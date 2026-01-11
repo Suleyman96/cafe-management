@@ -1,0 +1,32 @@
+{
+  "name": "cafe-idare",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean -- && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,md,json}\"",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "db:push": "turbo run db:push",
+    "db:studio": "turbo run db:studio"
+  },
+  "devDependencies": {
+    "@turbo/gen": "^1.11.3",
+    "prettier": "^3.1.0",
+    "turbo": "latest",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@8.14.0"
+}

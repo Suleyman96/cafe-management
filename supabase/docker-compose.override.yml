@@ -1,0 +1,11 @@
+# Docker Compose Override to Enable Email Authentication
+# This file is automatically merged with Supabase's docker-compose.yml
+
+version: '3.8'
+
+services:
+  auth:
+    environment:
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+
+

@@ -1,0 +1,91 @@
+/**
+ * Type-Safe Waiter Calls Hooks
+ * Uses the wrapped client for type safety without 'as any'
+ */
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { db } from '@/lib/supabase/wrapped-client';
+import { QUERY_KEYS, REFRESH_INTERVALS } from '@cafe-idare/core';
+import type { Database } from '@cafe-idare/database';
+
+type WaiterCallStatus = Database['public']['Tables']['waiter_calls']['Row']['status'];
+
+export function useWaiterCalls(status?: WaiterCallStatus) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.WAITER_CALLS, status],
+    queryFn: () => db.waiterCalls.findAll(status),
+    refetchInterval: REFRESH_INTERVALS.WAITER_CALLS,
+  });
+}
+
+export function usePendingWaiterCallsCount() {
+  return useQuery({
+    queryKey: ['waiter-calls-count', 'pending'],
+    queryFn: () => db.waiterCalls.getPendingCount(),
+    refetchInterval: REFRESH_INTERVALS.WAITER_CALLS,
+  });
+}
+
+export function useAcknowledgeWaiterCall() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ callId, staffId }: { callId: string; staffId: string }) =>
+      db.waiterCalls.acknowledge(callId, staffId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
+      queryClient.invalidateQueries({ queryKey: ['waiter-calls-count'] });
+    },
+  });
+}
+
+export function useResolveWaiterCall() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ callId, notes }: { callId: string; notes?: string }) =>
+      db.waiterCalls.resolve(callId, notes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
+      queryClient.invalidateQueries({ queryKey: ['waiter-calls-count'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+    },
+  });
+}
+
+// Helper to get active calls for a specific table
+export function useActiveCallsForTable(tableId: string) {
+  const { data: allCalls, ...rest } = useWaiterCalls('pending');
+  
+  const tableCalls = allCalls?.filter((call: any) => call.table_id === tableId) || [];
+  
+  return {
+    ...rest,
+    data: tableCalls,
+  };
+}
+
+// Helper function to get call type info
+export function getCallTypeInfo(type: string): { icon: string; label: string; color: string } {
+  const types: Record<string, { icon: string; label: string; color: string }> = {
+    assistance: { icon: '💬', label: 'General Help', color: 'blue' },
+    bill: { icon: '🧾', label: 'Request Bill', color: 'green' },
+    complaint: { icon: '⚠️', label: 'Complaint', color: 'red' },
+    question: { icon: '❓', label: 'Question', color: 'yellow' },
+    emergency: { icon: '🚨', label: 'Emergency', color: 'red' },
+  };
+
+  return types[type] || { icon: '📢', label: 'Call', color: 'gray' };
+}
+
+// Helper function to get priority info
+export function getPriorityInfo(priority: string): { label: string; color: string } {
+  const priorities: Record<string, { label: string; color: string }> = {
+    low: { label: 'Low', color: 'gray' },
+    normal: { label: 'Normal', color: 'blue' },
+    high: { label: 'High', color: 'orange' },
+    urgent: { label: 'Urgent', color: 'red' },
+  };
+
+  return priorities[priority] || { label: 'Unknown', color: 'gray' };
+}

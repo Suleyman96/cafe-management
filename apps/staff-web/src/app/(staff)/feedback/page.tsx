@@ -1,0 +1,304 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  useFeedback,
+  usePendingFeedbackCount,
+  useAcknowledgeFeedback,
+  useRespondToFeedback,
+  useDismissFeedback,
+  getFeedbackTypeInfo,
+} from '@/hooks';
+import { Button } from '@cafe-idare/ui';
+
+type FeedbackStatus = 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
+type CustomerFeedbackWithTable = any; // We'll get this from the query
+
+export default function FeedbackPage() {
+  const [selectedStatus, setSelectedStatus] = useState<FeedbackStatus | 'all'>('pending');
+  const [respondingTo, setRespondingTo] = useState<string | null>(null);
+  const [responseText, setResponseText] = useState('');
+
+  const { data: feedback, isLoading } = useFeedback(
+    selectedStatus === 'all' ? undefined : selectedStatus
+  );
+  const { data: pendingCount } = usePendingFeedbackCount();
+
+  const acknowledgeFeedback = useAcknowledgeFeedback();
+  const respondToFeedback = useRespondToFeedback();
+  const dismissFeedback = useDismissFeedback();
+
+  const handleAcknowledge = async (feedbackId: string) => {
+    try {
+      await acknowledgeFeedback.mutateAsync({
+        feedbackId,
+        staffId: 'temp-staff-id', // Temporary - no auth required
+      });
+    } catch (error) {
+      console.error('Error acknowledging feedback:', error);
+      alert('Failed to acknowledge feedback');
+    }
+  };
+
+  const handleRespond = async (feedbackId: string) => {
+    if (!responseText.trim()) return;
+
+    try {
+      await respondToFeedback.mutateAsync({
+        feedbackId,
+        staffId: 'temp-staff-id', // Temporary - no auth required
+        response: responseText.trim(),
+        status: 'resolved',
+      });
+      setRespondingTo(null);
+      setResponseText('');
+    } catch (error) {
+      console.error('Error responding to feedback:', error);
+      alert('Failed to send response');
+    }
+  };
+
+  const handleDismiss = async (feedbackId: string) => {
+    if (!confirm('Are you sure you want to dismiss this feedback?')) return;
+
+    try {
+      await dismissFeedback.mutateAsync(feedbackId);
+    } catch (error) {
+      console.error('Error dismissing feedback:', error);
+      alert('Failed to dismiss feedback');
+    }
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  };
+
+  const getStatusColor = (status: FeedbackStatus) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'acknowledged':
+        return 'bg-blue-100 text-blue-800';
+      case 'resolved':
+        return 'bg-green-100 text-green-800';
+      case 'dismissed':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Customer Feedback</h1>
+          <p className="text-gray-600">
+            Manage complaints, questions, and requests from customers
+          </p>
+        </div>
+
+        {/* Status Tabs */}
+        <div className="bg-white rounded-lg shadow-sm border mb-6">
+          <div className="flex overflow-x-auto">
+            {[
+              { value: 'all', label: 'All' },
+              { value: 'pending', label: 'Pending', count: pendingCount },
+              { value: 'acknowledged', label: 'Acknowledged' },
+              { value: 'resolved', label: 'Resolved' },
+              { value: 'dismissed', label: 'Dismissed' },
+            ].map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setSelectedStatus(tab.value as FeedbackStatus | 'all')}
+                className={`flex-shrink-0 px-6 py-4 font-medium border-b-2 transition-colors ${
+                  selectedStatus === tab.value
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {tab.label}
+                {tab.count !== undefined && tab.count > 0 && (
+                  <span className="ml-2 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Feedback List */}
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-4 text-gray-600">Loading feedback...</p>
+          </div>
+        ) : !feedback || feedback.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm border p-12 text-center">
+            <div className="text-6xl mb-4">📝</div>
+            <p className="text-gray-600">No feedback to display</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {feedback.map((item: CustomerFeedbackWithTable) => {
+              const typeInfo = getFeedbackTypeInfo(item.feedback_type);
+              const isResponding = respondingTo === item.id;
+
+              return (
+                <div key={item.id} className="bg-white rounded-lg shadow-sm border p-6">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start gap-4 flex-1">
+                      {/* Type Icon */}
+                      <div className="text-3xl">{typeInfo.icon}</div>
+                      
+                      {/* Content */}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-semibold text-lg">
+                            {item.subject || typeInfo.label}
+                          </h3>
+                          <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${getStatusColor(item.status)}`}>
+                            {item.status}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                          {item.table && (
+                            <span>🪑 Table {item.table.table_number}</span>
+                          )}
+                          <span>📅 {formatDateTime(item.created_at)}</span>
+                        </div>
+
+                        <p className="text-gray-700 whitespace-pre-wrap">{item.message}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Response Section */}
+                  {item.response && (
+                    <div className="ml-14 bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium text-blue-900">
+                          Staff Response:
+                        </span>
+                        {item.responded_by_staff && (
+                          <span className="text-sm text-blue-700">
+                            by {item.responded_by_staff.full_name}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-700">{item.response}</p>
+                    </div>
+                  )}
+
+                  {/* Response Input */}
+                  {isResponding && (
+                    <div className="ml-14 mb-4">
+                      <textarea
+                        value={responseText}
+                        onChange={(e) => setResponseText(e.target.value)}
+                        placeholder="Write your response to the customer..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        rows={4}
+                        maxLength={500}
+                        autoFocus
+                      />
+                      <div className="text-xs text-gray-500 mt-1">
+                        {responseText.length}/500
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="ml-14 flex gap-2">
+                    {item.status === 'pending' && !isResponding && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAcknowledge(item.id)}
+                          disabled={acknowledgeFeedback.isPending}
+                        >
+                          👁️ Acknowledge
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => setRespondingTo(item.id)}
+                        >
+                          💬 Respond
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 hover:bg-red-50"
+                          onClick={() => handleDismiss(item.id)}
+                          disabled={dismissFeedback.isPending}
+                        >
+                          ✕ Dismiss
+                        </Button>
+                      </>
+                    )}
+
+                    {item.status === 'acknowledged' && !isResponding && (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => setRespondingTo(item.id)}
+                        >
+                          💬 Respond & Resolve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 hover:bg-red-50"
+                          onClick={() => handleDismiss(item.id)}
+                          disabled={dismissFeedback.isPending}
+                        >
+                          ✕ Dismiss
+                        </Button>
+                      </>
+                    )}
+
+                    {isResponding && (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => handleRespond(item.id)}
+                          disabled={!responseText.trim() || respondToFeedback.isPending}
+                        >
+                          {respondToFeedback.isPending ? 'Sending...' : 'Send Response'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setRespondingTo(null);
+                            setResponseText('');
+                          }}
+                          disabled={respondToFeedback.isPending}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+

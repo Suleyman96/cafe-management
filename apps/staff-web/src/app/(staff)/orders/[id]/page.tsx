@@ -1,0 +1,440 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useOrder, useUpdateOrderStatus, useOrderPayments, useOrderTransferHistory } from '@/hooks';
+import { Button, LoadingSpinner } from '@cafe-idare/ui';
+import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
+import { supabase } from '@/lib/supabase/client';
+import { toast } from 'sonner';
+import type { Database } from '@cafe-idare/database';
+
+type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
+  menu_item?: Database['public']['Tables']['menu_items']['Row'];
+  price: number; // Order item has its own price
+};
+
+type Payment = Database['public']['Tables']['order_payments']['Row'] & {
+  staff?: Database['public']['Tables']['staff']['Row'];
+  items_paid?: OrderItem[];
+};
+
+type Table = Database['public']['Tables']['tables']['Row'];
+
+type TableTransfer = Database['public']['Tables']['table_transfers']['Row'] & {
+  from_table?: Table;
+  to_table?: Table;
+  transferred_by_staff?: Database['public']['Tables']['staff']['Row'];
+};
+
+// Complex order type with all joined relations
+type OrderWithRelations = Database['public']['Tables']['orders']['Row'] & {
+  table?: Table;
+  order_items?: OrderItem[];
+  assigned_waiter?: Database['public']['Tables']['staff']['Row'];
+  staff?: Database['public']['Tables']['staff']['Row'];
+  order_payments?: Payment[];
+  table_transfers?: TableTransfer[];
+  source?: string;
+};
+import { 
+  ArrowLeft,
+  Clock, 
+  DollarSign,
+  User,
+  CreditCard,
+  Package,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  ChefHat,
+  RefreshCw,
+  FileText,
+  ArrowRight
+} from 'lucide-react';
+
+export default function OrderDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const orderId = params.id as string;
+  
+  const { data: orderData, isLoading: loading, error, refetch } = useOrder(orderId);
+  const { data: paymentsData } = useOrderPayments(orderId);
+  const { data: transferHistory } = useOrderTransferHistory(orderId);
+  
+  // Type assertions for the complex joined data
+  const order = orderData as OrderWithRelations | undefined;
+  const payments = paymentsData as Payment[] | undefined;
+  const updateOrderStatus = useUpdateOrderStatus();
+  
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  // Set up real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel(`order-${orderId}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'orders',
+          filter: `id=eq.${orderId}`
+        },
+        () => {
+          refetch();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'order_items',
+          filter: `order_id=eq.${orderId}`
+        },
+        () => {
+          refetch();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'order_payments',
+          filter: `order_id=eq.${orderId}`
+        },
+        () => {
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orderId, refetch]);
+
+  // Calculate totals
+  const calculateOrderTotal = () => {
+    if (!order?.order_items) return 0;
+    return order.order_items.reduce((sum: number, item: OrderItem) => 
+      sum + (item.quantity * item.price), 0
+    );
+  };
+
+  const calculatePaidAmount = () => {
+    if (!payments) return 0;
+    return payments.reduce((sum: number, payment: Payment) => 
+      sum + payment.amount, 0
+    );
+  };
+
+  // Format timestamp
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatDate = (timestamp: string) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Get status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'new':
+        return 'bg-blue-100 text-blue-800';
+      case 'preparing':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'ready':
+        return 'bg-green-100 text-green-800';
+      case 'served':
+        return 'bg-purple-100 text-purple-800';
+      case 'paid':
+        return 'bg-gray-100 text-gray-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Handle status update
+  const handleStatusUpdate = async (newStatus: keyof typeof import('@cafe-idare/core').ORDER_STATUS) => {
+    try {
+      await updateOrderStatus.mutateAsync({
+        orderId,
+        status: newStatus
+      });
+      toast.success(`Order status updated to ${newStatus.toLowerCase()}`);
+    } catch (error) {
+      toast.error('Failed to update order status');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-red-500">Error loading order</p>
+      </div>
+    );
+  }
+
+  const total = calculateOrderTotal();
+  const paid = calculatePaidAmount();
+  const remaining = total - paid;
+  const isFullyPaid = remaining === 0 && total > 0;
+
+  return (
+    <div className="container mx-auto px-4 py-6 max-w-4xl">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-2xl font-bold">
+            {order.table ? `Table ${order.table.table_number}` : 'Takeout Order'}
+          </h1>
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
+            {order.status.toUpperCase()}
+          </span>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => refetch()}
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Order Info */}
+      <div className="bg-gray-50 rounded-lg p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Order ID</p>
+            <p className="font-mono text-sm">#{order.id.slice(0, 8)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Created</p>
+            <p className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {formatDate(order.created_at)}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Source</p>
+            <p className="flex items-center gap-1">
+              {order.source === 'phone' ? <Package className="h-4 w-4" /> : <User className="h-4 w-4" />}
+              {order.source?.charAt(0).toUpperCase() + (order.source?.slice(1) || '')}
+            </p>
+          </div>
+          {order.customer_name && (
+            <div>
+              <p className="text-sm text-gray-600">Customer</p>
+              <p>{order.customer_name}</p>
+            </div>
+          )}
+          {order.customer_phone && (
+            <div>
+              <p className="text-sm text-gray-600">Phone</p>
+              <p>{order.customer_phone}</p>
+            </div>
+          )}
+          {order.staff && (
+            <div>
+              <p className="text-sm text-gray-600">Waiter</p>
+              <p>{order.staff.full_name}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Table Transfer History */}
+      {transferHistory && transferHistory.length > 0 && (
+        <div className="bg-blue-50 rounded-lg p-4 mb-6">
+          <h3 className="font-semibold mb-2 flex items-center gap-2">
+            <ArrowRight className="h-4 w-4" />
+            Table Transfer History
+          </h3>
+          {transferHistory.map((transfer: TableTransfer) => (
+            <div key={transfer.id} className="text-sm">
+              Transferred from Table {transfer.from_table?.table_number} to Table {transfer.to_table?.table_number}
+              {transfer.reason && ` - ${transfer.reason}`}
+              <span className="text-gray-600 ml-2">({formatTime(transfer.created_at)})</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Order Items */}
+      <div className="border rounded-lg mb-6">
+        <div className="border-b px-4 py-3">
+          <h2 className="font-semibold">Order Items</h2>
+        </div>
+        <div className="divide-y">
+          {order.order_items?.map((item: OrderItem) => (
+            <div key={item.id} className="px-4 py-3">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{item.quantity}x</span>
+                    <span>{item.menu_item?.name_en}</span>
+                  </div>
+                  {item.notes && (
+                    <p className="text-sm text-gray-600 mt-1 flex items-start gap-1">
+                      <FileText className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                      {item.notes}
+                    </p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="font-medium">${(item.quantity * item.price).toFixed(2)}</p>
+                  <p className="text-sm text-gray-600">${item.price.toFixed(2)} each</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="border-t px-4 py-3">
+          <div className="flex justify-between items-center text-lg font-semibold">
+            <span>Total</span>
+            <span>${total.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment History */}
+      {payments && payments.length > 0 && (
+        <div className="border rounded-lg mb-6">
+          <div className="border-b px-4 py-3">
+            <h2 className="font-semibold">Payment History</h2>
+          </div>
+          <div className="divide-y">
+            {payments.map((payment: Payment) => (
+              <div key={payment.id} className="px-4 py-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium">${payment.amount.toFixed(2)}</p>
+                    <p className="text-sm text-gray-600">
+                      {payment.payment_method} - {payment.staff?.full_name || 'Unknown'}
+                    </p>
+                    <p className="text-xs text-gray-500">{formatTime(payment.created_at)}</p>
+                  </div>
+                  {payment.items_paid && payment.items_paid.length > 0 && (
+                    <div className="text-sm text-gray-600">
+                      {payment.items_paid.length} items
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="border-t px-4 py-3">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold">Total Paid</span>
+              <span className="font-semibold text-green-600">${paid.toFixed(2)}</span>
+            </div>
+            {remaining > 0 && (
+              <div className="flex justify-between items-center mt-2">
+                <span className="font-semibold">Remaining</span>
+                <span className="font-semibold text-orange-600">${remaining.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-3">
+        {order.status === 'new' && (
+          <Button
+            onClick={() => handleStatusUpdate('PREPARING')}
+            className="flex items-center gap-2"
+          >
+            <ChefHat className="h-4 w-4" />
+            Start Preparing
+          </Button>
+        )}
+        {order.status === 'preparing' && (
+          <Button
+            onClick={() => handleStatusUpdate('READY')}
+            className="flex items-center gap-2"
+          >
+            <CheckCircle className="h-4 w-4" />
+            Mark Ready
+          </Button>
+        )}
+        {order.status === 'ready' && order.table && (
+          <Button
+            onClick={() => handleStatusUpdate('SERVED')}
+            className="flex items-center gap-2"
+          >
+            <CheckCircle className="h-4 w-4" />
+            Mark Served
+          </Button>
+        )}
+        {(order.status === 'served' || order.status === 'ready') && !isFullyPaid && (
+          <Button
+            onClick={() => setIsPaymentModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <CreditCard className="h-4 w-4" />
+            Process Payment
+          </Button>
+        )}
+        {isFullyPaid && order.status !== 'closed' && order.status !== 'cancelled' && (
+          <Button
+            onClick={() => handleStatusUpdate('CLOSED')}
+            className="flex items-center gap-2"
+          >
+            <CheckCircle className="h-4 w-4" />
+            Close Order
+          </Button>
+        )}
+        {['new', 'preparing'].includes(order.status) && (
+          <Button
+            variant="destructive"
+            onClick={() => handleStatusUpdate('CANCELLED')}
+            className="flex items-center gap-2"
+          >
+            <XCircle className="h-4 w-4" />
+            Cancel Order
+          </Button>
+        )}
+      </div>
+
+      <SplitPaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        order={order}
+        onSuccess={() => {
+          setIsPaymentModalOpen(false);
+          toast.success('Payment processed successfully');
+          refetch();
+        }}
+      />
+    </div>
+  );
+}
