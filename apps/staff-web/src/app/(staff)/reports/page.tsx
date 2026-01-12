@@ -44,7 +44,7 @@ export default function ReportsPage() {
   const metrics = {
     totalRevenue: filteredOrders.reduce((sum: number, order: any) => {
       const orderTotal = order.order_items?.reduce((itemSum: number, item: any) => 
-        itemSum + (item.quantity * item.price), 0
+        itemSum + (item.quantity * item.item_price), 0
       ) || 0;
       return sum + orderTotal;
     }, 0),
@@ -58,7 +58,7 @@ export default function ReportsPage() {
     averageOrderValue: filteredOrders.length > 0 
       ? filteredOrders.reduce((sum: number, order: any) => {
           const orderTotal = order.order_items?.reduce((itemSum: number, item: any) => 
-            itemSum + (item.quantity * item.price), 0
+            itemSum + (item.quantity * item.item_price), 0
           ) || 0;
           return sum + orderTotal;
         }, 0) / filteredOrders.length
@@ -86,7 +86,7 @@ export default function ReportsPage() {
           itemCounts.set(key, {
             name: current.name,
             count: current.count + item.quantity,
-            revenue: current.revenue + (item.quantity * item.price)
+            revenue: current.revenue + (item.quantity * item.item_price)
           });
         });
       });

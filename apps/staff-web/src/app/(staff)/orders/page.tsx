@@ -78,8 +78,8 @@ export default function OrdersPage() {
   // Calculate order total
   const calculateOrderTotal = (order: any) => {
     if (!order?.order_items) return 0;
-    return order.order_items.reduce((sum: number, item: any) => 
-      sum + (item.quantity * item.price), 0
+    return order.order_items.reduce((sum: number, item: any) =>
+      sum + (item.quantity * item.item_price), 0
     );
   };
 

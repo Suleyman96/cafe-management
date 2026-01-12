@@ -7,6 +7,8 @@ import {
   useCategories,
   useUpdateMenuItem,
   useToggleMenuItemAvailability,
+  useDeleteMenuItem,
+  useDeleteCategory,
 } from '@/hooks';
 import { Button } from '@cafe-idare/ui';
 import { MenuItemModal } from '@/components/menu/menu-item-modal';
@@ -26,19 +28,27 @@ export default function MenuPage() {
   // Use hooks - these require QueryClientProvider
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
   const { data: menuItems = [], isLoading: itemsLoading } = useMenuItems(selectedCategory ? { categoryId: selectedCategory } : undefined);
-  // const deleteMenuItem = useDeleteMenuItem();
-  // const deleteCategory = useDeleteCategory();
+  const deleteMenuItem = useDeleteMenuItem();
+  const deleteCategory = useDeleteCategory();
 
   const handleDeleteItem = async (id: string) => {
     if (!confirm('Are you sure you want to delete this menu item?')) return;
-    // await deleteMenuItem.mutateAsync(id);
-    console.log('Delete not implemented yet');
+    try {
+      await deleteMenuItem.mutateAsync(id);
+    } catch (error) {
+      console.error('Failed to delete menu item:', error);
+      alert('Failed to delete menu item. Please try again.');
+    }
   };
 
   const handleDeleteCategory = async (id: string) => {
     if (!confirm('Are you sure you want to delete this category? All items in this category will be unassigned.')) return;
-    // await deleteCategory.mutateAsync(id);
-    console.log('Delete not implemented yet');
+    try {
+      await deleteCategory.mutateAsync(id);
+    } catch (error) {
+      console.error('Failed to delete category:', error);
+      alert('Failed to delete category. It may have items assigned to it.');
+    }
   };
 
   const groupedItems = categories.reduce((acc: any, category: any) => {

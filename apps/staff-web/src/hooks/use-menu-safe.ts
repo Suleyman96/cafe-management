@@ -72,6 +72,17 @@ export function useToggleMenuItemAvailability() {
   });
 }
 
+export function useDeleteMenuItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => db.menuItems.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
+    },
+  });
+}
+
 // Categories hooks
 export function useCategories() {
   return useQuery({
@@ -95,8 +106,20 @@ export function useUpdateCategory() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Category> }) => 
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Category> }) =>
       db.categories.update(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
+    },
+  });
+}
+
+export function useDeleteCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => db.categories.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });

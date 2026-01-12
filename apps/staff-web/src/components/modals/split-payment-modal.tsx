@@ -3,13 +3,15 @@
 import { useState } from 'react';
 import { useCreatePayment, useOrderRemainingBalance } from '@/hooks';
 import { Button } from '@cafe-idare/ui';
-import { X, DollarSign, CreditCard, CheckCircle } from 'lucide-react';
+import { X, DollarSign, CheckCircle } from 'lucide-react';
 import type { Database } from '@cafe-idare/database';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
   menu_item?: Database['public']['Tables']['menu_items']['Row'];
-  price: number;
 };
+
+// Default staff ID for development (Admin User)
+const DEFAULT_STAFF_ID = '10000000-0000-0000-0000-000000000001';
 
 type Order = Database['public']['Tables']['orders']['Row'] & {
   order_items?: OrderItem[];
@@ -36,11 +38,10 @@ export function SplitPaymentModal({
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('full');
   const [partialAmount, setPartialAmount] = useState<string>('');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
   const [loading, setLoading] = useState(false);
 
   const orderTotal = order?.order_items?.reduce(
-    (sum: number, item: OrderItem) => sum + item.quantity * item.price,
+    (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
     0
   ) || 0;
 
@@ -48,7 +49,7 @@ export function SplitPaymentModal({
     if (!order?.order_items) return 0;
     return order.order_items
       .filter((item: OrderItem) => selectedItems.has(item.id))
-      .reduce((sum: number, item: OrderItem) => sum + item.quantity * item.price, 0);
+      .reduce((sum: number, item: OrderItem) => sum + item.quantity * item.item_price, 0);
   };
 
   const getPaymentAmount = () => {
@@ -70,12 +71,12 @@ export function SplitPaymentModal({
     try {
       await createPayment.mutateAsync({
         order_id: order?.id || '',
-        received_by: 'current-staff-id', // This should come from auth context
-        payment_type: paymentMode === 'full' ? 'full' : 
-                     paymentMode === 'partial' ? 'partial_amount' : 
+        received_by: DEFAULT_STAFF_ID,
+        payment_type: paymentMode === 'full' ? 'full' :
+                     paymentMode === 'partial' ? 'partial_amount' :
                      'specific_items',
         amount,
-        payment_method: paymentMethod,
+        payment_method: 'cash',
         order_item_ids: paymentMode === 'items' ? Array.from(selectedItems) : null,
         notes: null,
       });
@@ -103,7 +104,7 @@ export function SplitPaymentModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-bold">Process Payment</h2>
+          <h2 className="text-xl font-bold">Process Payment (Cash)</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
@@ -227,14 +228,14 @@ export function SplitPaymentModal({
                     />
                     <div className="flex-1">
                       <div className="font-medium">
-                        {item.quantity}x {item.menu_item?.name_en}
+                        {item.quantity}x {item.item_name}
                       </div>
                       {item.notes && (
                         <div className="text-xs text-gray-600">{item.notes}</div>
                       )}
                     </div>
                     <div className="font-medium">
-                      ${(item.quantity * item.price).toFixed(2)}
+                      ${(item.quantity * item.item_price).toFixed(2)}
                     </div>
                   </label>
                 ))}
@@ -247,36 +248,6 @@ export function SplitPaymentModal({
             </div>
           )}
 
-          {/* Payment Method */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Payment Method
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setPaymentMethod('cash')}
-                className={`p-3 border rounded-lg text-center transition-colors ${
-                  paymentMethod === 'cash'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <DollarSign className="h-5 w-5 mx-auto mb-1" />
-                <div className="text-sm font-medium">Cash</div>
-              </button>
-              <button
-                onClick={() => setPaymentMethod('card')}
-                className={`p-3 border rounded-lg text-center transition-colors ${
-                  paymentMethod === 'card'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <CreditCard className="h-5 w-5 mx-auto mb-1" />
-                <div className="text-sm font-medium">Card</div>
-              </button>
-            </div>
-          </div>
         </div>
 
         <div className="border-t p-6">

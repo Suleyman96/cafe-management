@@ -26,7 +26,8 @@ enable_signup = false # Only admins can create staff accounts
 enable_anonymous_sign_ins = false
 
 [auth.email]
-enable_signup = false
+enable_signup = true
+double_confirm_changes = false
 enable_confirmations = false
 
 [realtime]

@@ -1,7 +1,12 @@
 /**
  * Comprehensive Supabase Wrapper
- * Provides type-safe operations without 'as any' casts
+ * Provides type-safe operations for database operations.
+ *
+ * Note: Some 'as any' casts are necessary due to Supabase's strict
+ * generated types not matching runtime behavior for insert/update operations.
  */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@cafe-idare/database';
@@ -323,9 +328,9 @@ export class SupabaseWrapper {
         .select('is_available')
         .eq('id', id)
         .single();
-      
+
       if (fetchError) throw handleSupabaseError(fetchError);
-      
+
       // Toggle the state
       const { data, error } = await this.client
         .from('menu_items')
@@ -333,10 +338,19 @@ export class SupabaseWrapper {
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isMenuItem(data)) throw new Error('Invalid menu item data');
       return data;
+    },
+
+    delete: async (id: string) => {
+      const { error } = await this.client
+        .from('menu_items')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw handleSupabaseError(error);
     },
   };
 
@@ -373,10 +387,19 @@ export class SupabaseWrapper {
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isCategory(data)) throw new Error('Invalid category data');
       return data;
+    },
+
+    delete: async (id: string) => {
+      const { error } = await this.client
+        .from('categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw handleSupabaseError(error);
     },
   };
 

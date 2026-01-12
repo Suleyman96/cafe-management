@@ -67,5 +67,23 @@ export function useCreateOrder() {
   });
 }
 
+export function useAddOrderItems() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (items: Database['public']['Tables']['order_items']['Insert'][]) =>
+      db.orderItems.create(items),
+    onSuccess: (_, variables) => {
+      // Get the order_id from the first item to invalidate that specific order
+      const orderId = variables[0]?.order_id;
+      if (orderId) {
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, orderId] });
+      }
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+    },
+  });
+}
+
 // Note: Payment-related hooks are in use-payments-safe.ts
 // Note: Transfer-related hooks are in use-table-transfers-safe.ts

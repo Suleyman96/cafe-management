@@ -1,20 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTables, useOrders, useWaiterCalls } from '@/hooks';
+import { useTables, useOrders, useWaiterCalls, useCreateOrder } from '@/hooks';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { TableTransferModal } from '@/components/modals/table-transfer-modal';
 import { CreateTakeoutModal } from '@/components/modals/create-takeout-modal';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { 
-  Phone, 
-  Users, 
-  Clock, 
+import {
+  Phone,
+  Users,
+  Clock,
   DollarSign,
   AlertCircle,
-  QrCode,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 
 export default function TablesPage() {
@@ -25,6 +25,9 @@ export default function TablesPage() {
   const [selectedTable, setSelectedTable] = useState<any>(null);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isTakeoutModalOpen, setIsTakeoutModalOpen] = useState(false);
+  const [creatingOrderForTable, setCreatingOrderForTable] = useState<string | null>(null);
+
+  const createOrder = useCreateOrder();
 
   // Set up real-time subscriptions
   useEffect(() => {
@@ -77,8 +80,8 @@ export default function TablesPage() {
   // Calculate order total
   const calculateOrderTotal = (order: any) => {
     if (!order?.order_items) return 0;
-    return order.order_items.reduce((sum: number, item: any) => 
-      sum + (item.quantity * item.price), 0
+    return order.order_items.reduce((sum: number, item: any) =>
+      sum + (item.quantity * item.item_price), 0
     );
   };
 
@@ -97,10 +100,23 @@ export default function TablesPage() {
     }
   };
 
-  // Handle QR code display
-  const handleShowQRCode = (table: any) => {
-    const qrCodeUrl = `${window.location.origin.replace('3001', '3000')}/table/${table.qr_code}`;
-    window.open(qrCodeUrl, '_blank');
+  // Handle creating order for a free table
+  const handleCreateOrderForTable = async (table: any) => {
+    setCreatingOrderForTable(table.id);
+    try {
+      const result = await createOrder.mutateAsync({
+        table_id: table.id,
+        order_type: 'dine_in',
+        status: 'new',
+      } as any);
+      toast.success(`Order created for Table ${table.table_number}`);
+      window.location.href = `/orders/${result.id}/add-items`;
+    } catch (error) {
+      console.error('Failed to create order:', error);
+      toast.error('Failed to create order. Please try again.');
+    } finally {
+      setCreatingOrderForTable(null);
+    }
   };
 
   if (tablesLoading) {
@@ -126,7 +142,7 @@ export default function TablesPage() {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={isTakeoutModalOpen => setIsTakeoutModalOpen(true)}
+            onClick={() => setIsTakeoutModalOpen(true)}
             className="flex items-center gap-2"
           >
             <Phone className="h-4 w-4" />
@@ -163,9 +179,9 @@ export default function TablesPage() {
                 ${hasActiveCalls ? 'ring-2 ring-red-500 animate-pulse' : ''}
               `}
               onClick={() => {
-                if (activeOrder || table.status !== 'free') {
-                  window.location.href = `/orders?table=${table.table_number}`;
-                }
+                if (creatingOrderForTable) return; // Prevent double-click
+                // Navigate to table detail page
+                window.location.href = `/tables/${table.id}`;
               }}
             >
               <div className="flex justify-between items-start mb-3">
@@ -213,19 +229,13 @@ export default function TablesPage() {
                 </div>
               ))}
 
-              <div className="flex gap-2 mt-4">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleShowQRCode(table);
-                  }}
-                  className="flex-1"
-                >
-                  <QrCode className="h-4 w-4" />
-                </Button>
-                {table.status === 'occupied' && (
+              {creatingOrderForTable === table.id ? (
+                <div className="flex items-center justify-center gap-2 mt-4 text-blue-600">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Creating order...</span>
+                </div>
+              ) : table.status === 'occupied' ? (
+                <div className="flex gap-2 mt-4">
                   <Button
                     size="sm"
                     variant="outline"
@@ -238,8 +248,8 @@ export default function TablesPage() {
                   >
                     Transfer
                   </Button>
-                )}
-              </div>
+                </div>
+              ) : null}
             </div>
           );
         })}
@@ -268,7 +278,7 @@ export default function TablesPage() {
         onSuccess={(orderId) => {
           setIsTakeoutModalOpen(false);
           toast.success('Takeout order created');
-          window.location.href = `/orders/${orderId}`;
+          window.location.href = `/orders/${orderId}/add-items`;
         }}
       />
     </div>

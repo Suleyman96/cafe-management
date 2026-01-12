@@ -5,6 +5,9 @@ import { useTables, useTransferTable, useOrders } from '@/hooks';
 import { Button } from '@cafe-idare/ui';
 import { X } from 'lucide-react';
 
+// Default staff ID for development (Admin User)
+const DEFAULT_STAFF_ID = '10000000-0000-0000-0000-000000000001';
+
 interface TableTransferModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -46,7 +49,7 @@ export function TableTransferModal({
         orderId: (activeOrder as any).id,
         fromTableId: sourceTable.id,
         toTableId: selectedTableId,
-        staffId: 'current-staff-id', // This should come from auth context
+        staffId: DEFAULT_STAFF_ID,
         reason: reason.trim() || undefined,
       });
       onSuccess();

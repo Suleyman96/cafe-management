@@ -11,7 +11,6 @@ import type { Database } from '@cafe-idare/database';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
   menu_item?: Database['public']['Tables']['menu_items']['Row'];
-  price: number; // Order item has its own price
 };
 
 type Payment = Database['public']['Tables']['order_payments']['Row'] & {
@@ -119,8 +118,8 @@ export default function OrderDetailPage() {
   // Calculate totals
   const calculateOrderTotal = () => {
     if (!order?.order_items) return 0;
-    return order.order_items.reduce((sum: number, item: OrderItem) => 
-      sum + (item.quantity * item.price), 0
+    return order.order_items.reduce((sum: number, item: OrderItem) =>
+      sum + (item.quantity * item.item_price), 0
     );
   };
 
@@ -310,8 +309,8 @@ export default function OrderDetailPage() {
                   )}
                 </div>
                 <div className="text-right">
-                  <p className="font-medium">${(item.quantity * item.price).toFixed(2)}</p>
-                  <p className="text-sm text-gray-600">${item.price.toFixed(2)} each</p>
+                  <p className="font-medium">${(item.quantity * item.item_price).toFixed(2)}</p>
+                  <p className="text-sm text-gray-600">${item.item_price.toFixed(2)} each</p>
                 </div>
               </div>
             </div>

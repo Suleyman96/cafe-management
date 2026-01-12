@@ -213,7 +213,7 @@ export function isOrderItem(value: unknown): value is OrderItem {
     'order_id' in value &&
     'menu_item_id' in value &&
     'quantity' in value &&
-    'price' in value
+    'item_price' in value
   );
 }
 
