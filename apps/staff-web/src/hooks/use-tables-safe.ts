@@ -48,10 +48,34 @@ export function useUpdateTableStatus() {
 
 export function useCreateTable() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: (tableData: Database['public']['Tables']['tables']['Insert']) => 
+    mutationFn: (tableData: Database['public']['Tables']['tables']['Insert']) =>
       db.tables.create(tableData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+    },
+  });
+}
+
+export function useUpdateTable() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Database['public']['Tables']['tables']['Update'] }) =>
+      db.tables.update(id, updates),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLE, data.id] });
+    },
+  });
+}
+
+export function useDeleteTable() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => db.tables.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
     },

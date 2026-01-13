@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useCreatePayment, useOrderRemainingBalance } from '@/hooks';
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@cafe-idare/ui';
 import { X, DollarSign, CheckCircle } from 'lucide-react';
 import type { Database } from '@cafe-idare/database';
@@ -9,9 +10,6 @@ import type { Database } from '@cafe-idare/database';
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
   menu_item?: Database['public']['Tables']['menu_items']['Row'];
 };
-
-// Default staff ID for development (Admin User)
-const DEFAULT_STAFF_ID = '10000000-0000-0000-0000-000000000001';
 
 type Order = Database['public']['Tables']['orders']['Row'] & {
   order_items?: OrderItem[];
@@ -32,6 +30,7 @@ export function SplitPaymentModal({
   order,
   onSuccess,
 }: SplitPaymentModalProps) {
+  const { staff } = useAuth();
   const createPayment = useCreatePayment();
   const { data: remainingBalance } = useOrderRemainingBalance(order?.id || '');
   
@@ -55,7 +54,7 @@ export function SplitPaymentModal({
   const getPaymentAmount = () => {
     switch (paymentMode) {
       case 'full':
-        return remainingBalance || orderTotal;
+        return remainingBalance !== undefined ? remainingBalance : orderTotal;
       case 'partial':
         return parseFloat(partialAmount) || 0;
       case 'items':
@@ -65,13 +64,13 @@ export function SplitPaymentModal({
 
   const handlePayment = async () => {
     const amount = getPaymentAmount();
-    if (amount <= 0) return;
+    if (amount <= 0 || !staff?.id) return;
 
     setLoading(true);
     try {
       await createPayment.mutateAsync({
         order_id: order?.id || '',
-        received_by: DEFAULT_STAFF_ID,
+        received_by: staff.id,
         payment_type: paymentMode === 'full' ? 'full' :
                      paymentMode === 'partial' ? 'partial_amount' :
                      'specific_items',
@@ -100,6 +99,8 @@ export function SplitPaymentModal({
 
   if (!isOpen || !order) return null;
 
+  const isFullyPaid = remainingBalance !== undefined && remainingBalance <= 0;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -114,6 +115,16 @@ export function SplitPaymentModal({
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
+          {/* Fully Paid Message */}
+          {isFullyPaid && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center gap-2 text-green-700">
+                <CheckCircle className="h-5 w-5" />
+                <span className="font-medium">This order has been fully paid!</span>
+              </div>
+            </div>
+          )}
+
           {/* Order Summary */}
           <div className="mb-6">
             <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
@@ -130,7 +141,9 @@ export function SplitPaymentModal({
                 </div>
                 <div className="flex justify-between items-center font-medium">
                   <span>Remaining Balance</span>
-                  <span className="text-orange-600">${remainingBalance.toFixed(2)}</span>
+                  <span className={isFullyPaid ? "text-green-600" : "text-orange-600"}>
+                    ${remainingBalance.toFixed(2)}
+                  </span>
                 </div>
               </>
             )}
@@ -153,7 +166,7 @@ export function SplitPaymentModal({
                 <DollarSign className="h-5 w-5 mx-auto mb-1" />
                 <div className="text-sm font-medium">Full Payment</div>
                 <div className="text-xs text-gray-600">
-                  ${(remainingBalance || orderTotal).toFixed(2)}
+                  ${(remainingBalance ?? orderTotal).toFixed(2)}
                 </div>
               </button>
 
@@ -202,7 +215,7 @@ export function SplitPaymentModal({
                   placeholder="0.00"
                   value={partialAmount}
                   onChange={(e) => setPartialAmount(e.target.value)}
-                  max={remainingBalance || orderTotal}
+                  max={remainingBalance ?? orderTotal}
                 />
               </div>
             </div>
@@ -253,7 +266,7 @@ export function SplitPaymentModal({
         <div className="border-t p-6">
           <div className="flex justify-between items-center mb-4">
             <span className="text-lg font-medium">Amount to Pay</span>
-            <span className="text-2xl font-bold text-blue-600">
+            <span className={`text-2xl font-bold ${isFullyPaid ? 'text-green-600' : 'text-blue-600'}`}>
               ${getPaymentAmount().toFixed(2)}
             </span>
           </div>
@@ -264,15 +277,17 @@ export function SplitPaymentModal({
               disabled={loading}
               className="flex-1"
             >
-              Cancel
+              {isFullyPaid ? 'Close' : 'Cancel'}
             </Button>
-            <Button
-              onClick={handlePayment}
-              disabled={getPaymentAmount() <= 0 || loading}
-              className="flex-1"
-            >
-              {loading ? 'Processing...' : 'Process Payment'}
-            </Button>
+            {!isFullyPaid && (
+              <Button
+                onClick={handlePayment}
+                disabled={getPaymentAmount() <= 0 || loading || !staff?.id}
+                className="flex-1"
+              >
+                {loading ? 'Processing...' : 'Process Payment'}
+              </Button>
+            )}
           </div>
         </div>
       </div>

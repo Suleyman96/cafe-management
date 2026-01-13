@@ -93,10 +93,32 @@ export class SupabaseWrapper {
         .insert(tableData as any)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isTable(data)) throw new Error('Invalid table data');
       return data;
+    },
+
+    update: async (id: string, updates: Database['public']['Tables']['tables']['Update']) => {
+      const { data, error } = await this.client
+        .from('tables')
+        .update(updates as any)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isTable(data)) throw new Error('Invalid table data');
+      return data;
+    },
+
+    delete: async (id: string) => {
+      const { error } = await this.client
+        .from('tables')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw handleSupabaseError(error);
     },
   };
 
