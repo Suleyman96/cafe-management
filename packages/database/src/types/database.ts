@@ -140,8 +140,11 @@ export interface Database {
           resolved_at: string | null;
           notes: string | null;
         };
-        Insert: Omit<Database['public']['Tables']['waiter_calls']['Row'], 'id' | 'created_at'>;
-        Update: Partial<Database['public']['Tables']['waiter_calls']['Insert']>;
+        Insert: Omit<Database['public']['Tables']['waiter_calls']['Row'], 'id' | 'created_at' | 'acknowledged_at' | 'resolved_at'>;
+        Update: Partial<Database['public']['Tables']['waiter_calls']['Insert']> & {
+          acknowledged_at?: string | null;
+          resolved_at?: string | null;
+        };
       };
       staff: {
         Row: {
@@ -175,7 +178,10 @@ export interface Database {
           resolved_at: string | null;
         };
         Insert: Omit<Database['public']['Tables']['customer_feedback']['Row'], 'id' | 'created_at' | 'acknowledged_at' | 'resolved_at'>;
-        Update: Partial<Database['public']['Tables']['customer_feedback']['Insert']>;
+        Update: Partial<Database['public']['Tables']['customer_feedback']['Insert']> & {
+          acknowledged_at?: string | null;
+          resolved_at?: string | null;
+        };
       };
       order_payments: {
         Row: {

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
@@ -12,6 +13,11 @@ import {
   BarChart3,
   Menu,
   Users,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  LogOut,
+  Settings,
 } from 'lucide-react';
 
 type NavItem = {
@@ -32,25 +38,78 @@ const navItems: NavItem[] = [
   { href: '/reports', label: 'Reports', icon: <BarChart3 className="h-5 w-5" />, adminOnly: true },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  isCollapsed: boolean;
+  onToggle: () => void;
+}
+
+export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
-  const { staff } = useAuth();
+  const { staff, logout } = useAuth();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = staff?.role === 'admin';
 
   // Filter nav items based on role
   const visibleItems = navItems.filter(item => !item.adminOnly || isAdmin);
 
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'bg-purple-100 text-purple-800';
+      case 'waiter':
+        return 'bg-blue-100 text-blue-800';
+      case 'kitchen':
+        return 'bg-orange-100 text-orange-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col">
+    <aside
+      className={`bg-white border-r border-gray-200 min-h-screen flex flex-col transition-all duration-300 ${
+        isCollapsed ? 'w-16' : 'w-64'
+      }`}
+    >
       {/* Logo */}
-      <div className="p-4 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-gray-900">Cafe Idare</h1>
-        <p className="text-xs text-gray-500">Staff Portal</p>
+      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+        {!isCollapsed && (
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Cafe Idare</h1>
+            <p className="text-xs text-gray-500">Staff Portal</p>
+          </div>
+        )}
+        <button
+          onClick={onToggle}
+          className={`p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors ${
+            isCollapsed ? 'mx-auto' : ''
+          }`}
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-5 w-5" />
+          ) : (
+            <ChevronLeft className="h-5 w-5" />
+          )}
+        </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-2">
         <ul className="space-y-1">
           {visibleItems.map((item) => {
             const isActive = pathname === item.href ||
@@ -64,16 +123,21 @@ export function Sidebar() {
                     isActive
                       ? 'bg-blue-50 text-blue-700'
                       : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  } ${isCollapsed ? 'justify-center' : ''}`}
+                  title={isCollapsed ? item.label : undefined}
                 >
                   <span className={isActive ? 'text-blue-600' : 'text-gray-500'}>
                     {item.icon}
                   </span>
-                  {item.label}
-                  {item.adminOnly && (
-                    <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
-                      Admin
-                    </span>
+                  {!isCollapsed && (
+                    <>
+                      {item.label}
+                      {item.adminOnly && (
+                        <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
+                          Admin
+                        </span>
+                      )}
+                    </>
                   )}
                 </Link>
               </li>
@@ -82,12 +146,65 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Role indicator at bottom */}
+      {/* User Menu at bottom */}
       {staff && (
-        <div className="p-4 border-t border-gray-200">
-          <div className="text-xs text-gray-500">
-            Logged in as <span className="font-medium capitalize">{staff.role}</span>
-          </div>
+        <div className="relative border-t border-gray-200" ref={userMenuRef}>
+          <button
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            className={`w-full p-3 flex items-center gap-3 hover:bg-gray-50 transition-colors ${
+              isCollapsed ? 'justify-center' : ''
+            }`}
+            title={isCollapsed ? staff.full_name : undefined}
+          >
+            <div className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
+              {staff.full_name?.charAt(0).toUpperCase() || 'U'}
+            </div>
+            {!isCollapsed && (
+              <>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{staff.full_name}</p>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(staff.role)}`}>
+                    {staff.role}
+                  </span>
+                </div>
+                <ChevronUp className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${isUserMenuOpen ? '' : 'rotate-180'}`} />
+              </>
+            )}
+          </button>
+
+          {/* Dropdown Menu */}
+          {isUserMenuOpen && (
+            <div className={`absolute bottom-full mb-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 ${
+              isCollapsed ? 'left-full ml-2 w-56' : 'left-2 right-2'
+            }`}>
+              {isCollapsed && (
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <p className="text-sm font-medium text-gray-900">{staff.full_name}</p>
+                  <p className="text-xs text-gray-500">{staff.email}</p>
+                </div>
+              )}
+
+              <Link
+                href="/settings"
+                onClick={() => setIsUserMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                <Settings className="h-4 w-4" />
+                Account Settings
+              </Link>
+
+              <button
+                onClick={() => {
+                  setIsUserMenuOpen(false);
+                  logout();
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
       )}
     </aside>

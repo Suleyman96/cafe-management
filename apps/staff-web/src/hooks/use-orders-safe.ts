@@ -85,5 +85,48 @@ export function useAddOrderItems() {
   });
 }
 
+export function useAssignWaiter() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ orderId, waiterId }: { orderId: string; waiterId: string | null }) =>
+      db.orders.assignWaiter(orderId, waiterId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.orderId] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+    },
+  });
+}
+
+type OrderItemStatus = Database['public']['Tables']['order_items']['Row']['status'];
+
+export function useUpdateOrderItemStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ itemId, status }: { itemId: string; status: OrderItemStatus }) =>
+      db.orderItems.updateStatus(itemId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+    },
+  });
+}
+
+export function useDeleteOrderItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (itemId: string) => db.orderItems.delete(itemId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+    },
+  });
+}
+
 // Note: Payment-related hooks are in use-payments-safe.ts
 // Note: Transfer-related hooks are in use-table-transfers-safe.ts

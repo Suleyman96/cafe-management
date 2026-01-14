@@ -2,19 +2,21 @@
  * Comprehensive Supabase Wrapper
  * Provides type-safe operations for database operations.
  *
- * Note: Some 'as any' casts are necessary due to Supabase's strict
+ * Note: Some type assertions are necessary due to Supabase's strict
  * generated types not matching runtime behavior for insert/update operations.
+ * The Supabase client requires 'as any' for update/insert operations because
+ * the generated types are too strict for practical use.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@cafe-idare/database';
-import { 
-  handleSupabaseError, 
-  isOrder, 
-  isTable, 
-  isMenuItem, 
+import {
+  handleSupabaseError,
+  isOrder,
+  isTable,
+  isMenuItem,
   isCustomerFeedback,
   isCategory,
   isStaff,
@@ -22,19 +24,40 @@ import {
   isOrderPayment,
   isOrderItem,
   isTableArray,
-  isOrderArray,
-  isMenuItemArray,
   isCategoryArray,
   isStaffArray,
-  isWaiterCallArray,
-  isCustomerFeedbackArray,
-  isOrderPaymentArray,
   isOrderItemArray,
-  assertType
 } from '@cafe-idare/core';
 
+// Type aliases for cleaner code
+type Tables = Database['public']['Tables'];
+type TableRow = Tables['tables']['Row'];
+type TableInsert = Tables['tables']['Insert'];
+type TableUpdate = Tables['tables']['Update'];
+type OrderRow = Tables['orders']['Row'];
+type OrderInsert = Tables['orders']['Insert'];
+type OrderItemInsert = Tables['order_items']['Insert'];
+type OrderItemRow = Tables['order_items']['Row'];
+type MenuItemInsert = Tables['menu_items']['Insert'];
+type MenuItemUpdate = Tables['menu_items']['Update'];
+type CategoryInsert = Tables['categories']['Insert'];
+type CategoryUpdate = Tables['categories']['Update'];
+type CustomerFeedbackRow = Tables['customer_feedback']['Row'];
+type OrderPaymentInsert = Tables['order_payments']['Insert'];
+type StaffInsert = Tables['staff']['Insert'];
+type StaffUpdate = Tables['staff']['Update'];
+type WaiterCallRow = Tables['waiter_calls']['Row'];
+
+// Helper type for Supabase client that bypasses strict typing
+type AnySupabaseClient = SupabaseClient<any>;
+
 export class SupabaseWrapper {
-  constructor(private client: SupabaseClient<Database>) {}
+  private anyClient: AnySupabaseClient;
+
+  constructor(private client: SupabaseClient<Database>) {
+    // Cast to any client to bypass strict Supabase typing for mutations
+    this.anyClient = client as AnySupabaseClient;
+  }
 
   // ========== TABLES ==========
   tables = {
@@ -43,7 +66,7 @@ export class SupabaseWrapper {
         .from('tables')
         .select('*')
         .order('table_number');
-      
+
       if (error) throw handleSupabaseError(error);
       const tables = data || [];
       if (!isTableArray(tables)) throw new Error('Invalid tables data');
@@ -56,7 +79,7 @@ export class SupabaseWrapper {
         .select('*')
         .eq('id', id)
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isTable(data)) throw new Error('Invalid table data');
       return data;
@@ -68,52 +91,52 @@ export class SupabaseWrapper {
         .select('*')
         .eq('qr_code', qrCode)
         .single();
-      
-      if (error) throw handleSupabaseError(error);
-      if (!isTable(data)) throw new Error('Invalid table data');
-      return data;
-    },
-
-    updateStatus: async (id: string, status: Database['public']['Tables']['tables']['Row']['status']) => {
-      const { data, error } = await this.client
-        .from('tables')
-        .update({ status } as any)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw handleSupabaseError(error);
-      if (!isTable(data)) throw new Error('Invalid table data');
-      return data;
-    },
-
-    create: async (tableData: Database['public']['Tables']['tables']['Insert']) => {
-      const { data, error } = await this.client
-        .from('tables')
-        .insert(tableData as any)
-        .select()
-        .single();
 
       if (error) throw handleSupabaseError(error);
       if (!isTable(data)) throw new Error('Invalid table data');
       return data;
     },
 
-    update: async (id: string, updates: Database['public']['Tables']['tables']['Update']) => {
-      const { data, error } = await this.client
+    updateStatus: async (id: string, status: TableRow['status']) => {
+      const { data, error } = await this.anyClient
         .from('tables')
-        .update(updates as any)
+        .update({ status })
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw handleSupabaseError(error);
       if (!isTable(data)) throw new Error('Invalid table data');
-      return data;
+      return data as TableRow;
+    },
+
+    create: async (tableData: TableInsert) => {
+      const { data, error } = await this.anyClient
+        .from('tables')
+        .insert(tableData)
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isTable(data)) throw new Error('Invalid table data');
+      return data as TableRow;
+    },
+
+    update: async (id: string, updates: TableUpdate) => {
+      const { data, error } = await this.anyClient
+        .from('tables')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isTable(data)) throw new Error('Invalid table data');
+      return data as TableRow;
     },
 
     delete: async (id: string) => {
-      const { error } = await this.client
+      const { error } = await this.anyClient
         .from('tables')
         .delete()
         .eq('id', id);
@@ -125,9 +148,9 @@ export class SupabaseWrapper {
   // ========== ORDERS ==========
   orders = {
     findAll: async (filters?: {
-      status?: Database['public']['Tables']['orders']['Row']['status'];
+      status?: OrderRow['status'];
       table_id?: string;
-      order_type?: Database['public']['Tables']['orders']['Row']['order_type'];
+      order_type?: OrderRow['order_type'];
     }) => {
       let query = this.client
         .from('orders')
@@ -153,11 +176,9 @@ export class SupabaseWrapper {
       }
 
       const { data, error } = await query;
-      
+
       if (error) throw handleSupabaseError(error);
-      const orders = data || [];
-      // Note: Complex nested types - validate top level only
-      return orders;
+      return data || [];
     },
 
     findById: async (id: string) => {
@@ -184,35 +205,35 @@ export class SupabaseWrapper {
         `)
         .eq('id', id)
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
       return data;
     },
 
-    create: async (orderData: Database['public']['Tables']['orders']['Insert']) => {
-      const { data, error } = await this.client
+    create: async (orderData: OrderInsert) => {
+      const { data, error } = await this.anyClient
         .from('orders')
-        .insert(orderData as any)
+        .insert(orderData)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
-      return data;
+      return data as OrderRow;
     },
 
-    updateStatus: async (id: string, status: Database['public']['Tables']['orders']['Row']['status']) => {
-      const { data, error } = await this.client
+    updateStatus: async (id: string, status: OrderRow['status']) => {
+      const { data, error } = await this.anyClient
         .from('orders')
-        .update({ status } as any)
+        .update({ status })
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
-      return data;
+      return data as OrderRow;
     },
 
     getActiveOrders: async () => {
@@ -225,55 +246,66 @@ export class SupabaseWrapper {
         `)
         .in('status', ['new', 'preparing', 'ready', 'served'])
         .order('created_at', { ascending: false });
-      
+
       if (error) throw handleSupabaseError(error);
-      const orders = data || [];
-      // Note: Complex nested types - validate top level only
-      return orders;
+      return data || [];
+    },
+
+    assignWaiter: async (orderId: string, waiterId: string | null) => {
+      const { data, error } = await this.anyClient
+        .from('orders')
+        .update({ assigned_waiter_id: waiterId })
+        .eq('id', orderId)
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isOrder(data)) throw new Error('Invalid order data');
+      return data as OrderRow;
     },
   };
 
   // ========== ORDER ITEMS ==========
   orderItems = {
-    create: async (items: Database['public']['Tables']['order_items']['Insert'][]) => {
-      const { data, error } = await this.client
+    create: async (items: OrderItemInsert[]) => {
+      const { data, error } = await this.anyClient
         .from('order_items')
-        .insert(items as any)
+        .insert(items)
         .select();
-      
+
       if (error) throw handleSupabaseError(error);
       const orderItems = data || [];
       if (!isOrderItemArray(orderItems)) throw new Error('Invalid order items data');
-      return orderItems;
+      return orderItems as OrderItemRow[];
     },
 
-    updateStatus: async (id: string, status: Database['public']['Tables']['order_items']['Row']['status']) => {
-      const { data, error } = await this.client
+    updateStatus: async (id: string, status: OrderItemRow['status']) => {
+      const { data, error } = await this.anyClient
         .from('order_items')
-        .update({ status } as any)
+        .update({ status })
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isOrderItem(data)) throw new Error('Invalid order item data');
-      return data;
+      return data as OrderItemRow;
     },
 
     delete: async (id: string) => {
-      const { error } = await this.client
+      const { error } = await this.anyClient
         .from('order_items')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw handleSupabaseError(error);
     },
   };
 
   // ========== MENU ITEMS ==========
   menuItems = {
-    findAll: async (options?: { 
-      categoryId?: string; 
+    findAll: async (options?: {
+      categoryId?: string;
       isAvailable?: boolean;
       isPopular?: boolean;
     }) => {
@@ -296,11 +328,9 @@ export class SupabaseWrapper {
       }
 
       const { data, error } = await query;
-      
+
       if (error) throw handleSupabaseError(error);
-      const menuItems = data || [];
-      // Note: Complex nested category - validate top level only
-      return menuItems;
+      return data || [];
     },
 
     findById: async (id: string) => {
@@ -312,32 +342,32 @@ export class SupabaseWrapper {
         `)
         .eq('id', id)
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isMenuItem(data)) throw new Error('Invalid menu item data');
       return data;
     },
 
-    update: async (id: string, updates: Partial<Database['public']['Tables']['menu_items']['Update']>) => {
-      const { data, error } = await this.client
+    update: async (id: string, updates: Partial<MenuItemUpdate>) => {
+      const { data, error } = await this.anyClient
         .from('menu_items')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isMenuItem(data)) throw new Error('Invalid menu item data');
       return data;
     },
 
-    create: async (itemData: Database['public']['Tables']['menu_items']['Insert']) => {
-      const { data, error } = await this.client
+    create: async (itemData: MenuItemInsert) => {
+      const { data, error } = await this.anyClient
         .from('menu_items')
-        .insert(itemData as any)
+        .insert(itemData)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isMenuItem(data)) throw new Error('Invalid menu item data');
       return data;
@@ -345,18 +375,19 @@ export class SupabaseWrapper {
 
     toggleAvailability: async (id: string) => {
       // First get current state
-      const { data: current, error: fetchError } = await this.client
+      const { data: current, error: fetchError } = await this.anyClient
         .from('menu_items')
         .select('is_available')
         .eq('id', id)
         .single();
 
       if (fetchError) throw handleSupabaseError(fetchError);
+      if (!current) throw new Error('Menu item not found');
 
       // Toggle the state
-      const { data, error } = await this.client
+      const { data, error } = await this.anyClient
         .from('menu_items')
-        .update({ is_available: !current.is_available } as any)
+        .update({ is_available: !(current as { is_available: boolean }).is_available })
         .eq('id', id)
         .select()
         .single();
@@ -367,7 +398,7 @@ export class SupabaseWrapper {
     },
 
     delete: async (id: string) => {
-      const { error } = await this.client
+      const { error } = await this.anyClient
         .from('menu_items')
         .delete()
         .eq('id', id);
@@ -383,29 +414,29 @@ export class SupabaseWrapper {
         .from('categories')
         .select('*')
         .order('display_order');
-      
+
       if (error) throw handleSupabaseError(error);
       const categories = data || [];
       if (!isCategoryArray(categories)) throw new Error('Invalid categories data');
       return categories;
     },
 
-    create: async (categoryData: Database['public']['Tables']['categories']['Insert']) => {
-      const { data, error } = await this.client
+    create: async (categoryData: CategoryInsert) => {
+      const { data, error } = await this.anyClient
         .from('categories')
-        .insert(categoryData as any)
+        .insert(categoryData)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isCategory(data)) throw new Error('Invalid category data');
       return data;
     },
 
-    update: async (id: string, updates: Partial<Database['public']['Tables']['categories']['Update']>) => {
-      const { data, error } = await this.client
+    update: async (id: string, updates: Partial<CategoryUpdate>) => {
+      const { data, error } = await this.anyClient
         .from('categories')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
@@ -416,7 +447,7 @@ export class SupabaseWrapper {
     },
 
     delete: async (id: string) => {
-      const { error } = await this.client
+      const { error } = await this.anyClient
         .from('categories')
         .delete()
         .eq('id', id);
@@ -427,7 +458,7 @@ export class SupabaseWrapper {
 
   // ========== CUSTOMER FEEDBACK ==========
   feedback = {
-    findAll: async (status?: Database['public']['Tables']['customer_feedback']['Row']['status']) => {
+    findAll: async (status?: CustomerFeedbackRow['status']) => {
       let query = this.client
         .from('customer_feedback')
         .select(`
@@ -442,59 +473,57 @@ export class SupabaseWrapper {
       }
 
       const { data, error } = await query;
-      
+
       if (error) throw handleSupabaseError(error);
-      const feedback = data || [];
-      // Note: Complex nested relations - validate top level only
-      return feedback;
+      return data || [];
     },
 
     acknowledge: async (id: string, staffId: string) => {
-      const { data, error } = await this.client
+      const { data, error } = await this.anyClient
         .from('customer_feedback')
         .update({
           status: 'acknowledged',
           responded_by: staffId,
           acknowledged_at: new Date().toISOString(),
-        } as any)
+        })
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isCustomerFeedback(data)) throw new Error('Invalid feedback data');
-      return data;
+      return data as CustomerFeedbackRow;
     },
 
-    respond: async (id: string, staffId: string, response: string, status: Database['public']['Tables']['customer_feedback']['Row']['status']) => {
-      const { data, error } = await this.client
+    respond: async (id: string, staffId: string, response: string, status: CustomerFeedbackRow['status']) => {
+      const { data, error } = await this.anyClient
         .from('customer_feedback')
         .update({
           status,
           responded_by: staffId,
           response,
           resolved_at: status === 'resolved' ? new Date().toISOString() : null,
-        } as any)
+        })
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isCustomerFeedback(data)) throw new Error('Invalid feedback data');
-      return data;
+      return data as CustomerFeedbackRow;
     },
 
     dismiss: async (id: string) => {
-      const { data, error } = await this.client
+      const { data, error } = await this.anyClient
         .from('customer_feedback')
-        .update({ status: 'dismissed' } as any)
+        .update({ status: 'dismissed' })
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isCustomerFeedback(data)) throw new Error('Invalid feedback data');
-      return data;
+      return data as CustomerFeedbackRow;
     },
 
     getPendingCount: async () => {
@@ -502,7 +531,7 @@ export class SupabaseWrapper {
         .from('customer_feedback')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
-      
+
       if (error) throw handleSupabaseError(error);
       return count || 0;
     },
@@ -510,16 +539,16 @@ export class SupabaseWrapper {
 
   // ========== PAYMENTS ==========
   payments = {
-    create: async (paymentData: Database['public']['Tables']['order_payments']['Insert']) => {
-      const { data, error } = await this.client
+    create: async (paymentData: OrderPaymentInsert) => {
+      const { data, error } = await this.anyClient
         .from('order_payments')
-        .insert(paymentData as any)
+        .insert(paymentData)
         .select(`
           *,
           received_by_staff:staff!order_payments_received_by_fkey(full_name, role)
         `)
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isOrderPayment(data)) throw new Error('Invalid payment data');
       return data;
@@ -534,11 +563,9 @@ export class SupabaseWrapper {
         `)
         .eq('order_id', orderId)
         .order('created_at', { ascending: false });
-      
+
       if (error) throw handleSupabaseError(error);
-      const payments = data || [];
-      // Note: Complex nested staff relation - validate top level only
-      return payments;
+      return data || [];
     },
   };
 
@@ -555,7 +582,7 @@ export class SupabaseWrapper {
       }
 
       const { data, error } = await query;
-      
+
       if (error) throw handleSupabaseError(error);
       const staff = data || [];
       if (!isStaffArray(staff)) throw new Error('Invalid staff data');
@@ -568,7 +595,7 @@ export class SupabaseWrapper {
         .select('*')
         .eq('id', id)
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isStaff(data)) throw new Error('Invalid staff data');
       return data;
@@ -580,7 +607,7 @@ export class SupabaseWrapper {
         .select('*')
         .eq('email', email)
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isStaff(data)) throw new Error('Invalid staff data');
       return data;
@@ -593,43 +620,43 @@ export class SupabaseWrapper {
         .eq('auth_user_id', authUserId)
         .eq('is_active', true)
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isStaff(data)) throw new Error('Invalid staff data');
       return data;
     },
 
-    create: async (staffData: Database['public']['Tables']['staff']['Insert']) => {
-      const { data, error } = await this.client
+    create: async (staffData: StaffInsert) => {
+      const { data, error } = await this.anyClient
         .from('staff')
-        .insert(staffData as any)
+        .insert(staffData)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isStaff(data)) throw new Error('Invalid staff data');
       return data;
     },
 
-    update: async (id: string, updates: Database['public']['Tables']['staff']['Update']) => {
-      const { data, error } = await this.client
+    update: async (id: string, updates: StaffUpdate) => {
+      const { data, error } = await this.anyClient
         .from('staff')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isStaff(data)) throw new Error('Invalid staff data');
       return data;
     },
 
     delete: async (id: string) => {
-      const { error } = await this.client
+      const { error } = await this.anyClient
         .from('staff')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw handleSupabaseError(error);
     },
 
@@ -640,7 +667,7 @@ export class SupabaseWrapper {
         .eq('role', 'waiter')
         .eq('is_active', true)
         .order('full_name');
-      
+
       if (error) throw handleSupabaseError(error);
       const waiters = data || [];
       if (!isStaffArray(waiters)) throw new Error('Invalid staff data');
@@ -650,7 +677,7 @@ export class SupabaseWrapper {
 
   // ========== WAITER CALLS ==========
   waiterCalls = {
-    findAll: async (status?: Database['public']['Tables']['waiter_calls']['Row']['status']) => {
+    findAll: async (status?: WaiterCallRow['status']) => {
       let query = this.client
         .from('waiter_calls')
         .select(`
@@ -664,45 +691,43 @@ export class SupabaseWrapper {
       }
 
       const { data, error } = await query;
-      
+
       if (error) throw handleSupabaseError(error);
-      const calls = data || [];
-      // Note: Complex nested table relation - validate top level only
-      return calls;
+      return data || [];
     },
 
     acknowledge: async (id: string, staffId: string) => {
-      const { data, error } = await this.client
+      const { data, error } = await this.anyClient
         .from('waiter_calls')
         .update({
           status: 'acknowledged',
           responded_by: staffId,
           acknowledged_at: new Date().toISOString(),
-        } as any)
+        })
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isWaiterCall(data)) throw new Error('Invalid waiter call data');
-      return data;
+      return data as WaiterCallRow;
     },
 
     resolve: async (id: string, notes?: string) => {
-      const { data, error } = await this.client
+      const { data, error } = await this.anyClient
         .from('waiter_calls')
         .update({
           status: 'resolved',
           resolved_at: new Date().toISOString(),
           notes,
-        } as any)
+        })
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       if (!isWaiterCall(data)) throw new Error('Invalid waiter call data');
-      return data;
+      return data as WaiterCallRow;
     },
 
     getPendingCount: async () => {
@@ -710,7 +735,7 @@ export class SupabaseWrapper {
         .from('waiter_calls')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
-      
+
       if (error) throw handleSupabaseError(error);
       return count || 0;
     },
@@ -719,11 +744,11 @@ export class SupabaseWrapper {
   // ========== RPC FUNCTIONS ==========
   rpc = {
     getRemainingBalance: async (orderId: string): Promise<number> => {
-      const { data, error } = await this.client
-        .rpc('get_order_remaining_balance', { order_uuid: orderId } as any);
-      
+      const { data, error } = await this.anyClient
+        .rpc('get_order_remaining_balance', { order_uuid: orderId });
+
       if (error) throw handleSupabaseError(error);
-      return data || 0;
+      return (data as number) || 0;
     },
 
     transferTable: async (params: {
@@ -733,42 +758,42 @@ export class SupabaseWrapper {
       staffId: string;
       reason?: string;
     }): Promise<boolean> => {
-      const { data, error } = await this.client
+      const { data, error } = await this.anyClient
         .rpc('transfer_table', {
           p_order_id: params.orderId,
           p_from_table_id: params.fromTableId,
           p_to_table_id: params.toTableId,
           p_staff_id: params.staffId,
           p_reason: params.reason
-        } as any);
-      
+        });
+
       if (error) throw handleSupabaseError(error);
-      return data || false;
+      return (data as boolean) || false;
     },
 
     generateOrderNumber: async (): Promise<string> => {
-      const { data, error } = await this.client
+      const { data, error } = await this.anyClient
         .rpc('generate_order_number');
-      
+
       if (error) throw handleSupabaseError(error);
-      return data || '';
+      return (data as string) || '';
     },
   };
 
   // ========== VIEWS ==========
   views = {
     getActiveOrders: async () => {
-      const { data, error } = await this.client
+      const { data, error } = await this.anyClient
         .from('active_orders_view')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) throw handleSupabaseError(error);
       return data || [];
     },
 
     getSalesSummary: async (startDate?: string, endDate?: string) => {
-      let query = this.client
+      let query = this.anyClient
         .from('sales_summary_view')
         .select('*')
         .order('date', { ascending: false });
@@ -781,13 +806,13 @@ export class SupabaseWrapper {
       }
 
       const { data, error } = await query;
-      
+
       if (error) throw handleSupabaseError(error);
       return data || [];
     },
 
     getOrderPaymentSummary: async (orderId?: string) => {
-      let query = this.client
+      let query = this.anyClient
         .from('order_payment_summary')
         .select('*');
 
@@ -796,7 +821,7 @@ export class SupabaseWrapper {
       }
 
       const { data, error } = await query;
-      
+
       if (error) throw handleSupabaseError(error);
       return data || [];
     },

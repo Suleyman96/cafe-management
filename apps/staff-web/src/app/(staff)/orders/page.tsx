@@ -7,10 +7,11 @@ import { ORDER_STATUS } from '@cafe-idare/core';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { 
-  Clock, 
+import {
+  Clock,
   DollarSign,
   User,
+  UserCheck,
   ChefHat,
   CheckCircle,
   XCircle,
@@ -226,24 +227,32 @@ export default function OrdersPage() {
           const remaining = total - paid;
           const isFullyPaid = remaining === 0 && total > 0;
 
+          const isTakeout = !order.table;
+
           return (
             <div
               key={order.id}
-              className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+              className={`border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer ${
+                isTakeout
+                  ? 'border-orange-300 bg-orange-50'
+                  : 'border-gray-200 bg-white'
+              }`}
               onClick={() => window.location.href = `/orders/${order.id}`}
             >
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <div className="flex items-center gap-3">
-                    <h3 className="font-semibold text-lg">
-                      {order.table ? `Table ${order.table.table_number}` : 'Takeout Order'}
-                    </h3>
+                    {isTakeout ? (
+                      <div className="flex items-center gap-2">
+                        <Package className="h-5 w-5 text-orange-600" />
+                        <h3 className="font-semibold text-lg text-orange-800">Takeout Order</h3>
+                      </div>
+                    ) : (
+                      <h3 className="font-semibold text-lg">Table {order.table.table_number}</h3>
+                    )}
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                       {order.status.toUpperCase()}
                     </span>
-                    {order.source === 'phone' && (
-                      <Package className="h-4 w-4 text-gray-500" />
-                    )}
                   </div>
                   <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
                     <span className="flex items-center gap-1">
@@ -254,6 +263,12 @@ export default function OrdersPage() {
                       <span className="flex items-center gap-1">
                         <User className="h-3 w-3" />
                         {order.customer_name}
+                      </span>
+                    )}
+                    {order.assigned_waiter && (
+                      <span className="flex items-center gap-1 text-green-600">
+                        <UserCheck className="h-3 w-3" />
+                        {order.assigned_waiter.full_name}
                       </span>
                     )}
                     <span className="text-xs">
@@ -316,6 +331,7 @@ export default function OrdersPage() {
                     Mark Ready
                   </Button>
                 )}
+                {/* Dine-in orders: Mark as served before payment */}
                 {order.status === 'ready' && order.table && (
                   <Button
                     size="sm"
@@ -326,7 +342,21 @@ export default function OrdersPage() {
                     Mark Served
                   </Button>
                 )}
-                {(order.status === 'served' || order.status === 'ready') && !isFullyPaid && (
+                {/* Takeout orders: Mark as picked up (completes the order) */}
+                {order.status === 'ready' && !order.table && !isFullyPaid && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      setIsPaymentModalOpen(true);
+                    }}
+                  >
+                    <CreditCard className="h-4 w-4 mr-1" />
+                    Process Payment
+                  </Button>
+                )}
+                {/* Dine-in served orders: Process payment */}
+                {order.status === 'served' && !isFullyPaid && (
                   <Button
                     size="sm"
                     onClick={() => {

@@ -1,32 +1,42 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Sidebar } from '@/components/layout/sidebar';
-import { UserMenu } from '@/components/layout/user-menu';
+
+const SIDEBAR_STORAGE_KEY = 'cafe-sidebar-collapsed';
 
 export default function StaffLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Load saved preference on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    if (saved !== null) {
+      setSidebarCollapsed(saved === 'true');
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    const newValue = !sidebarCollapsed;
+    setSidebarCollapsed(newValue);
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, String(newValue));
+  };
+
   return (
     <ProtectedRoute>
       <div className="flex min-h-screen bg-gray-50">
         {/* Sidebar */}
-        <Sidebar />
+        <Sidebar isCollapsed={sidebarCollapsed} onToggle={toggleSidebar} />
 
         {/* Main content area */}
-        <div className="flex-1 flex flex-col">
-          {/* Top header with user menu */}
-          <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-end">
-            <UserMenu />
-          </header>
-
-          {/* Page content */}
-          <main className="flex-1 overflow-auto">
-            {children}
-          </main>
-        </div>
+        <main className="flex-1 overflow-auto">
+          {children}
+        </main>
       </div>
     </ProtectedRoute>
   );

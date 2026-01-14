@@ -10,7 +10,7 @@ import { TableModal } from '@/components/modals/table-modal';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import {
-  Phone,
+  Package,
   Users,
   Clock,
   DollarSign,
@@ -21,6 +21,10 @@ import {
   Edit2,
   Trash2,
   MoreVertical,
+  UserCheck,
+  ChefHat,
+  CheckCircle,
+  UtensilsCrossed,
 } from 'lucide-react';
 
 export default function TablesPage() {
@@ -55,6 +59,13 @@ export default function TablesPage() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
+        () => {
+          refetchTables();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'order_items' },
         () => {
           refetchTables();
         }
@@ -122,6 +133,113 @@ export default function TablesPage() {
       const mins = diff % 60;
       return `${hours}h ${mins}m`;
     }
+  };
+
+  // Get effective status based on item statuses
+  const getEffectiveOrderStatus = (order: any) => {
+    if (!order?.order_items || order.order_items.length === 0) {
+      return order.status;
+    }
+
+    const items = order.order_items;
+    const allServed = items.every((item: any) => item.status === 'served');
+    const allReady = items.every((item: any) => item.status === 'ready' || item.status === 'served');
+    const anyReady = items.some((item: any) => item.status === 'ready');
+    const anyPreparing = items.some((item: any) => item.status === 'preparing');
+
+    if (allServed) return 'served';
+    if (allReady) return 'ready';
+    if (anyReady) return 'partially_ready';
+    if (anyPreparing) return 'preparing';
+    return order.status;
+  };
+
+  // Get order status badge styling
+  const getOrderStatusBadge = (status: string) => {
+    switch (status) {
+      case 'new':
+        return {
+          bg: 'bg-blue-100',
+          text: 'text-blue-800',
+          border: 'border-blue-300',
+          icon: <AlertCircle className="h-3.5 w-3.5" />,
+          label: 'New Order'
+        };
+      case 'preparing':
+        return {
+          bg: 'bg-yellow-100',
+          text: 'text-yellow-800',
+          border: 'border-yellow-300',
+          icon: <ChefHat className="h-3.5 w-3.5" />,
+          label: 'Preparing'
+        };
+      case 'ready':
+        return {
+          bg: 'bg-green-100',
+          text: 'text-green-800',
+          border: 'border-green-300',
+          icon: <CheckCircle className="h-3.5 w-3.5" />,
+          label: 'Ready'
+        };
+      case 'served':
+        return {
+          bg: 'bg-purple-100',
+          text: 'text-purple-800',
+          border: 'border-purple-300',
+          icon: <UtensilsCrossed className="h-3.5 w-3.5" />,
+          label: 'Served'
+        };
+      case 'partially_ready':
+        return {
+          bg: 'bg-lime-100',
+          text: 'text-lime-800',
+          border: 'border-lime-400',
+          icon: <CheckCircle className="h-3.5 w-3.5" />,
+          label: 'Partially Ready'
+        };
+      default:
+        return {
+          bg: 'bg-gray-100',
+          text: 'text-gray-800',
+          border: 'border-gray-300',
+          icon: null,
+          label: status
+        };
+    }
+  };
+
+  // Get table card background based on status and order
+  const getTableCardStyle = (table: any, activeOrder: any) => {
+    if (!table.is_active) {
+      return 'bg-gray-100 border-gray-300 opacity-60';
+    }
+    if (table.status === 'closed') {
+      return 'bg-gray-200 border-gray-400';
+    }
+    if (table.status === 'reserved') {
+      return 'bg-blue-50 border-blue-300';
+    }
+    if (table.status === 'occupied' && activeOrder) {
+      const effectiveStatus = getEffectiveOrderStatus(activeOrder);
+      if (effectiveStatus === 'served') {
+        return 'bg-purple-50 border-purple-400';
+      }
+      if (effectiveStatus === 'ready') {
+        return 'bg-green-50 border-green-400';
+      }
+      if (effectiveStatus === 'partially_ready') {
+        return 'bg-lime-50 border-lime-400';
+      }
+      if (effectiveStatus === 'preparing') {
+        return 'bg-yellow-50 border-yellow-400';
+      }
+      if (effectiveStatus === 'new') {
+        return 'bg-blue-50 border-blue-400';
+      }
+      return 'bg-orange-50 border-orange-300';
+    }
+    // Free table
+    return 'bg-white border-gray-200 hover:border-gray-400 hover:shadow-md';
   };
 
   // Handle creating order for a free table
@@ -200,9 +318,9 @@ export default function TablesPage() {
           <Button
             variant="outline"
             onClick={() => setIsTakeoutModalOpen(true)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:border-orange-500"
           >
-            <Phone className="h-4 w-4" />
+            <Package className="h-4 w-4" />
             Takeout Order
           </Button>
           <Button
@@ -221,22 +339,16 @@ export default function TablesPage() {
           const activeOrder = getActiveOrderForTable(table.id);
           const activeCalls = getActiveCallsForTable(table.id);
           const hasActiveCalls = activeCalls.length > 0;
+          const effectiveStatus = activeOrder ? getEffectiveOrderStatus(activeOrder) : null;
+          const statusBadge = effectiveStatus ? getOrderStatusBadge(effectiveStatus) : null;
 
           return (
             <div
               key={table.id}
               className={`
-                border rounded-lg p-4 cursor-pointer transition-all relative
-                ${table.status === 'occupied'
-                  ? 'bg-orange-50 border-orange-300'
-                  : table.status === 'reserved'
-                  ? 'bg-blue-50 border-blue-300'
-                  : table.status === 'closed'
-                  ? 'bg-gray-200 border-gray-400'
-                  : 'bg-gray-50 border-gray-300'
-                }
-                ${hasActiveCalls ? 'ring-2 ring-red-500 animate-pulse' : ''}
-                ${!table.is_active ? 'opacity-50' : ''}
+                border-2 rounded-xl p-4 cursor-pointer transition-all relative shadow-sm
+                ${getTableCardStyle(table, activeOrder)}
+                ${hasActiveCalls ? 'ring-2 ring-red-500 ring-offset-2' : ''}
               `}
               onClick={() => {
                 if (creatingOrderForTable) return;
@@ -252,7 +364,7 @@ export default function TablesPage() {
                       e.preventDefault();
                       setTableMenuOpen(tableMenuOpen === table.id ? null : table.id);
                     }}
-                    className="p-1 hover:bg-gray-200 rounded"
+                    className="p-1.5 hover:bg-white/50 rounded-lg transition-colors"
                   >
                     <MoreVertical className="h-4 w-4 text-gray-500" />
                   </button>
@@ -287,55 +399,94 @@ export default function TablesPage() {
                 </div>
               )}
 
+              {/* Table Header */}
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h3 className="text-xl font-bold">
+                  <h3 className="text-2xl font-bold text-gray-800">
                     Table {table.table_number}
                   </h3>
-                  <p className="text-sm text-gray-600 capitalize">
-                    {table.status}
-                    {table.location && ` - ${table.location}`}
-                  </p>
-                  <p className="text-xs text-gray-500">
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      table.status === 'free' ? 'bg-gray-100 text-gray-600' :
+                      table.status === 'occupied' ? 'bg-orange-100 text-orange-700' :
+                      table.status === 'reserved' ? 'bg-blue-100 text-blue-700' :
+                      'bg-gray-200 text-gray-600'
+                    }`}>
+                      {table.status.charAt(0).toUpperCase() + table.status.slice(1)}
+                    </span>
+                    {table.location && (
+                      <span className="text-xs text-gray-500">{table.location}</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <Users className="h-3 w-3" />
                     {table.capacity} seats
                   </p>
                 </div>
                 {hasActiveCalls && (
-                  <AlertCircle className="h-6 w-6 text-red-500 animate-bounce" />
+                  <div className="bg-red-500 text-white p-2 rounded-full animate-bounce">
+                    <AlertCircle className="h-5 w-5" />
+                  </div>
                 )}
               </div>
 
+              {/* Active Order Info */}
               {activeOrder && (
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Clock className="h-4 w-4" />
-                    {formatDuration((activeOrder as any).created_at)}
+                <div className="space-y-3 border-t border-gray-200/50 pt-3 mt-3">
+                  {/* Order Status Badge */}
+                  {statusBadge && (
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border ${statusBadge.bg} ${statusBadge.text} ${statusBadge.border}`}>
+                      {statusBadge.icon}
+                      {statusBadge.label}
+                    </div>
+                  )}
+
+                  {/* Order Details Grid */}
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Clock className="h-4 w-4 text-gray-400" />
+                      <span>{formatDuration((activeOrder as any).created_at)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Package className="h-4 w-4 text-gray-400" />
+                      <span>{(activeOrder as any).order_items?.length || 0} items</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Users className="h-4 w-4" />
-                    {(activeOrder as any).order_items?.length || 0} items
+
+                  {/* Total */}
+                  <div className="flex items-center justify-between bg-white/60 rounded-lg px-3 py-2">
+                    <span className="text-sm text-gray-600">Total</span>
+                    <span className="text-lg font-bold text-gray-800">
+                      ${calculateOrderTotal(activeOrder).toFixed(2)}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2 font-medium">
-                    <DollarSign className="h-4 w-4" />
-                    ${calculateOrderTotal(activeOrder).toFixed(2)}
-                  </div>
-                  <div className="mt-2 px-2 py-1 bg-gray-100 rounded text-xs font-medium capitalize">
-                    {(activeOrder as any).status}
-                  </div>
+
+                  {/* Assigned Waiter */}
+                  {(activeOrder as any).assigned_waiter && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <UserCheck className="h-4 w-4 text-green-500" />
+                      <span>{(activeOrder as any).assigned_waiter.full_name}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
+              {/* Waiter Calls */}
               {activeCalls.map((call: any) => (
-                <div key={call.id} className="mt-2 p-2 bg-red-100 rounded text-xs">
-                  <span className="font-medium text-red-700">
-                    {call.reason.toUpperCase()}
-                  </span>
+                <div key={call.id} className="mt-3 p-3 bg-red-100 border border-red-300 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <span className="font-semibold text-red-700 text-sm">
+                      {call.reason.toUpperCase()}
+                    </span>
+                  </div>
                   {call.message && (
-                    <p className="text-red-600 mt-1">{call.message}</p>
+                    <p className="text-red-600 text-sm mt-1">{call.message}</p>
                   )}
                 </div>
               ))}
 
+              {/* Actions */}
               {creatingOrderForTable === table.id ? (
                 <div className="flex items-center justify-center gap-2 mt-4 text-blue-600">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -356,7 +507,11 @@ export default function TablesPage() {
                     Transfer
                   </Button>
                 </div>
-              ) : null}
+              ) : table.status === 'free' && (
+                <div className="mt-4 pt-3 border-t border-gray-200">
+                  <p className="text-sm text-gray-500 text-center">Click to view table</p>
+                </div>
+              )}
             </div>
           );
         })}

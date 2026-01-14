@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useTable, useOrders, useMenuItems, useCategories, useCreateOrder, useAddOrderItems, useUpdateOrderStatus } from '@/hooks';
+import { useTable, useOrders, useMenuItems, useCategories, useCreateOrder, useAddOrderItems, useUpdateOrderStatus, useUpdateOrderItemStatus } from '@/hooks';
+import { useAuth } from '@/hooks/use-auth';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -19,6 +20,9 @@ import {
   CheckCircle,
   CreditCard,
   Loader2,
+  UserCheck,
+  AlertCircle,
+  UtensilsCrossed,
 } from 'lucide-react';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
@@ -35,6 +39,7 @@ export default function TableDetailPage() {
   const params = useParams();
   const router = useRouter();
   const tableId = params.id as string;
+  const { staff: currentStaff } = useAuth();
 
   const { data: table, isLoading: tableLoading } = useTable(tableId);
   const { data: orders, refetch: refetchOrders } = useOrders();
@@ -44,17 +49,63 @@ export default function TableDetailPage() {
   const createOrder = useCreateOrder();
   const addOrderItems = useAddOrderItems();
   const updateOrderStatus = useUpdateOrderStatus();
+  const updateItemStatus = useUpdateOrderItemStatus();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [creatingOrder, setCreatingOrder] = useState(false);
 
+  // Track if we've already attempted to create an order for this table
+  const orderCreationAttemptedRef = useRef(false);
+
   // Get active order for this table
   const activeOrder = orders?.find((order: any) =>
     order.table_id === tableId &&
     ['new', 'preparing', 'ready', 'served'].includes(order.status)
   );
+
+  // Reset the ref when tableId changes (navigating to a different table)
+  useEffect(() => {
+    orderCreationAttemptedRef.current = false;
+  }, [tableId]);
+
+  // Handle manual order creation
+  const handleCreateOrder = async () => {
+    if (creatingOrder) return;
+
+    setCreatingOrder(true);
+    try {
+      await createOrder.mutateAsync({
+        table_id: tableId,
+        order_type: 'dine_in',
+        status: 'new',
+        assigned_waiter_id: currentStaff?.id || null,
+      } as any);
+      refetchOrders();
+      toast.success('Order created');
+    } catch (error: any) {
+      console.error('Failed to create order:', error);
+      // If it's a conflict error (order already exists), just refetch
+      const isConflict =
+        error?.message?.includes('Conflict') ||
+        error?.message?.includes('already exists') ||
+        error?.code === '23505' ||
+        error?.status === 409 ||
+        error?.statusCode === 409 ||
+        error?.name === 'ConflictError';
+
+      if (isConflict) {
+        // Order already exists, just refetch to get it
+        refetchOrders();
+        toast.info('Order already exists for this table');
+      } else {
+        toast.error('Failed to create order');
+      }
+    } finally {
+      setCreatingOrder(false);
+    }
+  };
 
   // Set up real-time subscription
   useEffect(() => {
@@ -133,25 +184,6 @@ export default function TableDetailPage() {
     0
   ) || 0;
 
-  // Create new order for table
-  const handleCreateOrder = async () => {
-    setCreatingOrder(true);
-    try {
-      await createOrder.mutateAsync({
-        table_id: tableId,
-        order_type: 'dine_in',
-        status: 'new',
-      } as any);
-      toast.success('Order created');
-      refetchOrders();
-    } catch (error) {
-      console.error('Failed to create order:', error);
-      toast.error('Failed to create order');
-    } finally {
-      setCreatingOrder(false);
-    }
-  };
-
   // Submit cart items to order
   const handleSubmitItems = async () => {
     if (cart.length === 0) {
@@ -225,6 +257,36 @@ export default function TableDetailPage() {
     }
   };
 
+  // Get item status badge
+  const getItemStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return { bg: 'bg-gray-100', text: 'text-gray-700', icon: <AlertCircle className="h-3 w-3" />, label: 'Pending' };
+      case 'preparing':
+        return { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <ChefHat className="h-3 w-3" />, label: 'Preparing' };
+      case 'ready':
+        return { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="h-3 w-3" />, label: 'Ready' };
+      case 'served':
+        return { bg: 'bg-purple-100', text: 'text-purple-800', icon: <UtensilsCrossed className="h-3 w-3" />, label: 'Served' };
+      default:
+        return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, label: status };
+    }
+  };
+
+  // Handle item status update
+  const handleItemStatusUpdate = async (itemId: string, newStatus: string) => {
+    try {
+      await updateItemStatus.mutateAsync({
+        itemId,
+        status: newStatus as 'pending' | 'preparing' | 'ready' | 'served'
+      });
+      toast.success(`Item marked as ${newStatus}`);
+      refetchOrders();
+    } catch (error) {
+      toast.error('Failed to update item status');
+    }
+  };
+
   if (tableLoading || menuLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -259,23 +321,23 @@ export default function TableDetailPage() {
         </div>
       </div>
 
-      {/* No active order - show create button */}
-      {!activeOrder && (
+      {/* No active order - show create order button */}
+      {!activeOrder && !creatingOrder && (
         <div className="bg-gray-50 rounded-lg p-8 text-center mb-6">
+          <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-gray-400" />
           <p className="text-gray-600 mb-4">No active order for this table</p>
-          <Button onClick={handleCreateOrder} disabled={creatingOrder}>
-            {creatingOrder ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4 mr-2" />
-                Create New Order
-              </>
-            )}
+          <Button onClick={handleCreateOrder}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create New Order
           </Button>
+        </div>
+      )}
+
+      {/* Show loading while creating order */}
+      {!activeOrder && creatingOrder && (
+        <div className="bg-gray-50 rounded-lg p-8 text-center mb-6">
+          <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin text-blue-500" />
+          <p className="text-gray-600">Creating order...</p>
         </div>
       )}
 
@@ -293,6 +355,13 @@ export default function TableDetailPage() {
                   <DollarSign className="h-4 w-4" />
                   ${orderTotal.toFixed(2)}
                 </span>
+                {/* Assigned Waiter Display */}
+                {(activeOrder as any).assigned_waiter && (
+                  <span className="flex items-center gap-1">
+                    <UserCheck className="h-4 w-4 text-green-600" />
+                    <span className="text-green-700">{(activeOrder as any).assigned_waiter.full_name}</span>
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex gap-2">
@@ -328,12 +397,51 @@ export default function TableDetailPage() {
             <div className="mt-4 border-t pt-4">
               <h3 className="font-medium mb-2">Current Items</h3>
               <div className="space-y-2">
-                {activeOrder.order_items.map((item: OrderItem) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span>{item.quantity}x {item.item_name}</span>
-                    <span>${(item.quantity * item.item_price).toFixed(2)}</span>
-                  </div>
-                ))}
+                {activeOrder.order_items.map((item: OrderItem) => {
+                  const statusBadge = getItemStatusBadge(item.status);
+
+                  return (
+                    <div key={item.id} className="flex items-center justify-between text-sm gap-2 py-1">
+                      <span className="flex-1">{item.quantity}x {item.item_name}</span>
+
+                      {/* Quick Action Buttons */}
+                      <div className="flex items-center gap-1.5">
+                        {(item.status === 'pending' || item.status === 'preparing') && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleItemStatusUpdate(item.id, 'ready');
+                            }}
+                            className="px-2 py-1 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+                          >
+                            <CheckCircle className="h-3 w-3" />
+                            Ready
+                          </button>
+                        )}
+                        {item.status === 'ready' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleItemStatusUpdate(item.id, 'served');
+                            }}
+                            className="px-2 py-1 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+                          >
+                            <UtensilsCrossed className="h-3 w-3" />
+                            Served
+                          </button>
+                        )}
+                        {item.status === 'served' && (
+                          <span className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}>
+                            {statusBadge.icon}
+                            Done
+                          </span>
+                        )}
+                      </div>
+
+                      <span className="text-gray-600 w-16 text-right">${(item.quantity * item.item_price).toFixed(2)}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

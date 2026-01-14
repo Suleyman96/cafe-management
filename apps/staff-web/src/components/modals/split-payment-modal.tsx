@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useCreatePayment, useOrderRemainingBalance } from '@/hooks';
+import { useCreatePayment, useOrderRemainingBalance, useUpdateOrderStatus } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@cafe-idare/ui';
-import { X, DollarSign, CheckCircle } from 'lucide-react';
+import { X, DollarSign, CheckCircle, Check } from 'lucide-react';
+import { ORDER_STATUS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
@@ -32,8 +33,9 @@ export function SplitPaymentModal({
 }: SplitPaymentModalProps) {
   const { staff } = useAuth();
   const createPayment = useCreatePayment();
+  const updateOrderStatus = useUpdateOrderStatus();
   const { data: remainingBalance } = useOrderRemainingBalance(order?.id || '');
-  
+
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('full');
   const [partialAmount, setPartialAmount] = useState<string>('');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -97,9 +99,28 @@ export function SplitPaymentModal({
     setSelectedItems(newSelection);
   };
 
+  // Complete order (mark as paid) - used when order is fully paid or has $0 total
+  const handleCompleteOrder = async () => {
+    if (!order?.id) return;
+
+    setLoading(true);
+    try {
+      await updateOrderStatus.mutateAsync({
+        orderId: order.id,
+        status: 'CLOSED' as keyof typeof ORDER_STATUS,
+      });
+      onSuccess();
+    } catch (error) {
+      console.error('Failed to complete order:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isOpen || !order) return null;
 
   const isFullyPaid = remainingBalance !== undefined && remainingBalance <= 0;
+  const isZeroTotal = orderTotal === 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -115,13 +136,20 @@ export function SplitPaymentModal({
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Fully Paid Message */}
-          {isFullyPaid && (
+          {/* Fully Paid / Zero Total Message */}
+          {(isFullyPaid || isZeroTotal) && (
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-center gap-2 text-green-700">
                 <CheckCircle className="h-5 w-5" />
-                <span className="font-medium">This order has been fully paid!</span>
+                <span className="font-medium">
+                  {isZeroTotal
+                    ? 'This order has no items to pay for.'
+                    : 'This order has been fully paid!'}
+                </span>
               </div>
+              <p className="text-sm text-green-600 mt-2">
+                Click "Complete Order" to close this order.
+              </p>
             </div>
           )}
 
@@ -277,9 +305,18 @@ export function SplitPaymentModal({
               disabled={loading}
               className="flex-1"
             >
-              {isFullyPaid ? 'Close' : 'Cancel'}
+              Cancel
             </Button>
-            {!isFullyPaid && (
+            {isFullyPaid || isZeroTotal ? (
+              <Button
+                onClick={handleCompleteOrder}
+                disabled={loading}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                {loading ? 'Completing...' : 'Complete Order'}
+              </Button>
+            ) : (
               <Button
                 onClick={handlePayment}
                 disabled={getPaymentAmount() <= 0 || loading || !staff?.id}

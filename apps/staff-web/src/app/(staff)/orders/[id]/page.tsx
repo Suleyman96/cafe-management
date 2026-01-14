@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useOrder, useUpdateOrderStatus, useOrderPayments, useOrderTransferHistory } from '@/hooks';
+import { useOrder, useUpdateOrderStatus, useUpdateOrderItemStatus, useOrderPayments, useOrderTransferHistory } from '@/hooks';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import { supabase } from '@/lib/supabase/client';
@@ -36,9 +36,9 @@ type OrderWithRelations = Database['public']['Tables']['orders']['Row'] & {
   table_transfers?: TableTransfer[];
   source?: string;
 };
-import { 
+import {
   ArrowLeft,
-  Clock, 
+  Clock,
   DollarSign,
   User,
   CreditCard,
@@ -49,7 +49,9 @@ import {
   ChefHat,
   RefreshCw,
   FileText,
-  ArrowRight
+  ArrowRight,
+  ChevronDown,
+  UtensilsCrossed
 } from 'lucide-react';
 
 export default function OrderDetailPage() {
@@ -65,8 +67,10 @@ export default function OrderDetailPage() {
   const order = orderData as OrderWithRelations | undefined;
   const payments = paymentsData as Payment[] | undefined;
   const updateOrderStatus = useUpdateOrderStatus();
-  
+  const updateItemStatus = useUpdateOrderItemStatus();
+
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [openItemMenu, setOpenItemMenu] = useState<string | null>(null);
 
   // Set up real-time subscription
   useEffect(() => {
@@ -164,6 +168,43 @@ export default function OrderDetailPage() {
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Get item status badge
+  const getItemStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return { bg: 'bg-gray-100', text: 'text-gray-700', icon: <AlertCircle className="h-3 w-3" />, label: 'Pending' };
+      case 'preparing':
+        return { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <ChefHat className="h-3 w-3" />, label: 'Preparing' };
+      case 'ready':
+        return { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="h-3 w-3" />, label: 'Ready' };
+      case 'served':
+        return { bg: 'bg-purple-100', text: 'text-purple-800', icon: <UtensilsCrossed className="h-3 w-3" />, label: 'Served' };
+      default:
+        return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, label: status };
+    }
+  };
+
+  const itemStatusOptions = [
+    { value: 'pending', label: 'Pending', icon: <AlertCircle className="h-3.5 w-3.5" /> },
+    { value: 'preparing', label: 'Preparing', icon: <ChefHat className="h-3.5 w-3.5" /> },
+    { value: 'ready', label: 'Ready', icon: <CheckCircle className="h-3.5 w-3.5" /> },
+    { value: 'served', label: 'Served', icon: <UtensilsCrossed className="h-3.5 w-3.5" /> },
+  ];
+
+  // Handle item status update
+  const handleItemStatusUpdate = async (itemId: string, newStatus: string) => {
+    try {
+      await updateItemStatus.mutateAsync({
+        itemId,
+        status: newStatus as 'pending' | 'preparing' | 'ready' | 'served'
+      });
+      setOpenItemMenu(null);
+      toast.success(`Item status updated to ${newStatus}`);
+    } catch (error) {
+      toast.error('Failed to update item status');
     }
   };
 
@@ -293,28 +334,69 @@ export default function OrderDetailPage() {
           <h2 className="font-semibold">Order Items</h2>
         </div>
         <div className="divide-y">
-          {order.order_items?.map((item: OrderItem) => (
-            <div key={item.id} className="px-4 py-3">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{item.quantity}x</span>
-                    <span>{item.menu_item?.name_en}</span>
+          {order.order_items?.map((item: OrderItem) => {
+            const statusBadge = getItemStatusBadge(item.status);
+            const isMenuOpen = openItemMenu === item.id;
+
+            return (
+              <div key={item.id} className="px-4 py-3">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium">{item.quantity}x</span>
+                      <span className="truncate">{item.menu_item?.name_en}</span>
+                    </div>
+                    {item.notes && (
+                      <p className="text-sm text-gray-600 mt-1 flex items-start gap-1">
+                        <FileText className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                        {item.notes}
+                      </p>
+                    )}
                   </div>
-                  {item.notes && (
-                    <p className="text-sm text-gray-600 mt-1 flex items-start gap-1">
-                      <FileText className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                      {item.notes}
-                    </p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">${(item.quantity * item.item_price).toFixed(2)}</p>
-                  <p className="text-sm text-gray-600">${item.item_price.toFixed(2)} each</p>
+
+                  {/* Item Status Dropdown */}
+                  <div className="relative flex-shrink-0">
+                    <button
+                      onClick={() => setOpenItemMenu(isMenuOpen ? null : item.id)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${statusBadge.bg} ${statusBadge.text} hover:opacity-80`}
+                    >
+                      {statusBadge.icon}
+                      {statusBadge.label}
+                      <ChevronDown className={`h-3 w-3 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isMenuOpen && (
+                      <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 min-w-[140px]">
+                        {itemStatusOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => handleItemStatusUpdate(item.id, option.value)}
+                            disabled={item.status === option.value}
+                            className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
+                              item.status === option.value
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'hover:bg-gray-50 text-gray-700'
+                            }`}
+                          >
+                            {option.icon}
+                            {option.label}
+                            {item.status === option.value && (
+                              <CheckCircle className="h-3 w-3 ml-auto text-green-500" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-medium">${(item.quantity * item.item_price).toFixed(2)}</p>
+                    <p className="text-sm text-gray-600">${item.item_price.toFixed(2)} each</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <div className="border-t px-4 py-3">
           <div className="flex justify-between items-center text-lg font-semibold">
