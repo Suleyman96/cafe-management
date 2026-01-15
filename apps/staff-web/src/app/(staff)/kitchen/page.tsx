@@ -197,6 +197,35 @@ export default function KitchenDisplayPage() {
         itemId,
         status: newStatus as 'pending' | 'preparing' | 'ready' | 'served'
       });
+
+      // Check if all items will be ready after this update
+      if (newStatus === 'ready' && order.status === 'preparing') {
+        const otherItems = order.order_items?.filter((item: any) => item.id !== itemId) || [];
+        const allOthersReady = otherItems.every((item: any) => item.status === 'ready' || item.status === 'served');
+
+        // If all other items are ready/served, update order status to ready
+        if (allOthersReady) {
+          await updateOrderStatus.mutateAsync({
+            orderId: order.id,
+            status: 'READY'
+          });
+        }
+      }
+
+      // Check if all items will be served after this update
+      if (newStatus === 'served' && order.status === 'ready') {
+        const otherItems = order.order_items?.filter((item: any) => item.id !== itemId) || [];
+        const allOthersServed = otherItems.every((item: any) => item.status === 'served');
+
+        // If all other items are served, update order status to served
+        if (allOthersServed) {
+          await updateOrderStatus.mutateAsync({
+            orderId: order.id,
+            status: 'SERVED'
+          });
+        }
+      }
+
       // No toast for kitchen - faster feedback via visual change
     } catch (error) {
       toast.error('Failed to update item');
