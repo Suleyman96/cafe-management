@@ -23,8 +23,11 @@ This is a Turborepo monorepo containing:
 - Node.js 18+
 - pnpm 8+
 - Supabase account
+- Git (required for Windows)
 
 ### Installation
+
+#### macOS / Linux
 
 ```bash
 # Install dependencies
@@ -34,6 +37,54 @@ pnpm install
 cp apps/staff-web/.env.example apps/staff-web/.env.local
 # Add your Supabase credentials
 ```
+
+#### Windows
+
+**Option 1: Using PowerShell (Recommended)**
+
+```powershell
+# Install dependencies
+pnpm install
+
+# Set up environment variables
+Copy-Item apps/staff-web/.env.example apps/staff-web/.env.local
+# Add your Supabase credentials
+```
+
+**Option 2: Using Git Bash**
+
+If you have Git installed, you can use Git Bash which supports Unix commands:
+
+```bash
+# Install dependencies
+pnpm install
+
+# Set up environment variables
+cp apps/staff-web/.env.example apps/staff-web/.env.local
+# Add your Supabase credentials
+```
+
+**Option 3: Using WSL (Windows Subsystem for Linux)**
+
+For the best development experience on Windows, consider using WSL2:
+
+```bash
+# Follow the macOS/Linux instructions above in your WSL terminal
+```
+
+### Windows Troubleshooting
+
+- **Node.js Installation**: Download from [nodejs.org](https://nodejs.org/) or use [nvm-windows](https://github.com/coreybutler/nvm-windows)
+- **pnpm Installation**: Run `npm install -g pnpm` or use `corepack enable` (Node.js 16.13+)
+- **Long Path Issues**: If you encounter path length errors, enable long paths in Windows:
+  ```powershell
+  # Run as Administrator
+  New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+  ```
+- **Script Execution Policy**: If PowerShell blocks script execution:
+  ```powershell
+  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+  ```
 
 ### Development
 
