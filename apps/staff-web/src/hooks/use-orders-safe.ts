@@ -128,5 +128,20 @@ export function useDeleteOrderItem() {
   });
 }
 
+export function useCancelOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ orderId, reason, tableId }: { orderId: string; reason: string; tableId?: string | null }) =>
+      db.orders.cancelOrder(orderId, reason, tableId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+    },
+  });
+}
+
 // Note: Payment-related hooks are in use-payments-safe.ts
 // Note: Transfer-related hooks are in use-table-transfers-safe.ts

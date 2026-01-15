@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useOrders, useUpdateOrderStatus } from '@/hooks';
+import { useOrders, useUpdateOrderStatus, useCancelOrder } from '@/hooks';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { ORDER_STATUS } from '@cafe-idare/core';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
@@ -18,7 +18,9 @@ import {
   Filter,
   Search,
   CreditCard,
-  Package
+  Package,
+  X,
+  Loader2
 } from 'lucide-react';
 
 type OrderStatus = 'new' | 'preparing' | 'ready' | 'served' | 'paid' | 'cancelled';
@@ -27,13 +29,18 @@ type OrderSource = 'customer' | 'waiter' | 'phone';
 export default function OrdersPage() {
   const { data: orders, isLoading: loading, error, refetch } = useOrders();
   const updateOrderStatus = useUpdateOrderStatus();
-  
+  const cancelOrderMutation = useCancelOrder();
+
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [sourceFilter, setSourceFilter] = useState<OrderSource | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTableFilter, setSelectedTableFilter] = useState<string>('all');
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelOrderTarget, setCancelOrderTarget] = useState<any>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   // Get table filter from URL params
   useEffect(() => {
@@ -125,7 +132,7 @@ export default function OrdersPage() {
     try {
       const statusKey = Object.entries(ORDER_STATUS).find(([_, value]) => value === newStatus)?.[0];
       if (!statusKey) throw new Error('Invalid status');
-      
+
       await updateOrderStatus.mutateAsync({
         orderId,
         status: statusKey as keyof typeof ORDER_STATUS
@@ -134,6 +141,39 @@ export default function OrdersPage() {
     } catch (error) {
       toast.error('Failed to update order status');
     }
+  };
+
+  // Handle cancel order with reason
+  const handleCancelOrder = async () => {
+    if (!cancelOrderTarget || !cancelReason.trim()) {
+      toast.error('Please provide a cancellation reason');
+      return;
+    }
+
+    setCancelling(true);
+    try {
+      await cancelOrderMutation.mutateAsync({
+        orderId: cancelOrderTarget.id,
+        reason: cancelReason.trim(),
+        tableId: cancelOrderTarget.table_id
+      });
+      toast.success('Order cancelled');
+      setShowCancelModal(false);
+      setCancelOrderTarget(null);
+      setCancelReason('');
+      refetch();
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+      toast.error('Failed to cancel order');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  // Open cancel modal
+  const openCancelModal = (order: any) => {
+    setCancelOrderTarget(order);
+    setShowCancelModal(true);
   };
 
   // Filter orders
@@ -372,7 +412,7 @@ export default function OrdersPage() {
                   <Button
                     size="sm"
                     variant="destructive"
-                    onClick={() => handleStatusUpdate(order.id, 'cancelled')}
+                    onClick={() => openCancelModal(order)}
                   >
                     <XCircle className="h-4 w-4 mr-1" />
                     Cancel
@@ -399,6 +439,89 @@ export default function OrdersPage() {
             refetch();
           }}
         />
+      )}
+
+      {/* Cancel Order Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-red-600">Cancel Order</h2>
+              <button
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setCancelOrderTarget(null);
+                  setCancelReason('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {cancelOrderTarget && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <p className="font-medium">
+                  {cancelOrderTarget.table
+                    ? `Table ${cancelOrderTarget.table.table_number}`
+                    : 'Takeout Order'}
+                </p>
+                <p className="text-sm text-gray-500">#{cancelOrderTarget.id.slice(0, 8)}</p>
+              </div>
+            )}
+
+            <p className="text-gray-600 mb-4">
+              Please provide a reason for cancelling this order. This action cannot be undone.
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cancellation Reason <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Enter reason for cancellation..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                rows={3}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setCancelOrderTarget(null);
+                  setCancelReason('');
+                }}
+                disabled={cancelling}
+              >
+                Keep Order
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleCancelOrder}
+                disabled={cancelling || !cancelReason.trim()}
+              >
+                {cancelling ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Cancel Order
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useTable, useOrders, useMenuItems, useCategories, useCreateOrder, useAddOrderItems, useUpdateOrderStatus, useUpdateOrderItemStatus } from '@/hooks';
+import { useTable, useOrders, useMenuItems, useCategories, useCreateOrder, useAddOrderItems, useUpdateOrderStatus, useUpdateOrderItemStatus, useCancelOrder } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { supabase } from '@/lib/supabase/client';
@@ -23,6 +23,8 @@ import {
   UserCheck,
   AlertCircle,
   UtensilsCrossed,
+  XCircle,
+  X,
 } from 'lucide-react';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
@@ -50,11 +52,15 @@ export default function TableDetailPage() {
   const addOrderItems = useAddOrderItems();
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
+  const cancelOrder = useCancelOrder();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [creatingOrder, setCreatingOrder] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   // Track if we've already attempted to create an order for this table
   const orderCreationAttemptedRef = useRef(false);
@@ -287,6 +293,33 @@ export default function TableDetailPage() {
     }
   };
 
+  // Handle order cancellation
+  const handleCancelOrder = async () => {
+    if (!activeOrder || !cancelReason.trim()) {
+      toast.error('Please provide a cancellation reason');
+      return;
+    }
+
+    setCancelling(true);
+    try {
+      await cancelOrder.mutateAsync({
+        orderId: activeOrder.id,
+        reason: cancelReason.trim(),
+        tableId: activeOrder.table_id
+      });
+      toast.success('Order cancelled');
+      setShowCancelModal(false);
+      setCancelReason('');
+      refetchOrders();
+      router.push('/tables');
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+      toast.error('Failed to cancel order');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   if (tableLoading || menuLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -387,6 +420,17 @@ export default function TableDetailPage() {
                 <Button size="sm" onClick={() => router.push(`/orders/${activeOrder.id}`)}>
                   <CreditCard className="h-4 w-4 mr-1" />
                   Payment
+                </Button>
+              )}
+              {/* Cancel button - available for new and preparing orders */}
+              {['new', 'preparing'].includes(activeOrder.status) && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setShowCancelModal(true)}
+                >
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Cancel Order
                 </Button>
               )}
             </div>
@@ -587,6 +631,76 @@ export default function TableDetailPage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Cancel Order Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-red-600">Cancel Order</h2>
+              <button
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setCancelReason('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="text-gray-600 mb-4">
+              Please provide a reason for cancelling this order. This action cannot be undone.
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cancellation Reason <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Enter reason for cancellation..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                rows={3}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setCancelReason('');
+                }}
+                disabled={cancelling}
+              >
+                Keep Order
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleCancelOrder}
+                disabled={cancelling || !cancelReason.trim()}
+              >
+                {cancelling ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Cancel Order
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

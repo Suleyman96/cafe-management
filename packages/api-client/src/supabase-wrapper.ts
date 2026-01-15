@@ -263,6 +263,32 @@ export class SupabaseWrapper {
       if (!isOrder(data)) throw new Error('Invalid order data');
       return data as OrderRow;
     },
+
+    cancelOrder: async (orderId: string, reason: string, tableId?: string | null) => {
+      // Update order status to cancelled and store reason in internal_notes
+      const { data, error } = await this.anyClient
+        .from('orders')
+        .update({
+          status: 'cancelled',
+          internal_notes: `Cancelled: ${reason}`
+        })
+        .eq('id', orderId)
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isOrder(data)) throw new Error('Invalid order data');
+
+      // If the order has a table, set it back to free
+      if (tableId) {
+        await this.anyClient
+          .from('tables')
+          .update({ status: 'free', occupied_at: null })
+          .eq('id', tableId);
+      }
+
+      return data as OrderRow;
+    },
   };
 
   // ========== ORDER ITEMS ==========
