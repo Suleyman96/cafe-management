@@ -28,6 +28,7 @@ export function CreateTakeoutModal({
 }: CreateTakeoutModalProps) {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerNotes, setCustomerNotes] = useState('');
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -107,6 +108,7 @@ export function CreateTakeoutModal({
           order_type: 'takeout',
           customer_name: customerName.trim(),
           customer_phone: customerPhone.trim(),
+          customer_notes: customerNotes.trim() || null,
           assigned_waiter_id: staffId,
           status: 'new',
           subtotal,
@@ -143,6 +145,7 @@ export function CreateTakeoutModal({
       // Reset form
       setCustomerName('');
       setCustomerPhone('');
+      setCustomerNotes('');
       setSelectedItems([]);
       setSearchQuery('');
 
@@ -217,6 +220,19 @@ export function CreateTakeoutModal({
                       placeholder="+994 XX XXX XX XX"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Notes from customer
+                    </label>
+                    <textarea
+                      value={customerNotes}
+                      onChange={(e) => setCustomerNotes(e.target.value)}
+                      placeholder="Special requests, allergies, delivery instructions..."
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      rows={2}
                     />
                   </div>
                 </div>

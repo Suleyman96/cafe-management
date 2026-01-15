@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useTable, useUpdateTable, useOrders, useMenuItems, useCategories, useCreateOrder, useAddOrderItems, useUpdateOrderStatus, useUpdateOrderItemStatus, useCancelOrder } from '@/hooks';
+import { useTable, useOrders, useMenuItems, useCategories, useCreateOrder, useAddOrderItems, useUpdateOrderStatus, useUpdateOrderItemStatus, useCancelOrder } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { supabase } from '@/lib/supabase/client';
@@ -25,9 +25,6 @@ import {
   UtensilsCrossed,
   XCircle,
   X,
-  StickyNote,
-  Edit2,
-  Save,
 } from 'lucide-react';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
@@ -37,7 +34,6 @@ type OrderItem = Database['public']['Tables']['order_items']['Row'];
 type CartItem = {
   menuItem: MenuItem;
   quantity: number;
-  notes: string;
 };
 
 export default function TableDetailPage() {
@@ -46,7 +42,7 @@ export default function TableDetailPage() {
   const tableId = params.id as string;
   const { staff: currentStaff } = useAuth();
 
-  const { data: table, isLoading: tableLoading, refetch: refetchTable } = useTable(tableId);
+  const { data: table, isLoading: tableLoading } = useTable(tableId);
   const { data: orders, refetch: refetchOrders } = useOrders();
   const { data: menuItems, isLoading: menuLoading } = useMenuItems({ isAvailable: true });
   const { data: categories } = useCategories();
@@ -56,27 +52,14 @@ export default function TableDetailPage() {
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const cancelOrder = useCancelOrder();
-  const updateTable = useUpdateTable();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [creatingOrder, setCreatingOrder] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
-
-  // Table notes state
-  const [isEditingNotes, setIsEditingNotes] = useState(false);
-  const [tableNotes, setTableNotes] = useState('');
-  const [savingNotes, setSavingNotes] = useState(false);
-
-  // Sync table notes when table data loads
-  useEffect(() => {
-    if (table?.notes !== undefined) {
-      setTableNotes(table.notes || '');
-    }
-  }, [table?.notes]);
+  const [orderNotes, setOrderNotes] = useState('');
 
   // Track if we've already attempted to create an order for this table
   const orderCreationAttemptedRef = useRef(false);
@@ -92,40 +75,45 @@ export default function TableDetailPage() {
     orderCreationAttemptedRef.current = false;
   }, [tableId]);
 
-  // Handle manual order creation
-  const handleCreateOrder = async () => {
-    if (creatingOrder) return;
+  // Create order with items (for new orders on free tables)
+  const handleCreateOrderWithItems = async () => {
+    if (cart.length === 0) {
+      toast.error('Please add at least one item');
+      return;
+    }
 
-    setCreatingOrder(true);
+    setSubmitting(true);
     try {
-      await createOrder.mutateAsync({
+      // First create the order
+      const newOrder = await createOrder.mutateAsync({
         table_id: tableId,
         order_type: 'dine_in',
         status: 'new',
         assigned_waiter_id: currentStaff?.id || null,
+        customer_notes: orderNotes.trim() || null,
       } as any);
-      refetchOrders();
+
+      // Then add the items
+      const orderItems = cart.map((item) => ({
+        order_id: newOrder.id,
+        menu_item_id: item.menuItem.id,
+        item_name: item.menuItem.name_en,
+        quantity: item.quantity,
+        item_price: item.menuItem.price,
+        notes: null,
+        status: 'pending' as const,
+      }));
+
+      await addOrderItems.mutateAsync(orderItems);
       toast.success('Order created');
+      setCart([]);
+      setOrderNotes('');
+      refetchOrders();
     } catch (error: any) {
       console.error('Failed to create order:', error);
-      // If it's a conflict error (order already exists), just refetch
-      const isConflict =
-        error?.message?.includes('Conflict') ||
-        error?.message?.includes('already exists') ||
-        error?.code === '23505' ||
-        error?.status === 409 ||
-        error?.statusCode === 409 ||
-        error?.name === 'ConflictError';
-
-      if (isConflict) {
-        // Order already exists, just refetch to get it
-        refetchOrders();
-        toast.info('Order already exists for this table');
-      } else {
-        toast.error('Failed to create order');
-      }
+      toast.error('Failed to create order');
     } finally {
-      setCreatingOrder(false);
+      setSubmitting(false);
     }
   };
 
@@ -170,7 +158,7 @@ export default function TableDetailPage() {
             : item
         );
       }
-      return [...prev, { menuItem, quantity: 1, notes: '' }];
+      return [...prev, { menuItem, quantity: 1 }];
     });
   };
 
@@ -206,15 +194,15 @@ export default function TableDetailPage() {
     0
   ) || 0;
 
-  // Submit cart items to order
-  const handleSubmitItems = async () => {
+  // Submit cart items to existing order
+  const handleAddItemsToOrder = async () => {
     if (cart.length === 0) {
       toast.error('Please add at least one item');
       return;
     }
 
     if (!activeOrder) {
-      toast.error('No active order. Please create one first.');
+      toast.error('No active order');
       return;
     }
 
@@ -226,7 +214,7 @@ export default function TableDetailPage() {
         item_name: item.menuItem.name_en,
         quantity: item.quantity,
         item_price: item.menuItem.price,
-        notes: item.notes || null,
+        notes: null,
         status: 'pending' as const,
       }));
 
@@ -336,25 +324,6 @@ export default function TableDetailPage() {
     }
   };
 
-  // Handle table notes save
-  const handleSaveTableNotes = async () => {
-    setSavingNotes(true);
-    try {
-      await updateTable.mutateAsync({
-        id: tableId,
-        updates: { notes: tableNotes.trim() || null },
-      });
-      toast.success('Table notes saved');
-      setIsEditingNotes(false);
-      refetchTable();
-    } catch (error) {
-      console.error('Failed to save table notes:', error);
-      toast.error('Failed to save notes');
-    } finally {
-      setSavingNotes(false);
-    }
-  };
-
   if (tableLoading || menuLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -389,87 +358,6 @@ export default function TableDetailPage() {
         </div>
       </div>
 
-      {/* Table Notes Section */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-medium text-amber-800 flex items-center gap-2">
-            <StickyNote className="h-4 w-4" />
-            Table Notes
-          </h3>
-          {!isEditingNotes ? (
-            <button
-              onClick={() => setIsEditingNotes(true)}
-              className="text-amber-600 hover:text-amber-800 p-1 rounded hover:bg-amber-100 transition-colors"
-              title="Edit notes"
-            >
-              <Edit2 className="h-4 w-4" />
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setTableNotes(table?.notes || '');
-                  setIsEditingNotes(false);
-                }}
-                className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-amber-100 transition-colors"
-                title="Cancel"
-                disabled={savingNotes}
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <button
-                onClick={handleSaveTableNotes}
-                className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-100 transition-colors"
-                title="Save notes"
-                disabled={savingNotes}
-              >
-                {savingNotes ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-          )}
-        </div>
-        {isEditingNotes ? (
-          <textarea
-            value={tableNotes}
-            onChange={(e) => setTableNotes(e.target.value)}
-            placeholder="Add notes about this table (e.g., VIP customer, birthday celebration, accessibility needs...)"
-            className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none bg-white text-sm"
-            rows={3}
-            autoFocus
-          />
-        ) : (
-          <p className="text-sm text-amber-700">
-            {table?.notes || (
-              <span className="italic text-amber-500">No notes for this table. Click edit to add notes.</span>
-            )}
-          </p>
-        )}
-      </div>
-
-      {/* No active order - show create order button */}
-      {!activeOrder && !creatingOrder && (
-        <div className="bg-gray-50 rounded-lg p-8 text-center mb-6">
-          <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-600 mb-4">No active order for this table</p>
-          <Button onClick={handleCreateOrder}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create New Order
-          </Button>
-        </div>
-      )}
-
-      {/* Show loading while creating order */}
-      {!activeOrder && creatingOrder && (
-        <div className="bg-gray-50 rounded-lg p-8 text-center mb-6">
-          <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin text-blue-500" />
-          <p className="text-gray-600">Creating order...</p>
-        </div>
-      )}
-
       {/* Active order info */}
       {activeOrder && (
         <div className="bg-gray-50 rounded-lg p-4 mb-6">
@@ -492,6 +380,14 @@ export default function TableDetailPage() {
                   </span>
                 )}
               </div>
+              {/* Customer Notes */}
+              {(activeOrder as any).customer_notes && (
+                <div className="mt-2 p-2 bg-amber-100 rounded-lg border border-amber-300">
+                  <p className="text-sm text-amber-800">
+                    <span className="font-medium">Note:</span> {(activeOrder as any).customer_notes}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               {activeOrder.status === 'new' && (
@@ -588,146 +484,167 @@ export default function TableDetailPage() {
         </div>
       )}
 
-      {/* Menu and Cart - only show if there's an active order */}
-      {activeOrder && (
-        <>
-          {/* Category Filter */}
-          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      {/* Menu and Cart - always show */}
+      <>
+        {/* Category Filter */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          <Button
+            variant={selectedCategory === null ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedCategory(null)}
+          >
+            All
+          </Button>
+          {categories?.map((category: Category) => (
             <Button
-              variant={selectedCategory === null ? 'default' : 'outline'}
+              key={category.id}
+              variant={selectedCategory === category.id ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setSelectedCategory(null)}
+              onClick={() => setSelectedCategory(category.id)}
             >
-              All
+              {category.name_en}
             </Button>
-            {categories?.map((category: Category) => (
-              <Button
-                key={category.id}
-                variant={selectedCategory === category.id ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedCategory(category.id)}
-              >
-                {category.name_en}
-              </Button>
-            ))}
-          </div>
+          ))}
+        </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Menu Items Grid */}
-            <div className="lg:col-span-2">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {filteredItems?.map((item: MenuItem) => {
-                  const quantity = getCartQuantity(item.id);
-                  return (
-                    <div
-                      key={item.id}
-                      className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                        quantity > 0 ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'
-                      }`}
-                      onClick={() => addToCart(item)}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium text-sm">{item.name_en}</h3>
-                        {quantity > 0 && (
-                          <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                            {quantity}
-                          </span>
-                        )}
-                      </div>
-                      {item.description_en && (
-                        <p className="text-xs text-gray-500 mb-2 line-clamp-2">
-                          {item.description_en}
-                        </p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Menu Items Grid */}
+          <div className="lg:col-span-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {filteredItems?.map((item: MenuItem) => {
+                const quantity = getCartQuantity(item.id);
+                return (
+                  <div
+                    key={item.id}
+                    className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                      quantity > 0 ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'
+                    }`}
+                    onClick={() => addToCart(item)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-medium text-sm">{item.name_en}</h3>
+                      {quantity > 0 && (
+                        <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                          {quantity}
+                        </span>
                       )}
-                      <p className="font-semibold text-blue-600">${item.price.toFixed(2)}</p>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Cart Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="border rounded-lg p-4 sticky top-4">
-                <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  Add Items ({cart.reduce((sum, item) => sum + item.quantity, 0)})
-                </h2>
-
-                {cart.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">
-                    Click on menu items to add them
-                  </p>
-                ) : (
-                  <>
-                    <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
-                      {cart.map((item) => (
-                        <div
-                          key={item.menuItem.id}
-                          className="flex items-center justify-between border-b pb-3"
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{item.menuItem.name_en}</p>
-                            <p className="text-sm text-gray-600">
-                              ${item.menuItem.price.toFixed(2)} x {item.quantity}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeFromCart(item.menuItem.id);
-                              }}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            <span className="w-8 text-center">{item.quantity}</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addToCart(item.menuItem);
-                              }}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="border-t pt-4">
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="font-semibold">Total</span>
-                        <span className="font-semibold text-lg">${cartTotal.toFixed(2)}</span>
-                      </div>
-                      <Button
-                        className="w-full"
-                        onClick={handleSubmitItems}
-                        disabled={submitting || cart.length === 0}
-                      >
-                        {submitting ? (
-                          'Adding...'
-                        ) : (
-                          <>
-                            <Check className="h-4 w-4 mr-2" />
-                            Add to Order
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </div>
+                    {item.description_en && (
+                      <p className="text-xs text-gray-500 mb-2 line-clamp-2">
+                        {item.description_en}
+                      </p>
+                    )}
+                    <p className="font-semibold text-blue-600">${item.price.toFixed(2)}</p>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        </>
-      )}
+
+          {/* Cart Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="border rounded-lg p-4 sticky top-4">
+              <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5" />
+                {activeOrder ? 'Add Items' : 'New Order'} ({cart.reduce((sum, item) => sum + item.quantity, 0)})
+              </h2>
+
+              {cart.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">
+                  Click on menu items to add them
+                </p>
+              ) : (
+                <>
+                  <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
+                    {cart.map((item) => (
+                      <div
+                        key={item.menuItem.id}
+                        className="flex items-center justify-between border-b pb-3"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{item.menuItem.name_en}</p>
+                          <p className="text-sm text-gray-600">
+                            ${item.menuItem.price.toFixed(2)} x {item.quantity}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFromCart(item.menuItem.id);
+                            }}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-8 text-center">{item.quantity}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToCart(item.menuItem);
+                            }}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Order Notes */}
+                  <div className="mb-4">
+                    <textarea
+                      value={orderNotes}
+                      onChange={(e) => setOrderNotes(e.target.value)}
+                      placeholder="Notes from customers"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="font-semibold">Total</span>
+                      <span className="font-semibold text-lg">${cartTotal.toFixed(2)}</span>
+                    </div>
+                    <Button
+                      className="w-full"
+                      onClick={activeOrder ? handleAddItemsToOrder : handleCreateOrderWithItems}
+                      disabled={submitting || cart.length === 0}
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {activeOrder ? 'Adding...' : 'Creating...'}
+                        </>
+                      ) : (
+                        <>
+                          {activeOrder ? (
+                            <>
+                              <Check className="h-4 w-4 mr-2" />
+                              Add to Order
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Create Order
+                            </>
+                          )}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </>
 
       {/* Cancel Order Modal */}
       {showCancelModal && (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useOrder, useUpdateOrderStatus, useUpdateOrderItemStatus, useOrderPayments, useOrderTransferHistory, useUpdateOrderNotes } from '@/hooks';
+import { useOrder, useUpdateOrderStatus, useUpdateOrderItemStatus, useOrderPayments, useOrderTransferHistory } from '@/hooks';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import { supabase } from '@/lib/supabase/client';
@@ -34,7 +34,6 @@ type OrderWithRelations = Database['public']['Tables']['orders']['Row'] & {
   staff?: Database['public']['Tables']['staff']['Row'];
   order_payments?: Payment[];
   table_transfers?: TableTransfer[];
-  source?: string;
 };
 import {
   ArrowLeft,
@@ -52,11 +51,6 @@ import {
   ArrowRight,
   ChevronDown,
   UtensilsCrossed,
-  StickyNote,
-  Edit2,
-  Save,
-  X,
-  Loader2,
 } from 'lucide-react';
 
 export default function OrderDetailPage() {
@@ -73,24 +67,9 @@ export default function OrderDetailPage() {
   const payments = paymentsData as Payment[] | undefined;
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
-  const updateOrderNotes = useUpdateOrderNotes();
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [openItemMenu, setOpenItemMenu] = useState<string | null>(null);
-
-  // Order notes state
-  const [isEditingNotes, setIsEditingNotes] = useState(false);
-  const [customerNotes, setCustomerNotes] = useState('');
-  const [internalNotes, setInternalNotes] = useState('');
-  const [savingNotes, setSavingNotes] = useState(false);
-
-  // Sync order notes when order data loads
-  useEffect(() => {
-    if (order) {
-      setCustomerNotes(order.customer_notes || '');
-      setInternalNotes(order.internal_notes || '');
-    }
-  }, [order?.customer_notes, order?.internal_notes]);
 
   // Set up real-time subscription
   useEffect(() => {
@@ -241,28 +220,6 @@ export default function OrderDetailPage() {
     }
   };
 
-  // Handle order notes save
-  const handleSaveOrderNotes = async () => {
-    setSavingNotes(true);
-    try {
-      await updateOrderNotes.mutateAsync({
-        orderId,
-        notes: {
-          customer_notes: customerNotes.trim() || null,
-          internal_notes: internalNotes.trim() || null,
-        },
-      });
-      toast.success('Order notes saved');
-      setIsEditingNotes(false);
-      refetch();
-    } catch (error) {
-      console.error('Failed to save order notes:', error);
-      toast.error('Failed to save notes');
-    } finally {
-      setSavingNotes(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -326,10 +283,10 @@ export default function OrderDetailPage() {
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Source</p>
+            <p className="text-sm text-gray-600">Order Type</p>
             <p className="flex items-center gap-1">
-              {order.source === 'phone' ? <Package className="h-4 w-4" /> : <User className="h-4 w-4" />}
-              {order.source?.charAt(0).toUpperCase() + (order.source?.slice(1) || '')}
+              {order.order_type === 'takeout' ? <Package className="h-4 w-4" /> : <User className="h-4 w-4" />}
+              {order.order_type === 'takeout' ? 'Takeout' : 'Dine-in'}
             </p>
           </div>
           {order.customer_name && (
@@ -351,97 +308,12 @@ export default function OrderDetailPage() {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Order Notes Section */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-medium text-amber-800 flex items-center gap-2">
-            <StickyNote className="h-4 w-4" />
-            Order Notes
-          </h3>
-          {!isEditingNotes ? (
-            <button
-              onClick={() => setIsEditingNotes(true)}
-              className="text-amber-600 hover:text-amber-800 p-1 rounded hover:bg-amber-100 transition-colors"
-              title="Edit notes"
-            >
-              <Edit2 className="h-4 w-4" />
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setCustomerNotes(order?.customer_notes || '');
-                  setInternalNotes(order?.internal_notes || '');
-                  setIsEditingNotes(false);
-                }}
-                className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-amber-100 transition-colors"
-                title="Cancel"
-                disabled={savingNotes}
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <button
-                onClick={handleSaveOrderNotes}
-                className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-100 transition-colors"
-                title="Save notes"
-                disabled={savingNotes}
-              >
-                {savingNotes ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {isEditingNotes ? (
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-amber-700 mb-1">
-                Kitchen Instructions (visible to kitchen)
-              </label>
-              <textarea
-                value={customerNotes}
-                onChange={(e) => setCustomerNotes(e.target.value)}
-                placeholder="Special instructions for the kitchen (e.g., no onions, extra spicy, allergies...)"
-                className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none bg-white text-sm"
-                rows={2}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-amber-700 mb-1">
-                Internal Notes (staff only)
-              </label>
-              <textarea
-                value={internalNotes}
-                onChange={(e) => setInternalNotes(e.target.value)}
-                placeholder="Internal notes for staff (e.g., VIP customer, special occasion...)"
-                className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none bg-white text-sm"
-                rows={2}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {order?.customer_notes ? (
-              <div>
-                <p className="text-xs font-medium text-amber-600 mb-0.5">Kitchen Instructions:</p>
-                <p className="text-sm text-amber-700">{order.customer_notes}</p>
-              </div>
-            ) : null}
-            {order?.internal_notes ? (
-              <div>
-                <p className="text-xs font-medium text-amber-600 mb-0.5">Internal Notes:</p>
-                <p className="text-sm text-amber-700">{order.internal_notes}</p>
-              </div>
-            ) : null}
-            {!order?.customer_notes && !order?.internal_notes && (
-              <p className="text-sm italic text-amber-500">No notes for this order. Click edit to add notes.</p>
-            )}
+        {/* Customer Notes */}
+        {order.customer_notes && (
+          <div className="mt-4 p-3 bg-amber-100 rounded-lg border border-amber-300">
+            <p className="text-sm text-amber-800">
+              <span className="font-medium">Customer Note:</span> {order.customer_notes}
+            </p>
           </div>
         )}
       </div>

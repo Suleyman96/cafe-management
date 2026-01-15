@@ -358,6 +358,15 @@ export default function KitchenDisplayPage() {
                 </div>
               )}
 
+              {/* Order Notes */}
+              {order.customer_notes && (
+                <div className="mb-3 p-2 bg-red-200 rounded-lg border-2 border-red-400">
+                  <p className="text-sm font-bold text-red-800">
+                    📝 NOTE: {order.customer_notes}
+                  </p>
+                </div>
+              )}
+
               {/* Order Items - Background color indicates status */}
               <div className="space-y-1.5 mb-3 max-h-48 overflow-y-auto">
                 {order.order_items?.map((item: any) => {
@@ -400,11 +409,6 @@ export default function KitchenDisplayPage() {
                           )}
                         </div>
                       </div>
-                      {item.notes && (
-                        <div className="mt-1 p-1 bg-red-200 rounded text-xs font-bold text-red-800 border border-red-400">
-                          NOTE: {item.notes}
-                        </div>
-                      )}
                     </div>
                   );
                 })}

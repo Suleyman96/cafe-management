@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useOrder, useMenuItems, useCategories, useAddOrderItems } from '@/hooks';
+import { useOrder, useMenuItems, useCategories, useAddOrderItems, useUpdateOrderNotes } from '@/hooks';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { toast } from 'sonner';
 import type { Database } from '@cafe-idare/database';
@@ -20,7 +20,6 @@ type Category = Database['public']['Tables']['categories']['Row'];
 type CartItem = {
   menuItem: MenuItem;
   quantity: number;
-  notes: string;
 };
 
 export default function AddItemsPage() {
@@ -32,10 +31,19 @@ export default function AddItemsPage() {
   const { data: menuItems, isLoading: menuLoading } = useMenuItems({ isAvailable: true });
   const { data: categories } = useCategories();
   const addOrderItems = useAddOrderItems();
+  const updateOrderNotes = useUpdateOrderNotes();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [customerNotes, setCustomerNotes] = useState('');
+
+  // Initialize customer notes from existing order
+  useEffect(() => {
+    if (order && (order as any).customer_notes) {
+      setCustomerNotes((order as any).customer_notes);
+    }
+  }, [order]);
 
   // Filter menu items by category
   const filteredItems = selectedCategory
@@ -53,7 +61,7 @@ export default function AddItemsPage() {
             : item
         );
       }
-      return [...prev, { menuItem, quantity: 1, notes: '' }];
+      return [...prev, { menuItem, quantity: 1 }];
     });
   };
 
@@ -98,11 +106,21 @@ export default function AddItemsPage() {
         item_name: item.menuItem.name_en,
         quantity: item.quantity,
         item_price: item.menuItem.price,
-        notes: item.notes || null,
+        notes: null,
         status: 'pending' as const,
       }));
 
       await addOrderItems.mutateAsync(orderItems);
+
+      // Update customer notes if changed
+      const existingNotes = (order as any)?.customer_notes || '';
+      if (customerNotes.trim() !== existingNotes) {
+        await updateOrderNotes.mutateAsync({
+          orderId,
+          notes: { customer_notes: customerNotes.trim() || null },
+        });
+      }
+
       toast.success('Items added to order');
       router.push(`/orders/${orderId}`);
     } catch (error) {
@@ -252,6 +270,17 @@ export default function AddItemsPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Customer Notes */}
+                <div className="mb-4">
+                  <textarea
+                    value={customerNotes}
+                    onChange={(e) => setCustomerNotes(e.target.value)}
+                    placeholder="Notes from customer..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
+                    rows={2}
+                  />
                 </div>
 
                 <div className="border-t pt-4">
