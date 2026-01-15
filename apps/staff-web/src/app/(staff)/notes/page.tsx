@@ -135,22 +135,22 @@ export default function StaffNotesPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-3xl">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-3xl">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <StickyNote className="h-6 w-6 text-amber-600" />
-        <h1 className="text-2xl font-bold">Staff Notes</h1>
+      <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+        <StickyNote className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
+        <h1 className="text-xl sm:text-2xl font-bold">Staff Notes</h1>
       </div>
 
       {/* New Note Input */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-        <div className="flex gap-3">
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+        <div className="flex gap-2 sm:gap-3">
           <textarea
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Write a note for your team... (Press Enter to send)"
-            className="flex-1 px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none bg-white text-sm"
+            className="flex-1 px-2 sm:px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none bg-white text-xs sm:text-sm"
             rows={2}
             disabled={submitting}
           />
@@ -158,6 +158,7 @@ export default function StaffNotesPage() {
             onClick={handleCreate}
             disabled={submitting || !newNote.trim()}
             className="self-end"
+            size="sm"
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -169,36 +170,36 @@ export default function StaffNotesPage() {
       </div>
 
       {/* Notes List */}
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {notes?.map((note: any) => {
           const isEditing = editingId === note.id;
 
           return (
             <div
               key={note.id}
-              className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+              className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm"
             >
               {/* Note Content */}
               {isEditing ? (
-                <div className="mb-3">
+                <div className="mb-2 sm:mb-3">
                   <textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
+                    className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-xs sm:text-sm"
                     rows={3}
                     autoFocus
                   />
                 </div>
               ) : (
-                <p className="text-gray-800 whitespace-pre-wrap mb-3">{note.content}</p>
+                <p className="text-sm sm:text-base text-gray-800 whitespace-pre-wrap mb-2 sm:mb-3">{note.content}</p>
               )}
 
               {/* Note Footer */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 text-xs text-gray-500">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
                     <User className="h-3 w-3" />
-                    {note.created_by_staff?.full_name || 'Unknown'}
+                    <span className="truncate max-w-[80px] sm:max-w-none">{note.created_by_staff?.full_name || 'Unknown'}</span>
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
@@ -207,7 +208,7 @@ export default function StaffNotesPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   {isEditing ? (
                     <>
                       <button
@@ -258,9 +259,9 @@ export default function StaffNotesPage() {
 
       {/* Empty State */}
       {(!notes || notes.length === 0) && (
-        <div className="text-center py-12">
-          <Info className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-500">No notes yet. Write one above to share with your team.</p>
+        <div className="text-center py-8 sm:py-12">
+          <Info className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-gray-400" />
+          <p className="text-sm sm:text-base text-gray-500">No notes yet. Write one above to share with your team.</p>
         </div>
       )}
     </div>

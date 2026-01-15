@@ -43,9 +43,11 @@ const navItems: NavItem[] = [
 interface SidebarProps {
   isCollapsed: boolean;
   onToggle: () => void;
+  isMobile?: boolean;
+  onMobileClose?: () => void;
 }
 
-export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
+export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const { staff, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -81,33 +83,41 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     }
   };
 
+  const handleNavClick = () => {
+    if (isMobile && onMobileClose) {
+      onMobileClose();
+    }
+  };
+
   return (
     <aside
       className={`bg-white border-r border-gray-200 min-h-screen flex flex-col transition-all duration-300 ${
-        isCollapsed ? 'w-16' : 'w-64'
+        isCollapsed && !isMobile ? 'w-16' : 'w-64'
       }`}
     >
       {/* Logo */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        {!isCollapsed && (
+        {(!isCollapsed || isMobile) && (
           <div>
             <h1 className="text-xl font-bold text-gray-900">Cafe Idare</h1>
             <p className="text-xs text-gray-500">Staff Portal</p>
           </div>
         )}
-        <button
-          onClick={onToggle}
-          className={`p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors ${
-            isCollapsed ? 'mx-auto' : ''
-          }`}
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="h-5 w-5" />
-          ) : (
-            <ChevronLeft className="h-5 w-5" />
-          )}
-        </button>
+        {!isMobile && (
+          <button
+            onClick={onToggle}
+            className={`p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors ${
+              isCollapsed ? 'mx-auto' : ''
+            }`}
+            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-5 w-5" />
+            ) : (
+              <ChevronLeft className="h-5 w-5" />
+            )}
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
@@ -121,17 +131,18 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  onClick={handleNavClick}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
                     isActive
                       ? 'bg-blue-50 text-blue-700'
                       : 'text-gray-700 hover:bg-gray-100'
-                  } ${isCollapsed ? 'justify-center' : ''}`}
-                  title={isCollapsed ? item.label : undefined}
+                  } ${isCollapsed && !isMobile ? 'justify-center' : ''}`}
+                  title={isCollapsed && !isMobile ? item.label : undefined}
                 >
                   <span className={isActive ? 'text-blue-600' : 'text-gray-500'}>
                     {item.icon}
                   </span>
-                  {!isCollapsed && (
+                  {(!isCollapsed || isMobile) && (
                     <>
                       {item.label}
                       {item.adminOnly && (
@@ -154,14 +165,14 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
             className={`w-full p-3 flex items-center gap-3 hover:bg-gray-50 transition-colors ${
-              isCollapsed ? 'justify-center' : ''
+              isCollapsed && !isMobile ? 'justify-center' : ''
             }`}
-            title={isCollapsed ? staff.full_name : undefined}
+            title={isCollapsed && !isMobile ? staff.full_name : undefined}
           >
             <div className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
               {staff.full_name?.charAt(0).toUpperCase() || 'U'}
             </div>
-            {!isCollapsed && (
+            {(!isCollapsed || isMobile) && (
               <>
                 <div className="flex-1 text-left min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{staff.full_name}</p>
@@ -177,9 +188,9 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
           {/* Dropdown Menu */}
           {isUserMenuOpen && (
             <div className={`absolute bottom-full mb-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 ${
-              isCollapsed ? 'left-full ml-2 w-56' : 'left-2 right-2'
+              isCollapsed && !isMobile ? 'left-full ml-2 w-56' : 'left-2 right-2'
             }`}>
-              {isCollapsed && (
+              {isCollapsed && !isMobile && (
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="text-sm font-medium text-gray-900">{staff.full_name}</p>
                   <p className="text-xs text-gray-500">{staff.email}</p>
@@ -188,7 +199,10 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
 
               <Link
                 href="/settings"
-                onClick={() => setIsUserMenuOpen(false)}
+                onClick={() => {
+                  setIsUserMenuOpen(false);
+                  handleNavClick();
+                }}
                 className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               >
                 <Settings className="h-4 w-4" />

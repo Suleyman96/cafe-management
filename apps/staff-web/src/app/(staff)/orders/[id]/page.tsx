@@ -242,26 +242,28 @@ export default function OrderDetailPage() {
   const isFullyPaid = remaining === 0 && total > 0;
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-4xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
           <Button
             variant="ghost"
+            size="sm"
             onClick={() => router.back()}
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            <ArrowLeft className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Back</span>
           </Button>
-          <h1 className="text-2xl font-bold">
-            {order.table ? `Table ${order.table.table_number}` : 'Takeout Order'}
+          <h1 className="text-lg sm:text-2xl font-bold">
+            {order.table ? `Table ${order.table.table_number}` : 'Takeout'}
           </h1>
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
+          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(order.status)}`}>
             {order.status.toUpperCase()}
           </span>
         </div>
         <Button
           variant="outline"
+          size="sm"
           onClick={() => refetch()}
         >
           <RefreshCw className="h-4 w-4" />
@@ -269,8 +271,8 @@ export default function OrderDetailPage() {
       </div>
 
       {/* Order Info */}
-      <div className="bg-gray-50 rounded-lg p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           <div>
             <p className="text-sm text-gray-600">Order ID</p>
             <p className="font-mono text-sm">#{order.id.slice(0, 8)}</p>
@@ -336,9 +338,9 @@ export default function OrderDetailPage() {
       )}
 
       {/* Order Items */}
-      <div className="border rounded-lg mb-6">
-        <div className="border-b px-4 py-3">
-          <h2 className="font-semibold">Order Items</h2>
+      <div className="border rounded-lg mb-4 sm:mb-6">
+        <div className="border-b px-3 sm:px-4 py-2 sm:py-3">
+          <h2 className="font-semibold text-sm sm:text-base">Order Items</h2>
         </div>
         <div className="divide-y">
           {order.order_items?.map((item: OrderItem) => {
@@ -346,15 +348,15 @@ export default function OrderDetailPage() {
             const isMenuOpen = openItemMenu === item.id;
 
             return (
-              <div key={item.id} className="px-4 py-3">
-                <div className="flex justify-between items-start gap-3">
+              <div key={item.id} className="px-3 sm:px-4 py-2 sm:py-3">
+                <div className="flex justify-between items-start gap-2 sm:gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium">{item.quantity}x</span>
-                      <span className="truncate">{item.menu_item?.name_en}</span>
+                      <span className="font-medium text-sm sm:text-base">{item.quantity}x</span>
+                      <span className="text-sm sm:text-base truncate">{item.menu_item?.name_en}</span>
                     </div>
                     {item.notes && (
-                      <p className="text-sm text-gray-600 mt-1 flex items-start gap-1">
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1 flex items-start gap-1">
                         <FileText className="h-3 w-3 mt-0.5 flex-shrink-0" />
                         {item.notes}
                       </p>
@@ -365,10 +367,10 @@ export default function OrderDetailPage() {
                   <div className="relative flex-shrink-0">
                     <button
                       onClick={() => setOpenItemMenu(isMenuOpen ? null : item.id)}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${statusBadge.bg} ${statusBadge.text} hover:opacity-80`}
+                      className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${statusBadge.bg} ${statusBadge.text} hover:opacity-80`}
                     >
                       {statusBadge.icon}
-                      {statusBadge.label}
+                      <span className="hidden xs:inline">{statusBadge.label}</span>
                       <ChevronDown className={`h-3 w-3 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
                     </button>
 
@@ -455,60 +457,66 @@ export default function OrderDetailPage() {
       )}
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2 sm:gap-3">
         {order.status === 'new' && (
           <Button
+            size="sm"
             onClick={() => handleStatusUpdate('PREPARING')}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2"
           >
             <ChefHat className="h-4 w-4" />
-            Start Preparing
+            <span className="hidden xs:inline">Start </span>Preparing
           </Button>
         )}
         {order.status === 'preparing' && (
           <Button
+            size="sm"
             onClick={() => handleStatusUpdate('READY')}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2"
           >
             <CheckCircle className="h-4 w-4" />
-            Mark Ready
+            Ready
           </Button>
         )}
         {order.status === 'ready' && order.table && (
           <Button
+            size="sm"
             onClick={() => handleStatusUpdate('SERVED')}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2"
           >
             <CheckCircle className="h-4 w-4" />
-            Mark Served
+            Served
           </Button>
         )}
         {(order.status === 'served' || order.status === 'ready') && !isFullyPaid && (
           <Button
+            size="sm"
             onClick={() => setIsPaymentModalOpen(true)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2"
           >
             <CreditCard className="h-4 w-4" />
-            Process Payment
+            Payment
           </Button>
         )}
         {isFullyPaid && order.status !== 'closed' && order.status !== 'cancelled' && (
           <Button
+            size="sm"
             onClick={() => handleStatusUpdate('CLOSED')}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2"
           >
             <CheckCircle className="h-4 w-4" />
-            Close Order
+            Close
           </Button>
         )}
         {['new', 'preparing'].includes(order.status) && (
           <Button
+            size="sm"
             variant="destructive"
             onClick={() => handleStatusUpdate('CANCELLED')}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2"
           >
             <XCircle className="h-4 w-4" />
-            Cancel Order
+            Cancel
           </Button>
         )}
       </div>

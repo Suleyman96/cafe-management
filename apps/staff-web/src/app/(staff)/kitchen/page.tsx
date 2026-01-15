@@ -249,49 +249,49 @@ export default function KitchenDisplayPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6">
+    <div className="min-h-screen bg-gray-900 p-3 sm:p-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          <Utensils className="h-10 w-10 text-white" />
-          <h1 className="text-3xl font-bold text-white">Kitchen Display</h1>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4 sm:mb-6">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Utensils className="h-6 sm:h-10 w-6 sm:w-10 text-white" />
+          <h1 className="text-xl sm:text-3xl font-bold text-white">Kitchen</h1>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-6">
           {/* Status Summary */}
-          <div className="flex gap-4">
-            <div className="flex items-center gap-2 bg-blue-600 px-4 py-2 rounded-lg">
-              <AlertCircle className="h-6 w-6 text-white" />
-              <span className="text-white font-bold text-xl">{newOrdersCount}</span>
-              <span className="text-blue-200 text-sm">NEW</span>
+          <div className="flex gap-2 sm:gap-4">
+            <div className="flex items-center gap-1 sm:gap-2 bg-blue-600 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg">
+              <AlertCircle className="h-4 sm:h-6 w-4 sm:w-6 text-white" />
+              <span className="text-white font-bold text-base sm:text-xl">{newOrdersCount}</span>
+              <span className="text-blue-200 text-xs sm:text-sm hidden xs:inline">NEW</span>
             </div>
-            <div className="flex items-center gap-2 bg-yellow-500 px-4 py-2 rounded-lg">
-              <ChefHat className="h-6 w-6 text-black" />
-              <span className="text-black font-bold text-xl">{preparingCount}</span>
-              <span className="text-yellow-800 text-sm">COOKING</span>
+            <div className="flex items-center gap-1 sm:gap-2 bg-yellow-500 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg">
+              <ChefHat className="h-4 sm:h-6 w-4 sm:w-6 text-black" />
+              <span className="text-black font-bold text-base sm:text-xl">{preparingCount}</span>
+              <span className="text-yellow-800 text-xs sm:text-sm hidden xs:inline">COOK</span>
             </div>
-            <div className="flex items-center gap-2 bg-green-600 px-4 py-2 rounded-lg">
-              <CheckCircle className="h-6 w-6 text-white" />
-              <span className="text-white font-bold text-xl">{readyCount}</span>
-              <span className="text-green-200 text-sm">READY</span>
+            <div className="flex items-center gap-1 sm:gap-2 bg-green-600 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg">
+              <CheckCircle className="h-4 sm:h-6 w-4 sm:w-6 text-white" />
+              <span className="text-white font-bold text-base sm:text-xl">{readyCount}</span>
+              <span className="text-green-200 text-xs sm:text-sm hidden xs:inline">READY</span>
             </div>
           </div>
           {/* Sound Toggle */}
           <button
             onClick={() => setAudioEnabled(!audioEnabled)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-lg font-medium transition-colors ${
+            className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm sm:text-lg font-medium transition-colors ${
               audioEnabled
                 ? 'bg-green-600 hover:bg-green-700 text-white'
                 : 'bg-gray-600 hover:bg-gray-500 text-gray-300'
             }`}
           >
-            <Bell className={`h-5 w-5 ${audioEnabled ? 'animate-pulse' : ''}`} />
-            {audioEnabled ? 'Sound ON' : 'Sound OFF'}
+            <Bell className={`h-4 sm:h-5 w-4 sm:w-5 ${audioEnabled ? 'animate-pulse' : ''}`} />
+            <span className="hidden sm:inline">{audioEnabled ? 'Sound ON' : 'Sound OFF'}</span>
           </button>
         </div>
       </div>
 
       {/* Orders Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
         {kitchenOrders?.map((order: any) => {
           const elapsedMinutes = calculateElapsedTime(order.created_at);
           const timeColor = getTimeColor(elapsedMinutes, order.status);
@@ -300,46 +300,46 @@ export default function KitchenDisplayPage() {
           return (
             <div
               key={order.id}
-              className={`border-4 rounded-xl p-5 ${cardColor} transition-all shadow-lg ${
+              className={`border-2 sm:border-4 rounded-xl p-3 sm:p-5 ${cardColor} transition-all shadow-lg ${
                 order.status === 'new' ? 'animate-pulse' : ''
               }`}
             >
               {/* Order Header with Order Number */}
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex justify-between items-start mb-2 sm:mb-4">
                 <div>
                   {/* Order Number - Large and prominent */}
-                  <div className="text-3xl font-black text-gray-800 mb-1">
+                  <div className="text-2xl sm:text-3xl font-black text-gray-800 mb-1">
                     #{getOrderNumber(order.id)}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-700">
+                  <h3 className="text-base sm:text-xl font-bold text-gray-700">
                     {order.table ? `Table ${order.table.table_number}` : (
-                      <span className="flex items-center gap-2 text-orange-700">
-                        <Package className="h-5 w-5" />
+                      <span className="flex items-center gap-1 sm:gap-2 text-orange-700">
+                        <Package className="h-4 sm:h-5 w-4 sm:w-5" />
                         TAKEOUT
                       </span>
                     )}
                   </h3>
                 </div>
                 {/* Status Badge */}
-                <div className={`px-3 py-1.5 rounded-full text-sm font-bold ${getStatusBadgeColor(order.status)}`}>
+                <div className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-bold ${getStatusBadgeColor(order.status)}`}>
                   {getStatusLabel(order.status)}
                 </div>
               </div>
 
               {/* Timer - Compact */}
-              <div className={`flex items-center gap-2 mb-3 px-2 py-1.5 rounded-lg ${
+              <div className={`flex items-center gap-1 sm:gap-2 mb-2 sm:mb-3 px-2 py-1 sm:py-1.5 rounded-lg ${
                 elapsedMinutes > 20 ? 'bg-red-200' :
                 elapsedMinutes > 15 ? 'bg-orange-200' :
                 elapsedMinutes > 10 ? 'bg-yellow-200' :
                 'bg-white/60'
               }`}>
-                <Timer className={`h-5 w-5 ${timeColor}`} />
-                <span className={`text-xl font-bold ${timeColor}`}>
+                <Timer className={`h-4 sm:h-5 w-4 sm:w-5 ${timeColor}`} />
+                <span className={`text-lg sm:text-xl font-bold ${timeColor}`}>
                   {elapsedMinutes}
                 </span>
-                <span className={`text-sm ${timeColor}`}>min</span>
+                <span className={`text-xs sm:text-sm ${timeColor}`}>min</span>
                 {elapsedMinutes > 15 && (
-                  <span className="ml-auto text-red-600 text-sm font-bold animate-pulse">
+                  <span className="ml-auto text-red-600 text-xs sm:text-sm font-bold animate-pulse">
                     URGENT!
                   </span>
                 )}

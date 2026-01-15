@@ -84,41 +84,41 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl">
-      <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
+    <div className="p-3 sm:p-6 max-w-2xl">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Account Settings</h1>
 
       {/* Profile Information */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Profile Information</h2>
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6 mb-4 sm:mb-6">
+        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Profile Information</h2>
 
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-              <User className="h-5 w-5 text-gray-600" />
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <User className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Full Name</p>
-              <p className="font-medium">{staff.full_name}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500">Full Name</p>
+              <p className="font-medium text-sm sm:text-base truncate">{staff.full_name}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-              <Mail className="h-5 w-5 text-gray-600" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Email</p>
-              <p className="font-medium">{staff.email}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500">Email</p>
+              <p className="font-medium text-sm sm:text-base truncate">{staff.email}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-              <Shield className="h-5 w-5 text-gray-600" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Role</p>
-              <span className={`inline-block px-2 py-1 text-sm rounded-full capitalize ${getRoleBadgeColor(staff.role)}`}>
+              <p className="text-xs sm:text-sm text-gray-500">Role</p>
+              <span className={`inline-block px-2 py-0.5 sm:py-1 text-xs sm:text-sm rounded-full capitalize ${getRoleBadgeColor(staff.role)}`}>
                 {staff.role || 'Staff'}
               </span>
             </div>
@@ -127,14 +127,15 @@ export default function SettingsPage() {
       </div>
 
       {/* Change Password */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Security</h2>
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
+          <h2 className="text-base sm:text-lg font-semibold">Security</h2>
           {!isChangingPassword && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsChangingPassword(true)}
+              className="text-xs sm:text-sm w-full sm:w-auto"
             >
               <Key className="h-4 w-4 mr-2" />
               Change Password
@@ -143,9 +144,9 @@ export default function SettingsPage() {
         </div>
 
         {isChangingPassword ? (
-          <form onSubmit={handleChangePassword} className="space-y-4">
+          <form onSubmit={handleChangePassword} className="space-y-3 sm:space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 New Password
               </label>
               <div className="relative">
@@ -153,7 +154,7 @@ export default function SettingsPage() {
                   type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   placeholder="Enter new password"
                   required
                   minLength={6}
@@ -169,21 +170,21 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                 Confirm New Password
               </label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 placeholder="Confirm new password"
                 required
                 minLength={6}
               />
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <Button
                 type="button"
                 variant="outline"
@@ -194,16 +195,18 @@ export default function SettingsPage() {
                   setConfirmPassword('');
                 }}
                 disabled={passwordLoading}
+                size="sm"
+                className="flex-1 sm:flex-none text-xs sm:text-sm"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={passwordLoading}>
+              <Button type="submit" disabled={passwordLoading} size="sm" className="flex-1 sm:flex-none text-xs sm:text-sm">
                 {passwordLoading ? 'Saving...' : 'Update Password'}
               </Button>
             </div>
           </form>
         ) : (
-          <p className="text-sm text-gray-500">
+          <p className="text-xs sm:text-sm text-gray-500">
             Keep your account secure by using a strong password.
           </p>
         )}

@@ -204,54 +204,58 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Order Management</h1>
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      <div className="flex justify-between items-center mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">Order Management</h1>
       </div>
 
       {/* Filters */}
-      <div className="mb-6 space-y-4">
-        <div className="flex flex-wrap gap-4">
-          <div className="relative flex-1 min-w-[200px]">
+      <div className="mb-4 sm:mb-6 space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
               placeholder="Search orders..."
-              className="w-full pl-10 pr-3 py-2 border rounded-lg"
+              className="w-full pl-10 pr-3 py-2 border rounded-lg text-sm sm:text-base"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          
-          <select
-            className="px-3 py-2 border rounded-lg"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-          >
-            <option value="all">All Status</option>
-            <option value="new">New</option>
-            <option value="preparing">Preparing</option>
-            <option value="ready">Ready</option>
-            <option value="served">Served</option>
-            <option value="paid">Paid</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
 
-          <select
-            className="px-3 py-2 border rounded-lg"
-            value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value as any)}
-          >
-            <option value="all">All Sources</option>
-            <option value="customer">Customer</option>
-            <option value="waiter">Waiter</option>
-            <option value="phone">Takeout</option>
-          </select>
+          <div className="flex gap-2 sm:gap-4">
+            <select
+              className="flex-1 sm:flex-none px-3 py-2 border rounded-lg text-sm sm:text-base"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+            >
+              <option value="all">All Status</option>
+              <option value="new">New</option>
+              <option value="preparing">Preparing</option>
+              <option value="ready">Ready</option>
+              <option value="served">Served</option>
+              <option value="paid">Paid</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+
+            <select
+              className="flex-1 sm:flex-none px-3 py-2 border rounded-lg text-sm sm:text-base"
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value as any)}
+            >
+              <option value="all">All Sources</option>
+              <option value="customer">Customer</option>
+              <option value="waiter">Waiter</option>
+              <option value="phone">Takeout</option>
+            </select>
+          </div>
 
           {selectedTableFilter !== 'all' && (
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setSelectedTableFilter('all')}
+              className="w-full sm:w-auto"
             >
               Clear Table Filter (Table {selectedTableFilter})
             </Button>
@@ -260,7 +264,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Orders List */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {filteredOrders?.map((order: any) => {
           const total = calculateOrderTotal(order);
           const paid = calculatePaidAmount(order);
@@ -272,29 +276,29 @@ export default function OrdersPage() {
           return (
             <div
               key={order.id}
-              className={`border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer ${
+              className={`border rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow cursor-pointer ${
                 isTakeout
                   ? 'border-orange-300 bg-orange-50'
                   : 'border-gray-200 bg-white'
               }`}
               onClick={() => window.location.href = `/orders/${order.id}`}
             >
-              <div className="flex justify-between items-start mb-3">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0 mb-3">
                 <div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                     {isTakeout ? (
                       <div className="flex items-center gap-2">
-                        <Package className="h-5 w-5 text-orange-600" />
-                        <h3 className="font-semibold text-lg text-orange-800">Takeout Order</h3>
+                        <Package className="h-4 sm:h-5 w-4 sm:w-5 text-orange-600" />
+                        <h3 className="font-semibold text-base sm:text-lg text-orange-800">Takeout</h3>
                       </div>
                     ) : (
-                      <h3 className="font-semibold text-lg">Table {order.table.table_number}</h3>
+                      <h3 className="font-semibold text-base sm:text-lg">Table {order.table.table_number}</h3>
                     )}
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                    <span className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                       {order.status.toUpperCase()}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 text-xs sm:text-sm text-gray-600">
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {formatTime(order.created_at)}
@@ -308,27 +312,28 @@ export default function OrdersPage() {
                     {order.assigned_waiter && (
                       <span className="flex items-center gap-1 text-green-600">
                         <UserCheck className="h-3 w-3" />
-                        {order.assigned_waiter.full_name}
+                        <span className="hidden sm:inline">{order.assigned_waiter.full_name}</span>
+                        <span className="sm:hidden">{order.assigned_waiter.full_name.split(' ')[0]}</span>
                       </span>
                     )}
-                    <span className="text-xs">
+                    <span className="text-xs hidden sm:inline">
                       #{order.id.slice(0, 8)}
                     </span>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <div className="text-lg font-semibold">
+                <div className="text-left sm:text-right flex sm:block items-center gap-3 sm:gap-0">
+                  <div className="text-base sm:text-lg font-semibold">
                     ${total.toFixed(2)}
                   </div>
                   {paid > 0 && (
-                    <div className="text-sm text-green-600">
+                    <div className="text-xs sm:text-sm text-green-600">
                       Paid: ${paid.toFixed(2)}
                     </div>
                   )}
                   {remaining > 0 && paid > 0 && (
-                    <div className="text-sm text-orange-600">
-                      Remaining: ${remaining.toFixed(2)}
+                    <div className="text-xs sm:text-sm text-orange-600">
+                      Due: ${remaining.toFixed(2)}
                     </div>
                   )}
                 </div>
@@ -350,7 +355,7 @@ export default function OrdersPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+              <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                 {order.status === 'new' && (
                   <Button
                     size="sm"
@@ -358,7 +363,7 @@ export default function OrdersPage() {
                     onClick={() => handleStatusUpdate(order.id, 'preparing')}
                   >
                     <ChefHat className="h-4 w-4 mr-1" />
-                    Start Preparing
+                    <span className="hidden xs:inline">Start </span>Preparing
                   </Button>
                 )}
                 {order.status === 'preparing' && (
@@ -368,7 +373,7 @@ export default function OrdersPage() {
                     onClick={() => handleStatusUpdate(order.id, 'ready')}
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    Mark Ready
+                    Ready
                   </Button>
                 )}
                 {/* Dine-in orders: Mark as served before payment */}
@@ -379,7 +384,7 @@ export default function OrdersPage() {
                     onClick={() => handleStatusUpdate(order.id, 'served')}
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    Mark Served
+                    Served
                   </Button>
                 )}
                 {/* Takeout orders: Mark as picked up (completes the order) */}
@@ -392,7 +397,7 @@ export default function OrdersPage() {
                     }}
                   >
                     <CreditCard className="h-4 w-4 mr-1" />
-                    Process Payment
+                    Payment
                   </Button>
                 )}
                 {/* Dine-in served orders: Process payment */}
@@ -405,7 +410,7 @@ export default function OrdersPage() {
                     }}
                   >
                     <CreditCard className="h-4 w-4 mr-1" />
-                    Process Payment
+                    Payment
                   </Button>
                 )}
                 {['new', 'preparing'].includes(order.status) && (

@@ -140,23 +140,23 @@ export default function WaiterCallsPage() {
   const pendingCallsCount = waiterCalls?.filter((call: any) => call.status === 'pending').length || 0;
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Waiter Calls</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Waiter Calls</h1>
           {pendingCallsCount > 0 && (
             <p className="text-sm text-orange-600 font-medium">
               {pendingCallsCount} pending {pendingCallsCount === 1 ? 'call' : 'calls'}
             </p>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setAudioEnabled(!audioEnabled)}
-            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-              audioEnabled 
-                ? 'bg-green-100 text-green-800' 
+            className={`px-2 sm:px-3 py-1.5 rounded text-xs sm:text-sm font-medium transition-colors ${
+              audioEnabled
+                ? 'bg-green-100 text-green-800'
                 : 'bg-gray-100 text-gray-600'
             }`}
           >
@@ -173,12 +173,12 @@ export default function WaiterCallsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
         <button
           onClick={() => setFilter('pending')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'pending' 
-              ? 'bg-orange-100 text-orange-800' 
+          className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
+            filter === 'pending'
+              ? 'bg-orange-100 text-orange-800'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
@@ -186,9 +186,9 @@ export default function WaiterCallsPage() {
         </button>
         <button
           onClick={() => setFilter('completed')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'completed' 
-              ? 'bg-green-100 text-green-800' 
+          className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
+            filter === 'completed'
+              ? 'bg-green-100 text-green-800'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
@@ -196,9 +196,9 @@ export default function WaiterCallsPage() {
         </button>
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'all' 
-              ? 'bg-blue-100 text-blue-800' 
+          className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
+            filter === 'all'
+              ? 'bg-blue-100 text-blue-800'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
@@ -207,7 +207,7 @@ export default function WaiterCallsPage() {
       </div>
 
       {/* Calls List */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {filteredCalls?.map((call: any) => {
           const isEmergency = call.reason === 'emergency';
           const isPending = call.status === 'pending';
@@ -216,36 +216,36 @@ export default function WaiterCallsPage() {
             <div
               key={call.id}
               className={`
-                border rounded-lg p-4 transition-all
+                border rounded-lg p-3 sm:p-4 transition-all bg-white
                 ${isPending && isEmergency ? 'ring-2 ring-red-500 animate-pulse' : ''}
                 ${!isPending ? 'opacity-60' : ''}
               `}
             >
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getReasonColor(call.reason)}`}>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                    <span className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getReasonColor(call.reason)}`}>
                       {getReasonIcon(call.reason)}
-                      {call.reason.charAt(0).toUpperCase() + call.reason.slice(1)}
+                      <span className="hidden xs:inline">{call.reason.charAt(0).toUpperCase() + call.reason.slice(1)}</span>
                     </span>
-                    <span className="text-lg font-semibold">
+                    <span className="text-base sm:text-lg font-semibold">
                       Table {call.table.table_number}
                     </span>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-xs sm:text-sm text-gray-500">
                       {formatTimeAgo(call.created_at)}
                     </span>
                   </div>
 
                   {call.message && (
-                    <div className="mb-3 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-gray-700">{call.message}</p>
+                    <div className="mb-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs sm:text-sm text-gray-700">{call.message}</p>
                     </div>
                   )}
 
                   {call.responded_at && call.staff && (
-                    <div className="text-sm text-gray-600 flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      Responded by {call.staff.name} at {formatTimeAgo(call.responded_at)}
+                    <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
+                      <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
+                      <span>Responded by {call.staff.name} at {formatTimeAgo(call.responded_at)}</span>
                     </div>
                   )}
                 </div>
@@ -254,7 +254,7 @@ export default function WaiterCallsPage() {
                   <Button
                     onClick={() => handleRespond(call.id)}
                     size="sm"
-                    className="ml-4"
+                    className="w-full sm:w-auto sm:ml-4"
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
                     Respond
@@ -266,9 +266,9 @@ export default function WaiterCallsPage() {
         })}
 
         {filteredCalls?.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            <Bell className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p>No {filter !== 'all' ? filter : ''} calls</p>
+          <div className="text-center py-8 sm:py-12 text-gray-500">
+            <Bell className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 text-gray-300" />
+            <p className="text-sm sm:text-base">No {filter !== 'all' ? filter : ''} calls</p>
           </div>
         )}
       </div>

@@ -299,42 +299,48 @@ export default function TablesPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Table Management</h1>
-        <div className="flex gap-2">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      {/* Header - Stack on mobile */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">Table Management</h1>
+        <div className="flex flex-wrap gap-2">
           {isAdmin && (
             <Button
               onClick={() => {
                 setEditingTable(null);
                 setIsTableModalOpen(true);
               }}
+              size="sm"
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              Add Table
+              <span className="hidden xs:inline">Add Table</span>
+              <span className="xs:hidden">Add</span>
             </Button>
           )}
           <Button
             variant="outline"
+            size="sm"
             onClick={() => setIsTakeoutModalOpen(true)}
             className="flex items-center gap-2 border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:border-orange-500"
           >
             <Package className="h-4 w-4" />
-            Takeout Order
+            <span className="hidden sm:inline">Takeout Order</span>
+            <span className="sm:hidden">Takeout</span>
           </Button>
           <Button
             variant="outline"
+            size="sm"
             onClick={() => refetchTables()}
             className="flex items-center gap-2"
           >
             <RefreshCw className="h-4 w-4" />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
         {tables?.map((table: any) => {
           const activeOrder = getActiveOrderForTable(table.id);
           const activeCalls = getActiveCallsForTable(table.id);
@@ -402,7 +408,7 @@ export default function TablesPage() {
               {/* Table Header */}
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-800">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
                     Table {table.table_number}
                   </h3>
                   <div className="flex items-center gap-2 mt-1">

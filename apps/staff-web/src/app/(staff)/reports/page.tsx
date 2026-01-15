@@ -448,25 +448,25 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Reports & Analytics</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            <Calendar className="h-4 w-4 inline mr-1" />
+          <h1 className="text-xl sm:text-2xl font-bold">Reports & Analytics</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1" />
             {getDateRangeLabel()}
           </p>
         </div>
 
         {/* Date Range Filter + Export Button */}
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 sm:pb-0 sm:flex-wrap">
             {(['today', 'week', 'month', 'year', 'custom'] as const).map((range) => (
               <button
                 key={range}
                 onClick={() => setDateRange(range)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-shrink-0 ${
                   dateRange === range
                     ? 'bg-blue-100 text-blue-800'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -478,26 +478,27 @@ export default function ReportsPage() {
           </div>
           <Button
             onClick={exportToPDF}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+            className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+            size="sm"
           >
             <Download className="h-4 w-4" />
-            Export PDF
+            <span className="text-xs sm:text-sm">Export PDF</span>
           </Button>
         </div>
       </div>
 
       {/* Custom Date Picker */}
       {dateRange === 'custom' && (
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="bg-white rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col gap-3 sm:gap-4">
             {/* Mode Selection */}
-            <div className="flex gap-2">
-              <span className="text-sm font-medium text-gray-700 self-center mr-2">View by:</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs sm:text-sm font-medium text-gray-700 mr-1 sm:mr-2">View by:</span>
               {(['day', 'month', 'year'] as const).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setCustomMode(mode)}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                     customMode === mode
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -509,22 +510,22 @@ export default function ReportsPage() {
             </div>
 
             {/* Date Navigation */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => navigateDate('prev')}
-                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                className="p-1.5 sm:p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors flex-shrink-0"
               >
-                <ChevronLeft className="h-5 w-5 text-gray-600" />
+                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
               </button>
 
-              <div className="min-w-[200px] text-center">
+              <div className="flex-1 min-w-0 text-center">
                 {customMode === 'day' && (
                   <input
                     type="date"
                     value={selectedDate.toISOString().split('T')[0]}
                     max={todayString}
                     onChange={(e) => setSelectedDate(new Date(e.target.value + 'T00:00:00'))}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full sm:w-auto px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                 )}
                 {customMode === 'month' && (
@@ -536,14 +537,14 @@ export default function ReportsPage() {
                       const [year, month] = e.target.value.split('-');
                       setSelectedDate(new Date(parseInt(year), parseInt(month) - 1, 1));
                     }}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full sm:w-auto px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                 )}
                 {customMode === 'year' && (
                   <select
                     value={selectedDate.getFullYear()}
                     onChange={(e) => setSelectedDate(new Date(parseInt(e.target.value), 0, 1))}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full sm:w-auto px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
                     {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map((year) => (
                       <option key={year} value={year}>{year}</option>
@@ -555,91 +556,91 @@ export default function ReportsPage() {
               <button
                 onClick={() => navigateDate('next')}
                 disabled={!canNavigateNext}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`p-1.5 sm:p-2 rounded-lg transition-colors flex-shrink-0 ${
                   canNavigateNext
                     ? 'bg-gray-100 hover:bg-gray-200'
                     : 'bg-gray-50 cursor-not-allowed'
                 }`}
               >
-                <ChevronRight className={`h-5 w-5 ${canNavigateNext ? 'text-gray-600' : 'text-gray-300'}`} />
+                <ChevronRight className={`h-4 w-4 sm:h-5 sm:w-5 ${canNavigateNext ? 'text-gray-600' : 'text-gray-300'}`} />
+              </button>
+
+              {/* Quick Jump to Today */}
+              <button
+                onClick={() => setSelectedDate(new Date())}
+                className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium flex-shrink-0"
+              >
+                Today
               </button>
             </div>
-
-            {/* Quick Jump to Today */}
-            <button
-              onClick={() => setSelectedDate(new Date())}
-              className="px-3 py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Jump to Today
-            </button>
           </div>
         </div>
       )}
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-600">Total Revenue</p>
-            <DollarSign className="h-5 w-5 text-green-600" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8">
+        <div className="bg-white rounded-lg shadow p-3 sm:p-6">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <p className="text-xs sm:text-sm text-gray-600">Total Revenue</p>
+            <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
           </div>
-          <p className="text-2xl font-bold">${metrics.totalRevenue.toFixed(2)}</p>
+          <p className="text-lg sm:text-2xl font-bold">${metrics.totalRevenue.toFixed(2)}</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-600">Total Orders</p>
-            <ShoppingBag className="h-5 w-5 text-blue-600" />
+        <div className="bg-white rounded-lg shadow p-3 sm:p-6">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <p className="text-xs sm:text-sm text-gray-600">Total Orders</p>
+            <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
           </div>
-          <p className="text-2xl font-bold">{metrics.totalOrders}</p>
+          <p className="text-lg sm:text-2xl font-bold">{metrics.totalOrders}</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-600">Average Order Value</p>
-            <TrendingUp className="h-5 w-5 text-purple-600" />
+        <div className="bg-white rounded-lg shadow p-3 sm:p-6">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <p className="text-xs sm:text-sm text-gray-600">Avg Order</p>
+            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
           </div>
-          <p className="text-2xl font-bold">${metrics.averageOrderValue.toFixed(2)}</p>
+          <p className="text-lg sm:text-2xl font-bold">${metrics.averageOrderValue.toFixed(2)}</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-600">Completion Rate</p>
-            <ChefHat className="h-5 w-5 text-orange-600" />
+        <div className="bg-white rounded-lg shadow p-3 sm:p-6">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <p className="text-xs sm:text-sm text-gray-600">Completion</p>
+            <ChefHat className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
           </div>
-          <p className="text-2xl font-bold">
-            {metrics.totalOrders > 0 
-              ? Math.round((metrics.completedOrders / metrics.totalOrders) * 100) 
+          <p className="text-lg sm:text-2xl font-bold">
+            {metrics.totalOrders > 0
+              ? Math.round((metrics.completedOrders / metrics.totalOrders) * 100)
               : 0}%
           </p>
         </div>
       </div>
 
       {/* Order Types */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Order Types</h2>
-          <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 mb-4 sm:mb-8">
+        <div className="bg-white rounded-lg shadow p-3 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Order Types</h2>
+          <div className="space-y-2 sm:space-y-3">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-600" />
-                <span>Dine In</span>
+                <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                <span className="text-sm sm:text-base">Dine In</span>
               </div>
-              <span className="font-medium">{metrics.dineInOrders}</span>
+              <span className="font-medium text-sm sm:text-base">{metrics.dineInOrders}</span>
             </div>
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-green-600" />
-                <span>Takeout</span>
+                <Package className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                <span className="text-sm sm:text-base">Takeout</span>
               </div>
-              <span className="font-medium">{metrics.takeoutOrders}</span>
+              <span className="font-medium text-sm sm:text-base">{metrics.takeoutOrders}</span>
             </div>
           </div>
           {metrics.totalOrders > 0 && (
-            <div className="mt-4 pt-4 border-t">
+            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
               <div className="flex gap-2">
                 <div className="flex-1 bg-blue-100 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-blue-600 h-2 rounded-full"
                     style={{ width: `${(metrics.dineInOrders / metrics.totalOrders) * 100}%` }}
                   />
@@ -654,94 +655,94 @@ export default function ReportsPage() {
         </div>
 
         {/* Sold Items */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Sold Items</h2>
-            <span className="text-sm text-gray-500">{metrics.soldItems.length} items</span>
+        <div className="bg-white rounded-lg shadow p-3 sm:p-6">
+          <div className="flex justify-between items-center mb-3 sm:mb-4">
+            <h2 className="text-base sm:text-lg font-semibold">Sold Items</h2>
+            <span className="text-xs sm:text-sm text-gray-500">{metrics.soldItems.length} items</span>
           </div>
-          <div className="space-y-3 max-h-80 overflow-y-auto">
+          <div className="space-y-2 sm:space-y-3 max-h-48 sm:max-h-80 overflow-y-auto">
             {metrics.soldItems.map((item, index) => (
               <div key={index} className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-500">#{index + 1}</span>
-                  <span className="truncate flex-1">{item.name}</span>
+                <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
+                  <span className="text-xs sm:text-sm font-medium text-gray-500">#{index + 1}</span>
+                  <span className="truncate text-xs sm:text-sm">{item.name}</span>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium">{item.count} sold</p>
+                <div className="text-right flex-shrink-0 ml-2">
+                  <p className="font-medium text-xs sm:text-sm">{item.count} sold</p>
                   <p className="text-xs text-gray-600">${item.revenue.toFixed(2)}</p>
                 </div>
               </div>
             ))}
             {metrics.soldItems.length === 0 && (
-              <p className="text-gray-500 text-center py-4">No items sold yet</p>
+              <p className="text-gray-500 text-center py-4 text-sm">No items sold yet</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Order Status Summary */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <h2 className="text-lg font-semibold mb-4">Order Status Summary</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="bg-white rounded-lg shadow p-3 sm:p-6 mb-4 sm:mb-8">
+        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Order Status Summary</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div className="text-center">
-            <p className="text-3xl font-bold text-green-600">{metrics.completedOrders}</p>
-            <p className="text-sm text-gray-600">Completed</p>
+            <p className="text-xl sm:text-3xl font-bold text-green-600">{metrics.completedOrders}</p>
+            <p className="text-xs sm:text-sm text-gray-600">Completed</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-red-600">{metrics.cancelledOrders}</p>
-            <p className="text-sm text-gray-600">Cancelled</p>
+            <p className="text-xl sm:text-3xl font-bold text-red-600">{metrics.cancelledOrders}</p>
+            <p className="text-xs sm:text-sm text-gray-600">Cancelled</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-blue-600">{metrics.totalItems}</p>
-            <p className="text-sm text-gray-600">Items Sold</p>
+            <p className="text-xl sm:text-3xl font-bold text-blue-600">{metrics.totalItems}</p>
+            <p className="text-xs sm:text-sm text-gray-600">Items Sold</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-purple-600">
+            <p className="text-xl sm:text-3xl font-bold text-purple-600">
               {metrics.totalOrders > 0
                 ? (metrics.totalItems / metrics.totalOrders).toFixed(1)
                 : '0'}
             </p>
-            <p className="text-sm text-gray-600">Items/Order</p>
+            <p className="text-xs sm:text-sm text-gray-600">Items/Order</p>
           </div>
         </div>
       </div>
 
       {/* Staff Performance */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <BarChart3 className="h-5 w-5 text-blue-600" />
-          <h2 className="text-lg font-semibold">Staff Performance</h2>
+      <div className="bg-white rounded-lg shadow p-3 sm:p-6">
+        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+          <h2 className="text-base sm:text-lg font-semibold">Staff Performance</h2>
         </div>
 
         {staffPerformance.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">
+          <p className="text-gray-500 text-center py-6 sm:py-8 text-sm">
             No staff performance data for this period
           </p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Top Performer Highlight */}
             {staffPerformance.length > 0 && (
-              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center gap-3">
-                  <Award className="h-8 w-8 text-yellow-600" />
-                  <div>
-                    <p className="text-sm text-yellow-700">Top Performer</p>
-                    <p className="text-lg font-bold text-yellow-900">
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <Award className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm text-yellow-700">Top Performer</p>
+                    <p className="text-sm sm:text-lg font-bold text-yellow-900 truncate">
                       {staffPerformance[0].name}
                     </p>
-                    <p className="text-sm text-yellow-700">
-                      ${staffPerformance[0].revenue.toFixed(2)} revenue from {staffPerformance[0].ordersHandled} orders
+                    <p className="text-xs sm:text-sm text-yellow-700">
+                      ${staffPerformance[0].revenue.toFixed(2)} from {staffPerformance[0].ordersHandled} orders
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Staff Leaderboard */}
-            <div className="overflow-x-auto">
+            {/* Staff Leaderboard - Desktop Table */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b text-left text-sm text-gray-600">
+                  <tr className="border-b text-left text-xs sm:text-sm text-gray-600">
                     <th className="pb-3 font-medium">Rank</th>
                     <th className="pb-3 font-medium">Staff Member</th>
                     <th className="pb-3 font-medium">Role</th>
@@ -756,7 +757,7 @@ export default function ReportsPage() {
                   {staffPerformance.map((member, index) => (
                     <tr key={member.id} className="border-b last:border-0">
                       <td className="py-3">
-                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                        <span className={`inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full text-xs font-bold ${
                           index === 0 ? 'bg-yellow-100 text-yellow-800' :
                           index === 1 ? 'bg-gray-200 text-gray-700' :
                           index === 2 ? 'bg-orange-100 text-orange-800' :
@@ -767,12 +768,12 @@ export default function ReportsPage() {
                       </td>
                       <td className="py-3">
                         <div className="flex items-center gap-2">
-                          <UserCheck className="h-4 w-4 text-green-600" />
-                          <span className="font-medium">{member.name}</span>
+                          <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                          <span className="font-medium text-xs sm:text-sm">{member.name}</span>
                         </div>
                       </td>
                       <td className="py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        <span className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
                           member.role === 'admin' ? 'bg-purple-100 text-purple-800' :
                           member.role === 'waiter' ? 'bg-blue-100 text-blue-800' :
                           member.role === 'kitchen' ? 'bg-orange-100 text-orange-800' :
@@ -781,17 +782,17 @@ export default function ReportsPage() {
                           {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
                         </span>
                       </td>
-                      <td className="py-3 text-right">{member.ordersHandled}</td>
-                      <td className="py-3 text-right">{member.itemsSold}</td>
-                      <td className="py-3 text-right font-medium text-green-600">
+                      <td className="py-3 text-right text-xs sm:text-sm">{member.ordersHandled}</td>
+                      <td className="py-3 text-right text-xs sm:text-sm">{member.itemsSold}</td>
+                      <td className="py-3 text-right font-medium text-green-600 text-xs sm:text-sm">
                         ${member.revenue.toFixed(2)}
                       </td>
-                      <td className="py-3 text-right">
+                      <td className="py-3 text-right text-xs sm:text-sm">
                         ${member.ordersHandled > 0
                           ? (member.revenue / member.ordersHandled).toFixed(2)
                           : '0.00'}
                       </td>
-                      <td className="py-3 text-right">
+                      <td className="py-3 text-right text-xs sm:text-sm">
                         <span className={`font-medium ${
                           member.ordersHandled > 0 &&
                           (member.completedOrders / member.ordersHandled) >= 0.9
@@ -809,35 +810,87 @@ export default function ReportsPage() {
               </table>
             </div>
 
+            {/* Staff Leaderboard - Mobile Cards */}
+            <div className="sm:hidden space-y-2">
+              {staffPerformance.map((member, index) => (
+                <div key={member.id} className="border rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${
+                        index === 0 ? 'bg-yellow-100 text-yellow-800' :
+                        index === 1 ? 'bg-gray-200 text-gray-700' :
+                        index === 2 ? 'bg-orange-100 text-orange-800' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {index + 1}
+                      </span>
+                      <span className="font-medium text-sm truncate">{member.name}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      member.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                      member.role === 'waiter' ? 'bg-blue-100 text-blue-800' :
+                      member.role === 'kitchen' ? 'bg-orange-100 text-orange-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {member.role}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                    <div>
+                      <p className="font-bold text-blue-600">{member.ordersHandled}</p>
+                      <p className="text-gray-500">Orders</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-purple-600">{member.itemsSold}</p>
+                      <p className="text-gray-500">Items</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-green-600">${member.revenue.toFixed(0)}</p>
+                      <p className="text-gray-500">Revenue</p>
+                    </div>
+                    <div>
+                      <p className={`font-bold ${
+                        member.ordersHandled > 0 && (member.completedOrders / member.ordersHandled) >= 0.9
+                          ? 'text-green-600' : 'text-gray-600'
+                      }`}>
+                        {member.ordersHandled > 0 ? Math.round((member.completedOrders / member.ordersHandled) * 100) : 0}%
+                      </p>
+                      <p className="text-gray-500">Done</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* Summary Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t mt-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t mt-3 sm:mt-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{staffPerformance.length}</p>
+                <p className="text-lg sm:text-2xl font-bold text-blue-600">{staffPerformance.length}</p>
                 <p className="text-xs text-gray-600">Active Staff</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-lg sm:text-2xl font-bold text-green-600">
                   ${staffPerformance.length > 0
-                    ? (staffPerformance.reduce((sum, s) => sum + s.revenue, 0) / staffPerformance.length).toFixed(2)
-                    : '0.00'}
+                    ? (staffPerformance.reduce((sum, s) => sum + s.revenue, 0) / staffPerformance.length).toFixed(0)
+                    : '0'}
                 </p>
-                <p className="text-xs text-gray-600">Avg Revenue/Staff</p>
+                <p className="text-xs text-gray-600">Avg Revenue</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600">
+                <p className="text-lg sm:text-2xl font-bold text-purple-600">
                   {staffPerformance.length > 0
                     ? (staffPerformance.reduce((sum, s) => sum + s.ordersHandled, 0) / staffPerformance.length).toFixed(1)
                     : '0'}
                 </p>
-                <p className="text-xs text-gray-600">Avg Orders/Staff</p>
+                <p className="text-xs text-gray-600">Avg Orders</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-orange-600">
+                <p className="text-lg sm:text-2xl font-bold text-orange-600">
                   {staffPerformance.length > 0
                     ? (staffPerformance.reduce((sum, s) => sum + s.itemsSold, 0) / staffPerformance.length).toFixed(1)
                     : '0'}
                 </p>
-                <p className="text-xs text-gray-600">Avg Items/Staff</p>
+                <p className="text-xs text-gray-600">Avg Items</p>
               </div>
             </div>
           </div>

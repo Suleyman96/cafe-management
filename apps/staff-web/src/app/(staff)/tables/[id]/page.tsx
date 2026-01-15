@@ -341,17 +341,17 @@ export default function TableDetailPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.push('/tables')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" size="sm" onClick={() => router.push('/tables')}>
+            <ArrowLeft className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Back</span>
           </Button>
-          <h1 className="text-2xl font-bold">Table {table.table_number}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Table {table.table_number}</h1>
           {activeOrder && (
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(activeOrder.status)}`}>
+            <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(activeOrder.status)}`}>
               {activeOrder.status.toUpperCase()}
             </span>
           )}
@@ -360,10 +360,10 @@ export default function TableDetailPage() {
 
       {/* Active order info */}
       {activeOrder && (
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <div className="flex justify-between items-start">
+        <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3">
             <div className="space-y-2">
-              <div className="flex items-center gap-4 text-sm text-gray-600">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600">
                 <span className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
                   {formatDuration(activeOrder.created_at)}
@@ -389,23 +389,23 @@ export default function TableDetailPage() {
                 </div>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {activeOrder.status === 'new' && (
                 <Button size="sm" onClick={() => handleStatusUpdate('PREPARING')}>
                   <ChefHat className="h-4 w-4 mr-1" />
-                  Start Preparing
+                  <span className="hidden xs:inline">Start </span>Preparing
                 </Button>
               )}
               {activeOrder.status === 'preparing' && (
                 <Button size="sm" onClick={() => handleStatusUpdate('READY')}>
                   <CheckCircle className="h-4 w-4 mr-1" />
-                  Mark Ready
+                  <span className="hidden xs:inline">Mark </span>Ready
                 </Button>
               )}
               {activeOrder.status === 'ready' && (
                 <Button size="sm" onClick={() => handleStatusUpdate('SERVED')}>
                   <CheckCircle className="h-4 w-4 mr-1" />
-                  Mark Served
+                  <span className="hidden xs:inline">Mark </span>Served
                 </Button>
               )}
               {activeOrder.status === 'served' && (
@@ -422,7 +422,7 @@ export default function TableDetailPage() {
                   onClick={() => setShowCancelModal(true)}
                 >
                   <XCircle className="h-4 w-4 mr-1" />
-                  Cancel Order
+                  Cancel
                 </Button>
               )}
             </div>
@@ -487,11 +487,12 @@ export default function TableDetailPage() {
       {/* Menu and Cart - always show */}
       <>
         {/* Category Filter */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
           <Button
             variant={selectedCategory === null ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedCategory(null)}
+            className="flex-shrink-0"
           >
             All
           </Button>
@@ -501,40 +502,41 @@ export default function TableDetailPage() {
               variant={selectedCategory === category.id ? 'default' : 'outline'}
               size="sm"
               onClick={() => setSelectedCategory(category.id)}
+              className="flex-shrink-0"
             >
               {category.name_en}
             </Button>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Menu Items Grid */}
-          <div className="lg:col-span-2">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 order-2 lg:order-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
               {filteredItems?.map((item: MenuItem) => {
                 const quantity = getCartQuantity(item.id);
                 return (
                   <div
                     key={item.id}
-                    className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                    className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all ${
                       quantity > 0 ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'
                     }`}
                     onClick={() => addToCart(item)}
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-medium text-sm">{item.name_en}</h3>
+                    <div className="flex justify-between items-start mb-1 sm:mb-2">
+                      <h3 className="font-medium text-xs sm:text-sm line-clamp-2">{item.name_en}</h3>
                       {quantity > 0 && (
-                        <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                        <span className="bg-blue-500 text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ml-1 flex-shrink-0">
                           {quantity}
                         </span>
                       )}
                     </div>
                     {item.description_en && (
-                      <p className="text-xs text-gray-500 mb-2 line-clamp-2">
+                      <p className="text-xs text-gray-500 mb-1 sm:mb-2 line-clamp-2 hidden sm:block">
                         {item.description_en}
                       </p>
                     )}
-                    <p className="font-semibold text-blue-600">${item.price.toFixed(2)}</p>
+                    <p className="font-semibold text-blue-600 text-sm sm:text-base">${item.price.toFixed(2)}</p>
                   </div>
                 );
               })}
@@ -542,8 +544,8 @@ export default function TableDetailPage() {
           </div>
 
           {/* Cart Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="border rounded-lg p-4 sticky top-4">
+          <div className="lg:col-span-1 order-1 lg:order-2">
+            <div className="border rounded-lg p-3 sm:p-4 lg:sticky lg:top-4 bg-white">
               <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
                 {activeOrder ? 'Add Items' : 'New Order'} ({cart.reduce((sum, item) => sum + item.quantity, 0)})

@@ -148,26 +148,27 @@ export default function AddItemsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" size="sm" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Back</span>
           </Button>
-          <h1 className="text-2xl font-bold">
-            Add Items - Table {(order as any).table?.table_number || 'Takeout'}
+          <h1 className="text-lg sm:text-2xl font-bold">
+            Add Items - {(order as any).table?.table_number ? `Table ${(order as any).table.table_number}` : 'Takeout'}
           </h1>
         </div>
       </div>
 
       {/* Category Filter */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      <div className="flex gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
         <Button
           variant={selectedCategory === null ? 'default' : 'outline'}
           size="sm"
           onClick={() => setSelectedCategory(null)}
+          className="flex-shrink-0"
         >
           All
         </Button>
@@ -177,40 +178,41 @@ export default function AddItemsPage() {
             variant={selectedCategory === category.id ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedCategory(category.id)}
+            className="flex-shrink-0"
           >
             {category.name_en}
           </Button>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Menu Items Grid */}
-        <div className="lg:col-span-2">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 order-2 lg:order-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
             {filteredItems?.map((item: MenuItem) => {
               const quantity = getCartQuantity(item.id);
               return (
                 <div
                   key={item.id}
-                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                  className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all ${
                     quantity > 0 ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'
                   }`}
                   onClick={() => addToCart(item)}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium text-sm">{item.name_en}</h3>
+                  <div className="flex justify-between items-start mb-1 sm:mb-2">
+                    <h3 className="font-medium text-xs sm:text-sm line-clamp-2">{item.name_en}</h3>
                     {quantity > 0 && (
-                      <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                      <span className="bg-blue-500 text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ml-1 flex-shrink-0">
                         {quantity}
                       </span>
                     )}
                   </div>
                   {item.description_en && (
-                    <p className="text-xs text-gray-500 mb-2 line-clamp-2">
+                    <p className="text-xs text-gray-500 mb-1 sm:mb-2 line-clamp-2 hidden sm:block">
                       {item.description_en}
                     </p>
                   )}
-                  <p className="font-semibold text-blue-600">${item.price.toFixed(2)}</p>
+                  <p className="font-semibold text-blue-600 text-sm sm:text-base">${item.price.toFixed(2)}</p>
                 </div>
               );
             })}
@@ -218,54 +220,54 @@ export default function AddItemsPage() {
         </div>
 
         {/* Cart Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="border rounded-lg p-4 sticky top-4">
-            <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
+        <div className="lg:col-span-1 order-1 lg:order-2">
+          <div className="border rounded-lg p-3 sm:p-4 lg:sticky lg:top-4 bg-white">
+            <h2 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4 flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
               Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)
             </h2>
 
             {cart.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">
+              <p className="text-gray-500 text-center py-4 sm:py-8 text-sm">
                 Click on menu items to add them to the order
               </p>
             ) : (
               <>
-                <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
+                <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4 max-h-48 sm:max-h-96 overflow-y-auto">
                   {cart.map((item) => (
                     <div
                       key={item.menuItem.id}
-                      className="flex items-center justify-between border-b pb-3"
+                      className="flex items-center justify-between border-b pb-2 sm:pb-3"
                     >
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{item.menuItem.name_en}</p>
-                        <p className="text-sm text-gray-600">
+                      <div className="flex-1 min-w-0 mr-2">
+                        <p className="font-medium text-xs sm:text-sm truncate">{item.menuItem.name_en}</p>
+                        <p className="text-xs sm:text-sm text-gray-600">
                           ${item.menuItem.price.toFixed(2)} x {item.quantity}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 w-8 p-0"
+                          className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             removeFromCart(item.menuItem.id);
                           }}
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
-                        <span className="w-8 text-center">{item.quantity}</span>
+                        <span className="w-6 sm:w-8 text-center text-sm">{item.quantity}</span>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 w-8 p-0"
+                          className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             addToCart(item.menuItem);
                           }}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                       </div>
                     </div>
@@ -273,23 +275,23 @@ export default function AddItemsPage() {
                 </div>
 
                 {/* Customer Notes */}
-                <div className="mb-4">
+                <div className="mb-3 sm:mb-4">
                   <textarea
                     value={customerNotes}
                     onChange={(e) => setCustomerNotes(e.target.value)}
                     placeholder="Notes from customer..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
+                    className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-xs sm:text-sm"
                     rows={2}
                   />
                 </div>
 
-                <div className="border-t pt-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="font-semibold">Total</span>
-                    <span className="font-semibold text-lg">${cartTotal.toFixed(2)}</span>
+                <div className="border-t pt-3 sm:pt-4">
+                  <div className="flex justify-between items-center mb-3 sm:mb-4">
+                    <span className="font-semibold text-sm sm:text-base">Total</span>
+                    <span className="font-semibold text-base sm:text-lg">${cartTotal.toFixed(2)}</span>
                   </div>
                   <Button
-                    className="w-full"
+                    className="w-full text-sm sm:text-base"
                     onClick={handleSubmit}
                     disabled={submitting || cart.length === 0}
                   >

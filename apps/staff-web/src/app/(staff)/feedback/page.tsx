@@ -95,30 +95,30 @@ export default function FeedbackPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Customer Feedback</h1>
-          <p className="text-gray-600">
+        <div className="mb-4 sm:mb-8">
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Customer Feedback</h1>
+          <p className="text-sm sm:text-base text-gray-600">
             Manage complaints, questions, and requests from customers
           </p>
         </div>
 
         {/* Status Tabs */}
-        <div className="bg-white rounded-lg shadow-sm border mb-6">
-          <div className="flex overflow-x-auto">
+        <div className="bg-white rounded-lg shadow-sm border mb-4 sm:mb-6">
+          <div className="flex overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
             {[
               { value: 'all', label: 'All' },
               { value: 'pending', label: 'Pending', count: pendingCount },
-              { value: 'acknowledged', label: 'Acknowledged' },
+              { value: 'acknowledged', label: 'Ack.' },
               { value: 'resolved', label: 'Resolved' },
               { value: 'dismissed', label: 'Dismissed' },
             ].map((tab) => (
               <button
                 key={tab.value}
                 onClick={() => setSelectedStatus(tab.value as FeedbackStatus | 'all')}
-                className={`flex-shrink-0 px-6 py-4 font-medium border-b-2 transition-colors ${
+                className={`flex-shrink-0 px-3 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-medium border-b-2 transition-colors ${
                   selectedStatus === tab.value
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-600 hover:text-gray-900'
@@ -126,7 +126,7 @@ export default function FeedbackPage() {
               >
                 {tab.label}
                 {tab.count !== undefined && tab.count > 0 && (
-                  <span className="ml-2 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
+                  <span className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
                     {tab.count}
                   </span>
                 )}
@@ -137,78 +137,78 @@ export default function FeedbackPage() {
 
         {/* Feedback List */}
         {isLoading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Loading feedback...</p>
+          <div className="text-center py-8 sm:py-12">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-3 sm:mt-4 text-sm sm:text-base text-gray-600">Loading feedback...</p>
           </div>
         ) : !feedback || feedback.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border p-12 text-center">
-            <div className="text-6xl mb-4">📝</div>
-            <p className="text-gray-600">No feedback to display</p>
+          <div className="bg-white rounded-lg shadow-sm border p-8 sm:p-12 text-center">
+            <div className="text-4xl sm:text-6xl mb-3 sm:mb-4">📝</div>
+            <p className="text-sm sm:text-base text-gray-600">No feedback to display</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {feedback.map((item: CustomerFeedbackWithTable) => {
               const typeInfo = getFeedbackTypeInfo(item.feedback_type);
               const isResponding = respondingTo === item.id;
 
               return (
-                <div key={item.id} className="bg-white rounded-lg shadow-sm border p-6">
+                <div key={item.id} className="bg-white rounded-lg shadow-sm border p-3 sm:p-6">
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-start gap-4 flex-1">
+                  <div className="flex items-start justify-between mb-3 sm:mb-4">
+                    <div className="flex items-start gap-2 sm:gap-4 flex-1">
                       {/* Type Icon */}
-                      <div className="text-3xl">{typeInfo.icon}</div>
-                      
+                      <div className="text-2xl sm:text-3xl flex-shrink-0">{typeInfo.icon}</div>
+
                       {/* Content */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-lg">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                          <h3 className="font-semibold text-sm sm:text-lg">
                             {item.subject || typeInfo.label}
                           </h3>
-                          <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${getStatusColor(item.status)}`}>
+                          <span className={`px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-medium rounded-full capitalize ${getStatusColor(item.status)}`}>
                             {item.status}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
                           {item.table && (
                             <span>🪑 Table {item.table.table_number}</span>
                           )}
                           <span>📅 {formatDateTime(item.created_at)}</span>
                         </div>
 
-                        <p className="text-gray-700 whitespace-pre-wrap">{item.message}</p>
+                        <p className="text-xs sm:text-base text-gray-700 whitespace-pre-wrap">{item.message}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Response Section */}
                   {item.response && (
-                    <div className="ml-14 bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium text-blue-900">
+                    <div className="ml-0 sm:ml-14 bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                        <span className="text-xs sm:text-sm font-medium text-blue-900">
                           Staff Response:
                         </span>
                         {item.responded_by_staff && (
-                          <span className="text-sm text-blue-700">
+                          <span className="text-xs sm:text-sm text-blue-700">
                             by {item.responded_by_staff.full_name}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-700">{item.response}</p>
+                      <p className="text-xs sm:text-sm text-gray-700">{item.response}</p>
                     </div>
                   )}
 
                   {/* Response Input */}
                   {isResponding && (
-                    <div className="ml-14 mb-4">
+                    <div className="ml-0 sm:ml-14 mb-3 sm:mb-4">
                       <textarea
                         value={responseText}
                         onChange={(e) => setResponseText(e.target.value)}
                         placeholder="Write your response to the customer..."
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                        rows={4}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                        rows={3}
                         maxLength={500}
                         autoFocus
                       />
@@ -219,7 +219,7 @@ export default function FeedbackPage() {
                   )}
 
                   {/* Actions */}
-                  <div className="ml-14 flex gap-2">
+                  <div className="ml-0 sm:ml-14 flex flex-wrap gap-2">
                     {item.status === 'pending' && !isResponding && (
                       <>
                         <Button
@@ -227,19 +227,21 @@ export default function FeedbackPage() {
                           variant="outline"
                           onClick={() => handleAcknowledge(item.id)}
                           disabled={acknowledgeFeedback.isPending}
+                          className="text-xs sm:text-sm"
                         >
-                          👁️ Acknowledge
+                          👁️ <span className="hidden sm:inline">Acknowledge</span><span className="sm:hidden">Ack</span>
                         </Button>
                         <Button
                           size="sm"
                           onClick={() => setRespondingTo(item.id)}
+                          className="text-xs sm:text-sm"
                         >
                           💬 Respond
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-red-600 hover:bg-red-50"
+                          className="text-red-600 hover:bg-red-50 text-xs sm:text-sm"
                           onClick={() => handleDismiss(item.id)}
                           disabled={dismissFeedback.isPending}
                         >
@@ -253,13 +255,14 @@ export default function FeedbackPage() {
                         <Button
                           size="sm"
                           onClick={() => setRespondingTo(item.id)}
+                          className="text-xs sm:text-sm"
                         >
-                          💬 Respond & Resolve
+                          💬 <span className="hidden sm:inline">Respond & Resolve</span><span className="sm:hidden">Respond</span>
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-red-600 hover:bg-red-50"
+                          className="text-red-600 hover:bg-red-50 text-xs sm:text-sm"
                           onClick={() => handleDismiss(item.id)}
                           disabled={dismissFeedback.isPending}
                         >
@@ -274,6 +277,7 @@ export default function FeedbackPage() {
                           size="sm"
                           onClick={() => handleRespond(item.id)}
                           disabled={!responseText.trim() || respondToFeedback.isPending}
+                          className="text-xs sm:text-sm"
                         >
                           {respondToFeedback.isPending ? 'Sending...' : 'Send Response'}
                         </Button>
@@ -285,6 +289,7 @@ export default function FeedbackPage() {
                             setResponseText('');
                           }}
                           disabled={respondToFeedback.isPending}
+                          className="text-xs sm:text-sm"
                         >
                           Cancel
                         </Button>

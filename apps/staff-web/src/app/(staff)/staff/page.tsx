@@ -339,8 +339,8 @@ export default function StaffPage() {
   // Only admins can access this page
   if (currentUser?.role !== 'admin') {
     return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+      <div className="p-3 sm:p-6">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm">
           Access denied. Only administrators can manage staff.
         </div>
       </div>
@@ -387,17 +387,17 @@ export default function StaffPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Staff Management</h1>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
+    <div className="p-3 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">Staff Management</h1>
+        <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="text-xs sm:text-sm w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           Add Staff
         </Button>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
@@ -405,13 +405,13 @@ export default function StaffPage() {
             placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           />
         </div>
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         >
           <option value="all">All Roles</option>
           <option value="admin">Admin</option>
@@ -420,24 +420,24 @@ export default function StaffPage() {
         </select>
       </div>
 
-      {/* Staff List */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Staff List - Desktop Table */}
+      <div className="hidden sm:block bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Staff Member
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Role
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Phone
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -445,49 +445,49 @@ export default function StaffPage() {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredStaff?.map((staff: any) => (
               <tr key={staff.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                       {getRoleIcon(staff.role)}
                     </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
+                    <div className="ml-2 sm:ml-4 min-w-0">
+                      <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                         {staff.full_name}
                         {staff.id === currentUser?.id && (
-                          <span className="ml-2 text-xs text-gray-500">(You)</span>
+                          <span className="ml-1 sm:ml-2 text-xs text-gray-500">(You)</span>
                         )}
                       </div>
-                      <div className="text-sm text-gray-500">{staff.email}</div>
+                      <div className="text-xs sm:text-sm text-gray-500 truncate">{staff.email}</div>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                   <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getRoleBadgeColor(
+                    className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getRoleBadgeColor(
                       staff.role
                     )}`}
                   >
                     {getRoleIcon(staff.role)}
-                    {staff.role}
+                    <span className="hidden lg:inline">{staff.role}</span>
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                   {staff.is_active ? (
-                    <span className="inline-flex items-center gap-1 text-green-600 text-sm">
-                      <UserCheck className="h-4 w-4" />
-                      Active
+                    <span className="inline-flex items-center gap-1 text-green-600 text-xs sm:text-sm">
+                      <UserCheck className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden lg:inline">Active</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-gray-400 text-sm">
-                      <UserX className="h-4 w-4" />
-                      Inactive
+                    <span className="inline-flex items-center gap-1 text-gray-400 text-xs sm:text-sm">
+                      <UserX className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden lg:inline">Inactive</span>
                     </span>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="hidden md:table-cell px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                   {staff.phone || '-'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right text-sm font-medium">
                   <Button
                     variant="outline"
                     size="sm"
@@ -495,22 +495,80 @@ export default function StaffPage() {
                       setSelectedStaff(staff);
                       setIsEditModalOpen(true);
                     }}
+                    className="text-xs"
                   >
-                    <Edit2 className="h-4 w-4 mr-1" />
-                    Edit
+                    <Edit2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Edit</span>
                   </Button>
                 </td>
               </tr>
             ))}
             {filteredStaff?.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
                   No staff members found
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Staff List - Mobile Cards */}
+      <div className="sm:hidden space-y-3">
+        {filteredStaff?.map((staff: any) => (
+          <div key={staff.id} className="bg-white rounded-lg shadow p-3 border">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  {getRoleIcon(staff.role)}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">
+                    {staff.full_name}
+                    {staff.id === currentUser?.id && (
+                      <span className="ml-1 text-xs text-gray-500">(You)</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">{staff.email}</p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedStaff(staff);
+                  setIsEditModalOpen(true);
+                }}
+                className="text-xs ml-2"
+              >
+                <Edit2 className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="flex items-center gap-3 mt-2 pt-2 border-t">
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getRoleBadgeColor(staff.role)}`}>
+                {getRoleIcon(staff.role)}
+                {staff.role}
+              </span>
+              {staff.is_active ? (
+                <span className="inline-flex items-center gap-1 text-green-600 text-xs">
+                  <UserCheck className="h-3 w-3" />
+                  Active
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-gray-400 text-xs">
+                  <UserX className="h-3 w-3" />
+                  Inactive
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+        {filteredStaff?.length === 0 && (
+          <div className="bg-white rounded-lg shadow p-6 text-center text-sm text-gray-500">
+            No staff members found
+          </div>
+        )}
       </div>
 
       {/* Modals */}
