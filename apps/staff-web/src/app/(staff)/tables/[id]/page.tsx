@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useTable, useOrders, useMenuItems, useCategories, useCreateOrder, useAddOrderItems, useUpdateOrderStatus, useUpdateOrderItemStatus, useCancelOrder } from '@/hooks';
+import { useTable, useUpdateTable, useOrders, useMenuItems, useCategories, useCreateOrder, useAddOrderItems, useUpdateOrderStatus, useUpdateOrderItemStatus, useCancelOrder } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { supabase } from '@/lib/supabase/client';
@@ -25,6 +25,9 @@ import {
   UtensilsCrossed,
   XCircle,
   X,
+  StickyNote,
+  Edit2,
+  Save,
 } from 'lucide-react';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
@@ -43,7 +46,7 @@ export default function TableDetailPage() {
   const tableId = params.id as string;
   const { staff: currentStaff } = useAuth();
 
-  const { data: table, isLoading: tableLoading } = useTable(tableId);
+  const { data: table, isLoading: tableLoading, refetch: refetchTable } = useTable(tableId);
   const { data: orders, refetch: refetchOrders } = useOrders();
   const { data: menuItems, isLoading: menuLoading } = useMenuItems({ isAvailable: true });
   const { data: categories } = useCategories();
@@ -53,6 +56,7 @@ export default function TableDetailPage() {
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const cancelOrder = useCancelOrder();
+  const updateTable = useUpdateTable();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -61,6 +65,18 @@ export default function TableDetailPage() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+
+  // Table notes state
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [tableNotes, setTableNotes] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  // Sync table notes when table data loads
+  useEffect(() => {
+    if (table?.notes !== undefined) {
+      setTableNotes(table.notes || '');
+    }
+  }, [table?.notes]);
 
   // Track if we've already attempted to create an order for this table
   const orderCreationAttemptedRef = useRef(false);
@@ -320,6 +336,25 @@ export default function TableDetailPage() {
     }
   };
 
+  // Handle table notes save
+  const handleSaveTableNotes = async () => {
+    setSavingNotes(true);
+    try {
+      await updateTable.mutateAsync({
+        id: tableId,
+        updates: { notes: tableNotes.trim() || null },
+      });
+      toast.success('Table notes saved');
+      setIsEditingNotes(false);
+      refetchTable();
+    } catch (error) {
+      console.error('Failed to save table notes:', error);
+      toast.error('Failed to save notes');
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
   if (tableLoading || menuLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -352,6 +387,67 @@ export default function TableDetailPage() {
             </span>
           )}
         </div>
+      </div>
+
+      {/* Table Notes Section */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-medium text-amber-800 flex items-center gap-2">
+            <StickyNote className="h-4 w-4" />
+            Table Notes
+          </h3>
+          {!isEditingNotes ? (
+            <button
+              onClick={() => setIsEditingNotes(true)}
+              className="text-amber-600 hover:text-amber-800 p-1 rounded hover:bg-amber-100 transition-colors"
+              title="Edit notes"
+            >
+              <Edit2 className="h-4 w-4" />
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setTableNotes(table?.notes || '');
+                  setIsEditingNotes(false);
+                }}
+                className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-amber-100 transition-colors"
+                title="Cancel"
+                disabled={savingNotes}
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <button
+                onClick={handleSaveTableNotes}
+                className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-100 transition-colors"
+                title="Save notes"
+                disabled={savingNotes}
+              >
+                {savingNotes ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+        {isEditingNotes ? (
+          <textarea
+            value={tableNotes}
+            onChange={(e) => setTableNotes(e.target.value)}
+            placeholder="Add notes about this table (e.g., VIP customer, birthday celebration, accessibility needs...)"
+            className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none bg-white text-sm"
+            rows={3}
+            autoFocus
+          />
+        ) : (
+          <p className="text-sm text-amber-700">
+            {table?.notes || (
+              <span className="italic text-amber-500">No notes for this table. Click edit to add notes.</span>
+            )}
+          </p>
+        )}
       </div>
 
       {/* No active order - show create order button */}

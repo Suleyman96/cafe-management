@@ -143,5 +143,19 @@ export function useCancelOrder() {
   });
 }
 
+export function useUpdateOrderNotes() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ orderId, notes }: { orderId: string; notes: { customer_notes?: string | null; internal_notes?: string | null } }) =>
+      db.orders.updateNotes(orderId, notes),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.orderId] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+    },
+  });
+}
+
 // Note: Payment-related hooks are in use-payments-safe.ts
 // Note: Transfer-related hooks are in use-table-transfers-safe.ts

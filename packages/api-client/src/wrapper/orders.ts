@@ -149,6 +149,19 @@ export function createOrdersWrapper(ctx: WrapperContext) {
 
       return data as OrderRow;
     },
+
+    updateNotes: async (orderId: string, notes: { customer_notes?: string | null; internal_notes?: string | null }) => {
+      const { data, error } = await ctx.anyClient
+        .from('orders')
+        .update(notes)
+        .eq('id', orderId)
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isOrder(data)) throw new Error('Invalid order data');
+      return data as OrderRow;
+    },
   };
 }
 

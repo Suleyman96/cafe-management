@@ -8,3 +8,4 @@ export * from './use-table-transfers-safe';
 export * from './use-menu-safe';
 export * from './use-feedback-safe';
 export * from './use-staff-safe';
+export * from './use-staff-notes-safe';

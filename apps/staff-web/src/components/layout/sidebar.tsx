@@ -18,6 +18,7 @@ import {
   ChevronUp,
   LogOut,
   Settings,
+  StickyNote,
 } from 'lucide-react';
 
 type NavItem = {
@@ -33,6 +34,7 @@ const navItems: NavItem[] = [
   { href: '/kitchen', label: 'Kitchen', icon: <ChefHat className="h-5 w-5" /> },
   { href: '/calls', label: 'Waiter Calls', icon: <Bell className="h-5 w-5" /> },
   { href: '/feedback', label: 'Feedback', icon: <MessageSquare className="h-5 w-5" /> },
+  { href: '/notes', label: 'Staff Notes', icon: <StickyNote className="h-5 w-5" /> },
   { href: '/menu', label: 'Menu', icon: <Menu className="h-5 w-5" />, adminOnly: true },
   { href: '/staff', label: 'Staff', icon: <Users className="h-5 w-5" />, adminOnly: true },
   { href: '/reports', label: 'Reports', icon: <BarChart3 className="h-5 w-5" />, adminOnly: true },
