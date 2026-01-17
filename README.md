@@ -143,12 +143,16 @@ This project uses TypeScript strict mode with:
 
 MIT
 
-## local credentials
+## Supabase admin user create sql
 
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-NEXT_PUBLIC_APP_NAME="Café İdarə - Staff"
-SUPABASE_SERVICE_ROLE_KEY=sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz
+INSERT INTO staff (email, full_name, role, is_active, auth_user_id)
+VALUES (
+  'admin@example.com',
+  'Admin User', 
+  'admin',
+  true,
+  'YOUR_AUTH_USER_UUID_HERE'
+);
 
 ## 🤝 Contributing
 
