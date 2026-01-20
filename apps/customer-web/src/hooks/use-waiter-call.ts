@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import type { WaiterCall } from "@/types";
 
+type CallType = "assistance" | "bill" | "question" | "complaint" | "emergency";
+type CallPriority = "low" | "normal" | "high" | "urgent";
+
 export function useWaiterCalls(tableId: string) {
   return useQuery({
     queryKey: ["waiter_calls", tableId],
@@ -19,23 +22,28 @@ export function useWaiterCalls(tableId: string) {
   });
 }
 
-export function useCallWaiter() {
+interface CreateWaiterCallData {
+  tableId: string;
+  callType: CallType;
+  reason: string;
+  priority: CallPriority;
+  notes?: string;
+}
+
+export function useCreateWaiterCall() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tableId,
-      reason,
-    }: {
-      tableId: string;
-      reason: string;
-    }) => {
+    mutationFn: async ({ tableId, callType, reason, priority, notes }: CreateWaiterCallData) => {
+      // Use type assertion to work around Supabase client type inference issue
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("waiter_calls")
         .insert({
           table_id: tableId,
-          reason,
+          call_type: callType,
+          reason: notes || reason,
+          priority: priority,
           status: "pending",
         })
         .select()
@@ -52,4 +60,5 @@ export function useCallWaiter() {
   });
 }
 
-
+// Keep for backwards compatibility
+export const useCallWaiter = useCreateWaiterCall;

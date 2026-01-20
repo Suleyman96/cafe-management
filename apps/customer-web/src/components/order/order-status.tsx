@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTable } from "@/hooks/use-table";
 import { useOrder } from "@/hooks/use-order";
 import { useLanguageStore } from "@/store/language-store";
-import { getLocalizedField } from "@/types";
 import { formatPrice, getStatusColor, timeAgo } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,15 +14,22 @@ import { ArrowLeft, Bell, Plus, CheckCircle2, Clock, MessageSquare } from "lucid
 import { useState } from "react";
 
 interface OrderStatusProps {
-  tableId: string;
+  tableId: string; // This is the table_number from URL (e.g., "T01")
 }
 
 export function OrderStatus({ tableId }: OrderStatusProps) {
   const router = useRouter();
   const { language } = useLanguageStore();
-  const { data: order, isLoading } = useOrder(tableId);
+
+  // Fetch table to get the actual UUID for database operations
+  const { data: table, isLoading: tableLoading } = useTable(tableId);
+  const actualTableId = table?.id || "";
+
+  const { data: order, isLoading: orderLoading } = useOrder(actualTableId);
   const [showCallStaffModal, setShowCallStaffModal] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+
+  const isLoading = tableLoading || orderLoading;
 
   if (isLoading) {
     return <LoadingSpinner fullScreen />;
@@ -202,7 +209,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
         {showFeedbackForm && (
           <div className="bg-card rounded-lg p-6 border">
             <FeedbackForm
-              tableId={tableId}
+              tableId={actualTableId}
               orderId={order.id}
               onSuccess={() => setShowFeedbackForm(false)}
               onCancel={() => setShowFeedbackForm(false)}
@@ -250,7 +257,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
 
       {/* Call Staff Modal */}
       <CallStaffModal
-        tableId={tableId}
+        tableId={actualTableId}
         isOpen={showCallStaffModal}
         onClose={() => setShowCallStaffModal(false)}
       />

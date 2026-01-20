@@ -10,6 +10,8 @@ import {
   getFeedbackTypeInfo,
 } from '@/hooks';
 import { Button } from '@cafe-idare/ui';
+import { useAuthStore } from '@/store/auth-store';
+import { toast } from 'sonner';
 
 type FeedbackStatus = 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
 type CustomerFeedbackWithTable = any; // We'll get this from the query
@@ -18,6 +20,8 @@ export default function FeedbackPage() {
   const [selectedStatus, setSelectedStatus] = useState<FeedbackStatus | 'all'>('pending');
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [responseText, setResponseText] = useState('');
+
+  const { staff } = useAuthStore();
 
   const { data: feedback, isLoading } = useFeedback(
     selectedStatus === 'all' ? undefined : selectedStatus
@@ -29,32 +33,44 @@ export default function FeedbackPage() {
   const dismissFeedback = useDismissFeedback();
 
   const handleAcknowledge = async (feedbackId: string) => {
+    if (!staff?.id) {
+      toast.error('You must be logged in to acknowledge feedback');
+      return;
+    }
+
     try {
       await acknowledgeFeedback.mutateAsync({
         feedbackId,
-        staffId: 'temp-staff-id', // Temporary - no auth required
+        staffId: staff.id,
       });
+      toast.success('Feedback acknowledged');
     } catch (error) {
       console.error('Error acknowledging feedback:', error);
-      alert('Failed to acknowledge feedback');
+      toast.error('Failed to acknowledge feedback');
     }
   };
 
   const handleRespond = async (feedbackId: string) => {
     if (!responseText.trim()) return;
 
+    if (!staff?.id) {
+      toast.error('You must be logged in to respond to feedback');
+      return;
+    }
+
     try {
       await respondToFeedback.mutateAsync({
         feedbackId,
-        staffId: 'temp-staff-id', // Temporary - no auth required
+        staffId: staff.id,
         response: responseText.trim(),
         status: 'resolved',
       });
       setRespondingTo(null);
       setResponseText('');
+      toast.success('Response sent successfully');
     } catch (error) {
       console.error('Error responding to feedback:', error);
-      alert('Failed to send response');
+      toast.error('Failed to send response');
     }
   };
 
@@ -63,9 +79,10 @@ export default function FeedbackPage() {
 
     try {
       await dismissFeedback.mutateAsync(feedbackId);
+      toast.success('Feedback dismissed');
     } catch (error) {
       console.error('Error dismissing feedback:', error);
-      alert('Failed to dismiss feedback');
+      toast.error('Failed to dismiss feedback');
     }
   };
 

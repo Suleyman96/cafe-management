@@ -126,6 +126,8 @@ export interface Database {
           id: string;
           table_id: string;
           reason: string;
+          call_type: "assistance" | "bill" | "complaint" | "question" | "emergency";
+          priority: "low" | "normal" | "high" | "urgent";
           status: "pending" | "acknowledged" | "resolved";
           responded_by: string | null;
           created_at: string;
@@ -133,7 +135,15 @@ export interface Database {
           resolved_at: string | null;
           notes: string | null;
         };
-        Insert: Omit<Database["public"]["Tables"]["waiter_calls"]["Row"], "id" | "created_at">;
+        Insert: {
+          table_id: string;
+          reason: string;
+          call_type: "assistance" | "bill" | "complaint" | "question" | "emergency";
+          priority: "low" | "normal" | "high" | "urgent";
+          status: "pending" | "acknowledged" | "resolved";
+          responded_by?: string | null;
+          notes?: string | null;
+        };
         Update: Partial<Database["public"]["Tables"]["waiter_calls"]["Insert"]>;
       };
       staff: {

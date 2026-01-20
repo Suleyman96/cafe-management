@@ -7,6 +7,7 @@ import { setTableContext } from "@/lib/supabase";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { useLanguageStore } from "@/store/language-store";
+import type { Language } from "@/types";
 import { MapPin, Users } from "lucide-react";
 
 interface TableLandingProps {
@@ -79,17 +80,19 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             Select Language / Dil seçin
           </p>
           <div className="grid grid-cols-4 gap-2">
-            {[
-              { code: "en", label: "EN" },
-              { code: "az", label: "AZ" },
-              { code: "ru", label: "RU" },
-              { code: "tr", label: "TR" },
-            ].map((lang) => (
+            {(
+              [
+                { code: "en", label: "EN" },
+                { code: "az", label: "AZ" },
+                { code: "ru", label: "RU" },
+                { code: "tr", label: "TR" },
+              ] as const
+            ).map((lang) => (
               <Button
                 key={lang.code}
                 variant={language === lang.code ? "default" : "outline"}
                 size="lg"
-                onClick={() => setLanguage(lang.code as any)}
+                onClick={() => setLanguage(lang.code as Language)}
                 className="font-semibold"
               >
                 {lang.label}

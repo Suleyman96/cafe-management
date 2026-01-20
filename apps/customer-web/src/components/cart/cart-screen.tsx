@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cart-store";
 import { useLanguageStore } from "@/store/language-store";
+import { useTable } from "@/hooks/use-table";
 import { useOrder, useCreateOrder, useAddOrderItems } from "@/hooks/use-order";
 import { getLocalizedField } from "@/types";
 import { formatPrice } from "@/lib/utils";
@@ -13,7 +14,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 
 interface CartScreenProps {
-  tableId: string;
+  tableId: string; // This is the table_number from URL (e.g., "T01")
 }
 
 export function CartScreen({ tableId }: CartScreenProps) {
@@ -23,8 +24,12 @@ export function CartScreen({ tableId }: CartScreenProps) {
   const [orderNotes, setOrderNotes] = useState("");
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [tempNotes, setTempNotes] = useState<Record<string, string>>({});
-  
-  const { data: existingOrder } = useOrder(tableId);
+
+  // Fetch table to get the actual UUID for database operations
+  const { data: table } = useTable(tableId);
+  const actualTableId = table?.id || ""; // UUID for database operations
+
+  const { data: existingOrder } = useOrder(actualTableId);
   const createOrder = useCreateOrder();
   const addOrderItems = useAddOrderItems();
 
@@ -33,7 +38,7 @@ export function CartScreen({ tableId }: CartScreenProps) {
   const total = subtotal + tax;
 
   const handlePlaceOrder = async () => {
-    if (items.length === 0) return;
+    if (items.length === 0 || !actualTableId) return;
 
     try {
       let orderId = existingOrder?.id;
@@ -41,7 +46,7 @@ export function CartScreen({ tableId }: CartScreenProps) {
       // Create new order if none exists
       if (!orderId) {
         const newOrder = await createOrder.mutateAsync({
-          tableId,
+          tableId: actualTableId, // Use UUID for database
           notes: orderNotes,
         });
         orderId = newOrder.id;

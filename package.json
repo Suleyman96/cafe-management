@@ -17,7 +17,9 @@
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
     "db:push": "turbo run db:push",
-    "db:studio": "turbo run db:studio"
+    "db:studio": "turbo run db:studio",
+    "db:reset": "supabase db reset && ./scripts/create-admin-user.sh",
+    "db:seed-user": "./scripts/create-admin-user.sh"
   },
   "devDependencies": {
     "@turbo/gen": "^1.11.3",
