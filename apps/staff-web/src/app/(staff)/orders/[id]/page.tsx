@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useOrder, useUpdateOrderStatus, useUpdateOrderItemStatus, useOrderPayments, useOrderTransferHistory } from '@/hooks';
+import { useOrder, useUpdateOrderStatus, useUpdateOrderItemStatus, useOrderPayments, useOrderTransferHistory, useCafeSettings, formatPriceWithSettings } from '@/hooks';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import { supabase } from '@/lib/supabase/client';
@@ -61,12 +61,21 @@ export default function OrderDetailPage() {
   const { data: orderData, isLoading: loading, error, refetch } = useOrder(orderId);
   const { data: paymentsData } = useOrderPayments(orderId);
   const { data: transferHistory } = useOrderTransferHistory(orderId);
-  
+  const { data: cafeSettings } = useCafeSettings();
+
   // Type assertions for the complex joined data
   const order = orderData as OrderWithRelations | undefined;
   const payments = paymentsData as Payment[] | undefined;
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
+
+  // Format price using cafe settings or fallback
+  const formatPrice = (amount: number) => {
+    if (cafeSettings) {
+      return formatPriceWithSettings(amount, cafeSettings);
+    }
+    return `$${amount.toFixed(2)}`;
+  };
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [openItemMenu, setOpenItemMenu] = useState<string | null>(null);
@@ -399,8 +408,8 @@ export default function OrderDetailPage() {
                   </div>
 
                   <div className="text-right flex-shrink-0">
-                    <p className="font-medium">${(item.quantity * item.item_price).toFixed(2)}</p>
-                    <p className="text-sm text-gray-600">${item.item_price.toFixed(2)} each</p>
+                    <p className="font-medium">{formatPrice(item.quantity * item.item_price)}</p>
+                    <p className="text-sm text-gray-600">{formatPrice(item.item_price)} each</p>
                   </div>
                 </div>
               </div>
@@ -410,7 +419,7 @@ export default function OrderDetailPage() {
         <div className="border-t px-4 py-3">
           <div className="flex justify-between items-center text-lg font-semibold">
             <span>Total</span>
-            <span>${total.toFixed(2)}</span>
+            <span>{formatPrice(total)}</span>
           </div>
         </div>
       </div>
@@ -426,7 +435,7 @@ export default function OrderDetailPage() {
               <div key={payment.id} className="px-4 py-3">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="font-medium">${payment.amount.toFixed(2)}</p>
+                    <p className="font-medium">{formatPrice(payment.amount)}</p>
                     <p className="text-sm text-gray-600">
                       {payment.payment_method} - {payment.staff?.full_name || 'Unknown'}
                     </p>
@@ -444,12 +453,12 @@ export default function OrderDetailPage() {
           <div className="border-t px-4 py-3">
             <div className="flex justify-between items-center">
               <span className="font-semibold">Total Paid</span>
-              <span className="font-semibold text-green-600">${paid.toFixed(2)}</span>
+              <span className="font-semibold text-green-600">{formatPrice(paid)}</span>
             </div>
             {remaining > 0 && (
               <div className="flex justify-between items-center mt-2">
                 <span className="font-semibold">Remaining</span>
-                <span className="font-semibold text-orange-600">${remaining.toFixed(2)}</span>
+                <span className="font-semibold text-orange-600">{formatPrice(remaining)}</span>
               </div>
             )}
           </div>

@@ -5,9 +5,11 @@ import { useTable } from "@/hooks/use-table";
 import { useOrder } from "@/hooks/use-order";
 import { useLanguageStore } from "@/store/language-store";
 import { formatPrice, getStatusColor, timeAgo } from "@/lib/utils";
+import { useCafeSettings } from "@/hooks/use-settings";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { PlatformFooter } from "@/components/ui/platform-footer";
 import { CallStaffModal } from "@/components/waiter/call-staff-modal";
 import { FeedbackForm } from "@/components/feedback/feedback-form";
 import { ArrowLeft, Bell, Plus, CheckCircle2, Clock, MessageSquare } from "lucide-react";
@@ -26,6 +28,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
   const actualTableId = table?.id || "";
 
   const { data: order, isLoading: orderLoading } = useOrder(actualTableId);
+  const { data: settings } = useCafeSettings();
   const [showCallStaffModal, setShowCallStaffModal] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
 
@@ -190,14 +193,20 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
           </div>
 
           <div className="mt-4 pt-4 border-t space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span>{formatPrice(order.subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Tax</span>
-              <span>{formatPrice(order.tax)}</span>
-            </div>
+            {settings?.tax_enabled && settings?.show_tax_separately ? (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span>{formatPrice(order.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {settings.tax_label} ({settings.tax_percentage}%)
+                  </span>
+                  <span>{formatPrice(order.tax)}</span>
+                </div>
+              </>
+            ) : null}
             <div className="flex justify-between text-lg font-bold">
               <span>Total</span>
               <span className="text-primary">{formatPrice(order.total)}</span>
@@ -261,6 +270,9 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
         isOpen={showCallStaffModal}
         onClose={() => setShowCallStaffModal(false)}
       />
+
+      {/* Platform Footer */}
+      <PlatformFooter className="pb-4" />
     </div>
   );
 }

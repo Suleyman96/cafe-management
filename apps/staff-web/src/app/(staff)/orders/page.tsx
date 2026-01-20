@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useOrders, useUpdateOrderStatus, useCancelOrder } from '@/hooks';
+import { useOrders, useUpdateOrderStatus, useCancelOrder, useCafeSettings, formatPriceWithSettings } from '@/hooks';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { ORDER_STATUS } from '@cafe-idare/core';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
@@ -30,6 +30,15 @@ export default function OrdersPage() {
   const { data: orders, isLoading: loading, error, refetch } = useOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const cancelOrderMutation = useCancelOrder();
+  const { data: cafeSettings } = useCafeSettings();
+
+  // Format price using cafe settings or fallback
+  const formatPrice = (amount: number) => {
+    if (cafeSettings) {
+      return formatPriceWithSettings(amount, cafeSettings);
+    }
+    return `$${amount.toFixed(2)}`;
+  };
 
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -324,16 +333,16 @@ export default function OrdersPage() {
 
                 <div className="text-left sm:text-right flex sm:block items-center gap-3 sm:gap-0">
                   <div className="text-base sm:text-lg font-semibold">
-                    ${total.toFixed(2)}
+                    {formatPrice(total)}
                   </div>
                   {paid > 0 && (
                     <div className="text-xs sm:text-sm text-green-600">
-                      Paid: ${paid.toFixed(2)}
+                      Paid: {formatPrice(paid)}
                     </div>
                   )}
                   {remaining > 0 && paid > 0 && (
                     <div className="text-xs sm:text-sm text-orange-600">
-                      Due: ${remaining.toFixed(2)}
+                      Due: {formatPrice(remaining)}
                     </div>
                   )}
                 </div>

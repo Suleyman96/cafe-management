@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useTable, useOrders, useMenuItems, useCategories, useCreateOrder, useAddOrderItems, useUpdateOrderStatus, useUpdateOrderItemStatus, useCancelOrder } from '@/hooks';
+import { useTable, useOrders, useMenuItems, useCategories, useCreateOrder, useAddOrderItems, useUpdateOrderStatus, useUpdateOrderItemStatus, useCancelOrder, useCafeSettings, formatPriceWithSettings } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { supabase } from '@/lib/supabase/client';
@@ -52,6 +52,15 @@ export default function TableDetailPage() {
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const cancelOrder = useCancelOrder();
+  const { data: cafeSettings } = useCafeSettings();
+
+  // Format price using cafe settings or fallback
+  const formatPrice = (amount: number) => {
+    if (cafeSettings) {
+      return formatPriceWithSettings(amount, cafeSettings);
+    }
+    return `$${amount.toFixed(2)}`;
+  };
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -370,7 +379,7 @@ export default function TableDetailPage() {
                 </span>
                 <span className="flex items-center gap-1">
                   <DollarSign className="h-4 w-4" />
-                  ${orderTotal.toFixed(2)}
+                  {formatPrice(orderTotal)}
                 </span>
                 {/* Assigned Waiter Display */}
                 {(activeOrder as any).assigned_waiter && (
@@ -474,7 +483,7 @@ export default function TableDetailPage() {
                         )}
                       </div>
 
-                      <span className="text-gray-600 w-16 text-right">${(item.quantity * item.item_price).toFixed(2)}</span>
+                      <span className="text-gray-600 w-16 text-right">{formatPrice(item.quantity * item.item_price)}</span>
                     </div>
                   );
                 })}
@@ -536,7 +545,7 @@ export default function TableDetailPage() {
                         {item.description_en}
                       </p>
                     )}
-                    <p className="font-semibold text-blue-600 text-sm sm:text-base">${item.price.toFixed(2)}</p>
+                    <p className="font-semibold text-blue-600 text-sm sm:text-base">{formatPrice(item.price)}</p>
                   </div>
                 );
               })}
@@ -566,7 +575,7 @@ export default function TableDetailPage() {
                         <div className="flex-1">
                           <p className="font-medium text-sm">{item.menuItem.name_en}</p>
                           <p className="text-sm text-gray-600">
-                            ${item.menuItem.price.toFixed(2)} x {item.quantity}
+                            {formatPrice(item.menuItem.price)} x {item.quantity}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -612,7 +621,7 @@ export default function TableDetailPage() {
                   <div className="border-t pt-4">
                     <div className="flex justify-between items-center mb-4">
                       <span className="font-semibold">Total</span>
-                      <span className="font-semibold text-lg">${cartTotal.toFixed(2)}</span>
+                      <span className="font-semibold text-lg">{formatPrice(cartTotal)}</span>
                     </div>
                     <Button
                       className="w-full"

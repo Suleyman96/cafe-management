@@ -189,6 +189,28 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["customer_feedback"]["Insert"]>;
       };
+      cafe_settings: {
+        Row: {
+          id: string;
+          restaurant_name: string;
+          tax_enabled: boolean;
+          tax_percentage: number;
+          tax_label: string;
+          prices_include_tax: boolean;
+          show_tax_separately: boolean;
+          currency_symbol: string;
+          currency_code: string;
+          currency_position: "before" | "after";
+          currency_decimal_places: number;
+          minimum_order_amount: number;
+          allow_item_notes: boolean;
+          allow_order_notes: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["cafe_settings"]["Row"], "id" | "created_at" | "updated_at">;
+        Update: Partial<Database["public"]["Tables"]["cafe_settings"]["Insert"]>;
+      };
     };
     Views: {
       active_orders_view: {

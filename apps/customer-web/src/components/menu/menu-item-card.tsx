@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useLanguageStore } from "@/store/language-store";
 import { useCartStore } from "@/store/cart-store";
 import { getLocalizedField, type MenuItemWithCategory } from "@/types";
+import { useCafeSettings, formatPrice as formatPriceWithSettings } from "@/hooks/use-settings";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +20,18 @@ export function MenuItemCard({ item }: MenuItemCardProps) {
   const { language } = useLanguageStore();
   const addItem = useCartStore((state) => state.addItem);
   const [showModal, setShowModal] = useState(false);
+  const { data: settings } = useCafeSettings();
 
   const name = getLocalizedField(item, "name", language);
   const description = getLocalizedField(item, "description", language);
+
+  // Format price using cafe settings or fallback
+  const displayPrice = (amount: number) => {
+    if (settings) {
+      return formatPriceWithSettings(amount, settings);
+    }
+    return formatPrice(amount);
+  };
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -92,7 +102,7 @@ export function MenuItemCard({ item }: MenuItemCardProps) {
           {/* Price and Add Button */}
           <div className="flex items-center justify-between">
             <span className="text-xl font-bold text-primary">
-              {formatPrice(item.price)}
+              {displayPrice(item.price)}
             </span>
             <Button
               size="sm"

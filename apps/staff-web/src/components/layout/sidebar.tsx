@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
+import { CafeManLogo, CafeManIcon } from '@/components/ui/cafe-man-logo';
 import {
   UtensilsCrossed,
   ClipboardList,
@@ -19,6 +20,7 @@ import {
   LogOut,
   Settings,
   StickyNote,
+  Store,
 } from 'lucide-react';
 
 type NavItem = {
@@ -37,6 +39,7 @@ const navItems: NavItem[] = [
   { href: '/notes', label: 'Staff Notes', icon: <StickyNote className="h-5 w-5" /> },
   { href: '/menu', label: 'Menu', icon: <Menu className="h-5 w-5" />, adminOnly: true },
   { href: '/staff', label: 'Staff', icon: <Users className="h-5 w-5" />, adminOnly: true },
+  { href: '/cafe-settings', label: 'Cafe Settings', icon: <Store className="h-5 w-5" />, adminOnly: true },
   { href: '/reports', label: 'Reports', icon: <BarChart3 className="h-5 w-5" />, adminOnly: true },
 ];
 
@@ -96,26 +99,34 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
       }`}
     >
       {/* Logo */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        {(!isCollapsed || isMobile) && (
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Cafe Idare</h1>
-            <p className="text-xs text-gray-500">Staff Portal</p>
-          </div>
-        )}
-        {!isMobile && (
+      <div className="p-4 border-b border-gray-200 flex items-center justify-between relative">
+        <Link
+          href="/"
+          onClick={handleNavClick}
+          className="hover:opacity-80 transition-opacity"
+        >
+          {(!isCollapsed || isMobile) ? (
+            <CafeManLogo size={36} showText={true} />
+          ) : (
+            <CafeManIcon size={32} />
+          )}
+        </Link>
+        {!isMobile && !isCollapsed && (
           <button
             onClick={onToggle}
-            className={`p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors ${
-              isCollapsed ? 'mx-auto' : ''
-            }`}
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+            title="Collapse sidebar"
           >
-            {isCollapsed ? (
-              <ChevronRight className="h-5 w-5" />
-            ) : (
-              <ChevronLeft className="h-5 w-5" />
-            )}
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+        )}
+        {!isMobile && isCollapsed && (
+          <button
+            onClick={onToggle}
+            className="absolute -right-3 top-6 p-1 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 text-gray-500 transition-colors z-10"
+            title="Expand sidebar"
+          >
+            <ChevronRight className="h-4 w-4" />
           </button>
         )}
       </div>

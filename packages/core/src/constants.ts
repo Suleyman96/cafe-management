@@ -121,6 +121,7 @@ export const QUERY_KEYS = {
   WAITER_CALLS: 'waiter_calls',
   ACTIVE_ORDERS: 'active_orders',
   SALES: 'sales',
+  CAFE_SETTINGS: 'cafe_settings',
 } as const;
 
 // UI constants

@@ -3,8 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Café İdarə - Staff",
-  description: "Staff management system for Café İdarə",
+  title: "Cafe-Man | Staff Portal",
+  description: "Restaurant management system by Cafe-Man",
 };
 
 export default function RootLayout({

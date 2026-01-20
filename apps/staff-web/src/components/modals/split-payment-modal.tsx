@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useCreatePayment, useOrderRemainingBalance, useUpdateOrderStatus } from '@/hooks';
+import { useCreatePayment, useOrderRemainingBalance, useUpdateOrderStatus, useCafeSettings, formatPriceWithSettings } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@cafe-idare/ui';
 import { X, DollarSign, CheckCircle, Check } from 'lucide-react';
@@ -35,6 +35,15 @@ export function SplitPaymentModal({
   const createPayment = useCreatePayment();
   const updateOrderStatus = useUpdateOrderStatus();
   const { data: remainingBalance } = useOrderRemainingBalance(order?.id || '');
+  const { data: cafeSettings } = useCafeSettings();
+
+  // Format price using cafe settings or fallback
+  const formatPrice = (amount: number) => {
+    if (cafeSettings) {
+      return formatPriceWithSettings(amount, cafeSettings);
+    }
+    return `$${amount.toFixed(2)}`;
+  };
 
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('full');
   const [partialAmount, setPartialAmount] = useState<string>('');
@@ -157,20 +166,20 @@ export function SplitPaymentModal({
           <div className="mb-6">
             <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
               <span>Order Total</span>
-              <span className="font-medium">${orderTotal.toFixed(2)}</span>
+              <span className="font-medium">{formatPrice(orderTotal)}</span>
             </div>
             {(remainingBalance !== undefined && remainingBalance < orderTotal) && (
               <>
                 <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
                   <span>Already Paid</span>
                   <span className="font-medium text-green-600">
-                    ${(orderTotal - remainingBalance).toFixed(2)}
+                    {formatPrice(orderTotal - remainingBalance)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center font-medium">
                   <span>Remaining Balance</span>
                   <span className={isFullyPaid ? "text-green-600" : "text-orange-600"}>
-                    ${remainingBalance.toFixed(2)}
+                    {formatPrice(remainingBalance)}
                   </span>
                 </div>
               </>
@@ -194,7 +203,7 @@ export function SplitPaymentModal({
                 <DollarSign className="h-5 w-5 mx-auto mb-1" />
                 <div className="text-sm font-medium">Full Payment</div>
                 <div className="text-xs text-gray-600">
-                  ${(remainingBalance ?? orderTotal).toFixed(2)}
+                  {formatPrice(remainingBalance ?? orderTotal)}
                 </div>
               </button>
 
@@ -276,14 +285,14 @@ export function SplitPaymentModal({
                       )}
                     </div>
                     <div className="font-medium">
-                      ${(item.quantity * item.item_price).toFixed(2)}
+                      {formatPrice(item.quantity * item.item_price)}
                     </div>
                   </label>
                 ))}
               </div>
               {selectedItems.size > 0 && (
                 <div className="mt-2 text-sm font-medium text-blue-700">
-                  Total: ${calculateSelectedItemsTotal().toFixed(2)}
+                  Total: {formatPrice(calculateSelectedItemsTotal())}
                 </div>
               )}
             </div>
@@ -295,7 +304,7 @@ export function SplitPaymentModal({
           <div className="flex justify-between items-center mb-4">
             <span className="text-lg font-medium">Amount to Pay</span>
             <span className={`text-2xl font-bold ${isFullyPaid ? 'text-green-600' : 'text-blue-600'}`}>
-              ${getPaymentAmount().toFixed(2)}
+              {formatPrice(getPaymentAmount())}
             </span>
           </div>
           <div className="flex gap-3">

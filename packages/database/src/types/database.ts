@@ -227,6 +227,44 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['staff_notes']['Row'], 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Database['public']['Tables']['staff_notes']['Insert']>;
       };
+      cafe_settings: {
+        Row: {
+          id: string;
+          restaurant_name: string;
+          tax_enabled: boolean;
+          tax_percentage: number;
+          tax_label: string;
+          prices_include_tax: boolean;
+          show_tax_separately: boolean;
+          currency_symbol: string;
+          currency_code: string;
+          currency_position: 'before' | 'after';
+          currency_decimal_places: number;
+          minimum_order_amount: number;
+          allow_item_notes: boolean;
+          allow_order_notes: boolean;
+          // Branding fields
+          cafe_logo_url: string | null;
+          hero_image_url: string | null;
+          brand_primary_color: string;
+          brand_secondary_color: string;
+          // Welcome screen
+          welcome_heading: string | null;
+          welcome_message: string | null;
+          // Feature controls
+          qr_ordering_enabled: boolean;
+          // Contact & social
+          contact_phone: string | null;
+          contact_website: string | null;
+          social_instagram: string | null;
+          social_whatsapp: string | null;
+          location_maps_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['cafe_settings']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['cafe_settings']['Insert']>;
+      };
     };
     Views: {
       active_orders_view: {

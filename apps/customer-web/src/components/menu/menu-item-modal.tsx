@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useLanguageStore } from "@/store/language-store";
 import { useCartStore } from "@/store/cart-store";
 import { getLocalizedField, type MenuItemWithCategory } from "@/types";
+import { useCafeSettings, formatPrice as formatPriceWithSettings } from "@/hooks/use-settings";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,9 +23,18 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
   const addItem = useCartStore((state) => state.addItem);
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
+  const { data: settings } = useCafeSettings();
 
   const name = getLocalizedField(item, "name", language);
   const description = getLocalizedField(item, "description", language);
+
+  // Format price using cafe settings or fallback
+  const displayPrice = (amount: number) => {
+    if (settings) {
+      return formatPriceWithSettings(amount, settings);
+    }
+    return formatPrice(amount);
+  };
 
   const handleAdd = () => {
     addItem(item, quantity, notes);
@@ -125,7 +135,7 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
 
             {/* Price */}
             <div className="text-3xl font-bold text-primary mb-4">
-              {formatPrice(item.price)}
+              {displayPrice(item.price)}
             </div>
 
             {/* Quantity Selector */}
@@ -153,22 +163,24 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
               </div>
             </div>
 
-            {/* Special Notes */}
-            <div className="mb-6">
-              <label className="text-sm font-medium mb-2 block">
-                Special requests (optional)
-              </label>
-              <textarea
-                className="w-full min-h-[80px] p-3 rounded-md border border-input bg-background"
-                placeholder="e.g., Less sugar, Extra hot, No ice..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
+            {/* Special Notes - Only show if allow_item_notes is enabled */}
+            {(settings?.allow_item_notes !== false) && (
+              <div className="mb-6">
+                <label className="text-sm font-medium mb-2 block">
+                  Special requests (optional)
+                </label>
+                <textarea
+                  className="w-full min-h-[80px] p-3 rounded-md border border-input bg-background"
+                  placeholder="e.g., Less sugar, Extra hot, No ice..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+            )}
 
             {/* Add to Cart Button */}
             <Button size="xl" className="w-full" onClick={handleAdd}>
-              Add to Order · {formatPrice(item.price * quantity)}
+              Add to Order · {displayPrice(item.price * quantity)}
             </Button>
           </div>
         </div>

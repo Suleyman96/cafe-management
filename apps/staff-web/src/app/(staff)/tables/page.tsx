@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTables, useOrders, useWaiterCalls, useCreateOrder, useDeleteTable } from '@/hooks';
+import { useTables, useOrders, useWaiterCalls, useCreateOrder, useDeleteTable, useCafeSettings, formatPriceWithSettings } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { TableTransferModal } from '@/components/modals/table-transfer-modal';
@@ -44,6 +44,15 @@ export default function TablesPage() {
 
   const createOrder = useCreateOrder();
   const isAdmin = staff?.role === 'admin';
+  const { data: cafeSettings } = useCafeSettings();
+
+  // Format price using cafe settings or fallback
+  const formatPrice = (amount: number) => {
+    if (cafeSettings) {
+      return formatPriceWithSettings(amount, cafeSettings);
+    }
+    return `$${amount.toFixed(2)}`;
+  };
 
   // Set up real-time subscriptions
   useEffect(() => {
@@ -463,7 +472,7 @@ export default function TablesPage() {
                   <div className="flex items-center justify-between bg-white/60 rounded-lg px-3 py-2">
                     <span className="text-sm text-gray-600">Total</span>
                     <span className="text-lg font-bold text-gray-800">
-                      ${calculateOrderTotal(activeOrder).toFixed(2)}
+                      {formatPrice(calculateOrderTotal(activeOrder))}
                     </span>
                   </div>
 

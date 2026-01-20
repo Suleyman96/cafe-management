@@ -9,3 +9,4 @@ export * from './use-menu-safe';
 export * from './use-feedback-safe';
 export * from './use-staff-safe';
 export * from './use-staff-notes-safe';
+export * from './use-settings-safe';
