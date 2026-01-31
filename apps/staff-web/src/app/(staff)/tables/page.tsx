@@ -518,11 +518,11 @@ export default function TablesPage() {
                     </div>
                   )}
 
-                  {/* Assigned Waiter */}
+                  {/* Order Taken By */}
                   {(activeOrder as any).assigned_waiter && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <UserCheck className="h-4 w-4 text-green-500" />
-                      <span>{(activeOrder as any).assigned_waiter.full_name}</span>
+                      <span>Taken by: {(activeOrder as any).assigned_waiter.full_name}</span>
                     </div>
                   )}
                 </div>

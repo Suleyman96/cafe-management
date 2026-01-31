@@ -14,7 +14,7 @@ type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
 };
 
 type Payment = Database['public']['Tables']['order_payments']['Row'] & {
-  staff?: Database['public']['Tables']['staff']['Row'];
+  received_by_staff?: Database['public']['Tables']['staff']['Row'];
   items_paid?: OrderItem[];
 };
 
@@ -31,7 +31,6 @@ type OrderWithRelations = Database['public']['Tables']['orders']['Row'] & {
   table?: Table;
   order_items?: OrderItem[];
   assigned_waiter?: Database['public']['Tables']['staff']['Row'];
-  staff?: Database['public']['Tables']['staff']['Row'];
   order_payments?: Payment[];
   table_transfers?: TableTransfer[];
 };
@@ -312,10 +311,13 @@ export default function OrderDetailPage() {
               <p>{order.customer_phone}</p>
             </div>
           )}
-          {order.staff && (
+          {order.assigned_waiter && (
             <div>
-              <p className="text-sm text-gray-600">Waiter</p>
-              <p>{order.staff.full_name}</p>
+              <p className="text-sm text-gray-600">Order Taken By</p>
+              <p className="flex items-center gap-1">
+                <User className="h-3 w-3 text-blue-500" />
+                {order.assigned_waiter.full_name}
+              </p>
             </div>
           )}
         </div>
@@ -433,13 +435,17 @@ export default function OrderDetailPage() {
           <div className="divide-y">
             {payments.map((payment: Payment) => (
               <div key={payment.id} className="px-4 py-3">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-start">
                   <div>
                     <p className="font-medium">{formatPrice(payment.amount)}</p>
-                    <p className="text-sm text-gray-600">
-                      {payment.payment_method} - {payment.staff?.full_name || 'Unknown'}
+                    <p className="text-sm text-gray-600 capitalize">
+                      {payment.payment_method}
                     </p>
-                    <p className="text-xs text-gray-500">{formatTime(payment.created_at)}</p>
+                    <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                      <CreditCard className="h-3 w-3 text-green-500" />
+                      Received by: {payment.received_by_staff?.full_name || 'Unknown'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">{formatTime(payment.created_at)}</p>
                   </div>
                   {payment.items_paid && payment.items_paid.length > 0 && (
                     <div className="text-sm text-gray-600">

@@ -441,11 +441,11 @@ export default function TableDetailPage() {
                   <DollarSign className="h-4 w-4" />
                   {formatPrice(orderTotal)}
                 </span>
-                {/* Assigned Waiter Display */}
+                {/* Order Taken By */}
                 {(activeOrder as any).assigned_waiter && (
                   <span className="flex items-center gap-1">
                     <UserCheck className="h-4 w-4 text-green-600" />
-                    <span className="text-green-700">{(activeOrder as any).assigned_waiter.full_name}</span>
+                    <span className="text-green-700">Taken by: {(activeOrder as any).assigned_waiter.full_name}</span>
                   </span>
                 )}
               </div>
