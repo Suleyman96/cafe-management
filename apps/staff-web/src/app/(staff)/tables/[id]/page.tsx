@@ -483,8 +483,8 @@ export default function TableDetailPage() {
                   Payment
                 </Button>
               )}
-              {/* Cancel button - available for new and preparing orders */}
-              {['new', 'preparing'].includes(activeOrder.status) && (
+              {/* Cancel button - available for active orders */}
+              {['new', 'preparing', 'ready', 'served'].includes(activeOrder.status) && (
                 <Button
                   size="sm"
                   variant="destructive"

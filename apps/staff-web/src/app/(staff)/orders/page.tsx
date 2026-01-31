@@ -422,7 +422,7 @@ export default function OrdersPage() {
                     Payment
                   </Button>
                 )}
-                {['new', 'preparing'].includes(order.status) && (
+                {['new', 'preparing', 'ready', 'served'].includes(order.status) && (
                   <Button
                     size="sm"
                     variant="destructive"
