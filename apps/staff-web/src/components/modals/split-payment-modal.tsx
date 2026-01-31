@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useCreatePayment, useOrderRemainingBalance, useUpdateOrderStatus, useCafeSettings, formatPriceWithSettings } from '@/hooks';
+import { useCreatePayment, useOrderRemainingBalance, useUpdateOrderStatus, useCafeSettings, formatPriceWithSettings, calculateTax as calculateTaxFromSettings } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@cafe-idare/ui';
 import { X, DollarSign, CheckCircle, Check } from 'lucide-react';
@@ -50,10 +50,20 @@ export function SplitPaymentModal({
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
 
-  const orderTotal = order?.order_items?.reduce(
+  // Calculate subtotal from items (before tax)
+  const orderSubtotal = order?.order_items?.reduce(
     (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
     0
   ) || 0;
+
+  // Calculate tax based on cafe settings
+  const orderTax = cafeSettings?.tax_enabled
+    ? calculateTaxFromSettings(orderSubtotal, cafeSettings)
+    : 0;
+
+  // Use the order.total from database (includes tax) for consistency with remaining balance calculation
+  // Fall back to calculating from items + tax if total is not set
+  const orderTotal = order?.total || (orderSubtotal + orderTax);
 
   const calculateSelectedItemsTotal = () => {
     if (!order?.order_items) return 0;
@@ -164,9 +174,21 @@ export function SplitPaymentModal({
 
           {/* Order Summary */}
           <div className="mb-6">
-            <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
+            {cafeSettings?.tax_enabled && (
+              <>
+                <div className="flex justify-between items-center text-sm text-gray-600 mb-1">
+                  <span>Subtotal</span>
+                  <span>{formatPrice(orderSubtotal)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
+                  <span>Tax ({cafeSettings.tax_percentage}%)</span>
+                  <span>{formatPrice(orderTax)}</span>
+                </div>
+              </>
+            )}
+            <div className={`flex justify-between items-center text-sm font-medium mb-2 ${cafeSettings?.tax_enabled ? 'pt-2 border-t' : ''}`}>
               <span>Order Total</span>
-              <span className="font-medium">{formatPrice(orderTotal)}</span>
+              <span>{formatPrice(orderTotal)}</span>
             </div>
             {(remainingBalance !== undefined && remainingBalance < orderTotal) && (
               <>

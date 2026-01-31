@@ -12,7 +12,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { PlatformFooter } from "@/components/ui/platform-footer";
 import { CallStaffModal } from "@/components/waiter/call-staff-modal";
 import { FeedbackForm } from "@/components/feedback/feedback-form";
-import { ArrowLeft, Bell, Plus, CheckCircle2, Clock, MessageSquare } from "lucide-react";
+import { ArrowLeft, Bell, Plus, CheckCircle2, Clock, MessageSquare, Hourglass } from "lucide-react";
 import { useState } from "react";
 
 interface OrderStatusProps {
@@ -58,7 +58,8 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
   }
 
   const statusSteps = [
-    { key: "new", label: "Order Placed", icon: CheckCircle2 },
+    { key: "pending_approval", label: "Awaiting Approval", icon: Hourglass },
+    { key: "new", label: "Order Confirmed", icon: CheckCircle2 },
     { key: "preparing", label: "Preparing", icon: Clock },
     { key: "ready", label: "Ready", icon: CheckCircle2 },
     { key: "served", label: "Served", icon: CheckCircle2 },
@@ -141,6 +142,25 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
               );
             })}
           </div>
+
+          {order.status === "pending_approval" && (
+            <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
+              <p className="text-sm text-center font-medium text-amber-800 dark:text-amber-200">
+                ⏳ Your order is waiting for staff approval
+              </p>
+              <p className="text-xs text-center text-amber-600 dark:text-amber-400 mt-1">
+                A staff member will confirm your order shortly
+              </p>
+            </div>
+          )}
+
+          {order.status === "new" && (
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-center font-medium text-blue-800 dark:text-blue-200">
+                ✓ Your order has been confirmed!
+              </p>
+            </div>
+          )}
 
           {order.status === "preparing" && (
             <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
@@ -249,7 +269,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
               Send Feedback
             </Button>
 
-            {order.status === "new" && (
+            {(order.status === "pending_approval" || order.status === "new") && (
               <Button
                 variant="outline"
                 size="lg"

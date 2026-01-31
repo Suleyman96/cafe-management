@@ -104,7 +104,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
           table:tables!orders_table_id_fkey(table_number),
           order_items(count)
         `)
-        .in('status', ['new', 'preparing', 'ready', 'served'])
+        .in('status', ['pending_approval', 'new', 'preparing', 'ready', 'served'])
         .order('created_at', { ascending: false });
 
       if (error) throw handleSupabaseError(error);
@@ -139,12 +139,24 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
 
-      // If the order has a table, set it back to free
+      // If the order has a table, check if there are other active orders before setting it to free
       if (tableId) {
-        await ctx.anyClient
-          .from('tables')
-          .update({ status: 'free', occupied_at: null })
-          .eq('id', tableId);
+        // Check for other active orders on this table
+        const { data: otherOrders } = await ctx.client
+          .from('orders')
+          .select('id')
+          .eq('table_id', tableId)
+          .in('status', ['pending_approval', 'new', 'preparing', 'ready', 'served'])
+          .neq('id', orderId)
+          .limit(1);
+
+        // Only set table to free if no other active orders exist
+        if (!otherOrders || otherOrders.length === 0) {
+          await ctx.anyClient
+            .from('tables')
+            .update({ status: 'free', occupied_at: null })
+            .eq('id', tableId);
+        }
       }
 
       return data as OrderRow;

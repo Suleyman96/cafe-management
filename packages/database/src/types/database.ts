@@ -90,7 +90,8 @@ export interface Database {
           table_id: string | null; // Nullable for takeout orders
           assigned_waiter_id: string | null;
           order_number: string;
-          status: 'new' | 'preparing' | 'ready' | 'served' | 'closed' | 'cancelled';
+          status: 'pending_approval' | 'new' | 'preparing' | 'ready' | 'served' | 'closed' | 'cancelled';
+          source: 'customer' | 'waiter' | 'phone';
           order_type: 'dine_in' | 'takeout';
           customer_name: string | null;
           customer_phone: string | null;

@@ -18,7 +18,7 @@ export function useOrder(tableId: string) {
           order_items(*)
         `)
         .eq("table_id", tableId)
-        .in("status", ["new", "preparing", "ready", "served"])
+        .in("status", ["pending_approval", "new", "preparing", "ready", "served"])
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -93,7 +93,8 @@ export function useCreateOrder() {
         .insert({
           table_id: tableId,
           customer_notes: notes,
-          status: "new",
+          status: "pending_approval", // Customer QR orders require staff approval
+          source: "customer", // Track that this is from QR code scan
           subtotal: 0,
           tax: 0,
           total: 0,

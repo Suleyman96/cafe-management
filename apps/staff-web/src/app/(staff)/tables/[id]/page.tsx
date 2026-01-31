@@ -26,6 +26,8 @@ import {
   XCircle,
   X,
   Layers,
+  ThumbsUp,
+  Smartphone,
 } from 'lucide-react';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
@@ -72,11 +74,11 @@ export default function TableDetailPage() {
   const [orderNotes, setOrderNotes] = useState('');
   const [selectedOrderIndex, setSelectedOrderIndex] = useState(0);
 
-  // Get ALL active orders for this table
+  // Get ALL active orders for this table (including pending_approval)
   const activeOrders = useMemo(() => {
     return orders?.filter((order: any) =>
       order.table_id === tableId &&
-      ['new', 'preparing', 'ready', 'served'].includes(order.status)
+      ['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status)
     ) || [];
   }, [orders, tableId]);
 
@@ -208,15 +210,16 @@ export default function TableDetailPage() {
     0
   );
 
-  // Calculate existing order total
-  const orderTotal = activeOrder?.order_items?.reduce(
+  // Get order total from database (includes tax) for consistency
+  // Fall back to calculating from items if total is not set
+  const orderTotal = activeOrder?.total || activeOrder?.order_items?.reduce(
     (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
     0
   ) || 0;
 
   // Calculate combined total for all orders on this table
   const combinedTotal = activeOrders.reduce((total: number, order: any) => {
-    const orderSum = order.order_items?.reduce(
+    const orderSum = order.total || order.order_items?.reduce(
       (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
       0
     ) || 0;
@@ -459,6 +462,25 @@ export default function TableDetailPage() {
               )}
             </div>
             <div className="flex flex-wrap gap-2">
+              {/* Pending Approval: Show approve button and QR indicator */}
+              {activeOrder.status === 'pending_approval' && (
+                <>
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => handleStatusUpdate('NEW')}
+                  >
+                    <ThumbsUp className="h-4 w-4 mr-1" />
+                    Approve
+                  </Button>
+                  {(activeOrder as any).source === 'customer' && (
+                    <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
+                      <Smartphone className="h-3 w-3" />
+                      QR Order
+                    </span>
+                  )}
+                </>
+              )}
               {activeOrder.status === 'new' && (
                 <Button size="sm" onClick={() => handleStatusUpdate('PREPARING')}>
                   <ChefHat className="h-4 w-4 mr-1" />
@@ -483,15 +505,15 @@ export default function TableDetailPage() {
                   Payment
                 </Button>
               )}
-              {/* Cancel button - available for active orders */}
-              {['new', 'preparing', 'ready', 'served'].includes(activeOrder.status) && (
+              {/* Cancel/Reject button - available for active orders */}
+              {['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(activeOrder.status) && (
                 <Button
                   size="sm"
                   variant="destructive"
                   onClick={() => setShowCancelModal(true)}
                 >
                   <XCircle className="h-4 w-4 mr-1" />
-                  Cancel
+                  {activeOrder.status === 'pending_approval' ? 'Reject' : 'Cancel'}
                 </Button>
               )}
             </div>

@@ -5,6 +5,7 @@
 
 // Order statuses
 export const ORDER_STATUS = {
+  PENDING_APPROVAL: 'pending_approval',
   NEW: 'new',
   PREPARING: 'preparing',
   READY: 'ready',
@@ -72,6 +73,7 @@ export const REFRESH_INTERVALS = {
 
 // Status colors
 export const STATUS_COLORS = {
+  pending_approval: '#D97706', // amber-600
   new: '#EF4444', // red-500
   preparing: '#F59E0B', // amber-500
   ready: '#10B981', // green-500

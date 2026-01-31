@@ -20,10 +20,12 @@ import {
   CreditCard,
   Package,
   X,
-  Loader2
+  Loader2,
+  ThumbsUp,
+  Smartphone
 } from 'lucide-react';
 
-type OrderStatus = 'new' | 'preparing' | 'ready' | 'served' | 'paid' | 'cancelled';
+type OrderStatus = 'pending_approval' | 'new' | 'preparing' | 'ready' | 'served' | 'paid' | 'cancelled';
 type OrderSource = 'customer' | 'waiter' | 'phone';
 
 export default function OrdersPage() {
@@ -92,8 +94,10 @@ export default function OrdersPage() {
     };
   }, [refetch]);
 
-  // Calculate order total
+  // Get order total from database (includes tax) for consistency
+  // Fall back to calculating from items if total is not set
   const calculateOrderTotal = (order: any) => {
+    if (order?.total) return order.total;
     if (!order?.order_items) return 0;
     return order.order_items.reduce((sum: number, item: any) =>
       sum + (item.quantity * item.item_price), 0
@@ -119,6 +123,8 @@ export default function OrdersPage() {
   // Get status color
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
+      case 'pending_approval':
+        return 'bg-amber-100 text-amber-800 border border-amber-300';
       case 'new':
         return 'bg-blue-100 text-blue-800';
       case 'preparing':
@@ -239,6 +245,7 @@ export default function OrdersPage() {
               onChange={(e) => setStatusFilter(e.target.value as any)}
             >
               <option value="all">All Status</option>
+              <option value="pending_approval">⏳ Pending Approval</option>
               <option value="new">New</option>
               <option value="preparing">Preparing</option>
               <option value="ready">Ready</option>
@@ -365,6 +372,25 @@ export default function OrdersPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+                {/* Pending Approval: Show approve button */}
+                {order.status === 'pending_approval' && (
+                  <>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => handleStatusUpdate(order.id, 'new')}
+                    >
+                      <ThumbsUp className="h-4 w-4 mr-1" />
+                      Approve
+                    </Button>
+                    {order.source === 'customer' && (
+                      <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
+                        <Smartphone className="h-3 w-3" />
+                        QR Order
+                      </span>
+                    )}
+                  </>
+                )}
                 {order.status === 'new' && (
                   <Button
                     size="sm"
@@ -422,14 +448,14 @@ export default function OrdersPage() {
                     Payment
                   </Button>
                 )}
-                {['new', 'preparing', 'ready', 'served'].includes(order.status) && (
+                {['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status) && (
                   <Button
                     size="sm"
                     variant="destructive"
                     onClick={() => openCancelModal(order)}
                   >
                     <XCircle className="h-4 w-4 mr-1" />
-                    Cancel
+                    {order.status === 'pending_approval' ? 'Reject' : 'Cancel'}
                   </Button>
                 )}
               </div>

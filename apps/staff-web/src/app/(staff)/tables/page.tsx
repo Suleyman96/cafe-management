@@ -24,6 +24,7 @@ import {
   ChefHat,
   CheckCircle,
   UtensilsCrossed,
+  Hourglass,
 } from 'lucide-react';
 
 export default function TablesPage() {
@@ -104,11 +105,11 @@ export default function TablesPage() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  // Get all active orders for a table
+  // Get all active orders for a table (including pending_approval)
   const getActiveOrdersForTable = (tableId: string) => {
     return orders?.filter((order: any) =>
       order.table_id === tableId &&
-      ['new', 'preparing', 'ready', 'served'].includes(order.status)
+      ['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status)
     ) || [];
   };
 
@@ -120,8 +121,10 @@ export default function TablesPage() {
     ) || [];
   };
 
-  // Calculate order total
+  // Get order total from database (includes tax) for consistency
+  // Fall back to calculating from items if total is not set
   const calculateOrderTotal = (order: any) => {
+    if (order?.total) return order.total;
     if (!order?.order_items) return 0;
     return order.order_items.reduce((sum: number, item: any) =>
       sum + (item.quantity * item.item_price), 0
@@ -165,6 +168,14 @@ export default function TablesPage() {
   // Get order status badge styling
   const getOrderStatusBadge = (status: string) => {
     switch (status) {
+      case 'pending_approval':
+        return {
+          bg: 'bg-amber-100',
+          text: 'text-amber-800',
+          border: 'border-amber-400',
+          icon: <Hourglass className="h-3.5 w-3.5" />,
+          label: '⏳ Pending Approval'
+        };
       case 'new':
         return {
           bg: 'bg-blue-100',

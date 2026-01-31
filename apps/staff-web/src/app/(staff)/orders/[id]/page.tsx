@@ -2,12 +2,31 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useOrder, useUpdateOrderStatus, useUpdateOrderItemStatus, useOrderPayments, useOrderTransferHistory, useCafeSettings, formatPriceWithSettings } from '@/hooks';
+import { useOrder, useUpdateOrderStatus, useUpdateOrderItemStatus, useOrderPayments, useOrderTransferHistory, useCafeSettings, formatPriceWithSettings, calculateTax as calculateTaxFromSettings } from '@/hooks';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import type { Database } from '@cafe-idare/database';
+import { ORDER_STATUS } from '@cafe-idare/core';
+import {
+  ArrowLeft,
+  Clock,
+  User,
+  CreditCard,
+  Package,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  ChefHat,
+  RefreshCw,
+  FileText,
+  ArrowRight,
+  ChevronDown,
+  UtensilsCrossed,
+  ThumbsUp,
+  Smartphone,
+} from 'lucide-react';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
   menu_item?: Database['public']['Tables']['menu_items']['Row'];
@@ -34,23 +53,6 @@ type OrderWithRelations = Database['public']['Tables']['orders']['Row'] & {
   order_payments?: Payment[];
   table_transfers?: TableTransfer[];
 };
-import {
-  ArrowLeft,
-  Clock,
-  DollarSign,
-  User,
-  CreditCard,
-  Package,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  ChefHat,
-  RefreshCw,
-  FileText,
-  ArrowRight,
-  ChevronDown,
-  UtensilsCrossed,
-} from 'lucide-react';
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -126,12 +128,31 @@ export default function OrderDetailPage() {
     };
   }, [orderId, refetch]);
 
-  // Calculate totals
-  const calculateOrderTotal = () => {
+  // Calculate subtotal from items (before tax)
+  const calculateSubtotal = () => {
     if (!order?.order_items) return 0;
     return order.order_items.reduce((sum: number, item: OrderItem) =>
       sum + (item.quantity * item.item_price), 0
     );
+  };
+
+  // Get order total from the database (includes tax) for consistency
+  // Fall back to calculating from items if total is not set
+  const calculateOrderTotal = () => {
+    if (order?.total) return order.total;
+    const subtotal = calculateSubtotal();
+    // Use cafe settings for tax calculation
+    if (cafeSettings?.tax_enabled) {
+      return subtotal + calculateTaxFromSettings(subtotal, cafeSettings);
+    }
+    return subtotal;
+  };
+
+  // Calculate tax amount based on cafe settings
+  const calculateTax = () => {
+    if (!cafeSettings?.tax_enabled) return 0;
+    const subtotal = calculateSubtotal();
+    return calculateTaxFromSettings(subtotal, cafeSettings);
   };
 
   const calculatePaidAmount = () => {
@@ -161,6 +182,8 @@ export default function OrderDetailPage() {
   // Get status color
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'pending_approval':
+        return 'bg-amber-100 text-amber-800 border border-amber-300';
       case 'new':
         return 'bg-blue-100 text-blue-800';
       case 'preparing':
@@ -216,13 +239,13 @@ export default function OrderDetailPage() {
   };
 
   // Handle status update
-  const handleStatusUpdate = async (newStatus: keyof typeof import('@cafe-idare/core').ORDER_STATUS) => {
+  const handleStatusUpdate = async (newStatus: keyof typeof ORDER_STATUS) => {
     try {
       await updateOrderStatus.mutateAsync({
         orderId,
         status: newStatus
       });
-      toast.success(`Order status updated to ${newStatus.toLowerCase()}`);
+      toast.success(`Order status updated to ${String(newStatus).toLowerCase()}`);
     } catch (error) {
       toast.error('Failed to update order status');
     }
@@ -418,8 +441,20 @@ export default function OrderDetailPage() {
             );
           })}
         </div>
-        <div className="border-t px-4 py-3">
-          <div className="flex justify-between items-center text-lg font-semibold">
+        <div className="border-t px-4 py-3 space-y-2">
+          {cafeSettings?.tax_enabled && (
+            <>
+              <div className="flex justify-between items-center text-sm text-gray-600">
+                <span>Subtotal</span>
+                <span>{formatPrice(calculateSubtotal())}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm text-gray-600">
+                <span>Tax ({cafeSettings.tax_percentage}%)</span>
+                <span>{formatPrice(calculateTax())}</span>
+              </div>
+            </>
+          )}
+          <div className={`flex justify-between items-center text-lg font-semibold ${cafeSettings?.tax_enabled ? 'pt-2 border-t' : ''}`}>
             <span>Total</span>
             <span>{formatPrice(total)}</span>
           </div>
@@ -473,6 +508,25 @@ export default function OrderDetailPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-2 sm:gap-3">
+        {/* Pending Approval: Show approve button */}
+        {order.status === 'pending_approval' && (
+          <>
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 flex items-center gap-1 sm:gap-2"
+              onClick={() => handleStatusUpdate('NEW')}
+            >
+              <ThumbsUp className="h-4 w-4" />
+              Approve
+            </Button>
+            {(order as any).source === 'customer' && (
+              <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
+                <Smartphone className="h-3 w-3" />
+                QR Order
+              </span>
+            )}
+          </>
+        )}
         {order.status === 'new' && (
           <Button
             size="sm"
@@ -523,7 +577,7 @@ export default function OrderDetailPage() {
             Close
           </Button>
         )}
-        {['new', 'preparing', 'ready', 'served'].includes(order.status) && (
+        {['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status) && (
           <Button
             size="sm"
             variant="destructive"
@@ -531,7 +585,7 @@ export default function OrderDetailPage() {
             className="flex items-center gap-1 sm:gap-2"
           >
             <XCircle className="h-4 w-4" />
-            Cancel
+            {order.status === 'pending_approval' ? 'Reject' : 'Cancel'}
           </Button>
         )}
       </div>
