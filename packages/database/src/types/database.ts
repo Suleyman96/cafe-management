@@ -192,6 +192,7 @@ export interface Database {
           received_by: string;
           payment_type: 'full' | 'partial_amount' | 'specific_items';
           amount: number;
+          tip_amount: number;
           payment_method: 'cash' | 'card' | 'digital';
           order_item_ids: string[] | null;
           notes: string | null;
@@ -254,6 +255,7 @@ export interface Database {
           welcome_message: string | null;
           // Feature controls
           qr_ordering_enabled: boolean;
+          tips_enabled: boolean;
           // Contact & social
           contact_phone: string | null;
           contact_website: string | null;

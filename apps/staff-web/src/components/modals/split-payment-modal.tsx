@@ -48,6 +48,7 @@ export function SplitPaymentModal({
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('full');
   const [partialAmount, setPartialAmount] = useState<string>('');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [tipAmount, setTipAmount] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   // Calculate subtotal from items (before tax)
@@ -96,6 +97,7 @@ export function SplitPaymentModal({
                      paymentMode === 'partial' ? 'partial_amount' :
                      'specific_items',
         amount,
+        tip_amount: parseFloat(tipAmount) || 0,
         payment_method: 'cash',
         order_item_ids: paymentMode === 'items' ? Array.from(selectedItems) : null,
         notes: null,
@@ -320,14 +322,55 @@ export function SplitPaymentModal({
             </div>
           )}
 
+          {/* Tip Input - only shown when tips are enabled */}
+          {cafeSettings?.tips_enabled && !isFullyPaid && !isZeroTotal && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Add Tip (optional)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                  {cafeSettings.currency_symbol}
+                </span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00"
+                  value={tipAmount}
+                  onChange={(e) => setTipAmount(e.target.value)}
+                />
+              </div>
+              {parseFloat(tipAmount) > 0 && (
+                <div className="mt-2 text-sm text-green-600">
+                  Tip: {formatPrice(parseFloat(tipAmount))}
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
 
         <div className="border-t p-6">
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-lg font-medium">Amount to Pay</span>
-            <span className={`text-2xl font-bold ${isFullyPaid ? 'text-green-600' : 'text-blue-600'}`}>
-              {formatPrice(getPaymentAmount())}
-            </span>
+          {/* Payment Summary with Tip */}
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Payment</span>
+              <span className="font-medium">{formatPrice(getPaymentAmount())}</span>
+            </div>
+            {cafeSettings?.tips_enabled && parseFloat(tipAmount) > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Tip</span>
+                <span className="font-medium text-green-600">{formatPrice(parseFloat(tipAmount))}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="text-lg font-medium">Total to Collect</span>
+              <span className={`text-2xl font-bold ${isFullyPaid ? 'text-green-600' : 'text-blue-600'}`}>
+                {formatPrice(getPaymentAmount() + (parseFloat(tipAmount) || 0))}
+              </span>
+            </div>
           </div>
           <div className="flex gap-3">
             <Button

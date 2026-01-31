@@ -473,6 +473,11 @@ export default function OrderDetailPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-medium">{formatPrice(payment.amount)}</p>
+                    {(payment as { tip_amount?: number }).tip_amount && (payment as { tip_amount?: number }).tip_amount! > 0 && (
+                      <p className="text-sm text-green-600">
+                        + {formatPrice((payment as { tip_amount?: number }).tip_amount!)} tip
+                      </p>
+                    )}
                     <p className="text-sm text-gray-600 capitalize">
                       {payment.payment_method}
                     </p>

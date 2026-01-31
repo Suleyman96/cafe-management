@@ -55,6 +55,7 @@ export default function CafeSettingsPage() {
     welcome_message: null as string | null,
     // Feature controls
     qr_ordering_enabled: true,
+    tips_enabled: false,
     // Contact & social
     contact_phone: null as string | null,
     contact_website: null as string | null,
@@ -90,6 +91,7 @@ export default function CafeSettingsPage() {
         welcome_heading: settings.welcome_heading,
         welcome_message: settings.welcome_message,
         qr_ordering_enabled: settings.qr_ordering_enabled,
+        tips_enabled: settings.tips_enabled ?? false,
         contact_phone: settings.contact_phone,
         contact_website: settings.contact_website,
         social_instagram: settings.social_instagram,
@@ -159,6 +161,7 @@ export default function CafeSettingsPage() {
         welcome_heading: settings.welcome_heading,
         welcome_message: settings.welcome_message,
         qr_ordering_enabled: settings.qr_ordering_enabled,
+        tips_enabled: settings.tips_enabled ?? false,
         contact_phone: settings.contact_phone,
         contact_website: settings.contact_website,
         social_instagram: settings.social_instagram,
@@ -432,6 +435,21 @@ export default function CafeSettingsPage() {
                     type="checkbox"
                     checked={formData.allow_order_notes}
                     onChange={(e) => handleChange('allow_order_notes', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Enable Tips</label>
+                  <p className="text-xs text-gray-500">Allow staff to collect tips during payment</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.tips_enabled}
+                    onChange={(e) => handleChange('tips_enabled', e.target.checked)}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
