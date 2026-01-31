@@ -1,5 +1,6 @@
 // Export all hooks from a single entry point
 
+export * from './use-auth';
 export * from './use-orders-safe';
 export * from './use-tables-safe';
 export * from './use-waiter-calls-safe';

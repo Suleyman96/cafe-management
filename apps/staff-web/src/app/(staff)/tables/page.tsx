@@ -13,7 +13,6 @@ import {
   Package,
   Users,
   Clock,
-  DollarSign,
   AlertCircle,
   RefreshCw,
   Loader2,
@@ -105,12 +104,12 @@ export default function TablesPage() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  // Get active order for a table
-  const getActiveOrderForTable = (tableId: string) => {
-    return orders?.find((order: any) =>
+  // Get all active orders for a table
+  const getActiveOrdersForTable = (tableId: string) => {
+    return orders?.filter((order: any) =>
       order.table_id === tableId &&
       ['new', 'preparing', 'ready', 'served'].includes(order.status)
-    );
+    ) || [];
   };
 
   // Get active waiter calls for a table
@@ -217,8 +216,8 @@ export default function TablesPage() {
     }
   };
 
-  // Get table card background based on status and order
-  const getTableCardStyle = (table: any, activeOrder: any) => {
+  // Get table card background based on status and orders
+  const getTableCardStyle = (table: any, activeOrders: any[]) => {
     if (!table.is_active) {
       return 'bg-gray-100 border-gray-300 opacity-60';
     }
@@ -228,8 +227,12 @@ export default function TablesPage() {
     if (table.status === 'reserved') {
       return 'bg-blue-50 border-blue-300';
     }
-    if (table.status === 'occupied' && activeOrder) {
-      const effectiveStatus = getEffectiveOrderStatus(activeOrder);
+    if (table.status === 'occupied' && activeOrders.length > 0) {
+      // If multiple orders, use amber/orange to indicate complexity
+      if (activeOrders.length > 1) {
+        return 'bg-amber-50 border-amber-400';
+      }
+      const effectiveStatus = getEffectiveOrderStatus(activeOrders[0]);
       if (effectiveStatus === 'served') {
         return 'bg-purple-50 border-purple-400';
       }
@@ -272,8 +275,8 @@ export default function TablesPage() {
 
   // Handle delete table
   const handleDeleteTable = async (table: any) => {
-    const activeOrder = getActiveOrderForTable(table.id);
-    if (activeOrder) {
+    const activeOrders = getActiveOrdersForTable(table.id);
+    if (activeOrders.length > 0) {
       toast.error('Cannot delete table with active order');
       return;
     }
@@ -351,18 +354,28 @@ export default function TablesPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
         {tables?.map((table: any) => {
-          const activeOrder = getActiveOrderForTable(table.id);
+          const activeOrders = getActiveOrdersForTable(table.id);
+          const hasMultipleOrders = activeOrders.length > 1;
+          const activeOrder = activeOrders[0]; // First order for time display
           const activeCalls = getActiveCallsForTable(table.id);
           const hasActiveCalls = activeCalls.length > 0;
-          const effectiveStatus = activeOrder ? getEffectiveOrderStatus(activeOrder) : null;
-          const statusBadge = effectiveStatus ? getOrderStatusBadge(effectiveStatus) : null;
+
+          // Calculate combined total for all orders
+          const combinedTotal = activeOrders.reduce((total: number, order: any) => {
+            return total + calculateOrderTotal(order);
+          }, 0);
+
+          // Calculate combined items count
+          const combinedItemsCount = activeOrders.reduce((count: number, order: any) => {
+            return count + (order.order_items?.length || 0);
+          }, 0);
 
           return (
             <div
               key={table.id}
               className={`
                 border-2 rounded-xl p-4 cursor-pointer transition-all relative shadow-sm
-                ${getTableCardStyle(table, activeOrder)}
+                ${getTableCardStyle(table, activeOrders)}
                 ${hasActiveCalls ? 'ring-2 ring-red-500 ring-offset-2' : ''}
               `}
               onClick={() => {
@@ -446,15 +459,32 @@ export default function TablesPage() {
               </div>
 
               {/* Active Order Info */}
-              {activeOrder && (
+              {activeOrders.length > 0 && (
                 <div className="space-y-3 border-t border-gray-200/50 pt-3 mt-3">
-                  {/* Order Status Badge */}
-                  {statusBadge && (
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border ${statusBadge.bg} ${statusBadge.text} ${statusBadge.border}`}>
-                      {statusBadge.icon}
-                      {statusBadge.label}
+                  {/* Multiple Orders Indicator */}
+                  {hasMultipleOrders && (
+                    <div className="bg-amber-100 border border-amber-300 rounded-lg px-3 py-1.5 text-sm font-medium text-amber-800 flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      {activeOrders.length} orders on this table
                     </div>
                   )}
+
+                  {/* Order Status Badges */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {activeOrders.map((order: any, index: number) => {
+                      const orderEffectiveStatus = getEffectiveOrderStatus(order);
+                      const orderStatusBadge = getOrderStatusBadge(orderEffectiveStatus);
+                      return (
+                        <div
+                          key={order.id}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold border ${orderStatusBadge.bg} ${orderStatusBadge.text} ${orderStatusBadge.border}`}
+                        >
+                          {orderStatusBadge.icon}
+                          {hasMultipleOrders ? `#${index + 1} ${orderStatusBadge.label}` : orderStatusBadge.label}
+                        </div>
+                      );
+                    })}
+                  </div>
 
                   {/* Order Details Grid */}
                   <div className="grid grid-cols-2 gap-2 text-sm">
@@ -464,17 +494,29 @@ export default function TablesPage() {
                     </div>
                     <div className="flex items-center gap-2 text-gray-600">
                       <Package className="h-4 w-4 text-gray-400" />
-                      <span>{(activeOrder as any).order_items?.length || 0} items</span>
+                      <span>{combinedItemsCount} items</span>
                     </div>
                   </div>
 
                   {/* Total */}
                   <div className="flex items-center justify-between bg-white/60 rounded-lg px-3 py-2">
-                    <span className="text-sm text-gray-600">Total</span>
+                    <span className="text-sm text-gray-600">{hasMultipleOrders ? 'Combined Total' : 'Total'}</span>
                     <span className="text-lg font-bold text-gray-800">
-                      {formatPrice(calculateOrderTotal(activeOrder))}
+                      {formatPrice(combinedTotal)}
                     </span>
                   </div>
+
+                  {/* Individual Order Totals (if multiple) */}
+                  {hasMultipleOrders && (
+                    <div className="text-xs text-gray-500 space-y-0.5">
+                      {activeOrders.map((order: any, index: number) => (
+                        <div key={order.id} className="flex justify-between">
+                          <span>Order #{index + 1}</span>
+                          <span>{formatPrice(calculateOrderTotal(order))}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Assigned Waiter */}
                   {(activeOrder as any).assigned_waiter && (

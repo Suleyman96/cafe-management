@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTable, useOrders, useMenuItems, useCategories, useCreateOrder, useAddOrderItems, useUpdateOrderStatus, useUpdateOrderItemStatus, useCancelOrder, useCafeSettings, formatPriceWithSettings } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
@@ -25,6 +25,7 @@ import {
   UtensilsCrossed,
   XCircle,
   X,
+  Layers,
 } from 'lucide-react';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
@@ -69,19 +70,29 @@ export default function TableDetailPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
   const [orderNotes, setOrderNotes] = useState('');
+  const [selectedOrderIndex, setSelectedOrderIndex] = useState(0);
 
-  // Track if we've already attempted to create an order for this table
-  const orderCreationAttemptedRef = useRef(false);
+  // Get ALL active orders for this table
+  const activeOrders = useMemo(() => {
+    return orders?.filter((order: any) =>
+      order.table_id === tableId &&
+      ['new', 'preparing', 'ready', 'served'].includes(order.status)
+    ) || [];
+  }, [orders, tableId]);
 
-  // Get active order for this table
-  const activeOrder = orders?.find((order: any) =>
-    order.table_id === tableId &&
-    ['new', 'preparing', 'ready', 'served'].includes(order.status)
-  );
+  // Get currently selected order
+  const activeOrder = activeOrders[selectedOrderIndex] || activeOrders[0];
 
-  // Reset the ref when tableId changes (navigating to a different table)
+  // Reset selected order index when orders change
   useEffect(() => {
-    orderCreationAttemptedRef.current = false;
+    if (selectedOrderIndex >= activeOrders.length && activeOrders.length > 0) {
+      setSelectedOrderIndex(0);
+    }
+  }, [activeOrders.length, selectedOrderIndex]);
+
+  // Reset selected order when tableId changes (navigating to a different table)
+  useEffect(() => {
+    setSelectedOrderIndex(0);
   }, [tableId]);
 
   // Create order with items (for new orders on free tables)
@@ -202,6 +213,15 @@ export default function TableDetailPage() {
     (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
     0
   ) || 0;
+
+  // Calculate combined total for all orders on this table
+  const combinedTotal = activeOrders.reduce((total: number, order: any) => {
+    const orderSum = order.order_items?.reduce(
+      (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
+      0
+    ) || 0;
+    return total + orderSum;
+  }, 0);
 
   // Submit cart items to existing order
   const handleAddItemsToOrder = async () => {
@@ -324,7 +344,11 @@ export default function TableDetailPage() {
       setShowCancelModal(false);
       setCancelReason('');
       refetchOrders();
-      router.push('/tables');
+
+      // If there are other orders, stay on page, otherwise go back
+      if (activeOrders.length <= 1) {
+        router.push('/tables');
+      }
     } catch (error) {
       console.error('Failed to cancel order:', error);
       toast.error('Failed to cancel order');
@@ -366,6 +390,42 @@ export default function TableDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Multiple Orders Tab Selector */}
+      {activeOrders.length > 1 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Layers className="h-4 w-4 text-amber-600" />
+            <span className="text-sm font-medium text-amber-800">
+              {activeOrders.length} orders on this table
+            </span>
+            <span className="text-sm text-amber-600">
+              (Combined: {formatPrice(combinedTotal)})
+            </span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {activeOrders.map((order: any, index: number) => {
+              const orderItemsTotal = order.order_items?.reduce(
+                (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
+                0
+              ) || 0;
+              return (
+                <button
+                  key={order.id}
+                  onClick={() => setSelectedOrderIndex(index)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    selectedOrderIndex === index
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-white text-amber-700 hover:bg-amber-100 border border-amber-300'
+                  }`}
+                >
+                  Order #{index + 1} ({formatPrice(orderItemsTotal)})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Active order info */}
       {activeOrder && (
@@ -638,7 +698,7 @@ export default function TableDetailPage() {
                           {activeOrder ? (
                             <>
                               <Check className="h-4 w-4 mr-2" />
-                              Add to Order
+                              Add to Order #{selectedOrderIndex + 1}
                             </>
                           ) : (
                             <>
