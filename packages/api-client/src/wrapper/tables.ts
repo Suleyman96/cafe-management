@@ -24,6 +24,18 @@ export function createTablesWrapper(ctx: WrapperContext) {
       return data;
     },
 
+    findByTableNumber: async (tableNumber: string) => {
+      const { data, error } = await ctx.client
+        .from('tables')
+        .select('*')
+        .eq('table_number', tableNumber)
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isTable(data)) throw new Error('Invalid table data');
+      return data;
+    },
+
     findByQrCode: async (qrCode: string) => {
       const { data, error } = await ctx.client
         .from('tables')

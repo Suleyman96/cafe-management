@@ -2,8 +2,6 @@
  * Shared types for Supabase wrapper modules
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import type { Database } from '@cafe-idare/database';
 import type { SupabaseClient } from '@supabase/supabase-js';
 

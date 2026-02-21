@@ -1,18 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/supabase';
 import type { Table } from '@/types';
 
 export function useTables() {
   return useQuery({
     queryKey: ['tables'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tables')
-        .select('*')
-        .eq('is_active', true)
-        .order('table_number', { ascending: true });
-
-      if (error) throw error;
+      const data = await db.tables.findAll();
       return data as Table[];
     },
   });
@@ -22,9 +16,7 @@ export function useTable(tableId: string) {
   return useQuery({
     queryKey: ['table', tableId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('tables').select('*').eq('id', tableId).single();
-
-      if (error) throw error;
+      const data = await db.tables.findById(tableId);
       return data as Table;
     },
   });
@@ -35,14 +27,7 @@ export function useUpdateTableStatus() {
 
   return useMutation({
     mutationFn: async ({ tableId, status }: { tableId: string; status: string }) => {
-      const { data, error } = await supabase
-        .from('tables')
-        .update({ status })
-        .eq('id', tableId)
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await db.tables.updateStatus(tableId, status as any);
       return data as Table;
     },
     onSuccess: () => {

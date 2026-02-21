@@ -90,6 +90,12 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@cafe-idare/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@cafe-idare/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@expo/vector-icons':
         specifier: ^14.0.0
         version: 14.1.0(expo-font@14.0.10)(react-native@0.74.0)(react@18.2.0)

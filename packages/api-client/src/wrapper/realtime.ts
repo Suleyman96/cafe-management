@@ -2,8 +2,6 @@
  * Realtime subscriptions wrapper module
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import type { WrapperContext } from './types';
 
 export function createRealtimeWrapper(ctx: WrapperContext) {

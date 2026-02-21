@@ -7,6 +7,29 @@ import type { CustomerFeedbackRow, WrapperContext } from './types';
 
 export function createFeedbackWrapper(ctx: WrapperContext) {
   return {
+    create: async (data: {
+      table_id: string;
+      feedback_type: string;
+      rating?: number;
+      message?: string;
+      subject?: string | null;
+      order_id?: string | null;
+      status?: string;
+    }) => {
+      const { data: result, error } = await ctx.anyClient
+        .from('customer_feedback')
+        .insert({
+          ...data,
+          status: data.status || 'pending',
+        })
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isCustomerFeedback(result)) throw new Error('Invalid feedback data');
+      return result as CustomerFeedbackRow;
+    },
+
     findAll: async (status?: CustomerFeedbackRow['status']) => {
       let query = ctx.client
         .from('customer_feedback')

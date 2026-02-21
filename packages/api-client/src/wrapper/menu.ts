@@ -116,11 +116,14 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
 
 export function createCategoriesWrapper(ctx: WrapperContext) {
   return {
-    findAll: async () => {
-      const { data, error } = await ctx.client
-        .from('categories')
-        .select('*')
-        .order('display_order');
+    findAll: async (options?: { isActive?: boolean }) => {
+      let query = ctx.client.from('categories').select('*').order('display_order');
+
+      if (options?.isActive !== undefined) {
+        query = query.eq('is_active', options.isActive);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw handleSupabaseError(error);
       const categories = data || [];

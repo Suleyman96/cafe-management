@@ -1,4 +1,4 @@
-import type { Database } from './database';
+import type { Database } from '@cafe-idare/database';
 
 // Type aliases for easier use
 export type Table = Database['public']['Tables']['tables']['Row'];

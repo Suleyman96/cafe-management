@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/supabase';
 
 export interface CafeSettings {
   id: string;
@@ -74,18 +74,13 @@ export function useCafeSettings() {
   return useQuery({
     queryKey: ['cafe_settings'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('cafe_settings')
-        .select('*')
-        .eq('id', SETTINGS_ID)
-        .single();
-
-      if (error) {
+      try {
+        const data = await db.settings.get();
+        return data as CafeSettings;
+      } catch (error) {
         console.error('Failed to fetch cafe settings:', error);
         return DEFAULT_SETTINGS;
       }
-
-      return data as CafeSettings;
     },
     staleTime: 1000 * 60 * 5, // Consider fresh for 5 minutes
     placeholderData: DEFAULT_SETTINGS,

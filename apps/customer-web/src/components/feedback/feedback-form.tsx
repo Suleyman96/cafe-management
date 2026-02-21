@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/types/database';
+import { db } from '@/lib/supabase';
 
 type FeedbackType =
   | 'complaint_food'
@@ -12,7 +11,6 @@ type FeedbackType =
   | 'question_menu'
   | 'request_general'
   | 'praise';
-type FeedbackInsert = Database['public']['Tables']['customer_feedback']['Insert'];
 
 interface FeedbackFormProps {
   tableId: string;
@@ -50,18 +48,13 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
 
     setIsSubmitting(true);
     try {
-      const feedbackData: FeedbackInsert = {
+      await db.feedback.create({
         table_id: tableId,
         order_id: orderId || null,
         feedback_type: feedbackType,
         subject: subject.trim() || null,
         message: message.trim(),
-        status: 'pending',
-      };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any).from('customer_feedback').insert(feedbackData);
-
-      if (error) throw error;
+      });
 
       setShowSuccess(true);
       setTimeout(() => {

@@ -93,7 +93,6 @@ export function useAuth() {
     return () => {
       subscription.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staff, clearAuth, router.push, setIsLoading, setStaff]);
 
   const logout = async () => {

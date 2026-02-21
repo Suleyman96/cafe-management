@@ -96,6 +96,24 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       return data as OrderRow;
     },
 
+    findActiveByTable: async (tableId: string) => {
+      const { data, error } = await ctx.client
+        .from('orders')
+        .select(`
+          *,
+          table:tables!orders_table_id_fkey(table_number, location),
+          order_items(*)
+        `)
+        .eq('table_id', tableId)
+        .in('status', ['pending_approval', 'new', 'preparing', 'ready', 'served'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw handleSupabaseError(error);
+      return data;
+    },
+
     getActiveOrders: async () => {
       const { data, error } = await ctx.client
         .from('orders')

@@ -7,6 +7,44 @@ import type { WaiterCallRow, WrapperContext } from './types';
 
 export function createWaiterCallsWrapper(ctx: WrapperContext) {
   return {
+    create: async (data: {
+      table_id: string;
+      call_type?: string;
+      reason?: string;
+      priority?: string;
+      status?: string;
+    }) => {
+      const { data: result, error } = await ctx.anyClient
+        .from('waiter_calls')
+        .insert({
+          ...data,
+          status: data.status || 'pending',
+        })
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isWaiterCall(result)) throw new Error('Invalid waiter call data');
+      return result as WaiterCallRow;
+    },
+
+    findByTable: async (tableId: string, status?: WaiterCallRow['status']) => {
+      let query = ctx.client
+        .from('waiter_calls')
+        .select('*')
+        .eq('table_id', tableId)
+        .order('created_at', { ascending: false });
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw handleSupabaseError(error);
+      return data || [];
+    },
+
     findAll: async (status?: WaiterCallRow['status']) => {
       let query = ctx.client
         .from('waiter_calls')

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { notifyWaiterCall } from '@/lib/notifications';
 import { playWaiterCallSound } from '@/lib/sound';
-import { supabase } from '@/lib/supabase';
+import { db, supabase } from '@/lib/supabase';
 import type { WaiterCallWithTable } from '@/types';
 
 export function useWaiterCalls(status: string = 'pending') {
@@ -12,18 +12,12 @@ export function useWaiterCalls(status: string = 'pending') {
   const query = useQuery({
     queryKey: ['waiter_calls', status],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('waiter_calls')
-        .select('*, table:tables(table_number, location)')
-        .eq('status', status)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
+      const data = await db.waiterCalls.findAll(status as any);
       return data as WaiterCallWithTable[];
     },
   });
 
-  // Real-time subscription
+  // Real-time subscription (needs raw supabase client for channel API)
   useEffect(() => {
     let channel: RealtimeChannel;
 
@@ -38,10 +32,8 @@ export function useWaiterCalls(status: string = 'pending') {
             table: 'waiter_calls',
           },
           async (payload) => {
-            // Play sound and show notification
             await playWaiterCallSound();
 
-            // Fetch table info
             const { data: tableData } = await supabase
               .from('tables')
               .select('table_number')
@@ -94,24 +86,14 @@ export function useUpdateWaiterCall() {
       status: string;
       staffId?: string;
     }) => {
-      const updateData: any = { status };
-
-      if (status === 'acknowledged') {
-        updateData.acknowledged_at = new Date().toISOString();
-        updateData.responded_by = staffId;
-      } else if (status === 'resolved') {
-        updateData.resolved_at = new Date().toISOString();
+      if (status === 'acknowledged' && staffId) {
+        return await db.waiterCalls.acknowledge(callId, staffId);
       }
-
-      const { data, error } = await supabase
-        .from('waiter_calls')
-        .update(updateData)
-        .eq('id', callId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      if (status === 'resolved') {
+        return await db.waiterCalls.resolve(callId);
+      }
+      // Fallback for other statuses
+      return await db.waiterCalls.acknowledge(callId, staffId || '');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['waiter_calls'] });

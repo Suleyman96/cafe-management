@@ -72,6 +72,9 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
           status,
           is_active: isActive,
           qr_code: qrCode,
+          current_session_id: null,
+          occupied_at: null,
+          notes: null,
         });
         toast.success('Table created successfully');
       }

@@ -1,10 +1,7 @@
-// Re-export shared types from database types
-export type {
-  Database,
-  Json,
-} from './database';
+// Re-export shared types from database package
+export type { Database } from '@cafe-idare/database';
 
-import type { Database } from './database';
+import type { Database } from '@cafe-idare/database';
 
 // Type aliases for tables
 export type Table = Database['public']['Tables']['tables']['Row'];

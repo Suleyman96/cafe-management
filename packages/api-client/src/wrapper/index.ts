@@ -5,8 +5,6 @@
  * This module composes all domain-specific wrappers into a single unified API.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import type { Database } from '@cafe-idare/database';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createFeedbackWrapper } from './feedback';
