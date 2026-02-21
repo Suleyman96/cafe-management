@@ -6,14 +6,12 @@ import { LoadingSpinner } from '@cafe-idare/ui';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import {
-  Clock,
   CheckCircle,
   AlertCircle,
   Package,
   ChefHat,
   Timer,
   User,
-  Bell,
   Utensils,
   UtensilsCrossed
 } from 'lucide-react';
@@ -22,7 +20,6 @@ export default function KitchenDisplayPage() {
   const { data: orders, isLoading: loading, error, refetch } = useOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
-  const [audioEnabled, setAudioEnabled] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Update current time every minute to refresh elapsed times
@@ -64,17 +61,14 @@ export default function KitchenDisplayPage() {
 
   // Set up real-time subscription
   useEffect(() => {
+    console.log('Setting up kitchen realtime subscription');
     const channel = supabase
       .channel('kitchen-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
-        (payload) => {
+        () => {
           refetch();
-          // Play sound for new orders
-          if (payload.eventType === 'INSERT' && audioEnabled) {
-            playNotificationSound();
-          }
         }
       )
       .on(
@@ -84,20 +78,14 @@ export default function KitchenDisplayPage() {
           refetch();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Kitchen subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetch, audioEnabled]);
-
-  // Play notification sound
-  const playNotificationSound = () => {
-    const audio = new Audio('/notification.mp3');
-    audio.play().catch(() => {
-      // Ignore errors if audio can't play
-    });
-  };
+  }, [refetch]);
 
   // Calculate elapsed time
   const calculateElapsedTime = (createdAt: string) => {
@@ -275,18 +263,6 @@ export default function KitchenDisplayPage() {
               <span className="text-green-200 text-xs sm:text-sm hidden xs:inline">READY</span>
             </div>
           </div>
-          {/* Sound Toggle */}
-          <button
-            onClick={() => setAudioEnabled(!audioEnabled)}
-            className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm sm:text-lg font-medium transition-colors ${
-              audioEnabled
-                ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'bg-gray-600 hover:bg-gray-500 text-gray-300'
-            }`}
-          >
-            <Bell className={`h-4 sm:h-5 w-4 sm:w-5 ${audioEnabled ? 'animate-pulse' : ''}`} />
-            <span className="hidden sm:inline">{audioEnabled ? 'Sound ON' : 'Sound OFF'}</span>
-          </button>
         </div>
       </div>
 
@@ -312,7 +288,7 @@ export default function KitchenDisplayPage() {
                     #{getOrderNumber(order.id)}
                   </div>
                   <h3 className="text-base sm:text-xl font-bold text-gray-700">
-                    {order.table ? `Table ${order.table.table_number}` : (
+                    {order.table ? order.table.table_number : (
                       <span className="flex items-center gap-1 sm:gap-2 text-orange-700">
                         <Package className="h-4 sm:h-5 w-4 sm:w-5" />
                         TAKEOUT

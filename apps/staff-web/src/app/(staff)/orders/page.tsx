@@ -15,7 +15,6 @@ import {
   ChefHat,
   CheckCircle,
   XCircle,
-  Filter,
   Search,
   CreditCard,
   Package,
@@ -64,6 +63,7 @@ export default function OrdersPage() {
 
   // Set up real-time subscriptions
   useEffect(() => {
+    console.log('Setting up orders realtime subscription');
     const channel = supabase
       .channel('orders-realtime')
       .on(
@@ -87,7 +87,9 @@ export default function OrdersPage() {
           refetch();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Orders subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -273,7 +275,7 @@ export default function OrdersPage() {
               onClick={() => setSelectedTableFilter('all')}
               className="w-full sm:w-auto"
             >
-              Clear Table Filter (Table {selectedTableFilter})
+              Clear Table Filter ({selectedTableFilter})
             </Button>
           )}
         </div>
@@ -308,7 +310,7 @@ export default function OrdersPage() {
                         <h3 className="font-semibold text-base sm:text-lg text-orange-800">Takeout</h3>
                       </div>
                     ) : (
-                      <h3 className="font-semibold text-base sm:text-lg">Table {order.table.table_number}</h3>
+                      <h3 className="font-semibold text-base sm:text-lg">{order.table.table_number}</h3>
                     )}
                     <span className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                       {order.status.toUpperCase()}
@@ -503,7 +505,7 @@ export default function OrdersPage() {
               <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                 <p className="font-medium">
                   {cancelOrderTarget.table
-                    ? `Table ${cancelOrderTarget.table.table_number}`
+                    ? cancelOrderTarget.table.table_number
                     : 'Takeout Order'}
                 </p>
                 <p className="text-sm text-gray-500">#{cancelOrderTarget.id.slice(0, 8)}</p>

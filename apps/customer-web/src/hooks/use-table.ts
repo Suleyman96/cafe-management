@@ -2,6 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import type { Table } from "@/types";
 
+// Check if a string looks like a UUID
+const isUUID = (str: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
 /**
  * Fetch table by table_number (e.g., "T01", "T02")
  * This allows friendly URLs like /table/T01 instead of UUIDs
@@ -11,6 +15,18 @@ export function useTable(tableNumber: string) {
   return useQuery({
     queryKey: ["table", tableNumber],
     queryFn: async () => {
+      // If it looks like a UUID, query by id directly
+      if (isUUID(tableNumber)) {
+        const { data, error } = await supabase
+          .from("tables")
+          .select("*")
+          .eq("id", tableNumber)
+          .single();
+
+        if (error) throw error;
+        return data as Table;
+      }
+
       // First try to find by table_number (for friendly URLs)
       const { data, error } = await supabase
         .from("tables")

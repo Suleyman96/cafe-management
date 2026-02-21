@@ -190,7 +190,7 @@ export default function FeedbackPage() {
 
                         <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
                           {item.table && (
-                            <span>🪑 Table {item.table.table_number}</span>
+                            <span>🪑 {item.table.table_number}</span>
                           )}
                           <span>📅 {formatDateTime(item.created_at)}</span>
                         </div>

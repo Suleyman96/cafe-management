@@ -157,7 +157,7 @@ export default function AddItemsPage() {
             <span className="hidden sm:inline">Back</span>
           </Button>
           <h1 className="text-lg sm:text-2xl font-bold">
-            Add Items - {(order as any).table?.table_number ? `Table ${(order as any).table.table_number}` : 'Takeout'}
+            Add Items - {(order as any).table?.table_number ? (order as any).table.table_number : 'Takeout'}
           </h1>
         </div>
       </div>

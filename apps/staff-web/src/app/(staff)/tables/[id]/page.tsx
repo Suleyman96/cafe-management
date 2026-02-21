@@ -385,7 +385,7 @@ export default function TableDetailPage() {
             <ArrowLeft className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Back</span>
           </Button>
-          <h1 className="text-xl sm:text-2xl font-bold">Table {table.table_number}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{table.table_number}</h1>
           {activeOrder && (
             <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(activeOrder.status)}`}>
               {activeOrder.status.toUpperCase()}

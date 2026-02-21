@@ -95,7 +95,7 @@ export function TableModal({
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">
-            {isEditing ? `Edit Table ${table.table_number}` : 'Add New Table'}
+            {isEditing ? `Edit ${table.table_number}` : 'Add New Table'}
           </h2>
           <button
             onClick={onClose}

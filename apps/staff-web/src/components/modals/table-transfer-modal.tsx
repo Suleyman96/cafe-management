@@ -109,7 +109,7 @@ export function TableTransferModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Transfer Table {sourceTable?.table_number}</h2>
+          <h2 className="text-xl font-bold">Transfer {sourceTable?.table_number}</h2>
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600"
@@ -131,7 +131,7 @@ export function TableTransferModal({
               <option value="">Select a table</option>
               {availableTables?.map((table: any) => (
                 <option key={table.id} value={table.id}>
-                  Table {table.table_number} - {table.location || 'Main area'} ({table.status})
+                  {table.table_number} - {table.location || 'Main area'} ({table.status})
                 </option>
               ))}
             </select>

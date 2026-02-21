@@ -274,7 +274,7 @@ export default function TablesPage() {
         order_type: 'dine_in',
         status: 'new',
       } as any);
-      toast.success(`Order created for Table ${table.table_number}`);
+      toast.success(`Order created for ${table.table_number}`);
       window.location.href = `/orders/${result.id}/add-items`;
     } catch (error) {
       console.error('Failed to create order:', error);
@@ -292,13 +292,13 @@ export default function TablesPage() {
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete Table ${table.table_number}?`)) {
+    if (!confirm(`Are you sure you want to delete ${table.table_number}?`)) {
       return;
     }
 
     try {
       await deleteTable.mutateAsync(table.id);
-      toast.success(`Table ${table.table_number} deleted`);
+      toast.success(`${table.table_number} deleted`);
       refetchTables();
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete table');
@@ -442,7 +442,7 @@ export default function TablesPage() {
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
-                    Table {table.table_number}
+                    {table.table_number}
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${

@@ -26,6 +26,7 @@ export function useOrder(tableId: string) {
       if (error) throw error;
       return data as OrderWithItems | null;
     },
+    enabled: !!tableId, // Don't run query if tableId is empty
     staleTime: 0, // Always fetch fresh data
   });
 

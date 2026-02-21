@@ -286,7 +286,7 @@ export default function OrderDetailPage() {
             <span className="hidden sm:inline">Back</span>
           </Button>
           <h1 className="text-lg sm:text-2xl font-bold">
-            {order.table ? `Table ${order.table.table_number}` : 'Takeout'}
+            {order.table ? order.table.table_number : 'Takeout'}
           </h1>
           <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(order.status)}`}>
             {order.status.toUpperCase()}
@@ -363,7 +363,7 @@ export default function OrderDetailPage() {
           </h3>
           {transferHistory.map((transfer: TableTransfer) => (
             <div key={transfer.id} className="text-sm">
-              Transferred from Table {transfer.from_table?.table_number} to Table {transfer.to_table?.table_number}
+              Transferred from {transfer.from_table?.table_number} to {transfer.to_table?.table_number}
               {transfer.reason && ` - ${transfer.reason}`}
               <span className="text-gray-600 ml-2">({formatTime(transfer.created_at)})</span>
             </div>
