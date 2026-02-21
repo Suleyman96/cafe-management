@@ -1,6 +1,6 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { CartItem, MenuItem } from "@/types";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import type { CartItem, MenuItem } from '@/types';
 
 interface CartStore {
   items: CartItem[];
@@ -20,9 +20,7 @@ export const useCartStore = create<CartStore>()(
 
       addItem: (menuItem, quantity, notes) => {
         set((state) => {
-          const existingItem = state.items.find(
-            (item) => item.menuItem.id === menuItem.id
-          );
+          const existingItem = state.items.find((item) => item.menuItem.id === menuItem.id);
 
           if (existingItem) {
             // Update existing item
@@ -34,7 +32,7 @@ export const useCartStore = create<CartStore>()(
                       quantity: item.quantity + quantity,
                       notes: notes || item.notes,
                     }
-                  : item
+                  : item,
               ),
             };
           }
@@ -60,7 +58,7 @@ export const useCartStore = create<CartStore>()(
 
         set((state) => ({
           items: state.items.map((item) =>
-            item.menuItem.id === menuItemId ? { ...item, quantity } : item
+            item.menuItem.id === menuItemId ? { ...item, quantity } : item,
           ),
         }));
       },
@@ -68,7 +66,7 @@ export const useCartStore = create<CartStore>()(
       updateNotes: (menuItemId, notes) => {
         set((state) => ({
           items: state.items.map((item) =>
-            item.menuItem.id === menuItemId ? { ...item, notes } : item
+            item.menuItem.id === menuItemId ? { ...item, notes } : item,
           ),
         }));
       },
@@ -79,10 +77,7 @@ export const useCartStore = create<CartStore>()(
 
       getTotal: () => {
         const { items } = get();
-        return items.reduce(
-          (total, item) => total + item.menuItem.price * item.quantity,
-          0
-        );
+        return items.reduce((total, item) => total + item.menuItem.price * item.quantity, 0);
       },
 
       getItemCount: () => {
@@ -91,11 +86,9 @@ export const useCartStore = create<CartStore>()(
       },
     }),
     {
-      name: "cart-storage",
+      name: 'cart-storage',
       // Partition by table to avoid cart conflicts
       partialize: (state) => ({ items: state.items }),
-    }
-  )
+    },
+  ),
 );
-
-

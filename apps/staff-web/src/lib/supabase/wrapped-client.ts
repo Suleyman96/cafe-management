@@ -3,9 +3,9 @@
  * Uses the comprehensive wrapper for type-safe operations
  */
 
-import { createClient } from '@supabase/supabase-js';
 import { createSupabaseWrapper } from '@cafe-idare/api-client';
 import type { Database } from '@cafe-idare/database';
+import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;

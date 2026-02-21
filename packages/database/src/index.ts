@@ -3,7 +3,7 @@
  * Exports all database types, schemas, and enums
  */
 
-export * from './types';
-export * from './schemas';
 export * from './enums';
+export * from './schemas';
 export * from './supabase-helpers';
+export * from './types';

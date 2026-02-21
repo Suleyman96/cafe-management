@@ -1,11 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Missing Supabase environment variables");
+  throw new Error('Missing Supabase environment variables');
 }
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
@@ -26,7 +26,5 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 export async function setTableContext(qrToken: string) {
   // Set session variable for RLS
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).rpc("set_table_context", { qr_token: qrToken });
+  await (supabase as any).rpc('set_table_context', { qr_token: qrToken });
 }
-
-

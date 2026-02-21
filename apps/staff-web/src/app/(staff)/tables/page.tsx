@@ -1,35 +1,48 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useTables, useOrders, useWaiterCalls, useCreateOrder, useDeleteTable, useCafeSettings, formatPriceWithSettings } from '@/hooks';
-import { useAuth } from '@/hooks/use-auth';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
-import { TableTransferModal } from '@/components/modals/table-transfer-modal';
+import {
+  AlertCircle,
+  CheckCircle,
+  ChefHat,
+  Clock,
+  Edit2,
+  Hourglass,
+  Loader2,
+  MoreVertical,
+  Package,
+  Plus,
+  RefreshCw,
+  Trash2,
+  UserCheck,
+  Users,
+  UtensilsCrossed,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { CreateTakeoutModal } from '@/components/modals/create-takeout-modal';
 import { TableModal } from '@/components/modals/table-modal';
-import { supabase } from '@/lib/supabase/client';
-import { toast } from 'sonner';
+import { TableTransferModal } from '@/components/modals/table-transfer-modal';
 import {
-  Package,
-  Users,
-  Clock,
-  AlertCircle,
-  RefreshCw,
-  Loader2,
-  Plus,
-  Edit2,
-  Trash2,
-  MoreVertical,
-  UserCheck,
-  ChefHat,
-  CheckCircle,
-  UtensilsCrossed,
-  Hourglass,
-} from 'lucide-react';
+  formatPriceWithSettings,
+  useCafeSettings,
+  useCreateOrder,
+  useDeleteTable,
+  useOrders,
+  useTables,
+  useWaiterCalls,
+} from '@/hooks';
+import { useAuth } from '@/hooks/use-auth';
+import { supabase } from '@/lib/supabase/client';
 
 export default function TablesPage() {
   const { staff } = useAuth();
-  const { data: tables, isLoading: tablesLoading, error: tablesError, refetch: refetchTables } = useTables();
+  const {
+    data: tables,
+    isLoading: tablesLoading,
+    error: tablesError,
+    refetch: refetchTables,
+  } = useTables();
   const { data: orders } = useOrders();
   const { data: waiterCalls } = useWaiterCalls();
   const deleteTable = useDeleteTable();
@@ -58,34 +71,18 @@ export default function TablesPage() {
   useEffect(() => {
     const channel = supabase
       .channel('tables-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tables' },
-        () => {
-          refetchTables();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => {
-          refetchTables();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'order_items' },
-        () => {
-          refetchTables();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'waiter_calls' },
-        () => {
-          refetchTables();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tables' }, () => {
+        refetchTables();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        refetchTables();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
+        refetchTables();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waiter_calls' }, () => {
+        refetchTables();
+      })
       .subscribe();
 
     return () => {
@@ -107,18 +104,21 @@ export default function TablesPage() {
 
   // Get all active orders for a table (including pending_approval)
   const getActiveOrdersForTable = (tableId: string) => {
-    return orders?.filter((order: any) =>
-      order.table_id === tableId &&
-      ['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status)
-    ) || [];
+    return (
+      orders?.filter(
+        (order: any) =>
+          order.table_id === tableId &&
+          ['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status),
+      ) || []
+    );
   };
 
   // Get active waiter calls for a table
   const getActiveCallsForTable = (tableId: string) => {
-    return waiterCalls?.filter((call: any) =>
-      call.table_id === tableId &&
-      call.status === 'pending'
-    ) || [];
+    return (
+      waiterCalls?.filter((call: any) => call.table_id === tableId && call.status === 'pending') ||
+      []
+    );
   };
 
   // Get order total from database (includes tax) for consistency
@@ -126,8 +126,9 @@ export default function TablesPage() {
   const calculateOrderTotal = (order: any) => {
     if (order?.total) return order.total;
     if (!order?.order_items) return 0;
-    return order.order_items.reduce((sum: number, item: any) =>
-      sum + (item.quantity * item.item_price), 0
+    return order.order_items.reduce(
+      (sum: number, item: any) => sum + item.quantity * item.item_price,
+      0,
     );
   };
 
@@ -154,7 +155,9 @@ export default function TablesPage() {
 
     const items = order.order_items;
     const allServed = items.every((item: any) => item.status === 'served');
-    const allReady = items.every((item: any) => item.status === 'ready' || item.status === 'served');
+    const allReady = items.every(
+      (item: any) => item.status === 'ready' || item.status === 'served',
+    );
     const anyReady = items.some((item: any) => item.status === 'ready');
     const anyPreparing = items.some((item: any) => item.status === 'preparing');
 
@@ -174,7 +177,7 @@ export default function TablesPage() {
           text: 'text-amber-800',
           border: 'border-amber-400',
           icon: <Hourglass className="h-3.5 w-3.5" />,
-          label: '⏳ Pending Approval'
+          label: '⏳ Pending Approval',
         };
       case 'new':
         return {
@@ -182,7 +185,7 @@ export default function TablesPage() {
           text: 'text-blue-800',
           border: 'border-blue-300',
           icon: <AlertCircle className="h-3.5 w-3.5" />,
-          label: 'New Order'
+          label: 'New Order',
         };
       case 'preparing':
         return {
@@ -190,7 +193,7 @@ export default function TablesPage() {
           text: 'text-yellow-800',
           border: 'border-yellow-300',
           icon: <ChefHat className="h-3.5 w-3.5" />,
-          label: 'Preparing'
+          label: 'Preparing',
         };
       case 'ready':
         return {
@@ -198,7 +201,7 @@ export default function TablesPage() {
           text: 'text-green-800',
           border: 'border-green-300',
           icon: <CheckCircle className="h-3.5 w-3.5" />,
-          label: 'Ready'
+          label: 'Ready',
         };
       case 'served':
         return {
@@ -206,7 +209,7 @@ export default function TablesPage() {
           text: 'text-purple-800',
           border: 'border-purple-300',
           icon: <UtensilsCrossed className="h-3.5 w-3.5" />,
-          label: 'Served'
+          label: 'Served',
         };
       case 'partially_ready':
         return {
@@ -214,7 +217,7 @@ export default function TablesPage() {
           text: 'text-lime-800',
           border: 'border-lime-400',
           icon: <CheckCircle className="h-3.5 w-3.5" />,
-          label: 'Partially Ready'
+          label: 'Partially Ready',
         };
       default:
         return {
@@ -222,7 +225,7 @@ export default function TablesPage() {
           text: 'text-gray-800',
           border: 'border-gray-300',
           icon: null,
-          label: status
+          label: status,
         };
     }
   };
@@ -266,7 +269,7 @@ export default function TablesPage() {
   };
 
   // Handle creating order for a free table
-  const handleCreateOrderForTable = async (table: any) => {
+  const _handleCreateOrderForTable = async (table: any) => {
     setCreatingOrderForTable(table.id);
     try {
       const result = await createOrder.mutateAsync({
@@ -409,7 +412,10 @@ export default function TablesPage() {
                   </button>
 
                   {tableMenuOpen === table.id && (
-                    <div className="absolute right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 min-w-[120px]" data-table-menu>
+                    <div
+                      className="absolute right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 min-w-[120px]"
+                      data-table-menu
+                    >
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -445,12 +451,17 @@ export default function TablesPage() {
                     {table.table_number}
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      table.status === 'free' ? 'bg-gray-100 text-gray-600' :
-                      table.status === 'occupied' ? 'bg-orange-100 text-orange-700' :
-                      table.status === 'reserved' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-200 text-gray-600'
-                    }`}>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        table.status === 'free'
+                          ? 'bg-gray-100 text-gray-600'
+                          : table.status === 'occupied'
+                            ? 'bg-orange-100 text-orange-700'
+                            : table.status === 'reserved'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-gray-200 text-gray-600'
+                      }`}
+                    >
                       {table.status.charAt(0).toUpperCase() + table.status.slice(1)}
                     </span>
                     {table.location && (
@@ -491,7 +502,9 @@ export default function TablesPage() {
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold border ${orderStatusBadge.bg} ${orderStatusBadge.text} ${orderStatusBadge.border}`}
                         >
                           {orderStatusBadge.icon}
-                          {hasMultipleOrders ? `#${index + 1} ${orderStatusBadge.label}` : orderStatusBadge.label}
+                          {hasMultipleOrders
+                            ? `#${index + 1} ${orderStatusBadge.label}`
+                            : orderStatusBadge.label}
                         </div>
                       );
                     })}
@@ -511,7 +524,9 @@ export default function TablesPage() {
 
                   {/* Total */}
                   <div className="flex items-center justify-between bg-white/60 rounded-lg px-3 py-2">
-                    <span className="text-sm text-gray-600">{hasMultipleOrders ? 'Combined Total' : 'Total'}</span>
+                    <span className="text-sm text-gray-600">
+                      {hasMultipleOrders ? 'Combined Total' : 'Total'}
+                    </span>
                     <span className="text-lg font-bold text-gray-800">
                       {formatPrice(combinedTotal)}
                     </span>
@@ -548,9 +563,7 @@ export default function TablesPage() {
                       {call.reason.toUpperCase()}
                     </span>
                   </div>
-                  {call.message && (
-                    <p className="text-red-600 text-sm mt-1">{call.message}</p>
-                  )}
+                  {call.message && <p className="text-red-600 text-sm mt-1">{call.message}</p>}
                 </div>
               ))}
 
@@ -575,10 +588,12 @@ export default function TablesPage() {
                     Transfer
                   </Button>
                 </div>
-              ) : table.status === 'free' && (
-                <div className="mt-4 pt-3 border-t border-gray-200">
-                  <p className="text-sm text-gray-500 text-center">Click to view table</p>
-                </div>
+              ) : (
+                table.status === 'free' && (
+                  <div className="mt-4 pt-3 border-t border-gray-200">
+                    <p className="text-sm text-gray-500 text-center">Click to view table</p>
+                  </div>
+                )
               )}
             </div>
           );

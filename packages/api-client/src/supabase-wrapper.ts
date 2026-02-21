@@ -17,5 +17,5 @@
  * - realtime.ts - Realtime subscription helpers
  */
 
-export { SupabaseWrapper, createSupabaseWrapper } from './wrapper';
+export { createSupabaseWrapper, SupabaseWrapper } from './wrapper';
 export * from './wrapper/types';

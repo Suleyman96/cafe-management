@@ -1,16 +1,16 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
 
 function AuthCallbackContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const _searchParams = useSearchParams();
   const { setStaff } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [_isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -27,7 +27,9 @@ function AuthCallbackContent() {
 
         if (!accessToken) {
           // Check if we already have a session
-          const { data: { session } } = await supabase.auth.getSession();
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
           if (session?.user) {
             // Already logged in, redirect to home
             router.push('/');
@@ -60,17 +62,17 @@ function AuthCallbackContent() {
         }
 
         setStaff(staffData);
-        
+
         // Clear the hash to prevent redirect loops
         window.history.replaceState(null, '', '/');
-        
+
         // Redirect to home
         router.push('/');
       } catch (err: any) {
         console.error('Auth callback error:', err);
         setError(err.message || 'Authentication failed');
         setIsLoading(false);
-        
+
         // Redirect to login after 3 seconds
         setTimeout(() => {
           router.push(`/login?error=${encodeURIComponent(err.message || 'Authentication failed')}`);
@@ -86,8 +88,18 @@ function AuthCallbackContent() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <div className="text-red-600 mb-4">
-            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="mx-auto h-12 w-12"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Authentication Failed</h2>
@@ -111,14 +123,16 @@ function AuthCallbackContent() {
 
 export default function AuthCallbackPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Loading...</h2>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Loading...</h2>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <AuthCallbackContent />
     </Suspense>
   );

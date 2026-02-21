@@ -3,9 +3,9 @@
  * Shared across staff-web and mobile-app
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { OrderPaymentWithStaff } from '../../types';
 import { getSupabaseClient } from '../supabase';
-import type { OrderPayment, OrderPaymentWithStaff } from '../../types';
 
 // ========================================
 // Query: Get payments for an order
@@ -104,27 +104,27 @@ export function useCreatePayment() {
     },
     onSuccess: (_, variables) => {
       // Invalidate order queries
-      queryClient.invalidateQueries({ 
-        queryKey: ['orders', variables.order_id] 
+      queryClient.invalidateQueries({
+        queryKey: ['orders', variables.order_id],
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['order', variables.order_id] 
+      queryClient.invalidateQueries({
+        queryKey: ['order', variables.order_id],
       });
-      
+
       // Invalidate payment queries
-      queryClient.invalidateQueries({ 
-        queryKey: ['order_payments', variables.order_id] 
+      queryClient.invalidateQueries({
+        queryKey: ['order_payments', variables.order_id],
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['order_payment_summary', variables.order_id] 
+      queryClient.invalidateQueries({
+        queryKey: ['order_payment_summary', variables.order_id],
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['order_remaining_balance', variables.order_id] 
+      queryClient.invalidateQueries({
+        queryKey: ['order_remaining_balance', variables.order_id],
       });
-      
+
       // Invalidate order lists
-      queryClient.invalidateQueries({ 
-        queryKey: ['orders'] 
+      queryClient.invalidateQueries({
+        queryKey: ['orders'],
       });
     },
   });
@@ -149,20 +149,20 @@ export function useDeletePayment() {
     },
     onSuccess: (data) => {
       // Invalidate all related queries
-      queryClient.invalidateQueries({ 
-        queryKey: ['orders', data.orderId] 
+      queryClient.invalidateQueries({
+        queryKey: ['orders', data.orderId],
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['order_payments', data.orderId] 
+      queryClient.invalidateQueries({
+        queryKey: ['order_payments', data.orderId],
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['order_payment_summary', data.orderId] 
+      queryClient.invalidateQueries({
+        queryKey: ['order_payment_summary', data.orderId],
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['order_remaining_balance', data.orderId] 
+      queryClient.invalidateQueries({
+        queryKey: ['order_remaining_balance', data.orderId],
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['orders'] 
+      queryClient.invalidateQueries({
+        queryKey: ['orders'],
       });
     },
   });
@@ -174,10 +174,9 @@ export function useDeletePayment() {
 
 export function calculateItemsTotal(
   orderItems: Array<{ id: string; item_price: number; quantity: number }>,
-  selectedItemIds: string[]
+  selectedItemIds: string[],
 ): number {
   return orderItems
-    .filter(item => selectedItemIds.includes(item.id))
-    .reduce((total, item) => total + (item.item_price * item.quantity), 0);
+    .filter((item) => selectedItemIds.includes(item.id))
+    .reduce((total, item) => total + item.item_price * item.quantity, 0);
 }
-

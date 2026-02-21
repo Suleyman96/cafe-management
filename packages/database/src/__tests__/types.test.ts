@@ -1,6 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { z } from 'zod';
-import { OrderSchema, TableSchema, MenuItemSchema } from '../schemas';
+import { describe, expect, it } from 'vitest';
+import { MenuItemSchema, OrderSchema, TableSchema } from '../schemas';
 
 describe('Database Schemas', () => {
   describe('OrderSchema', () => {

@@ -1,18 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Menu, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Sidebar } from '@/components/layout/sidebar';
 import { NotificationProvider } from '@/components/providers/notification-provider';
-import { Menu, X } from 'lucide-react';
 
 const SIDEBAR_STORAGE_KEY = 'cafe-sidebar-collapsed';
 
-export default function StaffLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function StaffLayout({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -55,11 +51,7 @@ export default function StaffLayout({
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
             >
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
 
@@ -91,9 +83,7 @@ export default function StaffLayout({
           </div>
 
           {/* Main content area */}
-          <main className="flex-1 overflow-auto pt-16 lg:pt-0">
-            {children}
-          </main>
+          <main className="flex-1 overflow-auto pt-16 lg:pt-0">{children}</main>
         </div>
       </NotificationProvider>
     </ProtectedRoute>

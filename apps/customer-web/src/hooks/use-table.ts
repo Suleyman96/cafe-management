@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
-import type { Table } from "@/types";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
+import type { Table } from '@/types';
 
 // Check if a string looks like a UUID
 const isUUID = (str: string) =>
@@ -13,14 +13,14 @@ const isUUID = (str: string) =>
  */
 export function useTable(tableNumber: string) {
   return useQuery({
-    queryKey: ["table", tableNumber],
+    queryKey: ['table', tableNumber],
     queryFn: async () => {
       // If it looks like a UUID, query by id directly
       if (isUUID(tableNumber)) {
         const { data, error } = await supabase
-          .from("tables")
-          .select("*")
-          .eq("id", tableNumber)
+          .from('tables')
+          .select('*')
+          .eq('id', tableNumber)
           .single();
 
         if (error) throw error;
@@ -29,17 +29,17 @@ export function useTable(tableNumber: string) {
 
       // First try to find by table_number (for friendly URLs)
       const { data, error } = await supabase
-        .from("tables")
-        .select("*")
-        .eq("table_number", tableNumber)
+        .from('tables')
+        .select('*')
+        .eq('table_number', tableNumber)
         .single();
 
       if (error) {
         // If not found by table_number, try by ID (for backwards compatibility)
         const { data: dataById, error: errorById } = await supabase
-          .from("tables")
-          .select("*")
-          .eq("id", tableNumber)
+          .from('tables')
+          .select('*')
+          .eq('id', tableNumber)
           .single();
 
         if (errorById) throw errorById;

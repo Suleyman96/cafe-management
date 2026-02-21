@@ -3,10 +3,10 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { db } from '@/lib/supabase/wrapped-client';
 import { QUERY_KEYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { db } from '@/lib/supabase/wrapped-client';
 
 type PaymentInsert = Database['public']['Tables']['order_payments']['Insert'];
 type Payment = Database['public']['Tables']['order_payments']['Row'];
@@ -53,16 +53,16 @@ export function usePaymentSummary(orderId: string) {
       acc.total += payment.amount;
       acc.count += 1;
       if (payment.payment_method) {
-        acc.byMethod[payment.payment_method] = 
+        acc.byMethod[payment.payment_method] =
           (acc.byMethod[payment.payment_method] || 0) + payment.amount;
       }
       return acc;
     },
-    { 
-      total: 0, 
-      count: 0, 
-      byMethod: {} as Record<string, number> 
-    }
+    {
+      total: 0,
+      count: 0,
+      byMethod: {} as Record<string, number>,
+    },
   );
 
   return {
@@ -70,8 +70,8 @@ export function usePaymentSummary(orderId: string) {
     data: {
       payments: payments || [],
       summary: summary || { total: 0, count: 0, byMethod: {} },
-      remainingBalance: remainingBalance || 0
-    }
+      remainingBalance: remainingBalance || 0,
+    },
   };
 }
 
@@ -80,7 +80,7 @@ export function formatPaymentMethod(method: string): string {
   const methods: Record<string, string> = {
     cash: 'Cash',
     card: 'Credit/Debit Card',
-    digital: 'Digital Payment'
+    digital: 'Digital Payment',
   };
   return methods[method] || method;
 }

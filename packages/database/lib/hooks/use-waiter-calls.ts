@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSupabaseClient } from '../supabase';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { WaiterCall } from '../../types';
+import { getSupabaseClient } from '../supabase';
 
 type WaiterCallStatus = 'pending' | 'completed';
 
@@ -45,15 +45,15 @@ export function usePendingWaiterCalls() {
 
 export function useRespondToWaiterCall() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ callId, staffId }: { callId: string; staffId: string }) => {
       const { data, error } = await getSupabaseClient()
         .from('waiter_calls')
-        .update({ 
+        .update({
           status: 'completed' as WaiterCallStatus,
           responded_by: staffId,
-          responded_at: new Date().toISOString()
+          responded_at: new Date().toISOString(),
         })
         .eq('id', callId)
         .select()
@@ -71,7 +71,7 @@ export function useRespondToWaiterCall() {
 
 export function useCreateWaiterCall() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (callData: Omit<WaiterCall, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await getSupabaseClient()

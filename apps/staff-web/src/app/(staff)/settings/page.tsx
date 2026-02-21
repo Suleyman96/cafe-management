@@ -1,20 +1,20 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '@/hooks/use-auth';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
-import { supabase } from '@/lib/supabase/client';
+import { Eye, EyeOff, Key, Mail, Shield, User } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { User, Mail, Shield, Key, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { supabase } from '@/lib/supabase/client';
 
 export default function SettingsPage() {
   const { staff, isLoading } = useAuth();
 
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
+  const [_currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [_showCurrentPassword, _setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
 
@@ -118,7 +118,9 @@ export default function SettingsPage() {
             </div>
             <div>
               <p className="text-xs sm:text-sm text-gray-500">Role</p>
-              <span className={`inline-block px-2 py-0.5 sm:py-1 text-xs sm:text-sm rounded-full capitalize ${getRoleBadgeColor(staff.role)}`}>
+              <span
+                className={`inline-block px-2 py-0.5 sm:py-1 text-xs sm:text-sm rounded-full capitalize ${getRoleBadgeColor(staff.role)}`}
+              >
                 {staff.role || 'Staff'}
               </span>
             </div>
@@ -200,7 +202,12 @@ export default function SettingsPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={passwordLoading} size="sm" className="flex-1 sm:flex-none text-xs sm:text-sm">
+              <Button
+                type="submit"
+                disabled={passwordLoading}
+                size="sm"
+                className="flex-1 sm:flex-none text-xs sm:text-sm"
+              >
                 {passwordLoading ? 'Saving...' : 'Update Password'}
               </Button>
             </div>

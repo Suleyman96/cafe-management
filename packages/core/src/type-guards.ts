@@ -3,17 +3,17 @@
  * Runtime type checking utilities
  */
 
-import type { 
-  Order, 
-  OrderItem, 
-  Table, 
-  Staff,
-  MenuItem,
+import type {
   Category,
-  WaiterCall,
   CustomerFeedback,
+  MenuItem,
+  Order,
+  OrderItem,
   OrderPayment,
-  TableTransfer
+  Staff,
+  Table,
+  TableTransfer,
+  WaiterCall,
 } from '@cafe-idare/database';
 
 // Order type guards
@@ -27,7 +27,9 @@ export function isOrder(value: unknown): value is Order {
   );
 }
 
-export function hasOrderItems(order: Order & { order_items?: unknown[] }): order is Order & { order_items: OrderItem[] } {
+export function hasOrderItems(
+  order: Order & { order_items?: unknown[] },
+): order is Order & { order_items: OrderItem[] } {
   return Array.isArray(order.order_items) && order.order_items.length > 0;
 }
 
@@ -86,12 +88,7 @@ export function isAvailableMenuItem(item: MenuItem): boolean {
 
 // Category type guards
 export function isCategory(value: unknown): value is Category {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'id' in value &&
-    'name_en' in value
-  );
+  return typeof value === 'object' && value !== null && 'id' in value && 'name_en' in value;
 }
 
 // Waiter call type guards
@@ -154,7 +151,7 @@ export function isTableTransfer(value: unknown): value is TableTransfer {
 export function safeGet<T, K extends keyof T>(
   obj: T | null | undefined,
   key: K,
-  defaultValue: T[K] | null = null
+  defaultValue: T[K] | null = null,
 ): T[K] | null {
   return obj?.[key] ?? defaultValue;
 }
@@ -163,7 +160,7 @@ export function safeGet<T, K extends keyof T>(
 export function assertType<T>(
   value: unknown,
   guard: (value: unknown) => value is T,
-  errorMessage: string
+  errorMessage: string,
 ): T {
   if (!guard(value)) {
     throw new TypeError(errorMessage);

@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useOrder, useMenuItems, useCategories, useAddOrderItems, useUpdateOrderNotes } from '@/hooks';
-import { Button, LoadingSpinner } from '@cafe-idare/ui';
-import { toast } from 'sonner';
 import type { Database } from '@cafe-idare/database';
+import { Button, LoadingSpinner } from '@cafe-idare/ui';
+import { ArrowLeft, Check, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import {
-  ArrowLeft,
-  Plus,
-  Minus,
-  ShoppingCart,
-  Check,
-} from 'lucide-react';
+  useAddOrderItems,
+  useCategories,
+  useMenuItems,
+  useOrder,
+  useUpdateOrderNotes,
+} from '@/hooks';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -56,9 +56,7 @@ export default function AddItemsPage() {
       const existing = prev.find((item) => item.menuItem.id === menuItem.id);
       if (existing) {
         return prev.map((item) =>
-          item.menuItem.id === menuItem.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+          item.menuItem.id === menuItem.id ? { ...item, quantity: item.quantity + 1 } : item,
         );
       }
       return [...prev, { menuItem, quantity: 1 }];
@@ -71,9 +69,7 @@ export default function AddItemsPage() {
       const existing = prev.find((item) => item.menuItem.id === menuItemId);
       if (existing && existing.quantity > 1) {
         return prev.map((item) =>
-          item.menuItem.id === menuItemId
-            ? { ...item, quantity: item.quantity - 1 }
-            : item
+          item.menuItem.id === menuItemId ? { ...item, quantity: item.quantity - 1 } : item,
         );
       }
       return prev.filter((item) => item.menuItem.id !== menuItemId);
@@ -86,10 +82,7 @@ export default function AddItemsPage() {
   };
 
   // Calculate cart total
-  const cartTotal = cart.reduce(
-    (sum, item) => sum + item.menuItem.price * item.quantity,
-    0
-  );
+  const cartTotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
 
   // Submit order items
   const handleSubmit = async () => {
@@ -157,7 +150,8 @@ export default function AddItemsPage() {
             <span className="hidden sm:inline">Back</span>
           </Button>
           <h1 className="text-lg sm:text-2xl font-bold">
-            Add Items - {(order as any).table?.table_number ? (order as any).table.table_number : 'Takeout'}
+            Add Items -{' '}
+            {(order as any).table?.table_number ? (order as any).table.table_number : 'Takeout'}
           </h1>
         </div>
       </div>
@@ -212,7 +206,9 @@ export default function AddItemsPage() {
                       {item.description_en}
                     </p>
                   )}
-                  <p className="font-semibold text-blue-600 text-sm sm:text-base">${item.price.toFixed(2)}</p>
+                  <p className="font-semibold text-blue-600 text-sm sm:text-base">
+                    ${item.price.toFixed(2)}
+                  </p>
                 </div>
               );
             })}
@@ -240,7 +236,9 @@ export default function AddItemsPage() {
                       className="flex items-center justify-between border-b pb-2 sm:pb-3"
                     >
                       <div className="flex-1 min-w-0 mr-2">
-                        <p className="font-medium text-xs sm:text-sm truncate">{item.menuItem.name_en}</p>
+                        <p className="font-medium text-xs sm:text-sm truncate">
+                          {item.menuItem.name_en}
+                        </p>
                         <p className="text-xs sm:text-sm text-gray-600">
                           ${item.menuItem.price.toFixed(2)} x {item.quantity}
                         </p>
@@ -288,7 +286,9 @@ export default function AddItemsPage() {
                 <div className="border-t pt-3 sm:pt-4">
                   <div className="flex justify-between items-center mb-3 sm:mb-4">
                     <span className="font-semibold text-sm sm:text-base">Total</span>
-                    <span className="font-semibold text-base sm:text-lg">${cartTotal.toFixed(2)}</span>
+                    <span className="font-semibold text-base sm:text-lg">
+                      ${cartTotal.toFixed(2)}
+                    </span>
                   </div>
                   <Button
                     className="w-full text-sm sm:text-base"

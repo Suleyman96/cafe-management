@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
+import { useEffect } from 'react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useAuth } from '@/hooks/use-auth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -56,5 +56,3 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
   return <>{children}</>;
 }
-
-

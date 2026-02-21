@@ -133,5 +133,3 @@ export const UI = {
   MOBILE_BREAKPOINT: 768,
   TABLET_BREAKPOINT: 1024,
 } as const;
-
-

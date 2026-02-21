@@ -14,7 +14,7 @@ export function formatPrice(amount: number, currency: string = '€'): string {
  * Calculate elapsed time in minutes
  */
 export function getElapsedMinutes(timestamp: string): number {
-  const now = new Date().getTime();
+  const now = Date.now();
   const then = new Date(timestamp).getTime();
   return Math.floor((now - then) / 1000 / 60);
 }
@@ -24,13 +24,13 @@ export function getElapsedMinutes(timestamp: string): number {
  */
 export function timeAgo(timestamp: string): string {
   const minutes = getElapsedMinutes(timestamp);
-  
+
   if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes} min ago`;
-  
+
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  
+
   const days = Math.floor(hours / 24);
   return `${days} day${days > 1 ? 's' : ''} ago`;
 }
@@ -94,16 +94,16 @@ export function calculateTotal(subtotal: number, taxRate: number = 0.18): number
  */
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
-  wait: number
+  wait: number,
 ): (...args: Parameters<T>) => void {
   let timeout: ReturnType<typeof setTimeout>;
-  
+
   return function executedFunction(...args: Parameters<T>) {
     const later = () => {
       clearTimeout(timeout);
       func(...args);
     };
-    
+
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
@@ -115,7 +115,7 @@ export function debounce<T extends (...args: any[]) => any>(
 export function getInitials(fullName: string): string {
   return fullName
     .split(' ')
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);
@@ -129,5 +129,3 @@ export function getInitials(fullName: string): string {
 export function generateTempId(): string {
   return `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
-
-

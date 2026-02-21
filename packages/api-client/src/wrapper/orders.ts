@@ -3,7 +3,7 @@
  */
 
 import { handleSupabaseError, isOrder, isOrderItem, isOrderItemArray } from '@cafe-idare/core';
-import type { WrapperContext, OrderRow, OrderInsert, OrderItemInsert, OrderItemRow } from './types';
+import type { OrderInsert, OrderItemInsert, OrderItemRow, OrderRow, WrapperContext } from './types';
 
 export function createOrdersWrapper(ctx: WrapperContext) {
   return {
@@ -130,7 +130,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         .from('orders')
         .update({
           status: 'cancelled',
-          internal_notes: `Cancelled: ${reason}`
+          internal_notes: `Cancelled: ${reason}`,
         })
         .eq('id', orderId)
         .select()
@@ -162,7 +162,10 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       return data as OrderRow;
     },
 
-    updateNotes: async (orderId: string, notes: { customer_notes?: string | null; internal_notes?: string | null }) => {
+    updateNotes: async (
+      orderId: string,
+      notes: { customer_notes?: string | null; internal_notes?: string | null },
+    ) => {
       const { data, error } = await ctx.anyClient
         .from('orders')
         .update(notes)
@@ -180,10 +183,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
 export function createOrderItemsWrapper(ctx: WrapperContext) {
   return {
     create: async (items: OrderItemInsert[]) => {
-      const { data, error } = await ctx.anyClient
-        .from('order_items')
-        .insert(items)
-        .select();
+      const { data, error } = await ctx.anyClient.from('order_items').insert(items).select();
 
       if (error) throw handleSupabaseError(error);
       const orderItems = data || [];
@@ -205,10 +205,7 @@ export function createOrderItemsWrapper(ctx: WrapperContext) {
     },
 
     delete: async (id: string) => {
-      const { error } = await ctx.anyClient
-        .from('order_items')
-        .delete()
-        .eq('id', id);
+      const { error } = await ctx.anyClient.from('order_items').delete().eq('id', id);
 
       if (error) throw handleSupabaseError(error);
     },

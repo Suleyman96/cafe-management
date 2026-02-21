@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
 // Create a Supabase client with the service role key for admin operations
 const supabaseAdmin = createClient(
@@ -10,7 +10,7 @@ const supabaseAdmin = createClient(
       autoRefreshToken: false,
       persistSession: false,
     },
-  }
+  },
 );
 
 export async function POST(request: NextRequest) {
@@ -20,18 +20,12 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!email || !password || !full_name || !role) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Validate role
     if (!['waiter', 'admin', 'kitchen'].includes(role)) {
-      return NextResponse.json(
-        { error: 'Invalid role' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 
     // Create auth user using admin API
@@ -42,17 +36,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError) {
-      return NextResponse.json(
-        { error: authError.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: authError.message }, { status: 400 });
     }
 
     if (!authData.user) {
-      return NextResponse.json(
-        { error: 'Failed to create user' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
     }
 
     // Create staff record
@@ -72,18 +60,12 @@ export async function POST(request: NextRequest) {
     if (staffError) {
       // Rollback: delete the auth user if staff creation fails
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      return NextResponse.json(
-        { error: staffError.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: staffError.message }, { status: 400 });
     }
 
     return NextResponse.json({ staff: staffData }, { status: 201 });
   } catch (error) {
     console.error('Error creating staff:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

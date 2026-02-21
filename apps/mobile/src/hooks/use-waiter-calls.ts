@@ -1,22 +1,22 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
-import { useEffect } from "react";
-import type { WaiterCallWithTable } from "@/types";
-import type { RealtimeChannel } from "@supabase/supabase-js";
-import { notifyWaiterCall } from "@/lib/notifications";
-import { playWaiterCallSound } from "@/lib/sound";
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { notifyWaiterCall } from '@/lib/notifications';
+import { playWaiterCallSound } from '@/lib/sound';
+import { supabase } from '@/lib/supabase';
+import type { WaiterCallWithTable } from '@/types';
 
-export function useWaiterCalls(status: string = "pending") {
+export function useWaiterCalls(status: string = 'pending') {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["waiter_calls", status],
+    queryKey: ['waiter_calls', status],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("waiter_calls")
-        .select("*, table:tables(table_number, location)")
-        .eq("status", status)
-        .order("created_at", { ascending: true });
+        .from('waiter_calls')
+        .select('*, table:tables(table_number, location)')
+        .eq('status', status)
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
       return data as WaiterCallWithTable[];
@@ -29,45 +29,42 @@ export function useWaiterCalls(status: string = "pending") {
 
     const setupSubscription = async () => {
       channel = supabase
-        .channel("waiter_calls")
+        .channel('waiter_calls')
         .on(
-          "postgres_changes",
+          'postgres_changes',
           {
-            event: "INSERT",
-            schema: "public",
-            table: "waiter_calls",
+            event: 'INSERT',
+            schema: 'public',
+            table: 'waiter_calls',
           },
           async (payload) => {
             // Play sound and show notification
             await playWaiterCallSound();
-            
+
             // Fetch table info
             const { data: tableData } = await supabase
-              .from("tables")
-              .select("table_number")
-              .eq("id", (payload.new as any).table_id)
+              .from('tables')
+              .select('table_number')
+              .eq('id', (payload.new as any).table_id)
               .single();
 
             if (tableData) {
-              await notifyWaiterCall(
-                tableData.table_number,
-                (payload.new as any).reason
-              );
+              await notifyWaiterCall(tableData.table_number, (payload.new as any).reason);
             }
 
-            queryClient.invalidateQueries({ queryKey: ["waiter_calls"] });
-          }
+            queryClient.invalidateQueries({ queryKey: ['waiter_calls'] });
+          },
         )
         .on(
-          "postgres_changes",
+          'postgres_changes',
           {
-            event: "UPDATE",
-            schema: "public",
-            table: "waiter_calls",
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'waiter_calls',
           },
           () => {
-            queryClient.invalidateQueries({ queryKey: ["waiter_calls"] });
-          }
+            queryClient.invalidateQueries({ queryKey: ['waiter_calls'] });
+          },
         )
         .subscribe();
     };
@@ -98,18 +95,18 @@ export function useUpdateWaiterCall() {
       staffId?: string;
     }) => {
       const updateData: any = { status };
-      
-      if (status === "acknowledged") {
+
+      if (status === 'acknowledged') {
         updateData.acknowledged_at = new Date().toISOString();
         updateData.responded_by = staffId;
-      } else if (status === "resolved") {
+      } else if (status === 'resolved') {
         updateData.resolved_at = new Date().toISOString();
       }
 
       const { data, error } = await supabase
-        .from("waiter_calls")
+        .from('waiter_calls')
         .update(updateData)
-        .eq("id", callId)
+        .eq('id', callId)
         .select()
         .single();
 
@@ -117,9 +114,7 @@ export function useUpdateWaiterCall() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["waiter_calls"] });
+      queryClient.invalidateQueries({ queryKey: ['waiter_calls'] });
     },
   });
 }
-
-

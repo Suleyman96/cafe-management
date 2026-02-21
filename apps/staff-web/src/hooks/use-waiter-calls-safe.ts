@@ -3,10 +3,10 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { db } from '@/lib/supabase/wrapped-client';
 import { QUERY_KEYS, REFRESH_INTERVALS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { db } from '@/lib/supabase/wrapped-client';
 
 type WaiterCallStatus = Database['public']['Tables']['waiter_calls']['Row']['status'];
 
@@ -56,9 +56,9 @@ export function useResolveWaiterCall() {
 // Helper to get active calls for a specific table
 export function useActiveCallsForTable(tableId: string) {
   const { data: allCalls, ...rest } = useWaiterCalls('pending');
-  
+
   const tableCalls = allCalls?.filter((call: any) => call.table_id === tableId) || [];
-  
+
   return {
     ...rest,
     data: tableCalls,

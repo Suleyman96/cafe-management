@@ -1,20 +1,11 @@
 'use client';
 
+import { Button, LoadingSpinner } from '@cafe-idare/ui';
+import { ChefHat, Edit2, Plus, Search, Shield, User, UserCheck, UserX } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useStaff, useUpdateStaff } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
-import { Button, LoadingSpinner } from '@cafe-idare/ui';
-import { toast } from 'sonner';
-import {
-  Plus,
-  Search,
-  Edit2,
-  UserCheck,
-  UserX,
-  Shield,
-  ChefHat,
-  User,
-} from 'lucide-react';
 
 type StaffRole = 'waiter' | 'admin' | 'kitchen';
 
@@ -61,7 +52,7 @@ function CreateStaffModal({ isOpen, onClose, onSuccess }: CreateStaffModalProps)
       toast.success('Staff account created successfully');
       onSuccess();
       resetForm();
-    } catch (err) {
+    } catch (_err) {
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
@@ -92,9 +83,7 @@ function CreateStaffModal({ isOpen, onClose, onSuccess }: CreateStaffModalProps)
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
             <input
               type="text"
               value={fullName}
@@ -106,9 +95,7 @@ function CreateStaffModal({ isOpen, onClose, onSuccess }: CreateStaffModalProps)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
             <input
               type="email"
               value={email}
@@ -120,9 +107,7 @@ function CreateStaffModal({ isOpen, onClose, onSuccess }: CreateStaffModalProps)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
             <input
               type="password"
               value={password}
@@ -135,9 +120,7 @@ function CreateStaffModal({ isOpen, onClose, onSuccess }: CreateStaffModalProps)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Role *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as StaffRole)}
@@ -150,9 +133,7 @@ function CreateStaffModal({ isOpen, onClose, onSuccess }: CreateStaffModalProps)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
             <input
               type="tel"
               value={phone}
@@ -217,7 +198,7 @@ function EditStaffModal({ isOpen, onClose, staff, onSuccess }: EditStaffModalPro
       });
       toast.success('Staff updated successfully');
       onSuccess();
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to update staff');
     } finally {
       setLoading(false);
@@ -241,9 +222,7 @@ function EditStaffModal({ isOpen, onClose, staff, onSuccess }: EditStaffModalPro
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
               value={staff.email}
@@ -254,9 +233,7 @@ function EditStaffModal({ isOpen, onClose, staff, onSuccess }: EditStaffModalPro
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
             <input
               type="text"
               value={fullName}
@@ -267,9 +244,7 @@ function EditStaffModal({ isOpen, onClose, staff, onSuccess }: EditStaffModalPro
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Role *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as StaffRole)}
@@ -282,9 +257,7 @@ function EditStaffModal({ isOpen, onClose, staff, onSuccess }: EditStaffModalPro
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
             <input
               type="tel"
               value={phone}
@@ -390,7 +363,11 @@ export default function StaffPage() {
     <div className="p-3 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
         <h1 className="text-xl sm:text-2xl font-bold">Staff Management</h1>
-        <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="text-xs sm:text-sm w-full sm:w-auto">
+        <Button
+          onClick={() => setIsCreateModalOpen(true)}
+          size="sm"
+          className="text-xs sm:text-sm w-full sm:w-auto"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Add Staff
         </Button>
@@ -464,7 +441,7 @@ export default function StaffPage() {
                 <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                   <span
                     className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getRoleBadgeColor(
-                      staff.role
+                      staff.role,
                     )}`}
                   >
                     {getRoleIcon(staff.role)}
@@ -546,7 +523,9 @@ export default function StaffPage() {
               </Button>
             </div>
             <div className="flex items-center gap-3 mt-2 pt-2 border-t">
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getRoleBadgeColor(staff.role)}`}>
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getRoleBadgeColor(staff.role)}`}
+              >
                 {getRoleIcon(staff.role)}
                 {staff.role}
               </span>

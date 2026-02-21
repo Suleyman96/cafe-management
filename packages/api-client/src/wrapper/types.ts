@@ -4,8 +4,8 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@cafe-idare/database';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Type aliases for cleaner code
 export type Tables = Database['public']['Tables'];

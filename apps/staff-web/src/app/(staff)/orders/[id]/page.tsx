@@ -1,32 +1,41 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useOrder, useUpdateOrderStatus, useUpdateOrderItemStatus, useOrderPayments, useOrderTransferHistory, useCafeSettings, formatPriceWithSettings, calculateTax as calculateTaxFromSettings } from '@/hooks';
-import { Button, LoadingSpinner } from '@cafe-idare/ui';
-import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
-import { supabase } from '@/lib/supabase/client';
-import { toast } from 'sonner';
+import type { ORDER_STATUS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
-import { ORDER_STATUS } from '@cafe-idare/core';
+import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
-  ArrowLeft,
-  Clock,
-  User,
-  CreditCard,
-  Package,
   AlertCircle,
-  CheckCircle,
-  XCircle,
-  ChefHat,
-  RefreshCw,
-  FileText,
+  ArrowLeft,
   ArrowRight,
+  CheckCircle,
+  ChefHat,
   ChevronDown,
-  UtensilsCrossed,
-  ThumbsUp,
+  Clock,
+  CreditCard,
+  FileText,
+  Package,
+  RefreshCw,
   Smartphone,
+  ThumbsUp,
+  User,
+  UtensilsCrossed,
+  XCircle,
 } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
+import {
+  calculateTax as calculateTaxFromSettings,
+  formatPriceWithSettings,
+  useCafeSettings,
+  useOrder,
+  useOrderPayments,
+  useOrderTransferHistory,
+  useUpdateOrderItemStatus,
+  useUpdateOrderStatus,
+} from '@/hooks';
+import { supabase } from '@/lib/supabase/client';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
   menu_item?: Database['public']['Tables']['menu_items']['Row'];
@@ -58,7 +67,7 @@ export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
-  
+
   const { data: orderData, isLoading: loading, error, refetch } = useOrder(orderId);
   const { data: paymentsData } = useOrderPayments(orderId);
   const { data: transferHistory } = useOrderTransferHistory(orderId);
@@ -87,39 +96,39 @@ export default function OrderDetailPage() {
       .channel(`order-${orderId}`)
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'orders',
-          filter: `id=eq.${orderId}`
+          filter: `id=eq.${orderId}`,
         },
         () => {
           refetch();
-        }
+        },
       )
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'order_items',
-          filter: `order_id=eq.${orderId}`
+          filter: `order_id=eq.${orderId}`,
         },
         () => {
           refetch();
-        }
+        },
       )
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'order_payments',
-          filter: `order_id=eq.${orderId}`
+          filter: `order_id=eq.${orderId}`,
         },
         () => {
           refetch();
-        }
+        },
       )
       .subscribe();
 
@@ -131,8 +140,9 @@ export default function OrderDetailPage() {
   // Calculate subtotal from items (before tax)
   const calculateSubtotal = () => {
     if (!order?.order_items) return 0;
-    return order.order_items.reduce((sum: number, item: OrderItem) =>
-      sum + (item.quantity * item.item_price), 0
+    return order.order_items.reduce(
+      (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
+      0,
     );
   };
 
@@ -157,16 +167,14 @@ export default function OrderDetailPage() {
 
   const calculatePaidAmount = () => {
     if (!payments) return 0;
-    return payments.reduce((sum: number, payment: Payment) => 
-      sum + payment.amount, 0
-    );
+    return payments.reduce((sum: number, payment: Payment) => sum + payment.amount, 0);
   };
 
   // Format timestamp
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -175,7 +183,7 @@ export default function OrderDetailPage() {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -205,13 +213,33 @@ export default function OrderDetailPage() {
   const getItemStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return { bg: 'bg-gray-100', text: 'text-gray-700', icon: <AlertCircle className="h-3 w-3" />, label: 'Pending' };
+        return {
+          bg: 'bg-gray-100',
+          text: 'text-gray-700',
+          icon: <AlertCircle className="h-3 w-3" />,
+          label: 'Pending',
+        };
       case 'preparing':
-        return { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <ChefHat className="h-3 w-3" />, label: 'Preparing' };
+        return {
+          bg: 'bg-yellow-100',
+          text: 'text-yellow-800',
+          icon: <ChefHat className="h-3 w-3" />,
+          label: 'Preparing',
+        };
       case 'ready':
-        return { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="h-3 w-3" />, label: 'Ready' };
+        return {
+          bg: 'bg-green-100',
+          text: 'text-green-800',
+          icon: <CheckCircle className="h-3 w-3" />,
+          label: 'Ready',
+        };
       case 'served':
-        return { bg: 'bg-purple-100', text: 'text-purple-800', icon: <UtensilsCrossed className="h-3 w-3" />, label: 'Served' };
+        return {
+          bg: 'bg-purple-100',
+          text: 'text-purple-800',
+          icon: <UtensilsCrossed className="h-3 w-3" />,
+          label: 'Served',
+        };
       default:
         return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, label: status };
     }
@@ -229,11 +257,11 @@ export default function OrderDetailPage() {
     try {
       await updateItemStatus.mutateAsync({
         itemId,
-        status: newStatus as 'pending' | 'preparing' | 'ready' | 'served'
+        status: newStatus as 'pending' | 'preparing' | 'ready' | 'served',
       });
       setOpenItemMenu(null);
       toast.success(`Item status updated to ${newStatus}`);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to update item status');
     }
   };
@@ -243,10 +271,10 @@ export default function OrderDetailPage() {
     try {
       await updateOrderStatus.mutateAsync({
         orderId,
-        status: newStatus
+        status: newStatus,
       });
       toast.success(`Order status updated to ${String(newStatus).toLowerCase()}`);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to update order status');
     }
   };
@@ -277,26 +305,20 @@ export default function OrderDetailPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
         <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-          >
+          <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Back</span>
           </Button>
           <h1 className="text-lg sm:text-2xl font-bold">
             {order.table ? order.table.table_number : 'Takeout'}
           </h1>
-          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(order.status)}`}>
+          <span
+            className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(order.status)}`}
+          >
             {order.status.toUpperCase()}
           </span>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-        >
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
@@ -318,7 +340,11 @@ export default function OrderDetailPage() {
           <div>
             <p className="text-sm text-gray-600">Order Type</p>
             <p className="flex items-center gap-1">
-              {order.order_type === 'takeout' ? <Package className="h-4 w-4" /> : <User className="h-4 w-4" />}
+              {order.order_type === 'takeout' ? (
+                <Package className="h-4 w-4" />
+              ) : (
+                <User className="h-4 w-4" />
+              )}
               {order.order_type === 'takeout' ? 'Takeout' : 'Dine-in'}
             </p>
           </div>
@@ -363,7 +389,8 @@ export default function OrderDetailPage() {
           </h3>
           {transferHistory.map((transfer: TableTransfer) => (
             <div key={transfer.id} className="text-sm">
-              Transferred from {transfer.from_table?.table_number} to {transfer.to_table?.table_number}
+              Transferred from {transfer.from_table?.table_number} to{' '}
+              {transfer.to_table?.table_number}
               {transfer.reason && ` - ${transfer.reason}`}
               <span className="text-gray-600 ml-2">({formatTime(transfer.created_at)})</span>
             </div>
@@ -387,7 +414,9 @@ export default function OrderDetailPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm sm:text-base">{item.quantity}x</span>
-                      <span className="text-sm sm:text-base truncate">{item.menu_item?.name_en}</span>
+                      <span className="text-sm sm:text-base truncate">
+                        {item.menu_item?.name_en}
+                      </span>
                     </div>
                     {item.notes && (
                       <p className="text-xs sm:text-sm text-gray-600 mt-1 flex items-start gap-1">
@@ -405,7 +434,9 @@ export default function OrderDetailPage() {
                     >
                       {statusBadge.icon}
                       <span className="hidden xs:inline">{statusBadge.label}</span>
-                      <ChevronDown className={`h-3 w-3 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDown
+                        className={`h-3 w-3 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
+                      />
                     </button>
 
                     {isMenuOpen && (
@@ -454,7 +485,9 @@ export default function OrderDetailPage() {
               </div>
             </>
           )}
-          <div className={`flex justify-between items-center text-lg font-semibold ${cafeSettings?.tax_enabled ? 'pt-2 border-t' : ''}`}>
+          <div
+            className={`flex justify-between items-center text-lg font-semibold ${cafeSettings?.tax_enabled ? 'pt-2 border-t' : ''}`}
+          >
             <span>Total</span>
             <span>{formatPrice(total)}</span>
           </div>
@@ -473,14 +506,13 @@ export default function OrderDetailPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-medium">{formatPrice(payment.amount)}</p>
-                    {(payment as { tip_amount?: number }).tip_amount && (payment as { tip_amount?: number }).tip_amount! > 0 && (
-                      <p className="text-sm text-green-600">
-                        + {formatPrice((payment as { tip_amount?: number }).tip_amount!)} tip
-                      </p>
-                    )}
-                    <p className="text-sm text-gray-600 capitalize">
-                      {payment.payment_method}
-                    </p>
+                    {(payment as { tip_amount?: number }).tip_amount &&
+                      (payment as { tip_amount?: number }).tip_amount! > 0 && (
+                        <p className="text-sm text-green-600">
+                          + {formatPrice((payment as { tip_amount?: number }).tip_amount!)} tip
+                        </p>
+                      )}
+                    <p className="text-sm text-gray-600 capitalize">{payment.payment_method}</p>
                     <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
                       <CreditCard className="h-3 w-3 text-green-500" />
                       Received by: {payment.received_by_staff?.full_name || 'Unknown'}
@@ -488,9 +520,7 @@ export default function OrderDetailPage() {
                     <p className="text-xs text-gray-500 mt-1">{formatTime(payment.created_at)}</p>
                   </div>
                   {payment.items_paid && payment.items_paid.length > 0 && (
-                    <div className="text-sm text-gray-600">
-                      {payment.items_paid.length} items
-                    </div>
+                    <div className="text-sm text-gray-600">{payment.items_paid.length} items</div>
                   )}
                 </div>
               </div>

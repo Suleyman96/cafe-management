@@ -3,8 +3,8 @@
  */
 
 import { handleSupabaseError } from '@cafe-idare/core';
-import type { WrapperContext } from './types';
 import type { Database } from '@cafe-idare/database';
+import type { WrapperContext } from './types';
 
 type CafeSettingsRow = Database['public']['Tables']['cafe_settings']['Row'];
 type CafeSettingsUpdate = Database['public']['Tables']['cafe_settings']['Update'];

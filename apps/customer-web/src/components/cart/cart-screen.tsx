@@ -1,18 +1,23 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useCartStore } from "@/store/cart-store";
-import { useLanguageStore } from "@/store/language-store";
-import { useTable } from "@/hooks/use-table";
-import { useOrder, useCreateOrder, useAddOrderItems } from "@/hooks/use-order";
-import { getLocalizedField } from "@/types";
-import { useCafeSettings, calculateTax, calculateTotal, getDisplaySubtotal, formatPrice as formatPriceWithSettings } from "@/hooks/use-settings";
-import { formatPrice } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { ArrowLeft, Trash2, Plus, Minus, Edit3, ClipboardList } from "lucide-react";
-import { toast } from "sonner";
-import { useState } from "react";
+import { ArrowLeft, ClipboardList, Edit3, Minus, Plus, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useAddOrderItems, useCreateOrder, useOrder } from '@/hooks/use-order';
+import {
+  calculateTax,
+  calculateTotal,
+  getDisplaySubtotal,
+  useCafeSettings,
+} from '@/hooks/use-settings';
+import { useTable } from '@/hooks/use-table';
+import { formatPrice } from '@/lib/utils';
+import { useCartStore } from '@/store/cart-store';
+import { useLanguageStore } from '@/store/language-store';
+import { getLocalizedField } from '@/types';
 
 interface CartScreenProps {
   tableId: string; // This is the table_number from URL (e.g., "T01")
@@ -22,13 +27,13 @@ export function CartScreen({ tableId }: CartScreenProps) {
   const router = useRouter();
   const { language } = useLanguageStore();
   const { items, updateQuantity, updateNotes, removeItem, clearCart, getTotal } = useCartStore();
-  const [orderNotes, setOrderNotes] = useState("");
+  const [orderNotes, setOrderNotes] = useState('');
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [tempNotes, setTempNotes] = useState<Record<string, string>>({});
 
   // Fetch table to get the actual UUID for database operations
   const { data: table } = useTable(tableId);
-  const actualTableId = table?.id || ""; // UUID for database operations
+  const actualTableId = table?.id || ''; // UUID for database operations
 
   const { data: existingOrder } = useOrder(actualTableId);
   const createOrder = useCreateOrder();
@@ -50,9 +55,10 @@ export function CartScreen({ tableId }: CartScreenProps) {
 
     // Check minimum order amount
     if (settings?.minimum_order_amount && total < settings.minimum_order_amount) {
-      const minAmount = settings.currency_position === "before"
-        ? `${settings.currency_symbol}${settings.minimum_order_amount.toFixed(settings.currency_decimal_places)}`
-        : `${settings.minimum_order_amount.toFixed(settings.currency_decimal_places)}${settings.currency_symbol}`;
+      const minAmount =
+        settings.currency_position === 'before'
+          ? `${settings.currency_symbol}${settings.minimum_order_amount.toFixed(settings.currency_decimal_places)}`
+          : `${settings.minimum_order_amount.toFixed(settings.currency_decimal_places)}${settings.currency_symbol}`;
       toast.error(`Minimum order amount is ${minAmount}`);
       return;
     }
@@ -74,19 +80,19 @@ export function CartScreen({ tableId }: CartScreenProps) {
         orderId,
         items: items.map((item) => ({
           menu_item_id: item.menuItem.id,
-          item_name: getLocalizedField(item.menuItem, "name", language),
+          item_name: getLocalizedField(item.menuItem, 'name', language),
           item_price: item.menuItem.price,
           quantity: item.quantity,
           notes: item.notes,
         })),
       });
 
-      toast.success("Order placed successfully!");
+      toast.success('Order placed successfully!');
       clearCart();
       router.push(`/table/${tableId}/order`);
     } catch (error) {
-      console.error("Error placing order:", error);
-      toast.error("Failed to place order. Please try again.");
+      console.error('Error placing order:', error);
+      toast.error('Failed to place order. Please try again.');
     }
   };
 
@@ -97,8 +103,8 @@ export function CartScreen({ tableId }: CartScreenProps) {
           <h1 className="text-2xl font-bold mb-2">Your cart is empty</h1>
           <p className="text-muted-foreground">
             {existingOrder
-              ? "You have an active order. Add more items or view your order status."
-              : "Add some items from the menu to get started!"}
+              ? 'You have an active order. Add more items or view your order status.'
+              : 'Add some items from the menu to get started!'}
           </p>
         </div>
         <div className="flex flex-col gap-3 w-full max-w-xs">
@@ -114,11 +120,11 @@ export function CartScreen({ tableId }: CartScreenProps) {
           )}
           <Button
             size="lg"
-            variant={existingOrder ? "outline" : "default"}
+            variant={existingOrder ? 'outline' : 'default'}
             onClick={() => router.push(`/table/${tableId}/menu`)}
             className="w-full"
           >
-            {existingOrder ? "Add More Items" : "Browse Menu"}
+            {existingOrder ? 'Add More Items' : 'Browse Menu'}
           </Button>
         </div>
       </div>
@@ -132,20 +138,11 @@ export function CartScreen({ tableId }: CartScreenProps) {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b">
         <div className="flex items-center justify-between p-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.back()}
-          >
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-xl font-bold">Your Order</h1>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearCart}
-            className="text-destructive"
-          >
+          <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive">
             Clear
           </Button>
         </div>
@@ -155,14 +152,11 @@ export function CartScreen({ tableId }: CartScreenProps) {
         {/* Cart Items */}
         <div className="space-y-4 mb-6">
           {items.map((item) => {
-            const name = getLocalizedField(item.menuItem, "name", language);
+            const name = getLocalizedField(item.menuItem, 'name', language);
             const isEditingThisItem = editingNotes === item.menuItem.id;
-            
+
             return (
-              <div
-                key={item.menuItem.id}
-                className="bg-card rounded-lg p-4 border"
-              >
+              <div key={item.menuItem.id} className="bg-card rounded-lg p-4 border">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <h3 className="font-semibold">{name}</h3>
@@ -181,7 +175,7 @@ export function CartScreen({ tableId }: CartScreenProps) {
                 </div>
 
                 {/* Item Notes Section - Only show if allow_item_notes is enabled */}
-                {(settings?.allow_item_notes !== false) && (
+                {settings?.allow_item_notes !== false && (
                   <div className="mb-3">
                     {!isEditingThisItem ? (
                       <div>
@@ -196,7 +190,7 @@ export function CartScreen({ tableId }: CartScreenProps) {
                                 setEditingNotes(item.menuItem.id);
                                 setTempNotes({
                                   ...tempNotes,
-                                  [item.menuItem.id]: item.notes || ''
+                                  [item.menuItem.id]: item.notes || '',
                                 });
                               }}
                             >
@@ -212,7 +206,7 @@ export function CartScreen({ tableId }: CartScreenProps) {
                               setEditingNotes(item.menuItem.id);
                               setTempNotes({
                                 ...tempNotes,
-                                [item.menuItem.id]: ''
+                                [item.menuItem.id]: '',
                               });
                             }}
                           >
@@ -227,12 +221,13 @@ export function CartScreen({ tableId }: CartScreenProps) {
                           className="w-full min-h-[60px] p-2 text-sm rounded-md border border-input bg-background"
                           placeholder="e.g., no onions, extra sauce, well done..."
                           value={tempNotes[item.menuItem.id] || ''}
-                          onChange={(e) => setTempNotes({
-                            ...tempNotes,
-                            [item.menuItem.id]: e.target.value
-                          })}
+                          onChange={(e) =>
+                            setTempNotes({
+                              ...tempNotes,
+                              [item.menuItem.id]: e.target.value,
+                            })
+                          }
                           maxLength={200}
-                          autoFocus
                         />
                         <div className="flex gap-2">
                           <Button
@@ -251,10 +246,7 @@ export function CartScreen({ tableId }: CartScreenProps) {
                             size="sm"
                             className="flex-1"
                             onClick={() => {
-                              updateNotes(
-                                item.menuItem.id,
-                                tempNotes[item.menuItem.id] || ''
-                              );
+                              updateNotes(item.menuItem.id, tempNotes[item.menuItem.id] || '');
                               setEditingNotes(null);
                             }}
                           >
@@ -271,21 +263,15 @@ export function CartScreen({ tableId }: CartScreenProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        updateQuantity(item.menuItem.id, item.quantity - 1)
-                      }
+                      onClick={() => updateQuantity(item.menuItem.id, item.quantity - 1)}
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
-                    <span className="font-bold w-8 text-center">
-                      {item.quantity}
-                    </span>
+                    <span className="font-bold w-8 text-center">{item.quantity}</span>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        updateQuantity(item.menuItem.id, item.quantity + 1)
-                      }
+                      onClick={() => updateQuantity(item.menuItem.id, item.quantity + 1)}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -300,11 +286,9 @@ export function CartScreen({ tableId }: CartScreenProps) {
         </div>
 
         {/* Order Notes - Only show if allow_order_notes is enabled */}
-        {(settings?.allow_order_notes !== false) && (
+        {settings?.allow_order_notes !== false && (
           <div className="mb-6">
-            <label className="text-sm font-medium mb-2 block">
-              Order notes (optional)
-            </label>
+            <label className="text-sm font-medium mb-2 block">Order notes (optional)</label>
             <textarea
               className="w-full min-h-[80px] p-3 rounded-md border border-input bg-background"
               placeholder="Any special requests for your order..."
@@ -347,7 +331,8 @@ export function CartScreen({ tableId }: CartScreenProps) {
         {settings?.minimum_order_amount && !minimumOrderMet && (
           <div className="mb-3 p-2 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
             <p className="text-sm text-amber-700 dark:text-amber-300 text-center">
-              Minimum order: {settings.currency_position === "before"
+              Minimum order:{' '}
+              {settings.currency_position === 'before'
                 ? `${settings.currency_symbol}${settings.minimum_order_amount.toFixed(settings.currency_decimal_places)}`
                 : `${settings.minimum_order_amount.toFixed(settings.currency_decimal_places)}${settings.currency_symbol}`}
             </p>
@@ -366,7 +351,7 @@ export function CartScreen({ tableId }: CartScreenProps) {
               Placing Order...
             </>
           ) : !minimumOrderMet ? (
-            "Minimum order not met"
+            'Minimum order not met'
           ) : (
             `Place Order · ${formatPrice(total)}`
           )}
@@ -375,4 +360,3 @@ export function CartScreen({ tableId }: CartScreenProps) {
     </div>
   );
 }
-

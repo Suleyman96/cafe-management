@@ -1,17 +1,17 @@
 'use client';
 
+import { Button } from '@cafe-idare/ui';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import {
+  getFeedbackTypeInfo,
+  useAcknowledgeFeedback,
+  useDismissFeedback,
   useFeedback,
   usePendingFeedbackCount,
-  useAcknowledgeFeedback,
   useRespondToFeedback,
-  useDismissFeedback,
-  getFeedbackTypeInfo,
 } from '@/hooks';
-import { Button } from '@cafe-idare/ui';
 import { useAuthStore } from '@/store/auth-store';
-import { toast } from 'sonner';
 
 type FeedbackStatus = 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
 type CustomerFeedbackWithTable = any; // We'll get this from the query
@@ -24,7 +24,7 @@ export default function FeedbackPage() {
   const { staff } = useAuthStore();
 
   const { data: feedback, isLoading } = useFeedback(
-    selectedStatus === 'all' ? undefined : selectedStatus
+    selectedStatus === 'all' ? undefined : selectedStatus,
   );
   const { data: pendingCount } = usePendingFeedbackCount();
 
@@ -116,7 +116,9 @@ export default function FeedbackPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-4 sm:mb-8">
-          <h1 className="text-xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Customer Feedback</h1>
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
+            Customer Feedback
+          </h1>
           <p className="text-sm sm:text-base text-gray-600">
             Manage complaints, questions, and requests from customers
           </p>
@@ -183,19 +185,21 @@ export default function FeedbackPage() {
                           <h3 className="font-semibold text-sm sm:text-lg">
                             {item.subject || typeInfo.label}
                           </h3>
-                          <span className={`px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-medium rounded-full capitalize ${getStatusColor(item.status)}`}>
+                          <span
+                            className={`px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-medium rounded-full capitalize ${getStatusColor(item.status)}`}
+                          >
                             {item.status}
                           </span>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
-                          {item.table && (
-                            <span>🪑 {item.table.table_number}</span>
-                          )}
+                          {item.table && <span>🪑 {item.table.table_number}</span>}
                           <span>📅 {formatDateTime(item.created_at)}</span>
                         </div>
 
-                        <p className="text-xs sm:text-base text-gray-700 whitespace-pre-wrap">{item.message}</p>
+                        <p className="text-xs sm:text-base text-gray-700 whitespace-pre-wrap">
+                          {item.message}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -227,11 +231,8 @@ export default function FeedbackPage() {
                         className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
                         rows={3}
                         maxLength={500}
-                        autoFocus
                       />
-                      <div className="text-xs text-gray-500 mt-1">
-                        {responseText.length}/500
-                      </div>
+                      <div className="text-xs text-gray-500 mt-1">{responseText.length}/500</div>
                     </div>
                   )}
 
@@ -246,7 +247,8 @@ export default function FeedbackPage() {
                           disabled={acknowledgeFeedback.isPending}
                           className="text-xs sm:text-sm"
                         >
-                          👁️ <span className="hidden sm:inline">Acknowledge</span><span className="sm:hidden">Ack</span>
+                          👁️ <span className="hidden sm:inline">Acknowledge</span>
+                          <span className="sm:hidden">Ack</span>
                         </Button>
                         <Button
                           size="sm"
@@ -274,7 +276,8 @@ export default function FeedbackPage() {
                           onClick={() => setRespondingTo(item.id)}
                           className="text-xs sm:text-sm"
                         >
-                          💬 <span className="hidden sm:inline">Respond & Resolve</span><span className="sm:hidden">Respond</span>
+                          💬 <span className="hidden sm:inline">Respond & Resolve</span>
+                          <span className="sm:hidden">Respond</span>
                         </Button>
                         <Button
                           size="sm"
@@ -322,5 +325,3 @@ export default function FeedbackPage() {
     </div>
   );
 }
-
-

@@ -1,25 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/use-auth';
-import { useCafeSettings, useUpdateCafeSettings } from '@/hooks';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
-import { ImageUpload } from '@/components/settings/image-upload';
-import { ColorPicker } from '@/components/settings/color-picker';
-import { toast } from 'sonner';
 import {
-  Store,
-  Receipt,
-  DollarSign,
   ClipboardList,
-  Save,
-  RotateCcw,
-  Palette,
-  MessageSquare,
-  QrCode,
-  Phone,
+  DollarSign,
   Globe,
+  MessageSquare,
+  Palette,
+  Phone,
+  QrCode,
+  Receipt,
+  RotateCcw,
+  Save,
+  Store,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { ColorPicker } from '@/components/settings/color-picker';
+import { ImageUpload } from '@/components/settings/image-upload';
+import { useCafeSettings, useUpdateCafeSettings } from '@/hooks';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function CafeSettingsPage() {
   const { staff } = useAuth();
@@ -108,7 +108,8 @@ export default function CafeSettingsPage() {
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">
-            You don't have permission to access this page. Only administrators can manage cafe settings.
+            You don't have permission to access this page. Only administrators can manage cafe
+            settings.
           </p>
         </div>
       </div>
@@ -133,7 +134,7 @@ export default function CafeSettingsPage() {
       await updateSettings.mutateAsync(formData);
       toast.success('Settings saved successfully');
       setHasChanges(false);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to save settings');
     }
   };
@@ -193,11 +194,7 @@ export default function CafeSettingsPage() {
               <RotateCcw className="h-4 w-4 mr-2" />
               Reset
             </Button>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={updateSettings.isPending}
-            >
+            <Button size="sm" onClick={handleSave} disabled={updateSettings.isPending}>
               <Save className="h-4 w-4 mr-2" />
               {updateSettings.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
@@ -274,7 +271,9 @@ export default function CafeSettingsPage() {
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Tax Percentage</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tax Percentage
+                      </label>
                       <div className="relative">
                         <input
                           type="number"
@@ -282,14 +281,18 @@ export default function CafeSettingsPage() {
                           max="100"
                           step="0.1"
                           value={formData.tax_percentage}
-                          onChange={(e) => handleChange('tax_percentage', parseFloat(e.target.value) || 0)}
+                          onChange={(e) =>
+                            handleChange('tax_percentage', parseFloat(e.target.value) || 0)
+                          }
                           className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <span className="absolute right-3 top-2 text-gray-500">%</span>
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Tax Label</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tax Label
+                      </label>
                       <input
                         type="text"
                         value={formData.tax_label}
@@ -300,7 +303,9 @@ export default function CafeSettingsPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Prices Include Tax</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Prices Include Tax
+                      </label>
                       <p className="text-xs text-gray-500">Menu prices already have tax included</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -315,7 +320,9 @@ export default function CafeSettingsPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Show Tax Separately</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Show Tax Separately
+                      </label>
                       <p className="text-xs text-gray-500">Display tax as a separate line</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -342,7 +349,9 @@ export default function CafeSettingsPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency Symbol</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Currency Symbol
+                  </label>
                   <input
                     type="text"
                     value={formData.currency_symbol}
@@ -351,7 +360,9 @@ export default function CafeSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency Code</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Currency Code
+                  </label>
                   <input
                     type="text"
                     value={formData.currency_code}
@@ -363,7 +374,9 @@ export default function CafeSettingsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Symbol Position</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Symbol Position
+                  </label>
                   <select
                     value={formData.currency_position}
                     onChange={(e) => handleChange('currency_position', e.target.value)}
@@ -374,10 +387,14 @@ export default function CafeSettingsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Decimal Places</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Decimal Places
+                  </label>
                   <select
                     value={formData.currency_decimal_places}
-                    onChange={(e) => handleChange('currency_decimal_places', parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleChange('currency_decimal_places', parseInt(e.target.value, 10))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value={0}>0 (10)</option>
@@ -397,22 +414,30 @@ export default function CafeSettingsPage() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Order Amount</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Minimum Order Amount
+                </label>
                 <div className="relative w-48">
-                  <span className="absolute left-3 top-2 text-gray-500">{formData.currency_symbol}</span>
+                  <span className="absolute left-3 top-2 text-gray-500">
+                    {formData.currency_symbol}
+                  </span>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     value={formData.minimum_order_amount}
-                    onChange={(e) => handleChange('minimum_order_amount', parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleChange('minimum_order_amount', parseFloat(e.target.value) || 0)
+                    }
                     className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Allow Item Notes</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Allow Item Notes
+                  </label>
                   <p className="text-xs text-gray-500">Customers can add notes to items</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -427,7 +452,9 @@ export default function CafeSettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Allow Order Notes</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Allow Order Notes
+                  </label>
                   <p className="text-xs text-gray-500">Customers can add notes to orders</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -443,7 +470,9 @@ export default function CafeSettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Enable Tips</label>
-                  <p className="text-xs text-gray-500">Allow staff to collect tips during payment</p>
+                  <p className="text-xs text-gray-500">
+                    Allow staff to collect tips during payment
+                  </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -520,7 +549,9 @@ export default function CafeSettingsPage() {
             </p>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Welcome Heading</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Welcome Heading
+                </label>
                 <input
                   type="text"
                   value={formData.welcome_heading || ''}
@@ -530,7 +561,9 @@ export default function CafeSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Welcome Message</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Welcome Message
+                </label>
                 <textarea
                   value={formData.welcome_message || ''}
                   onChange={(e) => handleChange('welcome_message', e.target.value || null)}
@@ -550,7 +583,9 @@ export default function CafeSettingsPage() {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Enable QR Ordering</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Enable QR Ordering
+                </label>
                 <p className="text-xs text-gray-500">
                   Allow customers to place orders from QR menu. Disable for view-only menu.
                 </p>
@@ -659,11 +694,7 @@ export default function CafeSettingsPage() {
             >
               Reset
             </Button>
-            <Button
-              className="flex-1"
-              onClick={handleSave}
-              disabled={updateSettings.isPending}
-            >
+            <Button className="flex-1" onClick={handleSave} disabled={updateSettings.isPending}>
               {updateSettings.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>

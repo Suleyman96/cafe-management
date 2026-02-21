@@ -1,19 +1,19 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { Providers } from "@/components/providers";
-import { Toaster } from "sonner";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { Toaster } from 'sonner';
+import { Providers } from '@/components/providers';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "Café İdarə - Order",
-  description: "In-store ordering system",
-  manifest: "/manifest.json",
+  title: 'Café İdarə - Order',
+  description: 'In-store ordering system',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "Café İdarə",
+    statusBarStyle: 'default',
+    title: 'Café İdarə',
   },
 };
 
@@ -33,5 +33,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-

@@ -1,6 +1,6 @@
 /**
  * Supabase Client Factory
- * 
+ *
  * This allows the shared hooks to work with Supabase clients
  * initialized in each app (customer-web, staff-web, mobile-app)
  */
@@ -24,9 +24,7 @@ export function initSupabaseClient(client: SupabaseClient<Database>) {
  */
 export function getSupabaseClient(): SupabaseClient<Database> {
   if (!supabaseClient) {
-    throw new Error(
-      'Supabase client not initialized. Call initSupabaseClient() first.'
-    );
+    throw new Error('Supabase client not initialized. Call initSupabaseClient() first.');
   }
   return supabaseClient;
 }
@@ -40,4 +38,3 @@ export const supabase = new Proxy({} as SupabaseClient<Database>, {
     return getSupabaseClient()[prop as keyof SupabaseClient<Database>];
   },
 });
-

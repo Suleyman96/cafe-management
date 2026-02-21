@@ -4,7 +4,7 @@ interface CafeManLogoProps {
   showText?: boolean;
 }
 
-export function CafeManLogo({ size = 40, className = "", showText = true }: CafeManLogoProps) {
+export function CafeManLogo({ size = 40, className = '', showText = true }: CafeManLogoProps) {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {/* Icon - Coffee cup with dashboard grid */}
@@ -30,24 +30,9 @@ export function CafeManLogo({ size = 40, className = "", showText = true }: Cafe
         />
 
         {/* Steam lines */}
-        <path
-          d="M14 10C14 10 15 8 14 6"
-          stroke="#3B82F6"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <path
-          d="M21 10C21 10 22 7 21 4"
-          stroke="#3B82F6"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <path
-          d="M28 10C28 10 29 8 28 6"
-          stroke="#3B82F6"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
+        <path d="M14 10C14 10 15 8 14 6" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
+        <path d="M21 10C21 10 22 7 21 4" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
+        <path d="M28 10C28 10 29 8 28 6" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
 
         {/* Dashboard grid inside cup */}
         <rect x="12" y="20" width="7" height="7" rx="1" fill="white" opacity="0.9" />
@@ -57,17 +42,13 @@ export function CafeManLogo({ size = 40, className = "", showText = true }: Cafe
       </svg>
 
       {/* Text */}
-      {showText && (
-        <span className="text-xl font-bold text-blue-600">
-          Cafe-Man
-        </span>
-      )}
+      {showText && <span className="text-xl font-bold text-blue-600">Cafe-Man</span>}
     </div>
   );
 }
 
 // Icon-only version for favicons
-export function CafeManIcon({ size = 32, className = "" }: { size?: number; className?: string }) {
+export function CafeManIcon({ size = 32, className = '' }: { size?: number; className?: string }) {
   return (
     <svg
       width={size}
@@ -92,24 +73,9 @@ export function CafeManIcon({ size = 32, className = "" }: { size?: number; clas
       />
 
       {/* Steam lines */}
-      <path
-        d="M14 10C14 10 15 8 14 6"
-        stroke="#3B82F6"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M21 10C21 10 22 7 21 4"
-        stroke="#3B82F6"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M28 10C28 10 29 8 28 6"
-        stroke="#3B82F6"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+      <path d="M14 10C14 10 15 8 14 6" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
+      <path d="M21 10C21 10 22 7 21 4" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
+      <path d="M28 10C28 10 29 8 28 6" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
 
       {/* Dashboard grid inside cup */}
       <rect x="12" y="20" width="7" height="7" rx="1" fill="white" opacity="0.9" />

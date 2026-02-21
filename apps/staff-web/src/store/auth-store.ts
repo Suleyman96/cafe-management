@@ -1,5 +1,5 @@
-import { create } from "zustand";
-import type { Staff } from "@/types";
+import { create } from 'zustand';
+import type { Staff } from '@/types';
 
 interface AuthStore {
   staff: Staff | null;
@@ -18,5 +18,3 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setIsLoading: (isLoading) => set({ isLoading }),
   clearAuth: () => set({ staff: null, user: null, isLoading: false }),
 }));
-
-

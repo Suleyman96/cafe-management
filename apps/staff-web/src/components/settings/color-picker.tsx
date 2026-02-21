@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface ColorPickerProps {
   value: string;
@@ -67,11 +67,7 @@ export function ColorPicker({
 
   return (
     <div className="space-y-1" ref={containerRef}>
-      {label && (
-        <label className="block text-sm font-medium text-gray-700">
-          {label}
-        </label>
-      )}
+      {label && <label className="block text-sm font-medium text-gray-700">{label}</label>}
 
       <div className="relative">
         <div className="flex items-center gap-2">

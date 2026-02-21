@@ -3,7 +3,7 @@
  */
 
 import { handleSupabaseError, isCustomerFeedback } from '@cafe-idare/core';
-import type { WrapperContext, CustomerFeedbackRow } from './types';
+import type { CustomerFeedbackRow, WrapperContext } from './types';
 
 export function createFeedbackWrapper(ctx: WrapperContext) {
   return {
@@ -44,7 +44,12 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
       return data as CustomerFeedbackRow;
     },
 
-    respond: async (id: string, staffId: string, response: string, status: CustomerFeedbackRow['status']) => {
+    respond: async (
+      id: string,
+      staffId: string,
+      response: string,
+      status: CustomerFeedbackRow['status'],
+    ) => {
       const { data, error } = await ctx.anyClient
         .from('customer_feedback')
         .update({

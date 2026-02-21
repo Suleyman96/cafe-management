@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
-import { Button } from '@cafe-idare/ui';
-import { useCafeSettings, formatPriceWithSettings } from '@/hooks';
 import type { MenuItem } from '@cafe-idare/database';
+import { Button } from '@cafe-idare/ui';
+import { useState } from 'react';
+import { formatPriceWithSettings, useCafeSettings } from '@/hooks';
+import { supabase } from '@/lib/supabase/client';
 
 interface CreateTakeoutModalProps {
   staffId: string;
@@ -36,21 +36,20 @@ export function CreateTakeoutModal({
   const { data: cafeSettings } = useCafeSettings();
 
   // Filter menu items by search
-  const filteredItems = menuItems.filter((item) =>
-    item.name_en.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.name_az?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredItems = menuItems.filter(
+    (item) =>
+      item.name_en.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.name_az?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const addItem = (menuItem: MenuItem) => {
     const existing = selectedItems.find((item) => item.menuItem.id === menuItem.id);
-    
+
     if (existing) {
       setSelectedItems((prev) =>
         prev.map((item) =>
-          item.menuItem.id === menuItem.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        )
+          item.menuItem.id === menuItem.id ? { ...item, quantity: item.quantity + 1 } : item,
+        ),
       );
     } else {
       setSelectedItems((prev) => [...prev, { menuItem, quantity: 1, notes: '' }]);
@@ -62,25 +61,21 @@ export function CreateTakeoutModal({
       setSelectedItems((prev) => prev.filter((item) => item.menuItem.id !== menuItemId));
     } else {
       setSelectedItems((prev) =>
-        prev.map((item) =>
-          item.menuItem.id === menuItemId ? { ...item, quantity } : item
-        )
+        prev.map((item) => (item.menuItem.id === menuItemId ? { ...item, quantity } : item)),
       );
     }
   };
 
   const updateNotes = (menuItemId: string, notes: string) => {
     setSelectedItems((prev) =>
-      prev.map((item) =>
-        item.menuItem.id === menuItemId ? { ...item, notes } : item
-      )
+      prev.map((item) => (item.menuItem.id === menuItemId ? { ...item, notes } : item)),
     );
   };
 
   const calculateTotal = () => {
     const subtotal = selectedItems.reduce(
       (sum, item) => sum + item.menuItem.price * item.quantity,
-      0
+      0,
     );
     const tax = subtotal * 0.18;
     return { subtotal, tax, total: subtotal + tax };
@@ -103,7 +98,7 @@ export function CreateTakeoutModal({
       const { subtotal, tax, total } = calculateTotal();
 
       // Create takeout order
-      const orderResponse = await (supabase
+      const orderResponse = (await supabase
         .from('orders')
         .insert({
           table_id: null, // No table for takeout
@@ -138,9 +133,7 @@ export function CreateTakeoutModal({
         status: 'pending',
       }));
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems as any);
+      const { error: itemsError } = await supabase.from('order_items').insert(orderItems as any);
 
       if (itemsError) throw itemsError;
 
@@ -246,7 +239,7 @@ export function CreateTakeoutModal({
               {/* Menu Items Selection */}
               <div>
                 <h3 className="font-semibold text-lg mb-4">Add Items</h3>
-                
+
                 {/* Search */}
                 <input
                   type="text"
@@ -278,11 +271,9 @@ export function CreateTakeoutModal({
                       <div className="font-semibold">{formatPrice(item.price)}</div>
                     </button>
                   ))}
-                  
+
                   {filteredItems.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      No items found
-                    </div>
+                    <div className="text-center py-8 text-gray-500">No items found</div>
                   )}
                 </div>
               </div>
@@ -381,12 +372,7 @@ export function CreateTakeoutModal({
 
           {/* Action Buttons */}
           <div className="flex gap-3 mt-6 pt-6 border-t">
-            <Button
-              onClick={onClose}
-              variant="outline"
-              className="flex-1"
-              disabled={isSubmitting}
-            >
+            <Button onClick={onClose} variant="outline" className="flex-1" disabled={isSubmitting}>
               Cancel
             </Button>
             <Button
@@ -407,4 +393,3 @@ export function CreateTakeoutModal({
     </div>
   );
 }
-

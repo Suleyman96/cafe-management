@@ -3,8 +3,8 @@
  * This solves the type inference issues without using 'as any'
  */
 
-import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@cafe-idare/database';
+import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -22,16 +22,16 @@ export const supabaseV2 = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 
 // Type helper for insert operations
 export function createInsertData<T extends keyof Database['public']['Tables']>(
-  table: T,
-  data: Database['public']['Tables'][T]['Insert']
+  _table: T,
+  data: Database['public']['Tables'][T]['Insert'],
 ) {
   return data;
 }
 
 // Type helper for update operations
 export function createUpdateData<T extends keyof Database['public']['Tables']>(
-  table: T,
-  data: Partial<Database['public']['Tables'][T]['Update']>
+  _table: T,
+  data: Partial<Database['public']['Tables'][T]['Update']>,
 ) {
   return data;
 }

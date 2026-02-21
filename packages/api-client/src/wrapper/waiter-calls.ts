@@ -3,7 +3,7 @@
  */
 
 import { handleSupabaseError, isWaiterCall } from '@cafe-idare/core';
-import type { WrapperContext, WaiterCallRow } from './types';
+import type { WaiterCallRow, WrapperContext } from './types';
 
 export function createWaiterCallsWrapper(ctx: WrapperContext) {
   return {

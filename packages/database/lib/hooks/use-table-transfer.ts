@@ -3,9 +3,9 @@
  * Used by: staff-web, mobile-app
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { TableTransferWithDetails } from '../../types';
 import { getSupabaseClient } from '../supabase';
-import type { TableTransfer, TableTransferWithDetails } from '../../types';
 
 // ========================================
 // Query: Get transfer history for an order
@@ -111,32 +111,32 @@ export function useTransferTable() {
     },
     onSuccess: (_, variables) => {
       // Invalidate table queries
-      queryClient.invalidateQueries({ 
-        queryKey: ['tables'] 
+      queryClient.invalidateQueries({
+        queryKey: ['tables'],
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['table', variables.fromTableId] 
+      queryClient.invalidateQueries({
+        queryKey: ['table', variables.fromTableId],
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['table', variables.toTableId] 
+      queryClient.invalidateQueries({
+        queryKey: ['table', variables.toTableId],
       });
-      
+
       // Invalidate order queries
-      queryClient.invalidateQueries({ 
-        queryKey: ['orders', variables.orderId] 
+      queryClient.invalidateQueries({
+        queryKey: ['orders', variables.orderId],
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['order', variables.orderId] 
+      queryClient.invalidateQueries({
+        queryKey: ['order', variables.orderId],
       });
-      
+
       // Invalidate transfer history
-      queryClient.invalidateQueries({ 
-        queryKey: ['table_transfers'] 
+      queryClient.invalidateQueries({
+        queryKey: ['table_transfers'],
       });
-      
+
       // Invalidate order lists
-      queryClient.invalidateQueries({ 
-        queryKey: ['orders'] 
+      queryClient.invalidateQueries({
+        queryKey: ['orders'],
       });
     },
   });
@@ -148,7 +148,7 @@ export function useTransferTable() {
 
 export function canTransferTable(
   orderStatus: string,
-  targetTableStatus: string
+  targetTableStatus: string,
 ): { canTransfer: boolean; reason?: string } {
   // Can't transfer closed or cancelled orders
   if (orderStatus === 'closed' || orderStatus === 'cancelled') {
@@ -168,4 +168,3 @@ export function canTransferTable(
 
   return { canTransfer: true };
 }
-

@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Order, OrderStatus, OrderWithItems } from '../../types';
 import { getSupabaseClient } from '../supabase';
-import type { Order, OrderWithItems, OrderStatus } from '../../types';
 
 export function useOrders() {
   return useQuery<OrderWithItems[], Error>({
@@ -58,14 +58,14 @@ export function useOrder(orderId: string) {
 
 export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string; status: OrderStatus }) => {
       const { data, error } = await getSupabaseClient()
         .from('orders')
-        .update({ 
+        .update({
           status,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', orderId)
         .select()
@@ -84,7 +84,7 @@ export function useUpdateOrderStatus() {
 
 export function useCreateOrder() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (orderData: Partial<Order>) => {
       const { data, error } = await getSupabaseClient()

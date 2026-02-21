@@ -1,20 +1,20 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
-import type { WaiterCall } from "@/types";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
+import type { WaiterCall } from '@/types';
 
-type CallType = "assistance" | "bill" | "question" | "complaint" | "emergency";
-type CallPriority = "low" | "normal" | "high" | "urgent";
+type CallType = 'assistance' | 'bill' | 'question' | 'complaint' | 'emergency';
+type CallPriority = 'low' | 'normal' | 'high' | 'urgent';
 
 export function useWaiterCalls(tableId: string) {
   return useQuery({
-    queryKey: ["waiter_calls", tableId],
+    queryKey: ['waiter_calls', tableId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("waiter_calls")
-        .select("*")
-        .eq("table_id", tableId)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false });
+        .from('waiter_calls')
+        .select('*')
+        .eq('table_id', tableId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data as WaiterCall[];
@@ -38,13 +38,13 @@ export function useCreateWaiterCall() {
       // Use type assertion to work around Supabase client type inference issue
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
-        .from("waiter_calls")
+        .from('waiter_calls')
         .insert({
           table_id: tableId,
           call_type: callType,
           reason: notes || reason,
           priority: priority,
-          status: "pending",
+          status: 'pending',
         })
         .select()
         .single();
@@ -54,7 +54,7 @@ export function useCreateWaiterCall() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["waiter_calls", variables.tableId],
+        queryKey: ['waiter_calls', variables.tableId],
       });
     },
   });

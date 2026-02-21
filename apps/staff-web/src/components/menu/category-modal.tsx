@@ -1,13 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import {
-  useCreateCategory,
-  useUpdateCategory,
-} from '@/hooks';
-import { Button } from '@/components/ui/button';
-import toast from 'react-hot-toast';
 import type { Database } from '@cafe-idare/database';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
+import { Button } from '@/components/ui/button';
+import { useCreateCategory, useUpdateCategory } from '@/hooks';
 
 type Category = Database['public']['Tables']['categories']['Row'];
 
@@ -16,7 +13,23 @@ interface CategoryModalProps {
   onClose: () => void;
 }
 
-const COMMON_ICONS = ['📁', '☕', '🍔', '🍕', '🍝', '🥗', '🍰', '🥤', '🍺', '🍷', '🍽️', '🥐', '🍳', '🥙', '🌮'];
+const COMMON_ICONS = [
+  '📁',
+  '☕',
+  '🍔',
+  '🍕',
+  '🍝',
+  '🥗',
+  '🍰',
+  '🥤',
+  '🍺',
+  '🍷',
+  '🍽️',
+  '🥐',
+  '🍳',
+  '🥙',
+  '🌮',
+];
 
 export function CategoryModal({ category, onClose }: CategoryModalProps) {
   const isEditing = !!category;
@@ -39,7 +52,7 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
     try {
       const categoryData = {
         ...formData,
-        display_order: parseInt(formData.display_order),
+        display_order: parseInt(formData.display_order, 10),
         // Add missing multilingual fields with defaults
         name_az: formData.name_en,
         name_ru: formData.name_en,
@@ -63,10 +76,10 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
       onClose();
     } catch (error: any) {
       console.error('Error saving category:', error);
-      
+
       // Show user-friendly error message
       const errorMessage = error.message || 'Failed to save category';
-      
+
       if (errorMessage.includes('infinite recursion') || errorMessage.includes('policy')) {
         toast.error('Database permission error. Please run the latest migration.', { id: toastId });
       } else if (errorMessage.includes('duplicate')) {
@@ -84,10 +97,7 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
           <h2 className="text-2xl font-bold text-gray-900">
             {isEditing ? 'Edit Category' : 'Add Category'}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
             ×
           </button>
         </div>
@@ -95,9 +105,7 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Icon */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Icon
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {COMMON_ICONS.map((icon) => (
                 <button
@@ -125,9 +133,7 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Name *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
             <input
               type="text"
               value={formData.name_en}
@@ -140,9 +146,7 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
             <textarea
               value={formData.description_en}
               onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
@@ -155,9 +159,7 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
           {/* Display Order and Active */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Display Order
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Display Order</label>
               <input
                 type="number"
                 value={formData.display_order}
@@ -180,18 +182,10 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1"
-            >
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-            >
+            <Button type="submit" className="flex-1">
               {isEditing ? 'Update Category' : 'Create Category'}
             </Button>
           </div>
@@ -200,4 +194,3 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
     </div>
   );
 }
-

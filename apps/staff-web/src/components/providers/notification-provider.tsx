@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
-import { toast } from 'sonner';
 import { Bell, BellOff } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase/client';
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [audioEnabled, setAudioEnabled] = useState(() => {
@@ -52,15 +52,22 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (audioUnlockedRef.current) return;
 
       // Unlock all audio elements with silent play
-      const allAudios = [waiterCallAudioRef.current, orderAudioRef.current, notificationAudioRef.current];
+      const allAudios = [
+        waiterCallAudioRef.current,
+        orderAudioRef.current,
+        notificationAudioRef.current,
+      ];
       const unlockPromises = allAudios.map((audio) => {
         if (!audio) return Promise.resolve();
         audio.volume = 0;
-        return audio.play().then(() => {
-          audio.pause();
-          audio.currentTime = 0;
-          audio.volume = 1;
-        }).catch(() => {});
+        return audio
+          .play()
+          .then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.volume = 1;
+          })
+          .catch(() => {});
       });
 
       // After all unlocked, play any pending sound
@@ -119,7 +126,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     if (newState && notificationAudioRef.current) {
       notificationAudioRef.current.currentTime = 0;
-      notificationAudioRef.current.play()
+      notificationAudioRef.current
+        .play()
         .then(() => {
           audioUnlockedRef.current = true;
           toast.success('Notifications enabled!');
@@ -150,7 +158,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
               duration: 5000,
             });
           }
-        }
+        },
       )
       .subscribe((status) => {
         console.log('[Notifications] waiter_calls status:', status);
@@ -159,48 +167,44 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [playSound]);
 
   // Orders subscription
   useEffect(() => {
     console.log('[Notifications] Setting up orders subscription');
     const channel = supabase
       .channel('notify-orders')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        (payload) => {
-          console.log('[Notifications] orders event:', payload.eventType, payload);
-          if (payload.eventType === 'INSERT') {
-            const newOrder = payload.new as any;
-            if (newOrder.status === 'pending_approval') {
-              playSound(notificationAudioRef.current);
-              toast.info('New QR Order!', {
-                description: 'Customer placed an order via QR code',
-                duration: 5000,
-              });
-            } else {
-              playSound(orderAudioRef.current);
-              toast.info('New Order!', {
-                description: 'New order created',
-                duration: 3000,
-              });
-            }
-          }
-          if (payload.eventType === 'UPDATE') {
-            const newOrder = payload.new as any;
-            const oldOrder = payload.old as any;
-            if (newOrder.status === 'ready' && oldOrder.status !== 'ready') {
-              console.log('[Notifications] Order ready!');
-              playSound(notificationAudioRef.current);
-              toast.success('Order Ready!', {
-                description: 'An order is ready to be served',
-                duration: 5000,
-              });
-            }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        console.log('[Notifications] orders event:', payload.eventType, payload);
+        if (payload.eventType === 'INSERT') {
+          const newOrder = payload.new as any;
+          if (newOrder.status === 'pending_approval') {
+            playSound(notificationAudioRef.current);
+            toast.info('New QR Order!', {
+              description: 'Customer placed an order via QR code',
+              duration: 5000,
+            });
+          } else {
+            playSound(orderAudioRef.current);
+            toast.info('New Order!', {
+              description: 'New order created',
+              duration: 3000,
+            });
           }
         }
-      )
+        if (payload.eventType === 'UPDATE') {
+          const newOrder = payload.new as any;
+          const oldOrder = payload.old as any;
+          if (newOrder.status === 'ready' && oldOrder.status !== 'ready') {
+            console.log('[Notifications] Order ready!');
+            playSound(notificationAudioRef.current);
+            toast.success('Order Ready!', {
+              description: 'An order is ready to be served',
+              duration: 5000,
+            });
+          }
+        }
+      })
       .subscribe((status) => {
         console.log('[Notifications] orders status:', status);
       });
@@ -208,27 +212,23 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [playSound]);
 
   // Order items subscription (for items added to existing orders)
   useEffect(() => {
     console.log('[Notifications] Setting up order_items subscription');
     const channel = supabase
       .channel('notify-order-items')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'order_items' },
-        (payload) => {
-          console.log('[Notifications] order_items event:', payload.eventType);
-          if (payload.eventType === 'INSERT') {
-            playSound(orderAudioRef.current);
-            toast.info('New items added!', {
-              description: 'Items were added to an order',
-              duration: 3000,
-            });
-          }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, (payload) => {
+        console.log('[Notifications] order_items event:', payload.eventType);
+        if (payload.eventType === 'INSERT') {
+          playSound(orderAudioRef.current);
+          toast.info('New items added!', {
+            description: 'Items were added to an order',
+            duration: 3000,
+          });
         }
-      )
+      })
       .subscribe((status) => {
         console.log('[Notifications] order_items status:', status);
       });
@@ -236,7 +236,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [playSound]);
 
   return (
     <>
@@ -250,7 +250,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             ? 'bg-green-500 hover:bg-green-600 text-white'
             : 'bg-gray-500 hover:bg-gray-600 text-white'
         }`}
-        title={audioEnabled ? 'Notifications ON (click to mute)' : 'Notifications OFF (click to enable)'}
+        title={
+          audioEnabled ? 'Notifications ON (click to mute)' : 'Notifications OFF (click to enable)'
+        }
       >
         {audioEnabled ? (
           <Bell className="h-5 w-5 animate-pulse" />

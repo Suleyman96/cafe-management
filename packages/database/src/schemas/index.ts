@@ -5,7 +5,14 @@
 import { z } from 'zod';
 
 // Order schemas
-export const OrderStatusSchema = z.enum(['new', 'preparing', 'ready', 'served', 'paid', 'cancelled']);
+export const OrderStatusSchema = z.enum([
+  'new',
+  'preparing',
+  'ready',
+  'served',
+  'paid',
+  'cancelled',
+]);
 export const OrderSourceSchema = z.enum(['customer', 'waiter', 'phone']);
 
 export const OrderSchema = z.object({

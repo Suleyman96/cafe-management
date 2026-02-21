@@ -15,7 +15,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "lint": "biome check ./src"
   },
   "dependencies": {
     "@cafe-idare/core": "workspace:*",

@@ -12,6 +12,9 @@
     },
     "lint": {
       "outputs": [],
+      "cache": true
+    },
+    "format": {
       "cache": false
     },
     "type-check": {

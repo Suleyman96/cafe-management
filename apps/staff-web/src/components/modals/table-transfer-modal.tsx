@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useTables, useTransferTable, useOrders, useAuth } from '@/hooks';
 import { Button } from '@cafe-idare/ui';
-import { X, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useAuth, useOrders, useTables, useTransferTable } from '@/hooks';
 
 interface TableTransferModalProps {
   isOpen: boolean;
@@ -29,9 +29,10 @@ export function TableTransferModal({
   const [showOccupiedWarning, setShowOccupiedWarning] = useState(false);
 
   // Get the active order for this table
-  const activeOrder = orders?.find((order: any) =>
-    order.table_id === sourceTable?.id &&
-    ['new', 'preparing', 'ready', 'served'].includes(order.status)
+  const activeOrder = orders?.find(
+    (order: any) =>
+      order.table_id === sourceTable?.id &&
+      ['new', 'preparing', 'ready', 'served'].includes(order.status),
   );
 
   // Get available tables (all tables except source, sorted by status)
@@ -95,11 +96,21 @@ export function TableTransferModal({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'free':
-        return <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Free</span>;
+        return (
+          <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Free</span>
+        );
       case 'reserved':
-        return <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">Reserved</span>;
+        return (
+          <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+            Reserved
+          </span>
+        );
       case 'occupied':
-        return <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">Occupied</span>;
+        return (
+          <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">
+            Occupied
+          </span>
+        );
       default:
         return null;
     }
@@ -110,10 +121,7 @@ export function TableTransferModal({
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Transfer {sourceTable?.table_number}</h2>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -149,11 +157,10 @@ export function TableTransferModal({
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-amber-800">
-                  This table is already occupied
-                </p>
+                <p className="text-sm font-medium text-amber-800">This table is already occupied</p>
                 <p className="text-sm text-amber-600 mt-1">
-                  The order will be moved to this table. Both orders will be active on the same table.
+                  The order will be moved to this table. Both orders will be active on the same
+                  table.
                 </p>
               </div>
             </div>
@@ -174,12 +181,7 @@ export function TableTransferModal({
         </div>
 
         <div className="flex gap-3 mt-6">
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            disabled={loading}
-            className="flex-1"
-          >
+          <Button variant="outline" onClick={handleClose} disabled={loading} className="flex-1">
             Cancel
           </Button>
           <Button
@@ -187,7 +189,11 @@ export function TableTransferModal({
             disabled={!selectedTableId || loading}
             className={`flex-1 ${isSelectedTableOccupied ? 'bg-amber-500 hover:bg-amber-600' : ''}`}
           >
-            {loading ? 'Transferring...' : isSelectedTableOccupied ? 'Transfer Anyway' : 'Transfer Table'}
+            {loading
+              ? 'Transferring...'
+              : isSelectedTableOccupied
+                ? 'Transfer Anyway'
+                : 'Transfer Table'}
           </Button>
         </div>
       </div>

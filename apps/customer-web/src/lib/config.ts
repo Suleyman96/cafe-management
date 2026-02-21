@@ -7,7 +7,7 @@
 
 export const appConfig = {
   // Restaurant name
-  restaurantName: "Café İdarə",
+  restaurantName: 'Café İdarə',
 
   // Tax settings
   tax: {
@@ -23,14 +23,14 @@ export const appConfig = {
     pricesIncludeTax: false,
 
     // Label to show for tax line item
-    label: "Tax",
+    label: 'Tax',
   },
 
   // Currency settings
   currency: {
-    symbol: "₼",
-    code: "AZN",
-    position: "after" as "before" | "after", // "before" = $10, "after" = 10₼
+    symbol: '₼',
+    code: 'AZN',
+    position: 'after' as 'before' | 'after', // "before" = $10, "after" = 10₼
     decimalPlaces: 2,
   },
 

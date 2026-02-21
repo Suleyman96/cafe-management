@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
 
 export interface CafeSettings {
   id: string;
@@ -11,7 +11,7 @@ export interface CafeSettings {
   show_tax_separately: boolean;
   currency_symbol: string;
   currency_code: string;
-  currency_position: "before" | "after";
+  currency_position: 'before' | 'after';
   currency_decimal_places: number;
   minimum_order_amount: number;
   allow_item_notes: boolean;
@@ -34,20 +34,20 @@ export interface CafeSettings {
   location_maps_url: string | null;
 }
 
-const SETTINGS_ID = "00000000-0000-0000-0000-000000000001";
+const SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
 
 // Default settings in case the database fetch fails
 const DEFAULT_SETTINGS: CafeSettings = {
   id: SETTINGS_ID,
-  restaurant_name: "Restaurant",
+  restaurant_name: 'Restaurant',
   tax_enabled: true,
   tax_percentage: 18,
-  tax_label: "Tax",
+  tax_label: 'Tax',
   prices_include_tax: false,
   show_tax_separately: true,
-  currency_symbol: "₼",
-  currency_code: "AZN",
-  currency_position: "after",
+  currency_symbol: '₼',
+  currency_code: 'AZN',
+  currency_position: 'after',
   currency_decimal_places: 2,
   minimum_order_amount: 0,
   allow_item_notes: true,
@@ -55,8 +55,8 @@ const DEFAULT_SETTINGS: CafeSettings = {
   // Branding defaults
   cafe_logo_url: null,
   hero_image_url: null,
-  brand_primary_color: "#3B82F6",
-  brand_secondary_color: "#1E40AF",
+  brand_primary_color: '#3B82F6',
+  brand_secondary_color: '#1E40AF',
   // Welcome screen defaults
   welcome_heading: null,
   welcome_message: null,
@@ -72,16 +72,16 @@ const DEFAULT_SETTINGS: CafeSettings = {
 
 export function useCafeSettings() {
   return useQuery({
-    queryKey: ["cafe_settings"],
+    queryKey: ['cafe_settings'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("cafe_settings")
-        .select("*")
-        .eq("id", SETTINGS_ID)
+        .from('cafe_settings')
+        .select('*')
+        .eq('id', SETTINGS_ID)
         .single();
 
       if (error) {
-        console.error("Failed to fetch cafe settings:", error);
+        console.error('Failed to fetch cafe settings:', error);
         return DEFAULT_SETTINGS;
       }
 
@@ -125,7 +125,7 @@ export function getDisplaySubtotal(subtotal: number, settings: CafeSettings): nu
 export function formatPrice(amount: number, settings: CafeSettings): string {
   const formattedAmount = amount.toFixed(settings.currency_decimal_places);
 
-  if (settings.currency_position === "before") {
+  if (settings.currency_position === 'before') {
     return `${settings.currency_symbol}${formattedAmount}`;
   }
   return `${formattedAmount}${settings.currency_symbol}`;

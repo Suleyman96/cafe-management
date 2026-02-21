@@ -2,8 +2,14 @@
  * Menu items and categories wrapper module
  */
 
-import { handleSupabaseError, isMenuItem, isCategory, isCategoryArray } from '@cafe-idare/core';
-import type { WrapperContext, MenuItemInsert, MenuItemUpdate, CategoryInsert, CategoryUpdate } from './types';
+import { handleSupabaseError, isCategory, isCategoryArray, isMenuItem } from '@cafe-idare/core';
+import type {
+  CategoryInsert,
+  CategoryUpdate,
+  MenuItemInsert,
+  MenuItemUpdate,
+  WrapperContext,
+} from './types';
 
 export function createMenuItemsWrapper(ctx: WrapperContext) {
   return {
@@ -101,10 +107,7 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
     },
 
     delete: async (id: string) => {
-      const { error } = await ctx.anyClient
-        .from('menu_items')
-        .delete()
-        .eq('id', id);
+      const { error } = await ctx.anyClient.from('menu_items').delete().eq('id', id);
 
       if (error) throw handleSupabaseError(error);
     },
@@ -151,10 +154,7 @@ export function createCategoriesWrapper(ctx: WrapperContext) {
     },
 
     delete: async (id: string) => {
-      const { error } = await ctx.anyClient
-        .from('categories')
-        .delete()
-        .eq('id', id);
+      const { error } = await ctx.anyClient.from('categories').delete().eq('id', id);
 
       if (error) throw handleSupabaseError(error);
     },

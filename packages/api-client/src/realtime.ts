@@ -1,6 +1,6 @@
-import { TypedSupabaseClient } from './types';
-import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import type { Database } from '@cafe-idare/database';
+import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import type { TypedSupabaseClient } from './types';
 
 type TableName = keyof Database['public']['Tables'];
 type TableRow<T extends TableName> = Database['public']['Tables'][T]['Row'];
@@ -14,7 +14,7 @@ export interface RealtimeOptions {
 export function subscribeToTable<T extends TableName>(
   client: TypedSupabaseClient,
   table: T,
-  options: RealtimeOptions
+  options: RealtimeOptions,
 ): RealtimeChannel {
   const channel = client
     .channel(`${table}_changes`)
@@ -33,38 +33,26 @@ export function subscribeToTable<T extends TableName>(
             options.onDelete?.(payload.old);
             break;
         }
-      }
+      },
     )
     .subscribe();
 
   return channel;
 }
 
-export function subscribeToOrders(
-  client: TypedSupabaseClient,
-  options: RealtimeOptions
-) {
+export function subscribeToOrders(client: TypedSupabaseClient, options: RealtimeOptions) {
   return subscribeToTable(client, 'orders', options);
 }
 
-export function subscribeToOrderItems(
-  client: TypedSupabaseClient,
-  options: RealtimeOptions
-) {
+export function subscribeToOrderItems(client: TypedSupabaseClient, options: RealtimeOptions) {
   return subscribeToTable(client, 'order_items', options);
 }
 
-export function subscribeToTables(
-  client: TypedSupabaseClient,
-  options: RealtimeOptions
-) {
+export function subscribeToTables(client: TypedSupabaseClient, options: RealtimeOptions) {
   return subscribeToTable(client, 'tables', options);
 }
 
-export function subscribeToWaiterCalls(
-  client: TypedSupabaseClient,
-  options: RealtimeOptions
-) {
+export function subscribeToWaiterCalls(client: TypedSupabaseClient, options: RealtimeOptions) {
   return subscribeToTable(client, 'waiter_calls', options);
 }
 
@@ -78,29 +66,29 @@ export function subscribeToKitchenUpdates(
   handlers: {
     onNewItem: (item: any) => void;
     onItemStatusChange: (item: any) => void;
-  }
+  },
 ) {
   const channel = client
     .channel('kitchen_updates')
     .on(
       'postgres_changes',
-      { 
-        event: 'INSERT', 
-        schema: 'public', 
+      {
+        event: 'INSERT',
+        schema: 'public',
         table: 'order_items',
-        filter: 'status=eq.pending'
+        filter: 'status=eq.pending',
       },
-      (payload) => handlers.onNewItem(payload.new)
+      (payload) => handlers.onNewItem(payload.new),
     )
     .on(
       'postgres_changes',
-      { 
-        event: 'UPDATE', 
-        schema: 'public', 
+      {
+        event: 'UPDATE',
+        schema: 'public',
         table: 'order_items',
-        filter: 'status=in.(preparing,ready)'
+        filter: 'status=in.(preparing,ready)',
       },
-      (payload) => handlers.onItemStatusChange(payload.new)
+      (payload) => handlers.onItemStatusChange(payload.new),
     )
     .subscribe();
 
@@ -113,29 +101,29 @@ export function subscribeToWaiterUpdates(
   handlers: {
     onNewCall: (call: any) => void;
     onOrderReady: (order: any) => void;
-  }
+  },
 ) {
   const channel = client
     .channel('waiter_updates')
     .on(
       'postgres_changes',
-      { 
-        event: 'INSERT', 
-        schema: 'public', 
+      {
+        event: 'INSERT',
+        schema: 'public',
         table: 'waiter_calls',
-        filter: 'status=eq.pending'
+        filter: 'status=eq.pending',
       },
-      (payload) => handlers.onNewCall(payload.new)
+      (payload) => handlers.onNewCall(payload.new),
     )
     .on(
       'postgres_changes',
-      { 
-        event: 'UPDATE', 
-        schema: 'public', 
+      {
+        event: 'UPDATE',
+        schema: 'public',
         table: 'orders',
-        filter: 'status=eq.ready'
+        filter: 'status=eq.ready',
       },
-      (payload) => handlers.onOrderReady(payload.new)
+      (payload) => handlers.onOrderReady(payload.new),
     )
     .subscribe();
 

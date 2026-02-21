@@ -1,9 +1,9 @@
 'use client';
 
+import { Phone, User, X } from 'lucide-react';
 import { useState } from 'react';
-import { useCreateOrder } from '@/hooks';
 import { Button } from '@/components/ui/button';
-import { X, Phone, User } from 'lucide-react';
+import { useCreateOrder } from '@/hooks';
 
 interface CreateTakeoutModalProps {
   isOpen: boolean;
@@ -11,13 +11,9 @@ interface CreateTakeoutModalProps {
   onSuccess: (orderId: string) => void;
 }
 
-export function CreateTakeoutModal({
-  isOpen,
-  onClose,
-  onSuccess,
-}: CreateTakeoutModalProps) {
+export function CreateTakeoutModal({ isOpen, onClose, onSuccess }: CreateTakeoutModalProps) {
   const createOrder = useCreateOrder();
-  
+
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,7 +30,7 @@ export function CreateTakeoutModal({
         customer_phone: customerPhone.trim() || null,
       } as any);
       onSuccess(result.id);
-      
+
       // Reset form
       setCustomerName('');
       setCustomerPhone('');
@@ -52,10 +48,7 @@ export function CreateTakeoutModal({
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Create Takeout Order</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -72,7 +65,6 @@ export function CreateTakeoutModal({
               placeholder="John Doe"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              autoFocus
             />
           </div>
 
@@ -98,12 +90,7 @@ export function CreateTakeoutModal({
         </div>
 
         <div className="flex gap-3 mt-6">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={loading}
-            className="flex-1"
-          >
+          <Button variant="outline" onClick={onClose} disabled={loading} className="flex-1">
             Cancel
           </Button>
           <Button

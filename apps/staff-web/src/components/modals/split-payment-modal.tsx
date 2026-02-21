@@ -1,12 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { useCreatePayment, useOrderRemainingBalance, useUpdateOrderStatus, useCafeSettings, formatPriceWithSettings, calculateTax as calculateTaxFromSettings } from '@/hooks';
-import { useAuth } from '@/hooks/use-auth';
-import { Button } from '@cafe-idare/ui';
-import { X, DollarSign, CheckCircle, Check } from 'lucide-react';
-import { ORDER_STATUS } from '@cafe-idare/core';
+import type { ORDER_STATUS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
+import { Button } from '@cafe-idare/ui';
+import { Check, CheckCircle, DollarSign, X } from 'lucide-react';
+import { useState } from 'react';
+import {
+  calculateTax as calculateTaxFromSettings,
+  formatPriceWithSettings,
+  useCafeSettings,
+  useCreatePayment,
+  useOrderRemainingBalance,
+  useUpdateOrderStatus,
+} from '@/hooks';
+import { useAuth } from '@/hooks/use-auth';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
   menu_item?: Database['public']['Tables']['menu_items']['Row'];
@@ -25,12 +32,7 @@ interface SplitPaymentModalProps {
 
 type PaymentMode = 'full' | 'partial' | 'items';
 
-export function SplitPaymentModal({
-  isOpen,
-  onClose,
-  order,
-  onSuccess,
-}: SplitPaymentModalProps) {
+export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPaymentModalProps) {
   const { staff } = useAuth();
   const createPayment = useCreatePayment();
   const updateOrderStatus = useUpdateOrderStatus();
@@ -52,10 +54,11 @@ export function SplitPaymentModal({
   const [loading, setLoading] = useState(false);
 
   // Calculate subtotal from items (before tax)
-  const orderSubtotal = order?.order_items?.reduce(
-    (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
-    0
-  ) || 0;
+  const orderSubtotal =
+    order?.order_items?.reduce(
+      (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
+      0,
+    ) || 0;
 
   // Calculate tax based on cafe settings
   const orderTax = cafeSettings?.tax_enabled
@@ -64,7 +67,7 @@ export function SplitPaymentModal({
 
   // Use the order.total from database (includes tax) for consistency with remaining balance calculation
   // Fall back to calculating from items + tax if total is not set
-  const orderTotal = order?.total || (orderSubtotal + orderTax);
+  const orderTotal = order?.total || orderSubtotal + orderTax;
 
   const calculateSelectedItemsTotal = () => {
     if (!order?.order_items) return 0;
@@ -93,9 +96,12 @@ export function SplitPaymentModal({
       await createPayment.mutateAsync({
         order_id: order?.id || '',
         received_by: staff.id,
-        payment_type: paymentMode === 'full' ? 'full' :
-                     paymentMode === 'partial' ? 'partial_amount' :
-                     'specific_items',
+        payment_type:
+          paymentMode === 'full'
+            ? 'full'
+            : paymentMode === 'partial'
+              ? 'partial_amount'
+              : 'specific_items',
         amount,
         tip_amount: parseFloat(tipAmount) || 0,
         payment_method: 'cash',
@@ -148,10 +154,7 @@ export function SplitPaymentModal({
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-xl font-bold">Process Payment (Cash)</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -188,11 +191,13 @@ export function SplitPaymentModal({
                 </div>
               </>
             )}
-            <div className={`flex justify-between items-center text-sm font-medium mb-2 ${cafeSettings?.tax_enabled ? 'pt-2 border-t' : ''}`}>
+            <div
+              className={`flex justify-between items-center text-sm font-medium mb-2 ${cafeSettings?.tax_enabled ? 'pt-2 border-t' : ''}`}
+            >
               <span>Order Total</span>
               <span>{formatPrice(orderTotal)}</span>
             </div>
-            {(remainingBalance !== undefined && remainingBalance < orderTotal) && (
+            {remainingBalance !== undefined && remainingBalance < orderTotal && (
               <>
                 <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
                   <span>Already Paid</span>
@@ -202,7 +207,7 @@ export function SplitPaymentModal({
                 </div>
                 <div className="flex justify-between items-center font-medium">
                   <span>Remaining Balance</span>
-                  <span className={isFullyPaid ? "text-green-600" : "text-orange-600"}>
+                  <span className={isFullyPaid ? 'text-green-600' : 'text-orange-600'}>
                     {formatPrice(remainingBalance)}
                   </span>
                 </div>
@@ -212,9 +217,7 @@ export function SplitPaymentModal({
 
           {/* Payment Mode Selection */}
           <div className="space-y-3 mb-6">
-            <label className="block text-sm font-medium text-gray-700">
-              Payment Type
-            </label>
+            <label className="block text-sm font-medium text-gray-700">Payment Type</label>
             <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => setPaymentMode('full')}
@@ -262,9 +265,7 @@ export function SplitPaymentModal({
           {/* Partial Amount Input */}
           {paymentMode === 'partial' && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Amount to Pay
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Amount to Pay</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
                   $
@@ -304,9 +305,7 @@ export function SplitPaymentModal({
                       <div className="font-medium">
                         {item.quantity}x {item.item_name}
                       </div>
-                      {item.notes && (
-                        <div className="text-xs text-gray-600">{item.notes}</div>
-                      )}
+                      {item.notes && <div className="text-xs text-gray-600">{item.notes}</div>}
                     </div>
                     <div className="font-medium">
                       {formatPrice(item.quantity * item.item_price)}
@@ -349,7 +348,6 @@ export function SplitPaymentModal({
               )}
             </div>
           )}
-
         </div>
 
         <div className="border-t p-6">
@@ -362,23 +360,22 @@ export function SplitPaymentModal({
             {cafeSettings?.tips_enabled && parseFloat(tipAmount) > 0 && (
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Tip</span>
-                <span className="font-medium text-green-600">{formatPrice(parseFloat(tipAmount))}</span>
+                <span className="font-medium text-green-600">
+                  {formatPrice(parseFloat(tipAmount))}
+                </span>
               </div>
             )}
             <div className="flex justify-between items-center pt-2 border-t">
               <span className="text-lg font-medium">Total to Collect</span>
-              <span className={`text-2xl font-bold ${isFullyPaid ? 'text-green-600' : 'text-blue-600'}`}>
+              <span
+                className={`text-2xl font-bold ${isFullyPaid ? 'text-green-600' : 'text-blue-600'}`}
+              >
                 {formatPrice(getPaymentAmount() + (parseFloat(tipAmount) || 0))}
               </span>
             </div>
           </div>
           <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-              className="flex-1"
-            >
+            <Button variant="outline" onClick={onClose} disabled={loading} className="flex-1">
               Cancel
             </Button>
             {isFullyPaid || isZeroTotal ? (

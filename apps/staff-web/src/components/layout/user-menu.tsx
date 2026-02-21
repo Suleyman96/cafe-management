@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { ChevronDown, LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { LogOut, Settings, User, ChevronDown } from 'lucide-react';
 
 export function UserMenu() {
   const { staff, logout } = useAuth();
@@ -52,7 +52,9 @@ export function UserMenu() {
             {staff.role}
           </span>
         </div>
-        <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`h-4 w-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {isOpen && (

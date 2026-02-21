@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSupabaseClient } from '../supabase';
 import type { Database } from '@shared/types/database';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getSupabaseClient } from '../supabase';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 type MenuItemInsert = Database['public']['Tables']['menu_items']['Insert'];
@@ -40,11 +40,7 @@ export function useMenuItem(id: string) {
   return useQuery({
     queryKey: ['menu-item', id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data, error } = await supabase.from('menu_items').select('*').eq('id', id).single();
 
       if (error) throw error;
       return data as MenuItem;
@@ -59,11 +55,7 @@ export function useCreateMenuItem() {
 
   return useMutation({
     mutationFn: async (item: MenuItemInsert) => {
-      const { data, error } = await supabase
-        .from('menu_items')
-        .insert(item)
-        .select()
-        .single();
+      const { data, error } = await supabase.from('menu_items').insert(item).select().single();
 
       if (error) throw error;
       return data as MenuItem;
@@ -103,10 +95,7 @@ export function useDeleteMenuItem() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('menu_items')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from('menu_items').delete().eq('id', id);
 
       if (error) throw error;
     },
@@ -159,11 +148,7 @@ export function useCreateCategory() {
 
   return useMutation({
     mutationFn: async (category: CategoryInsert) => {
-      const { data, error } = await supabase
-        .from('categories')
-        .insert(category)
-        .select()
-        .single();
+      const { data, error } = await supabase.from('categories').insert(category).select().single();
 
       if (error) throw error;
       return data as Category;
@@ -202,10 +187,7 @@ export function useDeleteCategory() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from('categories').delete().eq('id', id);
 
       if (error) throw error;
     },
@@ -214,5 +196,3 @@ export function useDeleteCategory() {
     },
   });
 }
-
-

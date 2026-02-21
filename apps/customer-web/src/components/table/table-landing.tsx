@@ -1,31 +1,31 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { useTable } from "@/hooks/use-table";
-import { useOrder } from "@/hooks/use-order";
-import { useCafeSettings } from "@/hooks/use-settings";
-import { setTableContext } from "@/lib/supabase";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useLanguageStore } from "@/store/language-store";
-import { PlatformFooter } from "@/components/ui/platform-footer";
-import type { Language } from "@/types";
 import {
-  MapPin,
-  Users,
-  ClipboardList,
-  ChefHat,
   CheckCircle,
+  ChefHat,
+  ClipboardList,
   Clock,
-  Instagram,
-  Phone,
   Globe,
+  Instagram,
+  MapPin,
   MapPinned,
-  MessageCircle
-} from "lucide-react";
+  MessageCircle,
+  Phone,
+  Users,
+} from 'lucide-react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { PlatformFooter } from '@/components/ui/platform-footer';
+import { useOrder } from '@/hooks/use-order';
+import { useCafeSettings } from '@/hooks/use-settings';
+import { useTable } from '@/hooks/use-table';
+import { setTableContext } from '@/lib/supabase';
+import { useLanguageStore } from '@/store/language-store';
+import type { Language } from '@/types';
 
 interface TableLandingProps {
   tableId: string;
@@ -39,7 +39,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
   const { data: settings } = useCafeSettings();
 
   // Fetch active order for this table
-  const actualTableId = table?.id || "";
+  const actualTableId = table?.id || '';
   const { data: activeOrder, isLoading: orderLoading } = useOrder(actualTableId);
 
   useEffect(() => {
@@ -55,16 +55,16 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
   // Helper to get order status display info
   const getOrderStatusInfo = (status: string) => {
     switch (status) {
-      case "new":
-        return { label: "Order Placed", icon: ClipboardList, color: "bg-blue-500" };
-      case "preparing":
-        return { label: "Preparing", icon: ChefHat, color: "bg-yellow-500" };
-      case "ready":
-        return { label: "Ready to Serve", icon: CheckCircle, color: "bg-green-500" };
-      case "served":
-        return { label: "Served", icon: CheckCircle, color: "bg-green-600" };
+      case 'new':
+        return { label: 'Order Placed', icon: ClipboardList, color: 'bg-blue-500' };
+      case 'preparing':
+        return { label: 'Preparing', icon: ChefHat, color: 'bg-yellow-500' };
+      case 'ready':
+        return { label: 'Ready to Serve', icon: CheckCircle, color: 'bg-green-500' };
+      case 'served':
+        return { label: 'Served', icon: CheckCircle, color: 'bg-green-600' };
       default:
-        return { label: status, icon: Clock, color: "bg-gray-500" };
+        return { label: status, icon: Clock, color: 'bg-gray-500' };
     }
   };
 
@@ -80,11 +80,15 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
   }
 
   // Check if any social links are configured
-  const hasSocialLinks = settings?.social_instagram || settings?.social_whatsapp ||
-    settings?.contact_phone || settings?.contact_website || settings?.location_maps_url;
+  const hasSocialLinks =
+    settings?.social_instagram ||
+    settings?.social_whatsapp ||
+    settings?.contact_phone ||
+    settings?.contact_website ||
+    settings?.location_maps_url;
 
   // Dynamic styles based on brand colors
-  const primaryColor = settings?.brand_primary_color || "#3B82F6";
+  const primaryColor = settings?.brand_primary_color || '#3B82F6';
 
   return (
     <div
@@ -92,7 +96,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
       style={{
         background: settings?.hero_image_url
           ? `linear-gradient(to bottom, rgba(255,255,255,0.95), rgba(255,255,255,0.85)), url(${settings.hero_image_url}) center/cover no-repeat`
-          : `linear-gradient(to bottom, ${primaryColor}15, white)`
+          : `linear-gradient(to bottom, ${primaryColor}15, white)`,
       }}
     >
       {/* Social Links Bar */}
@@ -161,22 +165,17 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             <div className="mb-4">
               <Image
                 src={settings.cafe_logo_url}
-                alt={settings?.restaurant_name || "Restaurant"}
+                alt={settings?.restaurant_name || 'Restaurant'}
                 width={120}
                 height={120}
                 className="mx-auto rounded-2xl shadow-lg object-contain"
               />
             </div>
           ) : null}
-          <h1
-            className="text-3xl font-bold"
-            style={{ color: primaryColor }}
-          >
-            {settings?.restaurant_name || "Restaurant"}
+          <h1 className="text-3xl font-bold" style={{ color: primaryColor }}>
+            {settings?.restaurant_name || 'Restaurant'}
           </h1>
-          <p className="mt-2 text-muted-foreground">
-            {settings?.welcome_heading || "Welcome!"}
-          </p>
+          <p className="mt-2 text-muted-foreground">{settings?.welcome_heading || 'Welcome!'}</p>
           {settings?.welcome_message && (
             <p className="mt-1 text-sm text-muted-foreground/80 max-w-xs mx-auto">
               {settings.welcome_message}
@@ -202,9 +201,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
           )}
 
           <div className="mt-4 pt-4 border-t">
-            <p className="text-sm text-muted-foreground">
-              Capacity: {table.capacity} guests
-            </p>
+            <p className="text-sm text-muted-foreground">Capacity: {table.capacity} guests</p>
           </div>
         </div>
 
@@ -235,10 +232,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                   );
                 })()}
               </div>
-              <Badge
-                variant="outline"
-                style={{ color: primaryColor, borderColor: primaryColor }}
-              >
+              <Badge variant="outline" style={{ color: primaryColor, borderColor: primaryColor }}>
                 #{activeOrder.order_number}
               </Badge>
             </div>
@@ -258,21 +252,19 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
 
         {/* Language Selector */}
         <div className="w-full mb-6">
-          <p className="text-sm font-medium mb-2 text-center">
-            Select Language / Dil seçin
-          </p>
+          <p className="text-sm font-medium mb-2 text-center">Select Language / Dil seçin</p>
           <div className="grid grid-cols-4 gap-2">
             {(
               [
-                { code: "en", label: "EN" },
-                { code: "az", label: "AZ" },
-                { code: "ru", label: "RU" },
-                { code: "tr", label: "TR" },
+                { code: 'en', label: 'EN' },
+                { code: 'az', label: 'AZ' },
+                { code: 'ru', label: 'RU' },
+                { code: 'tr', label: 'TR' },
               ] as const
             ).map((lang) => (
               <Button
                 key={lang.code}
-                variant={language === lang.code ? "default" : "outline"}
+                variant={language === lang.code ? 'default' : 'outline'}
                 size="lg"
                 onClick={() => setLanguage(lang.code as Language)}
                 className="font-semibold"
@@ -288,12 +280,16 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
         {settings?.qr_ordering_enabled !== false ? (
           <Button
             size="xl"
-            variant={activeOrder ? "outline" : "default"}
+            variant={activeOrder ? 'outline' : 'default'}
             className="w-full"
-            style={activeOrder ? { borderColor: primaryColor, color: primaryColor } : { backgroundColor: primaryColor }}
+            style={
+              activeOrder
+                ? { borderColor: primaryColor, color: primaryColor }
+                : { backgroundColor: primaryColor }
+            }
             onClick={() => router.push(`/table/${tableId}/menu`)}
           >
-            {activeOrder ? "Add More Items" : "Browse Menu"}
+            {activeOrder ? 'Add More Items' : 'Browse Menu'}
           </Button>
         ) : (
           <Button
@@ -308,10 +304,10 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
 
         <p className="mt-4 text-sm text-center text-muted-foreground">
           {settings?.qr_ordering_enabled === false
-            ? "Browse our menu items"
+            ? 'Browse our menu items'
             : activeOrder
-              ? "Tap above to add more items to your order"
-              : "Scan the QR code on your table to order"}
+              ? 'Tap above to add more items to your order'
+              : 'Scan the QR code on your table to order'}
         </p>
       </div>
 
@@ -320,5 +316,3 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
     </div>
   );
 }
-
-

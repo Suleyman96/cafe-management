@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Image from "next/image";
-import { useLanguageStore } from "@/store/language-store";
-import { useCartStore } from "@/store/cart-store";
-import { getLocalizedField, type MenuItemWithCategory } from "@/types";
-import { useCafeSettings, formatPrice as formatPriceWithSettings } from "@/hooks/use-settings";
-import { formatPrice } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { MenuItemModal } from "./menu-item-modal";
-import { Plus, Star, Leaf, Flame } from "lucide-react";
+import { Flame, Leaf, Plus, Star } from 'lucide-react';
+import Image from 'next/image';
+import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { formatPrice as formatPriceWithSettings, useCafeSettings } from '@/hooks/use-settings';
+import { formatPrice } from '@/lib/utils';
+import { useCartStore } from '@/store/cart-store';
+import { useLanguageStore } from '@/store/language-store';
+import { getLocalizedField, type MenuItemWithCategory } from '@/types';
+import { MenuItemModal } from './menu-item-modal';
 
 interface MenuItemCardProps {
   item: MenuItemWithCategory;
@@ -22,8 +22,8 @@ export function MenuItemCard({ item }: MenuItemCardProps) {
   const [showModal, setShowModal] = useState(false);
   const { data: settings } = useCafeSettings();
 
-  const name = getLocalizedField(item, "name", language);
-  const description = getLocalizedField(item, "description", language);
+  const name = getLocalizedField(item, 'name', language);
+  const description = getLocalizedField(item, 'description', language);
 
   // Format price using cafe settings or fallback
   const displayPrice = (amount: number) => {
@@ -47,12 +47,7 @@ export function MenuItemCard({ item }: MenuItemCardProps) {
         {/* Image */}
         {item.image_url && (
           <div className="relative h-40 w-full bg-muted">
-            <Image
-              src={item.image_url}
-              alt={name}
-              fill
-              className="object-cover"
-            />
+            <Image src={item.image_url} alt={name} fill className="object-cover" />
             {/* Badges on image */}
             <div className="absolute top-2 left-2 flex flex-wrap gap-1">
               {item.is_popular && (
@@ -76,9 +71,7 @@ export function MenuItemCard({ item }: MenuItemCardProps) {
             <div className="flex-1">
               <h3 className="font-semibold text-lg line-clamp-1">{name}</h3>
               {description && (
-                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                  {description}
-                </p>
+                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{description}</p>
               )}
             </div>
           </div>
@@ -101,14 +94,8 @@ export function MenuItemCard({ item }: MenuItemCardProps) {
 
           {/* Price and Add Button */}
           <div className="flex items-center justify-between">
-            <span className="text-xl font-bold text-primary">
-              {displayPrice(item.price)}
-            </span>
-            <Button
-              size="sm"
-              onClick={handleQuickAdd}
-              className="touch-target"
-            >
+            <span className="text-xl font-bold text-primary">{displayPrice(item.price)}</span>
+            <Button size="sm" onClick={handleQuickAdd} className="touch-target">
               <Plus className="h-4 w-4 mr-1" />
               Add
             </Button>
@@ -116,21 +103,13 @@ export function MenuItemCard({ item }: MenuItemCardProps) {
 
           {/* Prep time */}
           {item.preparation_time && (
-            <p className="text-xs text-muted-foreground mt-2">
-              ⏱️ ~{item.preparation_time} min
-            </p>
+            <p className="text-xs text-muted-foreground mt-2">⏱️ ~{item.preparation_time} min</p>
           )}
         </div>
       </div>
 
       {/* Detail Modal */}
-      <MenuItemModal
-        item={item}
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-      />
+      <MenuItemModal item={item} isOpen={showModal} onClose={() => setShowModal(false)} />
     </>
   );
 }
-
-

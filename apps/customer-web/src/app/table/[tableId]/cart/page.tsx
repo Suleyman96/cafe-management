@@ -1,4 +1,4 @@
-import { CartScreen } from "@/components/cart/cart-screen";
+import { CartScreen } from '@/components/cart/cart-screen';
 
 interface PageProps {
   params: {
@@ -9,5 +9,3 @@ interface PageProps {
 export default function CartPage({ params }: PageProps) {
   return <CartScreen tableId={params.tableId} />;
 }
-
-

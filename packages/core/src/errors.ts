@@ -7,7 +7,7 @@ export class AppError extends Error {
     message: string,
     public code: string,
     public statusCode: number = 500,
-    public details?: any
+    public details?: any,
   ) {
     super(message);
     this.name = 'AppError';
@@ -72,37 +72,37 @@ export function handleSupabaseError(error: any): AppError {
   if (error?.code === 'PGRST301') {
     return new AuthenticationError();
   }
-  
+
   if (error?.code === '23505') {
     return new ConflictError('Resource already exists');
   }
-  
+
   if (error?.code === '23503') {
     return new ValidationError('Referenced resource does not exist');
   }
-  
+
   if (error?.status === 404) {
     return new NotFoundError('Resource');
   }
-  
+
   if (error?.status === 401) {
     return new AuthenticationError();
   }
-  
+
   if (error?.status === 403) {
     return new AuthorizationError();
   }
-  
+
   // Network errors
   if (!navigator.onLine || error?.code === 'NETWORK_ERROR') {
     return new NetworkError();
   }
-  
+
   // Default error
   return new AppError(
     getErrorMessage(error),
     error?.code || 'UNKNOWN_ERROR',
     error?.status || 500,
-    error
+    error,
   );
 }

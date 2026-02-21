@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database';
 
-type FeedbackType = 'complaint_food' | 'complaint_service' | 'complaint_staff' | 'question_menu' | 'request_general' | 'praise';
+type FeedbackType =
+  | 'complaint_food'
+  | 'complaint_service'
+  | 'complaint_staff'
+  | 'question_menu'
+  | 'request_general'
+  | 'praise';
 type FeedbackInsert = Database['public']['Tables']['customer_feedback']['Insert'];
 
 interface FeedbackFormProps {
@@ -45,17 +51,15 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
     setIsSubmitting(true);
     try {
       const feedbackData: FeedbackInsert = {
-          table_id: tableId,
-          order_id: orderId || null,
-          feedback_type: feedbackType,
-          subject: subject.trim() || null,
-          message: message.trim(),
-          status: 'pending',
-        };
+        table_id: tableId,
+        order_id: orderId || null,
+        feedback_type: feedbackType,
+        subject: subject.trim() || null,
+        message: message.trim(),
+        status: 'pending',
+      };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
-        .from('customer_feedback')
-        .insert(feedbackData);
+      const { error } = await (supabase as any).from('customer_feedback').insert(feedbackData);
 
       if (error) throw error;
 
@@ -75,9 +79,7 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">✅</div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">
-          Thank You!
-        </h3>
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h3>
         <p className="text-gray-600">
           Your feedback has been sent to our staff.
           <br />
@@ -107,16 +109,10 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
               }`}
             >
               <div className="text-2xl">{type.icon}</div>
-              <div className="flex-1 font-medium text-gray-900">
-                {type.label}
-              </div>
+              <div className="flex-1 font-medium text-gray-900">{type.label}</div>
               {feedbackType === type.value && (
                 <div className="text-blue-500">
-                  <svg
-                    className="w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path
                       fillRule="evenodd"
                       d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -161,9 +157,7 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
           maxLength={1000}
           required
         />
-        <div className="text-xs text-gray-500 mt-1 text-right">
-          {message.length}/1000
-        </div>
+        <div className="text-xs text-gray-500 mt-1 text-right">{message.length}/1000</div>
       </div>
 
       {/* Action Buttons */}
@@ -190,5 +184,3 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
     </form>
   );
 }
-
-

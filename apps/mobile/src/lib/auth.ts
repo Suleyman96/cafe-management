@@ -1,5 +1,5 @@
-import { supabase } from "./supabase";
-import type { Staff } from "@/types";
+import type { Staff } from '@/types';
+import { supabase } from './supabase';
 
 export interface LoginCredentials {
   email: string;
@@ -13,21 +13,21 @@ export async function login({ email, password }: LoginCredentials) {
   });
 
   if (error) throw error;
-  
+
   // Fetch staff profile
   const { data: staffData, error: staffError } = await supabase
-    .from("staff")
-    .select("*")
-    .eq("auth_user_id", data.user.id)
+    .from('staff')
+    .select('*')
+    .eq('auth_user_id', data.user.id)
     .single();
 
   if (staffError) throw staffError;
 
   // Update last login
   await supabase
-    .from("staff")
+    .from('staff')
     .update({ last_login_at: new Date().toISOString() })
-    .eq("id", staffData.id);
+    .eq('id', staffData.id);
 
   return { user: data.user, staff: staffData as Staff };
 }
@@ -38,34 +38,35 @@ export async function logout() {
 }
 
 export async function getCurrentUser() {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
   if (error || !user) return null;
 
   // Fetch staff profile
   const { data: staffData } = await supabase
-    .from("staff")
-    .select("*")
-    .eq("auth_user_id", user.id)
+    .from('staff')
+    .select('*')
+    .eq('auth_user_id', user.id)
     .single();
 
   return staffData as Staff | null;
 }
 
 export function onAuthStateChange(callback: (staff: Staff | null) => void) {
-  return supabase.auth.onAuthStateChange(async (event, session) => {
+  return supabase.auth.onAuthStateChange(async (_event, session) => {
     if (session?.user) {
       const { data } = await supabase
-        .from("staff")
-        .select("*")
-        .eq("auth_user_id", session.user.id)
+        .from('staff')
+        .select('*')
+        .eq('auth_user_id', session.user.id)
         .single();
-      
+
       callback(data as Staff | null);
     } else {
       callback(null);
     }
   });
 }
-
-

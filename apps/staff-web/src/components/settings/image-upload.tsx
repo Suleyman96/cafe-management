@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { ImageIcon, Loader2, Upload, X } from 'lucide-react';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabase/client';
-import { Upload, X, ImageIcon, Loader2 } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase/client';
 
 interface ImageUploadProps {
   value: string | null;
@@ -37,65 +37,67 @@ export function ImageUpload({
     tall: 'aspect-[3/4]',
   };
 
-  const handleFile = useCallback(async (file: File) => {
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
-      return;
-    }
+  const handleFile = useCallback(
+    async (file: File) => {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
 
-    // Validate file size
-    const maxSize = maxSizeMB * 1024 * 1024;
-    if (file.size > maxSize) {
-      toast.error(`Image must be smaller than ${maxSizeMB}MB`);
-      return;
-    }
+      // Validate file size
+      const maxSize = maxSizeMB * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast.error(`Image must be smaller than ${maxSizeMB}MB`);
+        return;
+      }
 
-    setIsUploading(true);
+      setIsUploading(true);
 
-    try {
-      // Generate unique filename
-      const ext = file.name.split('.').pop();
-      const filename = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+      try {
+        // Generate unique filename
+        const ext = file.name.split('.').pop();
+        const filename = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filename, file, {
+        // Upload to Supabase Storage
+        const { error: uploadError } = await supabase.storage.from(bucket).upload(filename, file, {
           cacheControl: '3600',
           upsert: false,
         });
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          toast.error('Failed to upload image');
+          return;
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filename);
+
+        onChange(urlData.publicUrl);
+        toast.success('Image uploaded successfully');
+      } catch (err) {
+        console.error('Upload error:', err);
         toast.error('Failed to upload image');
-        return;
+      } finally {
+        setIsUploading(false);
       }
+    },
+    [bucket, folder, maxSizeMB, onChange],
+  );
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filename);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragActive(false);
 
-      onChange(urlData.publicUrl);
-      toast.success('Image uploaded successfully');
-    } catch (err) {
-      console.error('Upload error:', err);
-      toast.error('Failed to upload image');
-    } finally {
-      setIsUploading(false);
-    }
-  }, [bucket, folder, maxSizeMB, onChange]);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(false);
-
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      handleFile(file);
-    }
-  }, [handleFile]);
+      const file = e.dataTransfer.files?.[0];
+      if (file) {
+        handleFile(file);
+      }
+    },
+    [handleFile],
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -107,12 +109,15 @@ export function ImageUpload({
     setDragActive(false);
   }, []);
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFile(file);
-    }
-  }, [handleFile]);
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        handleFile(file);
+      }
+    },
+    [handleFile],
+  );
 
   const handleRemove = useCallback(async () => {
     if (!value) return;
@@ -137,22 +142,15 @@ export function ImageUpload({
 
   return (
     <div className="space-y-2">
-      {label && (
-        <label className="block text-sm font-medium text-gray-700">
-          {label}
-        </label>
-      )}
+      {label && <label className="block text-sm font-medium text-gray-700">{label}</label>}
 
       {value ? (
         // Preview state
         <div className="relative inline-block">
-          <div className={`relative ${aspectClasses[aspectRatio]} w-40 bg-gray-100 rounded-lg overflow-hidden border border-gray-200`}>
-            <Image
-              src={value}
-              alt="Uploaded image"
-              fill
-              className="object-contain"
-            />
+          <div
+            className={`relative ${aspectClasses[aspectRatio]} w-40 bg-gray-100 rounded-lg overflow-hidden border border-gray-200`}
+          >
+            <Image src={value} alt="Uploaded image" fill className="object-contain" />
           </div>
           <button
             type="button"
@@ -171,9 +169,10 @@ export function ImageUpload({
           onClick={() => inputRef.current?.click()}
           className={`
             relative cursor-pointer rounded-lg border-2 border-dashed p-6 transition-colors
-            ${dragActive
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+            ${
+              dragActive
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
             }
             ${isUploading ? 'pointer-events-none opacity-60' : ''}
           `}
@@ -204,21 +203,15 @@ export function ImageUpload({
                 <p className="text-sm font-medium text-gray-700">
                   {dragActive ? 'Drop image here' : 'Click to upload'}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  or drag and drop
-                </p>
-                <p className="text-xs text-gray-400 mt-2">
-                  PNG, JPG up to {maxSizeMB}MB
-                </p>
+                <p className="text-xs text-gray-500 mt-1">or drag and drop</p>
+                <p className="text-xs text-gray-400 mt-2">PNG, JPG up to {maxSizeMB}MB</p>
               </>
             )}
           </div>
         </div>
       )}
 
-      {hint && (
-        <p className="text-xs text-gray-500">{hint}</p>
-      )}
+      {hint && <p className="text-xs text-gray-500">{hint}</p>}
     </div>
   );
 }

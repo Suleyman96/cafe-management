@@ -1,10 +1,10 @@
 'use client';
 
+import { Check, Loader2, X } from 'lucide-react';
 import { useState } from 'react';
-import { useCreateWaiterCall } from '@/hooks/use-waiter-call';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { X, Check, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useCreateWaiterCall } from '@/hooks/use-waiter-call';
 
 type CallType = 'assistance' | 'bill' | 'question' | 'complaint' | 'emergency';
 type CallPriority = 'low' | 'normal' | 'high' | 'urgent';
@@ -120,9 +120,7 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
               <p className="text-lg font-medium text-green-600 dark:text-green-400">
                 Staff has been notified!
               </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                They will be with you shortly.
-              </p>
+              <p className="text-sm text-muted-foreground mt-2">They will be with you shortly.</p>
             </div>
           ) : (
             <>
@@ -146,10 +144,14 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
                       <div className="flex-1 text-left">
                         <div className="font-medium">{reason.label}</div>
                         {reason.priority === 'high' && (
-                          <div className="text-xs text-orange-600 dark:text-orange-400">High Priority</div>
+                          <div className="text-xs text-orange-600 dark:text-orange-400">
+                            High Priority
+                          </div>
                         )}
                         {reason.priority === 'urgent' && (
-                          <div className="text-xs text-red-600 dark:text-red-400 font-bold">URGENT</div>
+                          <div className="text-xs text-red-600 dark:text-red-400 font-bold">
+                            URGENT
+                          </div>
                         )}
                       </div>
                       {selectedReason?.id === reason.id && (
@@ -199,8 +201,8 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
                     selectedReason?.priority === 'urgent'
                       ? 'bg-red-500 hover:bg-red-600'
                       : selectedReason?.priority === 'high'
-                      ? 'bg-orange-500 hover:bg-orange-600'
-                      : ''
+                        ? 'bg-orange-500 hover:bg-orange-600'
+                        : ''
                   }`}
                 >
                   {createWaiterCall.isPending ? (

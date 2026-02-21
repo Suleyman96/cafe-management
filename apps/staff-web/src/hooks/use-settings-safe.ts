@@ -3,10 +3,10 @@
  * Uses the wrapped client for type safety
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { db } from '@/lib/supabase/wrapped-client';
 import { QUERY_KEYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { db } from '@/lib/supabase/wrapped-client';
 
 type CafeSettings = Database['public']['Tables']['cafe_settings']['Row'];
 type CafeSettingsUpdate = Database['public']['Tables']['cafe_settings']['Update'];

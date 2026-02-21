@@ -4,13 +4,7 @@
  * Auto-generated from Supabase schema
  */
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export interface Database {
   public: {
@@ -21,7 +15,7 @@ export interface Database {
           table_number: string;
           qr_code: string;
           capacity: number;
-          status: "free" | "occupied" | "reserved" | "closed";
+          status: 'free' | 'occupied' | 'reserved' | 'closed';
           location: string | null;
           current_session_id: string | null;
           occupied_at: string | null;
@@ -29,8 +23,11 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["tables"]["Row"], "id" | "created_at" | "updated_at">;
-        Update: Partial<Database["public"]["Tables"]["tables"]["Insert"]>;
+        Insert: Omit<
+          Database['public']['Tables']['tables']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['tables']['Insert']>;
       };
       categories: {
         Row: {
@@ -49,8 +46,11 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["categories"]["Row"], "id" | "created_at" | "updated_at">;
-        Update: Partial<Database["public"]["Tables"]["categories"]["Insert"]>;
+        Insert: Omit<
+          Database['public']['Tables']['categories']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['categories']['Insert']>;
       };
       menu_items: {
         Row: {
@@ -79,8 +79,11 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["menu_items"]["Row"], "id" | "created_at" | "updated_at">;
-        Update: Partial<Database["public"]["Tables"]["menu_items"]["Insert"]>;
+        Insert: Omit<
+          Database['public']['Tables']['menu_items']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['menu_items']['Insert']>;
       };
       orders: {
         Row: {
@@ -88,7 +91,7 @@ export interface Database {
           table_id: string;
           assigned_waiter_id: string | null;
           order_number: string;
-          status: "new" | "preparing" | "ready" | "served" | "closed" | "cancelled";
+          status: 'new' | 'preparing' | 'ready' | 'served' | 'closed' | 'cancelled';
           subtotal: number;
           tax: number;
           total: number;
@@ -103,8 +106,11 @@ export interface Database {
           payment_method: string | null;
           paid_at: string | null;
         };
-        Insert: Omit<Database["public"]["Tables"]["orders"]["Row"], "id" | "order_number" | "created_at" | "updated_at">;
-        Update: Partial<Database["public"]["Tables"]["orders"]["Insert"]>;
+        Insert: Omit<
+          Database['public']['Tables']['orders']['Row'],
+          'id' | 'order_number' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['orders']['Insert']>;
       };
       order_items: {
         Row: {
@@ -115,34 +121,37 @@ export interface Database {
           item_price: number;
           quantity: number;
           notes: string | null;
-          status: "pending" | "preparing" | "ready" | "served";
+          status: 'pending' | 'preparing' | 'ready' | 'served';
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["order_items"]["Row"], "id" | "created_at" | "updated_at">;
-        Update: Partial<Database["public"]["Tables"]["order_items"]["Insert"]>;
+        Insert: Omit<
+          Database['public']['Tables']['order_items']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['order_items']['Insert']>;
       };
       waiter_calls: {
         Row: {
           id: string;
           table_id: string;
           reason: string;
-          status: "pending" | "acknowledged" | "resolved";
+          status: 'pending' | 'acknowledged' | 'resolved';
           responded_by: string | null;
           created_at: string;
           acknowledged_at: string | null;
           resolved_at: string | null;
           notes: string | null;
         };
-        Insert: Omit<Database["public"]["Tables"]["waiter_calls"]["Row"], "id" | "created_at">;
-        Update: Partial<Database["public"]["Tables"]["waiter_calls"]["Insert"]>;
+        Insert: Omit<Database['public']['Tables']['waiter_calls']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['waiter_calls']['Insert']>;
       };
       staff: {
         Row: {
           id: string;
           email: string;
           full_name: string;
-          role: "waiter" | "admin" | "kitchen";
+          role: 'waiter' | 'admin' | 'kitchen';
           phone: string | null;
           is_active: boolean;
           created_at: string;
@@ -150,8 +159,11 @@ export interface Database {
           last_login_at: string | null;
           auth_user_id: string | null;
         };
-        Insert: Omit<Database["public"]["Tables"]["staff"]["Row"], "id" | "created_at" | "updated_at">;
-        Update: Partial<Database["public"]["Tables"]["staff"]["Insert"]>;
+        Insert: Omit<
+          Database['public']['Tables']['staff']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['staff']['Insert']>;
       };
     };
     Views: {
@@ -186,7 +198,7 @@ export interface Database {
     Functions: {
       set_table_context: {
         Args: { qr_token: string };
-        Returns: void;
+        Returns: undefined;
       };
       generate_order_number: {
         Args: {};
@@ -194,10 +206,8 @@ export interface Database {
       };
       calculate_order_total: {
         Args: { order_uuid: string };
-        Returns: void;
+        Returns: undefined;
       };
     };
   };
 }
-
-

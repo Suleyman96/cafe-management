@@ -11,9 +11,12 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean -- && npx rimraf node_modules",
-    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,md,json}\"",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
     "db:push": "turbo run db:push",
@@ -22,8 +25,8 @@
     "db:seed-user": "./scripts/create-admin-user.sh"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
     "@turbo/gen": "^1.11.3",
-    "prettier": "^3.1.0",
     "turbo": "latest",
     "typescript": "^5.3.3"
   },

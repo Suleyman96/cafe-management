@@ -1,4 +1,4 @@
-import { MenuScreen } from "@/components/menu/menu-screen";
+import { MenuScreen } from '@/components/menu/menu-screen';
 
 interface PageProps {
   params: {
@@ -9,5 +9,3 @@ interface PageProps {
 export default function MenuPage({ params }: PageProps) {
   return <MenuScreen tableId={params.tableId} />;
 }
-
-

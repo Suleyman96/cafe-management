@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSupabaseClient } from '../supabase';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Table, TableStatus } from '../../types';
+import { getSupabaseClient } from '../supabase';
 
 export function useTables() {
   return useQuery<Table[], Error>({
@@ -35,14 +35,14 @@ export function useTable(tableId: string) {
 
 export function useUpdateTableStatus() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ tableId, status }: { tableId: string; status: TableStatus }) => {
       const { data, error } = await getSupabaseClient()
         .from('tables')
-        .update({ 
+        .update({
           status,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', tableId)
         .select()

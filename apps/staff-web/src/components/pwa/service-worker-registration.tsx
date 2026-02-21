@@ -11,9 +11,12 @@ export function ServiceWorkerRegistration() {
           console.log('Service Worker registered:', registration.scope);
 
           // Check for updates periodically
-          setInterval(() => {
-            registration.update();
-          }, 60 * 60 * 1000); // Check every hour
+          setInterval(
+            () => {
+              registration.update();
+            },
+            60 * 60 * 1000,
+          ); // Check every hour
         })
         .catch((error) => {
           console.error('Service Worker registration failed:', error);

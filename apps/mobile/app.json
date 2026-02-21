@@ -11,9 +11,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cafeidare.staff"
@@ -24,10 +22,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.cafeidare.staff",
-      "permissions": [
-        "NOTIFICATIONS",
-        "VIBRATE"
-      ]
+      "permissions": ["NOTIFICATIONS", "VIBRATE"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,9 +34,7 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#ffffff",
-          "sounds": [
-            "./assets/sounds/new-order.wav"
-          ]
+          "sounds": ["./assets/sounds/new-order.wav"]
         }
       ]
     ],
@@ -56,5 +49,3 @@
     }
   }
 }
-
-

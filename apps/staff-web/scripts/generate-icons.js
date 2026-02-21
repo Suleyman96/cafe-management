@@ -5,7 +5,7 @@ const path = require('path');
 let sharp;
 try {
   sharp = require('sharp');
-} catch (e) {
+} catch (_e) {
   console.log('Sharp not installed. Run: npm install sharp --save-dev');
   console.log('Then run this script again: node scripts/generate-icons.js');
   process.exit(1);
@@ -21,19 +21,13 @@ async function generateIcons() {
   for (const size of sizes) {
     const outputPath = path.join(outputDir, `icon-${size}x${size}.png`);
 
-    await sharp(svgBuffer)
-      .resize(size, size)
-      .png()
-      .toFile(outputPath);
+    await sharp(svgBuffer).resize(size, size).png().toFile(outputPath);
 
     console.log(`Generated: icon-${size}x${size}.png`);
   }
 
   // Also generate favicon
-  await sharp(svgBuffer)
-    .resize(32, 32)
-    .png()
-    .toFile(path.join(outputDir, '../favicon.ico'));
+  await sharp(svgBuffer).resize(32, 32).png().toFile(path.join(outputDir, '../favicon.ico'));
 
   console.log('Generated: favicon.ico');
   console.log('Done!');

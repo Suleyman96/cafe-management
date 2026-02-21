@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { CafeManLogo } from '@/components/ui/cafe-man-logo';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
-import { CafeManLogo } from '@/components/ui/cafe-man-logo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -79,12 +79,8 @@ export default function LoginPage() {
         <div className="flex justify-center">
           <CafeManLogo size={56} showText={false} />
         </div>
-        <h1 className="mt-4 text-center text-3xl font-bold text-gray-900">
-          Cafe-Man
-        </h1>
-        <p className="mt-1 text-center text-sm text-gray-500">
-          Staff Portal
-        </p>
+        <h1 className="mt-4 text-center text-3xl font-bold text-gray-900">Cafe-Man</h1>
+        <p className="mt-1 text-center text-sm text-gray-500">Staff Portal</p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">

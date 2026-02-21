@@ -1,22 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useStaffNotes, useCreateStaffNote, useUpdateStaffNote, useDeleteStaffNote } from '@/hooks';
-import { useAuth } from '@/hooks/use-auth';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
+import { Clock, Edit2, Info, Loader2, Save, Send, StickyNote, Trash2, User, X } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import {
-  Send,
-  Trash2,
-  Info,
-  Clock,
-  User,
-  Loader2,
-  StickyNote,
-  Edit2,
-  X,
-  Save,
-} from 'lucide-react';
+import { useCreateStaffNote, useDeleteStaffNote, useStaffNotes, useUpdateStaffNote } from '@/hooks';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function StaffNotesPage() {
   const { staff: currentStaff } = useAuth();
@@ -187,11 +176,12 @@ export default function StaffNotesPage() {
                     onChange={(e) => setEditContent(e.target.value)}
                     className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-xs sm:text-sm"
                     rows={3}
-                    autoFocus
                   />
                 </div>
               ) : (
-                <p className="text-sm sm:text-base text-gray-800 whitespace-pre-wrap mb-2 sm:mb-3">{note.content}</p>
+                <p className="text-sm sm:text-base text-gray-800 whitespace-pre-wrap mb-2 sm:mb-3">
+                  {note.content}
+                </p>
               )}
 
               {/* Note Footer */}
@@ -199,7 +189,9 @@ export default function StaffNotesPage() {
                 <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
                     <User className="h-3 w-3" />
-                    <span className="truncate max-w-[80px] sm:max-w-none">{note.created_by_staff?.full_name || 'Unknown'}</span>
+                    <span className="truncate max-w-[80px] sm:max-w-none">
+                      {note.created_by_staff?.full_name || 'Unknown'}
+                    </span>
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
@@ -261,7 +253,9 @@ export default function StaffNotesPage() {
       {(!notes || notes.length === 0) && (
         <div className="text-center py-8 sm:py-12">
           <Info className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-gray-400" />
-          <p className="text-sm sm:text-base text-gray-500">No notes yet. Write one above to share with your team.</p>
+          <p className="text-sm sm:text-base text-gray-500">
+            No notes yet. Write one above to share with your team.
+          </p>
         </div>
       )}
     </div>

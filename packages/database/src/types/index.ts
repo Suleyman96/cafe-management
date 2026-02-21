@@ -1,7 +1,7 @@
 /**
  * Shared Types
  * Used by: customer-web, staff-web, mobile-app
- * 
+ *
  * Keep these platform-agnostic so they work everywhere!
  */
 
@@ -126,11 +126,7 @@ export type CallType = WaiterCall['call_type'];
 export type CallPriority = WaiterCall['priority'];
 
 // Helper function for localized content
-export function getLocalizedField<T>(
-  item: T,
-  field: string,
-  language: Language
-): string {
+export function getLocalizedField<T>(item: T, field: string, language: Language): string {
   const key = `${field}_${language}` as keyof T;
   return (item[key] as string) || (item[`${field}_en` as keyof T] as string) || '';
 }
@@ -165,4 +161,3 @@ export function isOrderFullyPaid(order: OrderWithPayments): boolean {
 export function isOrderPartiallyPaid(order: OrderWithPayments): boolean {
   return order.paid_amount > 0 && order.remaining_balance > 0;
 }
-

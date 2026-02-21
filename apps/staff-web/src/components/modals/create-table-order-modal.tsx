@@ -1,10 +1,10 @@
 'use client';
 
+import { UtensilsCrossed, X } from 'lucide-react';
 import { useState } from 'react';
-import { useCreateOrder } from '@/hooks';
-import { Button } from '@/components/ui/button';
-import { X, UtensilsCrossed } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { useCreateOrder } from '@/hooks';
 
 interface CreateTableOrderModalProps {
   isOpen: boolean;
@@ -57,10 +57,7 @@ export function CreateTableOrderModal({
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Create Order for {table.table_number}</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -83,25 +80,16 @@ export function CreateTableOrderModal({
 
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
           <p className="text-sm text-green-800">
-            This will create a new dine-in order for {table.table_number}. You can add menu items in the next screen.
+            This will create a new dine-in order for {table.table_number}. You can add menu items in
+            the next screen.
           </p>
         </div>
 
         <div className="flex gap-3 mt-6">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={loading}
-            className="flex-1"
-          >
+          <Button variant="outline" onClick={onClose} disabled={loading} className="flex-1">
             Cancel
           </Button>
-          <Button
-            type="button"
-            onClick={handleCreate}
-            disabled={loading}
-            className="flex-1"
-          >
+          <Button type="button" onClick={handleCreate} disabled={loading} className="flex-1">
             {loading ? 'Creating...' : 'Create Order'}
           </Button>
         </div>

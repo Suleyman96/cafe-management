@@ -1,19 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import {
-  useMenuItems,
-  useCategories,
-  useUpdateMenuItem,
-  useToggleMenuItemAvailability,
-  useDeleteMenuItem,
-  useDeleteCategory,
-} from '@/hooks';
-import { Button } from '@cafe-idare/ui';
-import { MenuItemModal } from '@/components/menu/menu-item-modal';
-import { CategoryModal } from '@/components/menu/category-modal';
 import type { Database } from '@cafe-idare/database';
+import { Button } from '@cafe-idare/ui';
+import Link from 'next/link';
+import { useState } from 'react';
+import { CategoryModal } from '@/components/menu/category-modal';
+import { MenuItemModal } from '@/components/menu/menu-item-modal';
+import { useCategories, useDeleteCategory, useDeleteMenuItem, useMenuItems } from '@/hooks';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -27,7 +20,9 @@ export default function MenuPage() {
 
   // Use hooks - these require QueryClientProvider
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
-  const { data: menuItems = [], isLoading: itemsLoading } = useMenuItems(selectedCategory ? { categoryId: selectedCategory } : undefined);
+  const { data: menuItems = [], isLoading: itemsLoading } = useMenuItems(
+    selectedCategory ? { categoryId: selectedCategory } : undefined,
+  );
   const deleteMenuItem = useDeleteMenuItem();
   const deleteCategory = useDeleteCategory();
 
@@ -42,7 +37,12 @@ export default function MenuPage() {
   };
 
   const handleDeleteCategory = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this category? All items in this category will be unassigned.')) return;
+    if (
+      !confirm(
+        'Are you sure you want to delete this category? All items in this category will be unassigned.',
+      )
+    )
+      return;
     try {
       await deleteCategory.mutateAsync(id);
     } catch (error) {
@@ -51,13 +51,16 @@ export default function MenuPage() {
     }
   };
 
-  const groupedItems = categories.reduce((acc: any, category: any) => {
-    const items = menuItems.filter((item: any) => item.category_id === category.id);
-    if (items.length > 0 || selectedCategory === category.id) {
-      acc[category.id] = items;
-    }
-    return acc;
-  }, {} as Record<string, typeof menuItems>);
+  const groupedItems = categories.reduce(
+    (acc: any, category: any) => {
+      const items = menuItems.filter((item: any) => item.category_id === category.id);
+      if (items.length > 0 || selectedCategory === category.id) {
+        acc[category.id] = items;
+      }
+      return acc;
+    },
+    {} as Record<string, typeof menuItems>,
+  );
 
   const uncategorizedItems = menuItems.filter((item: any) => !item.category_id);
 
@@ -121,7 +124,9 @@ export default function MenuPage() {
               All ({menuItems.length})
             </button>
             {categories.map((category: any) => {
-              const count = menuItems.filter((item: any) => item.category_id === category.id).length;
+              const count = menuItems.filter(
+                (item: any) => item.category_id === category.id,
+              ).length;
               return (
                 <button
                   key={category.id}
@@ -149,8 +154,10 @@ export default function MenuPage() {
             {/* Categories with Items */}
             {categories.map((category) => {
               const items = selectedCategory
-                ? (selectedCategory === category.id ? groupedItems[category.id] || [] : [])
-                : (groupedItems[category.id] || []);
+                ? selectedCategory === category.id
+                  ? groupedItems[category.id] || []
+                  : []
+                : groupedItems[category.id] || [];
 
               if (selectedCategory && selectedCategory !== category.id) return null;
               if (!selectedCategory && items.length === 0) return null;
@@ -161,8 +168,12 @@ export default function MenuPage() {
                     <div className="flex items-center gap-2 sm:gap-3">
                       <span className="text-xl sm:text-2xl">{category.icon || '📁'}</span>
                       <div>
-                        <h2 className="text-base sm:text-xl font-semibold text-gray-900">{category.name_en}</h2>
-                        <p className="text-xs sm:text-sm text-gray-600 line-clamp-1">{category.description_en || 'No description'}</p>
+                        <h2 className="text-base sm:text-xl font-semibold text-gray-900">
+                          {category.name_en}
+                        </h2>
+                        <p className="text-xs sm:text-sm text-gray-600 line-clamp-1">
+                          {category.description_en || 'No description'}
+                        </p>
                       </div>
                     </div>
                     <div className="flex gap-2 self-end sm:self-auto">
@@ -203,8 +214,12 @@ export default function MenuPage() {
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-sm sm:text-base text-gray-900 truncate">{item.name_en}</h3>
-                              <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{item.description_en || 'No description'}</p>
+                              <h3 className="font-semibold text-sm sm:text-base text-gray-900 truncate">
+                                {item.name_en}
+                              </h3>
+                              <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
+                                {item.description_en || 'No description'}
+                              </p>
                             </div>
                             {item.image_url && (
                               <img
@@ -287,7 +302,9 @@ export default function MenuPage() {
             {uncategorizedItems.length > 0 && (
               <div className="bg-white rounded-lg shadow-sm border">
                 <div className="p-3 sm:p-4 border-b">
-                  <h2 className="text-base sm:text-xl font-semibold text-gray-900">Uncategorized Items</h2>
+                  <h2 className="text-base sm:text-xl font-semibold text-gray-900">
+                    Uncategorized Items
+                  </h2>
                 </div>
                 <div className="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {uncategorizedItems.map((item: MenuItem) => (
@@ -299,8 +316,12 @@ export default function MenuPage() {
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm sm:text-base text-gray-900 truncate">{item.name_en}</h3>
-                          <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{item.description_en || 'No description'}</p>
+                          <h3 className="font-semibold text-sm sm:text-base text-gray-900 truncate">
+                            {item.name_en}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
+                            {item.description_en || 'No description'}
+                          </p>
                         </div>
                         {item.image_url && (
                           <img
@@ -347,8 +368,12 @@ export default function MenuPage() {
             {menuItems.length === 0 && (
               <div className="bg-white rounded-lg shadow-sm border p-8 sm:p-12 text-center">
                 <div className="text-4xl sm:text-6xl mb-3 sm:mb-4">🍽️</div>
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No menu items yet</h3>
-                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Get started by adding your first menu item</p>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                  No menu items yet
+                </h3>
+                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+                  Get started by adding your first menu item
+                </p>
                 <Button onClick={() => setShowItemModal(true)} size="sm" className="text-sm">
                   + Add Menu Item
                 </Button>

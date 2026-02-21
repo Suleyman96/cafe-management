@@ -1,20 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useWaiterCalls, useResolveWaiterCall } from '@/hooks';
-import { LoadingSpinner, Button } from '@cafe-idare/ui';
-import { supabase } from '@/lib/supabase/client';
-import { toast } from 'sonner';
+import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
-  Bell,
   AlertCircle,
+  Bell,
   CheckCircle,
-  MessageSquare,
-  HelpCircle,
   DollarSign,
+  HelpCircle,
+  MessageSquare,
+  RefreshCw,
   Zap,
-  RefreshCw
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { useResolveWaiterCall, useWaiterCalls } from '@/hooks';
+import { supabase } from '@/lib/supabase/client';
 
 export default function WaiterCallsPage() {
   const { data: waiterCalls, isLoading: loading, error, refetch } = useWaiterCalls();
@@ -33,13 +33,9 @@ export default function WaiterCallsPage() {
     console.log('Setting up waiter-calls realtime subscription');
     const channel = supabase
       .channel('waiter-calls-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'waiter_calls' },
-        () => {
-          refetch();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waiter_calls' }, () => {
+        refetch();
+      })
       .subscribe((status) => {
         console.log('Waiter calls subscription status:', status);
       });
@@ -88,11 +84,11 @@ export default function WaiterCallsPage() {
     const now = new Date();
     const callTime = new Date(timestamp);
     const diffMinutes = Math.floor((now.getTime() - callTime.getTime()) / 1000 / 60);
-    
+
     if (diffMinutes < 1) return 'Just now';
     if (diffMinutes === 1) return '1 minute ago';
     if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
-    
+
     const diffHours = Math.floor(diffMinutes / 60);
     if (diffHours === 1) return '1 hour ago';
     return `${diffHours} hours ago`;
@@ -103,7 +99,7 @@ export default function WaiterCallsPage() {
     try {
       await respondToCall.mutateAsync({ callId, notes: undefined });
       toast.success('Call marked as completed');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to respond to call');
     }
   };
@@ -124,7 +120,8 @@ export default function WaiterCallsPage() {
     );
   }
 
-  const pendingCallsCount = waiterCalls?.filter((call: any) => call.status === 'pending').length || 0;
+  const pendingCallsCount =
+    waiterCalls?.filter((call: any) => call.status === 'pending').length || 0;
 
   return (
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
@@ -139,11 +136,7 @@ export default function WaiterCallsPage() {
           )}
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-            size="sm"
-          >
+          <Button variant="outline" onClick={() => refetch()} size="sm">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -193,12 +186,18 @@ export default function WaiterCallsPage() {
           // Get display label for call type
           const getCallTypeLabel = (type: string) => {
             switch (type) {
-              case 'bill': return 'Request Bill';
-              case 'assistance': return 'Assistance';
-              case 'complaint': return 'Complaint';
-              case 'question': return 'Question';
-              case 'emergency': return 'Emergency';
-              default: return type.charAt(0).toUpperCase() + type.slice(1);
+              case 'bill':
+                return 'Request Bill';
+              case 'assistance':
+                return 'Assistance';
+              case 'complaint':
+                return 'Complaint';
+              case 'question':
+                return 'Question';
+              case 'emergency':
+                return 'Emergency';
+              default:
+                return type.charAt(0).toUpperCase() + type.slice(1);
             }
           };
 
@@ -214,7 +213,9 @@ export default function WaiterCallsPage() {
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
-                    <span className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getReasonColor(callType)}`}>
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getReasonColor(callType)}`}
+                    >
                       {getReasonIcon(callType)}
                       <span>{getCallTypeLabel(callType)}</span>
                     </span>
@@ -228,14 +229,18 @@ export default function WaiterCallsPage() {
 
                   {(call.reason || call.message) && (
                     <div className="mb-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs sm:text-sm text-gray-700">{call.reason || call.message}</p>
+                      <p className="text-xs sm:text-sm text-gray-700">
+                        {call.reason || call.message}
+                      </p>
                     </div>
                   )}
 
                   {call.responded_at && call.staff && (
                     <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
                       <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
-                      <span>Responded by {call.staff.name} at {formatTimeAgo(call.responded_at)}</span>
+                      <span>
+                        Responded by {call.staff.name} at {formatTimeAgo(call.responded_at)}
+                      </span>
                     </div>
                   )}
                 </div>

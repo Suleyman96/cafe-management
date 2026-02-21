@@ -3,9 +3,14 @@
  * Used by: customer-web, staff-web, mobile-app
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type {
+  CustomerFeedback,
+  CustomerFeedbackWithTable,
+  FeedbackStatus,
+  FeedbackType,
+} from '../../types';
 import { getSupabaseClient } from '../supabase';
-import type { CustomerFeedback, CustomerFeedbackWithTable, FeedbackType, FeedbackStatus } from '../../types';
 
 // ========================================
 // Query: Get all feedback (staff only)
@@ -106,13 +111,13 @@ export function useSubmitFeedback() {
     },
     onSuccess: (_, variables) => {
       // Invalidate feedback queries
-      queryClient.invalidateQueries({ 
-        queryKey: ['customer_feedback'] 
+      queryClient.invalidateQueries({
+        queryKey: ['customer_feedback'],
       });
-      
+
       if (variables.table_id) {
-        queryClient.invalidateQueries({ 
-          queryKey: ['customer_feedback', 'table', variables.table_id] 
+        queryClient.invalidateQueries({
+          queryKey: ['customer_feedback', 'table', variables.table_id],
         });
       }
     },
@@ -143,8 +148,8 @@ export function useAcknowledgeFeedback() {
       return data as CustomerFeedback;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['customer_feedback'] 
+      queryClient.invalidateQueries({
+        queryKey: ['customer_feedback'],
       });
     },
   });
@@ -187,8 +192,8 @@ export function useRespondToFeedback() {
       return data as CustomerFeedback;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['customer_feedback'] 
+      queryClient.invalidateQueries({
+        queryKey: ['customer_feedback'],
       });
     },
   });
@@ -216,8 +221,8 @@ export function useDismissFeedback() {
       return data as CustomerFeedback;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['customer_feedback'] 
+      queryClient.invalidateQueries({
+        queryKey: ['customer_feedback'],
       });
     },
   });
@@ -227,7 +232,11 @@ export function useDismissFeedback() {
 // Helper: Get feedback type display info
 // ========================================
 
-export function getFeedbackTypeInfo(type: FeedbackType): { icon: string; label: string; color: string } {
+export function getFeedbackTypeInfo(type: FeedbackType): {
+  icon: string;
+  label: string;
+  color: string;
+} {
   const typeMap: Record<FeedbackType, { icon: string; label: string; color: string }> = {
     complaint_food: { icon: '🍽️', label: 'Food Issue', color: 'red' },
     complaint_service: { icon: '⚠️', label: 'Service Issue', color: 'orange' },
@@ -239,4 +248,3 @@ export function getFeedbackTypeInfo(type: FeedbackType): { icon: string; label: 
 
   return typeMap[type] || { icon: '📝', label: type, color: 'gray' };
 }
-

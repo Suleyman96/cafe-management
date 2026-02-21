@@ -1,16 +1,16 @@
-import type { Metadata, Viewport } from "next";
-import "./globals.css";
-import { Providers } from "./providers";
-import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
+import type { Metadata, Viewport } from 'next';
+import './globals.css';
+import { ServiceWorkerRegistration } from '@/components/pwa/service-worker-registration';
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  title: "Cafe-Man | Staff Portal",
-  description: "Restaurant management system by Cafe-Man",
-  manifest: "/manifest.json",
+  title: 'Cafe-Man | Staff Portal',
+  description: 'Restaurant management system by Cafe-Man',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "Cafe-Man",
+    statusBarStyle: 'default',
+    title: 'Cafe-Man',
   },
   formatDetection: {
     telephone: false,
@@ -18,18 +18,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#3B82F6",
-  width: "device-width",
+  themeColor: '#3B82F6',
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>

@@ -37,9 +37,7 @@ export function createViewsWrapper(ctx: WrapperContext) {
     },
 
     getOrderPaymentSummary: async (orderId?: string) => {
-      let query = ctx.anyClient
-        .from('order_payment_summary')
-        .select('*');
+      let query = ctx.anyClient.from('order_payment_summary').select('*');
 
       if (orderId) {
         query = query.eq('order_id', orderId);
