@@ -8,6 +8,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "type-check": "tsc --noEmit",
+    "test": "vitest run",
     "clean": "rm -rf dist node_modules .turbo",
     "lint": "biome check ./src"
   },

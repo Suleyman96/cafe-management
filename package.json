@@ -17,7 +17,9 @@
     "clean": "turbo run clean -- && npx rimraf node_modules",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "test": "turbo run test",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "turbo run test:e2e",
     "db:push": "turbo run db:push",
     "db:studio": "turbo run db:studio",
@@ -26,9 +28,12 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.4",
+    "@playwright/test": "^1.58.2",
     "@turbo/gen": "^1.11.3",
+    "@vitest/coverage-v8": "^4.0.18",
     "turbo": "latest",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.18"
   },
   "engines": {
     "node": ">=18.0.0"

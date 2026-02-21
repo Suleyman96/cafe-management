@@ -16,6 +16,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "type-check": "tsc --noEmit",
+    "test": "vitest run",
     "clean": "rm -rf dist",
     "lint": "biome check ./src"
   },
