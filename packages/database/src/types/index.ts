@@ -53,6 +53,17 @@ export type FeedbackUpdate = Database['public']['Tables']['customer_feedback']['
 export type OrderPayment = Database['public']['Tables']['order_payments']['Row'];
 export type TableTransfer = Database['public']['Tables']['table_transfers']['Row'];
 
+export type StockItem = Database['public']['Tables']['stock_items']['Row'];
+export type StockItemInsert = Database['public']['Tables']['stock_items']['Insert'];
+export type StockItemUpdate = Database['public']['Tables']['stock_items']['Update'];
+export type StockMovement = Database['public']['Tables']['stock_movements']['Row'];
+export type StockMovementInsert = Database['public']['Tables']['stock_movements']['Insert'];
+export type ExpenseCategory = Database['public']['Tables']['expense_categories']['Row'];
+export type ExpenseCategoryInsert = Database['public']['Tables']['expense_categories']['Insert'];
+export type Expense = Database['public']['Tables']['expenses']['Row'];
+export type ExpenseInsert = Database['public']['Tables']['expenses']['Insert'];
+export type ExpenseUpdate = Database['public']['Tables']['expenses']['Update'];
+
 // Extended types with relations
 export interface OrderWithDetails extends Order {
   table: Pick<Table, 'table_number' | 'location'>;
@@ -92,6 +103,17 @@ export interface TableTransferWithDetails extends TableTransfer {
   from_table: Pick<Table, 'table_number' | 'location'>;
   to_table: Pick<Table, 'table_number' | 'location'>;
   transferred_by_staff: Pick<Staff, 'full_name' | 'role'>;
+}
+
+// Stock movement with staff info
+export interface StockMovementWithStaff extends StockMovement {
+  performed_by_staff: Pick<Staff, 'full_name'> | null;
+}
+
+// Expense with category and staff info
+export interface ExpenseWithCategory extends Expense {
+  category: ExpenseCategory | null;
+  created_by_staff: Pick<Staff, 'full_name'> | null;
 }
 
 // Order with all related data for staff views

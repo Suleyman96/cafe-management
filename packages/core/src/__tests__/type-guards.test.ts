@@ -4,6 +4,8 @@ import {
   isAdmin,
   isCategory,
   isCustomerFeedback,
+  isExpense,
+  isExpenseCategory,
   isKitchen,
   isMenuItem,
   isOccupiedTable,
@@ -12,6 +14,8 @@ import {
   isOrderItem,
   isOrderPayment,
   isStaff,
+  isStockItem,
+  isStockMovement,
   isTable,
   isTableTransfer,
   isWaiter,
@@ -230,5 +234,67 @@ describe('assertType', () => {
 
   it('throws when guard fails', () => {
     expect(() => assertType('not an order', isOrder, 'Not an order')).toThrow('Not an order');
+  });
+});
+
+describe('isStockItem', () => {
+  it('returns true for valid stock item', () => {
+    expect(isStockItem({ id: '1', name: 'Coffee', quantity: 10, unit: 'kg' })).toBe(true);
+  });
+
+  it('returns false for missing name', () => {
+    expect(isStockItem({ id: '1', quantity: 10, unit: 'kg' })).toBe(false);
+  });
+
+  it('returns false for null', () => {
+    expect(isStockItem(null)).toBe(false);
+  });
+});
+
+describe('isStockMovement', () => {
+  it('returns true for valid movement', () => {
+    expect(
+      isStockMovement({
+        id: '1',
+        stock_item_id: '2',
+        movement_type: 'in',
+        quantity_change: 10,
+      }),
+    ).toBe(true);
+  });
+
+  it('returns false for missing fields', () => {
+    expect(isStockMovement({ id: '1' })).toBe(false);
+  });
+});
+
+describe('isExpenseCategory', () => {
+  it('returns true for valid category', () => {
+    expect(isExpenseCategory({ id: '1', name: 'Supplies', is_active: true })).toBe(true);
+  });
+
+  it('returns false for missing is_active', () => {
+    expect(isExpenseCategory({ id: '1', name: 'Supplies' })).toBe(false);
+  });
+});
+
+describe('isExpense', () => {
+  it('returns true for valid expense', () => {
+    expect(
+      isExpense({
+        id: '1',
+        amount: 100,
+        description: 'Test',
+        payment_method: 'cash',
+      }),
+    ).toBe(true);
+  });
+
+  it('returns false for missing amount', () => {
+    expect(isExpense({ id: '1', description: 'Test', payment_method: 'cash' })).toBe(false);
+  });
+
+  it('returns false for non-object', () => {
+    expect(isExpense('not an expense')).toBe(false);
   });
 });

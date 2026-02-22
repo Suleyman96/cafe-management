@@ -58,6 +58,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build packages
+        run: pnpm build --filter=@cafe-idare/database --filter=@cafe-idare/core --filter=@cafe-idare/api-client
+
       - name: Run tests
         run: pnpm test
 

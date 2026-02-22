@@ -305,6 +305,77 @@ export interface Database {
         >;
         Update: Partial<Database['public']['Tables']['cafe_settings']['Insert']>;
       };
+      stock_items: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          category: string;
+          quantity: number;
+          unit: string;
+          cost_price: number;
+          minimum_stock_level: number;
+          supplier_name: string | null;
+          notes: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<
+          Database['public']['Tables']['stock_items']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['stock_items']['Insert']>;
+      };
+      stock_movements: {
+        Row: {
+          id: string;
+          stock_item_id: string;
+          movement_type: 'in' | 'out' | 'adjustment';
+          quantity_change: number;
+          quantity_after: number;
+          reason: string | null;
+          performed_by: string | null;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['stock_movements']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['stock_movements']['Insert']>;
+      };
+      expense_categories: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          icon: string | null;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: Omit<
+          Database['public']['Tables']['expense_categories']['Row'],
+          'id' | 'created_at'
+        >;
+        Update: Partial<Database['public']['Tables']['expense_categories']['Insert']>;
+      };
+      expenses: {
+        Row: {
+          id: string;
+          category_id: string | null;
+          amount: number;
+          description: string;
+          payment_method: 'cash' | 'card' | 'digital' | 'bank_transfer';
+          expense_date: string;
+          receipt_url: string | null;
+          created_by: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<
+          Database['public']['Tables']['expenses']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['expenses']['Insert']>;
+      };
     };
     Views: {
       active_orders_view: {

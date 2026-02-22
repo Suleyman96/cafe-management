@@ -75,3 +75,24 @@ export const LANGUAGE = {
   RU: 'ru',
   TR: 'tr',
 } as const;
+
+export const STOCK_MOVEMENT_TYPE = {
+  IN: 'in',
+  OUT: 'out',
+  ADJUSTMENT: 'adjustment',
+} as const;
+
+export const STOCK_UNIT = {
+  PIECES: 'pieces',
+  KG: 'kg',
+  LITERS: 'liters',
+  BOXES: 'boxes',
+  BAGS: 'bags',
+} as const;
+
+export const EXPENSE_PAYMENT_METHOD = {
+  CASH: 'cash',
+  CARD: 'card',
+  DIGITAL: 'digital',
+  BANK_TRANSFER: 'bank_transfer',
+} as const;

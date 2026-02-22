@@ -124,6 +124,14 @@ export const QUERY_KEYS = {
   ACTIVE_ORDERS: 'active_orders',
   SALES: 'sales',
   CAFE_SETTINGS: 'cafe_settings',
+  STOCK_ITEMS: 'stock_items',
+  STOCK_ITEM: 'stock_item',
+  STOCK_MOVEMENTS: 'stock_movements',
+  LOW_STOCK_COUNT: 'low_stock_count',
+  EXPENSE_CATEGORIES: 'expense_categories',
+  EXPENSES: 'expenses',
+  EXPENSE: 'expense',
+  EXPENSE_MONTHLY_SUMMARY: 'expense_monthly_summary',
 } as const;
 
 // UI constants

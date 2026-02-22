@@ -6,11 +6,15 @@
 import type {
   Category,
   CustomerFeedback,
+  Expense,
+  ExpenseCategory,
   MenuItem,
   Order,
   OrderItem,
   OrderPayment,
   Staff,
+  StockItem,
+  StockMovement,
   Table,
   TableTransfer,
   WaiterCall,
@@ -216,4 +220,49 @@ export function isOrderItem(value: unknown): value is OrderItem {
 
 export function isOrderItemArray(value: unknown): value is OrderItem[] {
   return Array.isArray(value) && value.every(isOrderItem);
+}
+
+// Stock item type guards
+export function isStockItem(value: unknown): value is StockItem {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value &&
+    'quantity' in value &&
+    'unit' in value
+  );
+}
+
+export function isStockMovement(value: unknown): value is StockMovement {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'stock_item_id' in value &&
+    'movement_type' in value &&
+    'quantity_change' in value
+  );
+}
+
+// Expense type guards
+export function isExpenseCategory(value: unknown): value is ExpenseCategory {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value &&
+    'is_active' in value
+  );
+}
+
+export function isExpense(value: unknown): value is Expense {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'amount' in value &&
+    'description' in value &&
+    'payment_method' in value
+  );
 }

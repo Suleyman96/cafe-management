@@ -1,0 +1,231 @@
+'use client';
+
+import type { Database } from '@cafe-idare/database';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
+import { Button } from '@/components/ui/button';
+import { useCreateStockItem, useUpdateStockItem } from '@/hooks';
+
+type StockItem = Database['public']['Tables']['stock_items']['Row'];
+
+interface StockItemModalProps {
+  item?: StockItem;
+  onClose: () => void;
+}
+
+const UNITS = ['pieces', 'kg', 'liters', 'boxes', 'bags', 'bottles', 'packs'];
+const CATEGORIES = [
+  'Beverages',
+  'Food Supplies',
+  'Cleaning Supplies',
+  'Equipment',
+  'Packaging',
+  'Dairy',
+  'Produce',
+  'Meat',
+  'Dry Goods',
+  'Other',
+];
+
+export function StockItemModal({ item, onClose }: StockItemModalProps) {
+  const isEditing = !!item;
+  const createStockItem = useCreateStockItem();
+  const updateStockItem = useUpdateStockItem();
+
+  const [formData, setFormData] = useState({
+    name: item?.name || '',
+    description: item?.description || '',
+    category: item?.category || 'General',
+    quantity: item?.quantity?.toString() || '0',
+    unit: item?.unit || 'pieces',
+    cost_price: item?.cost_price?.toString() || '0',
+    minimum_stock_level: item?.minimum_stock_level?.toString() || '0',
+    supplier_name: item?.supplier_name || '',
+    notes: item?.notes || '',
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const toastId = toast.loading(isEditing ? 'Updating item...' : 'Creating item...');
+
+    try {
+      const data = {
+        name: formData.name,
+        description: formData.description || null,
+        category: formData.category,
+        quantity: Number.parseFloat(formData.quantity),
+        unit: formData.unit,
+        cost_price: Number.parseFloat(formData.cost_price),
+        minimum_stock_level: Number.parseFloat(formData.minimum_stock_level),
+        supplier_name: formData.supplier_name || null,
+        notes: formData.notes || null,
+        is_active: true,
+      };
+
+      if (isEditing) {
+        await updateStockItem.mutateAsync({ id: item.id, updates: data });
+        toast.success('Stock item updated!', { id: toastId });
+      } else {
+        await createStockItem.mutateAsync(data);
+        toast.success('Stock item created!', { id: toastId });
+      }
+
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save item', { id: toastId });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-gray-900">
+            {isEditing ? 'Edit Stock Item' : 'Add Stock Item'}
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
+            &times;
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g. Coffee Beans"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={2}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Optional description"
+            />
+          </div>
+
+          {/* Category + Unit */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Unit *</label>
+              <select
+                value={formData.unit}
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                {UNITS.map((unit) => (
+                  <option key={unit} value={unit}>
+                    {unit}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Quantity + Cost Price */}
+          <div className="grid grid-cols-2 gap-4">
+            {!isEditing && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Initial Quantity
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.quantity}
+                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cost Price per Unit
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.cost_price}
+                onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Minimum Stock Level */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Minimum Stock Level (for low-stock alerts)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={formData.minimum_stock_level}
+              onChange={(e) => setFormData({ ...formData, minimum_stock_level: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Supplier */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Supplier Name</label>
+            <input
+              type="text"
+              value={formData.supplier_name}
+              onChange={(e) => setFormData({ ...formData, supplier_name: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Optional supplier name"
+            />
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={2}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Optional notes"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+              Cancel
+            </Button>
+            <Button type="submit" className="flex-1">
+              {isEditing ? 'Update Item' : 'Create Item'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
