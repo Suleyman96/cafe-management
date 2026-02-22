@@ -40,6 +40,10 @@ export function useCreateExpense() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
     },
+    onSettled: () => {
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
+    },
   });
 }
 
@@ -53,6 +57,10 @@ export function useUpdateExpense() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
     },
+    onSettled: () => {
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
+    },
   });
 }
 
@@ -64,6 +72,10 @@ export function useDeleteExpense() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
+    },
+    onSettled: () => {
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
     },
   });
 }

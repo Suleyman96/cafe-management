@@ -85,7 +85,7 @@ export function createExpensesWrapper(ctx: WrapperContext) {
         query = query.gte('expense_date', options.startDate);
       }
       if (options?.endDate) {
-        query = query.lte('expense_date', options.endDate);
+        query = query.lt('expense_date', options.endDate);
       }
       if (options?.paymentMethod) {
         query = query.eq('payment_method', options.paymentMethod);

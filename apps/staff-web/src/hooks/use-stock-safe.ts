@@ -34,6 +34,10 @@ export function useCreateStockItem() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
     },
+    onSettled: () => {
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+    },
   });
 }
 
@@ -47,6 +51,10 @@ export function useUpdateStockItem() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
     },
+    onSettled: () => {
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+    },
   });
 }
 
@@ -58,6 +66,10 @@ export function useDeleteStockItem() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+    },
+    onSettled: () => {
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
     },
   });
 }
@@ -82,6 +94,11 @@ export function useAdjustStock() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_MOVEMENTS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+    },
+    onSettled: () => {
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.STOCK_MOVEMENTS] });
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
     },
   });
 }

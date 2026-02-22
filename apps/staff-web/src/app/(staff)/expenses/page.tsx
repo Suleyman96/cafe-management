@@ -195,22 +195,29 @@ export default function ExpensesPage() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <select
-          value={`${selectedYear}-${selectedMonth}`}
-          onChange={(e) => {
-            const [y, m] = e.target.value.split('-');
-            setSelectedYear(Number.parseInt(y, 10));
-            setSelectedMonth(Number.parseInt(m, 10));
-          }}
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(Number.parseInt(e.target.value, 10))}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
-          {Array.from({ length: 12 }, (_, i) => {
-            const m = i + 1;
+          {Array.from({ length: 2 }, (_, i) => {
+            const y = now.getFullYear() - i;
             return (
-              <option key={m} value={`${selectedYear}-${m}`}>
-                {months[i]} {selectedYear}
+              <option key={y} value={y}>
+                {y}
               </option>
             );
           })}
+        </select>
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(Number.parseInt(e.target.value, 10))}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+        >
+          {months.map((name, i) => (
+            <option key={i + 1} value={i + 1}>
+              {name}
+            </option>
+          ))}
         </select>
         <select
           value={categoryFilter}
