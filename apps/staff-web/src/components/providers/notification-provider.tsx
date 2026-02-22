@@ -1,7 +1,7 @@
 'use client';
 
 import { Bell, BellOff } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
 
@@ -103,7 +103,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   // Play sound helper - queues if not yet unlocked
-  const playSound = (audio: HTMLAudioElement | null) => {
+  const playSound = useCallback((audio: HTMLAudioElement | null) => {
     if (!audio || !audioEnabledRef.current) return;
 
     if (!audioUnlockedRef.current) {
@@ -117,7 +117,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     audio.play().catch((err) => {
       console.error('Audio play failed:', err.message);
     });
-  };
+  }, []);
 
   // Toggle audio
   const toggleAudio = () => {

@@ -713,7 +713,7 @@ export default function ReportsPage() {
           </div>
           <div className="space-y-2 sm:space-y-3 max-h-48 sm:max-h-80 overflow-y-auto">
             {metrics.soldItems.map((item, index) => (
-              <div key={index} className="flex justify-between items-center">
+              <div key={item.name} className="flex justify-between items-center">
                 <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
                   <span className="text-xs sm:text-sm font-medium text-gray-500">#{index + 1}</span>
                   <span className="truncate text-xs sm:text-sm">{item.name}</span>

@@ -13,7 +13,6 @@ import { useOrder } from '@/hooks/use-order';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
 import { formatPrice, getStatusColor, timeAgo } from '@/lib/utils';
-import { useLanguageStore } from '@/store/language-store';
 
 interface OrderStatusProps {
   tableId: string; // This is the table_number from URL (e.g., "T01")
@@ -21,7 +20,6 @@ interface OrderStatusProps {
 
 export function OrderStatus({ tableId }: OrderStatusProps) {
   const router = useRouter();
-  const { language } = useLanguageStore();
 
   // Fetch table to get the actual UUID for database operations
   const { data: table, isLoading: tableLoading } = useTable(tableId);
