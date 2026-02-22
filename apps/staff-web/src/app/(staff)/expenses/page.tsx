@@ -213,8 +213,8 @@ export default function ExpensesPage() {
           onChange={(e) => setSelectedMonth(Number.parseInt(e.target.value, 10))}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
-          {months.map((name, i) => (
-            <option key={i + 1} value={i + 1}>
+          {months.map((name) => (
+            <option key={name} value={months.indexOf(name) + 1}>
               {name}
             </option>
           ))}

@@ -1,5 +1,6 @@
 'use client';
 
+import { calculateProfitMetrics } from '@cafe-idare/core';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -13,13 +14,20 @@ import {
   DollarSign,
   Download,
   Package,
+  Receipt,
   ShoppingBag,
   TrendingUp,
   UserCheck,
   Users,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useOrders, useStaff } from '@/hooks';
+import {
+  formatPriceWithSettings,
+  useCafeSettings,
+  useExpenses,
+  useOrders,
+  useStaff,
+} from '@/hooks';
 
 type DateRangeType = 'today' | 'week' | 'month' | 'year' | 'custom';
 type CustomMode = 'day' | 'month' | 'year';
@@ -27,6 +35,7 @@ type CustomMode = 'day' | 'month' | 'year';
 export default function ReportsPage() {
   const { data: orders, isLoading: loading, error } = useOrders();
   const { data: staff, isLoading: staffLoading } = useStaff();
+  const { data: cafeSettings } = useCafeSettings();
   const [dateRange, setDateRange] = useState<DateRangeType>('today');
 
   // Custom date selection state
@@ -84,6 +93,27 @@ export default function ReportsPage() {
         return { start: today, end: tomorrow };
     }
   }, [dateRange, customMode, selectedDate]);
+
+  // Convert date range to 'YYYY-MM-DD' strings for expenses API
+  const expenseDateRange = useMemo(() => {
+    const fmt = (d: Date): string => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    return { startDate: fmt(getDateRange.start), endDate: fmt(getDateRange.end) };
+  }, [getDateRange]);
+
+  const { data: expenses = [], isLoading: expensesLoading } = useExpenses({
+    startDate: expenseDateRange.startDate,
+    endDate: expenseDateRange.endDate,
+  });
+
+  const formatPrice = (amount: number) => {
+    if (cafeSettings) return formatPriceWithSettings(amount, cafeSettings);
+    return `${amount.toFixed(2)}`;
+  };
 
   // Check if we can navigate to next (prevent future dates)
   const canNavigateNext = useMemo(() => {
@@ -246,6 +276,12 @@ export default function ReportsPage() {
     })(),
   };
 
+  // Calculate profit/loss metrics
+  const profitMetrics = useMemo(
+    () => calculateProfitMetrics(metrics.totalRevenue, expenses as any[]),
+    [expenses, metrics.totalRevenue],
+  );
+
   // Calculate staff performance metrics
   const staffPerformance = (() => {
     const performanceMap = new Map<
@@ -352,6 +388,57 @@ export default function ReportsPage() {
       headStyles: { fillColor: [59, 130, 246] },
       styles: { fontSize: 10 },
     });
+
+    // Profit & Loss Section
+    const plStartY = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Profit & Loss', 14, plStartY);
+
+    const plData = [
+      ['Revenue', formatPrice(metrics.totalRevenue)],
+      ['Total Expenses', formatPrice(profitMetrics.totalExpenses)],
+      [
+        'Net Profit',
+        `${profitMetrics.netProfit < 0 ? '-' : ''}${formatPrice(Math.abs(profitMetrics.netProfit))}`,
+      ],
+      [
+        'Profit Margin',
+        `${metrics.totalRevenue > 0 ? profitMetrics.profitMargin.toFixed(1) : '0.0'}%`,
+      ],
+    ];
+
+    autoTable(doc, {
+      startY: plStartY + 4,
+      head: [['Metric', 'Value']],
+      body: plData,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246] },
+      styles: { fontSize: 10 },
+    });
+
+    if (profitMetrics.byCategory.length > 0) {
+      const catStartY = (doc as any).lastAutoTable.finalY + 10;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Expense Breakdown by Category', 14, catStartY);
+
+      const catData = profitMetrics.byCategory.map((cat) => [
+        cat.name,
+        cat.count.toString(),
+        formatPrice(cat.total),
+        `${profitMetrics.totalExpenses > 0 ? ((cat.total / profitMetrics.totalExpenses) * 100).toFixed(1) : '0.0'}%`,
+      ]);
+
+      autoTable(doc, {
+        startY: catStartY + 4,
+        head: [['Category', 'Count', 'Amount', '% of Total']],
+        body: catData,
+        theme: 'striped',
+        headStyles: { fillColor: [220, 38, 38] },
+        styles: { fontSize: 10 },
+      });
+    }
 
     // Top Items Section
     const topItemsStartY = (doc as any).lastAutoTable.finalY + 15;
@@ -467,7 +554,7 @@ export default function ReportsPage() {
     doc.save(`Sales_Report_${dateStr}.pdf`);
   };
 
-  if (loading || staffLoading) {
+  if (loading || staffLoading || expensesLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <LoadingSpinner />
@@ -659,6 +746,105 @@ export default function ReportsPage() {
             %
           </p>
         </div>
+      </div>
+
+      {/* Profit & Loss Summary */}
+      <div className="bg-white rounded-lg shadow p-3 sm:p-6 mb-4 sm:mb-8">
+        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <Receipt className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+          <h2 className="text-base sm:text-lg font-semibold">Profit & Loss</h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+          <div className="bg-green-50 rounded-lg p-3 sm:p-4">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs sm:text-sm text-green-700">Revenue</p>
+              <DollarSign className="h-4 w-4 text-green-600" />
+            </div>
+            <p className="text-lg sm:text-2xl font-bold text-green-700">
+              {formatPrice(metrics.totalRevenue)}
+            </p>
+          </div>
+
+          <div className="bg-red-50 rounded-lg p-3 sm:p-4">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs sm:text-sm text-red-700">Expenses</p>
+              <Receipt className="h-4 w-4 text-red-600" />
+            </div>
+            <p className="text-lg sm:text-2xl font-bold text-red-700">
+              {formatPrice(profitMetrics.totalExpenses)}
+            </p>
+          </div>
+
+          <div
+            className={`rounded-lg p-3 sm:p-4 ${profitMetrics.netProfit >= 0 ? 'bg-green-50' : 'bg-red-50'}`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <p
+                className={`text-xs sm:text-sm ${profitMetrics.netProfit >= 0 ? 'text-green-700' : 'text-red-700'}`}
+              >
+                Net Profit
+              </p>
+              <TrendingUp
+                className={`h-4 w-4 ${profitMetrics.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
+              />
+            </div>
+            <p
+              className={`text-lg sm:text-2xl font-bold ${profitMetrics.netProfit >= 0 ? 'text-green-700' : 'text-red-700'}`}
+            >
+              {profitMetrics.netProfit < 0 ? '-' : ''}
+              {formatPrice(Math.abs(profitMetrics.netProfit))}
+            </p>
+            {metrics.totalRevenue > 0 && (
+              <p
+                className={`text-xs mt-1 ${profitMetrics.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
+              >
+                {profitMetrics.profitMargin.toFixed(1)}% margin
+              </p>
+            )}
+          </div>
+        </div>
+
+        {profitMetrics.byCategory.length > 0 && (
+          <div>
+            <h3 className="text-xs sm:text-sm font-medium text-gray-700 mb-3">
+              Expenses by Category
+            </h3>
+            <div className="space-y-2">
+              {profitMetrics.byCategory.map((cat) => {
+                const percentage =
+                  profitMetrics.totalExpenses > 0
+                    ? (cat.total / profitMetrics.totalExpenses) * 100
+                    : 0;
+                return (
+                  <div key={cat.name} className="flex items-center gap-3">
+                    <span className="text-xs sm:text-sm text-gray-600 w-24 sm:w-28 truncate">
+                      {cat.name}
+                    </span>
+                    <div className="flex-1 bg-gray-100 rounded-full h-2">
+                      <div
+                        className="bg-red-400 h-2 rounded-full"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                    <span className="text-xs sm:text-sm font-medium text-gray-900 w-20 text-right">
+                      {formatPrice(cat.total)}
+                    </span>
+                    <span className="text-xs text-gray-400 w-8 text-right">
+                      {percentage.toFixed(0)}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {profitMetrics.byCategory.length === 0 && expenses.length === 0 && (
+          <p className="text-gray-500 text-center py-4 text-sm">
+            No expenses recorded for this period
+          </p>
+        )}
       </div>
 
       {/* Order Types */}
