@@ -1,17 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
 
-// Create a Supabase client with the service role key for admin operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
+export const dynamic = 'force-dynamic';
+
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
     },
-  },
-);
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create auth user using admin API
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: authData, error: authError } = await getSupabaseAdmin().auth.admin.createUser({
       email,
       password,
       email_confirm: true, // Auto-confirm email for staff accounts
@@ -44,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create staff record
-    const { data: staffData, error: staffError } = await supabaseAdmin
+    const { data: staffData, error: staffError } = await getSupabaseAdmin()
       .from('staff')
       .insert({
         email,
@@ -59,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     if (staffError) {
       // Rollback: delete the auth user if staff creation fails
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      await getSupabaseAdmin().auth.admin.deleteUser(authData.user.id);
       return NextResponse.json({ error: staffError.message }, { status: 400 });
     }
 
