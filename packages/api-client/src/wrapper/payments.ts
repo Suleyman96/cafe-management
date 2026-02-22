@@ -3,7 +3,7 @@
  */
 
 import { handleSupabaseError, isOrderPayment } from '@cafe-idare/core';
-import type { WrapperContext, OrderPaymentInsert } from './types';
+import type { OrderPaymentInsert, WrapperContext } from './types';
 
 export function createPaymentsWrapper(ctx: WrapperContext) {
   return {

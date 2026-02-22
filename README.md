@@ -86,6 +86,27 @@ For the best development experience on Windows, consider using WSL2:
   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
   ```
 
+### Database Setup
+
+```bash
+# Start Supabase locally
+supabase start
+
+# Reset database (applies all migrations and seeds data)
+supabase db reset
+
+# Create admin user for login
+pnpm db:seed-user
+# Or run directly: ./scripts/create-admin-user.sh
+
+# Combined command (reset + create user)
+pnpm db:reset
+```
+
+**Default Admin Credentials:**
+- Email: `admin@test.com`
+- Password: `test1234`
+
 ### Development
 
 ```bash

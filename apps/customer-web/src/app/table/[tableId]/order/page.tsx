@@ -1,4 +1,4 @@
-import { OrderStatus } from "@/components/order/order-status";
+import { OrderStatus } from '@/components/order/order-status';
 
 interface PageProps {
   params: {
@@ -9,5 +9,3 @@ interface PageProps {
 export default function OrderPage({ params }: PageProps) {
   return <OrderStatus tableId={params.tableId} />;
 }
-
-

@@ -12,6 +12,9 @@
     },
     "lint": {
       "outputs": [],
+      "cache": true
+    },
+    "format": {
       "cache": false
     },
     "type-check": {
@@ -20,7 +23,6 @@
       "cache": false
     },
     "test": {
-      "dependsOn": ["build"],
       "outputs": ["coverage/**"],
       "cache": false
     },

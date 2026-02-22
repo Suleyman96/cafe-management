@@ -1,25 +1,29 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
 import {
-  UtensilsCrossed,
-  ClipboardList,
-  ChefHat,
-  Bell,
-  MessageSquare,
   BarChart3,
-  Menu,
-  Users,
+  Bell,
+  ChefHat,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  ClipboardList,
   LogOut,
+  Menu,
+  MessageSquare,
+  Package,
+  Receipt,
   Settings,
   StickyNote,
+  Store,
+  Users,
+  UtensilsCrossed,
 } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { CafeManIcon, CafeManLogo } from '@/components/ui/cafe-man-logo';
+import { useAuth } from '@/hooks/use-auth';
 
 type NavItem = {
   href: string;
@@ -35,8 +39,16 @@ const navItems: NavItem[] = [
   { href: '/calls', label: 'Waiter Calls', icon: <Bell className="h-5 w-5" /> },
   { href: '/feedback', label: 'Feedback', icon: <MessageSquare className="h-5 w-5" /> },
   { href: '/notes', label: 'Staff Notes', icon: <StickyNote className="h-5 w-5" /> },
+  { href: '/stock', label: 'Stock', icon: <Package className="h-5 w-5" />, adminOnly: true },
+  { href: '/expenses', label: 'Expenses', icon: <Receipt className="h-5 w-5" />, adminOnly: true },
   { href: '/menu', label: 'Menu', icon: <Menu className="h-5 w-5" />, adminOnly: true },
   { href: '/staff', label: 'Staff', icon: <Users className="h-5 w-5" />, adminOnly: true },
+  {
+    href: '/cafe-settings',
+    label: 'Cafe Settings',
+    icon: <Store className="h-5 w-5" />,
+    adminOnly: true,
+  },
   { href: '/reports', label: 'Reports', icon: <BarChart3 className="h-5 w-5" />, adminOnly: true },
 ];
 
@@ -56,7 +68,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
   const isAdmin = staff?.role === 'admin';
 
   // Filter nav items based on role
-  const visibleItems = navItems.filter(item => !item.adminOnly || isAdmin);
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -96,26 +108,30 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
       }`}
     >
       {/* Logo */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        {(!isCollapsed || isMobile) && (
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Cafe Idare</h1>
-            <p className="text-xs text-gray-500">Staff Portal</p>
-          </div>
-        )}
-        {!isMobile && (
+      <div className="p-4 border-b border-gray-200 flex items-center justify-between relative">
+        <Link href="/" onClick={handleNavClick} className="hover:opacity-80 transition-opacity">
+          {!isCollapsed || isMobile ? (
+            <CafeManLogo size={36} showText={true} />
+          ) : (
+            <CafeManIcon size={32} />
+          )}
+        </Link>
+        {!isMobile && !isCollapsed && (
           <button
             onClick={onToggle}
-            className={`p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors ${
-              isCollapsed ? 'mx-auto' : ''
-            }`}
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+            title="Collapse sidebar"
           >
-            {isCollapsed ? (
-              <ChevronRight className="h-5 w-5" />
-            ) : (
-              <ChevronLeft className="h-5 w-5" />
-            )}
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+        )}
+        {!isMobile && isCollapsed && (
+          <button
+            onClick={onToggle}
+            className="absolute -right-3 top-6 p-1 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 text-gray-500 transition-colors z-10"
+            title="Expand sidebar"
+          >
+            <ChevronRight className="h-4 w-4" />
           </button>
         )}
       </div>
@@ -124,8 +140,8 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
       <nav className="flex-1 p-2">
         <ul className="space-y-1">
           {visibleItems.map((item) => {
-            const isActive = pathname === item.href ||
-              (item.href !== '/' && pathname.startsWith(item.href));
+            const isActive =
+              pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
 
             return (
               <li key={item.href}>
@@ -133,15 +149,11 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
                   href={item.href}
                   onClick={handleNavClick}
                   className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-700 hover:bg-gray-100'
+                    isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
                   } ${isCollapsed && !isMobile ? 'justify-center' : ''}`}
                   title={isCollapsed && !isMobile ? item.label : undefined}
                 >
-                  <span className={isActive ? 'text-blue-600' : 'text-gray-500'}>
-                    {item.icon}
-                  </span>
+                  <span className={isActive ? 'text-blue-600' : 'text-gray-500'}>{item.icon}</span>
                   {(!isCollapsed || isMobile) && (
                     <>
                       {item.label}
@@ -176,20 +188,26 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
               <>
                 <div className="flex-1 text-left min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{staff.full_name}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(staff.role)}`}>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(staff.role)}`}
+                  >
                     {staff.role}
                   </span>
                 </div>
-                <ChevronUp className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${isUserMenuOpen ? '' : 'rotate-180'}`} />
+                <ChevronUp
+                  className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${isUserMenuOpen ? '' : 'rotate-180'}`}
+                />
               </>
             )}
           </button>
 
           {/* Dropdown Menu */}
           {isUserMenuOpen && (
-            <div className={`absolute bottom-full mb-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 ${
-              isCollapsed && !isMobile ? 'left-full ml-2 w-56' : 'left-2 right-2'
-            }`}>
+            <div
+              className={`absolute bottom-full mb-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 ${
+                isCollapsed && !isMobile ? 'left-full ml-2 w-56' : 'left-2 right-2'
+              }`}
+            >
               {isCollapsed && !isMobile && (
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="text-sm font-medium text-gray-900">{staff.full_name}</p>

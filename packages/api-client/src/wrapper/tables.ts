@@ -3,15 +3,12 @@
  */
 
 import { handleSupabaseError, isTable, isTableArray } from '@cafe-idare/core';
-import type { WrapperContext, TableRow, TableInsert, TableUpdate } from './types';
+import type { TableInsert, TableRow, TableUpdate, WrapperContext } from './types';
 
 export function createTablesWrapper(ctx: WrapperContext) {
   return {
     findAll: async () => {
-      const { data, error } = await ctx.client
-        .from('tables')
-        .select('*')
-        .order('table_number');
+      const { data, error } = await ctx.client.from('tables').select('*').order('table_number');
 
       if (error) throw handleSupabaseError(error);
       const tables = data || [];
@@ -20,10 +17,18 @@ export function createTablesWrapper(ctx: WrapperContext) {
     },
 
     findById: async (id: string) => {
+      const { data, error } = await ctx.client.from('tables').select('*').eq('id', id).single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isTable(data)) throw new Error('Invalid table data');
+      return data;
+    },
+
+    findByTableNumber: async (tableNumber: string) => {
       const { data, error } = await ctx.client
         .from('tables')
         .select('*')
-        .eq('id', id)
+        .eq('table_number', tableNumber)
         .single();
 
       if (error) throw handleSupabaseError(error);
@@ -82,10 +87,7 @@ export function createTablesWrapper(ctx: WrapperContext) {
     },
 
     delete: async (id: string) => {
-      const { error } = await ctx.anyClient
-        .from('tables')
-        .delete()
-        .eq('id', id);
+      const { error } = await ctx.anyClient.from('tables').delete().eq('id', id);
 
       if (error) throw handleSupabaseError(error);
     },

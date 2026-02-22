@@ -3,15 +3,12 @@
  */
 
 import { handleSupabaseError, isStaff, isStaffArray } from '@cafe-idare/core';
-import type { WrapperContext, StaffInsert, StaffUpdate } from './types';
+import type { StaffInsert, StaffUpdate, WrapperContext } from './types';
 
 export function createStaffWrapper(ctx: WrapperContext) {
   return {
     findAll: async (role?: string) => {
-      let query = ctx.client
-        .from('staff')
-        .select('*')
-        .order('full_name');
+      let query = ctx.client.from('staff').select('*').order('full_name');
 
       if (role) {
         query = query.eq('role', role);
@@ -26,11 +23,7 @@ export function createStaffWrapper(ctx: WrapperContext) {
     },
 
     findById: async (id: string) => {
-      const { data, error } = await ctx.client
-        .from('staff')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data, error } = await ctx.client.from('staff').select('*').eq('id', id).single();
 
       if (error) throw handleSupabaseError(error);
       if (!isStaff(data)) throw new Error('Invalid staff data');
@@ -63,11 +56,7 @@ export function createStaffWrapper(ctx: WrapperContext) {
     },
 
     create: async (staffData: StaffInsert) => {
-      const { data, error } = await ctx.anyClient
-        .from('staff')
-        .insert(staffData)
-        .select()
-        .single();
+      const { data, error } = await ctx.anyClient.from('staff').insert(staffData).select().single();
 
       if (error) throw handleSupabaseError(error);
       if (!isStaff(data)) throw new Error('Invalid staff data');
@@ -88,10 +77,7 @@ export function createStaffWrapper(ctx: WrapperContext) {
     },
 
     delete: async (id: string) => {
-      const { error } = await ctx.anyClient
-        .from('staff')
-        .delete()
-        .eq('id', id);
+      const { error } = await ctx.anyClient.from('staff').delete().eq('id', id);
 
       if (error) throw handleSupabaseError(error);
     },

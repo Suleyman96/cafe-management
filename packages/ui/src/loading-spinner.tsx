@@ -6,10 +6,10 @@ interface LoadingSpinnerProps {
   fullScreen?: boolean;
 }
 
-export function LoadingSpinner({ 
-  size = 'md', 
+export function LoadingSpinner({
+  size = 'md',
   className,
-  fullScreen = false 
+  fullScreen = false,
 }: LoadingSpinnerProps) {
   const sizeClasses = {
     sm: 'h-4 w-4',
@@ -22,17 +22,13 @@ export function LoadingSpinner({
       className={cn(
         'animate-spin rounded-full border-2 border-gray-300 border-t-blue-500',
         sizeClasses[size],
-        className
+        className,
       )}
     />
   );
 
   if (fullScreen) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        {spinner}
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center">{spinner}</div>;
   }
 
   return spinner;

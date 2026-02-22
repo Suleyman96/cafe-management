@@ -3,8 +3,8 @@
  */
 
 import { handleSupabaseError } from '@cafe-idare/core';
-import type { WrapperContext } from './types';
 import type { Database } from '@cafe-idare/database';
+import type { WrapperContext } from './types';
 
 type StaffNoteRow = Database['public']['Tables']['staff_notes']['Row'];
 type StaffNoteInsert = Database['public']['Tables']['staff_notes']['Insert'];
@@ -77,10 +77,7 @@ export function createStaffNotesWrapper(ctx: WrapperContext) {
     },
 
     delete: async (id: string) => {
-      const { error } = await ctx.anyClient
-        .from('staff_notes')
-        .delete()
-        .eq('id', id);
+      const { error } = await ctx.anyClient.from('staff_notes').delete().eq('id', id);
 
       if (error) throw handleSupabaseError(error);
     },

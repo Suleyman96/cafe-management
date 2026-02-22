@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { Button } from '@cafe-idare/ui';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
-import { Button } from '@cafe-idare/ui';
 
 /**
  * SIMPLE Dev Login: Direct session creation, no redirects
@@ -61,7 +61,9 @@ export function DevLoginButton() {
 
         if (staffError || !staffData) {
           await supabase.auth.signOut();
-          throw new Error('Staff account not found. Run the SQL script to link user to staff table.');
+          throw new Error(
+            'Staff account not found. Run the SQL script to link user to staff table.',
+          );
         }
 
         setStaff(staffData);
@@ -92,9 +94,7 @@ export function DevLoginButton() {
       <p className="text-sm text-yellow-800 mb-2">
         <strong>Dev Mode:</strong> Direct login (no redirects)
       </p>
-      {error && (
-        <p className="text-sm text-red-600 mb-2">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
       <Button
         onClick={handleDevLogin}
         disabled={isLoading}

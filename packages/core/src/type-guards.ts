@@ -3,17 +3,21 @@
  * Runtime type checking utilities
  */
 
-import type { 
-  Order, 
-  OrderItem, 
-  Table, 
-  Staff,
-  MenuItem,
+import type {
   Category,
-  WaiterCall,
   CustomerFeedback,
+  Expense,
+  ExpenseCategory,
+  MenuItem,
+  Order,
+  OrderItem,
   OrderPayment,
-  TableTransfer
+  Staff,
+  StockItem,
+  StockMovement,
+  Table,
+  TableTransfer,
+  WaiterCall,
 } from '@cafe-idare/database';
 
 // Order type guards
@@ -27,7 +31,9 @@ export function isOrder(value: unknown): value is Order {
   );
 }
 
-export function hasOrderItems(order: Order & { order_items?: unknown[] }): order is Order & { order_items: OrderItem[] } {
+export function hasOrderItems(
+  order: Order & { order_items?: unknown[] },
+): order is Order & { order_items: OrderItem[] } {
   return Array.isArray(order.order_items) && order.order_items.length > 0;
 }
 
@@ -86,12 +92,7 @@ export function isAvailableMenuItem(item: MenuItem): boolean {
 
 // Category type guards
 export function isCategory(value: unknown): value is Category {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'id' in value &&
-    'name_en' in value
-  );
+  return typeof value === 'object' && value !== null && 'id' in value && 'name_en' in value;
 }
 
 // Waiter call type guards
@@ -154,7 +155,7 @@ export function isTableTransfer(value: unknown): value is TableTransfer {
 export function safeGet<T, K extends keyof T>(
   obj: T | null | undefined,
   key: K,
-  defaultValue: T[K] | null = null
+  defaultValue: T[K] | null = null,
 ): T[K] | null {
   return obj?.[key] ?? defaultValue;
 }
@@ -163,7 +164,7 @@ export function safeGet<T, K extends keyof T>(
 export function assertType<T>(
   value: unknown,
   guard: (value: unknown) => value is T,
-  errorMessage: string
+  errorMessage: string,
 ): T {
   if (!guard(value)) {
     throw new TypeError(errorMessage);
@@ -219,4 +220,49 @@ export function isOrderItem(value: unknown): value is OrderItem {
 
 export function isOrderItemArray(value: unknown): value is OrderItem[] {
   return Array.isArray(value) && value.every(isOrderItem);
+}
+
+// Stock item type guards
+export function isStockItem(value: unknown): value is StockItem {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value &&
+    'quantity' in value &&
+    'unit' in value
+  );
+}
+
+export function isStockMovement(value: unknown): value is StockMovement {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'stock_item_id' in value &&
+    'movement_type' in value &&
+    'quantity_change' in value
+  );
+}
+
+// Expense type guards
+export function isExpenseCategory(value: unknown): value is ExpenseCategory {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value &&
+    'is_active' in value
+  );
+}
+
+export function isExpense(value: unknown): value is Expense {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'amount' in value &&
+    'description' in value &&
+    'payment_method' in value
+  );
 }

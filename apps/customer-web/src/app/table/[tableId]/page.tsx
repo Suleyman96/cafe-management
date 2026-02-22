@@ -1,6 +1,6 @@
-import { Suspense } from "react";
-import { TableLanding } from "@/components/table/table-landing";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Suspense } from 'react';
+import { TableLanding } from '@/components/table/table-landing';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface PageProps {
   params: {
@@ -18,5 +18,3 @@ export default function TablePage({ params, searchParams }: PageProps) {
     </Suspense>
   );
 }
-
-

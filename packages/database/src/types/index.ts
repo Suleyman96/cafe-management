@@ -1,7 +1,7 @@
 /**
  * Shared Types
  * Used by: customer-web, staff-web, mobile-app
- * 
+ *
  * Keep these platform-agnostic so they work everywhere!
  */
 
@@ -53,6 +53,17 @@ export type FeedbackUpdate = Database['public']['Tables']['customer_feedback']['
 export type OrderPayment = Database['public']['Tables']['order_payments']['Row'];
 export type TableTransfer = Database['public']['Tables']['table_transfers']['Row'];
 
+export type StockItem = Database['public']['Tables']['stock_items']['Row'];
+export type StockItemInsert = Database['public']['Tables']['stock_items']['Insert'];
+export type StockItemUpdate = Database['public']['Tables']['stock_items']['Update'];
+export type StockMovement = Database['public']['Tables']['stock_movements']['Row'];
+export type StockMovementInsert = Database['public']['Tables']['stock_movements']['Insert'];
+export type ExpenseCategory = Database['public']['Tables']['expense_categories']['Row'];
+export type ExpenseCategoryInsert = Database['public']['Tables']['expense_categories']['Insert'];
+export type Expense = Database['public']['Tables']['expenses']['Row'];
+export type ExpenseInsert = Database['public']['Tables']['expenses']['Insert'];
+export type ExpenseUpdate = Database['public']['Tables']['expenses']['Update'];
+
 // Extended types with relations
 export interface OrderWithDetails extends Order {
   table: Pick<Table, 'table_number' | 'location'>;
@@ -94,6 +105,17 @@ export interface TableTransferWithDetails extends TableTransfer {
   transferred_by_staff: Pick<Staff, 'full_name' | 'role'>;
 }
 
+// Stock movement with staff info
+export interface StockMovementWithStaff extends StockMovement {
+  performed_by_staff: Pick<Staff, 'full_name'> | null;
+}
+
+// Expense with category and staff info
+export interface ExpenseWithCategory extends Expense {
+  category: ExpenseCategory | null;
+  created_by_staff: Pick<Staff, 'full_name'> | null;
+}
+
 // Order with all related data for staff views
 export interface OrderWithItems extends Order {
   table?: Table;
@@ -126,11 +148,7 @@ export type CallType = WaiterCall['call_type'];
 export type CallPriority = WaiterCall['priority'];
 
 // Helper function for localized content
-export function getLocalizedField<T>(
-  item: T,
-  field: string,
-  language: Language
-): string {
+export function getLocalizedField<T>(item: T, field: string, language: Language): string {
   const key = `${field}_${language}` as keyof T;
   return (item[key] as string) || (item[`${field}_en` as keyof T] as string) || '';
 }
@@ -165,4 +183,3 @@ export function isOrderFullyPaid(order: OrderWithPayments): boolean {
 export function isOrderPartiallyPaid(order: OrderWithPayments): boolean {
   return order.paid_amount > 0 && order.remaining_balance > 0;
 }
-

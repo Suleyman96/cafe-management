@@ -1,14 +1,10 @@
 -- Sample data for development and testing
+-- NOTE: Admin user (admin@test.com / test1234) is created via Supabase Admin API
+-- Run: npm run db:seed-user (or see scripts/create-admin-user.sh)
 
--- Create admin user (password: admin123)
--- Note: In production, use auth.users properly
-INSERT INTO auth.users (id, email)
-VALUES ('00000000-0000-0000-0000-000000000001', 'admin@cafe.com')
-ON CONFLICT (id) DO NOTHING;
-
--- Insert staff members
+-- Insert staff members (auth_user_id will be updated after user is created)
 INSERT INTO staff (id, email, full_name, role, auth_user_id, is_active) VALUES
-('10000000-0000-0000-0000-000000000001', 'admin@cafe.com', 'Admin User', 'admin', '00000000-0000-0000-0000-000000000001', true),
+('10000000-0000-0000-0000-000000000001', 'admin@test.com', 'Admin User', 'admin', null, true),
 ('10000000-0000-0000-0000-000000000002', 'waiter1@cafe.com', 'John Doe', 'waiter', null, true),
 ('10000000-0000-0000-0000-000000000003', 'waiter2@cafe.com', 'Jane Smith', 'waiter', null, true),
 ('10000000-0000-0000-0000-000000000004', 'kitchen@cafe.com', 'Chef Mike', 'kitchen', null, true)
@@ -85,5 +81,3 @@ UPDATE menu_items SET allergens = ARRAY['eggs'] WHERE id IN (
 );
 
 UPDATE menu_items SET allergens = ARRAY['nuts'] WHERE id = '40000000-0000-0000-0000-000000000016';
-
-

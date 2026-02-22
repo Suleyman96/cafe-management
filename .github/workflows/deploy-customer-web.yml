@@ -1,12 +1,10 @@
 name: Deploy Customer Web
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
-    paths:
-      - 'apps/customer-web/**'
-      - 'packages/**'
-      - 'pnpm-lock.yaml'
   workflow_dispatch:
 
 concurrency:
@@ -18,6 +16,7 @@ jobs:
     name: Deploy to Vercel
     runs-on: ubuntu-latest
     environment: production
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout

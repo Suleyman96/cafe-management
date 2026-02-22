@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -25,7 +25,10 @@ export function useAuth() {
       setIsLoading(true);
 
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
         if (sessionError) {
           console.error('Session error:', sessionError);
@@ -66,32 +69,31 @@ export function useAuth() {
     checkSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_OUT' || !session) {
-          clearAuth();
-          router.push('/login');
-        } else if (event === 'SIGNED_IN' && session.user) {
-          // Fetch staff record
-          const { data: staffData } = await supabase
-            .from('staff')
-            .select('*')
-            .eq('auth_user_id', session.user.id)
-            .eq('is_active', true)
-            .single();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        clearAuth();
+        router.push('/login');
+      } else if (event === 'SIGNED_IN' && session.user) {
+        // Fetch staff record
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('*')
+          .eq('auth_user_id', session.user.id)
+          .eq('is_active', true)
+          .single();
 
-          if (staffData) {
-            setStaff(staffData);
-          }
+        if (staffData) {
+          setStaff(staffData);
         }
       }
-    );
+    });
 
     return () => {
       subscription.unsubscribe();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [staff]);
+  }, [staff, clearAuth, router.push, setIsLoading, setStaff]);
 
   const logout = async () => {
     await supabase.auth.signOut();

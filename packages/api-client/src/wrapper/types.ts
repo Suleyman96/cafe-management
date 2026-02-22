@@ -2,10 +2,8 @@
  * Shared types for Supabase wrapper modules
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@cafe-idare/database';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Type aliases for cleaner code
 export type Tables = Database['public']['Tables'];
@@ -28,6 +26,16 @@ export type StaffRow = Tables['staff']['Row'];
 export type StaffInsert = Tables['staff']['Insert'];
 export type StaffUpdate = Tables['staff']['Update'];
 export type WaiterCallRow = Tables['waiter_calls']['Row'];
+export type StockItemRow = Tables['stock_items']['Row'];
+export type StockItemInsert = Tables['stock_items']['Insert'];
+export type StockItemUpdate = Tables['stock_items']['Update'];
+export type StockMovementRow = Tables['stock_movements']['Row'];
+export type StockMovementInsert = Tables['stock_movements']['Insert'];
+export type ExpenseCategoryRow = Tables['expense_categories']['Row'];
+export type ExpenseCategoryInsert = Tables['expense_categories']['Insert'];
+export type ExpenseRow = Tables['expenses']['Row'];
+export type ExpenseInsert = Tables['expenses']['Insert'];
+export type ExpenseUpdate = Tables['expenses']['Update'];
 
 // Helper type for Supabase client that bypasses strict typing
 export type AnySupabaseClient = SupabaseClient<any>;

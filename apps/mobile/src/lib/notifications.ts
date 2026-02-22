@@ -1,7 +1,7 @@
-import * as Notifications from "expo-notifications";
-import * as Device from "expo-device";
-import { Platform } from "react-native";
-import Constants from "expo-constants";
+import Constants from 'expo-constants';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -14,51 +14,47 @@ Notifications.setNotificationHandler({
 
 export async function registerForPushNotifications() {
   if (!Device.isDevice) {
-    console.log("Must use physical device for Push Notifications");
+    console.log('Must use physical device for Push Notifications');
     return null;
   }
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
-  if (existingStatus !== "granted") {
+  if (existingStatus !== 'granted') {
     const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
   }
 
-  if (finalStatus !== "granted") {
-    console.log("Failed to get push token for push notification!");
+  if (finalStatus !== 'granted') {
+    console.log('Failed to get push token for push notification!');
     return null;
   }
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-  
+
   try {
     const pushToken = await Notifications.getExpoPushTokenAsync({
       projectId,
     });
-    
-    if (Platform.OS === "android") {
-      Notifications.setNotificationChannelAsync("default", {
-        name: "default",
+
+    if (Platform.OS === 'android') {
+      Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: "#FF231F7C",
+        lightColor: '#FF231F7C',
       });
     }
 
     return pushToken.data;
   } catch (error) {
-    console.error("Error getting push token:", error);
+    console.error('Error getting push token:', error);
     return null;
   }
 }
 
-export async function showLocalNotification(
-  title: string,
-  body: string,
-  data?: any
-) {
+export async function showLocalNotification(title: string, body: string, data?: any) {
   await Notifications.scheduleNotificationAsync({
     content: {
       title,
@@ -72,29 +68,27 @@ export async function showLocalNotification(
 
 // New order notification
 export async function notifyNewOrder(orderNumber: string, tableNumber: string) {
-  await showLocalNotification(
-    "🔔 New Order!",
-    `Order ${orderNumber} from Table ${tableNumber}`,
-    { type: "new_order", orderNumber, tableNumber }
-  );
+  await showLocalNotification('🔔 New Order!', `Order ${orderNumber} from Table ${tableNumber}`, {
+    type: 'new_order',
+    orderNumber,
+    tableNumber,
+  });
 }
 
 // Waiter call notification
 export async function notifyWaiterCall(tableNumber: string, reason: string) {
   await showLocalNotification(
-    "🔔 Waiter Call",
+    '🔔 Waiter Call',
     `Table ${tableNumber} needs assistance: ${reason}`,
-    { type: "waiter_call", tableNumber, reason }
+    { type: 'waiter_call', tableNumber, reason },
   );
 }
 
 // Order ready notification
 export async function notifyOrderReady(orderNumber: string, tableNumber: string) {
   await showLocalNotification(
-    "✅ Order Ready",
+    '✅ Order Ready',
     `Order ${orderNumber} for Table ${tableNumber} is ready to serve`,
-    { type: "order_ready", orderNumber, tableNumber }
+    { type: 'order_ready', orderNumber, tableNumber },
   );
 }
-
-

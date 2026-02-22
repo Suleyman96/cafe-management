@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useCreateTable, useUpdateTable } from '@/hooks';
 import { Button } from '@cafe-idare/ui';
 import { X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useCreateTable, useUpdateTable } from '@/hooks';
 
 interface TableModalProps {
   isOpen: boolean;
@@ -13,12 +13,7 @@ interface TableModalProps {
   table?: any; // If provided, we're editing; otherwise creating
 }
 
-export function TableModal({
-  isOpen,
-  onClose,
-  onSuccess,
-  table,
-}: TableModalProps) {
+export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProps) {
   const createTable = useCreateTable();
   const updateTable = useUpdateTable();
 
@@ -47,7 +42,7 @@ export function TableModal({
       setStatus('free');
       setIsActive(true);
     }
-  }, [table, isOpen]);
+  }, [table]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +72,9 @@ export function TableModal({
           status,
           is_active: isActive,
           qr_code: qrCode,
+          current_session_id: null,
+          occupied_at: null,
+          notes: null,
         });
         toast.success('Table created successfully');
       }
@@ -95,21 +93,16 @@ export function TableModal({
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">
-            {isEditing ? `Edit Table ${table.table_number}` : 'Add New Table'}
+            {isEditing ? `Edit ${table.table_number}` : 'Add New Table'}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Table Number *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Table Number *</label>
             <input
               type="text"
               value={tableNumber}
@@ -129,16 +122,14 @@ export function TableModal({
               min="1"
               max="20"
               value={capacity}
-              onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
+              onChange={(e) => setCapacity(parseInt(e.target.value, 10) || 1)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Location / Zone
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location / Zone</label>
             <input
               type="text"
               value={location}
@@ -149,9 +140,7 @@ export function TableModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as any)}
@@ -188,7 +177,13 @@ export function TableModal({
               Cancel
             </Button>
             <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Add Table')}
+              {loading
+                ? isEditing
+                  ? 'Saving...'
+                  : 'Creating...'
+                : isEditing
+                  ? 'Save Changes'
+                  : 'Add Table'}
             </Button>
           </div>
         </form>

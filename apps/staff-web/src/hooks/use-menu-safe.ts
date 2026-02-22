@@ -3,10 +3,10 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { db } from '@/lib/supabase/wrapped-client';
 import { QUERY_KEYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { db } from '@/lib/supabase/wrapped-client';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -19,8 +19,8 @@ type MenuItemWithCategory = MenuItem & {
 };
 
 // Menu items hooks
-export function useMenuItems(options?: { 
-  categoryId?: string; 
+export function useMenuItems(options?: {
+  categoryId?: string;
   isAvailable?: boolean;
   isPopular?: boolean;
 }) {
@@ -42,7 +42,7 @@ export function useUpdateMenuItem() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<MenuItem> }) => 
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<MenuItem> }) =>
       db.menuItems.update(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
@@ -132,21 +132,24 @@ export function useMenuItemsByCategory() {
   const { data: menuItems, ...rest } = useMenuItems();
   const { data: categories } = useCategories();
 
-  const groupedItems = menuItems?.reduce((acc: Record<string, MenuItemWithCategory[]>, item: MenuItemWithCategory) => {
-    const categoryId = item.category_id || 'uncategorized';
-    if (!acc[categoryId]) {
-      acc[categoryId] = [];
-    }
-    acc[categoryId].push(item);
-    return acc;
-  }, {} as Record<string, MenuItemWithCategory[]>);
+  const groupedItems = menuItems?.reduce(
+    (acc: Record<string, MenuItemWithCategory[]>, item: MenuItemWithCategory) => {
+      const categoryId = item.category_id || 'uncategorized';
+      if (!acc[categoryId]) {
+        acc[categoryId] = [];
+      }
+      acc[categoryId].push(item);
+      return acc;
+    },
+    {} as Record<string, MenuItemWithCategory[]>,
+  );
 
   return {
     ...rest,
     data: {
       categories: categories || [],
       groupedItems: groupedItems || {},
-      uncategorizedItems: groupedItems?.uncategorized || []
-    }
+      uncategorizedItems: groupedItems?.uncategorized || [],
+    },
   };
 }

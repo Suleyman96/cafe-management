@@ -1,0 +1,31 @@
+{
+  "name": "Cafe-Man Staff Portal",
+  "short_name": "Cafe-Man",
+  "description": "Restaurant management system for staff",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3B82F6",
+  "orientation": "any",
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Orders",
+      "short_name": "Orders",
+      "description": "View active orders",
+      "url": "/orders"
+    },
+    {
+      "name": "Tables",
+      "short_name": "Tables",
+      "description": "Manage tables",
+      "url": "/tables"
+    },
+    {
+      "name": "Kitchen",
+      "short_name": "Kitchen",
+      "description": "Kitchen display",
+      "url": "/kitchen"
+    }
+  ]
+}

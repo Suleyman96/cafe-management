@@ -5,28 +5,29 @@
 
 import type * as DB from '@cafe-idare/database';
 
-// Re-export all database types
-export * from '@cafe-idare/database';
-
 // Re-export constants from core
 export {
-  QUERY_KEYS,
-  ORDER_STATUS,
-  TABLE_STATUS,
-  USER_ROLE,
   ORDER_ITEM_STATUS,
-  WAITER_CALL_STATUS,
-  TAX_RATE,
+  ORDER_STATUS,
+  QUERY_KEYS,
   REFRESH_INTERVALS,
   STATUS_COLORS,
-  STORAGE_KEYS
+  STORAGE_KEYS,
+  TABLE_STATUS,
+  TAX_RATE,
+  USER_ROLE,
+  WAITER_CALL_STATUS,
 } from '@cafe-idare/core';
+// Re-export all database types
+export * from '@cafe-idare/database';
 
 // Local extended types specific to staff-web
 export interface OrderWithDetails extends DB.Order {
   table: Pick<DB.Tables, 'table_number' | 'location'>;
-  order_items: Array<DB.OrderItem & {
-    menu_item?: DB.MenuItems;
-  }>;
+  order_items: Array<
+    DB.OrderItem & {
+      menu_item?: DB.MenuItems;
+    }
+  >;
   assigned_waiter?: Pick<DB.Staff, 'full_name'>;
 }

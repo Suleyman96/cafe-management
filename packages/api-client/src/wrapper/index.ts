@@ -5,23 +5,23 @@
  * This module composes all domain-specific wrappers into a single unified API.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@cafe-idare/database';
-import type { WrapperContext, AnySupabaseClient } from './types';
-
-import { createTablesWrapper } from './tables';
-import { createOrdersWrapper, createOrderItemsWrapper } from './orders';
-import { createMenuItemsWrapper, createCategoriesWrapper } from './menu';
-import { createStaffWrapper } from './staff';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { createExpenseCategoriesWrapper, createExpensesWrapper } from './expenses';
 import { createFeedbackWrapper } from './feedback';
+import { createCategoriesWrapper, createMenuItemsWrapper } from './menu';
+import { createOrderItemsWrapper, createOrdersWrapper } from './orders';
 import { createPaymentsWrapper } from './payments';
-import { createWaiterCallsWrapper } from './waiter-calls';
-import { createStaffNotesWrapper } from './staff-notes';
-import { createRpcWrapper } from './rpc';
-import { createViewsWrapper } from './views';
 import { createRealtimeWrapper } from './realtime';
+import { createRpcWrapper } from './rpc';
+import { createSettingsWrapper } from './settings';
+import { createStaffWrapper } from './staff';
+import { createStaffNotesWrapper } from './staff-notes';
+import { createStockItemsWrapper } from './stock';
+import { createTablesWrapper } from './tables';
+import type { AnySupabaseClient, WrapperContext } from './types';
+import { createViewsWrapper } from './views';
+import { createWaiterCallsWrapper } from './waiter-calls';
 
 export class SupabaseWrapper {
   private ctx: WrapperContext;
@@ -37,6 +37,10 @@ export class SupabaseWrapper {
   payments;
   waiterCalls;
   staffNotes;
+  settings;
+  stockItems;
+  expenseCategories;
+  expenses;
   rpc;
   views;
   realtime;
@@ -59,6 +63,10 @@ export class SupabaseWrapper {
     this.payments = createPaymentsWrapper(this.ctx);
     this.waiterCalls = createWaiterCallsWrapper(this.ctx);
     this.staffNotes = createStaffNotesWrapper(this.ctx);
+    this.settings = createSettingsWrapper(this.ctx);
+    this.stockItems = createStockItemsWrapper(this.ctx);
+    this.expenseCategories = createExpenseCategoriesWrapper(this.ctx);
+    this.expenses = createExpensesWrapper(this.ctx);
     this.rpc = createRpcWrapper(this.ctx);
     this.views = createViewsWrapper(this.ctx);
     this.realtime = createRealtimeWrapper(this.ctx);
@@ -70,16 +78,19 @@ export function createSupabaseWrapper(client: SupabaseClient<Database>) {
   return new SupabaseWrapper(client);
 }
 
+export type { ExpenseCategoriesWrapper, ExpensesWrapper } from './expenses';
+export type { FeedbackWrapper } from './feedback';
+export type { CategoriesWrapper, MenuItemsWrapper } from './menu';
+export type { OrderItemsWrapper, OrdersWrapper } from './orders';
+export type { PaymentsWrapper } from './payments';
+export type { RealtimeWrapper } from './realtime';
+export type { RpcWrapper } from './rpc';
+export type { SettingsWrapper } from './settings';
+export type { StaffWrapper } from './staff';
+export type { StaffNotesWrapper } from './staff-notes';
+export type { StockItemsWrapper } from './stock';
+export type { TablesWrapper } from './tables';
 // Re-export types
 export * from './types';
-export type { TablesWrapper } from './tables';
-export type { OrdersWrapper, OrderItemsWrapper } from './orders';
-export type { MenuItemsWrapper, CategoriesWrapper } from './menu';
-export type { StaffWrapper } from './staff';
-export type { FeedbackWrapper } from './feedback';
-export type { PaymentsWrapper } from './payments';
-export type { WaiterCallsWrapper } from './waiter-calls';
-export type { StaffNotesWrapper } from './staff-notes';
-export type { RpcWrapper } from './rpc';
 export type { ViewsWrapper } from './views';
-export type { RealtimeWrapper } from './realtime';
+export type { WaiterCallsWrapper } from './waiter-calls';

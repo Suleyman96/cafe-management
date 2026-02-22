@@ -3,10 +3,10 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { db } from '@/lib/supabase/wrapped-client';
 import { QUERY_KEYS, USER_ROLE } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { db } from '@/lib/supabase/wrapped-client';
 
 type StaffInsert = Database['public']['Tables']['staff']['Insert'];
 type StaffUpdate = Database['public']['Tables']['staff']['Update'];
@@ -43,7 +43,7 @@ export function useStaffByEmail(email: string) {
 
 export function useCreateStaff() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (staff: StaffInsert) => db.staff.create(staff),
     onSuccess: () => {
@@ -54,9 +54,9 @@ export function useCreateStaff() {
 
 export function useUpdateStaff() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: StaffUpdate }) => 
+    mutationFn: ({ id, updates }: { id: string; updates: StaffUpdate }) =>
       db.staff.update(id, updates),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STAFF] });
@@ -67,7 +67,7 @@ export function useUpdateStaff() {
 
 export function useDeleteStaff() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (id: string) => db.staff.delete(id),
     onSuccess: () => {
@@ -79,16 +79,19 @@ export function useDeleteStaff() {
 // Helper function to get staff by role
 export function useStaffByRole() {
   const { data: staff, ...rest } = useStaff();
-  
-  const staffByRole = staff?.reduce((acc, member) => {
-    const role = member.role || 'other';
-    if (!acc[role]) {
-      acc[role] = [];
-    }
-    acc[role].push(member);
-    return acc;
-  }, {} as Record<string, typeof staff>);
-  
+
+  const staffByRole = staff?.reduce(
+    (acc, member) => {
+      const role = member.role || 'other';
+      if (!acc[role]) {
+        acc[role] = [];
+      }
+      acc[role].push(member);
+      return acc;
+    },
+    {} as Record<string, typeof staff>,
+  );
+
   return {
     ...rest,
     data: {
@@ -97,12 +100,14 @@ export function useStaffByRole() {
       waiters: staffByRole?.waiter || [],
       managers: staffByRole?.manager || [],
       admins: staffByRole?.admin || [],
-    }
+    },
   };
 }
 
 // Helper function to format staff name and role
 export function formatStaffInfo(staff: { full_name: string; role?: string | null }): string {
-  const roleLabel = staff.role ? ` (${staff.role.charAt(0).toUpperCase() + staff.role.slice(1)})` : '';
+  const roleLabel = staff.role
+    ? ` (${staff.role.charAt(0).toUpperCase() + staff.role.slice(1)})`
+    : '';
   return `${staff.full_name}${roleLabel}`;
 }

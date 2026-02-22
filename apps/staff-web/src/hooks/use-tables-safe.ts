@@ -3,10 +3,10 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { db } from '@/lib/supabase/wrapped-client';
 import { QUERY_KEYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { db } from '@/lib/supabase/wrapped-client';
 
 type TableStatus = Database['public']['Tables']['tables']['Row']['status'];
 
@@ -35,9 +35,9 @@ export function useTableByQrCode(qrCode: string) {
 
 export function useUpdateTableStatus() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: ({ tableId, status }: { tableId: string; status: TableStatus }) => 
+    mutationFn: ({ tableId, status }: { tableId: string; status: TableStatus }) =>
       db.tables.updateStatus(tableId, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
@@ -62,8 +62,13 @@ export function useUpdateTable() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Database['public']['Tables']['tables']['Update'] }) =>
-      db.tables.update(id, updates),
+    mutationFn: ({
+      id,
+      updates,
+    }: {
+      id: string;
+      updates: Database['public']['Tables']['tables']['Update'];
+    }) => db.tables.update(id, updates),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLE, data.id] });

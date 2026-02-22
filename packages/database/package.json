@@ -16,7 +16,9 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "test": "vitest run",
+    "clean": "rm -rf dist",
+    "lint": "biome check ./src"
   },
   "dependencies": {
     "zod": "^3.22.4"
@@ -30,9 +32,12 @@
     "tsup": "^8.0.1",
     "typescript": "^5.3.3"
   },
-  "keywords": ["shared", "types", "utilities"],
+  "keywords": [
+    "shared",
+    "types",
+    "utilities"
+  ],
   "author": "Café İdarə",
   "license": "UNLICENSED",
   "private": true
 }
-

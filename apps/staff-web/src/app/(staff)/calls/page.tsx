@@ -1,28 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useWaiterCalls, useResolveWaiterCall } from '@/hooks';
-import { LoadingSpinner, Button } from '@cafe-idare/ui';
-import { supabase } from '@/lib/supabase/client';
-import { toast } from 'sonner';
-import { 
-  Bell, 
-  Clock, 
+import { Button, LoadingSpinner } from '@cafe-idare/ui';
+import {
   AlertCircle,
+  Bell,
   CheckCircle,
-  MessageSquare,
-  HelpCircle,
   DollarSign,
-  Heart,
+  HelpCircle,
+  MessageSquare,
+  RefreshCw,
   Zap,
-  User,
-  RefreshCw
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { useResolveWaiterCall, useWaiterCalls } from '@/hooks';
+import { supabase } from '@/lib/supabase/client';
 
 export default function WaiterCallsPage() {
   const { data: waiterCalls, isLoading: loading, error, refetch } = useWaiterCalls();
   const respondToCall = useResolveWaiterCall();
-  const [audioEnabled, setAudioEnabled] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending');
 
   // Filter calls based on status
@@ -34,33 +30,20 @@ export default function WaiterCallsPage() {
 
   // Set up real-time subscription
   useEffect(() => {
+    console.log('Setting up waiter-calls realtime subscription');
     const channel = supabase
       .channel('waiter-calls-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'waiter_calls' },
-        (payload) => {
-          refetch();
-          // Play sound for new calls
-          if (payload.eventType === 'INSERT' && audioEnabled) {
-            playNotificationSound();
-          }
-        }
-      )
-      .subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waiter_calls' }, () => {
+        refetch();
+      })
+      .subscribe((status) => {
+        console.log('Waiter calls subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetch, audioEnabled]);
-
-  // Play notification sound
-  const playNotificationSound = () => {
-    const audio = new Audio('/notification.mp3');
-    audio.play().catch(() => {
-      // Ignore errors if audio can't play
-    });
-  };
+  }, [refetch]);
 
   // Get icon for reason
   const getReasonIcon = (reason: string) => {
@@ -101,11 +84,11 @@ export default function WaiterCallsPage() {
     const now = new Date();
     const callTime = new Date(timestamp);
     const diffMinutes = Math.floor((now.getTime() - callTime.getTime()) / 1000 / 60);
-    
+
     if (diffMinutes < 1) return 'Just now';
     if (diffMinutes === 1) return '1 minute ago';
     if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
-    
+
     const diffHours = Math.floor(diffMinutes / 60);
     if (diffHours === 1) return '1 hour ago';
     return `${diffHours} hours ago`;
@@ -116,7 +99,7 @@ export default function WaiterCallsPage() {
     try {
       await respondToCall.mutateAsync({ callId, notes: undefined });
       toast.success('Call marked as completed');
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to respond to call');
     }
   };
@@ -137,7 +120,8 @@ export default function WaiterCallsPage() {
     );
   }
 
-  const pendingCallsCount = waiterCalls?.filter((call: any) => call.status === 'pending').length || 0;
+  const pendingCallsCount =
+    waiterCalls?.filter((call: any) => call.status === 'pending').length || 0;
 
   return (
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
@@ -152,21 +136,7 @@ export default function WaiterCallsPage() {
           )}
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            onClick={() => setAudioEnabled(!audioEnabled)}
-            className={`px-2 sm:px-3 py-1.5 rounded text-xs sm:text-sm font-medium transition-colors ${
-              audioEnabled
-                ? 'bg-green-100 text-green-800'
-                : 'bg-gray-100 text-gray-600'
-            }`}
-          >
-            Sound: {audioEnabled ? 'ON' : 'OFF'}
-          </button>
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-            size="sm"
-          >
+          <Button variant="outline" onClick={() => refetch()} size="sm">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -209,8 +179,27 @@ export default function WaiterCallsPage() {
       {/* Calls List */}
       <div className="space-y-3 sm:space-y-4">
         {filteredCalls?.map((call: any) => {
-          const isEmergency = call.reason === 'emergency';
+          const callType = call.call_type || call.reason || 'assistance';
+          const isEmergency = callType === 'emergency';
           const isPending = call.status === 'pending';
+
+          // Get display label for call type
+          const getCallTypeLabel = (type: string) => {
+            switch (type) {
+              case 'bill':
+                return 'Request Bill';
+              case 'assistance':
+                return 'Assistance';
+              case 'complaint':
+                return 'Complaint';
+              case 'question':
+                return 'Question';
+              case 'emergency':
+                return 'Emergency';
+              default:
+                return type.charAt(0).toUpperCase() + type.slice(1);
+            }
+          };
 
           return (
             <div
@@ -224,28 +213,34 @@ export default function WaiterCallsPage() {
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
-                    <span className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getReasonColor(call.reason)}`}>
-                      {getReasonIcon(call.reason)}
-                      <span className="hidden xs:inline">{call.reason.charAt(0).toUpperCase() + call.reason.slice(1)}</span>
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getReasonColor(callType)}`}
+                    >
+                      {getReasonIcon(callType)}
+                      <span>{getCallTypeLabel(callType)}</span>
                     </span>
                     <span className="text-base sm:text-lg font-semibold">
-                      Table {call.table.table_number}
+                      {call.table?.table_number}
                     </span>
                     <span className="text-xs sm:text-sm text-gray-500">
                       {formatTimeAgo(call.created_at)}
                     </span>
                   </div>
 
-                  {call.message && (
+                  {(call.reason || call.message) && (
                     <div className="mb-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs sm:text-sm text-gray-700">{call.message}</p>
+                      <p className="text-xs sm:text-sm text-gray-700">
+                        {call.reason || call.message}
+                      </p>
                     </div>
                   )}
 
                   {call.responded_at && call.staff && (
                     <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
                       <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
-                      <span>Responded by {call.staff.name} at {formatTimeAgo(call.responded_at)}</span>
+                      <span>
+                        Responded by {call.staff.name} at {formatTimeAgo(call.responded_at)}
+                      </span>
                     </div>
                   )}
                 </div>

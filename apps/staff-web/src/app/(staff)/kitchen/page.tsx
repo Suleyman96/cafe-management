@@ -1,29 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useOrders, useUpdateOrderStatus, useUpdateOrderItemStatus } from '@/hooks';
 import { LoadingSpinner } from '@cafe-idare/ui';
-import { supabase } from '@/lib/supabase/client';
-import { toast } from 'sonner';
 import {
-  Clock,
-  CheckCircle,
   AlertCircle,
-  Package,
+  CheckCircle,
   ChefHat,
+  Package,
   Timer,
   User,
-  Bell,
   Utensils,
-  UtensilsCrossed
+  UtensilsCrossed,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
+import { supabase } from '@/lib/supabase/client';
 
 export default function KitchenDisplayPage() {
   const { data: orders, isLoading: loading, error, refetch } = useOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [_currentTime, setCurrentTime] = useState(new Date());
 
   // Update current time every minute to refresh elapsed times
   useEffect(() => {
@@ -42,20 +39,25 @@ export default function KitchenDisplayPage() {
   // Check if all items in an order are ready (or served)
   const allItemsReady = (order: any) => {
     if (!order.order_items || order.order_items.length === 0) return false;
-    return order.order_items.every((item: any) => item.status === 'ready' || item.status === 'served');
+    return order.order_items.every(
+      (item: any) => item.status === 'ready' || item.status === 'served',
+    );
   };
 
   // Filter orders for kitchen display (new, preparing, ready) - exclude orders where all items are served
-  const kitchenOrders = orders?.filter((order: any) =>
-    ['new', 'preparing', 'ready'].includes(order.status) && !allItemsServed(order)
-  ).sort((a: any, b: any) => {
-    // Sort by status priority (new > preparing > ready) then by time
-    const statusPriority = { 'new': 0, 'preparing': 1, 'ready': 2 };
-    const aPriority = statusPriority[a.status as keyof typeof statusPriority];
-    const bPriority = statusPriority[b.status as keyof typeof statusPriority];
-    if (aPriority !== bPriority) return aPriority - bPriority;
-    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-  });
+  const kitchenOrders = orders
+    ?.filter(
+      (order: any) =>
+        ['new', 'preparing', 'ready'].includes(order.status) && !allItemsServed(order),
+    )
+    .sort((a: any, b: any) => {
+      // Sort by status priority (new > preparing > ready) then by time
+      const statusPriority = { 'new': 0, preparing: 1, ready: 2 };
+      const aPriority = statusPriority[a.status as keyof typeof statusPriority];
+      const bPriority = statusPriority[b.status as keyof typeof statusPriority];
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    });
 
   // Count orders by status
   const newOrdersCount = kitchenOrders?.filter((o: any) => o.status === 'new').length || 0;
@@ -64,40 +66,23 @@ export default function KitchenDisplayPage() {
 
   // Set up real-time subscription
   useEffect(() => {
+    console.log('Setting up kitchen realtime subscription');
     const channel = supabase
       .channel('kitchen-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        (payload) => {
-          refetch();
-          // Play sound for new orders
-          if (payload.eventType === 'INSERT' && audioEnabled) {
-            playNotificationSound();
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'order_items' },
-        () => {
-          refetch();
-        }
-      )
-      .subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        refetch();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
+        refetch();
+      })
+      .subscribe((status) => {
+        console.log('Kitchen subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetch, audioEnabled]);
-
-  // Play notification sound
-  const playNotificationSound = () => {
-    const audio = new Audio('/notification.mp3');
-    audio.play().catch(() => {
-      // Ignore errors if audio can't play
-    });
-  };
+  }, [refetch]);
 
   // Calculate elapsed time
   const calculateElapsedTime = (createdAt: string) => {
@@ -122,7 +107,8 @@ export default function KitchenDisplayPage() {
     // If all items are ready, show green regardless of order status
     if (allItemsReady(order)) return 'bg-green-50 border-green-400 shadow-green-200';
     if (status === 'ready') return 'bg-green-50 border-green-400 shadow-green-200';
-    if (status === 'new') return 'bg-blue-100 border-blue-400 ring-4 ring-blue-500/50 shadow-blue-200';
+    if (status === 'new')
+      return 'bg-blue-100 border-blue-400 ring-4 ring-blue-500/50 shadow-blue-200';
     if (minutes > 20) return 'bg-red-100 border-red-400 shadow-red-200';
     if (minutes > 15) return 'bg-orange-100 border-orange-400 shadow-orange-200';
     return 'bg-yellow-50 border-yellow-400 shadow-yellow-200';
@@ -136,32 +122,43 @@ export default function KitchenDisplayPage() {
   // Get status label
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'new': return 'NEW ORDER';
-      case 'preparing': return 'COOKING';
-      case 'ready': return 'READY';
-      default: return status.toUpperCase();
+      case 'new':
+        return 'NEW ORDER';
+      case 'preparing':
+        return 'COOKING';
+      case 'ready':
+        return 'READY';
+      default:
+        return status.toUpperCase();
     }
   };
 
   // Get status badge color
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'new': return 'bg-blue-600 text-white';
-      case 'preparing': return 'bg-yellow-500 text-black';
-      case 'ready': return 'bg-green-600 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'new':
+        return 'bg-blue-600 text-white';
+      case 'preparing':
+        return 'bg-yellow-500 text-black';
+      case 'ready':
+        return 'bg-green-600 text-white';
+      default:
+        return 'bg-gray-500 text-white';
     }
   };
 
   // Handle status update
-  const handleStatusUpdate = async (orderId: string, newStatus: 'PREPARING' | 'READY' | 'SERVED') => {
+  const handleStatusUpdate = async (
+    orderId: string,
+    newStatus: 'PREPARING' | 'READY' | 'SERVED',
+  ) => {
     try {
       await updateOrderStatus.mutateAsync({
         orderId,
-        status: newStatus
+        status: newStatus,
       });
       // Don't show toast in kitchen view to avoid distractions
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to update order');
     }
   };
@@ -170,15 +167,45 @@ export default function KitchenDisplayPage() {
   const getItemStatusStyle = (status: string) => {
     switch (status) {
       case 'pending':
-        return { bg: 'bg-gray-100', border: 'border-gray-300', text: 'text-gray-700', icon: <AlertCircle className="h-4 w-4" />, label: 'Pending' };
+        return {
+          bg: 'bg-gray-100',
+          border: 'border-gray-300',
+          text: 'text-gray-700',
+          icon: <AlertCircle className="h-4 w-4" />,
+          label: 'Pending',
+        };
       case 'preparing':
-        return { bg: 'bg-yellow-100', border: 'border-yellow-400', text: 'text-yellow-800', icon: <ChefHat className="h-4 w-4" />, label: 'Cooking' };
+        return {
+          bg: 'bg-yellow-100',
+          border: 'border-yellow-400',
+          text: 'text-yellow-800',
+          icon: <ChefHat className="h-4 w-4" />,
+          label: 'Cooking',
+        };
       case 'ready':
-        return { bg: 'bg-green-100', border: 'border-green-400', text: 'text-green-800', icon: <CheckCircle className="h-4 w-4" />, label: 'Ready' };
+        return {
+          bg: 'bg-green-100',
+          border: 'border-green-400',
+          text: 'text-green-800',
+          icon: <CheckCircle className="h-4 w-4" />,
+          label: 'Ready',
+        };
       case 'served':
-        return { bg: 'bg-purple-100', border: 'border-purple-400', text: 'text-purple-800', icon: <UtensilsCrossed className="h-4 w-4" />, label: 'Served' };
+        return {
+          bg: 'bg-purple-100',
+          border: 'border-purple-400',
+          text: 'text-purple-800',
+          icon: <UtensilsCrossed className="h-4 w-4" />,
+          label: 'Served',
+        };
       default:
-        return { bg: 'bg-gray-100', border: 'border-gray-300', text: 'text-gray-700', icon: null, label: status };
+        return {
+          bg: 'bg-gray-100',
+          border: 'border-gray-300',
+          text: 'text-gray-700',
+          icon: null,
+          label: status,
+        };
     }
   };
 
@@ -189,25 +216,27 @@ export default function KitchenDisplayPage() {
       if (order.status === 'new') {
         await updateOrderStatus.mutateAsync({
           orderId: order.id,
-          status: 'PREPARING'
+          status: 'PREPARING',
         });
       }
 
       await updateItemStatus.mutateAsync({
         itemId,
-        status: newStatus as 'pending' | 'preparing' | 'ready' | 'served'
+        status: newStatus as 'pending' | 'preparing' | 'ready' | 'served',
       });
 
       // Check if all items will be ready after this update
       if (newStatus === 'ready' && order.status === 'preparing') {
         const otherItems = order.order_items?.filter((item: any) => item.id !== itemId) || [];
-        const allOthersReady = otherItems.every((item: any) => item.status === 'ready' || item.status === 'served');
+        const allOthersReady = otherItems.every(
+          (item: any) => item.status === 'ready' || item.status === 'served',
+        );
 
         // If all other items are ready/served, update order status to ready
         if (allOthersReady) {
           await updateOrderStatus.mutateAsync({
             orderId: order.id,
-            status: 'READY'
+            status: 'READY',
           });
         }
       }
@@ -221,13 +250,13 @@ export default function KitchenDisplayPage() {
         if (allOthersServed) {
           await updateOrderStatus.mutateAsync({
             orderId: order.id,
-            status: 'SERVED'
+            status: 'SERVED',
           });
         }
       }
 
       // No toast for kitchen - faster feedback via visual change
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to update item');
     }
   };
@@ -275,18 +304,6 @@ export default function KitchenDisplayPage() {
               <span className="text-green-200 text-xs sm:text-sm hidden xs:inline">READY</span>
             </div>
           </div>
-          {/* Sound Toggle */}
-          <button
-            onClick={() => setAudioEnabled(!audioEnabled)}
-            className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm sm:text-lg font-medium transition-colors ${
-              audioEnabled
-                ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'bg-gray-600 hover:bg-gray-500 text-gray-300'
-            }`}
-          >
-            <Bell className={`h-4 sm:h-5 w-4 sm:w-5 ${audioEnabled ? 'animate-pulse' : ''}`} />
-            <span className="hidden sm:inline">{audioEnabled ? 'Sound ON' : 'Sound OFF'}</span>
-          </button>
         </div>
       </div>
 
@@ -312,7 +329,9 @@ export default function KitchenDisplayPage() {
                     #{getOrderNumber(order.id)}
                   </div>
                   <h3 className="text-base sm:text-xl font-bold text-gray-700">
-                    {order.table ? `Table ${order.table.table_number}` : (
+                    {order.table ? (
+                      order.table.table_number
+                    ) : (
                       <span className="flex items-center gap-1 sm:gap-2 text-orange-700">
                         <Package className="h-4 sm:h-5 w-4 sm:w-5" />
                         TAKEOUT
@@ -321,18 +340,25 @@ export default function KitchenDisplayPage() {
                   </h3>
                 </div>
                 {/* Status Badge */}
-                <div className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-bold ${getStatusBadgeColor(order.status)}`}>
+                <div
+                  className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-bold ${getStatusBadgeColor(order.status)}`}
+                >
                   {getStatusLabel(order.status)}
                 </div>
               </div>
 
               {/* Timer - Compact */}
-              <div className={`flex items-center gap-1 sm:gap-2 mb-2 sm:mb-3 px-2 py-1 sm:py-1.5 rounded-lg ${
-                elapsedMinutes > 20 ? 'bg-red-200' :
-                elapsedMinutes > 15 ? 'bg-orange-200' :
-                elapsedMinutes > 10 ? 'bg-yellow-200' :
-                'bg-white/60'
-              }`}>
+              <div
+                className={`flex items-center gap-1 sm:gap-2 mb-2 sm:mb-3 px-2 py-1 sm:py-1.5 rounded-lg ${
+                  elapsedMinutes > 20
+                    ? 'bg-red-200'
+                    : elapsedMinutes > 15
+                      ? 'bg-orange-200'
+                      : elapsedMinutes > 10
+                        ? 'bg-yellow-200'
+                        : 'bg-white/60'
+                }`}
+              >
                 <Timer className={`h-4 sm:h-5 w-4 sm:w-5 ${timeColor}`} />
                 <span className={`text-lg sm:text-xl font-bold ${timeColor}`}>
                   {elapsedMinutes}
@@ -361,9 +387,7 @@ export default function KitchenDisplayPage() {
               {/* Order Notes */}
               {order.customer_notes && (
                 <div className="mb-3 p-2 bg-red-200 rounded-lg border-2 border-red-400">
-                  <p className="text-sm font-bold text-red-800">
-                    📝 NOTE: {order.customer_notes}
-                  </p>
+                  <p className="text-sm font-bold text-red-800">📝 NOTE: {order.customer_notes}</p>
                 </div>
               )}
 

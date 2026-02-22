@@ -3,9 +3,8 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
-import { QUERY_KEYS } from '@cafe-idare/core';
 
 type FeedbackStatus = 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
 

@@ -51,7 +51,9 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
   }
 }
 
@@ -81,5 +83,3 @@
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   }
 }
-
-

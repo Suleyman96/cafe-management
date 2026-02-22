@@ -1,26 +1,33 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useOrders, useStaff } from '@/hooks';
-import { LoadingSpinner, Button } from '@cafe-idare/ui';
+import { calculateProfitMetrics } from '@cafe-idare/core';
+import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
-  DollarSign,
-  TrendingUp,
-  Package,
-  Users,
-  Calendar,
-  ChefHat,
-  ShoppingBag,
-  UserCheck,
   Award,
   BarChart3,
+  Calendar,
+  ChefHat,
   ChevronLeft,
   ChevronRight,
+  DollarSign,
   Download,
-  FileText
+  Package,
+  Receipt,
+  ShoppingBag,
+  TrendingUp,
+  UserCheck,
+  Users,
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import {
+  formatPriceWithSettings,
+  useCafeSettings,
+  useExpenses,
+  useOrders,
+  useStaff,
+} from '@/hooks';
 
 type DateRangeType = 'today' | 'week' | 'month' | 'year' | 'custom';
 type CustomMode = 'day' | 'month' | 'year';
@@ -28,6 +35,7 @@ type CustomMode = 'day' | 'month' | 'year';
 export default function ReportsPage() {
   const { data: orders, isLoading: loading, error } = useOrders();
   const { data: staff, isLoading: staffLoading } = useStaff();
+  const { data: cafeSettings } = useCafeSettings();
   const [dateRange, setDateRange] = useState<DateRangeType>('today');
 
   // Custom date selection state
@@ -43,7 +51,11 @@ export default function ReportsPage() {
 
     if (dateRange === 'custom') {
       if (customMode === 'day') {
-        const start = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+        const start = new Date(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate(),
+        );
         const end = new Date(start);
         end.setDate(end.getDate() + 1);
         return { start, end };
@@ -61,34 +73,65 @@ export default function ReportsPage() {
     switch (dateRange) {
       case 'today':
         return { start: today, end: tomorrow };
-      case 'week':
+      case 'week': {
         const weekStart = new Date(today);
         weekStart.setDate(today.getDate() - 6);
         return { start: weekStart, end: tomorrow };
-      case 'month':
+      }
+      case 'month': {
         const monthStart = new Date(today);
         monthStart.setDate(today.getDate() - 29);
         return { start: monthStart, end: tomorrow };
-      case 'year':
+      }
+      case 'year': {
         const yearStart = new Date(today);
         yearStart.setFullYear(today.getFullYear() - 1);
         yearStart.setDate(yearStart.getDate() + 1);
         return { start: yearStart, end: tomorrow };
+      }
       default:
         return { start: today, end: tomorrow };
     }
   }, [dateRange, customMode, selectedDate]);
+
+  // Convert date range to 'YYYY-MM-DD' strings for expenses API
+  const expenseDateRange = useMemo(() => {
+    const fmt = (d: Date): string => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    return { startDate: fmt(getDateRange.start), endDate: fmt(getDateRange.end) };
+  }, [getDateRange]);
+
+  const { data: expenses = [], isLoading: expensesLoading } = useExpenses({
+    startDate: expenseDateRange.startDate,
+    endDate: expenseDateRange.endDate,
+  });
+
+  const formatPrice = (amount: number) => {
+    if (cafeSettings) return formatPriceWithSettings(amount, cafeSettings);
+    return `${amount.toFixed(2)}`;
+  };
 
   // Check if we can navigate to next (prevent future dates)
   const canNavigateNext = useMemo(() => {
     const now = new Date();
     if (customMode === 'day') {
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const selected = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+      const selected = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+      );
       return selected < today;
     } else if (customMode === 'month') {
-      return selectedDate.getFullYear() < now.getFullYear() ||
-        (selectedDate.getFullYear() === now.getFullYear() && selectedDate.getMonth() < now.getMonth());
+      return (
+        selectedDate.getFullYear() < now.getFullYear() ||
+        (selectedDate.getFullYear() === now.getFullYear() &&
+          selectedDate.getMonth() < now.getMonth())
+      );
     } else {
       return selectedDate.getFullYear() < now.getFullYear();
     }
@@ -116,7 +159,12 @@ export default function ReportsPage() {
   // Format display for custom selection
   const getCustomDateDisplay = (): string => {
     if (customMode === 'day') {
-      return selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
+      return selectedDate.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      });
     } else if (customMode === 'month') {
       return selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     } else {
@@ -131,38 +179,43 @@ export default function ReportsPage() {
     }
 
     const { start, end } = getDateRange;
-    const formatDate = (d: Date) => d.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: dateRange === 'year' ? 'numeric' : undefined
-    });
+    const formatDate = (d: Date) =>
+      d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: dateRange === 'year' ? 'numeric' : undefined,
+      });
 
     switch (dateRange) {
       case 'today':
         return formatDate(new Date());
       case 'week':
       case 'month':
-      case 'year':
+      case 'year': {
         const endDisplay = new Date(end);
         endDisplay.setDate(endDisplay.getDate() - 1);
         return `${formatDate(start)} - ${formatDate(endDisplay)}`;
+      }
       default:
         return '';
     }
   };
 
   // Filter orders by date
-  const filteredOrders = orders?.filter((order: any) => {
-    const orderDate = new Date(order.created_at);
-    return orderDate >= getDateRange.start && orderDate < getDateRange.end;
-  }) || [];
+  const filteredOrders =
+    orders?.filter((order: any) => {
+      const orderDate = new Date(order.created_at);
+      return orderDate >= getDateRange.start && orderDate < getDateRange.end;
+    }) || [];
 
   // Calculate metrics
   const metrics = {
     totalRevenue: filteredOrders.reduce((sum: number, order: any) => {
-      const orderTotal = order.order_items?.reduce((itemSum: number, item: any) =>
-        itemSum + (item.quantity * item.item_price), 0
-      ) || 0;
+      const orderTotal =
+        order.order_items?.reduce(
+          (itemSum: number, item: any) => itemSum + item.quantity * item.item_price,
+          0,
+        ) || 0;
       return sum + orderTotal;
     }, 0),
 
@@ -173,14 +226,17 @@ export default function ReportsPage() {
 
     cancelledOrders: filteredOrders.filter((order: any) => order.status === 'cancelled').length,
 
-    averageOrderValue: filteredOrders.length > 0
-      ? filteredOrders.reduce((sum: number, order: any) => {
-          const orderTotal = order.order_items?.reduce((itemSum: number, item: any) =>
-            itemSum + (item.quantity * item.item_price), 0
-          ) || 0;
-          return sum + orderTotal;
-        }, 0) / filteredOrders.length
-      : 0,
+    averageOrderValue:
+      filteredOrders.length > 0
+        ? filteredOrders.reduce((sum: number, order: any) => {
+            const orderTotal =
+              order.order_items?.reduce(
+                (itemSum: number, item: any) => itemSum + item.quantity * item.item_price,
+                0,
+              ) || 0;
+            return sum + orderTotal;
+          }, 0) / filteredOrders.length
+        : 0,
 
     // Use table_id to determine order type (more reliable than source)
     dineInOrders: filteredOrders.filter((order: any) => order.table_id).length,
@@ -188,8 +244,12 @@ export default function ReportsPage() {
     takeoutOrders: filteredOrders.filter((order: any) => !order.table_id).length,
 
     // Calculate total quantity of items sold (not just line items count)
-    totalItems: filteredOrders.reduce((sum: number, order: any) =>
-      sum + (order.order_items?.reduce((itemSum: number, item: any) => itemSum + item.quantity, 0) || 0), 0
+    totalItems: filteredOrders.reduce(
+      (sum: number, order: any) =>
+        sum +
+        (order.order_items?.reduce((itemSum: number, item: any) => itemSum + item.quantity, 0) ||
+          0),
+      0,
     ),
 
     // All sold items (sorted by quantity sold)
@@ -202,33 +262,41 @@ export default function ReportsPage() {
           const current = itemCounts.get(key) || {
             name: item.menu_item?.name_en || 'Unknown',
             count: 0,
-            revenue: 0
+            revenue: 0,
           };
           itemCounts.set(key, {
             name: current.name,
             count: current.count + item.quantity,
-            revenue: current.revenue + (item.quantity * item.item_price)
+            revenue: current.revenue + item.quantity * item.item_price,
           });
         });
       });
 
-      return Array.from(itemCounts.values())
-        .sort((a, b) => b.count - a.count);
-    })()
+      return Array.from(itemCounts.values()).sort((a, b) => b.count - a.count);
+    })(),
   };
+
+  // Calculate profit/loss metrics
+  const profitMetrics = useMemo(
+    () => calculateProfitMetrics(metrics.totalRevenue, expenses as any[]),
+    [expenses, metrics.totalRevenue],
+  );
 
   // Calculate staff performance metrics
   const staffPerformance = (() => {
-    const performanceMap = new Map<string, {
-      id: string;
-      name: string;
-      role: string;
-      ordersHandled: number;
-      revenue: number;
-      itemsSold: number;
-      completedOrders: number;
-      cancelledOrders: number;
-    }>();
+    const performanceMap = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        role: string;
+        ordersHandled: number;
+        revenue: number;
+        itemsSold: number;
+        completedOrders: number;
+        cancelledOrders: number;
+      }
+    >();
 
     // Initialize with all staff members
     staff?.forEach((member: any) => {
@@ -252,13 +320,14 @@ export default function ReportsPage() {
       const current = performanceMap.get(waiterId);
       if (!current) return;
 
-      const orderTotal = order.order_items?.reduce((sum: number, item: any) =>
-        sum + (item.quantity * item.item_price), 0
-      ) || 0;
+      const orderTotal =
+        order.order_items?.reduce(
+          (sum: number, item: any) => sum + item.quantity * item.item_price,
+          0,
+        ) || 0;
 
-      const itemCount = order.order_items?.reduce((sum: number, item: any) =>
-        sum + item.quantity, 0
-      ) || 0;
+      const itemCount =
+        order.order_items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
 
       performanceMap.set(waiterId, {
         ...current,
@@ -271,7 +340,7 @@ export default function ReportsPage() {
     });
 
     return Array.from(performanceMap.values())
-      .filter(p => p.ordersHandled > 0) // Only show staff with orders
+      .filter((p) => p.ordersHandled > 0) // Only show staff with orders
       .sort((a, b) => b.revenue - a.revenue);
   })();
 
@@ -302,7 +371,10 @@ export default function ReportsPage() {
       ['Completed Orders', metrics.completedOrders.toString()],
       ['Cancelled Orders', metrics.cancelledOrders.toString()],
       ['Average Order Value', `$${metrics.averageOrderValue.toFixed(2)}`],
-      ['Completion Rate', `${metrics.totalOrders > 0 ? Math.round((metrics.completedOrders / metrics.totalOrders) * 100) : 0}%`],
+      [
+        'Completion Rate',
+        `${metrics.totalOrders > 0 ? Math.round((metrics.completedOrders / metrics.totalOrders) * 100) : 0}%`,
+      ],
       ['Dine-in Orders', metrics.dineInOrders.toString()],
       ['Takeout Orders', metrics.takeoutOrders.toString()],
       ['Total Items Sold', metrics.totalItems.toString()],
@@ -316,6 +388,57 @@ export default function ReportsPage() {
       headStyles: { fillColor: [59, 130, 246] },
       styles: { fontSize: 10 },
     });
+
+    // Profit & Loss Section
+    const plStartY = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Profit & Loss', 14, plStartY);
+
+    const plData = [
+      ['Revenue', formatPrice(metrics.totalRevenue)],
+      ['Total Expenses', formatPrice(profitMetrics.totalExpenses)],
+      [
+        'Net Profit',
+        `${profitMetrics.netProfit < 0 ? '-' : ''}${formatPrice(Math.abs(profitMetrics.netProfit))}`,
+      ],
+      [
+        'Profit Margin',
+        `${metrics.totalRevenue > 0 ? profitMetrics.profitMargin.toFixed(1) : '0.0'}%`,
+      ],
+    ];
+
+    autoTable(doc, {
+      startY: plStartY + 4,
+      head: [['Metric', 'Value']],
+      body: plData,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246] },
+      styles: { fontSize: 10 },
+    });
+
+    if (profitMetrics.byCategory.length > 0) {
+      const catStartY = (doc as any).lastAutoTable.finalY + 10;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Expense Breakdown by Category', 14, catStartY);
+
+      const catData = profitMetrics.byCategory.map((cat) => [
+        cat.name,
+        cat.count.toString(),
+        formatPrice(cat.total),
+        `${profitMetrics.totalExpenses > 0 ? ((cat.total / profitMetrics.totalExpenses) * 100).toFixed(1) : '0.0'}%`,
+      ]);
+
+      autoTable(doc, {
+        startY: catStartY + 4,
+        head: [['Category', 'Count', 'Amount', '% of Total']],
+        body: catData,
+        theme: 'striped',
+        headStyles: { fillColor: [220, 38, 38] },
+        styles: { fontSize: 10 },
+      });
+    }
 
     // Top Items Section
     const topItemsStartY = (doc as any).lastAutoTable.finalY + 15;
@@ -422,7 +545,7 @@ export default function ReportsPage() {
         `Cafe Idare - Sales Report | Page ${i} of ${pageCount}`,
         pageWidth / 2,
         doc.internal.pageSize.getHeight() - 10,
-        { align: 'center' }
+        { align: 'center' },
       );
     }
 
@@ -431,7 +554,7 @@ export default function ReportsPage() {
     doc.save(`Sales_Report_${dateStr}.pdf`);
   };
 
-  if (loading || staffLoading) {
+  if (loading || staffLoading || expensesLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <LoadingSpinner />
@@ -493,7 +616,9 @@ export default function ReportsPage() {
           <div className="flex flex-col gap-3 sm:gap-4">
             {/* Mode Selection */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs sm:text-sm font-medium text-gray-700 mr-1 sm:mr-2">View by:</span>
+              <span className="text-xs sm:text-sm font-medium text-gray-700 mr-1 sm:mr-2">
+                View by:
+              </span>
               {(['day', 'month', 'year'] as const).map((mode) => (
                 <button
                   key={mode}
@@ -524,7 +649,7 @@ export default function ReportsPage() {
                     type="date"
                     value={selectedDate.toISOString().split('T')[0]}
                     max={todayString}
-                    onChange={(e) => setSelectedDate(new Date(e.target.value + 'T00:00:00'))}
+                    onChange={(e) => setSelectedDate(new Date(`${e.target.value}T00:00:00`))}
                     className="w-full sm:w-auto px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                 )}
@@ -535,7 +660,7 @@ export default function ReportsPage() {
                     max={currentMonthString}
                     onChange={(e) => {
                       const [year, month] = e.target.value.split('-');
-                      setSelectedDate(new Date(parseInt(year), parseInt(month) - 1, 1));
+                      setSelectedDate(new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1));
                     }}
                     className="w-full sm:w-auto px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
@@ -543,12 +668,16 @@ export default function ReportsPage() {
                 {customMode === 'year' && (
                   <select
                     value={selectedDate.getFullYear()}
-                    onChange={(e) => setSelectedDate(new Date(parseInt(e.target.value), 0, 1))}
+                    onChange={(e) => setSelectedDate(new Date(parseInt(e.target.value, 10), 0, 1))}
                     className="w-full sm:w-auto px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map((year) => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
+                    {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(
+                      (year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ),
+                    )}
                   </select>
                 )}
               </div>
@@ -562,7 +691,9 @@ export default function ReportsPage() {
                     : 'bg-gray-50 cursor-not-allowed'
                 }`}
               >
-                <ChevronRight className={`h-4 w-4 sm:h-5 sm:w-5 ${canNavigateNext ? 'text-gray-600' : 'text-gray-300'}`} />
+                <ChevronRight
+                  className={`h-4 w-4 sm:h-5 sm:w-5 ${canNavigateNext ? 'text-gray-600' : 'text-gray-300'}`}
+                />
               </button>
 
               {/* Quick Jump to Today */}
@@ -611,9 +742,109 @@ export default function ReportsPage() {
           <p className="text-lg sm:text-2xl font-bold">
             {metrics.totalOrders > 0
               ? Math.round((metrics.completedOrders / metrics.totalOrders) * 100)
-              : 0}%
+              : 0}
+            %
           </p>
         </div>
+      </div>
+
+      {/* Profit & Loss Summary */}
+      <div className="bg-white rounded-lg shadow p-3 sm:p-6 mb-4 sm:mb-8">
+        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <Receipt className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+          <h2 className="text-base sm:text-lg font-semibold">Profit & Loss</h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+          <div className="bg-green-50 rounded-lg p-3 sm:p-4">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs sm:text-sm text-green-700">Revenue</p>
+              <DollarSign className="h-4 w-4 text-green-600" />
+            </div>
+            <p className="text-lg sm:text-2xl font-bold text-green-700">
+              {formatPrice(metrics.totalRevenue)}
+            </p>
+          </div>
+
+          <div className="bg-red-50 rounded-lg p-3 sm:p-4">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs sm:text-sm text-red-700">Expenses</p>
+              <Receipt className="h-4 w-4 text-red-600" />
+            </div>
+            <p className="text-lg sm:text-2xl font-bold text-red-700">
+              {formatPrice(profitMetrics.totalExpenses)}
+            </p>
+          </div>
+
+          <div
+            className={`rounded-lg p-3 sm:p-4 ${profitMetrics.netProfit >= 0 ? 'bg-green-50' : 'bg-red-50'}`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <p
+                className={`text-xs sm:text-sm ${profitMetrics.netProfit >= 0 ? 'text-green-700' : 'text-red-700'}`}
+              >
+                Net Profit
+              </p>
+              <TrendingUp
+                className={`h-4 w-4 ${profitMetrics.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
+              />
+            </div>
+            <p
+              className={`text-lg sm:text-2xl font-bold ${profitMetrics.netProfit >= 0 ? 'text-green-700' : 'text-red-700'}`}
+            >
+              {profitMetrics.netProfit < 0 ? '-' : ''}
+              {formatPrice(Math.abs(profitMetrics.netProfit))}
+            </p>
+            {metrics.totalRevenue > 0 && (
+              <p
+                className={`text-xs mt-1 ${profitMetrics.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
+              >
+                {profitMetrics.profitMargin.toFixed(1)}% margin
+              </p>
+            )}
+          </div>
+        </div>
+
+        {profitMetrics.byCategory.length > 0 && (
+          <div>
+            <h3 className="text-xs sm:text-sm font-medium text-gray-700 mb-3">
+              Expenses by Category
+            </h3>
+            <div className="space-y-2">
+              {profitMetrics.byCategory.map((cat) => {
+                const percentage =
+                  profitMetrics.totalExpenses > 0
+                    ? (cat.total / profitMetrics.totalExpenses) * 100
+                    : 0;
+                return (
+                  <div key={cat.name} className="flex items-center gap-3">
+                    <span className="text-xs sm:text-sm text-gray-600 w-24 sm:w-28 truncate">
+                      {cat.name}
+                    </span>
+                    <div className="flex-1 bg-gray-100 rounded-full h-2">
+                      <div
+                        className="bg-red-400 h-2 rounded-full"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                    <span className="text-xs sm:text-sm font-medium text-gray-900 w-20 text-right">
+                      {formatPrice(cat.total)}
+                    </span>
+                    <span className="text-xs text-gray-400 w-8 text-right">
+                      {percentage.toFixed(0)}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {profitMetrics.byCategory.length === 0 && expenses.length === 0 && (
+          <p className="text-gray-500 text-center py-4 text-sm">
+            No expenses recorded for this period
+          </p>
+        )}
       </div>
 
       {/* Order Types */}
@@ -647,8 +878,12 @@ export default function ReportsPage() {
                 </div>
               </div>
               <div className="flex justify-between text-xs text-gray-600 mt-2">
-                <span>Dine In: {Math.round((metrics.dineInOrders / metrics.totalOrders) * 100)}%</span>
-                <span>Takeout: {Math.round((metrics.takeoutOrders / metrics.totalOrders) * 100)}%</span>
+                <span>
+                  Dine In: {Math.round((metrics.dineInOrders / metrics.totalOrders) * 100)}%
+                </span>
+                <span>
+                  Takeout: {Math.round((metrics.takeoutOrders / metrics.totalOrders) * 100)}%
+                </span>
               </div>
             </div>
           )}
@@ -658,11 +893,13 @@ export default function ReportsPage() {
         <div className="bg-white rounded-lg shadow p-3 sm:p-6">
           <div className="flex justify-between items-center mb-3 sm:mb-4">
             <h2 className="text-base sm:text-lg font-semibold">Sold Items</h2>
-            <span className="text-xs sm:text-sm text-gray-500">{metrics.soldItems.length} items</span>
+            <span className="text-xs sm:text-sm text-gray-500">
+              {metrics.soldItems.length} items
+            </span>
           </div>
           <div className="space-y-2 sm:space-y-3 max-h-48 sm:max-h-80 overflow-y-auto">
             {metrics.soldItems.map((item, index) => (
-              <div key={index} className="flex justify-between items-center">
+              <div key={item.name} className="flex justify-between items-center">
                 <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
                   <span className="text-xs sm:text-sm font-medium text-gray-500">#{index + 1}</span>
                   <span className="truncate text-xs sm:text-sm">{item.name}</span>
@@ -685,7 +922,9 @@ export default function ReportsPage() {
         <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Order Status Summary</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div className="text-center">
-            <p className="text-xl sm:text-3xl font-bold text-green-600">{metrics.completedOrders}</p>
+            <p className="text-xl sm:text-3xl font-bold text-green-600">
+              {metrics.completedOrders}
+            </p>
             <p className="text-xs sm:text-sm text-gray-600">Completed</p>
           </div>
           <div className="text-center">
@@ -731,7 +970,8 @@ export default function ReportsPage() {
                       {staffPerformance[0].name}
                     </p>
                     <p className="text-xs sm:text-sm text-yellow-700">
-                      ${staffPerformance[0].revenue.toFixed(2)} from {staffPerformance[0].ordersHandled} orders
+                      ${staffPerformance[0].revenue.toFixed(2)} from{' '}
+                      {staffPerformance[0].ordersHandled} orders
                     </p>
                   </div>
                 </div>
@@ -757,12 +997,17 @@ export default function ReportsPage() {
                   {staffPerformance.map((member, index) => (
                     <tr key={member.id} className="border-b last:border-0">
                       <td className="py-3">
-                        <span className={`inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full text-xs font-bold ${
-                          index === 0 ? 'bg-yellow-100 text-yellow-800' :
-                          index === 1 ? 'bg-gray-200 text-gray-700' :
-                          index === 2 ? 'bg-orange-100 text-orange-800' :
-                          'bg-gray-100 text-gray-600'
-                        }`}>
+                        <span
+                          className={`inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full text-xs font-bold ${
+                            index === 0
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : index === 1
+                                ? 'bg-gray-200 text-gray-700'
+                                : index === 2
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
                           {index + 1}
                         </span>
                       </td>
@@ -773,12 +1018,17 @@ export default function ReportsPage() {
                         </div>
                       </td>
                       <td className="py-3">
-                        <span className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
-                          member.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                          member.role === 'waiter' ? 'bg-blue-100 text-blue-800' :
-                          member.role === 'kitchen' ? 'bg-orange-100 text-orange-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span
+                          className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
+                            member.role === 'admin'
+                              ? 'bg-purple-100 text-purple-800'
+                              : member.role === 'waiter'
+                                ? 'bg-blue-100 text-blue-800'
+                                : member.role === 'kitchen'
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
                           {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
                         </span>
                       </td>
@@ -788,20 +1038,24 @@ export default function ReportsPage() {
                         ${member.revenue.toFixed(2)}
                       </td>
                       <td className="py-3 text-right text-xs sm:text-sm">
-                        ${member.ordersHandled > 0
+                        $
+                        {member.ordersHandled > 0
                           ? (member.revenue / member.ordersHandled).toFixed(2)
                           : '0.00'}
                       </td>
                       <td className="py-3 text-right text-xs sm:text-sm">
-                        <span className={`font-medium ${
-                          member.ordersHandled > 0 &&
-                          (member.completedOrders / member.ordersHandled) >= 0.9
-                            ? 'text-green-600'
-                            : 'text-gray-600'
-                        }`}>
+                        <span
+                          className={`font-medium ${
+                            member.ordersHandled > 0 &&
+                            member.completedOrders / member.ordersHandled >= 0.9
+                              ? 'text-green-600'
+                              : 'text-gray-600'
+                          }`}
+                        >
                           {member.ordersHandled > 0
                             ? Math.round((member.completedOrders / member.ordersHandled) * 100)
-                            : 0}%
+                            : 0}
+                          %
                         </span>
                       </td>
                     </tr>
@@ -816,22 +1070,32 @@ export default function ReportsPage() {
                 <div key={member.id} className="border rounded-lg p-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${
-                        index === 0 ? 'bg-yellow-100 text-yellow-800' :
-                        index === 1 ? 'bg-gray-200 text-gray-700' :
-                        index === 2 ? 'bg-orange-100 text-orange-800' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
+                      <span
+                        className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${
+                          index === 0
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : index === 1
+                              ? 'bg-gray-200 text-gray-700'
+                              : index === 2
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
                         {index + 1}
                       </span>
                       <span className="font-medium text-sm truncate">{member.name}</span>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      member.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                      member.role === 'waiter' ? 'bg-blue-100 text-blue-800' :
-                      member.role === 'kitchen' ? 'bg-orange-100 text-orange-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        member.role === 'admin'
+                          ? 'bg-purple-100 text-purple-800'
+                          : member.role === 'waiter'
+                            ? 'bg-blue-100 text-blue-800'
+                            : member.role === 'kitchen'
+                              ? 'bg-orange-100 text-orange-800'
+                              : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
                       {member.role}
                     </span>
                   </div>
@@ -849,11 +1113,18 @@ export default function ReportsPage() {
                       <p className="text-gray-500">Revenue</p>
                     </div>
                     <div>
-                      <p className={`font-bold ${
-                        member.ordersHandled > 0 && (member.completedOrders / member.ordersHandled) >= 0.9
-                          ? 'text-green-600' : 'text-gray-600'
-                      }`}>
-                        {member.ordersHandled > 0 ? Math.round((member.completedOrders / member.ordersHandled) * 100) : 0}%
+                      <p
+                        className={`font-bold ${
+                          member.ordersHandled > 0 &&
+                          member.completedOrders / member.ordersHandled >= 0.9
+                            ? 'text-green-600'
+                            : 'text-gray-600'
+                        }`}
+                      >
+                        {member.ordersHandled > 0
+                          ? Math.round((member.completedOrders / member.ordersHandled) * 100)
+                          : 0}
+                        %
                       </p>
                       <p className="text-gray-500">Done</p>
                     </div>
@@ -865,13 +1136,19 @@ export default function ReportsPage() {
             {/* Summary Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t mt-3 sm:mt-4">
               <div className="text-center">
-                <p className="text-lg sm:text-2xl font-bold text-blue-600">{staffPerformance.length}</p>
+                <p className="text-lg sm:text-2xl font-bold text-blue-600">
+                  {staffPerformance.length}
+                </p>
                 <p className="text-xs text-gray-600">Active Staff</p>
               </div>
               <div className="text-center">
                 <p className="text-lg sm:text-2xl font-bold text-green-600">
-                  ${staffPerformance.length > 0
-                    ? (staffPerformance.reduce((sum, s) => sum + s.revenue, 0) / staffPerformance.length).toFixed(0)
+                  $
+                  {staffPerformance.length > 0
+                    ? (
+                        staffPerformance.reduce((sum, s) => sum + s.revenue, 0) /
+                        staffPerformance.length
+                      ).toFixed(0)
                     : '0'}
                 </p>
                 <p className="text-xs text-gray-600">Avg Revenue</p>
@@ -879,7 +1156,10 @@ export default function ReportsPage() {
               <div className="text-center">
                 <p className="text-lg sm:text-2xl font-bold text-purple-600">
                   {staffPerformance.length > 0
-                    ? (staffPerformance.reduce((sum, s) => sum + s.ordersHandled, 0) / staffPerformance.length).toFixed(1)
+                    ? (
+                        staffPerformance.reduce((sum, s) => sum + s.ordersHandled, 0) /
+                        staffPerformance.length
+                      ).toFixed(1)
                     : '0'}
                 </p>
                 <p className="text-xs text-gray-600">Avg Orders</p>
@@ -887,7 +1167,10 @@ export default function ReportsPage() {
               <div className="text-center">
                 <p className="text-lg sm:text-2xl font-bold text-orange-600">
                   {staffPerformance.length > 0
-                    ? (staffPerformance.reduce((sum, s) => sum + s.itemsSold, 0) / staffPerformance.length).toFixed(1)
+                    ? (
+                        staffPerformance.reduce((sum, s) => sum + s.itemsSold, 0) /
+                        staffPerformance.length
+                      ).toFixed(1)
                     : '0'}
                 </p>
                 <p className="text-xs text-gray-600">Avg Items</p>

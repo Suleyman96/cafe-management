@@ -11,19 +11,29 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean -- && npx rimraf node_modules",
-    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,md,json}\"",
-    "test": "turbo run test",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "turbo run test:e2e",
     "db:push": "turbo run db:push",
-    "db:studio": "turbo run db:studio"
+    "db:studio": "turbo run db:studio",
+    "db:reset": "supabase db reset && ./scripts/create-admin-user.sh",
+    "db:seed-user": "./scripts/create-admin-user.sh"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
+    "@playwright/test": "^1.58.2",
     "@turbo/gen": "^1.11.3",
-    "prettier": "^3.1.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "turbo": "latest",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.18"
   },
   "engines": {
     "node": ">=18.0.0"

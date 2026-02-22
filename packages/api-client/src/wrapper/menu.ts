@@ -2,8 +2,14 @@
  * Menu items and categories wrapper module
  */
 
-import { handleSupabaseError, isMenuItem, isCategory, isCategoryArray } from '@cafe-idare/core';
-import type { WrapperContext, MenuItemInsert, MenuItemUpdate, CategoryInsert, CategoryUpdate } from './types';
+import { handleSupabaseError, isCategory, isCategoryArray, isMenuItem } from '@cafe-idare/core';
+import type {
+  CategoryInsert,
+  CategoryUpdate,
+  MenuItemInsert,
+  MenuItemUpdate,
+  WrapperContext,
+} from './types';
 
 export function createMenuItemsWrapper(ctx: WrapperContext) {
   return {
@@ -101,10 +107,7 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
     },
 
     delete: async (id: string) => {
-      const { error } = await ctx.anyClient
-        .from('menu_items')
-        .delete()
-        .eq('id', id);
+      const { error } = await ctx.anyClient.from('menu_items').delete().eq('id', id);
 
       if (error) throw handleSupabaseError(error);
     },
@@ -113,11 +116,14 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
 
 export function createCategoriesWrapper(ctx: WrapperContext) {
   return {
-    findAll: async () => {
-      const { data, error } = await ctx.client
-        .from('categories')
-        .select('*')
-        .order('display_order');
+    findAll: async (options?: { isActive?: boolean }) => {
+      let query = ctx.client.from('categories').select('*').order('display_order');
+
+      if (options?.isActive !== undefined) {
+        query = query.eq('is_active', options.isActive);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw handleSupabaseError(error);
       const categories = data || [];
@@ -151,10 +157,7 @@ export function createCategoriesWrapper(ctx: WrapperContext) {
     },
 
     delete: async (id: string) => {
-      const { error } = await ctx.anyClient
-        .from('categories')
-        .delete()
-        .eq('id', id);
+      const { error } = await ctx.anyClient.from('categories').delete().eq('id', id);
 
       if (error) throw handleSupabaseError(error);
     },

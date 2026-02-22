@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
 
 const QUERY_KEYS = {
@@ -45,7 +45,10 @@ export function useUpdateStaffNote() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: {
+    mutationFn: ({
+      id,
+      updates,
+    }: {
       id: string;
       updates: {
         title?: string;

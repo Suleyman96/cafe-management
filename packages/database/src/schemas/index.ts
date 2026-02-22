@@ -5,7 +5,14 @@
 import { z } from 'zod';
 
 // Order schemas
-export const OrderStatusSchema = z.enum(['new', 'preparing', 'ready', 'served', 'paid', 'cancelled']);
+export const OrderStatusSchema = z.enum([
+  'new',
+  'preparing',
+  'ready',
+  'served',
+  'paid',
+  'cancelled',
+]);
 export const OrderSourceSchema = z.enum(['customer', 'waiter', 'phone']);
 
 export const OrderSchema = z.object({
@@ -58,6 +65,44 @@ export const MenuItemSchema = z.object({
   updated_at: z.string(),
 });
 
+// Stock item schema
+export const StockMovementTypeSchema = z.enum(['in', 'out', 'adjustment']);
+
+export const StockItemSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  description: z.string().nullable(),
+  category: z.string(),
+  quantity: z.number(),
+  unit: z.string(),
+  cost_price: z.number(),
+  minimum_stock_level: z.number(),
+  supplier_name: z.string().nullable(),
+  notes: z.string().nullable(),
+  is_active: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+// Expense schema
+export const ExpensePaymentMethodSchema = z.enum(['cash', 'card', 'digital', 'bank_transfer']);
+
+export const ExpenseSchema = z.object({
+  id: z.string().uuid(),
+  category_id: z.string().uuid().nullable(),
+  amount: z.number().positive(),
+  description: z.string(),
+  payment_method: ExpensePaymentMethodSchema,
+  expense_date: z.string(),
+  receipt_url: z.string().nullable(),
+  created_by: z.string().uuid().nullable(),
+  notes: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
 export type OrderStatus = z.infer<typeof OrderStatusSchema>;
 export type OrderSource = z.infer<typeof OrderSourceSchema>;
 export type TableStatus = z.infer<typeof TableStatusSchema>;
+export type StockMovementType = z.infer<typeof StockMovementTypeSchema>;
+export type ExpensePaymentMethod = z.infer<typeof ExpensePaymentMethodSchema>;

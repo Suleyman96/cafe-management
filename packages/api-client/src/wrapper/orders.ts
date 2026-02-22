@@ -3,7 +3,7 @@
  */
 
 import { handleSupabaseError, isOrder, isOrderItem, isOrderItemArray } from '@cafe-idare/core';
-import type { WrapperContext, OrderRow, OrderInsert, OrderItemInsert, OrderItemRow } from './types';
+import type { OrderInsert, OrderItemInsert, OrderItemRow, OrderRow, WrapperContext } from './types';
 
 export function createOrdersWrapper(ctx: WrapperContext) {
   return {
@@ -96,6 +96,24 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       return data as OrderRow;
     },
 
+    findActiveByTable: async (tableId: string) => {
+      const { data, error } = await ctx.client
+        .from('orders')
+        .select(`
+          *,
+          table:tables!orders_table_id_fkey(table_number, location),
+          order_items(*)
+        `)
+        .eq('table_id', tableId)
+        .in('status', ['pending_approval', 'new', 'preparing', 'ready', 'served'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw handleSupabaseError(error);
+      return data;
+    },
+
     getActiveOrders: async () => {
       const { data, error } = await ctx.client
         .from('orders')
@@ -104,7 +122,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
           table:tables!orders_table_id_fkey(table_number),
           order_items(count)
         `)
-        .in('status', ['new', 'preparing', 'ready', 'served'])
+        .in('status', ['pending_approval', 'new', 'preparing', 'ready', 'served'])
         .order('created_at', { ascending: false });
 
       if (error) throw handleSupabaseError(error);
@@ -130,7 +148,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         .from('orders')
         .update({
           status: 'cancelled',
-          internal_notes: `Cancelled: ${reason}`
+          internal_notes: `Cancelled: ${reason}`,
         })
         .eq('id', orderId)
         .select()
@@ -139,18 +157,33 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
 
-      // If the order has a table, set it back to free
+      // If the order has a table, check if there are other active orders before setting it to free
       if (tableId) {
-        await ctx.anyClient
-          .from('tables')
-          .update({ status: 'free', occupied_at: null })
-          .eq('id', tableId);
+        // Check for other active orders on this table
+        const { data: otherOrders } = await ctx.client
+          .from('orders')
+          .select('id')
+          .eq('table_id', tableId)
+          .in('status', ['pending_approval', 'new', 'preparing', 'ready', 'served'])
+          .neq('id', orderId)
+          .limit(1);
+
+        // Only set table to free if no other active orders exist
+        if (!otherOrders || otherOrders.length === 0) {
+          await ctx.anyClient
+            .from('tables')
+            .update({ status: 'free', occupied_at: null })
+            .eq('id', tableId);
+        }
       }
 
       return data as OrderRow;
     },
 
-    updateNotes: async (orderId: string, notes: { customer_notes?: string | null; internal_notes?: string | null }) => {
+    updateNotes: async (
+      orderId: string,
+      notes: { customer_notes?: string | null; internal_notes?: string | null },
+    ) => {
       const { data, error } = await ctx.anyClient
         .from('orders')
         .update(notes)
@@ -168,10 +201,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
 export function createOrderItemsWrapper(ctx: WrapperContext) {
   return {
     create: async (items: OrderItemInsert[]) => {
-      const { data, error } = await ctx.anyClient
-        .from('order_items')
-        .insert(items)
-        .select();
+      const { data, error } = await ctx.anyClient.from('order_items').insert(items).select();
 
       if (error) throw handleSupabaseError(error);
       const orderItems = data || [];
@@ -193,10 +223,7 @@ export function createOrderItemsWrapper(ctx: WrapperContext) {
     },
 
     delete: async (id: string) => {
-      const { error } = await ctx.anyClient
-        .from('order_items')
-        .delete()
-        .eq('id', id);
+      const { error } = await ctx.anyClient.from('order_items').delete().eq('id', id);
 
       if (error) throw handleSupabaseError(error);
     },

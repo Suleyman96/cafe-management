@@ -1,14 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import {
-  useCreateMenuItem,
-  useUpdateMenuItem,
-} from '@/hooks';
-import { Button } from '@cafe-idare/ui';
-import { supabase } from '@/lib/supabase/client';
-import toast from 'react-hot-toast';
 import type { Database } from '@cafe-idare/database';
+import { Button } from '@cafe-idare/ui';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
+import { useCreateMenuItem, useUpdateMenuItem } from '@/hooks';
+import { supabase } from '@/lib/supabase/client';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -19,16 +16,7 @@ interface MenuItemModalProps {
   onClose: () => void;
 }
 
-const COMMON_ALLERGENS = [
-  'Gluten',
-  'Dairy',
-  'Eggs',
-  'Nuts',
-  'Soy',
-  'Fish',
-  'Shellfish',
-  'Sesame',
-];
+const COMMON_ALLERGENS = ['Gluten', 'Dairy', 'Eggs', 'Nuts', 'Soy', 'Fish', 'Shellfish', 'Sesame'];
 
 export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps) {
   const isEditing = !!item;
@@ -55,16 +43,20 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(item?.image_url || null);
   const [uploading, setUploading] = useState(false);
-  const [selectedAllergens, setSelectedAllergens] = useState<string[]>(formData.allergens as string[]);
+  const [selectedAllergens, setSelectedAllergens] = useState<string[]>(
+    formData.allergens as string[],
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploading(true);
 
     const toastId = toast.loading(
-      imageFile 
-        ? 'Uploading image...' 
-        : isEditing ? 'Updating menu item...' : 'Creating menu item...'
+      imageFile
+        ? 'Uploading image...'
+        : isEditing
+          ? 'Updating menu item...'
+          : 'Creating menu item...',
     );
 
     try {
@@ -84,19 +76,21 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
 
         if (uploadError) throw uploadError;
 
-        const { data } = supabase.storage
-          .from('menu-images')
-          .getPublicUrl(filePath);
+        const { data } = supabase.storage.from('menu-images').getPublicUrl(filePath);
 
         imageUrl = data.publicUrl;
-        toast.loading(isEditing ? 'Updating menu item...' : 'Creating menu item...', { id: toastId });
+        toast.loading(isEditing ? 'Updating menu item...' : 'Creating menu item...', {
+          id: toastId,
+        });
       }
 
       const itemData = {
         ...formData,
         price: parseFloat(formData.price),
-        preparation_time: formData.preparation_time ? parseInt(formData.preparation_time) : null,
-        display_order: parseInt(formData.display_order),
+        preparation_time: formData.preparation_time
+          ? parseInt(formData.preparation_time, 10)
+          : null,
+        display_order: parseInt(formData.display_order, 10),
         allergens: selectedAllergens.length > 0 ? selectedAllergens : null,
         category_id: formData.category_id || null,
         image_url: imageUrl || null,
@@ -123,9 +117,9 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
       onClose();
     } catch (error: any) {
       console.error('Error saving menu item:', error);
-      
+
       const errorMessage = error.message || 'Failed to save menu item';
-      
+
       if (errorMessage.includes('infinite recursion') || errorMessage.includes('policy')) {
         toast.error('Database permission error. Please run the latest migration.', { id: toastId });
       } else if (errorMessage.includes('storage')) {
@@ -153,10 +147,8 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
   };
 
   const toggleAllergen = (allergen: string) => {
-    setSelectedAllergens(prev =>
-      prev.includes(allergen)
-        ? prev.filter(a => a !== allergen)
-        : [...prev, allergen]
+    setSelectedAllergens((prev) =>
+      prev.includes(allergen) ? prev.filter((a) => a !== allergen) : [...prev, allergen],
     );
   };
 
@@ -167,10 +159,7 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
           <h2 className="text-2xl font-bold text-gray-900">
             {isEditing ? 'Edit Menu Item' : 'Add Menu Item'}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
             ×
           </button>
         </div>
@@ -178,9 +167,7 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
             <select
               value={formData.category_id}
               onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
@@ -197,9 +184,7 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Name *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
             <input
               type="text"
               value={formData.name_en}
@@ -212,9 +197,7 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
             <textarea
               value={formData.description_en}
               onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
@@ -227,9 +210,7 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
           {/* Price and Preparation Time */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Price * (USD)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Price * (USD)</label>
               <input
                 type="number"
                 step="0.01"
@@ -256,9 +237,7 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
 
           {/* Image Upload */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Image
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
             {imagePreview && (
               <img
                 src={imagePreview}
@@ -276,9 +255,7 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
 
           {/* Dietary Options */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Dietary Options
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Dietary Options</label>
             <div className="flex flex-wrap gap-3">
               {[
                 { key: 'is_vegetarian', label: '🌱 Vegetarian' },
@@ -303,9 +280,7 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
 
           {/* Allergens */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Allergens
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Allergens</label>
             <div className="flex flex-wrap gap-2">
               {COMMON_ALLERGENS.map((allergen) => (
                 <button
@@ -327,9 +302,7 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
           {/* Other Options */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Display Order
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Display Order</label>
               <input
                 type="number"
                 value={formData.display_order}
@@ -352,19 +325,10 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1"
-            >
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={uploading}
-              className="flex-1"
-            >
+            <Button type="submit" disabled={uploading} className="flex-1">
               {uploading ? 'Saving...' : isEditing ? 'Update Item' : 'Create Item'}
             </Button>
           </div>
@@ -373,4 +337,3 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
     </div>
   );
 }
-

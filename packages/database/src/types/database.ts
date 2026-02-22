@@ -1,17 +1,11 @@
 /**
  * Database type definitions
  * Auto-generated from Supabase schema
- * 
+ *
  * This file is shared across all platforms
  */
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export interface Database {
   public: {
@@ -31,7 +25,10 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['tables']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['tables']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
         Update: Partial<Database['public']['Tables']['tables']['Insert']>;
       };
       categories: {
@@ -51,7 +48,10 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['categories']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['categories']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
         Update: Partial<Database['public']['Tables']['categories']['Insert']>;
       };
       menu_items: {
@@ -81,7 +81,10 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['menu_items']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['menu_items']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
         Update: Partial<Database['public']['Tables']['menu_items']['Insert']>;
       };
       orders: {
@@ -90,7 +93,15 @@ export interface Database {
           table_id: string | null; // Nullable for takeout orders
           assigned_waiter_id: string | null;
           order_number: string;
-          status: 'new' | 'preparing' | 'ready' | 'served' | 'closed' | 'cancelled';
+          status:
+            | 'pending_approval'
+            | 'new'
+            | 'preparing'
+            | 'ready'
+            | 'served'
+            | 'closed'
+            | 'cancelled';
+          source: 'customer' | 'waiter' | 'phone';
           order_type: 'dine_in' | 'takeout';
           customer_name: string | null;
           customer_phone: string | null;
@@ -108,7 +119,10 @@ export interface Database {
           payment_method: string | null;
           paid_at: string | null;
         };
-        Insert: Omit<Database['public']['Tables']['orders']['Row'], 'id' | 'order_number' | 'created_at' | 'updated_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['orders']['Row'],
+          'id' | 'order_number' | 'created_at' | 'updated_at'
+        >;
         Update: Partial<Database['public']['Tables']['orders']['Insert']>;
       };
       order_items: {
@@ -124,7 +138,10 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['order_items']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['order_items']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
         Update: Partial<Database['public']['Tables']['order_items']['Insert']>;
       };
       waiter_calls: {
@@ -141,7 +158,10 @@ export interface Database {
           resolved_at: string | null;
           notes: string | null;
         };
-        Insert: Omit<Database['public']['Tables']['waiter_calls']['Row'], 'id' | 'created_at' | 'acknowledged_at' | 'resolved_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['waiter_calls']['Row'],
+          'id' | 'created_at' | 'acknowledged_at' | 'resolved_at'
+        >;
         Update: Partial<Database['public']['Tables']['waiter_calls']['Insert']> & {
           acknowledged_at?: string | null;
           resolved_at?: string | null;
@@ -160,7 +180,10 @@ export interface Database {
           last_login_at: string | null;
           auth_user_id: string | null;
         };
-        Insert: Omit<Database['public']['Tables']['staff']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['staff']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
         Update: Partial<Database['public']['Tables']['staff']['Insert']>;
       };
       customer_feedback: {
@@ -168,7 +191,13 @@ export interface Database {
           id: string;
           table_id: string | null;
           order_id: string | null;
-          feedback_type: 'complaint_food' | 'complaint_service' | 'complaint_staff' | 'question_menu' | 'request_general' | 'praise';
+          feedback_type:
+            | 'complaint_food'
+            | 'complaint_service'
+            | 'complaint_staff'
+            | 'question_menu'
+            | 'request_general'
+            | 'praise';
           subject: string | null;
           message: string;
           status: 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
@@ -178,7 +207,10 @@ export interface Database {
           acknowledged_at: string | null;
           resolved_at: string | null;
         };
-        Insert: Omit<Database['public']['Tables']['customer_feedback']['Row'], 'id' | 'created_at' | 'acknowledged_at' | 'resolved_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['customer_feedback']['Row'],
+          'id' | 'created_at' | 'acknowledged_at' | 'resolved_at'
+        >;
         Update: Partial<Database['public']['Tables']['customer_feedback']['Insert']> & {
           acknowledged_at?: string | null;
           resolved_at?: string | null;
@@ -191,6 +223,7 @@ export interface Database {
           received_by: string;
           payment_type: 'full' | 'partial_amount' | 'specific_items';
           amount: number;
+          tip_amount: number;
           payment_method: 'cash' | 'card' | 'digital';
           order_item_ids: string[] | null;
           notes: string | null;
@@ -224,8 +257,124 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['staff_notes']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['staff_notes']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
         Update: Partial<Database['public']['Tables']['staff_notes']['Insert']>;
+      };
+      cafe_settings: {
+        Row: {
+          id: string;
+          restaurant_name: string;
+          tax_enabled: boolean;
+          tax_percentage: number;
+          tax_label: string;
+          prices_include_tax: boolean;
+          show_tax_separately: boolean;
+          currency_symbol: string;
+          currency_code: string;
+          currency_position: 'before' | 'after';
+          currency_decimal_places: number;
+          minimum_order_amount: number;
+          allow_item_notes: boolean;
+          allow_order_notes: boolean;
+          // Branding fields
+          cafe_logo_url: string | null;
+          hero_image_url: string | null;
+          brand_primary_color: string;
+          brand_secondary_color: string;
+          // Welcome screen
+          welcome_heading: string | null;
+          welcome_message: string | null;
+          // Feature controls
+          qr_ordering_enabled: boolean;
+          tips_enabled: boolean;
+          // Contact & social
+          contact_phone: string | null;
+          contact_website: string | null;
+          social_instagram: string | null;
+          social_whatsapp: string | null;
+          location_maps_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<
+          Database['public']['Tables']['cafe_settings']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['cafe_settings']['Insert']>;
+      };
+      stock_items: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          category: string;
+          quantity: number;
+          unit: string;
+          cost_price: number;
+          minimum_stock_level: number;
+          supplier_name: string | null;
+          notes: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<
+          Database['public']['Tables']['stock_items']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['stock_items']['Insert']>;
+      };
+      stock_movements: {
+        Row: {
+          id: string;
+          stock_item_id: string;
+          movement_type: 'in' | 'out' | 'adjustment';
+          quantity_change: number;
+          quantity_after: number;
+          reason: string | null;
+          performed_by: string | null;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['stock_movements']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['stock_movements']['Insert']>;
+      };
+      expense_categories: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          icon: string | null;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: Omit<
+          Database['public']['Tables']['expense_categories']['Row'],
+          'id' | 'created_at'
+        >;
+        Update: Partial<Database['public']['Tables']['expense_categories']['Insert']>;
+      };
+      expenses: {
+        Row: {
+          id: string;
+          category_id: string | null;
+          amount: number;
+          description: string;
+          payment_method: 'cash' | 'card' | 'digital' | 'bank_transfer';
+          expense_date: string;
+          receipt_url: string | null;
+          created_by: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<
+          Database['public']['Tables']['expenses']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['expenses']['Insert']>;
       };
     };
     Views: {
@@ -271,7 +420,7 @@ export interface Database {
     Functions: {
       set_table_context: {
         Args: { qr_token: string };
-        Returns: void;
+        Returns: undefined;
       };
       generate_order_number: {
         Args: {};
@@ -279,7 +428,7 @@ export interface Database {
       };
       calculate_order_total: {
         Args: { order_uuid: string };
-        Returns: void;
+        Returns: undefined;
       };
       get_order_remaining_balance: {
         Args: { order_uuid: string };
@@ -298,4 +447,3 @@ export interface Database {
     };
   };
 }
-

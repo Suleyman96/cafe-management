@@ -1,52 +1,45 @@
 /**
  * API Client Package
- * Provides all database operations and real-time subscriptions
+ * Provides type-safe database operations via SupabaseWrapper
  */
-
-// Export types
-export * from './types';
-
-// Export table operations
-export * from './tables';
-export * from './orders';
-export * from './order-items';
-export * from './menu-items';
-export * from './categories';
-export * from './waiter-calls';
-export * from './staff';
-export * from './feedback';
-export * from './analytics';
-
-// Export realtime subscriptions
-export * from './realtime';
-
-// Export Supabase wrapper
-export * from './supabase-wrapper';
 
 // Re-export commonly used types from database
 export type {
-  Tables,
-  TablesInsert,
-  TablesUpdate,
-  Orders,
-  OrdersInsert,
-  OrdersUpdate,
-  OrderItems,
-  OrderItemsInsert,
-  OrderItemsUpdate,
-  MenuItems,
-  MenuItemsInsert,
-  MenuItemsUpdate,
   Categories,
   CategoriesInsert,
   CategoriesUpdate,
-  Staff,
-  StaffInsert,
-  StaffUpdate,
-  WaiterCalls,
-  WaiterCallsInsert,
-  WaiterCallsUpdate,
+  Expense,
+  ExpenseCategory,
+  ExpenseCategoryInsert,
+  ExpenseInsert,
+  ExpenseUpdate,
   Feedback,
   FeedbackInsert,
   FeedbackUpdate,
+  MenuItems,
+  MenuItemsInsert,
+  MenuItemsUpdate,
+  OrderItems,
+  OrderItemsInsert,
+  OrderItemsUpdate,
+  Orders,
+  OrdersInsert,
+  OrdersUpdate,
+  Staff,
+  StaffInsert,
+  StaffUpdate,
+  StockItem,
+  StockItemInsert,
+  StockItemUpdate,
+  StockMovement,
+  StockMovementInsert,
+  Tables,
+  TablesInsert,
+  TablesUpdate,
+  WaiterCalls,
+  WaiterCallsInsert,
+  WaiterCallsUpdate,
 } from '@cafe-idare/database';
+
+// Export Supabase wrapper (the primary API)
+export * from './wrapper';

@@ -3,10 +3,10 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { db } from '@/lib/supabase/wrapped-client';
-import { QUERY_KEYS, ORDER_STATUS } from '@cafe-idare/core';
+import { ORDER_STATUS, QUERY_KEYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { db } from '@/lib/supabase/wrapped-client';
 
 type OrderStatus = Database['public']['Tables']['orders']['Row']['status'];
 type OrderInsert = Database['public']['Tables']['orders']['Insert'];
@@ -41,7 +41,7 @@ export function useActiveOrders() {
 
 export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ orderId, status }: { orderId: string; status: keyof typeof ORDER_STATUS }) => {
       const statusValue = ORDER_STATUS[status] as OrderStatus;
@@ -57,7 +57,7 @@ export function useUpdateOrderStatus() {
 
 export function useCreateOrder() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (orderData: OrderInsert) => db.orders.create(orderData),
     onSuccess: () => {
@@ -132,8 +132,15 @@ export function useCancelOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ orderId, reason, tableId }: { orderId: string; reason: string; tableId?: string | null }) =>
-      db.orders.cancelOrder(orderId, reason, tableId),
+    mutationFn: ({
+      orderId,
+      reason,
+      tableId,
+    }: {
+      orderId: string;
+      reason: string;
+      tableId?: string | null;
+    }) => db.orders.cancelOrder(orderId, reason, tableId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
@@ -147,8 +154,13 @@ export function useUpdateOrderNotes() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ orderId, notes }: { orderId: string; notes: { customer_notes?: string | null; internal_notes?: string | null } }) =>
-      db.orders.updateNotes(orderId, notes),
+    mutationFn: ({
+      orderId,
+      notes,
+    }: {
+      orderId: string;
+      notes: { customer_notes?: string | null; internal_notes?: string | null };
+    }) => db.orders.updateNotes(orderId, notes),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.orderId] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });

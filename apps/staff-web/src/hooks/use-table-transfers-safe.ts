@@ -3,9 +3,9 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { db } from '@/lib/supabase/wrapped-client';
 import { QUERY_KEYS } from '@cafe-idare/core';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { db } from '@/lib/supabase/wrapped-client';
 
 interface TransferTableData {
   orderId: string;
@@ -20,7 +20,7 @@ export function useOrderTransferHistory(orderId: string) {
     queryKey: ['table_transfers', orderId],
     queryFn: async () => {
       // Get order details which includes transfer history
-      const order = await db.orders.findById(orderId) as any;
+      const order = (await db.orders.findById(orderId)) as any;
       return order.table_transfers || [];
     },
     enabled: !!orderId,
@@ -47,15 +47,15 @@ export function useTransferTable() {
 // Helper to format transfer reason
 export function formatTransferReason(reason?: string | null): string {
   if (!reason) return 'No reason provided';
-  
+
   const reasons: Record<string, string> = {
-    'customer_request': 'Customer requested move',
-    'table_combine': 'Tables combined',
-    'table_split': 'Tables split',
-    'operational': 'Operational reasons',
-    'maintenance': 'Table maintenance'
+    customer_request: 'Customer requested move',
+    table_combine: 'Tables combined',
+    table_split: 'Tables split',
+    operational: 'Operational reasons',
+    maintenance: 'Table maintenance',
   };
-  
+
   return reasons[reason] || reason;
 }
 
@@ -67,10 +67,10 @@ export function useTableTransferStats(tableId: string) {
       // This would ideally be an RPC function on Supabase
       // For now, we'll fetch orders and analyze transfers
       const orders = await db.orders.findAll({ table_id: tableId });
-      
+
       let transfersIn = 0;
       let transfersOut = 0;
-      
+
       orders.forEach((order: any) => {
         if (order.table_transfers) {
           order.table_transfers.forEach((transfer: any) => {
@@ -79,11 +79,11 @@ export function useTableTransferStats(tableId: string) {
           });
         }
       });
-      
+
       return {
         transfersIn,
         transfersOut,
-        totalTransfers: transfersIn + transfersOut
+        totalTransfers: transfersIn + transfersOut,
       };
     },
     enabled: !!tableId,

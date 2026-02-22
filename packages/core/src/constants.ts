@@ -5,6 +5,7 @@
 
 // Order statuses
 export const ORDER_STATUS = {
+  PENDING_APPROVAL: 'pending_approval',
   NEW: 'new',
   PREPARING: 'preparing',
   READY: 'ready',
@@ -72,6 +73,7 @@ export const REFRESH_INTERVALS = {
 
 // Status colors
 export const STATUS_COLORS = {
+  pending_approval: '#D97706', // amber-600
   new: '#EF4444', // red-500
   preparing: '#F59E0B', // amber-500
   ready: '#10B981', // green-500
@@ -121,6 +123,15 @@ export const QUERY_KEYS = {
   WAITER_CALLS: 'waiter_calls',
   ACTIVE_ORDERS: 'active_orders',
   SALES: 'sales',
+  CAFE_SETTINGS: 'cafe_settings',
+  STOCK_ITEMS: 'stock_items',
+  STOCK_ITEM: 'stock_item',
+  STOCK_MOVEMENTS: 'stock_movements',
+  LOW_STOCK_COUNT: 'low_stock_count',
+  EXPENSE_CATEGORIES: 'expense_categories',
+  EXPENSES: 'expenses',
+  EXPENSE: 'expense',
+  EXPENSE_MONTHLY_SUMMARY: 'expense_monthly_summary',
 } as const;
 
 // UI constants
@@ -130,5 +141,3 @@ export const UI = {
   MOBILE_BREAKPOINT: 768,
   TABLET_BREAKPOINT: 1024,
 } as const;
-
-

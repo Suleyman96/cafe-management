@@ -1,35 +1,57 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useOrders, useUpdateOrderStatus, useCancelOrder } from '@/hooks';
-import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { ORDER_STATUS } from '@cafe-idare/core';
-import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
-import { supabase } from '@/lib/supabase/client';
-import { toast } from 'sonner';
+import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
+  CheckCircle,
+  ChefHat,
   Clock,
-  DollarSign,
+  CreditCard,
+  Loader2,
+  Package,
+  Search,
+  Smartphone,
+  ThumbsUp,
   User,
   UserCheck,
-  ChefHat,
-  CheckCircle,
-  XCircle,
-  Filter,
-  Search,
-  CreditCard,
-  Package,
   X,
-  Loader2
+  XCircle,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
+import {
+  formatPriceWithSettings,
+  useCafeSettings,
+  useCancelOrder,
+  useOrders,
+  useUpdateOrderStatus,
+} from '@/hooks';
+import { supabase } from '@/lib/supabase/client';
 
-type OrderStatus = 'new' | 'preparing' | 'ready' | 'served' | 'paid' | 'cancelled';
+type OrderStatus =
+  | 'pending_approval'
+  | 'new'
+  | 'preparing'
+  | 'ready'
+  | 'served'
+  | 'paid'
+  | 'cancelled';
 type OrderSource = 'customer' | 'waiter' | 'phone';
 
 export default function OrdersPage() {
   const { data: orders, isLoading: loading, error, refetch } = useOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const cancelOrderMutation = useCancelOrder();
+  const { data: cafeSettings } = useCafeSettings();
+
+  // Format price using cafe settings or fallback
+  const formatPrice = (amount: number) => {
+    if (cafeSettings) {
+      return formatPriceWithSettings(amount, cafeSettings);
+    }
+    return `$${amount.toFixed(2)}`;
+  };
 
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -53,63 +75,57 @@ export default function OrdersPage() {
 
   // Set up real-time subscriptions
   useEffect(() => {
+    console.log('Setting up orders realtime subscription');
     const channel = supabase
       .channel('orders-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => {
-          refetch();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'order_items' },
-        () => {
-          refetch();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'order_payments' },
-        () => {
-          refetch();
-        }
-      )
-      .subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        refetch();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
+        refetch();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_payments' }, () => {
+        refetch();
+      })
+      .subscribe((status) => {
+        console.log('Orders subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [refetch]);
 
-  // Calculate order total
+  // Get order total from database (includes tax) for consistency
+  // Fall back to calculating from items if total is not set
   const calculateOrderTotal = (order: any) => {
+    if (order?.total) return order.total;
     if (!order?.order_items) return 0;
-    return order.order_items.reduce((sum: number, item: any) =>
-      sum + (item.quantity * item.item_price), 0
+    return order.order_items.reduce(
+      (sum: number, item: any) => sum + item.quantity * item.item_price,
+      0,
     );
   };
 
   // Calculate paid amount
   const calculatePaidAmount = (order: any) => {
     if (!order?.order_payments) return 0;
-    return order.order_payments.reduce((sum: number, payment: any) => 
-      sum + payment.amount, 0
-    );
+    return order.order_payments.reduce((sum: number, payment: any) => sum + payment.amount, 0);
   };
 
   // Format timestamp
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   // Get status color
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
+      case 'pending_approval':
+        return 'bg-amber-100 text-amber-800 border border-amber-300';
       case 'new':
         return 'bg-blue-100 text-blue-800';
       case 'preparing':
@@ -135,10 +151,10 @@ export default function OrdersPage() {
 
       await updateOrderStatus.mutateAsync({
         orderId,
-        status: statusKey as keyof typeof ORDER_STATUS
+        status: statusKey as keyof typeof ORDER_STATUS,
       });
       toast.success(`Order status updated to ${newStatus}`);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to update order status');
     }
   };
@@ -155,7 +171,7 @@ export default function OrdersPage() {
       await cancelOrderMutation.mutateAsync({
         orderId: cancelOrderTarget.id,
         reason: cancelReason.trim(),
-        tableId: cancelOrderTarget.table_id
+        tableId: cancelOrderTarget.table_id,
       });
       toast.success('Order cancelled');
       setShowCancelModal(false);
@@ -180,10 +196,18 @@ export default function OrdersPage() {
   const filteredOrders = orders?.filter((order: any) => {
     if (statusFilter !== 'all' && order.status !== statusFilter) return false;
     if (sourceFilter !== 'all' && order.source !== sourceFilter) return false;
-    if (selectedTableFilter !== 'all' && order.table?.table_number !== parseInt(selectedTableFilter)) return false;
-    if (searchTerm && !order.id.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        !order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        !order.table?.table_number.toString().includes(searchTerm)) return false;
+    if (
+      selectedTableFilter !== 'all' &&
+      order.table?.table_number !== parseInt(selectedTableFilter, 10)
+    )
+      return false;
+    if (
+      searchTerm &&
+      !order.id.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      !order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      !order.table?.table_number.toString().includes(searchTerm)
+    )
+      return false;
     return true;
   });
 
@@ -230,6 +254,7 @@ export default function OrdersPage() {
               onChange={(e) => setStatusFilter(e.target.value as any)}
             >
               <option value="all">All Status</option>
+              <option value="pending_approval">⏳ Pending Approval</option>
               <option value="new">New</option>
               <option value="preparing">Preparing</option>
               <option value="ready">Ready</option>
@@ -257,7 +282,7 @@ export default function OrdersPage() {
               onClick={() => setSelectedTableFilter('all')}
               className="w-full sm:w-auto"
             >
-              Clear Table Filter (Table {selectedTableFilter})
+              Clear Table Filter ({selectedTableFilter})
             </Button>
           )}
         </div>
@@ -277,11 +302,9 @@ export default function OrdersPage() {
             <div
               key={order.id}
               className={`border rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow cursor-pointer ${
-                isTakeout
-                  ? 'border-orange-300 bg-orange-50'
-                  : 'border-gray-200 bg-white'
+                isTakeout ? 'border-orange-300 bg-orange-50' : 'border-gray-200 bg-white'
               }`}
-              onClick={() => window.location.href = `/orders/${order.id}`}
+              onClick={() => (window.location.href = `/orders/${order.id}`)}
             >
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0 mb-3">
                 <div>
@@ -289,12 +312,18 @@ export default function OrdersPage() {
                     {isTakeout ? (
                       <div className="flex items-center gap-2">
                         <Package className="h-4 sm:h-5 w-4 sm:w-5 text-orange-600" />
-                        <h3 className="font-semibold text-base sm:text-lg text-orange-800">Takeout</h3>
+                        <h3 className="font-semibold text-base sm:text-lg text-orange-800">
+                          Takeout
+                        </h3>
                       </div>
                     ) : (
-                      <h3 className="font-semibold text-base sm:text-lg">Table {order.table.table_number}</h3>
+                      <h3 className="font-semibold text-base sm:text-lg">
+                        {order.table.table_number}
+                      </h3>
                     )}
-                    <span className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                    <span
+                      className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}
+                    >
                       {order.status.toUpperCase()}
                     </span>
                   </div>
@@ -313,27 +342,25 @@ export default function OrdersPage() {
                       <span className="flex items-center gap-1 text-green-600">
                         <UserCheck className="h-3 w-3" />
                         <span className="hidden sm:inline">{order.assigned_waiter.full_name}</span>
-                        <span className="sm:hidden">{order.assigned_waiter.full_name.split(' ')[0]}</span>
+                        <span className="sm:hidden">
+                          {order.assigned_waiter.full_name.split(' ')[0]}
+                        </span>
                       </span>
                     )}
-                    <span className="text-xs hidden sm:inline">
-                      #{order.id.slice(0, 8)}
-                    </span>
+                    <span className="text-xs hidden sm:inline">#{order.id.slice(0, 8)}</span>
                   </div>
                 </div>
 
                 <div className="text-left sm:text-right flex sm:block items-center gap-3 sm:gap-0">
-                  <div className="text-base sm:text-lg font-semibold">
-                    ${total.toFixed(2)}
-                  </div>
+                  <div className="text-base sm:text-lg font-semibold">{formatPrice(total)}</div>
                   {paid > 0 && (
                     <div className="text-xs sm:text-sm text-green-600">
-                      Paid: ${paid.toFixed(2)}
+                      Paid: {formatPrice(paid)}
                     </div>
                   )}
                   {remaining > 0 && paid > 0 && (
                     <div className="text-xs sm:text-sm text-orange-600">
-                      Due: ${remaining.toFixed(2)}
+                      Due: {formatPrice(remaining)}
                     </div>
                   )}
                 </div>
@@ -341,21 +368,38 @@ export default function OrdersPage() {
 
               {/* Order Items Preview */}
               <div className="mb-3 text-sm text-gray-600">
-                {order.order_items?.slice(0, 3).map((item: any, index: number) => (
+                {order.order_items?.slice(0, 3).map((item: any, _index: number) => (
                   <div key={item.id}>
                     {item.quantity}x {item.menu_item?.name_en}
                     {item.notes && <span className="text-xs text-gray-500"> ({item.notes})</span>}
                   </div>
                 ))}
                 {order.order_items?.length > 3 && (
-                  <div className="text-gray-400">
-                    +{order.order_items.length - 3} more items
-                  </div>
+                  <div className="text-gray-400">+{order.order_items.length - 3} more items</div>
                 )}
               </div>
 
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+                {/* Pending Approval: Show approve button */}
+                {order.status === 'pending_approval' && (
+                  <>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => handleStatusUpdate(order.id, 'new')}
+                    >
+                      <ThumbsUp className="h-4 w-4 mr-1" />
+                      Approve
+                    </Button>
+                    {order.source === 'customer' && (
+                      <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
+                        <Smartphone className="h-3 w-3" />
+                        QR Order
+                      </span>
+                    )}
+                  </>
+                )}
                 {order.status === 'new' && (
                   <Button
                     size="sm"
@@ -413,14 +457,12 @@ export default function OrdersPage() {
                     Payment
                   </Button>
                 )}
-                {['new', 'preparing'].includes(order.status) && (
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => openCancelModal(order)}
-                  >
+                {['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(
+                  order.status,
+                ) && (
+                  <Button size="sm" variant="destructive" onClick={() => openCancelModal(order)}>
                     <XCircle className="h-4 w-4 mr-1" />
-                    Cancel
+                    {order.status === 'pending_approval' ? 'Reject' : 'Cancel'}
                   </Button>
                 )}
               </div>
@@ -467,9 +509,7 @@ export default function OrdersPage() {
             {cancelOrderTarget && (
               <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                 <p className="font-medium">
-                  {cancelOrderTarget.table
-                    ? `Table ${cancelOrderTarget.table.table_number}`
-                    : 'Takeout Order'}
+                  {cancelOrderTarget.table ? cancelOrderTarget.table.table_number : 'Takeout Order'}
                 </p>
                 <p className="text-sm text-gray-500">#{cancelOrderTarget.id.slice(0, 8)}</p>
               </div>
@@ -489,7 +529,6 @@ export default function OrdersPage() {
                 placeholder="Enter reason for cancellation..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
                 rows={3}
-                autoFocus
               />
             </div>
 

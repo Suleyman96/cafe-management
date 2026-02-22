@@ -1,20 +1,48 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useOrder, useUpdateOrderStatus, useUpdateOrderItemStatus, useOrderPayments, useOrderTransferHistory } from '@/hooks';
-import { Button, LoadingSpinner } from '@cafe-idare/ui';
-import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
-import { supabase } from '@/lib/supabase/client';
-import { toast } from 'sonner';
+import type { ORDER_STATUS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
+import { Button, LoadingSpinner } from '@cafe-idare/ui';
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle,
+  ChefHat,
+  ChevronDown,
+  Clock,
+  CreditCard,
+  FileText,
+  Package,
+  RefreshCw,
+  Smartphone,
+  ThumbsUp,
+  User,
+  UtensilsCrossed,
+  XCircle,
+} from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
+import {
+  calculateTax as calculateTaxFromSettings,
+  formatPriceWithSettings,
+  useCafeSettings,
+  useOrder,
+  useOrderPayments,
+  useOrderTransferHistory,
+  useUpdateOrderItemStatus,
+  useUpdateOrderStatus,
+} from '@/hooks';
+import { supabase } from '@/lib/supabase/client';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
   menu_item?: Database['public']['Tables']['menu_items']['Row'];
 };
 
 type Payment = Database['public']['Tables']['order_payments']['Row'] & {
-  staff?: Database['public']['Tables']['staff']['Row'];
+  received_by_staff?: Database['public']['Tables']['staff']['Row'];
   items_paid?: OrderItem[];
 };
 
@@ -31,42 +59,33 @@ type OrderWithRelations = Database['public']['Tables']['orders']['Row'] & {
   table?: Table;
   order_items?: OrderItem[];
   assigned_waiter?: Database['public']['Tables']['staff']['Row'];
-  staff?: Database['public']['Tables']['staff']['Row'];
   order_payments?: Payment[];
   table_transfers?: TableTransfer[];
 };
-import {
-  ArrowLeft,
-  Clock,
-  DollarSign,
-  User,
-  CreditCard,
-  Package,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  ChefHat,
-  RefreshCw,
-  FileText,
-  ArrowRight,
-  ChevronDown,
-  UtensilsCrossed,
-} from 'lucide-react';
 
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
-  
+
   const { data: orderData, isLoading: loading, error, refetch } = useOrder(orderId);
   const { data: paymentsData } = useOrderPayments(orderId);
   const { data: transferHistory } = useOrderTransferHistory(orderId);
-  
+  const { data: cafeSettings } = useCafeSettings();
+
   // Type assertions for the complex joined data
   const order = orderData as OrderWithRelations | undefined;
   const payments = paymentsData as Payment[] | undefined;
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
+
+  // Format price using cafe settings or fallback
+  const formatPrice = (amount: number) => {
+    if (cafeSettings) {
+      return formatPriceWithSettings(amount, cafeSettings);
+    }
+    return `$${amount.toFixed(2)}`;
+  };
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [openItemMenu, setOpenItemMenu] = useState<string | null>(null);
@@ -77,39 +96,39 @@ export default function OrderDetailPage() {
       .channel(`order-${orderId}`)
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'orders',
-          filter: `id=eq.${orderId}`
+          filter: `id=eq.${orderId}`,
         },
         () => {
           refetch();
-        }
+        },
       )
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'order_items',
-          filter: `order_id=eq.${orderId}`
+          filter: `order_id=eq.${orderId}`,
         },
         () => {
           refetch();
-        }
+        },
       )
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'order_payments',
-          filter: `order_id=eq.${orderId}`
+          filter: `order_id=eq.${orderId}`,
         },
         () => {
           refetch();
-        }
+        },
       )
       .subscribe();
 
@@ -118,26 +137,44 @@ export default function OrderDetailPage() {
     };
   }, [orderId, refetch]);
 
-  // Calculate totals
-  const calculateOrderTotal = () => {
+  // Calculate subtotal from items (before tax)
+  const calculateSubtotal = () => {
     if (!order?.order_items) return 0;
-    return order.order_items.reduce((sum: number, item: OrderItem) =>
-      sum + (item.quantity * item.item_price), 0
+    return order.order_items.reduce(
+      (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
+      0,
     );
+  };
+
+  // Get order total from the database (includes tax) for consistency
+  // Fall back to calculating from items if total is not set
+  const calculateOrderTotal = () => {
+    if (order?.total) return order.total;
+    const subtotal = calculateSubtotal();
+    // Use cafe settings for tax calculation
+    if (cafeSettings?.tax_enabled) {
+      return subtotal + calculateTaxFromSettings(subtotal, cafeSettings);
+    }
+    return subtotal;
+  };
+
+  // Calculate tax amount based on cafe settings
+  const calculateTax = () => {
+    if (!cafeSettings?.tax_enabled) return 0;
+    const subtotal = calculateSubtotal();
+    return calculateTaxFromSettings(subtotal, cafeSettings);
   };
 
   const calculatePaidAmount = () => {
     if (!payments) return 0;
-    return payments.reduce((sum: number, payment: Payment) => 
-      sum + payment.amount, 0
-    );
+    return payments.reduce((sum: number, payment: Payment) => sum + payment.amount, 0);
   };
 
   // Format timestamp
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -146,13 +183,15 @@ export default function OrderDetailPage() {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   // Get status color
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'pending_approval':
+        return 'bg-amber-100 text-amber-800 border border-amber-300';
       case 'new':
         return 'bg-blue-100 text-blue-800';
       case 'preparing':
@@ -174,13 +213,33 @@ export default function OrderDetailPage() {
   const getItemStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return { bg: 'bg-gray-100', text: 'text-gray-700', icon: <AlertCircle className="h-3 w-3" />, label: 'Pending' };
+        return {
+          bg: 'bg-gray-100',
+          text: 'text-gray-700',
+          icon: <AlertCircle className="h-3 w-3" />,
+          label: 'Pending',
+        };
       case 'preparing':
-        return { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <ChefHat className="h-3 w-3" />, label: 'Preparing' };
+        return {
+          bg: 'bg-yellow-100',
+          text: 'text-yellow-800',
+          icon: <ChefHat className="h-3 w-3" />,
+          label: 'Preparing',
+        };
       case 'ready':
-        return { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="h-3 w-3" />, label: 'Ready' };
+        return {
+          bg: 'bg-green-100',
+          text: 'text-green-800',
+          icon: <CheckCircle className="h-3 w-3" />,
+          label: 'Ready',
+        };
       case 'served':
-        return { bg: 'bg-purple-100', text: 'text-purple-800', icon: <UtensilsCrossed className="h-3 w-3" />, label: 'Served' };
+        return {
+          bg: 'bg-purple-100',
+          text: 'text-purple-800',
+          icon: <UtensilsCrossed className="h-3 w-3" />,
+          label: 'Served',
+        };
       default:
         return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, label: status };
     }
@@ -198,24 +257,24 @@ export default function OrderDetailPage() {
     try {
       await updateItemStatus.mutateAsync({
         itemId,
-        status: newStatus as 'pending' | 'preparing' | 'ready' | 'served'
+        status: newStatus as 'pending' | 'preparing' | 'ready' | 'served',
       });
       setOpenItemMenu(null);
       toast.success(`Item status updated to ${newStatus}`);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to update item status');
     }
   };
 
   // Handle status update
-  const handleStatusUpdate = async (newStatus: keyof typeof import('@cafe-idare/core').ORDER_STATUS) => {
+  const handleStatusUpdate = async (newStatus: keyof typeof ORDER_STATUS) => {
     try {
       await updateOrderStatus.mutateAsync({
         orderId,
-        status: newStatus
+        status: newStatus,
       });
-      toast.success(`Order status updated to ${newStatus.toLowerCase()}`);
-    } catch (error) {
+      toast.success(`Order status updated to ${String(newStatus).toLowerCase()}`);
+    } catch (_error) {
       toast.error('Failed to update order status');
     }
   };
@@ -246,26 +305,20 @@ export default function OrderDetailPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
         <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-          >
+          <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Back</span>
           </Button>
           <h1 className="text-lg sm:text-2xl font-bold">
-            {order.table ? `Table ${order.table.table_number}` : 'Takeout'}
+            {order.table ? order.table.table_number : 'Takeout'}
           </h1>
-          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(order.status)}`}>
+          <span
+            className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(order.status)}`}
+          >
             {order.status.toUpperCase()}
           </span>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-        >
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
@@ -287,7 +340,11 @@ export default function OrderDetailPage() {
           <div>
             <p className="text-sm text-gray-600">Order Type</p>
             <p className="flex items-center gap-1">
-              {order.order_type === 'takeout' ? <Package className="h-4 w-4" /> : <User className="h-4 w-4" />}
+              {order.order_type === 'takeout' ? (
+                <Package className="h-4 w-4" />
+              ) : (
+                <User className="h-4 w-4" />
+              )}
               {order.order_type === 'takeout' ? 'Takeout' : 'Dine-in'}
             </p>
           </div>
@@ -303,10 +360,13 @@ export default function OrderDetailPage() {
               <p>{order.customer_phone}</p>
             </div>
           )}
-          {order.staff && (
+          {order.assigned_waiter && (
             <div>
-              <p className="text-sm text-gray-600">Waiter</p>
-              <p>{order.staff.full_name}</p>
+              <p className="text-sm text-gray-600">Order Taken By</p>
+              <p className="flex items-center gap-1">
+                <User className="h-3 w-3 text-blue-500" />
+                {order.assigned_waiter.full_name}
+              </p>
             </div>
           )}
         </div>
@@ -329,7 +389,8 @@ export default function OrderDetailPage() {
           </h3>
           {transferHistory.map((transfer: TableTransfer) => (
             <div key={transfer.id} className="text-sm">
-              Transferred from Table {transfer.from_table?.table_number} to Table {transfer.to_table?.table_number}
+              Transferred from {transfer.from_table?.table_number} to{' '}
+              {transfer.to_table?.table_number}
               {transfer.reason && ` - ${transfer.reason}`}
               <span className="text-gray-600 ml-2">({formatTime(transfer.created_at)})</span>
             </div>
@@ -353,7 +414,9 @@ export default function OrderDetailPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm sm:text-base">{item.quantity}x</span>
-                      <span className="text-sm sm:text-base truncate">{item.menu_item?.name_en}</span>
+                      <span className="text-sm sm:text-base truncate">
+                        {item.menu_item?.name_en}
+                      </span>
                     </div>
                     {item.notes && (
                       <p className="text-xs sm:text-sm text-gray-600 mt-1 flex items-start gap-1">
@@ -371,7 +434,9 @@ export default function OrderDetailPage() {
                     >
                       {statusBadge.icon}
                       <span className="hidden xs:inline">{statusBadge.label}</span>
-                      <ChevronDown className={`h-3 w-3 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDown
+                        className={`h-3 w-3 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
+                      />
                     </button>
 
                     {isMenuOpen && (
@@ -399,18 +464,32 @@ export default function OrderDetailPage() {
                   </div>
 
                   <div className="text-right flex-shrink-0">
-                    <p className="font-medium">${(item.quantity * item.item_price).toFixed(2)}</p>
-                    <p className="text-sm text-gray-600">${item.item_price.toFixed(2)} each</p>
+                    <p className="font-medium">{formatPrice(item.quantity * item.item_price)}</p>
+                    <p className="text-sm text-gray-600">{formatPrice(item.item_price)} each</p>
                   </div>
                 </div>
               </div>
             );
           })}
         </div>
-        <div className="border-t px-4 py-3">
-          <div className="flex justify-between items-center text-lg font-semibold">
+        <div className="border-t px-4 py-3 space-y-2">
+          {cafeSettings?.tax_enabled && (
+            <>
+              <div className="flex justify-between items-center text-sm text-gray-600">
+                <span>Subtotal</span>
+                <span>{formatPrice(calculateSubtotal())}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm text-gray-600">
+                <span>Tax ({cafeSettings.tax_percentage}%)</span>
+                <span>{formatPrice(calculateTax())}</span>
+              </div>
+            </>
+          )}
+          <div
+            className={`flex justify-between items-center text-lg font-semibold ${cafeSettings?.tax_enabled ? 'pt-2 border-t' : ''}`}
+          >
             <span>Total</span>
-            <span>${total.toFixed(2)}</span>
+            <span>{formatPrice(total)}</span>
           </div>
         </div>
       </div>
@@ -424,18 +503,24 @@ export default function OrderDetailPage() {
           <div className="divide-y">
             {payments.map((payment: Payment) => (
               <div key={payment.id} className="px-4 py-3">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-medium">${payment.amount.toFixed(2)}</p>
-                    <p className="text-sm text-gray-600">
-                      {payment.payment_method} - {payment.staff?.full_name || 'Unknown'}
+                    <p className="font-medium">{formatPrice(payment.amount)}</p>
+                    {(payment as { tip_amount?: number }).tip_amount &&
+                      (payment as { tip_amount?: number }).tip_amount! > 0 && (
+                        <p className="text-sm text-green-600">
+                          + {formatPrice((payment as { tip_amount?: number }).tip_amount!)} tip
+                        </p>
+                      )}
+                    <p className="text-sm text-gray-600 capitalize">{payment.payment_method}</p>
+                    <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                      <CreditCard className="h-3 w-3 text-green-500" />
+                      Received by: {payment.received_by_staff?.full_name || 'Unknown'}
                     </p>
-                    <p className="text-xs text-gray-500">{formatTime(payment.created_at)}</p>
+                    <p className="text-xs text-gray-500 mt-1">{formatTime(payment.created_at)}</p>
                   </div>
                   {payment.items_paid && payment.items_paid.length > 0 && (
-                    <div className="text-sm text-gray-600">
-                      {payment.items_paid.length} items
-                    </div>
+                    <div className="text-sm text-gray-600">{payment.items_paid.length} items</div>
                   )}
                 </div>
               </div>
@@ -444,12 +529,12 @@ export default function OrderDetailPage() {
           <div className="border-t px-4 py-3">
             <div className="flex justify-between items-center">
               <span className="font-semibold">Total Paid</span>
-              <span className="font-semibold text-green-600">${paid.toFixed(2)}</span>
+              <span className="font-semibold text-green-600">{formatPrice(paid)}</span>
             </div>
             {remaining > 0 && (
               <div className="flex justify-between items-center mt-2">
                 <span className="font-semibold">Remaining</span>
-                <span className="font-semibold text-orange-600">${remaining.toFixed(2)}</span>
+                <span className="font-semibold text-orange-600">{formatPrice(remaining)}</span>
               </div>
             )}
           </div>
@@ -458,6 +543,25 @@ export default function OrderDetailPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-2 sm:gap-3">
+        {/* Pending Approval: Show approve button */}
+        {order.status === 'pending_approval' && (
+          <>
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 flex items-center gap-1 sm:gap-2"
+              onClick={() => handleStatusUpdate('NEW')}
+            >
+              <ThumbsUp className="h-4 w-4" />
+              Approve
+            </Button>
+            {(order as any).source === 'customer' && (
+              <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
+                <Smartphone className="h-3 w-3" />
+                QR Order
+              </span>
+            )}
+          </>
+        )}
         {order.status === 'new' && (
           <Button
             size="sm"
@@ -508,7 +612,7 @@ export default function OrderDetailPage() {
             Close
           </Button>
         )}
-        {['new', 'preparing'].includes(order.status) && (
+        {['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status) && (
           <Button
             size="sm"
             variant="destructive"
@@ -516,7 +620,7 @@ export default function OrderDetailPage() {
             className="flex items-center gap-1 sm:gap-2"
           >
             <XCircle className="h-4 w-4" />
-            Cancel
+            {order.status === 'pending_approval' ? 'Reject' : 'Cancel'}
           </Button>
         )}
       </div>

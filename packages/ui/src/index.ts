@@ -5,7 +5,6 @@
 
 // Export components
 export * from './button';
-export * from './loading-spinner';
-
 // Export utilities
 export { cn } from './lib/utils';
+export * from './loading-spinner';

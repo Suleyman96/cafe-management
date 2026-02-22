@@ -1,15 +1,16 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Image from "next/image";
-import { useLanguageStore } from "@/store/language-store";
-import { useCartStore } from "@/store/cart-store";
-import { getLocalizedField, type MenuItemWithCategory } from "@/types";
-import { formatPrice } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { X, Plus, Minus, Star, Leaf, Flame, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
+import { AlertCircle, Flame, Leaf, Minus, Plus, Star, X } from 'lucide-react';
+import Image from 'next/image';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { formatPrice as formatPriceWithSettings, useCafeSettings } from '@/hooks/use-settings';
+import { formatPrice } from '@/lib/utils';
+import { useCartStore } from '@/store/cart-store';
+import { useLanguageStore } from '@/store/language-store';
+import { getLocalizedField, type MenuItemWithCategory } from '@/types';
 
 interface MenuItemModalProps {
   item: MenuItemWithCategory;
@@ -21,17 +22,26 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
   const { language } = useLanguageStore();
   const addItem = useCartStore((state) => state.addItem);
   const [quantity, setQuantity] = useState(1);
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState('');
+  const { data: settings } = useCafeSettings();
 
-  const name = getLocalizedField(item, "name", language);
-  const description = getLocalizedField(item, "description", language);
+  const name = getLocalizedField(item, 'name', language);
+  const description = getLocalizedField(item, 'description', language);
+
+  // Format price using cafe settings or fallback
+  const displayPrice = (amount: number) => {
+    if (settings) {
+      return formatPriceWithSettings(amount, settings);
+    }
+    return formatPrice(amount);
+  };
 
   const handleAdd = () => {
     addItem(item, quantity, notes);
     toast.success(`Added ${quantity}x ${name} to cart`);
     onClose();
     setQuantity(1);
-    setNotes("");
+    setNotes('');
   };
 
   if (!isOpen) return null;
@@ -53,12 +63,7 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
           {/* Image */}
           {item.image_url && (
             <div className="relative h-64 w-full bg-muted">
-              <Image
-                src={item.image_url}
-                alt={name}
-                fill
-                className="object-cover"
-              />
+              <Image src={item.image_url} alt={name} fill className="object-cover" />
             </div>
           )}
 
@@ -92,16 +97,12 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
                     Spicy
                   </Badge>
                 )}
-                {item.is_gluten_free && (
-                  <Badge variant="outline">Gluten Free</Badge>
-                )}
+                {item.is_gluten_free && <Badge variant="outline">Gluten Free</Badge>}
               </div>
             </div>
 
             {/* Description */}
-            {description && (
-              <p className="text-muted-foreground mb-4">{description}</p>
-            )}
+            {description && <p className="text-muted-foreground mb-4">{description}</p>}
 
             {/* Allergens */}
             {item.allergens && item.allergens.length > 0 && (
@@ -110,7 +111,7 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
                   <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-medium text-sm">Contains allergens:</p>
-                    <p className="text-sm">{item.allergens.join(", ")}</p>
+                    <p className="text-sm">{item.allergens.join(', ')}</p>
                   </div>
                 </div>
               </div>
@@ -124,9 +125,7 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
             )}
 
             {/* Price */}
-            <div className="text-3xl font-bold text-primary mb-4">
-              {formatPrice(item.price)}
-            </div>
+            <div className="text-3xl font-bold text-primary mb-4">{displayPrice(item.price)}</div>
 
             {/* Quantity Selector */}
             <div className="mb-4">
@@ -140,35 +139,31 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
-                <span className="text-2xl font-bold w-12 text-center">
-                  {quantity}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity(quantity + 1)}
-                >
+                <span className="text-2xl font-bold w-12 text-center">{quantity}</span>
+                <Button variant="outline" size="icon" onClick={() => setQuantity(quantity + 1)}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            {/* Special Notes */}
-            <div className="mb-6">
-              <label className="text-sm font-medium mb-2 block">
-                Special requests (optional)
-              </label>
-              <textarea
-                className="w-full min-h-[80px] p-3 rounded-md border border-input bg-background"
-                placeholder="e.g., Less sugar, Extra hot, No ice..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
+            {/* Special Notes - Only show if allow_item_notes is enabled */}
+            {settings?.allow_item_notes !== false && (
+              <div className="mb-6">
+                <label className="text-sm font-medium mb-2 block">
+                  Special requests (optional)
+                </label>
+                <textarea
+                  className="w-full min-h-[80px] p-3 rounded-md border border-input bg-background"
+                  placeholder="e.g., Less sugar, Extra hot, No ice..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+            )}
 
             {/* Add to Cart Button */}
             <Button size="xl" className="w-full" onClick={handleAdd}>
-              Add to Order · {formatPrice(item.price * quantity)}
+              Add to Order · {displayPrice(item.price * quantity)}
             </Button>
           </div>
         </div>
@@ -176,5 +171,3 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
     </div>
   );
 }
-
-
