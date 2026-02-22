@@ -55,7 +55,9 @@ export default function StockPage() {
   }
 
   // Get unique categories
-  const categories = [...new Set(stockItems.map((item: StockItem) => item.category))].sort() as string[];
+  const categories = [
+    ...new Set(stockItems.map((item: StockItem) => item.category)),
+  ].sort() as string[];
 
   // Filter items
   const filteredItems = stockItems.filter((item: StockItem) => {

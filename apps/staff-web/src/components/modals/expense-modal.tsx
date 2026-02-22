@@ -137,7 +137,12 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
               </label>
               <select
                 value={formData.payment_method}
-                onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as 'cash' | 'card' | 'digital' | 'bank_transfer' })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    payment_method: e.target.value as 'cash' | 'card' | 'digital' | 'bank_transfer',
+                  })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 {PAYMENT_METHODS.map((pm) => (
