@@ -64,6 +64,10 @@ export type Expense = Database['public']['Tables']['expenses']['Row'];
 export type ExpenseInsert = Database['public']['Tables']['expenses']['Insert'];
 export type ExpenseUpdate = Database['public']['Tables']['expenses']['Update'];
 
+export type StaffSchedule = Database['public']['Tables']['staff_schedules']['Row'];
+export type StaffScheduleInsert = Database['public']['Tables']['staff_schedules']['Insert'];
+export type StaffScheduleUpdate = Database['public']['Tables']['staff_schedules']['Update'];
+
 // Extended types with relations
 export interface OrderWithDetails extends Order {
   table: Pick<Table, 'table_number' | 'location'>;

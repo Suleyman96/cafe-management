@@ -77,7 +77,7 @@ export function createStaffWrapper(ctx: WrapperContext) {
     },
 
     delete: async (id: string) => {
-      const { error } = await ctx.anyClient.from('staff').delete().eq('id', id);
+      const { error } = await ctx.anyClient.from('staff').update({ is_active: false }).eq('id', id);
 
       if (error) throw handleSupabaseError(error);
     },

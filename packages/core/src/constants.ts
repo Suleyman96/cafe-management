@@ -82,6 +82,14 @@ export const STATUS_COLORS = {
   cancelled: '#9CA3AF', // gray-400
 } as const;
 
+// Schedule statuses
+export const SCHEDULE_STATUS = {
+  SCHEDULED: 'scheduled',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+  MISSED: 'missed',
+} as const;
+
 // Notification sounds
 export const SOUNDS = {
   NEW_ORDER: 'new-order',
@@ -132,6 +140,8 @@ export const QUERY_KEYS = {
   EXPENSES: 'expenses',
   EXPENSE: 'expense',
   EXPENSE_MONTHLY_SUMMARY: 'expense_monthly_summary',
+  SCHEDULES: 'schedules',
+  MY_SCHEDULE: 'my_schedule',
 } as const;
 
 // UI constants

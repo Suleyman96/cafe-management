@@ -57,6 +57,21 @@ export function useAuth() {
         }
 
         setStaff(staffData);
+
+        // Fire-and-forget: update last_login_at
+        (supabase.from('staff') as any)
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('id', (staffData as any).id)
+          .then();
+
+        // Fire-and-forget: fill actual_start for today's schedule
+        const today = new Date().toISOString().split('T')[0];
+        (supabase.from('staff_schedules') as any)
+          .update({ actual_start: new Date().toISOString(), status: 'in_progress' })
+          .eq('staff_id', (staffData as any).id)
+          .eq('date', today)
+          .eq('status', 'scheduled')
+          .then();
       } catch (error) {
         console.error('Auth check error:', error);
         clearAuth();
@@ -86,6 +101,21 @@ export function useAuth() {
 
         if (staffData) {
           setStaff(staffData);
+
+          // Fire-and-forget: update last_login_at
+          (supabase.from('staff') as any)
+            .update({ last_login_at: new Date().toISOString() })
+            .eq('id', (staffData as any).id)
+            .then();
+
+          // Fire-and-forget: fill actual_start for today's schedule
+          const today = new Date().toISOString().split('T')[0];
+          (supabase.from('staff_schedules') as any)
+            .update({ actual_start: new Date().toISOString(), status: 'in_progress' })
+            .eq('staff_id', (staffData as any).id)
+            .eq('date', today)
+            .eq('status', 'scheduled')
+            .then();
         }
       }
     });
