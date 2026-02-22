@@ -20,7 +20,9 @@ import { StockItemModal } from '@/components/modals/stock-item-modal';
 import { StockMovementModal } from '@/components/modals/stock-movement-modal';
 import { Button } from '@/components/ui/button';
 import {
+  formatPriceWithSettings,
   useAuth,
+  useCafeSettings,
   useDeleteStockItem,
   useLowStockCount,
   useStockItems,
@@ -43,7 +45,15 @@ export default function StockPage() {
 
   const { data: stockItems = [], isLoading } = useStockItems();
   const { data: lowStockCount = 0 } = useLowStockCount();
+  const { data: cafeSettings } = useCafeSettings();
   const deleteStockItem = useDeleteStockItem();
+
+  const formatPrice = (amount: number) => {
+    if (cafeSettings) {
+      return formatPriceWithSettings(amount, cafeSettings);
+    }
+    return `$${amount.toFixed(2)}`;
+  };
 
   // Redirect if not admin
   if (staff && staff.role !== 'admin') {
@@ -144,7 +154,7 @@ export default function StockPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Total Value</p>
-              <p className="text-2xl font-bold text-gray-900">{totalValue.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatPrice(totalValue)}</p>
             </div>
           </div>
         </div>
@@ -184,8 +194,8 @@ export default function StockPage() {
               <tr className="bg-gray-50 border-b">
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Name</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Category</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Stock</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Cost</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Quantity</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Cost/Unit</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Supplier</th>
                 <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Actions</th>
               </tr>
@@ -213,7 +223,7 @@ export default function StockPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
-                    {item.cost_price.toFixed(2)}/{item.unit}
+                    {formatPrice(item.cost_price)}/{item.unit}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{item.supplier_name || '-'}</td>
                   <td className="px-4 py-3">

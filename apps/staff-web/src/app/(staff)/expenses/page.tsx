@@ -9,7 +9,9 @@ import { ExpenseCategoryModal } from '@/components/modals/expense-category-modal
 import { ExpenseModal } from '@/components/modals/expense-modal';
 import { Button } from '@/components/ui/button';
 import {
+  formatPriceWithSettings,
   useAuth,
+  useCafeSettings,
   useDeleteExpense,
   useExpenseCategories,
   useExpenseMonthlySummary,
@@ -49,7 +51,15 @@ export default function ExpensesPage() {
   });
   const { data: categories = [] } = useExpenseCategories();
   const { data: summary } = useExpenseMonthlySummary(selectedYear, selectedMonth);
+  const { data: cafeSettings } = useCafeSettings();
   const deleteExpense = useDeleteExpense();
+
+  const formatPrice = (amount: number) => {
+    if (cafeSettings) {
+      return formatPriceWithSettings(amount, cafeSettings);
+    }
+    return `$${amount.toFixed(2)}`;
+  };
 
   // Redirect if not admin
   if (staff && staff.role !== 'admin') {
@@ -123,7 +133,7 @@ export default function ExpensesPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Total This Month</p>
-              <p className="text-2xl font-bold text-gray-900">{(summary?.total || 0).toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatPrice(summary?.total || 0)}</p>
             </div>
           </div>
         </div>
@@ -170,7 +180,7 @@ export default function ExpensesPage() {
                     />
                   </div>
                   <span className="text-sm font-medium text-gray-900 w-20 text-right">
-                    {cat.total.toFixed(2)}
+                    {formatPrice(cat.total)}
                   </span>
                   <span className="text-xs text-gray-400 w-8 text-right">
                     {percentage.toFixed(0)}%
@@ -262,7 +272,7 @@ export default function ExpensesPage() {
                     {expense.category?.name || '-'}
                   </td>
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
-                    {expense.amount.toFixed(2)}
+                    {formatPrice(expense.amount)}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {PAYMENT_METHOD_LABELS[expense.payment_method] || expense.payment_method}
