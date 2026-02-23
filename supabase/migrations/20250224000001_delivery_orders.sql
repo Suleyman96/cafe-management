@@ -5,6 +5,24 @@ ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_order_type_check;
 ALTER TABLE orders ADD CONSTRAINT orders_order_type_check
   CHECK (order_type IN ('dine_in', 'takeout', 'delivery'));
 
+-- 1b. Update dine_in_table_check to allow delivery orders (table_id IS NULL)
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_dine_in_table_check;
+ALTER TABLE orders ADD CONSTRAINT orders_dine_in_table_check
+  CHECK (
+    (order_type = 'dine_in' AND table_id IS NOT NULL) OR
+    (order_type = 'takeout' AND table_id IS NULL) OR
+    (order_type = 'delivery' AND table_id IS NULL)
+  );
+
+-- 1c. Update takeout_customer_check to also allow delivery orders
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_takeout_customer_check;
+ALTER TABLE orders ADD CONSTRAINT orders_takeout_customer_check
+  CHECK (
+    (order_type = 'takeout' AND customer_name IS NOT NULL AND customer_phone IS NOT NULL) OR
+    (order_type = 'delivery' AND customer_name IS NOT NULL AND customer_phone IS NOT NULL) OR
+    (order_type = 'dine_in')
+  );
+
 -- 2. Add delivery statuses to order status check constraint
 ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check;
 ALTER TABLE orders ADD CONSTRAINT orders_status_check

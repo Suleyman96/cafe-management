@@ -18,6 +18,7 @@ import {
   Settings,
   StickyNote,
   Store,
+  Truck,
   Users,
   UtensilsCrossed,
 } from 'lucide-react';
@@ -38,6 +39,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: '/tables', label: 'Tables', icon: <UtensilsCrossed className="h-5 w-5" /> },
   { href: '/orders', label: 'Orders', icon: <ClipboardList className="h-5 w-5" /> },
+  { href: '/delivery', label: 'Delivery', icon: <Truck className="h-5 w-5" /> },
   { href: '/kitchen', label: 'Kitchen', icon: <ChefHat className="h-5 w-5" /> },
   { href: '/calls', label: 'Waiter Calls', icon: <Bell className="h-5 w-5" /> },
   { href: '/feedback', label: 'Feedback', icon: <MessageSquare className="h-5 w-5" /> },
