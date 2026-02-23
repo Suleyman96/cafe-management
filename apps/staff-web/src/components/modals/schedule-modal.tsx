@@ -13,6 +13,14 @@ interface ScheduleModalProps {
   onSuccess: () => void;
 }
 
+// Generate 30-minute time slots from 00:00 to 23:30
+const TIME_OPTIONS: string[] = [];
+for (let h = 0; h < 24; h++) {
+  for (const m of [0, 30]) {
+    TIME_OPTIONS.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+  }
+}
+
 const DAYS_OF_WEEK = [
   { value: 1, label: 'Mon' },
   { value: 2, label: 'Tue' },
@@ -227,23 +235,33 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Planned Start</label>
-              <input
-                type="time"
+              <select
                 value={plannedStart}
                 onChange={(e) => setPlannedStart(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
-              />
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Planned End</label>
-              <input
-                type="time"
+              <select
                 value={plannedEnd}
                 onChange={(e) => setPlannedEnd(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
-              />
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

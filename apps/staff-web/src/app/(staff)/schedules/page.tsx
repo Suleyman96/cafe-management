@@ -23,6 +23,12 @@ function getWeekDates(referenceDate: Date) {
   return dates;
 }
 
+function getMonthDates(year: number, month: number) {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  return { firstDay, lastDay, daysInMonth: lastDay.getDate() };
+}
+
 function formatDate(d: Date) {
   return d.toISOString().split('T')[0];
 }
@@ -58,7 +64,8 @@ const STATUS_DOT: Record<string, string> = {
 export default function SchedulesPage() {
   const { staff: currentUser } = useAuth();
   const [weekOffset, setWeekOffset] = useState(0);
-  const [viewMode, setViewMode] = useState<'weekly' | 'daily'>('weekly');
+  const [monthOffset, setMonthOffset] = useState(0);
+  const [viewMode, setViewMode] = useState<'weekly' | 'daily' | 'monthly'>('weekly');
   const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
   const [showModal, setShowModal] = useState(false);
   const [editSchedule, setEditSchedule] = useState<any>(null);
@@ -69,8 +76,15 @@ export default function SchedulesPage() {
     return getWeekDates(ref);
   }, [weekOffset]);
 
-  const startDate = formatDate(weekDates[0]);
-  const endDate = formatDate(weekDates[6]);
+  const monthInfo = useMemo(() => {
+    const ref = new Date();
+    ref.setMonth(ref.getMonth() + monthOffset);
+    return getMonthDates(ref.getFullYear(), ref.getMonth());
+  }, [monthOffset]);
+
+  const startDate =
+    viewMode === 'monthly' ? formatDate(monthInfo.firstDay) : formatDate(weekDates[0]);
+  const endDate = viewMode === 'monthly' ? formatDate(monthInfo.lastDay) : formatDate(weekDates[6]);
 
   const { data: schedules, isLoading, refetch } = useSchedulesByDateRange(startDate, endDate);
   const { data: staffList } = useStaff();
@@ -105,6 +119,18 @@ export default function SchedulesPage() {
     if (!schedules) return [];
     return schedules.filter((s: any) => s.date === selectedDate);
   }, [schedules, selectedDate]);
+
+  // Monthly view: group schedules by date
+  const monthlyByDate = useMemo(() => {
+    if (!schedules) return {};
+    const map: Record<string, any[]> = {};
+    for (const sched of schedules) {
+      const dateKey = (sched as any).date;
+      if (!map[dateKey]) map[dateKey] = [];
+      map[dateKey].push(sched);
+    }
+    return map;
+  }, [schedules]);
 
   // Only admins can access
   if (currentUser?.role !== 'admin') {
@@ -147,6 +173,15 @@ export default function SchedulesPage() {
         <div className="flex items-center gap-2">
           <div className="flex bg-gray-100 rounded-lg p-0.5">
             <button
+              onClick={() => setViewMode('monthly')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                viewMode === 'monthly' ? 'bg-white shadow text-gray-900' : 'text-gray-600'
+              }`}
+              type="button"
+            >
+              Monthly
+            </button>
+            <button
               onClick={() => setViewMode('weekly')}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 viewMode === 'weekly' ? 'bg-white shadow text-gray-900' : 'text-gray-600'
@@ -172,36 +207,59 @@ export default function SchedulesPage() {
         </div>
       </div>
 
-      {/* Week Navigation */}
+      {/* Navigation */}
       <div className="flex items-center justify-between bg-white rounded-lg shadow px-4 py-3">
         <button
-          onClick={() => setWeekOffset((p) => p - 1)}
+          onClick={() =>
+            viewMode === 'monthly' ? setMonthOffset((p) => p - 1) : setWeekOffset((p) => p - 1)
+          }
           className="p-1 rounded hover:bg-gray-100"
           type="button"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-900">
-            {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} -{' '}
-            {weekDates[6].toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })}
-          </span>
-          {weekOffset !== 0 && (
-            <button
-              onClick={() => setWeekOffset(0)}
-              className="text-xs text-blue-600 hover:underline"
-              type="button"
-            >
-              Today
-            </button>
+          {viewMode === 'monthly' ? (
+            <span className="text-sm font-medium text-gray-900">
+              {monthInfo.firstDay.toLocaleDateString('en-US', {
+                month: 'long',
+                year: 'numeric',
+              })}
+            </span>
+          ) : (
+            <span className="text-sm font-medium text-gray-900">
+              {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} -{' '}
+              {weekDates[6].toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </span>
           )}
+          {viewMode === 'monthly'
+            ? monthOffset !== 0 && (
+                <button
+                  onClick={() => setMonthOffset(0)}
+                  className="text-xs text-blue-600 hover:underline"
+                  type="button"
+                >
+                  This Month
+                </button>
+              )
+            : weekOffset !== 0 && (
+                <button
+                  onClick={() => setWeekOffset(0)}
+                  className="text-xs text-blue-600 hover:underline"
+                  type="button"
+                >
+                  Today
+                </button>
+              )}
         </div>
         <button
-          onClick={() => setWeekOffset((p) => p + 1)}
+          onClick={() =>
+            viewMode === 'monthly' ? setMonthOffset((p) => p + 1) : setWeekOffset((p) => p + 1)
+          }
           className="p-1 rounded hover:bg-gray-100"
           type="button"
         >
@@ -270,6 +328,9 @@ export default function SchedulesPage() {
                                   className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[sched.status] || STATUS_DOT.scheduled}`}
                                 />
                                 {formatTime(sched.planned_start)} - {formatTime(sched.planned_end)}
+                              </div>
+                              <div className="text-[10px] opacity-70 truncate">
+                                {sched.staff?.full_name || s.full_name}
                               </div>
                             </button>
                           ))
@@ -430,6 +491,102 @@ export default function SchedulesPage() {
                 </table>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Monthly View */}
+      {viewMode === 'monthly' && (
+        <div className="bg-white rounded-lg shadow">
+          {/* Calendar header */}
+          <div className="grid grid-cols-7 border-b">
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+              <div
+                key={day}
+                className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase"
+              >
+                {day}
+              </div>
+            ))}
+          </div>
+          {/* Calendar body */}
+          <div className="grid grid-cols-7">
+            {(() => {
+              const cells: React.ReactNode[] = [];
+              const year = monthInfo.firstDay.getFullYear();
+              const month = monthInfo.firstDay.getMonth();
+              // Monday=0 offset: getDay() returns 0=Sun, so Mon=1..Sun=0 -> offset
+              const firstDayOfWeek = monthInfo.firstDay.getDay();
+              const emptyBefore = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+
+              for (let i = 0; i < emptyBefore; i++) {
+                cells.push(
+                  <div
+                    key={`empty-${i}`}
+                    className="border-b border-r p-2 min-h-[80px] bg-gray-50"
+                  />,
+                );
+              }
+
+              const todayStr = formatDate(new Date());
+              for (let day = 1; day <= monthInfo.daysInMonth; day++) {
+                const d = new Date(year, month, day);
+                const dateKey = formatDate(d);
+                const daySchedules = monthlyByDate[dateKey] || [];
+                const isTodayCell = dateKey === todayStr;
+
+                cells.push(
+                  <div
+                    key={dateKey}
+                    className={`border-b border-r p-1.5 min-h-[80px] ${isTodayCell ? 'bg-blue-50/50' : ''}`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span
+                        className={`text-xs font-medium ${isTodayCell ? 'text-blue-600 font-bold' : 'text-gray-700'}`}
+                      >
+                        {day}
+                      </span>
+                      <button
+                        onClick={() => handleOpenCreate(dateKey)}
+                        className="text-gray-300 hover:text-gray-500 text-xs"
+                        type="button"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="space-y-0.5">
+                      {daySchedules.map((sched: any) => (
+                        <button
+                          key={sched.id}
+                          onClick={() => handleOpenEdit(sched)}
+                          className={`block w-full text-left px-1 py-0.5 rounded text-[10px] font-medium truncate cursor-pointer hover:opacity-80 ${
+                            STATUS_COLORS[sched.status] || STATUS_COLORS.scheduled
+                          }`}
+                          type="button"
+                          title={`${sched.staff?.full_name}: ${formatTime(sched.planned_start)}-${formatTime(sched.planned_end)}`}
+                        >
+                          {sched.staff?.full_name?.split(' ')[0]} {formatTime(sched.planned_start)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>,
+                );
+              }
+
+              // Fill remaining cells to complete last row
+              const totalCells = emptyBefore + monthInfo.daysInMonth;
+              const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+              for (let i = 0; i < remaining; i++) {
+                cells.push(
+                  <div
+                    key={`empty-end-${i}`}
+                    className="border-b border-r p-2 min-h-[80px] bg-gray-50"
+                  />,
+                );
+              }
+
+              return cells;
+            })()}
           </div>
         </div>
       )}
