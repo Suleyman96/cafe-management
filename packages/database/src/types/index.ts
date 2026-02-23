@@ -179,6 +179,10 @@ export function isTakeoutOrder(order: Order): boolean {
   return order.order_type === 'takeout';
 }
 
+export function isDeliveryOrder(order: Order): boolean {
+  return order.order_type === 'delivery';
+}
+
 // Payment status helper
 export function isOrderFullyPaid(order: OrderWithPayments): boolean {
   return order.remaining_balance <= 0;

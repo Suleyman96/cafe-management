@@ -21,7 +21,8 @@ export function createOrdersWrapper(ctx: WrapperContext) {
             *,
             menu_item:menu_items(*)
           ),
-          assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name)
+          assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name),
+          delivery_person:staff!orders_delivery_person_id_fkey(full_name)
         `)
         .order('created_at', { ascending: false });
 
@@ -52,6 +53,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
             menu_item:menu_items(*)
           ),
           assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name),
+          delivery_person:staff!orders_delivery_person_id_fkey(full_name),
           order_payments(
             *,
             received_by_staff:staff!order_payments_received_by_fkey(full_name)
@@ -122,7 +124,14 @@ export function createOrdersWrapper(ctx: WrapperContext) {
           table:tables!orders_table_id_fkey(table_number),
           order_items(count)
         `)
-        .in('status', ['pending_approval', 'new', 'preparing', 'ready', 'served'])
+        .in('status', [
+          'pending_approval',
+          'new',
+          'preparing',
+          'ready',
+          'served',
+          'out_for_delivery',
+        ])
         .order('created_at', { ascending: false });
 
       if (error) throw handleSupabaseError(error);
@@ -187,6 +196,108 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       const { data, error } = await ctx.anyClient
         .from('orders')
         .update(notes)
+        .eq('id', orderId)
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isOrder(data)) throw new Error('Invalid order data');
+      return data as OrderRow;
+    },
+
+    // Delivery-specific methods
+    findDeliveryOrders: async () => {
+      const { data, error } = await ctx.client
+        .from('orders')
+        .select(`
+          *,
+          order_items(
+            *,
+            menu_item:menu_items(*)
+          ),
+          assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name),
+          delivery_person:staff!orders_delivery_person_id_fkey(full_name)
+        `)
+        .eq('order_type', 'delivery')
+        .order('created_at', { ascending: false });
+
+      if (error) throw handleSupabaseError(error);
+      return data || [];
+    },
+
+    findDeliveryById: async (id: string) => {
+      const { data, error } = await ctx.client
+        .from('orders')
+        .select(`
+          *,
+          order_items(
+            *,
+            menu_item:menu_items(*)
+          ),
+          assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name),
+          delivery_person:staff!orders_delivery_person_id_fkey(full_name),
+          order_payments(
+            *,
+            received_by_staff:staff!order_payments_received_by_fkey(full_name)
+          )
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isOrder(data)) throw new Error('Invalid order data');
+      return data;
+    },
+
+    assignDeliveryPerson: async (orderId: string, staffId: string) => {
+      const { data, error } = await ctx.anyClient
+        .from('orders')
+        .update({ delivery_person_id: staffId })
+        .eq('id', orderId)
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isOrder(data)) throw new Error('Invalid order data');
+      return data as OrderRow;
+    },
+
+    updateDeliveryFee: async (orderId: string, fee: number) => {
+      const { data, error } = await ctx.anyClient
+        .from('orders')
+        .update({ delivery_fee: fee })
+        .eq('id', orderId)
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isOrder(data)) throw new Error('Invalid order data');
+      return data as OrderRow;
+    },
+
+    markOutForDelivery: async (orderId: string, deliveryPersonId: string) => {
+      const { data, error } = await ctx.anyClient
+        .from('orders')
+        .update({
+          status: 'out_for_delivery',
+          delivery_person_id: deliveryPersonId,
+        })
+        .eq('id', orderId)
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isOrder(data)) throw new Error('Invalid order data');
+      return data as OrderRow;
+    },
+
+    markDelivered: async (orderId: string) => {
+      const { data, error } = await ctx.anyClient
+        .from('orders')
+        .update({
+          status: 'delivered',
+          delivered_at: new Date().toISOString(),
+        })
         .eq('id', orderId)
         .select()
         .single();

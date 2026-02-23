@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Save,
   Store,
+  Truck,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -56,6 +57,11 @@ export default function CafeSettingsPage() {
     // Feature controls
     qr_ordering_enabled: true,
     tips_enabled: false,
+    // Delivery settings
+    delivery_enabled: false,
+    delivery_fee_default: 0,
+    minimum_delivery_amount: 0,
+    delivery_zone_info: null as string | null,
     // Contact & social
     contact_phone: null as string | null,
     contact_website: null as string | null,
@@ -92,6 +98,10 @@ export default function CafeSettingsPage() {
         welcome_message: settings.welcome_message,
         qr_ordering_enabled: settings.qr_ordering_enabled,
         tips_enabled: settings.tips_enabled ?? false,
+        delivery_enabled: settings.delivery_enabled ?? false,
+        delivery_fee_default: settings.delivery_fee_default ?? 0,
+        minimum_delivery_amount: settings.minimum_delivery_amount ?? 0,
+        delivery_zone_info: settings.delivery_zone_info ?? null,
         contact_phone: settings.contact_phone,
         contact_website: settings.contact_website,
         social_instagram: settings.social_instagram,
@@ -163,6 +173,10 @@ export default function CafeSettingsPage() {
         welcome_message: settings.welcome_message,
         qr_ordering_enabled: settings.qr_ordering_enabled,
         tips_enabled: settings.tips_enabled ?? false,
+        delivery_enabled: settings.delivery_enabled ?? false,
+        delivery_fee_default: settings.delivery_fee_default ?? 0,
+        minimum_delivery_amount: settings.minimum_delivery_amount ?? 0,
+        delivery_zone_info: settings.delivery_zone_info ?? null,
         contact_phone: settings.contact_phone,
         contact_website: settings.contact_website,
         social_instagram: settings.social_instagram,
@@ -484,6 +498,94 @@ export default function CafeSettingsPage() {
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
               </div>
+            </div>
+          </div>
+          {/* Delivery Settings */}
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Truck className="h-5 w-5 text-gray-600" />
+              <h2 className="text-lg font-semibold">Delivery Settings</h2>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Enable Delivery</label>
+                  <p className="text-xs text-gray-500">
+                    Allow customers to order for delivery via direct link
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.delivery_enabled}
+                    onChange={(e) => handleChange('delivery_enabled', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              {formData.delivery_enabled && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Default Delivery Fee
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2 text-gray-500">
+                          {formData.currency_symbol}
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={formData.delivery_fee_default}
+                          onChange={(e) =>
+                            handleChange('delivery_fee_default', parseFloat(e.target.value) || 0)
+                          }
+                          className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Minimum Delivery Amount
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2 text-gray-500">
+                          {formData.currency_symbol}
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={formData.minimum_delivery_amount}
+                          onChange={(e) =>
+                            handleChange('minimum_delivery_amount', parseFloat(e.target.value) || 0)
+                          }
+                          className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Delivery Zone Info
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Describe your delivery area (shown to customers)
+                    </p>
+                    <textarea
+                      value={formData.delivery_zone_info || ''}
+                      onChange={(e) => handleChange('delivery_zone_info', e.target.value || null)}
+                      placeholder="e.g., We deliver within 5km of our restaurant..."
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

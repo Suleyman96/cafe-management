@@ -26,6 +26,9 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
   const [showSearch, setShowSearch] = useState(false);
   const [dietaryFilters, setDietaryFilters] = useState<DietaryFilter[]>([]);
 
+  const isDelivery = tableId === '__delivery__';
+  const cartPath = isDelivery ? '/delivery/cart' : `/table/${tableId}/cart`;
+
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: menuItems, isLoading: itemsLoading } = useMenuItems(selectedCategory);
   const itemCount = useCartStore((state) => state.getItemCount());
@@ -117,7 +120,7 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => router.push(`/table/${tableId}/cart`)}
+              onClick={() => router.push(cartPath)}
               className="relative"
             >
               <ShoppingCart className="h-5 w-5" />
@@ -231,11 +234,7 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
       {/* Cart Button (Fixed Bottom) */}
       {itemCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t">
-          <Button
-            size="xl"
-            className="w-full"
-            onClick={() => router.push(`/table/${tableId}/cart`)}
-          >
+          <Button size="xl" className="w-full" onClick={() => router.push(cartPath)}>
             <ShoppingCart className="mr-2 h-5 w-5" />
             View Cart ({itemCount} items)
           </Button>

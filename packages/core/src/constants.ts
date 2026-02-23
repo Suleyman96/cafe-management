@@ -10,8 +10,16 @@ export const ORDER_STATUS = {
   PREPARING: 'preparing',
   READY: 'ready',
   SERVED: 'served',
+  OUT_FOR_DELIVERY: 'out_for_delivery',
+  DELIVERED: 'delivered',
   CLOSED: 'closed',
   CANCELLED: 'cancelled',
+} as const;
+
+export const ORDER_TYPE = {
+  DINE_IN: 'dine_in',
+  TAKEOUT: 'takeout',
+  DELIVERY: 'delivery',
 } as const;
 
 // Table statuses
@@ -79,6 +87,8 @@ export const STATUS_COLORS = {
   ready: '#10B981', // green-500
   served: '#6B7280', // gray-500
   closed: '#374151', // gray-700
+  out_for_delivery: '#8B5CF6', // purple-500
+  delivered: '#10B981', // green-500
   cancelled: '#9CA3AF', // gray-400
 } as const;
 
@@ -142,6 +152,8 @@ export const QUERY_KEYS = {
   EXPENSE_MONTHLY_SUMMARY: 'expense_monthly_summary',
   SCHEDULES: 'schedules',
   MY_SCHEDULE: 'my_schedule',
+  DELIVERY_ORDER: 'delivery_order',
+  DELIVERY_ORDERS: 'delivery_orders',
 } as const;
 
 // UI constants
