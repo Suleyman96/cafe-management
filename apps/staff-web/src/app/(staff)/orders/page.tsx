@@ -12,6 +12,7 @@ import {
   Search,
   Smartphone,
   ThumbsUp,
+  Truck,
   User,
   UserCheck,
   X,
@@ -35,6 +36,8 @@ type OrderStatus =
   | 'preparing'
   | 'ready'
   | 'served'
+  | 'out_for_delivery'
+  | 'delivered'
   | 'paid'
   | 'cancelled';
 type OrderSource = 'customer' | 'waiter' | 'phone';
@@ -134,6 +137,10 @@ export default function OrdersPage() {
         return 'bg-green-100 text-green-800';
       case 'served':
         return 'bg-purple-100 text-purple-800';
+      case 'out_for_delivery':
+        return 'bg-violet-100 text-violet-800';
+      case 'delivered':
+        return 'bg-emerald-100 text-emerald-800';
       case 'paid':
         return 'bg-gray-100 text-gray-800';
       case 'cancelled':
@@ -259,6 +266,8 @@ export default function OrdersPage() {
               <option value="preparing">Preparing</option>
               <option value="ready">Ready</option>
               <option value="served">Served</option>
+              <option value="out_for_delivery">Out for Delivery</option>
+              <option value="delivered">Delivered</option>
               <option value="paid">Paid</option>
               <option value="cancelled">Cancelled</option>
             </select>
@@ -296,20 +305,33 @@ export default function OrdersPage() {
           const remaining = total - paid;
           const isFullyPaid = remaining === 0 && total > 0;
 
-          const isTakeout = !order.table;
+          const isTakeout =
+            order.order_type === 'takeout' || (!order.table && order.order_type !== 'delivery');
+          const isDelivery = order.order_type === 'delivery';
 
           return (
             <div
               key={order.id}
               className={`border rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow cursor-pointer ${
-                isTakeout ? 'border-orange-300 bg-orange-50' : 'border-gray-200 bg-white'
+                isDelivery
+                  ? 'border-purple-300 bg-purple-50'
+                  : isTakeout
+                    ? 'border-orange-300 bg-orange-50'
+                    : 'border-gray-200 bg-white'
               }`}
               onClick={() => (window.location.href = `/orders/${order.id}`)}
             >
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0 mb-3">
                 <div>
                   <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                    {isTakeout ? (
+                    {isDelivery ? (
+                      <div className="flex items-center gap-2">
+                        <Truck className="h-4 sm:h-5 w-4 sm:w-5 text-purple-600" />
+                        <h3 className="font-semibold text-base sm:text-lg text-purple-800">
+                          Delivery
+                        </h3>
+                      </div>
+                    ) : isTakeout ? (
                       <div className="flex items-center gap-2">
                         <Package className="h-4 sm:h-5 w-4 sm:w-5 text-orange-600" />
                         <h3 className="font-semibold text-base sm:text-lg text-orange-800">
@@ -379,6 +401,19 @@ export default function OrdersPage() {
                 )}
               </div>
 
+              {/* Delivery Address Preview */}
+              {isDelivery && order.delivery_address && (
+                <div className="mb-3 text-sm text-purple-700 bg-purple-100/50 rounded px-2 py-1.5 flex items-start gap-1.5">
+                  <Truck className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                  <span className="line-clamp-1">{order.delivery_address}</span>
+                  {order.delivery_person?.full_name && (
+                    <span className="text-xs text-purple-500 ml-auto flex-shrink-0">
+                      {order.delivery_person.full_name}
+                    </span>
+                  )}
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                 {/* Pending Approval: Show approve button */}
@@ -421,7 +456,7 @@ export default function OrdersPage() {
                   </Button>
                 )}
                 {/* Dine-in orders: Mark as served before payment */}
-                {order.status === 'ready' && order.table && (
+                {order.status === 'ready' && order.table && !isDelivery && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -431,8 +466,30 @@ export default function OrdersPage() {
                     Served
                   </Button>
                 )}
+                {/* Delivery orders: Out for Delivery when ready */}
+                {order.status === 'ready' && isDelivery && (
+                  <Button
+                    size="sm"
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    onClick={() => handleStatusUpdate(order.id, 'out_for_delivery')}
+                  >
+                    <Truck className="h-4 w-4 mr-1" />
+                    Out for Delivery
+                  </Button>
+                )}
+                {/* Delivery orders: Mark Delivered */}
+                {order.status === 'out_for_delivery' && isDelivery && (
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => handleStatusUpdate(order.id, 'delivered')}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    Mark Delivered
+                  </Button>
+                )}
                 {/* Takeout orders: Mark as picked up (completes the order) */}
-                {order.status === 'ready' && !order.table && !isFullyPaid && (
+                {order.status === 'ready' && !order.table && !isDelivery && !isFullyPaid && (
                   <Button
                     size="sm"
                     onClick={() => {
@@ -457,9 +514,14 @@ export default function OrdersPage() {
                     Payment
                   </Button>
                 )}
-                {['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(
-                  order.status,
-                ) && (
+                {[
+                  'pending_approval',
+                  'new',
+                  'preparing',
+                  'ready',
+                  'served',
+                  'out_for_delivery',
+                ].includes(order.status) && (
                   <Button size="sm" variant="destructive" onClick={() => openCancelModal(order)}>
                     <XCircle className="h-4 w-4 mr-1" />
                     {order.status === 'pending_approval' ? 'Reject' : 'Cancel'}

@@ -268,6 +268,16 @@ export function isExpense(value: unknown): value is Expense {
   );
 }
 
+// Order type helpers
+export function isDeliveryOrder(value: unknown): boolean {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'order_type' in value &&
+    (value as any).order_type === 'delivery'
+  );
+}
+
 // Staff schedule type guards
 export function isStaffSchedule(value: unknown): value is StaffSchedule {
   return (

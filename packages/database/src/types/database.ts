@@ -99,10 +99,12 @@ export interface Database {
             | 'preparing'
             | 'ready'
             | 'served'
+            | 'out_for_delivery'
+            | 'delivered'
             | 'closed'
             | 'cancelled';
           source: 'customer' | 'waiter' | 'phone';
-          order_type: 'dine_in' | 'takeout';
+          order_type: 'dine_in' | 'takeout' | 'delivery';
           customer_name: string | null;
           customer_phone: string | null;
           subtotal: number;
@@ -118,6 +120,13 @@ export interface Database {
           closed_at: string | null;
           payment_method: string | null;
           paid_at: string | null;
+          // Delivery fields
+          delivery_address: string | null;
+          delivery_fee: number;
+          delivery_notes: string | null;
+          estimated_delivery_time: string | null;
+          delivered_at: string | null;
+          delivery_person_id: string | null;
         };
         Insert: Omit<
           Database['public']['Tables']['orders']['Row'],
@@ -245,24 +254,6 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['table_transfers']['Row'], 'id' | 'created_at'>;
         Update: Partial<Database['public']['Tables']['table_transfers']['Insert']>;
       };
-      staff_notes: {
-        Row: {
-          id: string;
-          created_by: string;
-          title: string;
-          content: string;
-          priority: 'low' | 'normal' | 'high' | 'urgent';
-          is_pinned: boolean;
-          expires_at: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Omit<
-          Database['public']['Tables']['staff_notes']['Row'],
-          'id' | 'created_at' | 'updated_at'
-        >;
-        Update: Partial<Database['public']['Tables']['staff_notes']['Insert']>;
-      };
       staff_schedules: {
         Row: {
           id: string;
@@ -310,6 +301,11 @@ export interface Database {
           // Feature controls
           qr_ordering_enabled: boolean;
           tips_enabled: boolean;
+          // Delivery settings
+          delivery_enabled: boolean;
+          delivery_fee_default: number;
+          minimum_delivery_amount: number;
+          delivery_zone_info: string | null;
           // Contact & social
           contact_phone: string | null;
           contact_website: string | null;

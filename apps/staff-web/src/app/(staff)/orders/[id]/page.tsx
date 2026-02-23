@@ -13,10 +13,13 @@ import {
   Clock,
   CreditCard,
   FileText,
+  MapPin,
   Package,
+  Phone,
   RefreshCw,
   Smartphone,
   ThumbsUp,
+  Truck,
   User,
   UtensilsCrossed,
   XCircle,
@@ -28,10 +31,12 @@ import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import {
   calculateTax as calculateTaxFromSettings,
   formatPriceWithSettings,
+  useAssignDeliveryPerson,
   useCafeSettings,
   useOrder,
   useOrderPayments,
   useOrderTransferHistory,
+  useStaff,
   useUpdateOrderItemStatus,
   useUpdateOrderStatus,
 } from '@/hooks';
@@ -78,6 +83,8 @@ export default function OrderDetailPage() {
   const payments = paymentsData as Payment[] | undefined;
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
+  const assignDeliveryPerson = useAssignDeliveryPerson();
+  const { data: staffList } = useStaff();
 
   // Format price using cafe settings or fallback
   const formatPrice = (amount: number) => {
@@ -200,6 +207,10 @@ export default function OrderDetailPage() {
         return 'bg-green-100 text-green-800';
       case 'served':
         return 'bg-purple-100 text-purple-800';
+      case 'out_for_delivery':
+        return 'bg-violet-100 text-violet-800';
+      case 'delivered':
+        return 'bg-emerald-100 text-emerald-800';
       case 'paid':
         return 'bg-gray-100 text-gray-800';
       case 'cancelled':
@@ -310,7 +321,11 @@ export default function OrderDetailPage() {
             <span className="hidden sm:inline">Back</span>
           </Button>
           <h1 className="text-lg sm:text-2xl font-bold">
-            {order.table ? order.table.table_number : 'Takeout'}
+            {order.order_type === 'delivery'
+              ? 'Delivery'
+              : order.table
+                ? order.table.table_number
+                : 'Takeout'}
           </h1>
           <span
             className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(order.status)}`}
@@ -340,12 +355,18 @@ export default function OrderDetailPage() {
           <div>
             <p className="text-sm text-gray-600">Order Type</p>
             <p className="flex items-center gap-1">
-              {order.order_type === 'takeout' ? (
+              {order.order_type === 'delivery' ? (
+                <Truck className="h-4 w-4 text-purple-600" />
+              ) : order.order_type === 'takeout' ? (
                 <Package className="h-4 w-4" />
               ) : (
                 <User className="h-4 w-4" />
               )}
-              {order.order_type === 'takeout' ? 'Takeout' : 'Dine-in'}
+              {order.order_type === 'delivery'
+                ? 'Delivery'
+                : order.order_type === 'takeout'
+                  ? 'Takeout'
+                  : 'Dine-in'}
             </p>
           </div>
           {order.customer_name && (
@@ -379,6 +400,87 @@ export default function OrderDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Delivery Info Section */}
+      {order.order_type === 'delivery' && (
+        <div className="bg-purple-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 border border-purple-200">
+          <h3 className="font-semibold mb-3 flex items-center gap-2 text-purple-800">
+            <Truck className="h-4 w-4" />
+            Delivery Information
+          </h3>
+          <div className="space-y-2 text-sm">
+            {order.delivery_address && (
+              <div className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                <span>{order.delivery_address}</span>
+              </div>
+            )}
+            {order.customer_name && (
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                <span>{order.customer_name}</span>
+              </div>
+            )}
+            {order.customer_phone && (
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                <a href={`tel:${order.customer_phone}`} className="text-blue-600 underline">
+                  {order.customer_phone}
+                </a>
+              </div>
+            )}
+            {order.delivery_notes && (
+              <div className="flex items-start gap-2">
+                <FileText className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                <span className="text-gray-600">{order.delivery_notes}</span>
+              </div>
+            )}
+            {order.delivery_fee > 0 && (
+              <div className="flex items-center gap-2 pt-2 border-t border-purple-200">
+                <CreditCard className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                <span>
+                  Delivery Fee: <strong>{formatPrice(order.delivery_fee)}</strong>
+                </span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 pt-2 border-t border-purple-200">
+              <Truck className="h-4 w-4 text-purple-500 flex-shrink-0" />
+              <span className="text-sm">Driver:</span>
+              {['delivered', 'cancelled'].includes(order.status) ? (
+                <span className="font-medium">
+                  {(order as any).delivery_person?.full_name || 'Not assigned'}
+                </span>
+              ) : (
+                <select
+                  className="flex-1 px-2 py-1 border border-purple-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  value={order.delivery_person_id || ''}
+                  onChange={async (e) => {
+                    const staffId = e.target.value;
+                    if (!staffId) return;
+                    try {
+                      await assignDeliveryPerson.mutateAsync({
+                        orderId: order.id,
+                        staffId,
+                      });
+                      toast.success('Delivery person assigned');
+                      refetch();
+                    } catch {
+                      toast.error('Failed to assign delivery person');
+                    }
+                  }}
+                >
+                  <option value="">Select driver...</option>
+                  {staffList?.map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.full_name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Table Transfer History */}
       {transferHistory && transferHistory.length > 0 && (
@@ -582,7 +684,7 @@ export default function OrderDetailPage() {
             Ready
           </Button>
         )}
-        {order.status === 'ready' && order.table && (
+        {order.status === 'ready' && order.table && order.order_type !== 'delivery' && (
           <Button
             size="sm"
             onClick={() => handleStatusUpdate('SERVED')}
@@ -592,16 +694,40 @@ export default function OrderDetailPage() {
             Served
           </Button>
         )}
-        {(order.status === 'served' || order.status === 'ready') && !isFullyPaid && (
+        {/* Delivery: Out for Delivery when ready */}
+        {order.status === 'ready' && order.order_type === 'delivery' && (
           <Button
             size="sm"
-            onClick={() => setIsPaymentModalOpen(true)}
-            className="flex items-center gap-1 sm:gap-2"
+            onClick={() => handleStatusUpdate('OUT_FOR_DELIVERY')}
+            className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-1 sm:gap-2"
           >
-            <CreditCard className="h-4 w-4" />
-            Payment
+            <Truck className="h-4 w-4" />
+            Out for Delivery
           </Button>
         )}
+        {/* Delivery: Mark Delivered */}
+        {order.status === 'out_for_delivery' && order.order_type === 'delivery' && (
+          <Button
+            size="sm"
+            onClick={() => handleStatusUpdate('DELIVERED')}
+            className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-1 sm:gap-2"
+          >
+            <CheckCircle className="h-4 w-4" />
+            Mark Delivered
+          </Button>
+        )}
+        {(order.status === 'served' || order.status === 'ready') &&
+          !isFullyPaid &&
+          order.order_type !== 'delivery' && (
+            <Button
+              size="sm"
+              onClick={() => setIsPaymentModalOpen(true)}
+              className="flex items-center gap-1 sm:gap-2"
+            >
+              <CreditCard className="h-4 w-4" />
+              Payment
+            </Button>
+          )}
         {isFullyPaid && order.status !== 'closed' && order.status !== 'cancelled' && (
           <Button
             size="sm"
@@ -612,7 +738,9 @@ export default function OrderDetailPage() {
             Close
           </Button>
         )}
-        {['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status) && (
+        {['pending_approval', 'new', 'preparing', 'ready', 'served', 'out_for_delivery'].includes(
+          order.status,
+        ) && (
           <Button
             size="sm"
             variant="destructive"

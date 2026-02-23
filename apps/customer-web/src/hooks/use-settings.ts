@@ -26,6 +26,11 @@ export interface CafeSettings {
   welcome_message: string | null;
   // Feature controls
   qr_ordering_enabled: boolean;
+  // Delivery settings
+  delivery_enabled: boolean;
+  delivery_fee_default: number;
+  minimum_delivery_amount: number;
+  delivery_zone_info: string | null;
   // Contact & social
   contact_phone: string | null;
   contact_website: string | null;
@@ -62,6 +67,11 @@ const DEFAULT_SETTINGS: CafeSettings = {
   welcome_message: null,
   // Feature controls
   qr_ordering_enabled: true,
+  // Delivery defaults
+  delivery_enabled: false,
+  delivery_fee_default: 0,
+  minimum_delivery_amount: 0,
+  delivery_zone_info: null,
   // Contact & social defaults
   contact_phone: null,
   contact_website: null,

@@ -17,7 +17,6 @@ import { createRpcWrapper } from './rpc';
 import { createSchedulesWrapper } from './schedules';
 import { createSettingsWrapper } from './settings';
 import { createStaffWrapper } from './staff';
-import { createStaffNotesWrapper } from './staff-notes';
 import { createStockItemsWrapper } from './stock';
 import { createTablesWrapper } from './tables';
 import type { AnySupabaseClient, WrapperContext } from './types';
@@ -37,7 +36,6 @@ export class SupabaseWrapper {
   feedback;
   payments;
   waiterCalls;
-  staffNotes;
   settings;
   stockItems;
   expenseCategories;
@@ -64,7 +62,6 @@ export class SupabaseWrapper {
     this.feedback = createFeedbackWrapper(this.ctx);
     this.payments = createPaymentsWrapper(this.ctx);
     this.waiterCalls = createWaiterCallsWrapper(this.ctx);
-    this.staffNotes = createStaffNotesWrapper(this.ctx);
     this.settings = createSettingsWrapper(this.ctx);
     this.stockItems = createStockItemsWrapper(this.ctx);
     this.expenseCategories = createExpenseCategoriesWrapper(this.ctx);
@@ -91,7 +88,6 @@ export type { RpcWrapper } from './rpc';
 export type { SchedulesWrapper } from './schedules';
 export type { SettingsWrapper } from './settings';
 export type { StaffWrapper } from './staff';
-export type { StaffNotesWrapper } from './staff-notes';
 export type { StockItemsWrapper } from './stock';
 export type { TablesWrapper } from './tables';
 // Re-export types

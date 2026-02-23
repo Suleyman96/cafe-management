@@ -16,8 +16,8 @@ import {
   Package,
   Receipt,
   Settings,
-  StickyNote,
   Store,
+  Truck,
   Users,
   UtensilsCrossed,
 } from 'lucide-react';
@@ -38,10 +38,10 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: '/tables', label: 'Tables', icon: <UtensilsCrossed className="h-5 w-5" /> },
   { href: '/orders', label: 'Orders', icon: <ClipboardList className="h-5 w-5" /> },
+  { href: '/delivery', label: 'Delivery', icon: <Truck className="h-5 w-5" /> },
   { href: '/kitchen', label: 'Kitchen', icon: <ChefHat className="h-5 w-5" /> },
   { href: '/calls', label: 'Waiter Calls', icon: <Bell className="h-5 w-5" /> },
   { href: '/feedback', label: 'Feedback', icon: <MessageSquare className="h-5 w-5" /> },
-  { href: '/notes', label: 'Staff Notes', icon: <StickyNote className="h-5 w-5" /> },
   { href: '/stock', label: 'Stock', icon: <Package className="h-5 w-5" />, adminOnly: true },
   { href: '/expenses', label: 'Expenses', icon: <Receipt className="h-5 w-5" />, adminOnly: true },
   { href: '/menu', label: 'Menu', icon: <Menu className="h-5 w-5" />, adminOnly: true },
