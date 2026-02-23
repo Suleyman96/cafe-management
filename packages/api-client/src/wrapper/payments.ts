@@ -35,6 +35,18 @@ export function createPaymentsWrapper(ctx: WrapperContext) {
       if (error) throw handleSupabaseError(error);
       return data || [];
     },
+
+    findByReceivedBy: async (staffId: string, limit = 10) => {
+      const { data, error } = await ctx.client
+        .from('order_payments')
+        .select('*')
+        .eq('received_by', staffId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw handleSupabaseError(error);
+      return data || [];
+    },
   };
 }
 

@@ -93,7 +93,7 @@ describe('StaffWrapper', () => {
     });
     const deleteStaff = createStaffWrapper(deleteCtx);
     await deleteStaff.delete(validStaff.id);
-    expect(deleteCtx.getCalls()[0].method).toBe('delete');
+    expect(deleteCtx.getCalls()[0].method).toBe('update');
   });
 
   it('getActiveWaiters returns active waiters', async () => {

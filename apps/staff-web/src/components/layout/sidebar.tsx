@@ -3,11 +3,13 @@
 import {
   BarChart3,
   Bell,
+  CalendarDays,
   ChefHat,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
   ClipboardList,
+  Clock,
   LogOut,
   Menu,
   MessageSquare,
@@ -24,6 +26,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { CafeManIcon, CafeManLogo } from '@/components/ui/cafe-man-logo';
 import { useAuth } from '@/hooks/use-auth';
+import { useMyScheduleToday } from '@/hooks/use-schedules-safe';
 
 type NavItem = {
   href: string;
@@ -43,6 +46,12 @@ const navItems: NavItem[] = [
   { href: '/expenses', label: 'Expenses', icon: <Receipt className="h-5 w-5" />, adminOnly: true },
   { href: '/menu', label: 'Menu', icon: <Menu className="h-5 w-5" />, adminOnly: true },
   { href: '/staff', label: 'Staff', icon: <Users className="h-5 w-5" />, adminOnly: true },
+  {
+    href: '/schedules',
+    label: 'Schedules',
+    icon: <CalendarDays className="h-5 w-5" />,
+    adminOnly: true,
+  },
   {
     href: '/cafe-settings',
     label: 'Cafe Settings',
@@ -171,6 +180,9 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
         </ul>
       </nav>
 
+      {/* Today's Shift Indicator */}
+      {staff && (!isCollapsed || isMobile) && <TodayShiftIndicator staffId={staff.id} />}
+
       {/* User Menu at bottom */}
       {staff && (
         <div className="relative border-t border-gray-200" ref={userMenuRef}>
@@ -242,5 +254,33 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
         </div>
       )}
     </aside>
+  );
+}
+
+function TodayShiftIndicator({ staffId }: { staffId: string }) {
+  const { data: todaySchedules } = useMyScheduleToday(staffId);
+
+  if (!todaySchedules || todaySchedules.length === 0) return null;
+
+  const shift = todaySchedules[0] as any;
+  const statusColors: Record<string, string> = {
+    scheduled: 'bg-gray-50 border-gray-200 text-gray-600',
+    in_progress: 'bg-blue-50 border-blue-200 text-blue-700',
+    completed: 'bg-green-50 border-green-200 text-green-700',
+    missed: 'bg-red-50 border-red-200 text-red-700',
+  };
+
+  return (
+    <div
+      className={`mx-2 mb-2 px-3 py-2 rounded-lg border text-xs ${statusColors[shift.status] || statusColors.scheduled}`}
+    >
+      <div className="flex items-center gap-1.5 font-medium">
+        <Clock className="h-3 w-3" />
+        Today&apos;s Shift
+      </div>
+      <div className="mt-0.5">
+        {shift.planned_start?.slice(0, 5)} - {shift.planned_end?.slice(0, 5)}
+      </div>
+    </div>
   );
 }

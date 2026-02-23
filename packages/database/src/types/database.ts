@@ -263,6 +263,26 @@ export interface Database {
         >;
         Update: Partial<Database['public']['Tables']['staff_notes']['Insert']>;
       };
+      staff_schedules: {
+        Row: {
+          id: string;
+          staff_id: string;
+          date: string;
+          planned_start: string;
+          planned_end: string;
+          actual_start: string | null;
+          actual_end: string | null;
+          status: 'scheduled' | 'in_progress' | 'completed' | 'missed';
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<
+          Database['public']['Tables']['staff_schedules']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['staff_schedules']['Insert']>;
+      };
       cafe_settings: {
         Row: {
           id: string;

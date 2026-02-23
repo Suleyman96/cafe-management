@@ -11,6 +11,14 @@ import { db } from '@/lib/supabase/wrapped-client';
 type PaymentInsert = Database['public']['Tables']['order_payments']['Insert'];
 type Payment = Database['public']['Tables']['order_payments']['Row'];
 
+export function usePaymentsByStaff(staffId: string, limit = 5) {
+  return useQuery({
+    queryKey: ['staff_payments', staffId, limit],
+    queryFn: () => db.payments.findByReceivedBy(staffId, limit),
+    enabled: !!staffId,
+  });
+}
+
 export function useOrderPayments(orderId: string) {
   return useQuery({
     queryKey: ['order_payments', orderId],

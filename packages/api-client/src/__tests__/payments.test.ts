@@ -62,6 +62,28 @@ describe('PaymentsWrapper', () => {
     ).rejects.toThrow();
   });
 
+  it('findByReceivedBy returns payments for a staff member', async () => {
+    const ctx = createMockContext({
+      responses: {
+        order_payments: { data: [validPayment], error: null },
+      },
+    });
+    const payments = createPaymentsWrapper(ctx);
+    const result = await payments.findByReceivedBy(validPayment.received_by);
+    expect(result).toEqual([validPayment]);
+  });
+
+  it('findByReceivedBy returns empty array when no payments', async () => {
+    const ctx = createMockContext({
+      responses: {
+        order_payments: { data: [], error: null },
+      },
+    });
+    const payments = createPaymentsWrapper(ctx);
+    const result = await payments.findByReceivedBy('nonexistent');
+    expect(result).toEqual([]);
+  });
+
   it('throws on supabase error for findByOrderId', async () => {
     const ctx = createMockContext({
       responses: {

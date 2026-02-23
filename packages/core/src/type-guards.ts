@@ -13,6 +13,7 @@ import type {
   OrderItem,
   OrderPayment,
   Staff,
+  StaffSchedule,
   StockItem,
   StockMovement,
   Table,
@@ -265,4 +266,22 @@ export function isExpense(value: unknown): value is Expense {
     'description' in value &&
     'payment_method' in value
   );
+}
+
+// Staff schedule type guards
+export function isStaffSchedule(value: unknown): value is StaffSchedule {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'staff_id' in value &&
+    'date' in value &&
+    'planned_start' in value &&
+    'planned_end' in value &&
+    'status' in value
+  );
+}
+
+export function isStaffScheduleArray(value: unknown): value is StaffSchedule[] {
+  return Array.isArray(value) && value.every(isStaffSchedule);
 }

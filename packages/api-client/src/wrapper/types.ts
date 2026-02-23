@@ -36,6 +36,9 @@ export type ExpenseCategoryInsert = Tables['expense_categories']['Insert'];
 export type ExpenseRow = Tables['expenses']['Row'];
 export type ExpenseInsert = Tables['expenses']['Insert'];
 export type ExpenseUpdate = Tables['expenses']['Update'];
+export type StaffScheduleRow = Tables['staff_schedules']['Row'];
+export type StaffScheduleInsert = Tables['staff_schedules']['Insert'];
+export type StaffScheduleUpdate = Tables['staff_schedules']['Update'];
 
 // Helper type for Supabase client that bypasses strict typing
 export type AnySupabaseClient = SupabaseClient<any>;
