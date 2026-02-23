@@ -31,10 +31,12 @@ import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import {
   calculateTax as calculateTaxFromSettings,
   formatPriceWithSettings,
+  useAssignDeliveryPerson,
   useCafeSettings,
   useOrder,
   useOrderPayments,
   useOrderTransferHistory,
+  useStaff,
   useUpdateOrderItemStatus,
   useUpdateOrderStatus,
 } from '@/hooks';
@@ -81,6 +83,8 @@ export default function OrderDetailPage() {
   const payments = paymentsData as Payment[] | undefined;
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
+  const assignDeliveryPerson = useAssignDeliveryPerson();
+  const { data: staffList } = useStaff();
 
   // Format price using cafe settings or fallback
   const formatPrice = (amount: number) => {
@@ -439,14 +443,41 @@ export default function OrderDetailPage() {
                 </span>
               </div>
             )}
-            {(order as any).delivery_person?.full_name && (
-              <div className="flex items-center gap-2 pt-2 border-t border-purple-200">
-                <Truck className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                <span>
-                  Driver: <strong>{(order as any).delivery_person.full_name}</strong>
+            <div className="flex items-center gap-2 pt-2 border-t border-purple-200">
+              <Truck className="h-4 w-4 text-purple-500 flex-shrink-0" />
+              <span className="text-sm">Driver:</span>
+              {['delivered', 'cancelled'].includes(order.status) ? (
+                <span className="font-medium">
+                  {(order as any).delivery_person?.full_name || 'Not assigned'}
                 </span>
-              </div>
-            )}
+              ) : (
+                <select
+                  className="flex-1 px-2 py-1 border border-purple-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  value={order.delivery_person_id || ''}
+                  onChange={async (e) => {
+                    const staffId = e.target.value;
+                    if (!staffId) return;
+                    try {
+                      await assignDeliveryPerson.mutateAsync({
+                        orderId: order.id,
+                        staffId,
+                      });
+                      toast.success('Delivery person assigned');
+                      refetch();
+                    } catch {
+                      toast.error('Failed to assign delivery person');
+                    }
+                  }}
+                >
+                  <option value="">Select driver...</option>
+                  {staffList?.map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.full_name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
         </div>
       )}
