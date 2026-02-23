@@ -9,7 +9,6 @@ export * from './use-orders-safe';
 export * from './use-payments-safe';
 export * from './use-schedules-safe';
 export * from './use-settings-safe';
-export * from './use-staff-notes-safe';
 export * from './use-staff-safe';
 export * from './use-stock-safe';
 export * from './use-table-transfers-safe';

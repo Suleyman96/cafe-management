@@ -254,24 +254,6 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['table_transfers']['Row'], 'id' | 'created_at'>;
         Update: Partial<Database['public']['Tables']['table_transfers']['Insert']>;
       };
-      staff_notes: {
-        Row: {
-          id: string;
-          created_by: string;
-          title: string;
-          content: string;
-          priority: 'low' | 'normal' | 'high' | 'urgent';
-          is_pinned: boolean;
-          expires_at: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Omit<
-          Database['public']['Tables']['staff_notes']['Row'],
-          'id' | 'created_at' | 'updated_at'
-        >;
-        Update: Partial<Database['public']['Tables']['staff_notes']['Insert']>;
-      };
       staff_schedules: {
         Row: {
           id: string;
