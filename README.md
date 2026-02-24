@@ -306,15 +306,19 @@ Delivery order:  new -> preparing -> ready -> out_for_delivery -> delivered -> c
 
 ### Deploy to Supabase Cloud
 
+**Initial setup (new project):**
+
+Run [`supabase/reset.sql`](supabase/reset.sql) in the Supabase Dashboard SQL Editor to create all tables, functions, and seed data from scratch.
+
+**Ongoing deployments (applying new migrations):**
+
 ```bash
 # Link to your project
 supabase link --project-ref your-project-ref
 
-# Push migrations
+# Push only new migrations
 supabase db push
 ```
-
-Or run [`supabase/reset.sql`](supabase/reset.sql) directly in the SQL Editor.
 
 ### Deploy Apps (Vercel)
 
