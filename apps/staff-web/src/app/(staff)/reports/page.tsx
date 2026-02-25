@@ -18,6 +18,7 @@ import {
   ShoppingBag,
   Trash2,
   TrendingUp,
+  Truck,
   UserCheck,
   Users,
 } from 'lucide-react';
@@ -244,10 +245,9 @@ export default function ReportsPage() {
           }, 0) / filteredOrders.length
         : 0,
 
-    // Use table_id to determine order type (more reliable than source)
-    dineInOrders: filteredOrders.filter((order: any) => order.table_id).length,
-
-    takeoutOrders: filteredOrders.filter((order: any) => !order.table_id).length,
+    dineInOrders: filteredOrders.filter((order: any) => order.order_type === 'dine_in').length,
+    takeoutOrders: filteredOrders.filter((order: any) => order.order_type === 'takeout').length,
+    deliveryOrders: filteredOrders.filter((order: any) => order.order_type === 'delivery').length,
 
     // Calculate total quantity of items sold (not just line items count)
     totalItems: filteredOrders.reduce(
@@ -426,6 +426,7 @@ export default function ReportsPage() {
       ],
       ['Dine-in Orders', metrics.dineInOrders.toString()],
       ['Takeout Orders', metrics.takeoutOrders.toString()],
+      ['Delivery Orders', metrics.deliveryOrders.toString()],
       ['Total Items Sold', metrics.totalItems.toString()],
     ];
 
@@ -1088,23 +1089,39 @@ export default function ReportsPage() {
               </div>
               <span className="font-medium text-sm sm:text-base">{metrics.takeoutOrders}</span>
             </div>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Truck className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
+                <span className="text-sm sm:text-base">Delivery</span>
+              </div>
+              <span className="font-medium text-sm sm:text-base">{metrics.deliveryOrders}</span>
+            </div>
           </div>
           {metrics.totalOrders > 0 && (
             <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
-              <div className="flex gap-2">
-                <div className="flex-1 bg-blue-100 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full"
-                    style={{ width: `${(metrics.dineInOrders / metrics.totalOrders) * 100}%` }}
-                  />
-                </div>
+              <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-gray-100">
+                <div
+                  className="bg-blue-600 h-2"
+                  style={{ width: `${(metrics.dineInOrders / metrics.totalOrders) * 100}%` }}
+                />
+                <div
+                  className="bg-green-500 h-2"
+                  style={{ width: `${(metrics.takeoutOrders / metrics.totalOrders) * 100}%` }}
+                />
+                <div
+                  className="bg-orange-500 h-2"
+                  style={{ width: `${(metrics.deliveryOrders / metrics.totalOrders) * 100}%` }}
+                />
               </div>
-              <div className="flex justify-between text-xs text-gray-600 mt-2">
+              <div className="flex justify-between text-xs text-gray-600 mt-2 flex-wrap gap-1">
                 <span>
                   Dine In: {Math.round((metrics.dineInOrders / metrics.totalOrders) * 100)}%
                 </span>
                 <span>
                   Takeout: {Math.round((metrics.takeoutOrders / metrics.totalOrders) * 100)}%
+                </span>
+                <span>
+                  Delivery: {Math.round((metrics.deliveryOrders / metrics.totalOrders) * 100)}%
                 </span>
               </div>
             </div>
