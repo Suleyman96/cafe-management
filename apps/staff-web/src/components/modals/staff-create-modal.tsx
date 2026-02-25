@@ -7,11 +7,12 @@ import { toast } from 'sonner';
 type StaffRole = 'waiter' | 'admin' | 'kitchen' | 'owner';
 
 interface StaffCreateModalProps {
+  currentUserRole?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function StaffCreateModal({ onClose, onSuccess }: StaffCreateModalProps) {
+export function StaffCreateModal({ currentUserRole, onClose, onSuccess }: StaffCreateModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -113,7 +114,7 @@ export function StaffCreateModal({ onClose, onSuccess }: StaffCreateModalProps) 
               <option value="waiter">Waiter</option>
               <option value="kitchen">Kitchen Staff</option>
               <option value="admin">Admin</option>
-              <option value="owner">Owner</option>
+              {currentUserRole === 'owner' && <option value="owner">Owner</option>}
             </select>
           </div>
 

@@ -194,7 +194,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
 
   return (
     <aside
-      className={`bg-white border-r border-gray-200 min-h-screen flex flex-col transition-all duration-300 ${
+      className={`bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col transition-all duration-300 ${
         isCollapsed && !isMobile ? 'w-16' : 'w-64'
       }`}
     >
@@ -228,7 +228,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-2">
+      <nav className="flex-1 overflow-y-auto p-2">
         {visibleGroups.map((group) => {
           const collapsed = isGroupCollapsed(group.key);
           const showHeader = group.collapsible && (!isCollapsed || isMobile);
