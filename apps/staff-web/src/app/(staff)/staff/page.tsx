@@ -20,7 +20,7 @@ export default function StaffPage() {
   const [selectedStaff, setSelectedStaff] = useState<any>(null);
 
   // Only admins can access this page
-  if (currentUser?.role !== 'admin') {
+  if (currentUser?.role !== 'admin' && currentUser?.role !== 'owner') {
     return (
       <div className="p-3 sm:p-6">
         <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm">
@@ -43,6 +43,8 @@ export default function StaffPage() {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
+      case 'owner':
+        return 'bg-emerald-100 text-emerald-800';
       case 'admin':
         return 'bg-purple-100 text-purple-800';
       case 'kitchen':
@@ -101,6 +103,7 @@ export default function StaffPage() {
           className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         >
           <option value="all">All Roles</option>
+          <option value="owner">Owner</option>
           <option value="admin">Admin</option>
           <option value="waiter">Waiter</option>
           <option value="kitchen">Kitchen</option>
@@ -269,6 +272,7 @@ export default function StaffPage() {
       {/* Modals */}
       {isCreateModalOpen && (
         <StaffCreateModal
+          currentUserRole={currentUser?.role}
           onClose={() => setIsCreateModalOpen(false)}
           onSuccess={() => {
             setIsCreateModalOpen(false);
@@ -280,6 +284,7 @@ export default function StaffPage() {
       {isEditModalOpen && selectedStaff && (
         <StaffEditModal
           staff={selectedStaff}
+          currentUserRole={currentUser?.role}
           onClose={() => {
             setIsEditModalOpen(false);
             setSelectedStaff(null);

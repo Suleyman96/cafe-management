@@ -16,23 +16,28 @@ import {
   Package,
   Receipt,
   ShoppingBag,
+  Trash2,
   TrendingUp,
+  Truck,
   UserCheck,
   Users,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
   formatPriceWithSettings,
+  useAuth,
   useCafeSettings,
   useExpenses,
   useOrders,
   useStaff,
+  useWasteLogs,
 } from '@/hooks';
 
 type DateRangeType = 'today' | 'week' | 'month' | 'year' | 'custom';
 type CustomMode = 'day' | 'month' | 'year';
 
 export default function ReportsPage() {
+  const { staff: currentUser } = useAuth();
   const { data: orders, isLoading: loading, error } = useOrders();
   const { data: staff, isLoading: staffLoading } = useStaff();
   const { data: cafeSettings } = useCafeSettings();
@@ -106,6 +111,10 @@ export default function ReportsPage() {
   }, [getDateRange]);
 
   const { data: expenses = [], isLoading: expensesLoading } = useExpenses({
+    startDate: expenseDateRange.startDate,
+    endDate: expenseDateRange.endDate,
+  });
+  const { data: wasteLogs = [], isLoading: wasteLoading } = useWasteLogs({
     startDate: expenseDateRange.startDate,
     endDate: expenseDateRange.endDate,
   });
@@ -238,10 +247,9 @@ export default function ReportsPage() {
           }, 0) / filteredOrders.length
         : 0,
 
-    // Use table_id to determine order type (more reliable than source)
-    dineInOrders: filteredOrders.filter((order: any) => order.table_id).length,
-
-    takeoutOrders: filteredOrders.filter((order: any) => !order.table_id).length,
+    dineInOrders: filteredOrders.filter((order: any) => order.order_type === 'dine_in').length,
+    takeoutOrders: filteredOrders.filter((order: any) => order.order_type === 'takeout').length,
+    deliveryOrders: filteredOrders.filter((order: any) => order.order_type === 'delivery').length,
 
     // Calculate total quantity of items sold (not just line items count)
     totalItems: filteredOrders.reduce(
@@ -281,6 +289,49 @@ export default function ReportsPage() {
     () => calculateProfitMetrics(metrics.totalRevenue, expenses as any[]),
     [expenses, metrics.totalRevenue],
   );
+
+  // Calculate waste metrics
+  const wasteMetrics = useMemo(() => {
+    const totalCost = wasteLogs.reduce((sum: number, log: any) => sum + (log.total_cost || 0), 0);
+    const totalItems = wasteLogs.length;
+
+    const reasonMap = new Map<string, { count: number; cost: number }>();
+    wasteLogs.forEach((log: any) => {
+      const reason = log.reason || 'other';
+      const current = reasonMap.get(reason) || { count: 0, cost: 0 };
+      reasonMap.set(reason, {
+        count: current.count + 1,
+        cost: current.cost + (log.total_cost || 0),
+      });
+    });
+    const byReason = Array.from(reasonMap.entries())
+      .map(([reason, data]) => ({ reason, ...data }))
+      .sort((a, b) => b.cost - a.cost);
+
+    const itemMap = new Map<
+      string,
+      { name: string; quantity: number; unit: string; cost: number }
+    >();
+    wasteLogs.forEach((log: any) => {
+      const key = log.item_name;
+      const current = itemMap.get(key) || {
+        name: log.item_name,
+        quantity: 0,
+        unit: log.unit,
+        cost: 0,
+      };
+      itemMap.set(key, {
+        ...current,
+        quantity: current.quantity + (log.quantity || 0),
+        cost: current.cost + (log.total_cost || 0),
+      });
+    });
+    const topItems = Array.from(itemMap.values())
+      .sort((a, b) => b.cost - a.cost)
+      .slice(0, 5);
+
+    return { totalCost, totalItems, byReason, topItems };
+  }, [wasteLogs]);
 
   // Calculate staff performance metrics
   const staffPerformance = (() => {
@@ -377,6 +428,7 @@ export default function ReportsPage() {
       ],
       ['Dine-in Orders', metrics.dineInOrders.toString()],
       ['Takeout Orders', metrics.takeoutOrders.toString()],
+      ['Delivery Orders', metrics.deliveryOrders.toString()],
       ['Total Items Sold', metrics.totalItems.toString()],
     ];
 
@@ -438,6 +490,77 @@ export default function ReportsPage() {
         headStyles: { fillColor: [220, 38, 38] },
         styles: { fontSize: 10 },
       });
+    }
+
+    // Waste Summary Section
+    if (wasteMetrics.totalItems > 0) {
+      const wasteStartY = (doc as any).lastAutoTable.finalY + 15;
+      if (wasteStartY > 240) doc.addPage();
+      const wasteY = wasteStartY > 240 ? 20 : wasteStartY;
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Waste Summary', 14, wasteY);
+
+      const wasteData = [
+        ['Total Waste Cost', formatPrice(wasteMetrics.totalCost)],
+        ['Waste Entries', wasteMetrics.totalItems.toString()],
+        ['Avg Cost/Entry', formatPrice(wasteMetrics.totalCost / wasteMetrics.totalItems)],
+      ];
+
+      autoTable(doc, {
+        startY: wasteY + 4,
+        head: [['Metric', 'Value']],
+        body: wasteData,
+        theme: 'striped',
+        headStyles: { fillColor: [239, 68, 68] },
+        styles: { fontSize: 10 },
+      });
+
+      if (wasteMetrics.byReason.length > 0) {
+        const reasonStartY = (doc as any).lastAutoTable.finalY + 10;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Waste by Reason', 14, reasonStartY);
+
+        const reasonData = wasteMetrics.byReason.map((item) => [
+          item.reason.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
+          item.count.toString(),
+          formatPrice(item.cost),
+          `${wasteMetrics.totalCost > 0 ? ((item.cost / wasteMetrics.totalCost) * 100).toFixed(1) : '0.0'}%`,
+        ]);
+
+        autoTable(doc, {
+          startY: reasonStartY + 4,
+          head: [['Reason', 'Count', 'Cost', '% of Total']],
+          body: reasonData,
+          theme: 'striped',
+          headStyles: { fillColor: [239, 68, 68] },
+          styles: { fontSize: 10 },
+        });
+      }
+
+      if (wasteMetrics.topItems.length > 0) {
+        const topWasteStartY = (doc as any).lastAutoTable.finalY + 10;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Top Wasted Items', 14, topWasteStartY);
+
+        const topWasteData = wasteMetrics.topItems.map((item, index) => [
+          `#${index + 1}`,
+          item.name,
+          `${item.quantity} ${item.unit}`,
+          formatPrice(item.cost),
+        ]);
+
+        autoTable(doc, {
+          startY: topWasteStartY + 4,
+          head: [['Rank', 'Item', 'Quantity', 'Cost']],
+          body: topWasteData,
+          theme: 'striped',
+          headStyles: { fillColor: [239, 68, 68] },
+          styles: { fontSize: 10 },
+        });
+      }
     }
 
     // Top Items Section
@@ -554,10 +677,18 @@ export default function ReportsPage() {
     doc.save(`Sales_Report_${dateStr}.pdf`);
   };
 
-  if (loading || staffLoading || expensesLoading) {
+  if (loading || staffLoading || expensesLoading || wasteLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (currentUser?.role !== 'owner') {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">Owner access required</p>
       </div>
     );
   }
@@ -847,6 +978,108 @@ export default function ReportsPage() {
         )}
       </div>
 
+      {/* Waste Summary */}
+      <div className="bg-white rounded-lg shadow p-3 sm:p-6 mb-4 sm:mb-8">
+        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <Trash2 className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+          <h2 className="text-base sm:text-lg font-semibold">Waste Summary</h2>
+        </div>
+
+        {wasteMetrics.totalItems === 0 ? (
+          <p className="text-gray-500 text-center py-4 text-sm">
+            No waste recorded for this period
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+              <div className="bg-red-50 rounded-lg p-3 sm:p-4">
+                <p className="text-xs sm:text-sm text-red-700">Total Waste Cost</p>
+                <p className="text-lg sm:text-2xl font-bold text-red-700">
+                  {formatPrice(wasteMetrics.totalCost)}
+                </p>
+              </div>
+              <div className="bg-orange-50 rounded-lg p-3 sm:p-4">
+                <p className="text-xs sm:text-sm text-orange-700">Waste Entries</p>
+                <p className="text-lg sm:text-2xl font-bold text-orange-700">
+                  {wasteMetrics.totalItems}
+                </p>
+              </div>
+              <div className="bg-amber-50 rounded-lg p-3 sm:p-4 col-span-2 sm:col-span-1">
+                <p className="text-xs sm:text-sm text-amber-700">Avg Cost/Entry</p>
+                <p className="text-lg sm:text-2xl font-bold text-amber-700">
+                  {formatPrice(
+                    wasteMetrics.totalItems > 0
+                      ? wasteMetrics.totalCost / wasteMetrics.totalItems
+                      : 0,
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Waste by Reason */}
+              {wasteMetrics.byReason.length > 0 && (
+                <div>
+                  <h3 className="text-xs sm:text-sm font-medium text-gray-700 mb-3">By Reason</h3>
+                  <div className="space-y-2">
+                    {wasteMetrics.byReason.map((item) => {
+                      const percentage =
+                        wasteMetrics.totalCost > 0 ? (item.cost / wasteMetrics.totalCost) * 100 : 0;
+                      const reasonLabel = item.reason
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, (c: string) => c.toUpperCase());
+                      return (
+                        <div key={item.reason} className="flex items-center gap-3">
+                          <span className="text-xs sm:text-sm text-gray-600 w-28 sm:w-36 truncate">
+                            {reasonLabel}
+                          </span>
+                          <div className="flex-1 bg-gray-100 rounded-full h-2">
+                            <div
+                              className="bg-red-400 h-2 rounded-full"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                          <span className="text-xs sm:text-sm font-medium text-gray-900 w-20 text-right">
+                            {formatPrice(item.cost)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Top Wasted Items */}
+              {wasteMetrics.topItems.length > 0 && (
+                <div>
+                  <h3 className="text-xs sm:text-sm font-medium text-gray-700 mb-3">
+                    Top Wasted Items
+                  </h3>
+                  <div className="space-y-2">
+                    {wasteMetrics.topItems.map((item, index) => (
+                      <div key={item.name} className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span className="text-xs sm:text-sm font-medium text-gray-500">
+                            #{index + 1}
+                          </span>
+                          <span className="truncate text-xs sm:text-sm">{item.name}</span>
+                        </div>
+                        <div className="text-right flex-shrink-0 ml-2">
+                          <p className="font-medium text-xs sm:text-sm">
+                            {item.quantity} {item.unit}
+                          </p>
+                          <p className="text-xs text-red-600">{formatPrice(item.cost)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
       {/* Order Types */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 mb-4 sm:mb-8">
         <div className="bg-white rounded-lg shadow p-3 sm:p-6">
@@ -866,23 +1099,39 @@ export default function ReportsPage() {
               </div>
               <span className="font-medium text-sm sm:text-base">{metrics.takeoutOrders}</span>
             </div>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Truck className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
+                <span className="text-sm sm:text-base">Delivery</span>
+              </div>
+              <span className="font-medium text-sm sm:text-base">{metrics.deliveryOrders}</span>
+            </div>
           </div>
           {metrics.totalOrders > 0 && (
             <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
-              <div className="flex gap-2">
-                <div className="flex-1 bg-blue-100 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full"
-                    style={{ width: `${(metrics.dineInOrders / metrics.totalOrders) * 100}%` }}
-                  />
-                </div>
+              <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-gray-100">
+                <div
+                  className="bg-blue-600 h-2"
+                  style={{ width: `${(metrics.dineInOrders / metrics.totalOrders) * 100}%` }}
+                />
+                <div
+                  className="bg-green-500 h-2"
+                  style={{ width: `${(metrics.takeoutOrders / metrics.totalOrders) * 100}%` }}
+                />
+                <div
+                  className="bg-orange-500 h-2"
+                  style={{ width: `${(metrics.deliveryOrders / metrics.totalOrders) * 100}%` }}
+                />
               </div>
-              <div className="flex justify-between text-xs text-gray-600 mt-2">
+              <div className="flex justify-between text-xs text-gray-600 mt-2 flex-wrap gap-1">
                 <span>
                   Dine In: {Math.round((metrics.dineInOrders / metrics.totalOrders) * 100)}%
                 </span>
                 <span>
                   Takeout: {Math.round((metrics.takeoutOrders / metrics.totalOrders) * 100)}%
+                </span>
+                <span>
+                  Delivery: {Math.round((metrics.deliveryOrders / metrics.totalOrders) * 100)}%
                 </span>
               </div>
             </div>
@@ -1020,13 +1269,15 @@ export default function ReportsPage() {
                       <td className="py-3">
                         <span
                           className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
-                            member.role === 'admin'
-                              ? 'bg-purple-100 text-purple-800'
-                              : member.role === 'waiter'
-                                ? 'bg-blue-100 text-blue-800'
-                                : member.role === 'kitchen'
-                                  ? 'bg-orange-100 text-orange-800'
-                                  : 'bg-gray-100 text-gray-800'
+                            member.role === 'owner'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : member.role === 'admin'
+                                ? 'bg-purple-100 text-purple-800'
+                                : member.role === 'waiter'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : member.role === 'kitchen'
+                                    ? 'bg-orange-100 text-orange-800'
+                                    : 'bg-gray-100 text-gray-800'
                           }`}
                         >
                           {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
@@ -1087,13 +1338,15 @@ export default function ReportsPage() {
                     </div>
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        member.role === 'admin'
-                          ? 'bg-purple-100 text-purple-800'
-                          : member.role === 'waiter'
-                            ? 'bg-blue-100 text-blue-800'
-                            : member.role === 'kitchen'
-                              ? 'bg-orange-100 text-orange-800'
-                              : 'bg-gray-100 text-gray-800'
+                        member.role === 'owner'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : member.role === 'admin'
+                            ? 'bg-purple-100 text-purple-800'
+                            : member.role === 'waiter'
+                              ? 'bg-blue-100 text-blue-800'
+                              : member.role === 'kitchen'
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-gray-100 text-gray-800'
                       }`}
                     >
                       {member.role}

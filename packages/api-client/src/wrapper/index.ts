@@ -19,9 +19,11 @@ import { createSettingsWrapper } from './settings';
 import { createStaffWrapper } from './staff';
 import { createStockItemsWrapper } from './stock';
 import { createTablesWrapper } from './tables';
+import { createTasksWrapper } from './tasks';
 import type { AnySupabaseClient, WrapperContext } from './types';
 import { createViewsWrapper } from './views';
 import { createWaiterCallsWrapper } from './waiter-calls';
+import { createWasteWrapper } from './waste';
 
 export class SupabaseWrapper {
   private ctx: WrapperContext;
@@ -41,6 +43,8 @@ export class SupabaseWrapper {
   expenseCategories;
   expenses;
   schedules;
+  waste;
+  tasks;
   rpc;
   views;
   realtime;
@@ -67,6 +71,8 @@ export class SupabaseWrapper {
     this.expenseCategories = createExpenseCategoriesWrapper(this.ctx);
     this.expenses = createExpensesWrapper(this.ctx);
     this.schedules = createSchedulesWrapper(this.ctx);
+    this.waste = createWasteWrapper(this.ctx);
+    this.tasks = createTasksWrapper(this.ctx);
     this.rpc = createRpcWrapper(this.ctx);
     this.views = createViewsWrapper(this.ctx);
     this.realtime = createRealtimeWrapper(this.ctx);
@@ -90,7 +96,9 @@ export type { SettingsWrapper } from './settings';
 export type { StaffWrapper } from './staff';
 export type { StockItemsWrapper } from './stock';
 export type { TablesWrapper } from './tables';
+export type { TasksWrapper } from './tasks';
 // Re-export types
 export * from './types';
 export type { ViewsWrapper } from './views';
 export type { WaiterCallsWrapper } from './waiter-calls';
+export type { WasteWrapper } from './waste';

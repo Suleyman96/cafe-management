@@ -56,7 +56,7 @@ export default function TablesPage() {
   const [tableMenuOpen, setTableMenuOpen] = useState<string | null>(null);
 
   const createOrder = useCreateOrder();
-  const isAdmin = staff?.role === 'admin';
+  const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
   const { data: cafeSettings } = useCafeSettings();
 
   // Format price using cafe settings or fallback

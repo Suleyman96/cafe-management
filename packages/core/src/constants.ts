@@ -35,6 +35,7 @@ export const USER_ROLE = {
   WAITER: 'waiter',
   ADMIN: 'admin',
   KITCHEN: 'kitchen',
+  OWNER: 'owner',
 } as const;
 
 // Order item statuses
@@ -154,6 +155,46 @@ export const QUERY_KEYS = {
   MY_SCHEDULE: 'my_schedule',
   DELIVERY_ORDER: 'delivery_order',
   DELIVERY_ORDERS: 'delivery_orders',
+  WASTE_LOGS: 'waste_logs',
+  WASTE_LOG: 'waste_log',
+  WASTE_SUMMARY: 'waste_summary',
+  TASKS: 'tasks',
+  TASK: 'task',
+  OVERDUE_TASKS_COUNT: 'overdue_tasks_count',
+} as const;
+
+// Waste reasons
+export const WASTE_REASON = {
+  EXPIRED: 'expired',
+  SPOILED: 'spoiled',
+  OVERCOOKED: 'overcooked',
+  DROPPED: 'dropped',
+  RETURNED_BY_CUSTOMER: 'returned_by_customer',
+  PREPARATION_WASTE: 'preparation_waste',
+  OTHER: 'other',
+} as const;
+
+// Task statuses
+export const TASK_STATUS = {
+  PENDING: 'pending',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+} as const;
+
+// Task priorities
+export const TASK_PRIORITY = {
+  LOW: 'low',
+  NORMAL: 'normal',
+  HIGH: 'high',
+  URGENT: 'urgent',
+} as const;
+
+// Task recurrence patterns
+export const TASK_RECURRENCE = {
+  DAILY: 'daily',
+  WEEKLY: 'weekly',
+  MONTHLY: 'monthly',
 } as const;
 
 // UI constants

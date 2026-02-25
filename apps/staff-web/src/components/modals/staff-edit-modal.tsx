@@ -5,15 +5,21 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useUpdateStaff } from '@/hooks';
 
-type StaffRole = 'waiter' | 'admin' | 'kitchen';
+type StaffRole = 'waiter' | 'admin' | 'kitchen' | 'owner';
 
 interface StaffEditModalProps {
   staff: any;
+  currentUserRole?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function StaffEditModal({ staff, onClose, onSuccess }: StaffEditModalProps) {
+export function StaffEditModal({
+  staff,
+  currentUserRole,
+  onClose,
+  onSuccess,
+}: StaffEditModalProps) {
   const [fullName, setFullName] = useState(staff.full_name || '');
   const [role, setRole] = useState<StaffRole>(staff.role || 'waiter');
   const [phone, setPhone] = useState(staff.phone || '');
@@ -91,6 +97,7 @@ export function StaffEditModal({ staff, onClose, onSuccess }: StaffEditModalProp
               <option value="waiter">Waiter</option>
               <option value="kitchen">Kitchen Staff</option>
               <option value="admin">Admin</option>
+              {currentUserRole === 'owner' && <option value="owner">Owner</option>}
             </select>
           </div>
 

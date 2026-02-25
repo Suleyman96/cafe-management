@@ -62,7 +62,7 @@ export default function ExpensesPage() {
   };
 
   // Redirect if not admin
-  if (staff && staff.role !== 'admin') {
+  if (staff && staff.role !== 'admin' && staff.role !== 'owner') {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-gray-500">Admin access required</p>
