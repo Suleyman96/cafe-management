@@ -4,7 +4,7 @@ import { Button } from '@cafe-idare/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-type StaffRole = 'waiter' | 'admin' | 'kitchen';
+type StaffRole = 'waiter' | 'admin' | 'kitchen' | 'owner';
 
 interface StaffCreateModalProps {
   onClose: () => void;
@@ -113,6 +113,7 @@ export function StaffCreateModal({ onClose, onSuccess }: StaffCreateModalProps) 
               <option value="waiter">Waiter</option>
               <option value="kitchen">Kitchen Staff</option>
               <option value="admin">Admin</option>
+              <option value="owner">Owner</option>
             </select>
           </div>
 

@@ -78,6 +78,10 @@ export function isKitchen(staff: Staff): boolean {
   return staff.role === 'kitchen';
 }
 
+export function isOwner(staff: Staff): boolean {
+  return staff.role === 'owner';
+}
+
 // Menu item type guards
 export function isMenuItem(value: unknown): value is MenuItem {
   return (

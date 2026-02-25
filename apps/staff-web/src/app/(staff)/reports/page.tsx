@@ -25,6 +25,7 @@ import {
 import { useMemo, useState } from 'react';
 import {
   formatPriceWithSettings,
+  useAuth,
   useCafeSettings,
   useExpenses,
   useOrders,
@@ -36,6 +37,7 @@ type DateRangeType = 'today' | 'week' | 'month' | 'year' | 'custom';
 type CustomMode = 'day' | 'month' | 'year';
 
 export default function ReportsPage() {
+  const { staff: currentUser } = useAuth();
   const { data: orders, isLoading: loading, error } = useOrders();
   const { data: staff, isLoading: staffLoading } = useStaff();
   const { data: cafeSettings } = useCafeSettings();
@@ -683,6 +685,14 @@ export default function ReportsPage() {
     );
   }
 
+  if (currentUser?.role !== 'owner') {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">Owner access required</p>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -1259,13 +1269,15 @@ export default function ReportsPage() {
                       <td className="py-3">
                         <span
                           className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
-                            member.role === 'admin'
-                              ? 'bg-purple-100 text-purple-800'
-                              : member.role === 'waiter'
-                                ? 'bg-blue-100 text-blue-800'
-                                : member.role === 'kitchen'
-                                  ? 'bg-orange-100 text-orange-800'
-                                  : 'bg-gray-100 text-gray-800'
+                            member.role === 'owner'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : member.role === 'admin'
+                                ? 'bg-purple-100 text-purple-800'
+                                : member.role === 'waiter'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : member.role === 'kitchen'
+                                    ? 'bg-orange-100 text-orange-800'
+                                    : 'bg-gray-100 text-gray-800'
                           }`}
                         >
                           {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
@@ -1326,13 +1338,15 @@ export default function ReportsPage() {
                     </div>
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        member.role === 'admin'
-                          ? 'bg-purple-100 text-purple-800'
-                          : member.role === 'waiter'
-                            ? 'bg-blue-100 text-blue-800'
-                            : member.role === 'kitchen'
-                              ? 'bg-orange-100 text-orange-800'
-                              : 'bg-gray-100 text-gray-800'
+                        member.role === 'owner'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : member.role === 'admin'
+                            ? 'bg-purple-100 text-purple-800'
+                            : member.role === 'waiter'
+                              ? 'bg-blue-100 text-blue-800'
+                              : member.role === 'kitchen'
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-gray-100 text-gray-800'
                       }`}
                     >
                       {member.role}

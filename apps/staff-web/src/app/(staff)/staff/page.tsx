@@ -20,7 +20,7 @@ export default function StaffPage() {
   const [selectedStaff, setSelectedStaff] = useState<any>(null);
 
   // Only admins can access this page
-  if (currentUser?.role !== 'admin') {
+  if (currentUser?.role !== 'admin' && currentUser?.role !== 'owner') {
     return (
       <div className="p-3 sm:p-6">
         <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm">

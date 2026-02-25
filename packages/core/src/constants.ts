@@ -35,6 +35,7 @@ export const USER_ROLE = {
   WAITER: 'waiter',
   ADMIN: 'admin',
   KITCHEN: 'kitchen',
+  OWNER: 'owner',
 } as const;
 
 // Order item statuses

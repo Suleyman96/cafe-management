@@ -55,7 +55,7 @@ type TabView = 'today' | 'all' | 'my' | 'templates';
 
 export default function TasksPage() {
   const { staff } = useAuth();
-  const isAdmin = staff?.role === 'admin';
+  const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabView) || 'today';
   const [activeTab, setActiveTab] = useState<TabView>(initialTab);

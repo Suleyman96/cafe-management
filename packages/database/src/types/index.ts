@@ -190,6 +190,10 @@ export function isKitchen(staff: Staff): boolean {
   return staff.role === 'kitchen';
 }
 
+export function isOwner(staff: Staff): boolean {
+  return staff.role === 'owner';
+}
+
 // Order type guards
 export function isDineInOrder(order: Order): boolean {
   return order.order_type === 'dine_in';

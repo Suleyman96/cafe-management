@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useUpdateStaff } from '@/hooks';
 
-type StaffRole = 'waiter' | 'admin' | 'kitchen';
+type StaffRole = 'waiter' | 'admin' | 'kitchen' | 'owner';
 
 interface StaffEditModalProps {
   staff: any;
@@ -91,6 +91,7 @@ export function StaffEditModal({ staff, onClose, onSuccess }: StaffEditModalProp
               <option value="waiter">Waiter</option>
               <option value="kitchen">Kitchen Staff</option>
               <option value="admin">Admin</option>
+              <option value="owner">Owner</option>
             </select>
           </div>
 

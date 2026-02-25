@@ -38,6 +38,7 @@ type NavItem = {
   label: string;
   icon: React.ReactNode;
   adminOnly?: boolean;
+  ownerOnly?: boolean;
 };
 
 type NavGroup = {
@@ -91,7 +92,12 @@ const navGroups: NavGroup[] = [
         label: 'Schedules',
         icon: <CalendarDays className="h-5 w-5" />,
       },
-      { href: '/reports', label: 'Reports', icon: <BarChart3 className="h-5 w-5" /> },
+      {
+        href: '/reports',
+        label: 'Reports',
+        icon: <BarChart3 className="h-5 w-5" />,
+        ownerOnly: true,
+      },
       {
         href: '/cafe-settings',
         label: 'Cafe Settings',
@@ -117,10 +123,12 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
   const { data: overdueCount = 0 } = useOverdueTasksCount();
   const { data: cafeSettings } = useCafeSettings();
 
-  const isAdmin = staff?.role === 'admin';
+  const isOwner = staff?.role === 'owner';
+  const isAdmin = staff?.role === 'admin' || isOwner;
 
   const filterItems = (items: NavItem[]) =>
     items.filter((item) => {
+      if (item.ownerOnly && !isOwner) return false;
       if (item.adminOnly && !isAdmin) return false;
       if (item.href === '/waste' && !cafeSettings?.waste_tracking_enabled) return false;
       return true;
@@ -165,6 +173,8 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
+      case 'owner':
+        return 'bg-emerald-100 text-emerald-800';
       case 'admin':
         return 'bg-purple-100 text-purple-800';
       case 'waiter':

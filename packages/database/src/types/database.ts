@@ -181,7 +181,7 @@ export interface Database {
           id: string;
           email: string;
           full_name: string;
-          role: 'waiter' | 'admin' | 'kitchen';
+          role: 'waiter' | 'admin' | 'kitchen' | 'owner';
           phone: string | null;
           is_active: boolean;
           created_at: string;

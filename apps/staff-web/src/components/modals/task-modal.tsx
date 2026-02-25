@@ -42,7 +42,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
   const updateTask = useUpdateTask();
   const { data: staffList = [] } = useStaff();
   const { staff } = useAuth();
-  const isAdmin = staff?.role === 'admin';
+  const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
 
   const [formData, setFormData] = useState({
     title: task?.title || '',

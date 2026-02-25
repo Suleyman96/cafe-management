@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/use-auth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'waiter' | 'admin' | 'kitchen';
+  requiredRole?: 'waiter' | 'admin' | 'kitchen' | 'owner';
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
@@ -22,7 +22,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && staff && requiredRole) {
-      if (staff.role !== requiredRole && staff.role !== 'admin') {
+      if (staff.role !== requiredRole && staff.role !== 'admin' && staff.role !== 'owner') {
         // Admins can access everything, but others need specific role
         router.push('/');
       }
@@ -42,7 +42,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   if (requiredRole && staff) {
-    if (staff.role !== requiredRole && staff.role !== 'admin') {
+    if (staff.role !== requiredRole && staff.role !== 'admin' && staff.role !== 'owner') {
       return (
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">

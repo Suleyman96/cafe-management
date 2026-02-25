@@ -115,7 +115,7 @@ export default function CafeSettingsPage() {
   }, [settings]);
 
   // Check if user is admin
-  if (staff?.role !== 'admin') {
+  if (staff?.role !== 'admin' && staff?.role !== 'owner') {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
