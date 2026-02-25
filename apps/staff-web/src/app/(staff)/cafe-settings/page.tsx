@@ -57,6 +57,7 @@ export default function CafeSettingsPage() {
     // Feature controls
     qr_ordering_enabled: true,
     tips_enabled: false,
+    waste_tracking_enabled: false,
     // Delivery settings
     delivery_enabled: false,
     delivery_fee_default: 0,
@@ -98,6 +99,7 @@ export default function CafeSettingsPage() {
         welcome_message: settings.welcome_message,
         qr_ordering_enabled: settings.qr_ordering_enabled,
         tips_enabled: settings.tips_enabled ?? false,
+        waste_tracking_enabled: settings.waste_tracking_enabled ?? false,
         delivery_enabled: settings.delivery_enabled ?? false,
         delivery_fee_default: settings.delivery_fee_default ?? 0,
         minimum_delivery_amount: settings.minimum_delivery_amount ?? 0,
@@ -173,6 +175,7 @@ export default function CafeSettingsPage() {
         welcome_message: settings.welcome_message,
         qr_ordering_enabled: settings.qr_ordering_enabled,
         tips_enabled: settings.tips_enabled ?? false,
+        waste_tracking_enabled: settings.waste_tracking_enabled ?? false,
         delivery_enabled: settings.delivery_enabled ?? false,
         delivery_fee_default: settings.delivery_fee_default ?? 0,
         minimum_delivery_amount: settings.minimum_delivery_amount ?? 0,
@@ -493,6 +496,23 @@ export default function CafeSettingsPage() {
                     type="checkbox"
                     checked={formData.tips_enabled}
                     onChange={(e) => handleChange('tips_enabled', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Waste Tracking</label>
+                  <p className="text-xs text-gray-500">
+                    Track food waste to identify patterns and reduce costs
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.waste_tracking_enabled}
+                    onChange={(e) => handleChange('waste_tracking_enabled', e.target.checked)}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>

@@ -301,6 +301,7 @@ export interface Database {
           // Feature controls
           qr_ordering_enabled: boolean;
           tips_enabled: boolean;
+          waste_tracking_enabled: boolean;
           // Delivery settings
           delivery_enabled: boolean;
           delivery_fee_default: number;
@@ -391,6 +392,71 @@ export interface Database {
           'id' | 'created_at' | 'updated_at'
         >;
         Update: Partial<Database['public']['Tables']['expenses']['Insert']>;
+      };
+      waste_logs: {
+        Row: {
+          id: string;
+          item_name: string;
+          category: string;
+          quantity: number;
+          unit: string;
+          cost_per_unit: number;
+          total_cost: number;
+          reason:
+            | 'expired'
+            | 'spoiled'
+            | 'overcooked'
+            | 'dropped'
+            | 'returned_by_customer'
+            | 'preparation_waste'
+            | 'other';
+          stock_item_id: string | null;
+          notes: string | null;
+          logged_by: string | null;
+          waste_date: string;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['waste_logs']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['waste_logs']['Insert']>;
+      };
+      task_categories: {
+        Row: {
+          id: string;
+          name: string;
+          icon: string | null;
+          color: string;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['task_categories']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['task_categories']['Insert']>;
+      };
+      tasks: {
+        Row: {
+          id: string;
+          title: string;
+          description: string | null;
+          category_id: string | null;
+          priority: 'low' | 'normal' | 'high' | 'urgent';
+          status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+          assigned_to: string | null;
+          created_by: string | null;
+          due_date: string | null;
+          due_time: string | null;
+          completed_at: string | null;
+          is_recurring: boolean;
+          recurrence_pattern: 'daily' | 'weekly' | 'monthly' | null;
+          recurrence_days: number[] | null;
+          parent_task_id: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<
+          Database['public']['Tables']['tasks']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['tasks']['Insert']>;
       };
     };
     Views: {

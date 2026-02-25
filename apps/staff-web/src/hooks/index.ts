@@ -13,4 +13,6 @@ export * from './use-staff-safe';
 export * from './use-stock-safe';
 export * from './use-table-transfers-safe';
 export * from './use-tables-safe';
+export * from './use-tasks-safe';
 export * from './use-waiter-calls-safe';
+export * from './use-waste-safe';

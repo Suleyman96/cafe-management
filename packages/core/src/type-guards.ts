@@ -18,7 +18,9 @@ import type {
   StockMovement,
   Table,
   TableTransfer,
+  Task,
   WaiterCall,
+  WasteLog,
 } from '@cafe-idare/database';
 
 // Order type guards
@@ -294,4 +296,36 @@ export function isStaffSchedule(value: unknown): value is StaffSchedule {
 
 export function isStaffScheduleArray(value: unknown): value is StaffSchedule[] {
   return Array.isArray(value) && value.every(isStaffSchedule);
+}
+
+// Waste log type guards
+export function isWasteLog(value: unknown): value is WasteLog {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'item_name' in value &&
+    'quantity' in value &&
+    'reason' in value
+  );
+}
+
+export function isWasteLogArray(value: unknown): value is WasteLog[] {
+  return Array.isArray(value) && value.every(isWasteLog);
+}
+
+// Task type guards
+export function isTask(value: unknown): value is Task {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'title' in value &&
+    'status' in value &&
+    'priority' in value
+  );
+}
+
+export function isTaskArray(value: unknown): value is Task[] {
+  return Array.isArray(value) && value.every(isTask);
 }

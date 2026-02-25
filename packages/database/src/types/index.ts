@@ -68,6 +68,14 @@ export type StaffSchedule = Database['public']['Tables']['staff_schedules']['Row
 export type StaffScheduleInsert = Database['public']['Tables']['staff_schedules']['Insert'];
 export type StaffScheduleUpdate = Database['public']['Tables']['staff_schedules']['Update'];
 
+export type WasteLog = Database['public']['Tables']['waste_logs']['Row'];
+export type WasteLogInsert = Database['public']['Tables']['waste_logs']['Insert'];
+export type WasteLogUpdate = Database['public']['Tables']['waste_logs']['Update'];
+
+export type Task = Database['public']['Tables']['tasks']['Row'];
+export type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
+export type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
+
 // Extended types with relations
 export interface OrderWithDetails extends Order {
   table: Pick<Table, 'table_number' | 'location'>;
@@ -107,6 +115,18 @@ export interface TableTransferWithDetails extends TableTransfer {
   from_table: Pick<Table, 'table_number' | 'location'>;
   to_table: Pick<Table, 'table_number' | 'location'>;
   transferred_by_staff: Pick<Staff, 'full_name' | 'role'>;
+}
+
+// Waste log with staff and stock item info
+export interface WasteLogWithDetails extends WasteLog {
+  logged_by_staff: Pick<Staff, 'full_name'> | null;
+  stock_item: Pick<StockItem, 'name' | 'unit'> | null;
+}
+
+// Task with staff info
+export interface TaskWithDetails extends Task {
+  assigned_to_staff: Pick<Staff, 'full_name'> | null;
+  created_by_staff: Pick<Staff, 'full_name'> | null;
 }
 
 // Stock movement with staff info

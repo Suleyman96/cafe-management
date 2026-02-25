@@ -5,11 +5,13 @@ import {
   Bell,
   CalendarDays,
   ChefHat,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
   ClipboardList,
   Clock,
+  ListTodo,
   LogOut,
   Menu,
   MessageSquare,
@@ -17,6 +19,7 @@ import {
   Receipt,
   Settings,
   Store,
+  Trash2,
   Truck,
   Users,
   UtensilsCrossed,
@@ -27,6 +30,8 @@ import { useEffect, useRef, useState } from 'react';
 import { CafeManIcon, CafeManLogo } from '@/components/ui/cafe-man-logo';
 import { useAuth } from '@/hooks/use-auth';
 import { useMyScheduleToday } from '@/hooks/use-schedules-safe';
+import { useCafeSettings } from '@/hooks/use-settings-safe';
+import { useMyTasks, useOverdueTasksCount } from '@/hooks/use-tasks-safe';
 
 type NavItem = {
   href: string;
@@ -35,30 +40,65 @@ type NavItem = {
   adminOnly?: boolean;
 };
 
-const navItems: NavItem[] = [
-  { href: '/tables', label: 'Tables', icon: <UtensilsCrossed className="h-5 w-5" /> },
-  { href: '/orders', label: 'Orders', icon: <ClipboardList className="h-5 w-5" /> },
-  { href: '/delivery', label: 'Delivery', icon: <Truck className="h-5 w-5" /> },
-  { href: '/kitchen', label: 'Kitchen', icon: <ChefHat className="h-5 w-5" /> },
-  { href: '/calls', label: 'Waiter Calls', icon: <Bell className="h-5 w-5" /> },
-  { href: '/feedback', label: 'Feedback', icon: <MessageSquare className="h-5 w-5" /> },
-  { href: '/stock', label: 'Stock', icon: <Package className="h-5 w-5" />, adminOnly: true },
-  { href: '/expenses', label: 'Expenses', icon: <Receipt className="h-5 w-5" />, adminOnly: true },
-  { href: '/menu', label: 'Menu', icon: <Menu className="h-5 w-5" />, adminOnly: true },
-  { href: '/staff', label: 'Staff', icon: <Users className="h-5 w-5" />, adminOnly: true },
+type NavGroup = {
+  key: string;
+  label: string;
+  collapsible: boolean;
+  adminOnly?: boolean;
+  items: NavItem[];
+};
+
+const navGroups: NavGroup[] = [
   {
-    href: '/schedules',
-    label: 'Schedules',
-    icon: <CalendarDays className="h-5 w-5" />,
-    adminOnly: true,
+    key: 'main',
+    label: 'Main',
+    collapsible: false,
+    items: [
+      { href: '/tables', label: 'Tables', icon: <UtensilsCrossed className="h-5 w-5" /> },
+      { href: '/orders', label: 'Orders', icon: <ClipboardList className="h-5 w-5" /> },
+      { href: '/delivery', label: 'Delivery', icon: <Truck className="h-5 w-5" /> },
+      { href: '/kitchen', label: 'Kitchen', icon: <ChefHat className="h-5 w-5" /> },
+      { href: '/calls', label: 'Waiter Calls', icon: <Bell className="h-5 w-5" /> },
+      { href: '/tasks', label: 'Tasks', icon: <ListTodo className="h-5 w-5" /> },
+    ],
   },
   {
-    href: '/cafe-settings',
-    label: 'Cafe Settings',
-    icon: <Store className="h-5 w-5" />,
-    adminOnly: true,
+    key: 'management',
+    label: 'Management',
+    collapsible: true,
+    items: [
+      { href: '/feedback', label: 'Feedback', icon: <MessageSquare className="h-5 w-5" /> },
+      { href: '/stock', label: 'Stock', icon: <Package className="h-5 w-5" />, adminOnly: true },
+      { href: '/waste', label: 'Waste', icon: <Trash2 className="h-5 w-5" /> },
+      {
+        href: '/expenses',
+        label: 'Expenses',
+        icon: <Receipt className="h-5 w-5" />,
+        adminOnly: true,
+      },
+    ],
   },
-  { href: '/reports', label: 'Reports', icon: <BarChart3 className="h-5 w-5" />, adminOnly: true },
+  {
+    key: 'admin',
+    label: 'Admin',
+    collapsible: true,
+    adminOnly: true,
+    items: [
+      { href: '/staff', label: 'Staff', icon: <Users className="h-5 w-5" /> },
+      { href: '/menu', label: 'Menu', icon: <Menu className="h-5 w-5" /> },
+      {
+        href: '/schedules',
+        label: 'Schedules',
+        icon: <CalendarDays className="h-5 w-5" />,
+      },
+      { href: '/reports', label: 'Reports', icon: <BarChart3 className="h-5 w-5" /> },
+      {
+        href: '/cafe-settings',
+        label: 'Cafe Settings',
+        icon: <Store className="h-5 w-5" />,
+      },
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -72,12 +112,44 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
   const pathname = usePathname();
   const { staff, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const { data: overdueCount = 0 } = useOverdueTasksCount();
+  const { data: cafeSettings } = useCafeSettings();
 
   const isAdmin = staff?.role === 'admin';
 
-  // Filter nav items based on role
-  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const filterItems = (items: NavItem[]) =>
+    items.filter((item) => {
+      if (item.adminOnly && !isAdmin) return false;
+      if (item.href === '/waste' && !cafeSettings?.waste_tracking_enabled) return false;
+      return true;
+    });
+
+  // Build visible groups with filtered items
+  const visibleGroups = navGroups
+    .filter((group) => {
+      if (group.adminOnly && !isAdmin) return false;
+      return true;
+    })
+    .map((group) => ({ ...group, items: filterItems(group.items) }))
+    .filter((group) => group.items.length > 0);
+
+  const isGroupCollapsed = (groupKey: string) => {
+    // Auto-expand if active page is in this group
+    const group = visibleGroups.find((g) => g.key === groupKey);
+    if (group) {
+      const hasActivePage = group.items.some(
+        (item) => pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)),
+      );
+      if (hasActivePage) return false;
+    }
+    return collapsedGroups[groupKey] ?? false;
+  };
+
+  const toggleGroup = (groupKey: string) => {
+    setCollapsedGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }));
+  };
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -147,41 +219,77 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
 
       {/* Navigation */}
       <nav className="flex-1 p-2">
-        <ul className="space-y-1">
-          {visibleItems.map((item) => {
-            const isActive =
-              pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+        {visibleGroups.map((group) => {
+          const collapsed = isGroupCollapsed(group.key);
+          const showHeader = group.collapsible && (!isCollapsed || isMobile);
 
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={handleNavClick}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
-                  } ${isCollapsed && !isMobile ? 'justify-center' : ''}`}
-                  title={isCollapsed && !isMobile ? item.label : undefined}
+          return (
+            <div key={group.key}>
+              {/* Group header */}
+              {showHeader && (
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.key)}
+                  className="flex items-center justify-between w-full px-3 py-1.5 mt-3 text-xs font-semibold uppercase text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <span className={isActive ? 'text-blue-600' : 'text-gray-500'}>{item.icon}</span>
-                  {(!isCollapsed || isMobile) && (
-                    <>
-                      {item.label}
-                      {item.adminOnly && (
-                        <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
-                          Admin
-                        </span>
-                      )}
-                    </>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                  {group.label}
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform ${collapsed ? '-rotate-90' : ''}`}
+                  />
+                </button>
+              )}
+
+              {/* Group items */}
+              {(!group.collapsible || !collapsed || (isCollapsed && !isMobile)) && (
+                <ul className="space-y-1">
+                  {group.items.map((item) => {
+                    const isActive =
+                      pathname === item.href ||
+                      (item.href !== '/' && pathname.startsWith(item.href));
+
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          onClick={handleNavClick}
+                          className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                            isActive
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          } ${isCollapsed && !isMobile ? 'justify-center' : ''}`}
+                          title={isCollapsed && !isMobile ? item.label : undefined}
+                        >
+                          <span className={isActive ? 'text-blue-600' : 'text-gray-500'}>
+                            {item.icon}
+                          </span>
+                          {(!isCollapsed || isMobile) && (
+                            <>
+                              {item.label}
+                              {item.href === '/tasks' && overdueCount > 0 && (
+                                <span className="ml-auto text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                                  {overdueCount}
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          );
+        })}
       </nav>
 
-      {/* Today's Shift Indicator */}
-      {staff && (!isCollapsed || isMobile) && <TodayShiftIndicator staffId={staff.id} />}
+      {/* My Tasks + Today's Shift */}
+      {staff && (!isCollapsed || isMobile) && (
+        <>
+          <MyTasksIndicator staffId={staff.id} />
+          <TodayShiftIndicator staffId={staff.id} />
+        </>
+      )}
 
       {/* User Menu at bottom */}
       {staff && (
@@ -254,6 +362,54 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
         </div>
       )}
     </aside>
+  );
+}
+
+function MyTasksIndicator({ staffId }: { staffId: string }) {
+  const { data: tasks } = useMyTasks(staffId);
+
+  const activeTasks =
+    tasks?.filter((t: any) => t.status === 'pending' || t.status === 'in_progress') || [];
+
+  if (activeTasks.length === 0) return null;
+
+  const priorityOrder: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
+  const displayTasks = [...activeTasks]
+    .sort((a: any, b: any) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3))
+    .slice(0, 3);
+
+  const priorityDot: Record<string, string> = {
+    urgent: 'bg-red-500',
+    high: 'bg-orange-500',
+    normal: 'bg-blue-500',
+    low: 'bg-gray-400',
+  };
+
+  return (
+    <Link href="/tasks?tab=my" className="block mx-2 mb-2">
+      <div className="px-3 py-2 rounded-lg border bg-amber-50 border-amber-200 text-xs hover:bg-amber-100 transition-colors">
+        <div className="flex items-center justify-between font-medium text-amber-800">
+          <div className="flex items-center gap-1.5">
+            <ListTodo className="h-3 w-3" />
+            My Tasks
+          </div>
+          <span className="text-amber-600">{activeTasks.length}</span>
+        </div>
+        <div className="mt-1.5 space-y-1">
+          {displayTasks.map((task: any) => (
+            <div key={task.id} className="flex items-center gap-1.5 text-gray-700">
+              <span
+                className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${priorityDot[task.priority] || priorityDot.normal}`}
+              />
+              <span className="truncate">{task.title}</span>
+            </div>
+          ))}
+          {activeTasks.length > 3 && (
+            <div className="text-amber-600">+{activeTasks.length - 3} more</div>
+          )}
+        </div>
+      </div>
+    </Link>
   );
 }
 

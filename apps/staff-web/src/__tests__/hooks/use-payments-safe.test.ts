@@ -1,0 +1,63 @@
+import { QUERY_KEYS } from '@cafe-idare/core';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  useCreatePayment,
+  useOrderPayments,
+  useOrderRemainingBalance,
+  usePaymentsByStaff,
+} from '@/hooks/use-payments-safe';
+import { db } from '@/lib/supabase/wrapped-client';
+import { renderHookWithProviders } from '../helpers/test-utils';
+
+describe('usePaymentsByStaff', () => {
+  it('calls findByReceivedBy with staffId and limit', () => {
+    renderHookWithProviders(() => usePaymentsByStaff('s1', 10));
+    expect(db.payments.findByReceivedBy).toHaveBeenCalledWith('s1', 10);
+  });
+
+  it('is disabled when staffId is empty', () => {
+    renderHookWithProviders(() => usePaymentsByStaff(''));
+    expect(db.payments.findByReceivedBy).not.toHaveBeenCalled();
+  });
+});
+
+describe('useOrderPayments', () => {
+  it('calls findByOrderId', () => {
+    renderHookWithProviders(() => useOrderPayments('o1'));
+    expect(db.payments.findByOrderId).toHaveBeenCalledWith('o1');
+  });
+
+  it('is disabled when orderId is empty', () => {
+    renderHookWithProviders(() => useOrderPayments(''));
+    expect(db.payments.findByOrderId).not.toHaveBeenCalled();
+  });
+});
+
+describe('useOrderRemainingBalance', () => {
+  it('calls getRemainingBalance', () => {
+    renderHookWithProviders(() => useOrderRemainingBalance('o1'));
+    expect(db.rpc.getRemainingBalance).toHaveBeenCalledWith('o1');
+  });
+
+  it('is disabled when orderId is empty', () => {
+    renderHookWithProviders(() => useOrderRemainingBalance(''));
+    expect(db.rpc.getRemainingBalance).not.toHaveBeenCalled();
+  });
+});
+
+describe('useCreatePayment', () => {
+  it('invalidates 6 query keys on success', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useCreatePayment());
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await result.current.mutateAsync({ order_id: 'o1', amount: 50, payment_method: 'cash' } as any);
+
+    const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS, 'o1']);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDER, 'o1']);
+    expect(invalidatedKeys).toContainEqual(['order_payments', 'o1']);
+    expect(invalidatedKeys).toContainEqual(['order_payment_summary', 'o1']);
+    expect(invalidatedKeys).toContainEqual(['order_remaining_balance', 'o1']);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
+  });
+});
