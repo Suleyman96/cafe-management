@@ -70,6 +70,9 @@ export default function CafeSettingsPage() {
     contact_website: null as string | null,
     social_instagram: null as string | null,
     social_whatsapp: null as string | null,
+    social_tiktok: null as string | null,
+    social_telegram: null as string | null,
+    social_line: null as string | null,
     location_maps_url: null as string | null,
   });
 
@@ -110,6 +113,9 @@ export default function CafeSettingsPage() {
         contact_website: settings.contact_website,
         social_instagram: settings.social_instagram,
         social_whatsapp: settings.social_whatsapp,
+        social_tiktok: settings.social_tiktok,
+        social_telegram: settings.social_telegram,
+        social_line: settings.social_line,
         location_maps_url: settings.location_maps_url,
       });
       setHasChanges(false);
@@ -183,6 +189,9 @@ export default function CafeSettingsPage() {
         contact_website: settings.contact_website,
         social_instagram: settings.social_instagram,
         social_whatsapp: settings.social_whatsapp,
+        social_tiktok: settings.social_tiktok,
+        social_telegram: settings.social_telegram,
+        social_line: settings.social_line,
         location_maps_url: settings.location_maps_url,
       });
       setHasChanges(false);
@@ -791,6 +800,36 @@ export default function CafeSettingsPage() {
                   value={formData.social_whatsapp || ''}
                   onChange={(e) => handleChange('social_whatsapp', e.target.value || null)}
                   placeholder="https://wa.me/994501234567"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">TikTok</label>
+                <input
+                  type="url"
+                  value={formData.social_tiktok || ''}
+                  onChange={(e) => handleChange('social_tiktok', e.target.value || null)}
+                  placeholder="https://tiktok.com/@yourrestaurant"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Telegram</label>
+                <input
+                  type="url"
+                  value={formData.social_telegram || ''}
+                  onChange={(e) => handleChange('social_telegram', e.target.value || null)}
+                  placeholder="https://t.me/yourrestaurant"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">LINE</label>
+                <input
+                  type="url"
+                  value={formData.social_line || ''}
+                  onChange={(e) => handleChange('social_line', e.target.value || null)}
+                  placeholder="https://line.me/R/ti/p/@yourrestaurant"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>

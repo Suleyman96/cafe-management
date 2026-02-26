@@ -36,6 +36,9 @@ export interface CafeSettings {
   contact_website: string | null;
   social_instagram: string | null;
   social_whatsapp: string | null;
+  social_tiktok: string | null;
+  social_telegram: string | null;
+  social_line: string | null;
   location_maps_url: string | null;
 }
 
@@ -77,6 +80,9 @@ const DEFAULT_SETTINGS: CafeSettings = {
   contact_website: null,
   social_instagram: null,
   social_whatsapp: null,
+  social_tiktok: null,
+  social_telegram: null,
+  social_line: null,
   location_maps_url: null,
 };
 

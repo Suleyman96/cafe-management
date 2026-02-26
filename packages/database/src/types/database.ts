@@ -301,6 +301,9 @@ export interface Database {
           contact_website: string | null;
           social_instagram: string | null;
           social_whatsapp: string | null;
+          social_tiktok: string | null;
+          social_telegram: string | null;
+          social_line: string | null;
           location_maps_url: string | null;
           created_at: string;
           updated_at: string;

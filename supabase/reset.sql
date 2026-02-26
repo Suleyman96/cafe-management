@@ -353,6 +353,9 @@ CREATE TABLE cafe_settings (
   contact_website TEXT,
   social_instagram TEXT,
   social_whatsapp TEXT,
+  social_tiktok TEXT,
+  social_telegram TEXT,
+  social_line TEXT,
   location_maps_url TEXT,
   -- Tips
   tips_enabled BOOLEAN DEFAULT false,
