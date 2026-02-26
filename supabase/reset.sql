@@ -326,6 +326,7 @@ CREATE TABLE cafe_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   -- Restaurant info
   restaurant_name VARCHAR(255) NOT NULL DEFAULT 'Cafe Idare',
+  restaurant_address TEXT,
   -- Tax settings
   tax_enabled BOOLEAN NOT NULL DEFAULT true,
   tax_percentage DECIMAL(5, 2) NOT NULL DEFAULT 18.00,

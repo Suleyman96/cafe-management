@@ -31,6 +31,7 @@ export interface CafeSettings {
   delivery_fee_default: number;
   minimum_delivery_amount: number;
   delivery_zone_info: string | null;
+  restaurant_address: string | null;
   // Contact & social
   contact_phone: string | null;
   contact_website: string | null;
@@ -75,6 +76,7 @@ const DEFAULT_SETTINGS: CafeSettings = {
   delivery_fee_default: 0,
   minimum_delivery_amount: 0,
   delivery_zone_info: null,
+  restaurant_address: null,
   // Contact & social defaults
   contact_phone: null,
   contact_website: null,

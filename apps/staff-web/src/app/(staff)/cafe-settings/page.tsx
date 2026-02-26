@@ -33,6 +33,7 @@ export default function CafeSettingsPage() {
   const [formData, setFormData] = useState({
     // Basic info
     restaurant_name: '',
+    restaurant_address: null as string | null,
     // Tax settings
     tax_enabled: true,
     tax_percentage: 18,
@@ -84,6 +85,7 @@ export default function CafeSettingsPage() {
     if (settings) {
       setFormData({
         restaurant_name: settings.restaurant_name,
+        restaurant_address: settings.restaurant_address ?? null,
         tax_enabled: settings.tax_enabled,
         tax_percentage: settings.tax_percentage,
         tax_label: settings.tax_label,
@@ -160,6 +162,7 @@ export default function CafeSettingsPage() {
     if (settings) {
       setFormData({
         restaurant_name: settings.restaurant_name,
+        restaurant_address: settings.restaurant_address ?? null,
         tax_enabled: settings.tax_enabled,
         tax_percentage: settings.tax_percentage,
         tax_label: settings.tax_label,
@@ -265,6 +268,18 @@ export default function CafeSettingsPage() {
                   type="text"
                   value={formData.restaurant_name}
                   onChange={(e) => handleChange('restaurant_name', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Restaurant Address
+                </label>
+                <input
+                  type="text"
+                  value={formData.restaurant_address || ''}
+                  onChange={(e) => handleChange('restaurant_address', e.target.value || null)}
+                  placeholder="123 Main Street, City, Country"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>

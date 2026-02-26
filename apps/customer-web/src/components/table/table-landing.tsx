@@ -100,7 +100,6 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
     settings?.social_tiktok ||
     settings?.social_telegram ||
     settings?.social_line ||
-    settings?.contact_phone ||
     settings?.contact_website ||
     settings?.location_maps_url;
 
@@ -427,14 +426,6 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                     </svg>
                   </a>
                 )}
-                {settings?.contact_phone && (
-                  <a
-                    href={getPhoneUrl(settings.contact_phone)}
-                    className="flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/8 text-white/50 transition-all hover:text-white/80 hover:bg-white/15"
-                  >
-                    <Phone className="h-5 w-5" />
-                  </a>
-                )}
                 {settings?.contact_website && (
                   <a
                     href={ensureUrl(settings.contact_website)}
@@ -456,6 +447,34 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                   </a>
                 )}
               </div>
+
+              {/* Phone & Address info */}
+              {(settings?.contact_phone || settings?.restaurant_address) && (
+                <div className="mt-4 flex flex-col items-center gap-2">
+                  {settings?.contact_phone && (
+                    <a
+                      href={getPhoneUrl(settings.contact_phone)}
+                      className="flex items-center gap-2 text-xs text-white/40 hover:text-white/60 transition-colors"
+                    >
+                      <Phone className="h-3.5 w-3.5" />
+                      <span>{settings.contact_phone}</span>
+                    </a>
+                  )}
+                  {settings?.restaurant_address && (
+                    <a
+                      href={
+                        settings?.location_maps_url ? ensureUrl(settings.location_maps_url) : '#'
+                      }
+                      target={settings?.location_maps_url ? '_blank' : undefined}
+                      rel={settings?.location_maps_url ? 'noopener noreferrer' : undefined}
+                      className="flex items-center gap-2 text-xs text-white/40 hover:text-white/60 transition-colors text-center max-w-[280px]"
+                    >
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      <span>{settings.restaurant_address}</span>
+                    </a>
+                  )}
+                </div>
+              )}
             </>
           )}
 

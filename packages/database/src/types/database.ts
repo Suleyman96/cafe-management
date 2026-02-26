@@ -296,6 +296,7 @@ export interface Database {
           delivery_fee_default: number;
           minimum_delivery_amount: number;
           delivery_zone_info: string | null;
+          restaurant_address: string | null;
           // Contact & social
           contact_phone: string | null;
           contact_website: string | null;
