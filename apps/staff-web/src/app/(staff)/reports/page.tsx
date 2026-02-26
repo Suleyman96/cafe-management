@@ -1,6 +1,7 @@
 'use client';
 
 import { calculateProfitMetrics } from '@cafe-idare/core';
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -37,6 +38,7 @@ type DateRangeType = 'today' | 'week' | 'month' | 'year' | 'custom';
 type CustomMode = 'day' | 'month' | 'year';
 
 export default function ReportsPage() {
+  const { t } = useTranslation('staff');
   const { staff: currentUser } = useAuth();
   const { data: orders, isLoading: loading, error } = useOrders();
   const { data: staff, isLoading: staffLoading } = useStaff();
@@ -210,6 +212,38 @@ export default function ReportsPage() {
     }
   };
 
+  // Map range keys to translation keys
+  const getRangeLabel = (range: DateRangeType): string => {
+    switch (range) {
+      case 'today':
+        return t('reports.today');
+      case 'week':
+        return t('reports.week');
+      case 'month':
+        return t('reports.month');
+      case 'year':
+        return t('reports.year');
+      case 'custom':
+        return t('reports.custom');
+      default:
+        return range;
+    }
+  };
+
+  // Map custom mode keys to translation keys
+  const getCustomModeLabel = (mode: CustomMode): string => {
+    switch (mode) {
+      case 'day':
+        return t('reports.day');
+      case 'month':
+        return t('reports.month');
+      case 'year':
+        return t('reports.year');
+      default:
+        return mode;
+    }
+  };
+
   // Filter orders by date
   const filteredOrders =
     orders?.filter((order: any) => {
@@ -268,7 +302,7 @@ export default function ReportsPage() {
         order.order_items?.forEach((item: any) => {
           const key = item.menu_item_id;
           const current = itemCounts.get(key) || {
-            name: item.menu_item?.name_en || 'Unknown',
+            name: item.menu_item?.name || 'Unknown',
             count: 0,
             revenue: 0,
           };
@@ -688,7 +722,7 @@ export default function ReportsPage() {
   if (currentUser?.role !== 'owner') {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Owner access required</p>
+        <p className="text-gray-500">{t('reports.ownerAccessRequired')}</p>
       </div>
     );
   }
@@ -696,7 +730,7 @@ export default function ReportsPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-red-500">Error loading reports</p>
+        <p className="text-red-500">{t('reports.errorLoading')}</p>
       </div>
     );
   }
@@ -706,7 +740,7 @@ export default function ReportsPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Reports & Analytics</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{t('reports.title')}</h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
             <Calendar className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1" />
             {getDateRangeLabel()}
@@ -726,7 +760,7 @@ export default function ReportsPage() {
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {range === 'custom' ? 'Custom' : range.charAt(0).toUpperCase() + range.slice(1)}
+                {getRangeLabel(range)}
               </button>
             ))}
           </div>
@@ -736,7 +770,7 @@ export default function ReportsPage() {
             size="sm"
           >
             <Download className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">Export PDF</span>
+            <span className="text-xs sm:text-sm">{t('reports.exportPdf')}</span>
           </Button>
         </div>
       </div>
@@ -748,7 +782,7 @@ export default function ReportsPage() {
             {/* Mode Selection */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs sm:text-sm font-medium text-gray-700 mr-1 sm:mr-2">
-                View by:
+                {t('reports.viewBy')}
               </span>
               {(['day', 'month', 'year'] as const).map((mode) => (
                 <button
@@ -760,7 +794,7 @@ export default function ReportsPage() {
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  {getCustomModeLabel(mode)}
                 </button>
               ))}
             </div>
@@ -832,7 +866,7 @@ export default function ReportsPage() {
                 onClick={() => setSelectedDate(new Date())}
                 className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium flex-shrink-0"
               >
-                Today
+                {t('today', { ns: 'common' })}
               </button>
             </div>
           </div>
@@ -843,7 +877,7 @@ export default function ReportsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8">
         <div className="bg-white rounded-lg shadow p-3 sm:p-6">
           <div className="flex items-center justify-between mb-1 sm:mb-2">
-            <p className="text-xs sm:text-sm text-gray-600">Total Revenue</p>
+            <p className="text-xs sm:text-sm text-gray-600">{t('reports.totalRevenue')}</p>
             <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
           </div>
           <p className="text-lg sm:text-2xl font-bold">${metrics.totalRevenue.toFixed(2)}</p>
@@ -851,7 +885,7 @@ export default function ReportsPage() {
 
         <div className="bg-white rounded-lg shadow p-3 sm:p-6">
           <div className="flex items-center justify-between mb-1 sm:mb-2">
-            <p className="text-xs sm:text-sm text-gray-600">Total Orders</p>
+            <p className="text-xs sm:text-sm text-gray-600">{t('reports.totalOrders')}</p>
             <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
           </div>
           <p className="text-lg sm:text-2xl font-bold">{metrics.totalOrders}</p>
@@ -859,7 +893,7 @@ export default function ReportsPage() {
 
         <div className="bg-white rounded-lg shadow p-3 sm:p-6">
           <div className="flex items-center justify-between mb-1 sm:mb-2">
-            <p className="text-xs sm:text-sm text-gray-600">Avg Order</p>
+            <p className="text-xs sm:text-sm text-gray-600">{t('reports.avgOrderShort')}</p>
             <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
           </div>
           <p className="text-lg sm:text-2xl font-bold">${metrics.averageOrderValue.toFixed(2)}</p>
@@ -867,7 +901,7 @@ export default function ReportsPage() {
 
         <div className="bg-white rounded-lg shadow p-3 sm:p-6">
           <div className="flex items-center justify-between mb-1 sm:mb-2">
-            <p className="text-xs sm:text-sm text-gray-600">Completion</p>
+            <p className="text-xs sm:text-sm text-gray-600">{t('reports.completion')}</p>
             <ChefHat className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
           </div>
           <p className="text-lg sm:text-2xl font-bold">
@@ -883,13 +917,13 @@ export default function ReportsPage() {
       <div className="bg-white rounded-lg shadow p-3 sm:p-6 mb-4 sm:mb-8">
         <div className="flex items-center gap-2 mb-3 sm:mb-4">
           <Receipt className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-          <h2 className="text-base sm:text-lg font-semibold">Profit & Loss</h2>
+          <h2 className="text-base sm:text-lg font-semibold">{t('reports.profitLoss')}</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
           <div className="bg-green-50 rounded-lg p-3 sm:p-4">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-xs sm:text-sm text-green-700">Revenue</p>
+              <p className="text-xs sm:text-sm text-green-700">{t('reports.revenue')}</p>
               <DollarSign className="h-4 w-4 text-green-600" />
             </div>
             <p className="text-lg sm:text-2xl font-bold text-green-700">
@@ -899,7 +933,7 @@ export default function ReportsPage() {
 
           <div className="bg-red-50 rounded-lg p-3 sm:p-4">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-xs sm:text-sm text-red-700">Expenses</p>
+              <p className="text-xs sm:text-sm text-red-700">{t('reports.expenses')}</p>
               <Receipt className="h-4 w-4 text-red-600" />
             </div>
             <p className="text-lg sm:text-2xl font-bold text-red-700">
@@ -914,7 +948,7 @@ export default function ReportsPage() {
               <p
                 className={`text-xs sm:text-sm ${profitMetrics.netProfit >= 0 ? 'text-green-700' : 'text-red-700'}`}
               >
-                Net Profit
+                {t('reports.netProfit')}
               </p>
               <TrendingUp
                 className={`h-4 w-4 ${profitMetrics.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
@@ -930,7 +964,7 @@ export default function ReportsPage() {
               <p
                 className={`text-xs mt-1 ${profitMetrics.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
               >
-                {profitMetrics.profitMargin.toFixed(1)}% margin
+                {profitMetrics.profitMargin.toFixed(1)}% {t('reports.margin')}
               </p>
             )}
           </div>
@@ -939,7 +973,7 @@ export default function ReportsPage() {
         {profitMetrics.byCategory.length > 0 && (
           <div>
             <h3 className="text-xs sm:text-sm font-medium text-gray-700 mb-3">
-              Expenses by Category
+              {t('reports.expenseBreakdown')}
             </h3>
             <div className="space-y-2">
               {profitMetrics.byCategory.map((cat) => {
@@ -972,9 +1006,7 @@ export default function ReportsPage() {
         )}
 
         {profitMetrics.byCategory.length === 0 && expenses.length === 0 && (
-          <p className="text-gray-500 text-center py-4 text-sm">
-            No expenses recorded for this period
-          </p>
+          <p className="text-gray-500 text-center py-4 text-sm">{t('reports.noExpenses')}</p>
         )}
       </div>
 
@@ -982,30 +1014,28 @@ export default function ReportsPage() {
       <div className="bg-white rounded-lg shadow p-3 sm:p-6 mb-4 sm:mb-8">
         <div className="flex items-center gap-2 mb-3 sm:mb-4">
           <Trash2 className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
-          <h2 className="text-base sm:text-lg font-semibold">Waste Summary</h2>
+          <h2 className="text-base sm:text-lg font-semibold">{t('reports.wasteSummary')}</h2>
         </div>
 
         {wasteMetrics.totalItems === 0 ? (
-          <p className="text-gray-500 text-center py-4 text-sm">
-            No waste recorded for this period
-          </p>
+          <p className="text-gray-500 text-center py-4 text-sm">{t('reports.noWaste')}</p>
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
               <div className="bg-red-50 rounded-lg p-3 sm:p-4">
-                <p className="text-xs sm:text-sm text-red-700">Total Waste Cost</p>
+                <p className="text-xs sm:text-sm text-red-700">{t('reports.totalWasteCost')}</p>
                 <p className="text-lg sm:text-2xl font-bold text-red-700">
                   {formatPrice(wasteMetrics.totalCost)}
                 </p>
               </div>
               <div className="bg-orange-50 rounded-lg p-3 sm:p-4">
-                <p className="text-xs sm:text-sm text-orange-700">Waste Entries</p>
+                <p className="text-xs sm:text-sm text-orange-700">{t('reports.wasteEntries')}</p>
                 <p className="text-lg sm:text-2xl font-bold text-orange-700">
                   {wasteMetrics.totalItems}
                 </p>
               </div>
               <div className="bg-amber-50 rounded-lg p-3 sm:p-4 col-span-2 sm:col-span-1">
-                <p className="text-xs sm:text-sm text-amber-700">Avg Cost/Entry</p>
+                <p className="text-xs sm:text-sm text-amber-700">{t('reports.avgCostEntry')}</p>
                 <p className="text-lg sm:text-2xl font-bold text-amber-700">
                   {formatPrice(
                     wasteMetrics.totalItems > 0
@@ -1020,7 +1050,9 @@ export default function ReportsPage() {
               {/* Waste by Reason */}
               {wasteMetrics.byReason.length > 0 && (
                 <div>
-                  <h3 className="text-xs sm:text-sm font-medium text-gray-700 mb-3">By Reason</h3>
+                  <h3 className="text-xs sm:text-sm font-medium text-gray-700 mb-3">
+                    {t('reports.wasteByReason')}
+                  </h3>
                   <div className="space-y-2">
                     {wasteMetrics.byReason.map((item) => {
                       const percentage =
@@ -1053,7 +1085,7 @@ export default function ReportsPage() {
               {wasteMetrics.topItems.length > 0 && (
                 <div>
                   <h3 className="text-xs sm:text-sm font-medium text-gray-700 mb-3">
-                    Top Wasted Items
+                    {t('reports.topWastedItems')}
                   </h3>
                   <div className="space-y-2">
                     {wasteMetrics.topItems.map((item, index) => (
@@ -1083,26 +1115,28 @@ export default function ReportsPage() {
       {/* Order Types */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 mb-4 sm:mb-8">
         <div className="bg-white rounded-lg shadow p-3 sm:p-6">
-          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Order Types</h2>
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+            {t('reports.orderTypes')}
+          </h2>
           <div className="space-y-2 sm:space-y-3">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
-                <span className="text-sm sm:text-base">Dine In</span>
+                <span className="text-sm sm:text-base">{t('reports.dineIn')}</span>
               </div>
               <span className="font-medium text-sm sm:text-base">{metrics.dineInOrders}</span>
             </div>
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <Package className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-                <span className="text-sm sm:text-base">Takeout</span>
+                <span className="text-sm sm:text-base">{t('reports.takeout')}</span>
               </div>
               <span className="font-medium text-sm sm:text-base">{metrics.takeoutOrders}</span>
             </div>
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <Truck className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
-                <span className="text-sm sm:text-base">Delivery</span>
+                <span className="text-sm sm:text-base">{t('reports.delivery')}</span>
               </div>
               <span className="font-medium text-sm sm:text-base">{metrics.deliveryOrders}</span>
             </div>
@@ -1125,13 +1159,16 @@ export default function ReportsPage() {
               </div>
               <div className="flex justify-between text-xs text-gray-600 mt-2 flex-wrap gap-1">
                 <span>
-                  Dine In: {Math.round((metrics.dineInOrders / metrics.totalOrders) * 100)}%
+                  {t('reports.dineIn')}:{' '}
+                  {Math.round((metrics.dineInOrders / metrics.totalOrders) * 100)}%
                 </span>
                 <span>
-                  Takeout: {Math.round((metrics.takeoutOrders / metrics.totalOrders) * 100)}%
+                  {t('reports.takeout')}:{' '}
+                  {Math.round((metrics.takeoutOrders / metrics.totalOrders) * 100)}%
                 </span>
                 <span>
-                  Delivery: {Math.round((metrics.deliveryOrders / metrics.totalOrders) * 100)}%
+                  {t('reports.delivery')}:{' '}
+                  {Math.round((metrics.deliveryOrders / metrics.totalOrders) * 100)}%
                 </span>
               </div>
             </div>
@@ -1141,9 +1178,9 @@ export default function ReportsPage() {
         {/* Sold Items */}
         <div className="bg-white rounded-lg shadow p-3 sm:p-6">
           <div className="flex justify-between items-center mb-3 sm:mb-4">
-            <h2 className="text-base sm:text-lg font-semibold">Sold Items</h2>
+            <h2 className="text-base sm:text-lg font-semibold">{t('reports.soldItems')}</h2>
             <span className="text-xs sm:text-sm text-gray-500">
-              {metrics.soldItems.length} items
+              {metrics.soldItems.length} {t('reports.itemsCount')}
             </span>
           </div>
           <div className="space-y-2 sm:space-y-3 max-h-48 sm:max-h-80 overflow-y-auto">
@@ -1154,13 +1191,15 @@ export default function ReportsPage() {
                   <span className="truncate text-xs sm:text-sm">{item.name}</span>
                 </div>
                 <div className="text-right flex-shrink-0 ml-2">
-                  <p className="font-medium text-xs sm:text-sm">{item.count} sold</p>
+                  <p className="font-medium text-xs sm:text-sm">
+                    {item.count} {t('reports.soldSuffix')}
+                  </p>
                   <p className="text-xs text-gray-600">${item.revenue.toFixed(2)}</p>
                 </div>
               </div>
             ))}
             {metrics.soldItems.length === 0 && (
-              <p className="text-gray-500 text-center py-4 text-sm">No items sold yet</p>
+              <p className="text-gray-500 text-center py-4 text-sm">{t('reports.noItemsSold')}</p>
             )}
           </div>
         </div>
@@ -1168,21 +1207,23 @@ export default function ReportsPage() {
 
       {/* Order Status Summary */}
       <div className="bg-white rounded-lg shadow p-3 sm:p-6 mb-4 sm:mb-8">
-        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Order Status Summary</h2>
+        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+          {t('reports.orderStatusSummary')}
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div className="text-center">
             <p className="text-xl sm:text-3xl font-bold text-green-600">
               {metrics.completedOrders}
             </p>
-            <p className="text-xs sm:text-sm text-gray-600">Completed</p>
+            <p className="text-xs sm:text-sm text-gray-600">{t('completed', { ns: 'common' })}</p>
           </div>
           <div className="text-center">
             <p className="text-xl sm:text-3xl font-bold text-red-600">{metrics.cancelledOrders}</p>
-            <p className="text-xs sm:text-sm text-gray-600">Cancelled</p>
+            <p className="text-xs sm:text-sm text-gray-600">{t('orders.cancelled')}</p>
           </div>
           <div className="text-center">
             <p className="text-xl sm:text-3xl font-bold text-blue-600">{metrics.totalItems}</p>
-            <p className="text-xs sm:text-sm text-gray-600">Items Sold</p>
+            <p className="text-xs sm:text-sm text-gray-600">{t('reports.itemsSold')}</p>
           </div>
           <div className="text-center">
             <p className="text-xl sm:text-3xl font-bold text-purple-600">
@@ -1190,7 +1231,7 @@ export default function ReportsPage() {
                 ? (metrics.totalItems / metrics.totalOrders).toFixed(1)
                 : '0'}
             </p>
-            <p className="text-xs sm:text-sm text-gray-600">Items/Order</p>
+            <p className="text-xs sm:text-sm text-gray-600">{t('reports.itemsPerOrder')}</p>
           </div>
         </div>
       </div>
@@ -1199,12 +1240,12 @@ export default function ReportsPage() {
       <div className="bg-white rounded-lg shadow p-3 sm:p-6">
         <div className="flex items-center gap-2 mb-3 sm:mb-4">
           <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-          <h2 className="text-base sm:text-lg font-semibold">Staff Performance</h2>
+          <h2 className="text-base sm:text-lg font-semibold">{t('reports.staffPerformance')}</h2>
         </div>
 
         {staffPerformance.length === 0 ? (
           <p className="text-gray-500 text-center py-6 sm:py-8 text-sm">
-            No staff performance data for this period
+            {t('reports.noStaffData')}
           </p>
         ) : (
           <div className="space-y-3 sm:space-y-4">
@@ -1214,13 +1255,15 @@ export default function ReportsPage() {
                 <div className="flex items-center gap-2 sm:gap-3">
                   <Award className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600 flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-xs sm:text-sm text-yellow-700">Top Performer</p>
+                    <p className="text-xs sm:text-sm text-yellow-700">
+                      {t('reports.topPerformer')}
+                    </p>
                     <p className="text-sm sm:text-lg font-bold text-yellow-900 truncate">
                       {staffPerformance[0].name}
                     </p>
                     <p className="text-xs sm:text-sm text-yellow-700">
-                      ${staffPerformance[0].revenue.toFixed(2)} from{' '}
-                      {staffPerformance[0].ordersHandled} orders
+                      ${staffPerformance[0].revenue.toFixed(2)} {t('reports.from')}{' '}
+                      {staffPerformance[0].ordersHandled} {t('reports.orders')}
                     </p>
                   </div>
                 </div>
@@ -1232,14 +1275,14 @@ export default function ReportsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b text-left text-xs sm:text-sm text-gray-600">
-                    <th className="pb-3 font-medium">Rank</th>
-                    <th className="pb-3 font-medium">Staff Member</th>
-                    <th className="pb-3 font-medium">Role</th>
-                    <th className="pb-3 font-medium text-right">Orders</th>
-                    <th className="pb-3 font-medium text-right">Items</th>
-                    <th className="pb-3 font-medium text-right">Revenue</th>
-                    <th className="pb-3 font-medium text-right">Avg/Order</th>
-                    <th className="pb-3 font-medium text-right">Completion</th>
+                    <th className="pb-3 font-medium">{t('reports.rank')}</th>
+                    <th className="pb-3 font-medium">{t('staffMgmt.staffMember')}</th>
+                    <th className="pb-3 font-medium">{t('settings.role')}</th>
+                    <th className="pb-3 font-medium text-right">{t('reports.ordersHandled')}</th>
+                    <th className="pb-3 font-medium text-right">{t('reports.itemsSoldCol')}</th>
+                    <th className="pb-3 font-medium text-right">{t('reports.revenue')}</th>
+                    <th className="pb-3 font-medium text-right">{t('reports.avgOrder')}</th>
+                    <th className="pb-3 font-medium text-right">{t('reports.completion')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1355,15 +1398,15 @@ export default function ReportsPage() {
                   <div className="grid grid-cols-4 gap-2 text-center text-xs">
                     <div>
                       <p className="font-bold text-blue-600">{member.ordersHandled}</p>
-                      <p className="text-gray-500">Orders</p>
+                      <p className="text-gray-500">{t('reports.ordersHandled')}</p>
                     </div>
                     <div>
                       <p className="font-bold text-purple-600">{member.itemsSold}</p>
-                      <p className="text-gray-500">Items</p>
+                      <p className="text-gray-500">{t('reports.itemsSoldCol')}</p>
                     </div>
                     <div>
                       <p className="font-bold text-green-600">${member.revenue.toFixed(0)}</p>
-                      <p className="text-gray-500">Revenue</p>
+                      <p className="text-gray-500">{t('reports.revenue')}</p>
                     </div>
                     <div>
                       <p
@@ -1379,7 +1422,7 @@ export default function ReportsPage() {
                           : 0}
                         %
                       </p>
-                      <p className="text-gray-500">Done</p>
+                      <p className="text-gray-500">{t('reports.done')}</p>
                     </div>
                   </div>
                 </div>
@@ -1392,7 +1435,7 @@ export default function ReportsPage() {
                 <p className="text-lg sm:text-2xl font-bold text-blue-600">
                   {staffPerformance.length}
                 </p>
-                <p className="text-xs text-gray-600">Active Staff</p>
+                <p className="text-xs text-gray-600">{t('reports.activeStaff')}</p>
               </div>
               <div className="text-center">
                 <p className="text-lg sm:text-2xl font-bold text-green-600">
@@ -1404,7 +1447,7 @@ export default function ReportsPage() {
                       ).toFixed(0)
                     : '0'}
                 </p>
-                <p className="text-xs text-gray-600">Avg Revenue</p>
+                <p className="text-xs text-gray-600">{t('reports.avgRevenue')}</p>
               </div>
               <div className="text-center">
                 <p className="text-lg sm:text-2xl font-bold text-purple-600">
@@ -1415,7 +1458,7 @@ export default function ReportsPage() {
                       ).toFixed(1)
                     : '0'}
                 </p>
-                <p className="text-xs text-gray-600">Avg Orders</p>
+                <p className="text-xs text-gray-600">{t('reports.avgOrders')}</p>
               </div>
               <div className="text-center">
                 <p className="text-lg sm:text-2xl font-bold text-orange-600">
@@ -1426,7 +1469,7 @@ export default function ReportsPage() {
                       ).toFixed(1)
                     : '0'}
                 </p>
-                <p className="text-xs text-gray-600">Avg Items</p>
+                <p className="text-xs text-gray-600">{t('reports.avgItems')}</p>
               </div>
             </div>
           </div>

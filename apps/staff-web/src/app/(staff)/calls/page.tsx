@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
   AlertCircle,
@@ -17,6 +18,7 @@ import { useResolveWaiterCall, useWaiterCalls } from '@/hooks';
 import { supabase } from '@/lib/supabase/client';
 
 export default function WaiterCallsPage() {
+  const { t } = useTranslation('staff');
   const { data: waiterCalls, isLoading: loading, error, refetch } = useWaiterCalls();
   const respondToCall = useResolveWaiterCall();
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending');
@@ -85,22 +87,40 @@ export default function WaiterCallsPage() {
     const callTime = new Date(timestamp);
     const diffMinutes = Math.floor((now.getTime() - callTime.getTime()) / 1000 / 60);
 
-    if (diffMinutes < 1) return 'Just now';
-    if (diffMinutes === 1) return '1 minute ago';
-    if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+    if (diffMinutes < 1) return t('calls.justNow');
+    if (diffMinutes === 1) return t('calls.minuteAgo');
+    if (diffMinutes < 60) return t('calls.minutesAgo', { count: diffMinutes });
 
     const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours === 1) return '1 hour ago';
-    return `${diffHours} hours ago`;
+    if (diffHours === 1) return t('calls.hourAgo');
+    return t('calls.hoursAgo', { count: diffHours });
+  };
+
+  // Get display label for call type
+  const getCallTypeLabel = (type: string) => {
+    switch (type) {
+      case 'bill':
+        return t('calls.requestBill');
+      case 'assistance':
+        return t('calls.assistance');
+      case 'complaint':
+        return t('calls.complaint');
+      case 'question':
+        return t('calls.question');
+      case 'emergency':
+        return t('calls.emergency');
+      default:
+        return type.charAt(0).toUpperCase() + type.slice(1);
+    }
   };
 
   // Handle respond to call
   const handleRespond = async (callId: string) => {
     try {
       await respondToCall.mutateAsync({ callId, notes: undefined });
-      toast.success('Call marked as completed');
+      toast.success(t('calls.callCompleted'));
     } catch (_error) {
-      toast.error('Failed to respond to call');
+      toast.error(t('calls.failedRespond'));
     }
   };
 
@@ -115,7 +135,7 @@ export default function WaiterCallsPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-red-500">Error loading waiter calls</p>
+        <p className="text-red-500">{t('calls.errorLoading')}</p>
       </div>
     );
   }
@@ -128,10 +148,11 @@ export default function WaiterCallsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Waiter Calls</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{t('calls.title')}</h1>
           {pendingCallsCount > 0 && (
             <p className="text-sm text-orange-600 font-medium">
-              {pendingCallsCount} pending {pendingCallsCount === 1 ? 'call' : 'calls'}
+              {pendingCallsCount} {t('pending', { ns: 'common' }).toLowerCase()}{' '}
+              {pendingCallsCount === 1 ? t('calls.call') : t('calls.callsPlural')}
             </p>
           )}
         </div>
@@ -152,7 +173,7 @@ export default function WaiterCallsPage() {
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          Pending
+          {t('pending', { ns: 'common' })}
         </button>
         <button
           onClick={() => setFilter('completed')}
@@ -162,7 +183,7 @@ export default function WaiterCallsPage() {
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          Completed
+          {t('completed', { ns: 'common' })}
         </button>
         <button
           onClick={() => setFilter('all')}
@@ -172,7 +193,7 @@ export default function WaiterCallsPage() {
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          All
+          {t('all', { ns: 'common' })}
         </button>
       </div>
 
@@ -182,24 +203,6 @@ export default function WaiterCallsPage() {
           const callType = call.call_type || call.reason || 'assistance';
           const isEmergency = callType === 'emergency';
           const isPending = call.status === 'pending';
-
-          // Get display label for call type
-          const getCallTypeLabel = (type: string) => {
-            switch (type) {
-              case 'bill':
-                return 'Request Bill';
-              case 'assistance':
-                return 'Assistance';
-              case 'complaint':
-                return 'Complaint';
-              case 'question':
-                return 'Question';
-              case 'emergency':
-                return 'Emergency';
-              default:
-                return type.charAt(0).toUpperCase() + type.slice(1);
-            }
-          };
 
           return (
             <div
@@ -239,7 +242,8 @@ export default function WaiterCallsPage() {
                     <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
                       <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
                       <span>
-                        Responded by {call.staff.name} at {formatTimeAgo(call.responded_at)}
+                        {t('calls.respondedBy', { name: call.staff.name })}{' '}
+                        {formatTimeAgo(call.responded_at)}
                       </span>
                     </div>
                   )}
@@ -252,7 +256,7 @@ export default function WaiterCallsPage() {
                     className="w-full sm:w-auto sm:ml-4"
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    Respond
+                    {t('calls.respond')}
                   </Button>
                 )}
               </div>
@@ -263,7 +267,7 @@ export default function WaiterCallsPage() {
         {filteredCalls?.length === 0 && (
           <div className="text-center py-8 sm:py-12 text-gray-500">
             <Bell className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 text-gray-300" />
-            <p className="text-sm sm:text-base">No {filter !== 'all' ? filter : ''} calls</p>
+            <p className="text-sm sm:text-base">{t('calls.noCalls')}</p>
           </div>
         )}
       </div>

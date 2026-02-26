@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -13,6 +14,7 @@ interface StaffCreateModalProps {
 }
 
 export function StaffCreateModal({ currentUserRole, onClose, onSuccess }: StaffCreateModalProps) {
+  const { t } = useTranslation('staff');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -42,14 +44,14 @@ export function StaffCreateModal({ currentUserRole, onClose, onSuccess }: StaffC
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Failed to create staff account');
+        setError(data.error || t('staffMgmt.failedCreate'));
         return;
       }
 
-      toast.success('Staff account created successfully');
+      toast.success(t('staffMgmt.staffCreated'));
       onSuccess();
     } catch (_err) {
-      setError('An unexpected error occurred');
+      setError(t('staffMgmt.unexpectedError'));
     } finally {
       setLoading(false);
     }
@@ -58,7 +60,7 @@ export function StaffCreateModal({ currentUserRole, onClose, onSuccess }: StaffC
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-md w-full p-6">
-        <h2 className="text-xl font-bold mb-4">Add New Staff Member</h2>
+        <h2 className="text-xl font-bold mb-4">{t('staffMgmt.addNewStaff')}</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
@@ -68,7 +70,9 @@ export function StaffCreateModal({ currentUserRole, onClose, onSuccess }: StaffC
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('staffMgmt.fullName')} *
+            </label>
             <input
               type="text"
               value={fullName}
@@ -80,7 +84,9 @@ export function StaffCreateModal({ currentUserRole, onClose, onSuccess }: StaffC
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('email', { ns: 'common' })} *
+            </label>
             <input
               type="email"
               value={email}
@@ -92,34 +98,42 @@ export function StaffCreateModal({ currentUserRole, onClose, onSuccess }: StaffC
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('staffMgmt.password')} *
+            </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Minimum 6 characters"
+              placeholder={t('staffMgmt.minSixChars')}
               minLength={6}
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('staffMgmt.role')} *
+            </label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as StaffRole)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="waiter">Waiter</option>
-              <option value="kitchen">Kitchen Staff</option>
-              <option value="admin">Admin</option>
-              {currentUserRole === 'owner' && <option value="owner">Owner</option>}
+              <option value="waiter">{t('waiter', { ns: 'roles' })}</option>
+              <option value="kitchen">{t('staffMgmt.kitchenStaff')}</option>
+              <option value="admin">{t('admin', { ns: 'roles' })}</option>
+              {currentUserRole === 'owner' && (
+                <option value="owner">{t('owner', { ns: 'roles' })}</option>
+              )}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('phone', { ns: 'common' })}
+            </label>
             <input
               type="tel"
               value={phone}
@@ -137,10 +151,10 @@ export function StaffCreateModal({ currentUserRole, onClose, onSuccess }: StaffC
               disabled={loading}
               className="flex-1"
             >
-              Cancel
+              {t('cancel', { ns: 'common' })}
             </Button>
             <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? 'Creating...' : 'Create Account'}
+              {loading ? t('staffMgmt.creating') : t('staffMgmt.createAccount')}
             </Button>
           </div>
         </form>

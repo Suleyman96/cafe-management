@@ -1,4 +1,6 @@
 import 'react-native-gesture-handler';
+import './src/lib/i18n';
+import { I18nextProvider, i18n } from '@cafe-idare/i18n';
 import { NavigationContainer } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
@@ -50,14 +52,16 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <PaperProvider>
-          <NavigationContainer>
-            <RootNavigator />
-            <StatusBar style="auto" />
-          </NavigationContainer>
-        </PaperProvider>
-      </QueryClientProvider>
+      <I18nextProvider i18n={i18n}>
+        <QueryClientProvider client={queryClient}>
+          <PaperProvider>
+            <NavigationContainer>
+              <RootNavigator />
+              <StatusBar style="auto" />
+            </NavigationContainer>
+          </PaperProvider>
+        </QueryClientProvider>
+      </I18nextProvider>
     </SafeAreaProvider>
   );
 }

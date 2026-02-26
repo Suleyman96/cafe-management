@@ -1,6 +1,7 @@
 'use client';
 
 import { ORDER_STATUS } from '@cafe-idare/core';
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
   CheckCircle,
@@ -43,6 +44,7 @@ type OrderStatus =
 type OrderSource = 'customer' | 'waiter' | 'phone';
 
 export default function OrdersPage() {
+  const { t } = useTranslation('staff');
   const { data: orders, isLoading: loading, error, refetch } = useOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const cancelOrderMutation = useCancelOrder();
@@ -160,16 +162,16 @@ export default function OrdersPage() {
         orderId,
         status: statusKey as keyof typeof ORDER_STATUS,
       });
-      toast.success(`Order status updated to ${newStatus}`);
+      toast.success(`${t('orders.statusUpdated')} ${newStatus}`);
     } catch (_error) {
-      toast.error('Failed to update order status');
+      toast.error(t('delivery.failedUpdate'));
     }
   };
 
   // Handle cancel order with reason
   const handleCancelOrder = async () => {
     if (!cancelOrderTarget || !cancelReason.trim()) {
-      toast.error('Please provide a cancellation reason');
+      toast.error(t('orders.reasonRequired'));
       return;
     }
 
@@ -180,14 +182,14 @@ export default function OrdersPage() {
         reason: cancelReason.trim(),
         tableId: cancelOrderTarget.table_id,
       });
-      toast.success('Order cancelled');
+      toast.success(t('orders.orderCancelled'));
       setShowCancelModal(false);
       setCancelOrderTarget(null);
       setCancelReason('');
       refetch();
     } catch (error) {
       console.error('Failed to cancel order:', error);
-      toast.error('Failed to cancel order');
+      toast.error(t('orders.failedCancel'));
     } finally {
       setCancelling(false);
     }
@@ -229,7 +231,9 @@ export default function OrdersPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-red-500">Error loading orders: {error.message}</p>
+        <p className="text-red-500">
+          {t('error', { ns: 'common' })}: {error.message}
+        </p>
       </div>
     );
   }
@@ -237,7 +241,7 @@ export default function OrdersPage() {
   return (
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
       <div className="flex justify-between items-center mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold">Order Management</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">{t('orders.title')}</h1>
       </div>
 
       {/* Filters */}
@@ -247,7 +251,7 @@ export default function OrdersPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
-              placeholder="Search orders..."
+              placeholder={t('orders.searchOrders')}
               className="w-full pl-10 pr-3 py-2 border rounded-lg text-sm sm:text-base"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -260,16 +264,16 @@ export default function OrdersPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
             >
-              <option value="all">All Status</option>
-              <option value="pending_approval">⏳ Pending Approval</option>
-              <option value="new">New</option>
-              <option value="preparing">Preparing</option>
-              <option value="ready">Ready</option>
-              <option value="served">Served</option>
-              <option value="out_for_delivery">Out for Delivery</option>
-              <option value="delivered">Delivered</option>
-              <option value="paid">Paid</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="all">{t('orders.allStatus')}</option>
+              <option value="pending_approval">⏳ {t('orders.pendingApproval')}</option>
+              <option value="new">{t('orders.new')}</option>
+              <option value="preparing">{t('orders.preparing')}</option>
+              <option value="ready">{t('orders.ready')}</option>
+              <option value="served">{t('orders.served')}</option>
+              <option value="out_for_delivery">{t('orders.outForDelivery')}</option>
+              <option value="delivered">{t('orders.delivered')}</option>
+              <option value="paid">{t('orders.paid')}</option>
+              <option value="cancelled">{t('orders.cancelled')}</option>
             </select>
 
             <select
@@ -277,10 +281,10 @@ export default function OrdersPage() {
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value as any)}
             >
-              <option value="all">All Sources</option>
-              <option value="customer">Customer</option>
-              <option value="waiter">Waiter</option>
-              <option value="phone">Takeout</option>
+              <option value="all">{t('orders.allSources')}</option>
+              <option value="customer">{t('orders.customer')}</option>
+              <option value="waiter">{t('orders.waiter')}</option>
+              <option value="phone">{t('orders.takeout')}</option>
             </select>
           </div>
 
@@ -291,7 +295,7 @@ export default function OrdersPage() {
               onClick={() => setSelectedTableFilter('all')}
               className="w-full sm:w-auto"
             >
-              Clear Table Filter ({selectedTableFilter})
+              {t('orders.clearTableFilter')} ({selectedTableFilter})
             </Button>
           )}
         </div>
@@ -328,14 +332,14 @@ export default function OrdersPage() {
                       <div className="flex items-center gap-2">
                         <Truck className="h-4 sm:h-5 w-4 sm:w-5 text-purple-600" />
                         <h3 className="font-semibold text-base sm:text-lg text-purple-800">
-                          Delivery
+                          {t('orders.delivered').replace(/d$/, 'y')}
                         </h3>
                       </div>
                     ) : isTakeout ? (
                       <div className="flex items-center gap-2">
                         <Package className="h-4 sm:h-5 w-4 sm:w-5 text-orange-600" />
                         <h3 className="font-semibold text-base sm:text-lg text-orange-800">
-                          Takeout
+                          {t('orders.takeout')}
                         </h3>
                       </div>
                     ) : (
@@ -377,12 +381,12 @@ export default function OrdersPage() {
                   <div className="text-base sm:text-lg font-semibold">{formatPrice(total)}</div>
                   {paid > 0 && (
                     <div className="text-xs sm:text-sm text-green-600">
-                      Paid: {formatPrice(paid)}
+                      {t('orders.paidAmount')} {formatPrice(paid)}
                     </div>
                   )}
                   {remaining > 0 && paid > 0 && (
                     <div className="text-xs sm:text-sm text-orange-600">
-                      Due: {formatPrice(remaining)}
+                      {t('orders.dueAmount')} {formatPrice(remaining)}
                     </div>
                   )}
                 </div>
@@ -392,7 +396,7 @@ export default function OrdersPage() {
               <div className="mb-3 text-sm text-gray-600">
                 {order.order_items?.slice(0, 3).map((item: any, _index: number) => (
                   <div key={item.id}>
-                    {item.quantity}x {item.menu_item?.name_en}
+                    {item.quantity}x {item.menu_item?.name}
                     {item.notes && <span className="text-xs text-gray-500"> ({item.notes})</span>}
                   </div>
                 ))}
@@ -425,12 +429,12 @@ export default function OrdersPage() {
                       onClick={() => handleStatusUpdate(order.id, 'new')}
                     >
                       <ThumbsUp className="h-4 w-4 mr-1" />
-                      Approve
+                      {t('approve', { ns: 'common' })}
                     </Button>
                     {order.source === 'customer' && (
                       <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
                         <Smartphone className="h-3 w-3" />
-                        QR Order
+                        {t('orders.qrOrder')}
                       </span>
                     )}
                   </>
@@ -442,7 +446,8 @@ export default function OrdersPage() {
                     onClick={() => handleStatusUpdate(order.id, 'preparing')}
                   >
                     <ChefHat className="h-4 w-4 mr-1" />
-                    <span className="hidden xs:inline">Start </span>Preparing
+                    <span className="hidden xs:inline">{t('orders.startPreparing')}</span>
+                    <span className="xs:hidden">{t('orders.preparing')}</span>
                   </Button>
                 )}
                 {order.status === 'preparing' && (
@@ -452,7 +457,7 @@ export default function OrdersPage() {
                     onClick={() => handleStatusUpdate(order.id, 'ready')}
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    Ready
+                    {t('orders.ready')}
                   </Button>
                 )}
                 {/* Dine-in orders: Mark as served before payment */}
@@ -463,7 +468,7 @@ export default function OrdersPage() {
                     onClick={() => handleStatusUpdate(order.id, 'served')}
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    Served
+                    {t('orders.served')}
                   </Button>
                 )}
                 {/* Delivery orders: Out for Delivery when ready */}
@@ -474,7 +479,7 @@ export default function OrdersPage() {
                     onClick={() => handleStatusUpdate(order.id, 'out_for_delivery')}
                   >
                     <Truck className="h-4 w-4 mr-1" />
-                    Out for Delivery
+                    {t('orders.outForDelivery')}
                   </Button>
                 )}
                 {/* Delivery orders: Mark Delivered */}
@@ -485,7 +490,7 @@ export default function OrdersPage() {
                     onClick={() => handleStatusUpdate(order.id, 'delivered')}
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    Mark Delivered
+                    {t('orders.markDelivered')}
                   </Button>
                 )}
                 {/* Takeout orders: Mark as picked up (completes the order) */}
@@ -498,7 +503,7 @@ export default function OrdersPage() {
                     }}
                   >
                     <CreditCard className="h-4 w-4 mr-1" />
-                    Payment
+                    {t('orders.payment')}
                   </Button>
                 )}
                 {/* Dine-in served orders: Process payment */}
@@ -511,7 +516,7 @@ export default function OrdersPage() {
                     }}
                   >
                     <CreditCard className="h-4 w-4 mr-1" />
-                    Payment
+                    {t('orders.payment')}
                   </Button>
                 )}
                 {[
@@ -524,7 +529,9 @@ export default function OrdersPage() {
                 ].includes(order.status) && (
                   <Button size="sm" variant="destructive" onClick={() => openCancelModal(order)}>
                     <XCircle className="h-4 w-4 mr-1" />
-                    {order.status === 'pending_approval' ? 'Reject' : 'Cancel'}
+                    {order.status === 'pending_approval'
+                      ? t('reject', { ns: 'common' })
+                      : t('cancel', { ns: 'common' })}
                   </Button>
                 )}
               </div>
@@ -544,7 +551,7 @@ export default function OrdersPage() {
           onSuccess={() => {
             setIsPaymentModalOpen(false);
             setSelectedOrder(null);
-            toast.success('Payment processed successfully');
+            toast.success(t('orders.payment'));
             refetch();
           }}
         />
@@ -555,7 +562,7 @@ export default function OrdersPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-red-600">Cancel Order</h2>
+              <h2 className="text-lg font-semibold text-red-600">{t('orders.cancelOrder')}</h2>
               <button
                 onClick={() => {
                   setShowCancelModal(false);
@@ -571,24 +578,24 @@ export default function OrdersPage() {
             {cancelOrderTarget && (
               <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                 <p className="font-medium">
-                  {cancelOrderTarget.table ? cancelOrderTarget.table.table_number : 'Takeout Order'}
+                  {cancelOrderTarget.table
+                    ? cancelOrderTarget.table.table_number
+                    : t('orders.takeout')}
                 </p>
                 <p className="text-sm text-gray-500">#{cancelOrderTarget.id.slice(0, 8)}</p>
               </div>
             )}
 
-            <p className="text-gray-600 mb-4">
-              Please provide a reason for cancelling this order. This action cannot be undone.
-            </p>
+            <p className="text-gray-600 mb-4">{t('orders.reasonRequired')}</p>
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cancellation Reason <span className="text-red-500">*</span>
+                {t('orders.cancellationReason')} <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Enter reason for cancellation..."
+                placeholder={t('orders.reasonPlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
                 rows={3}
               />
@@ -605,7 +612,7 @@ export default function OrdersPage() {
                 }}
                 disabled={cancelling}
               >
-                Keep Order
+                {t('orders.keepOrder')}
               </Button>
               <Button
                 variant="destructive"
@@ -616,12 +623,12 @@ export default function OrdersPage() {
                 {cancelling ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Cancelling...
+                    {t('orders.cancelling')}
                   </>
                 ) : (
                   <>
                     <XCircle className="h-4 w-4 mr-2" />
-                    Cancel Order
+                    {t('orders.cancelOrder')}
                   </>
                 )}
               </Button>

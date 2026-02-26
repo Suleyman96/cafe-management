@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { AlertCircle, Flame, Leaf, Minus, Plus, Star, X } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
@@ -9,8 +10,7 @@ import { Button } from '@/components/ui/button';
 import { formatPrice as formatPriceWithSettings, useCafeSettings } from '@/hooks/use-settings';
 import { formatPrice } from '@/lib/utils';
 import { useCartStore } from '@/store/cart-store';
-import { useLanguageStore } from '@/store/language-store';
-import { getLocalizedField, type MenuItemWithCategory } from '@/types';
+import type { MenuItemWithCategory } from '@/types';
 
 interface MenuItemModalProps {
   item: MenuItemWithCategory;
@@ -19,14 +19,14 @@ interface MenuItemModalProps {
 }
 
 export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
-  const { language } = useLanguageStore();
+  const { t } = useTranslation('customer');
   const addItem = useCartStore((state) => state.addItem);
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
   const { data: settings } = useCafeSettings();
 
-  const name = getLocalizedField(item, 'name', language);
-  const description = getLocalizedField(item, 'description', language);
+  const name = item.name;
+  const description = item.description;
 
   // Format price using cafe settings or fallback
   const displayPrice = (amount: number) => {
@@ -38,7 +38,7 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
 
   const handleAdd = () => {
     addItem(item, quantity, notes);
-    toast.success(`Added ${quantity}x ${name} to cart`);
+    toast.success(t('menuItem.addedToCart', { count: quantity, name }));
     onClose();
     setQuantity(1);
     setNotes('');
@@ -63,7 +63,7 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
           {/* Image */}
           {item.image_url && (
             <div className="relative h-64 w-full bg-muted">
-              <Image src={item.image_url} alt={name} fill className="object-cover" />
+              <Image src={item.image_url} alt={name} fill className="object-cover" unoptimized />
             </div>
           )}
 
@@ -76,28 +76,30 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
                 {item.is_popular && (
                   <Badge variant="warning">
                     <Star className="h-3 w-3 mr-1" />
-                    Popular
+                    {t('menuItem.badgePopular')}
                   </Badge>
                 )}
                 {item.is_vegetarian && (
                   <Badge variant="outline">
                     <Leaf className="h-3 w-3 mr-1 text-green-600" />
-                    Vegetarian
+                    {t('menuItem.badgeVegetarian')}
                   </Badge>
                 )}
                 {item.is_vegan && (
                   <Badge variant="outline">
                     <Leaf className="h-3 w-3 mr-1 text-green-600" />
-                    Vegan
+                    {t('menuItem.badgeVegan')}
                   </Badge>
                 )}
                 {item.is_spicy && (
                   <Badge variant="outline">
                     <Flame className="h-3 w-3 mr-1 text-red-600" />
-                    Spicy
+                    {t('menuItem.badgeSpicy')}
                   </Badge>
                 )}
-                {item.is_gluten_free && <Badge variant="outline">Gluten Free</Badge>}
+                {item.is_gluten_free && (
+                  <Badge variant="outline">{t('menuItem.badgeGlutenFree')}</Badge>
+                )}
               </div>
             </div>
 
@@ -110,7 +112,7 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
                 <div className="flex items-start gap-2">
                   <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium text-sm">Contains allergens:</p>
+                    <p className="font-medium text-sm">{t('menuItem.allergens')}</p>
                     <p className="text-sm">{item.allergens.join(', ')}</p>
                   </div>
                 </div>
@@ -120,7 +122,7 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
             {/* Prep Time */}
             {item.preparation_time && (
               <p className="text-sm text-muted-foreground mb-4">
-                ⏱️ Preparation time: ~{item.preparation_time} minutes
+                ⏱️ {t('menuItem.prepTimeFull', { count: item.preparation_time })}
               </p>
             )}
 
@@ -129,7 +131,9 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
 
             {/* Quantity Selector */}
             <div className="mb-4">
-              <label className="text-sm font-medium mb-2 block">Quantity</label>
+              <label className="text-sm font-medium mb-2 block">
+                {t('menuItem.quantityLabel')}
+              </label>
               <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
@@ -150,11 +154,11 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
             {settings?.allow_item_notes !== false && (
               <div className="mb-6">
                 <label className="text-sm font-medium mb-2 block">
-                  Special requests (optional)
+                  {t('menuItem.specialRequests')}
                 </label>
                 <textarea
                   className="w-full min-h-[80px] p-3 rounded-md border border-input bg-background"
-                  placeholder="e.g., Less sugar, Extra hot, No ice..."
+                  placeholder={t('menuItem.specialRequestsPlaceholder')}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                 />
@@ -163,7 +167,7 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
 
             {/* Add to Cart Button */}
             <Button size="xl" className="w-full" onClick={handleAdd}>
-              Add to Order · {displayPrice(item.price * quantity)}
+              {t('menuItem.addToOrder', { price: displayPrice(item.price * quantity) })}
             </Button>
           </div>
         </div>

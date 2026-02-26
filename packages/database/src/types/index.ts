@@ -156,9 +156,6 @@ export interface CartItem {
   notes?: string;
 }
 
-// Language support
-export type Language = 'en' | 'az' | 'ru' | 'tr';
-
 // Status types - commented out to avoid conflict with enum exports
 // export type OrderStatus = Order['status'];
 export type OrderType = Order['order_type'];
@@ -170,12 +167,6 @@ export type PaymentType = OrderPayment['payment_type'];
 export type PaymentMethod = OrderPayment['payment_method'];
 export type CallType = WaiterCall['call_type'];
 export type CallPriority = WaiterCall['priority'];
-
-// Helper function for localized content
-export function getLocalizedField<T>(item: T, field: string, language: Language): string {
-  const key = `${field}_${language}` as keyof T;
-  return (item[key] as string) || (item[`${field}_en` as keyof T] as string) || '';
-}
 
 // Type guards
 export function isWaiter(staff: Staff): boolean {

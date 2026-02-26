@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, User } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -62,6 +63,7 @@ const STATUS_DOT: Record<string, string> = {
 };
 
 export default function SchedulesPage() {
+  const { t } = useTranslation('staff');
   const { staff: currentUser } = useAuth();
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
@@ -137,7 +139,7 @@ export default function SchedulesPage() {
     return (
       <div className="p-3 sm:p-6">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-          Access denied. Only administrators can manage schedules.
+          {t('schedules.accessDeniedAdmin')}
         </div>
       </div>
     );
@@ -168,7 +170,7 @@ export default function SchedulesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
           <CalendarDays className="h-6 w-6 text-blue-600" />
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Staff Schedules</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('schedules.title')}</h1>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex bg-gray-100 rounded-lg p-0.5">
@@ -179,7 +181,7 @@ export default function SchedulesPage() {
               }`}
               type="button"
             >
-              Monthly
+              {t('schedules.monthly')}
             </button>
             <button
               onClick={() => setViewMode('weekly')}
@@ -188,7 +190,7 @@ export default function SchedulesPage() {
               }`}
               type="button"
             >
-              Weekly
+              {t('schedules.weekly')}
             </button>
             <button
               onClick={() => setViewMode('daily')}
@@ -197,12 +199,12 @@ export default function SchedulesPage() {
               }`}
               type="button"
             >
-              Daily
+              {t('schedules.daily')}
             </button>
           </div>
           <Button size="sm" onClick={() => handleOpenCreate(selectedDate)}>
             <Plus className="h-4 w-4 mr-1" />
-            Add Schedule
+            {t('schedules.addSchedule')}
           </Button>
         </div>
       </div>
@@ -243,7 +245,7 @@ export default function SchedulesPage() {
                   className="text-xs text-blue-600 hover:underline"
                   type="button"
                 >
-                  This Month
+                  {t('thisMonth', { ns: 'common' })}
                 </button>
               )
             : weekOffset !== 0 && (
@@ -252,7 +254,7 @@ export default function SchedulesPage() {
                   className="text-xs text-blue-600 hover:underline"
                   type="button"
                 >
-                  Today
+                  {t('today', { ns: 'common' })}
                 </button>
               )}
         </div>
@@ -274,7 +276,7 @@ export default function SchedulesPage() {
             <thead>
               <tr className="border-b">
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-40">
-                  Staff
+                  {t('schedules.staffHeader')}
                 </th>
                 {weekDates.map((d) => (
                   <th
@@ -351,7 +353,7 @@ export default function SchedulesPage() {
               {Object.keys(schedulesByStaff).length === 0 && !isLoading && (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-sm text-gray-500">
-                    No active staff found. Add staff members first.
+                    {t('schedules.noActiveStaff')}
                   </td>
                 </tr>
               )}
@@ -396,34 +398,38 @@ export default function SchedulesPage() {
               </h2>
             </div>
             {isLoading ? (
-              <div className="p-6 text-center text-sm text-gray-500">Loading...</div>
+              <div className="p-6 text-center text-sm text-gray-500">
+                {t('loading', { ns: 'common' })}...
+              </div>
             ) : dailySchedules.length === 0 ? (
-              <div className="p-6 text-center text-sm text-gray-500">No schedules for this day</div>
+              <div className="p-6 text-center text-sm text-gray-500">
+                {t('schedules.noSchedulesDay')}
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                        Staff
+                        {t('schedules.staffHeader')}
                       </th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                        Planned
+                        {t('schedules.planned')}
                       </th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                        Actual Start
+                        {t('schedules.actualStart')}
                       </th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                        Actual End
+                        {t('schedules.actualEnd')}
                       </th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                        Duration
+                        {t('schedules.duration')}
                       </th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                        Status
+                        {t('status', { ns: 'common' })}
                       </th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                        Notes
+                        {t('notes', { ns: 'common' })}
                       </th>
                     </tr>
                   </thead>

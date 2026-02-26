@@ -30,19 +30,8 @@ export interface CartItem {
   notes?: string;
 }
 
-// Language codes
-export type Language = 'en' | 'az' | 'ru' | 'tr';
-
 // Order status type
 export type OrderStatus = Order['status'];
 
 // Table status type
 export type TableStatus = Table['status'];
-
-// Localized content helper
-export type LocalizedField<T, K extends string> = K extends keyof T ? T[K] : never;
-
-export function getLocalizedField<T>(item: T, field: string, language: Language): string {
-  const key = `${field}_${language}` as keyof T;
-  return (item[key] as string) || (item[`${field}_en` as keyof T] as string) || '';
-}

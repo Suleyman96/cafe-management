@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { ChefHat, Edit2, Plus, Search, Shield, User, UserCheck, UserX } from 'lucide-react';
 import Link from 'next/link';
@@ -10,6 +11,8 @@ import { useStaff } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 
 export default function StaffPage() {
+  const { t } = useTranslation('staff');
+  const { t: tRoles } = useTranslation('roles');
   const { staff: currentUser } = useAuth();
   const { data: staffList, isLoading, refetch } = useStaff();
 
@@ -24,7 +27,7 @@ export default function StaffPage() {
     return (
       <div className="p-3 sm:p-6">
         <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm">
-          Access denied. Only administrators can manage staff.
+          {t('staffMgmt.accessDenied')}
         </div>
       </div>
     );
@@ -74,14 +77,14 @@ export default function StaffPage() {
   return (
     <div className="p-3 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold">Staff Management</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">{t('staffMgmt.title')}</h1>
         <Button
           onClick={() => setIsCreateModalOpen(true)}
           size="sm"
           className="text-xs sm:text-sm w-full sm:w-auto"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Staff
+          {t('staffMgmt.addStaff')}
         </Button>
       </div>
 
@@ -91,7 +94,7 @@ export default function StaffPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search by name or email..."
+            placeholder={t('staffMgmt.searchStaff')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -102,11 +105,11 @@ export default function StaffPage() {
           onChange={(e) => setRoleFilter(e.target.value)}
           className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         >
-          <option value="all">All Roles</option>
-          <option value="owner">Owner</option>
-          <option value="admin">Admin</option>
-          <option value="waiter">Waiter</option>
-          <option value="kitchen">Kitchen</option>
+          <option value="all">{t('staffMgmt.allRoles')}</option>
+          <option value="owner">{tRoles('owner')}</option>
+          <option value="admin">{tRoles('admin')}</option>
+          <option value="waiter">{tRoles('waiter')}</option>
+          <option value="kitchen">{tRoles('kitchen')}</option>
         </select>
       </div>
 
@@ -116,19 +119,19 @@ export default function StaffPage() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Staff Member
+                {t('staffMgmt.staffMember')}
               </th>
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role
+                {t('staffMgmt.role')}
               </th>
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
+                {t('status', { ns: 'common' })}
               </th>
               <th className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Phone
+                {t('phone', { ns: 'common' })}
               </th>
               <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                {t('actions', { ns: 'common' })}
               </th>
             </tr>
           </thead>
@@ -147,7 +150,9 @@ export default function StaffPage() {
                       >
                         {staff.full_name}
                         {staff.id === currentUser?.id && (
-                          <span className="ml-1 sm:ml-2 text-xs text-gray-500">(You)</span>
+                          <span className="ml-1 sm:ml-2 text-xs text-gray-500">
+                            {t('staffMgmt.you')}
+                          </span>
                         )}
                       </Link>
                       <div className="text-xs sm:text-sm text-gray-500 truncate">{staff.email}</div>
@@ -161,19 +166,19 @@ export default function StaffPage() {
                     )}`}
                   >
                     {getRoleIcon(staff.role)}
-                    <span className="hidden lg:inline">{staff.role}</span>
+                    <span className="hidden lg:inline">{tRoles(staff.role)}</span>
                   </span>
                 </td>
                 <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                   {staff.is_active ? (
                     <span className="inline-flex items-center gap-1 text-green-600 text-xs sm:text-sm">
                       <UserCheck className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden lg:inline">Active</span>
+                      <span className="hidden lg:inline">{t('active', { ns: 'common' })}</span>
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-gray-400 text-xs sm:text-sm">
                       <UserX className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden lg:inline">Inactive</span>
+                      <span className="hidden lg:inline">{t('inactive', { ns: 'common' })}</span>
                     </span>
                   )}
                 </td>
@@ -191,7 +196,7 @@ export default function StaffPage() {
                     className="text-xs"
                   >
                     <Edit2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                    <span className="hidden sm:inline">Edit</span>
+                    <span className="hidden sm:inline">{t('edit', { ns: 'common' })}</span>
                   </Button>
                 </td>
               </tr>
@@ -199,7 +204,7 @@ export default function StaffPage() {
             {filteredStaff?.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
-                  No staff members found
+                  {t('staffMgmt.noStaff')}
                 </td>
               </tr>
             )}
@@ -223,7 +228,7 @@ export default function StaffPage() {
                   >
                     {staff.full_name}
                     {staff.id === currentUser?.id && (
-                      <span className="ml-1 text-xs text-gray-500">(You)</span>
+                      <span className="ml-1 text-xs text-gray-500">{t('staffMgmt.you')}</span>
                     )}
                   </Link>
                   <p className="text-xs text-gray-500 truncate">{staff.email}</p>
@@ -246,17 +251,17 @@ export default function StaffPage() {
                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getRoleBadgeColor(staff.role)}`}
               >
                 {getRoleIcon(staff.role)}
-                {staff.role}
+                {tRoles(staff.role)}
               </span>
               {staff.is_active ? (
                 <span className="inline-flex items-center gap-1 text-green-600 text-xs">
                   <UserCheck className="h-3 w-3" />
-                  Active
+                  {t('active', { ns: 'common' })}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 text-gray-400 text-xs">
                   <UserX className="h-3 w-3" />
-                  Inactive
+                  {t('inactive', { ns: 'common' })}
                 </span>
               )}
             </div>
@@ -264,7 +269,7 @@ export default function StaffPage() {
         ))}
         {filteredStaff?.length === 0 && (
           <div className="bg-white rounded-lg shadow p-6 text-center text-sm text-gray-500">
-            No staff members found
+            {t('staffMgmt.noStaff')}
           </div>
         )}
       </div>

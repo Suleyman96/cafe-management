@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import {
   BarChart3,
   Bell,
@@ -35,7 +36,7 @@ import { useMyTasks, useOverdueTasksCount } from '@/hooks/use-tasks-safe';
 
 type NavItem = {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ReactNode;
   adminOnly?: boolean;
   ownerOnly?: boolean;
@@ -43,7 +44,7 @@ type NavItem = {
 
 type NavGroup = {
   key: string;
-  label: string;
+  labelKey: string;
   collapsible: boolean;
   adminOnly?: boolean;
   items: NavItem[];
@@ -52,28 +53,28 @@ type NavGroup = {
 const navGroups: NavGroup[] = [
   {
     key: 'main',
-    label: 'Main',
+    labelKey: 'mainSection',
     collapsible: false,
     items: [
-      { href: '/tables', label: 'Tables', icon: <UtensilsCrossed className="h-5 w-5" /> },
-      { href: '/orders', label: 'Orders', icon: <ClipboardList className="h-5 w-5" /> },
-      { href: '/delivery', label: 'Delivery', icon: <Truck className="h-5 w-5" /> },
-      { href: '/kitchen', label: 'Kitchen', icon: <ChefHat className="h-5 w-5" /> },
-      { href: '/calls', label: 'Waiter Calls', icon: <Bell className="h-5 w-5" /> },
-      { href: '/tasks', label: 'Tasks', icon: <ListTodo className="h-5 w-5" /> },
+      { href: '/tables', labelKey: 'tables', icon: <UtensilsCrossed className="h-5 w-5" /> },
+      { href: '/orders', labelKey: 'orders', icon: <ClipboardList className="h-5 w-5" /> },
+      { href: '/delivery', labelKey: 'delivery', icon: <Truck className="h-5 w-5" /> },
+      { href: '/kitchen', labelKey: 'kitchen', icon: <ChefHat className="h-5 w-5" /> },
+      { href: '/calls', labelKey: 'waiterCalls', icon: <Bell className="h-5 w-5" /> },
+      { href: '/tasks', labelKey: 'tasks', icon: <ListTodo className="h-5 w-5" /> },
     ],
   },
   {
     key: 'management',
-    label: 'Management',
+    labelKey: 'managementSection',
     collapsible: true,
     items: [
-      { href: '/feedback', label: 'Feedback', icon: <MessageSquare className="h-5 w-5" /> },
-      { href: '/stock', label: 'Stock', icon: <Package className="h-5 w-5" />, adminOnly: true },
-      { href: '/waste', label: 'Waste', icon: <Trash2 className="h-5 w-5" /> },
+      { href: '/feedback', labelKey: 'feedback', icon: <MessageSquare className="h-5 w-5" /> },
+      { href: '/stock', labelKey: 'stock', icon: <Package className="h-5 w-5" />, adminOnly: true },
+      { href: '/waste', labelKey: 'waste', icon: <Trash2 className="h-5 w-5" /> },
       {
         href: '/expenses',
-        label: 'Expenses',
+        labelKey: 'expenses',
         icon: <Receipt className="h-5 w-5" />,
         adminOnly: true,
       },
@@ -81,26 +82,26 @@ const navGroups: NavGroup[] = [
   },
   {
     key: 'admin',
-    label: 'Admin',
+    labelKey: 'adminSection',
     collapsible: true,
     adminOnly: true,
     items: [
-      { href: '/staff', label: 'Staff', icon: <Users className="h-5 w-5" /> },
-      { href: '/menu', label: 'Menu', icon: <Menu className="h-5 w-5" /> },
+      { href: '/staff', labelKey: 'staff', icon: <Users className="h-5 w-5" /> },
+      { href: '/menu', labelKey: 'menu', icon: <Menu className="h-5 w-5" /> },
       {
         href: '/schedules',
-        label: 'Schedules',
+        labelKey: 'schedules',
         icon: <CalendarDays className="h-5 w-5" />,
       },
       {
         href: '/reports',
-        label: 'Reports',
+        labelKey: 'reports',
         icon: <BarChart3 className="h-5 w-5" />,
         ownerOnly: true,
       },
       {
         href: '/cafe-settings',
-        label: 'Cafe Settings',
+        labelKey: 'cafeSettings',
         icon: <Store className="h-5 w-5" />,
       },
     ],
@@ -117,6 +118,8 @@ interface SidebarProps {
 export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const { staff, logout } = useAuth();
+  const { t: tNav } = useTranslation('nav');
+  const { t: tRoles } = useTranslation('roles');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -242,7 +245,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
                   onClick={() => toggleGroup(group.key)}
                   className="flex items-center justify-between w-full px-3 py-1.5 mt-3 text-xs font-semibold uppercase text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  {group.label}
+                  {tNav(group.labelKey)}
                   <ChevronDown
                     className={`h-3.5 w-3.5 transition-transform ${collapsed ? '-rotate-90' : ''}`}
                   />
@@ -256,6 +259,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
                     const isActive =
                       pathname === item.href ||
                       (item.href !== '/' && pathname.startsWith(item.href));
+                    const label = tNav(item.labelKey);
 
                     return (
                       <li key={item.href}>
@@ -267,14 +271,14 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
                               ? 'bg-blue-50 text-blue-700'
                               : 'text-gray-700 hover:bg-gray-100'
                           } ${isCollapsed && !isMobile ? 'justify-center' : ''}`}
-                          title={isCollapsed && !isMobile ? item.label : undefined}
+                          title={isCollapsed && !isMobile ? label : undefined}
                         >
                           <span className={isActive ? 'text-blue-600' : 'text-gray-500'}>
                             {item.icon}
                           </span>
                           {(!isCollapsed || isMobile) && (
                             <>
-                              {item.label}
+                              {label}
                               {item.href === '/tasks' && overdueCount > 0 && (
                                 <span className="ml-auto text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
                                   {overdueCount}
@@ -321,7 +325,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(staff.role)}`}
                   >
-                    {staff.role}
+                    {tRoles(staff.role)}
                   </span>
                 </div>
                 <ChevronUp
@@ -354,7 +358,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
                 className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               >
                 <Settings className="h-4 w-4" />
-                Account Settings
+                {tNav('settings')}
               </Link>
 
               <button
@@ -365,7 +369,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
                 className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
               >
                 <LogOut className="h-4 w-4" />
-                Sign out
+                {tNav('logout')}
               </button>
             </div>
           )}
@@ -377,6 +381,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
 
 function MyTasksIndicator({ staffId }: { staffId: string }) {
   const { data: tasks } = useMyTasks(staffId);
+  const { t } = useTranslation('nav');
 
   const activeTasks =
     tasks?.filter((t: any) => t.status === 'pending' || t.status === 'in_progress') || [];
@@ -401,7 +406,7 @@ function MyTasksIndicator({ staffId }: { staffId: string }) {
         <div className="flex items-center justify-between font-medium text-amber-800">
           <div className="flex items-center gap-1.5">
             <ListTodo className="h-3 w-3" />
-            My Tasks
+            {t('myTasks')}
           </div>
           <span className="text-amber-600">{activeTasks.length}</span>
         </div>
@@ -425,6 +430,7 @@ function MyTasksIndicator({ staffId }: { staffId: string }) {
 
 function TodayShiftIndicator({ staffId }: { staffId: string }) {
   const { data: todaySchedules } = useMyScheduleToday(staffId);
+  const { t } = useTranslation('nav');
 
   if (!todaySchedules || todaySchedules.length === 0) return null;
 
@@ -442,7 +448,7 @@ function TodayShiftIndicator({ staffId }: { staffId: string }) {
     >
       <div className="flex items-center gap-1.5 font-medium">
         <Clock className="h-3 w-3" />
-        Today&apos;s Shift
+        {shift.status === 'in_progress' ? t('onShift') : t('offShift')}
       </div>
       <div className="mt-0.5">
         {shift.planned_start?.slice(0, 5)} - {shift.planned_end?.slice(0, 5)}

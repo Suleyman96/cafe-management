@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -14,6 +15,7 @@ interface TableModalProps {
 }
 
 export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProps) {
+  const { t } = useTranslation('staff');
   const createTable = useCreateTable();
   const updateTable = useUpdateTable();
 
@@ -60,7 +62,7 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
             is_active: isActive,
           },
         });
-        toast.success('Table updated successfully');
+        toast.success(t('tables.tableUpdated'));
       } else {
         // Generate a simple QR code value (in production, use proper QR generation)
         const qrCode = `table-${tableNumber}-${Date.now()}`;
@@ -76,11 +78,11 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
           occupied_at: null,
           notes: null,
         });
-        toast.success('Table created successfully');
+        toast.success(t('tables.tableCreated'));
       }
       onSuccess();
     } catch (error: any) {
-      toast.error(error.message || `Failed to ${isEditing ? 'update' : 'create'} table`);
+      toast.error(error.message || t('tables.failedSaveTable'));
     } finally {
       setLoading(false);
     }
@@ -93,7 +95,9 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">
-            {isEditing ? `Edit ${table.table_number}` : 'Add New Table'}
+            {isEditing
+              ? t('tables.editTable', { table: table.table_number })
+              : t('tables.addNewTable')}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-5 w-5" />
@@ -102,7 +106,9 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Table Number *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('tables.tableNumber')} *
+            </label>
             <input
               type="text"
               value={tableNumber}
@@ -115,7 +121,7 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Capacity (seats) *
+              {t('tables.capacitySeats')} *
             </label>
             <input
               type="number"
@@ -129,7 +135,9 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Location / Zone</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('tables.locationZone')}
+            </label>
             <input
               type="text"
               value={location}
@@ -140,16 +148,18 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('status', { ns: 'common' })}
+            </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as any)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="free">Free</option>
-              <option value="occupied">Occupied</option>
-              <option value="reserved">Reserved</option>
-              <option value="closed">Closed</option>
+              <option value="free">{t('tables.free')}</option>
+              <option value="occupied">{t('tables.occupied')}</option>
+              <option value="reserved">{t('tables.reserved')}</option>
+              <option value="closed">{t('tables.closed')}</option>
             </select>
           </div>
 
@@ -162,7 +172,7 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
               className="h-4 w-4 text-blue-600 rounded"
             />
             <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-              Table is active (visible in the system)
+              {t('tables.tableActive')}
             </label>
           </div>
 
@@ -174,16 +184,16 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
               disabled={loading}
               className="flex-1"
             >
-              Cancel
+              {t('cancel', { ns: 'common' })}
             </Button>
             <Button type="submit" disabled={loading} className="flex-1">
               {loading
                 ? isEditing
-                  ? 'Saving...'
-                  : 'Creating...'
+                  ? `${t('save', { ns: 'common' })}...`
+                  : `${t('loading', { ns: 'common' })}...`
                 : isEditing
-                  ? 'Save Changes'
-                  : 'Add Table'}
+                  ? t('saveChanges', { ns: 'common' })
+                  : t('tables.addNewTable')}
             </Button>
           </div>
         </form>

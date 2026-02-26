@@ -1,6 +1,7 @@
 'use client';
 
 import type { MenuItem } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { useState } from 'react';
 import { formatPriceWithSettings, useCafeSettings } from '@/hooks';
@@ -27,6 +28,7 @@ export function CreateTakeoutModal({
   onClose,
   onSuccess,
 }: CreateTakeoutModalProps) {
+  const { t } = useTranslation('staff');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
@@ -36,10 +38,8 @@ export function CreateTakeoutModal({
   const { data: cafeSettings } = useCafeSettings();
 
   // Filter menu items by search
-  const filteredItems = menuItems.filter(
-    (item) =>
-      item.name_en.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.name_az?.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredItems = menuItems.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const addItem = (menuItem: MenuItem) => {
@@ -83,12 +83,12 @@ export function CreateTakeoutModal({
 
   const handleSubmit = async () => {
     if (!customerName.trim() || !customerPhone.trim()) {
-      alert('Please enter customer name and phone number');
+      alert(t('orders.enterNameAndPhone'));
       return;
     }
 
     if (selectedItems.length === 0) {
-      alert('Please add at least one item to the order');
+      alert(t('orders.addAtLeastOneItem'));
       return;
     }
 
@@ -126,7 +126,7 @@ export function CreateTakeoutModal({
       const orderItems = selectedItems.map((item) => ({
         order_id: orderId,
         menu_item_id: item.menuItem.id,
-        item_name: item.menuItem.name_en,
+        item_name: item.menuItem.name,
         item_price: item.menuItem.price,
         quantity: item.quantity,
         notes: item.notes || null,
@@ -148,7 +148,7 @@ export function CreateTakeoutModal({
       onClose();
     } catch (error) {
       console.error('Error creating takeout order:', error);
-      alert('Failed to create takeout order. Please try again.');
+      alert(t('orders.failedCreateTakeout'));
     } finally {
       setIsSubmitting(false);
     }
@@ -175,8 +175,8 @@ export function CreateTakeoutModal({
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Create Take-out Order</h2>
-              <p className="text-sm text-gray-600">For phone or counter orders</p>
+              <h2 className="text-2xl font-bold text-gray-900">{t('orders.createTakeoutOrder')}</h2>
+              <p className="text-sm text-gray-600">{t('orders.forPhoneOrCounter')}</p>
             </div>
             <button
               onClick={onClose}
@@ -191,17 +191,17 @@ export function CreateTakeoutModal({
             <div className="space-y-6">
               {/* Customer Information */}
               <div>
-                <h3 className="font-semibold text-lg mb-4">Customer Information</h3>
+                <h3 className="font-semibold text-lg mb-4">{t('orders.customerInformation')}</h3>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Customer Name *
+                      {t('orders.customerNameLabel')} *
                     </label>
                     <input
                       type="text"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder="Full name"
+                      placeholder={t('orders.fullNamePlaceholder')}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     />
@@ -209,7 +209,7 @@ export function CreateTakeoutModal({
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number *
+                      {t('orders.phoneNumberLabel')} *
                     </label>
                     <input
                       type="tel"
@@ -223,12 +223,12 @@ export function CreateTakeoutModal({
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Notes from customer
+                      {t('orders.customerNotesLabel')}
                     </label>
                     <textarea
                       value={customerNotes}
                       onChange={(e) => setCustomerNotes(e.target.value)}
-                      placeholder="Special requests, allergies, delivery instructions..."
+                      placeholder={t('orders.specialRequestsPlaceholder')}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                       rows={2}
                     />
@@ -238,14 +238,14 @@ export function CreateTakeoutModal({
 
               {/* Menu Items Selection */}
               <div>
-                <h3 className="font-semibold text-lg mb-4">Add Items</h3>
+                <h3 className="font-semibold text-lg mb-4">{t('orders.addItems')}</h3>
 
                 {/* Search */}
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search menu items..."
+                  placeholder={t('orders.searchMenuItems')}
                   className="w-full px-4 py-2 mb-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
 
@@ -263,9 +263,9 @@ export function CreateTakeoutModal({
                       }`}
                     >
                       <div className="flex-1">
-                        <div className="font-medium">{item.name_en}</div>
+                        <div className="font-medium">{item.name}</div>
                         {!item.is_available && (
-                          <div className="text-xs text-red-600">Unavailable</div>
+                          <div className="text-xs text-red-600">{t('orders.unavailable')}</div>
                         )}
                       </div>
                       <div className="font-semibold">{formatPrice(item.price)}</div>
@@ -273,7 +273,7 @@ export function CreateTakeoutModal({
                   ))}
 
                   {filteredItems.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">No items found</div>
+                    <div className="text-center py-8 text-gray-500">{t('orders.noItemsFound')}</div>
                   )}
                 </div>
               </div>
@@ -283,15 +283,13 @@ export function CreateTakeoutModal({
             <div className="space-y-6">
               <div>
                 <h3 className="font-semibold text-lg mb-4">
-                  Selected Items ({selectedItems.length})
+                  {t('orders.selectedItems')} ({selectedItems.length})
                 </h3>
 
                 {selectedItems.length === 0 ? (
                   <div className="text-center py-12 bg-gray-50 rounded-lg">
-                    <p className="text-gray-500">No items added yet</p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      Select items from the menu on the left
-                    </p>
+                    <p className="text-gray-500">{t('orders.noItemsAddedYet')}</p>
+                    <p className="text-sm text-gray-400 mt-1">{t('orders.selectFromMenu')}</p>
                   </div>
                 ) : (
                   <div className="space-y-3 max-h-[500px] overflow-y-auto">
@@ -299,9 +297,9 @@ export function CreateTakeoutModal({
                       <div key={item.menuItem.id} className="bg-gray-50 rounded-lg p-4">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">
-                            <div className="font-medium">{item.menuItem.name_en}</div>
+                            <div className="font-medium">{item.menuItem.name}</div>
                             <div className="text-sm text-gray-600">
-                              {formatPrice(item.menuItem.price)} each
+                              {formatPrice(item.menuItem.price)} {t('each', { ns: 'common' })}
                             </div>
                           </div>
                           <button
@@ -337,7 +335,7 @@ export function CreateTakeoutModal({
                           type="text"
                           value={item.notes}
                           onChange={(e) => updateNotes(item.menuItem.id, e.target.value)}
-                          placeholder="Special requests..."
+                          placeholder={t('orders.specialRequestsShort')}
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500"
                           maxLength={200}
                         />
@@ -350,18 +348,22 @@ export function CreateTakeoutModal({
               {/* Order Summary */}
               {selectedItems.length > 0 && (
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                  <h3 className="font-semibold mb-3">Order Summary</h3>
+                  <h3 className="font-semibold mb-3">{t('orders.orderSummary')}</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Subtotal:</span>
+                      <span className="text-gray-600">{t('subtotal', { ns: 'common' })}:</span>
                       <span className="font-medium">{formatPrice(subtotal)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Tax (18%):</span>
+                      <span className="text-gray-600">
+                        {t('orders.taxPercent', { percent: '18' })}:
+                      </span>
                       <span className="font-medium">{formatPrice(tax)}</span>
                     </div>
                     <div className="flex justify-between pt-2 border-t border-blue-200">
-                      <span className="font-semibold text-gray-900">Total:</span>
+                      <span className="font-semibold text-gray-900">
+                        {t('total', { ns: 'common' })}:
+                      </span>
                       <span className="font-bold text-lg">{formatPrice(total)}</span>
                     </div>
                   </div>
@@ -373,7 +375,7 @@ export function CreateTakeoutModal({
           {/* Action Buttons */}
           <div className="flex gap-3 mt-6 pt-6 border-t">
             <Button onClick={onClose} variant="outline" className="flex-1" disabled={isSubmitting}>
-              Cancel
+              {t('cancel', { ns: 'common' })}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -385,7 +387,9 @@ export function CreateTakeoutModal({
               }
               className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
             >
-              {isSubmitting ? 'Creating...' : `Create Order · ${formatPrice(total)}`}
+              {isSubmitting
+                ? t('orders.creating')
+                : `${t('orders.createOrder')} · ${formatPrice(total)}`}
             </Button>
           </div>
         </div>

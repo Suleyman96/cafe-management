@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { ArrowLeft, Edit3, MapPin, Minus, Phone, Plus, Trash2, Truck, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -16,12 +17,10 @@ import {
 import { formatPrice } from '@/lib/utils';
 import { useCartStore } from '@/store/cart-store';
 import { useDeliveryStore } from '@/store/delivery-store';
-import { useLanguageStore } from '@/store/language-store';
-import { getLocalizedField } from '@/types';
 
 export function DeliveryCartScreen() {
   const router = useRouter();
-  const { language } = useLanguageStore();
+  const { t } = useTranslation('customer');
   const { items, updateQuantity, updateNotes, removeItem, clearCart, getTotal } = useCartStore();
   const { customerName, customerPhone, deliveryAddress, deliveryNotes, setLastOrderId } =
     useDeliveryStore();
@@ -48,7 +47,9 @@ export function DeliveryCartScreen() {
 
     if (!minimumMet) {
       toast.error(
-        `Minimum delivery order is ${formatPrice(settings?.minimum_delivery_amount || 0)}`,
+        t('deliveryCart.minimumDeliveryToast', {
+          amount: formatPrice(settings?.minimum_delivery_amount || 0),
+        }),
       );
       return;
     }
@@ -67,7 +68,7 @@ export function DeliveryCartScreen() {
         orderId: order.id,
         items: items.map((item) => ({
           menu_item_id: item.menuItem.id,
-          item_name: getLocalizedField(item.menuItem, 'name', language),
+          item_name: item.menuItem.name,
           item_price: item.menuItem.price,
           quantity: item.quantity,
           notes: item.notes,
@@ -75,12 +76,12 @@ export function DeliveryCartScreen() {
       });
 
       setLastOrderId(order.id);
-      toast.success('Delivery order placed!');
+      toast.success(t('deliveryCart.orderSuccess'));
       clearCart();
       router.push(`/delivery/order/${order.id}`);
     } catch (error) {
       console.error('Error placing delivery order:', error);
-      toast.error('Failed to place order. Please try again.');
+      toast.error(t('deliveryCart.orderError'));
     }
   };
 
@@ -88,11 +89,11 @@ export function DeliveryCartScreen() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold mb-2">Your cart is empty</h1>
-          <p className="text-muted-foreground">Add some items from the menu to get started!</p>
+          <h1 className="text-2xl font-bold mb-2">{t('deliveryCart.emptyTitle')}</h1>
+          <p className="text-muted-foreground">{t('deliveryCart.emptySubtext')}</p>
         </div>
         <Button size="lg" onClick={() => router.push('/delivery/menu')}>
-          Browse Menu
+          {t('cart.browseMenu')}
         </Button>
       </div>
     );
@@ -108,9 +109,9 @@ export function DeliveryCartScreen() {
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold">Your Delivery Order</h1>
+          <h1 className="text-xl font-bold">{t('deliveryCart.header')}</h1>
           <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive">
-            Clear
+            {t('deliveryCart.clearButton')}
           </Button>
         </div>
       </div>
@@ -121,11 +122,11 @@ export function DeliveryCartScreen() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold flex items-center gap-2">
               <Truck className="h-4 w-4" />
-              Delivery Details
+              {t('deliveryCart.deliveryDetails')}
             </h2>
             <Button variant="ghost" size="sm" onClick={() => router.push('/delivery')}>
               <Edit3 className="h-3 w-3 mr-1" />
-              Edit
+              {t('deliveryCart.editButton')}
             </Button>
           </div>
           <div className="space-y-2 text-sm">
@@ -148,7 +149,7 @@ export function DeliveryCartScreen() {
         {/* Cart Items */}
         <div className="space-y-4 mb-6">
           {items.map((item) => {
-            const name = getLocalizedField(item.menuItem, 'name', language);
+            const name = item.menuItem.name;
             const isEditingThisItem = editingNotes === item.menuItem.id;
 
             return (
@@ -157,7 +158,7 @@ export function DeliveryCartScreen() {
                   <div className="flex-1">
                     <h3 className="font-semibold">{name}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {formatPrice(item.menuItem.price)} each
+                      {formatPrice(item.menuItem.price)} {t('each', { ns: 'common' })}
                     </p>
                   </div>
                   <Button
@@ -204,7 +205,7 @@ export function DeliveryCartScreen() {
                             }}
                           >
                             <Edit3 className="h-3 w-3 mr-1" />
-                            Add special notes
+                            {t('deliveryCart.addSpecialNotes')}
                           </Button>
                         )}
                       </div>
@@ -212,7 +213,7 @@ export function DeliveryCartScreen() {
                       <div className="space-y-2">
                         <textarea
                           className="w-full min-h-[60px] p-2 text-sm rounded-md border border-input bg-background"
-                          placeholder="e.g., no onions, extra sauce..."
+                          placeholder={t('deliveryCart.notesPlaceholder')}
                           value={tempNotes[item.menuItem.id] || ''}
                           onChange={(e) =>
                             setTempNotes({ ...tempNotes, [item.menuItem.id]: e.target.value })
@@ -226,7 +227,7 @@ export function DeliveryCartScreen() {
                             className="flex-1"
                             onClick={() => setEditingNotes(null)}
                           >
-                            Cancel
+                            {t('cancel', { ns: 'common' })}
                           </Button>
                           <Button
                             size="sm"
@@ -236,7 +237,7 @@ export function DeliveryCartScreen() {
                               setEditingNotes(null);
                             }}
                           >
-                            Save
+                            {t('save', { ns: 'common' })}
                           </Button>
                         </div>
                       </div>
@@ -274,10 +275,10 @@ export function DeliveryCartScreen() {
         {/* Order Notes */}
         {settings?.allow_order_notes !== false && (
           <div className="mb-6">
-            <label className="text-sm font-medium mb-2 block">Order notes (optional)</label>
+            <label className="text-sm font-medium mb-2 block">{t('deliveryCart.orderNotes')}</label>
             <textarea
               className="w-full min-h-[80px] p-3 rounded-md border border-input bg-background"
-              placeholder="Any special requests for your order..."
+              placeholder={t('deliveryCart.orderNotesPlaceholder')}
               value={orderNotes}
               onChange={(e) => setOrderNotes(e.target.value)}
             />
@@ -291,7 +292,7 @@ export function DeliveryCartScreen() {
           {settings?.tax_enabled && settings?.show_tax_separately ? (
             <>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
+                <span className="text-muted-foreground">{t('subtotal', { ns: 'common' })}</span>
                 <span>{formatPrice(displaySubtotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
@@ -304,12 +305,12 @@ export function DeliveryCartScreen() {
           ) : null}
           {deliveryFee > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Delivery Fee</span>
+              <span className="text-muted-foreground">{t('deliveryFee', { ns: 'common' })}</span>
               <span>{formatPrice(deliveryFee)}</span>
             </div>
           )}
           <div className="flex justify-between text-lg font-bold pt-2 border-t">
-            <span>Total</span>
+            <span>{t('total', { ns: 'common' })}</span>
             <span className="text-primary">{formatPrice(grandTotal)}</span>
           </div>
         </div>
@@ -318,7 +319,9 @@ export function DeliveryCartScreen() {
         {!minimumMet && settings?.minimum_delivery_amount && (
           <div className="mb-3 p-2 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
             <p className="text-sm text-amber-700 dark:text-amber-300 text-center">
-              Minimum delivery order: {formatPrice(settings.minimum_delivery_amount)}
+              {t('deliveryCart.minimumDelivery', {
+                amount: formatPrice(settings.minimum_delivery_amount),
+              })}
             </p>
           </div>
         )}
@@ -332,12 +335,12 @@ export function DeliveryCartScreen() {
           {isLoading ? (
             <>
               <LoadingSpinner size="sm" className="mr-2" />
-              Placing Order...
+              {t('placingOrder', { ns: 'common' })}
             </>
           ) : !minimumMet ? (
-            'Minimum order not met'
+            t('minimumOrderNotMet', { ns: 'common' })
           ) : (
-            `Place Delivery Order · ${formatPrice(grandTotal)}`
+            t('deliveryCart.placeOrder', { price: formatPrice(grandTotal) })
           )}
         </Button>
       </div>

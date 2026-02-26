@@ -31,12 +31,17 @@ export interface CafeSettings {
   delivery_fee_default: number;
   minimum_delivery_amount: number;
   delivery_zone_info: string | null;
+  restaurant_address: string | null;
   // Contact & social
   contact_phone: string | null;
   contact_website: string | null;
   social_instagram: string | null;
   social_whatsapp: string | null;
+  social_tiktok: string | null;
+  social_telegram: string | null;
+  social_line: string | null;
   location_maps_url: string | null;
+  default_language: string;
 }
 
 const SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
@@ -72,12 +77,17 @@ const DEFAULT_SETTINGS: CafeSettings = {
   delivery_fee_default: 0,
   minimum_delivery_amount: 0,
   delivery_zone_info: null,
+  restaurant_address: null,
   // Contact & social defaults
   contact_phone: null,
   contact_website: null,
   social_instagram: null,
   social_whatsapp: null,
+  social_tiktok: null,
+  social_telegram: null,
+  social_line: null,
   location_maps_url: null,
+  default_language: 'en',
 };
 
 export function useCafeSettings() {

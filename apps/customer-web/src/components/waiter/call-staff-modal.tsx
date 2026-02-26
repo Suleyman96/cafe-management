@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { Check, Loader2, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -22,45 +23,21 @@ interface CallReason {
   priority: CallPriority;
 }
 
-const CALL_REASONS: CallReason[] = [
-  {
-    id: 'assistance',
-    icon: '💬',
-    label: 'Need Assistance',
-    priority: 'normal',
-  },
-  {
-    id: 'bill',
-    icon: '🧾',
-    label: 'Request Bill',
-    priority: 'normal',
-  },
-  {
-    id: 'question',
-    icon: '❓',
-    label: 'Have a Question',
-    priority: 'normal',
-  },
-  {
-    id: 'complaint',
-    icon: '⚠️',
-    label: 'Have a Complaint',
-    priority: 'high',
-  },
-  {
-    id: 'emergency',
-    icon: '🚨',
-    label: 'Emergency',
-    priority: 'urgent',
-  },
-];
-
 export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps) {
+  const { t } = useTranslation('customer');
   const [selectedReason, setSelectedReason] = useState<CallReason | null>(null);
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
   const createWaiterCall = useCreateWaiterCall();
+
+  const CALL_REASONS: CallReason[] = [
+    { id: 'assistance', icon: '💬', label: t('callStaff.reason.assistance'), priority: 'normal' },
+    { id: 'bill', icon: '🧾', label: t('callStaff.reason.bill'), priority: 'normal' },
+    { id: 'question', icon: '❓', label: t('callStaff.reason.question'), priority: 'normal' },
+    { id: 'complaint', icon: '⚠️', label: t('callStaff.reason.complaint'), priority: 'high' },
+    { id: 'emergency', icon: '🚨', label: t('callStaff.reason.emergency'), priority: 'urgent' },
+  ];
 
   if (!isOpen) return null;
 
@@ -84,14 +61,14 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
       });
 
       setShowSuccess(true);
-      toast.success('Staff has been notified!');
+      toast.success(t('callStaff.toastSuccess'));
 
       setTimeout(() => {
         handleClose();
       }, 1500);
     } catch (error) {
       console.error('Error calling staff:', error);
-      toast.error('Failed to call staff. Please try again.');
+      toast.error(t('callStaff.toastError'));
     }
   };
 
@@ -101,11 +78,11 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Call Staff</h2>
+            <h2 className="text-2xl font-bold">{t('callStaff.title')}</h2>
             <button
               onClick={handleClose}
               className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
-              aria-label="Close"
+              aria-label={t('close', { ns: 'common' })}
             >
               <X className="h-5 w-5" />
             </button>
@@ -118,17 +95,15 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
                 <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
               <p className="text-lg font-medium text-green-600 dark:text-green-400">
-                Staff has been notified!
+                {t('callStaff.successMessage')}
               </p>
-              <p className="text-sm text-muted-foreground mt-2">They will be with you shortly.</p>
+              <p className="text-sm text-muted-foreground mt-2">{t('callStaff.successSubtext')}</p>
             </div>
           ) : (
             <>
               {/* Select Reason */}
               <div className="mb-6">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Please select the reason for calling staff:
-                </p>
+                <p className="text-sm text-muted-foreground mb-4">{t('callStaff.selectReason')}</p>
                 <div className="space-y-3">
                   {CALL_REASONS.map((reason) => (
                     <button
@@ -145,12 +120,12 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
                         <div className="font-medium">{reason.label}</div>
                         {reason.priority === 'high' && (
                           <div className="text-xs text-orange-600 dark:text-orange-400">
-                            High Priority
+                            {t('callStaff.priorityHigh')}
                           </div>
                         )}
                         {reason.priority === 'urgent' && (
                           <div className="text-xs text-red-600 dark:text-red-400 font-bold">
-                            URGENT
+                            {t('callStaff.priorityUrgent')}
                           </div>
                         )}
                       </div>
@@ -168,12 +143,12 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
               {selectedReason && (
                 <div className="mb-6">
                   <label className="block text-sm font-medium mb-2">
-                    Additional Notes (Optional)
+                    {t('callStaff.additionalNotes')}
                   </label>
                   <textarea
                     value={additionalNotes}
                     onChange={(e) => setAdditionalNotes(e.target.value)}
-                    placeholder="Any additional details you'd like to share..."
+                    placeholder={t('callStaff.notesPlaceholder')}
                     className="w-full px-4 py-3 border border-input rounded-xl bg-background focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                     rows={3}
                     maxLength={200}
@@ -192,7 +167,7 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
                   className="flex-1"
                   disabled={createWaiterCall.isPending}
                 >
-                  Cancel
+                  {t('callStaff.cancel')}
                 </Button>
                 <Button
                   onClick={handleSubmit}
@@ -208,10 +183,10 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
                   {createWaiterCall.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Calling...
+                      {t('callStaff.calling')}
                     </>
                   ) : (
-                    'Call Staff'
+                    t('callStaff.callButton')
                   )}
                 </Button>
               </div>

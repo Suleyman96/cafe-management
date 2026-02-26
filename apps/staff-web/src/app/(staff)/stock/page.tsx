@@ -1,6 +1,7 @@
 'use client';
 
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { LoadingSpinner } from '@cafe-idare/ui';
 import {
   AlertTriangle,
@@ -32,6 +33,7 @@ import {
 type StockItem = Database['public']['Tables']['stock_items']['Row'];
 
 export default function StockPage() {
+  const { t } = useTranslation('staff');
   const { staff } = useAuth();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -59,7 +61,7 @@ export default function StockPage() {
   if (staff && staff.role !== 'admin' && staff.role !== 'owner') {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Admin access required</p>
+        <p className="text-gray-500">{t('staffMgmt.accessDenied')}</p>
       </div>
     );
   }
@@ -95,9 +97,9 @@ export default function StockPage() {
     if (!confirm('Are you sure you want to delete this stock item?')) return;
     try {
       await deleteStockItem.mutateAsync(id);
-      toast.success('Stock item deleted');
+      toast.success(t('stock.stockItemDeleted'));
     } catch (error: any) {
-      toast.error(error.message || 'Failed to delete');
+      toast.error(error.message || t('delete', { ns: 'common' }));
     }
   };
 
@@ -114,12 +116,12 @@ export default function StockPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Stock Management</h1>
-          <p className="text-gray-500 mt-1">Track inventory and stock levels</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('stock.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('stock.subtitle')}</p>
         </div>
         <Button onClick={() => setShowItemModal(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Item
+          {t('stock.addItem')}
         </Button>
       </div>
 
@@ -131,7 +133,7 @@ export default function StockPage() {
               <Package className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Items</p>
+              <p className="text-sm text-gray-500">{t('stock.totalItems')}</p>
               <p className="text-2xl font-bold text-gray-900">{stockItems.length}</p>
             </div>
           </div>
@@ -142,7 +144,7 @@ export default function StockPage() {
               <AlertTriangle className="h-5 w-5 text-red-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Low Stock</p>
+              <p className="text-sm text-gray-500">{t('stock.lowStock')}</p>
               <p className="text-2xl font-bold text-red-600">{lowStockCount}</p>
             </div>
           </div>
@@ -153,7 +155,7 @@ export default function StockPage() {
               <Package className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Value</p>
+              <p className="text-sm text-gray-500">{t('stock.totalValue')}</p>
               <p className="text-2xl font-bold text-gray-900">{formatPrice(totalValue)}</p>
             </div>
           </div>
@@ -168,7 +170,7 @@ export default function StockPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search items or suppliers..."
+            placeholder={t('stock.searchItems')}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -177,7 +179,7 @@ export default function StockPage() {
           onChange={(e) => setCategoryFilter(e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">All Categories</option>
+          <option value="">{t('stock.allCategories')}</option>
           {categories.map((cat) => (
             <option key={cat} value={cat}>
               {cat}
@@ -192,12 +194,24 @@ export default function StockPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b">
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Name</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Category</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Quantity</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Cost/Unit</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Supplier</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Actions</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('name', { ns: 'common' })}
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('category', { ns: 'common' })}
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('quantity', { ns: 'common' })}
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('stock.costUnit')}
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('stock.supplier')}
+                </th>
+                <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('actions', { ns: 'common' })}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -219,7 +233,7 @@ export default function StockPage() {
                       {item.quantity} {item.unit}
                     </span>
                     {item.quantity <= item.minimum_stock_level && (
-                      <span className="ml-2 text-xs text-red-500">Low</span>
+                      <span className="ml-2 text-xs text-red-500">{t('stock.lowIndicator')}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
@@ -231,21 +245,21 @@ export default function StockPage() {
                       <button
                         onClick={() => setMovementItem({ item, type: 'in' })}
                         className="p-1.5 text-green-600 hover:bg-green-50 rounded"
-                        title="Add stock"
+                        title={t('stock.addStock')}
                       >
                         <ArrowUpCircle className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => setMovementItem({ item, type: 'out' })}
                         className="p-1.5 text-red-600 hover:bg-red-50 rounded"
-                        title="Remove stock"
+                        title={t('stock.removeStock')}
                       >
                         <ArrowDownCircle className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => setHistoryItem(item)}
                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
-                        title="View history"
+                        title={t('stock.viewHistory')}
                       >
                         <History className="h-4 w-4" />
                       </button>
@@ -255,14 +269,14 @@ export default function StockPage() {
                           setShowItemModal(true);
                         }}
                         className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
-                        title="Edit"
+                        title={t('edit', { ns: 'common' })}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(item.id)}
                         className="p-1.5 text-gray-400 hover:text-red-600 rounded"
-                        title="Delete"
+                        title={t('delete', { ns: 'common' })}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -273,9 +287,7 @@ export default function StockPage() {
               {filteredItems.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                    {stockItems.length === 0
-                      ? 'No stock items yet. Add your first item!'
-                      : 'No items match your search.'}
+                    {stockItems.length === 0 ? t('stock.noStockItems') : t('stock.noItemsMatch')}
                   </td>
                 </tr>
               )}
@@ -312,13 +324,16 @@ export default function StockPage() {
 
 // Inline history modal component
 function StockHistoryModal({ item, onClose }: { item: StockItem; onClose: () => void }) {
+  const { t } = useTranslation('staff');
   const { data: movements = [], isLoading } = useStockMovements(item.id);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">History: {item.name}</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            {t('stock.history')} {item.name}
+          </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-5 w-5" />
           </button>
@@ -330,7 +345,7 @@ function StockHistoryModal({ item, onClose }: { item: StockItem; onClose: () => 
               <LoadingSpinner />
             </div>
           ) : movements.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No stock movements recorded</p>
+            <p className="text-gray-500 text-center py-8">{t('stock.stockMovements')}</p>
           ) : (
             <div className="space-y-3">
               {movements.map((m: any) => (
@@ -379,7 +394,7 @@ function StockHistoryModal({ item, onClose }: { item: StockItem; onClose: () => 
 
         <div className="border-t px-6 py-4">
           <Button variant="outline" onClick={onClose} className="w-full">
-            Close
+            {t('close', { ns: 'common' })}
           </Button>
         </div>
       </div>

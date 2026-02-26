@@ -88,7 +88,7 @@ export function isMenuItem(value: unknown): value is MenuItem {
     typeof value === 'object' &&
     value !== null &&
     'id' in value &&
-    'name_en' in value &&
+    'name' in value &&
     'price' in value
   );
 }
@@ -99,7 +99,7 @@ export function isAvailableMenuItem(item: MenuItem): boolean {
 
 // Category type guards
 export function isCategory(value: unknown): value is Category {
-  return typeof value === 'object' && value !== null && 'id' in value && 'name_en' in value;
+  return typeof value === 'object' && value !== null && 'id' in value && 'name' in value;
 }
 
 // Waiter call type guards

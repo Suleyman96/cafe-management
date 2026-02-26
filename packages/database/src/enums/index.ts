@@ -69,13 +69,6 @@ export const USER_ROLE = {
   KITCHEN: 'kitchen',
 } as const;
 
-export const LANGUAGE = {
-  EN: 'en',
-  AZ: 'az',
-  RU: 'ru',
-  TR: 'tr',
-} as const;
-
 export const STOCK_MOVEMENT_TYPE = {
   IN: 'in',
   OUT: 'out',

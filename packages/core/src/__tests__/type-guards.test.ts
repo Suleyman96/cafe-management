@@ -90,20 +90,20 @@ describe('role checks', () => {
 
 describe('isMenuItem', () => {
   it('returns true for valid menu item', () => {
-    expect(isMenuItem({ id: '1', name_en: 'Pizza', price: 10 })).toBe(true);
+    expect(isMenuItem({ id: '1', name: 'Pizza', price: 10 })).toBe(true);
   });
 
   it('returns false for missing price', () => {
-    expect(isMenuItem({ id: '1', name_en: 'Pizza' })).toBe(false);
+    expect(isMenuItem({ id: '1', name: 'Pizza' })).toBe(false);
   });
 });
 
 describe('isCategory', () => {
   it('returns true for valid category', () => {
-    expect(isCategory({ id: '1', name_en: 'Main Dishes' })).toBe(true);
+    expect(isCategory({ id: '1', name: 'Main Dishes' })).toBe(true);
   });
 
-  it('returns false for missing name_en', () => {
+  it('returns false for missing name', () => {
     expect(isCategory({ id: '1' })).toBe(false);
   });
 });
@@ -218,7 +218,7 @@ describe('safeGet', () => {
   });
 
   it('returns null for null object', () => {
-    expect(safeGet(null, 'name' as any)).toBeNull();
+    expect(safeGet(null as { name: string } | null, 'name')).toBeNull();
   });
 
   it('returns default for missing key', () => {

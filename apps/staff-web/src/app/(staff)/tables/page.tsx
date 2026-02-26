@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
   AlertCircle,
@@ -36,6 +37,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
 
 export default function TablesPage() {
+  const { t } = useTranslation('staff');
   const { staff } = useAuth();
   const {
     data: tables,
@@ -177,7 +179,7 @@ export default function TablesPage() {
           text: 'text-amber-800',
           border: 'border-amber-400',
           icon: <Hourglass className="h-3.5 w-3.5" />,
-          label: '⏳ Pending Approval',
+          label: `⏳ ${t('orders.pendingApproval')}`,
         };
       case 'new':
         return {
@@ -185,7 +187,7 @@ export default function TablesPage() {
           text: 'text-blue-800',
           border: 'border-blue-300',
           icon: <AlertCircle className="h-3.5 w-3.5" />,
-          label: 'New Order',
+          label: t('orders.new'),
         };
       case 'preparing':
         return {
@@ -193,7 +195,7 @@ export default function TablesPage() {
           text: 'text-yellow-800',
           border: 'border-yellow-300',
           icon: <ChefHat className="h-3.5 w-3.5" />,
-          label: 'Preparing',
+          label: t('orders.preparing'),
         };
       case 'ready':
         return {
@@ -201,7 +203,7 @@ export default function TablesPage() {
           text: 'text-green-800',
           border: 'border-green-300',
           icon: <CheckCircle className="h-3.5 w-3.5" />,
-          label: 'Ready',
+          label: t('orders.ready'),
         };
       case 'served':
         return {
@@ -209,7 +211,7 @@ export default function TablesPage() {
           text: 'text-purple-800',
           border: 'border-purple-300',
           icon: <UtensilsCrossed className="h-3.5 w-3.5" />,
-          label: 'Served',
+          label: t('orders.served'),
         };
       case 'partially_ready':
         return {
@@ -217,7 +219,7 @@ export default function TablesPage() {
           text: 'text-lime-800',
           border: 'border-lime-400',
           icon: <CheckCircle className="h-3.5 w-3.5" />,
-          label: 'Partially Ready',
+          label: t('orders.ready'),
         };
       default:
         return {
@@ -277,11 +279,11 @@ export default function TablesPage() {
         order_type: 'dine_in',
         status: 'new',
       } as any);
-      toast.success(`Order created for ${table.table_number}`);
+      toast.success(`${t('tables.createdOrder')} ${table.table_number}`);
       window.location.href = `/orders/${result.id}/add-items`;
     } catch (error) {
       console.error('Failed to create order:', error);
-      toast.error('Failed to create order. Please try again.');
+      toast.error(t('tables.failedCreateOrder'));
     } finally {
       setCreatingOrderForTable(null);
     }
@@ -291,7 +293,7 @@ export default function TablesPage() {
   const handleDeleteTable = async (table: any) => {
     const activeOrders = getActiveOrdersForTable(table.id);
     if (activeOrders.length > 0) {
-      toast.error('Cannot delete table with active order');
+      toast.error(t('tables.cannotDeleteActiveOrder'));
       return;
     }
 
@@ -301,10 +303,10 @@ export default function TablesPage() {
 
     try {
       await deleteTable.mutateAsync(table.id);
-      toast.success(`${table.table_number} deleted`);
+      toast.success(`${table.table_number} ${t('tables.tableDeleted')}`);
       refetchTables();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to delete table');
+      toast.error(error.message || t('tables.failedDeleteTable'));
     }
   };
 
@@ -328,7 +330,7 @@ export default function TablesPage() {
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
       {/* Header - Stack on mobile */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold">Table Management</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">{t('tables.title')}</h1>
         <div className="flex flex-wrap gap-2">
           {isAdmin && (
             <Button
@@ -340,8 +342,8 @@ export default function TablesPage() {
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              <span className="hidden xs:inline">Add Table</span>
-              <span className="xs:hidden">Add</span>
+              <span className="hidden xs:inline">{t('tables.addTable')}</span>
+              <span className="xs:hidden">{t('add', { ns: 'common' })}</span>
             </Button>
           )}
           <Button
@@ -351,8 +353,8 @@ export default function TablesPage() {
             className="flex items-center gap-2 border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:border-orange-500"
           >
             <Package className="h-4 w-4" />
-            <span className="hidden sm:inline">Takeout Order</span>
-            <span className="sm:hidden">Takeout</span>
+            <span className="hidden sm:inline">{t('tables.takeoutOrder')}</span>
+            <span className="sm:hidden">{t('tables.takeout')}</span>
           </Button>
           <Button
             variant="outline"
@@ -361,7 +363,7 @@ export default function TablesPage() {
             className="flex items-center gap-2"
           >
             <RefreshCw className="h-4 w-4" />
-            <span className="hidden sm:inline">Refresh</span>
+            <span className="hidden sm:inline">{t('refresh', { ns: 'common' })}</span>
           </Button>
         </div>
       </div>
@@ -470,7 +472,7 @@ export default function TablesPage() {
                   </div>
                   <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                     <Users className="h-3 w-3" />
-                    {table.capacity} seats
+                    {table.capacity} {t('tables.seats')}
                   </p>
                 </div>
                 {hasActiveCalls && (
@@ -487,7 +489,7 @@ export default function TablesPage() {
                   {hasMultipleOrders && (
                     <div className="bg-amber-100 border border-amber-300 rounded-lg px-3 py-1.5 text-sm font-medium text-amber-800 flex items-center gap-2">
                       <Package className="h-4 w-4" />
-                      {activeOrders.length} orders on this table
+                      {activeOrders.length} {t('tables.ordersOnTable')}
                     </div>
                   )}
 
@@ -518,14 +520,16 @@ export default function TablesPage() {
                     </div>
                     <div className="flex items-center gap-2 text-gray-600">
                       <Package className="h-4 w-4 text-gray-400" />
-                      <span>{combinedItemsCount} items</span>
+                      <span>
+                        {combinedItemsCount} {t('tables.items')}
+                      </span>
                     </div>
                   </div>
 
                   {/* Total */}
                   <div className="flex items-center justify-between bg-white/60 rounded-lg px-3 py-2">
                     <span className="text-sm text-gray-600">
-                      {hasMultipleOrders ? 'Combined Total' : 'Total'}
+                      {hasMultipleOrders ? t('tables.combinedTotal') : t('total', { ns: 'common' })}
                     </span>
                     <span className="text-lg font-bold text-gray-800">
                       {formatPrice(combinedTotal)}
@@ -585,13 +589,13 @@ export default function TablesPage() {
                     }}
                     className="flex-1"
                   >
-                    Transfer
+                    {t('tables.transfer')}
                   </Button>
                 </div>
               ) : (
                 table.status === 'free' && (
                   <div className="mt-4 pt-3 border-t border-gray-200">
-                    <p className="text-sm text-gray-500 text-center">Click to view table</p>
+                    <p className="text-sm text-gray-500 text-center">{t('tables.clickToView')}</p>
                   </div>
                 )
               )}
@@ -626,7 +630,7 @@ export default function TablesPage() {
           onSuccess={() => {
             setIsTransferModalOpen(false);
             setSelectedTable(null);
-            toast.success('Table transferred successfully');
+            toast.success(t('tables.tableTransferred'));
             refetchTables();
           }}
         />
@@ -637,7 +641,7 @@ export default function TablesPage() {
         onClose={() => setIsTakeoutModalOpen(false)}
         onSuccess={(orderId) => {
           setIsTakeoutModalOpen(false);
-          toast.success('Takeout order created');
+          toast.success(t('orders.orderCreated'));
           window.location.href = `/orders/${orderId}/add-items`;
         }}
       />

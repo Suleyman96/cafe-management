@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -32,6 +33,7 @@ const DAYS_OF_WEEK = [
 ];
 
 export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: ScheduleModalProps) {
+  const { t } = useTranslation('staff');
   const isEdit = !!schedule;
   const { data: staffList } = useStaff();
   const createSchedule = useCreateSchedule();
@@ -86,7 +88,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
 
     try {
       if (!staffId) {
-        setError('Please select a staff member');
+        setError(t('schedules.selectStaffMember'));
         setLoading(false);
         return;
       }
@@ -109,7 +111,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
         }
 
         await updateSchedule.mutateAsync({ id: schedule.id, data: updateData });
-        toast.success('Schedule updated');
+        toast.success(t('schedules.scheduleUpdated'));
       } else if (repeatEnabled && repeatDays.length > 0) {
         // Bulk create for multiple days
         const baseDate = new Date(date);
@@ -139,7 +141,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
         }
 
         await Promise.allSettled(promises);
-        toast.success(`Created ${promises.length} schedule entries`);
+        toast.success(t('schedules.createdEntries', { count: promises.length }));
       } else {
         await createSchedule.mutateAsync({
           staff_id: staffId,
@@ -149,12 +151,12 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
           status: 'scheduled',
           notes: notes || null,
         } as any);
-        toast.success('Schedule created');
+        toast.success(t('schedules.scheduleCreated'));
       }
 
       onSuccess();
     } catch (err: any) {
-      setError(err?.message || 'Failed to save schedule');
+      setError(err?.message || t('schedules.failedSave'));
     } finally {
       setLoading(false);
     }
@@ -162,15 +164,15 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
 
   const handleDelete = async () => {
     if (!schedule?.id) return;
-    if (!confirm('Delete this schedule entry?')) return;
+    if (!confirm(t('schedules.deleteConfirm'))) return;
 
     setLoading(true);
     try {
       await deleteSchedule.mutateAsync(schedule.id);
-      toast.success('Schedule deleted');
+      toast.success(t('schedules.scheduleDeleted'));
       onSuccess();
     } catch (err: any) {
-      setError(err?.message || 'Failed to delete schedule');
+      setError(err?.message || t('schedules.failedDelete'));
     } finally {
       setLoading(false);
     }
@@ -187,7 +189,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">
-            {isEdit ? 'Edit Schedule' : 'Add Schedule'}
+            {isEdit ? t('schedules.editSchedule') : t('schedules.addSchedule')}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600" type="button">
             <X className="h-5 w-5" />
@@ -203,14 +205,16 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
 
           {/* Staff Select */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Staff Member</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('schedules.staffMember')}
+            </label>
             <select
               value={staffId}
               onChange={(e) => setStaffId(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
-              <option value="">Select staff...</option>
+              <option value="">{t('schedules.selectStaff')}</option>
               {activeStaff.map((s: any) => (
                 <option key={s.id} value={s.id}>
                   {s.full_name} ({s.role})
@@ -221,7 +225,9 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
 
           {/* Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('date', { ns: 'common' })}
+            </label>
             <input
               type="date"
               value={date}
@@ -234,31 +240,35 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
           {/* Planned Times */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Planned Start</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('schedules.plannedStart')}
+              </label>
               <select
                 value={plannedStart}
                 onChange={(e) => setPlannedStart(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
-                {TIME_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+                {TIME_OPTIONS.map((time) => (
+                  <option key={time} value={time}>
+                    {time}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Planned End</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('schedules.plannedEnd')}
+              </label>
               <select
                 value={plannedEnd}
                 onChange={(e) => setPlannedEnd(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
-                {TIME_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+                {TIME_OPTIONS.map((time) => (
+                  <option key={time} value={time}>
+                    {time}
                   </option>
                 ))}
               </select>
@@ -272,7 +282,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Actual Start
+                    {t('schedules.actualStart')}
                   </label>
                   <input
                     type="datetime-local"
@@ -282,7 +292,9 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Actual End</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('schedules.actualEnd')}
+                  </label>
                   <input
                     type="datetime-local"
                     value={actualEnd}
@@ -294,16 +306,18 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
 
               {/* Status */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('status', { ns: 'common' })}
+                </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="scheduled">Scheduled</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                  <option value="missed">Missed</option>
+                  <option value="scheduled">{t('schedules.scheduled')}</option>
+                  <option value="in_progress">{t('schedules.inProgress')}</option>
+                  <option value="completed">{t('schedules.completed')}</option>
+                  <option value="missed">{t('schedules.missed')}</option>
                 </select>
               </div>
             </>
@@ -311,13 +325,15 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('notes', { ns: 'common' })}
+            </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows={2}
-              placeholder="Optional notes..."
+              placeholder={t('schedules.optionalNotes')}
             />
           </div>
 
@@ -331,13 +347,15 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
                   onChange={(e) => setRepeatEnabled(e.target.checked)}
                   className="rounded border-gray-300"
                 />
-                Repeat for multiple days
+                {t('schedules.repeatMultipleDays')}
               </label>
 
               {repeatEnabled && (
                 <div className="mt-3 space-y-3">
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Days of the week</label>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      {t('schedules.daysOfWeek')}
+                    </label>
                     <div className="flex gap-1">
                       {DAYS_OF_WEEK.map((day) => (
                         <button
@@ -356,7 +374,9 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Number of weeks</label>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      {t('schedules.numberOfWeeks')}
+                    </label>
                     <select
                       value={repeatWeeks}
                       onChange={(e) => setRepeatWeeks(Number(e.target.value))}
@@ -384,15 +404,15 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
                 disabled={loading}
                 size="sm"
               >
-                Delete
+                {t('delete', { ns: 'common' })}
               </Button>
             )}
             <div className="flex-1" />
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-              Cancel
+              {t('cancel', { ns: 'common' })}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Saving...' : isEdit ? 'Update' : 'Create'}
+              {loading ? t('saving', { ns: 'common' }) : t('save', { ns: 'common' })}
             </Button>
           </div>
         </form>

@@ -2,6 +2,7 @@
 
 import type { ORDER_STATUS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { Check, CheckCircle, DollarSign, X } from 'lucide-react';
 import { useState } from 'react';
@@ -33,6 +34,7 @@ interface SplitPaymentModalProps {
 type PaymentMode = 'full' | 'partial' | 'items';
 
 export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPaymentModalProps) {
+  const { t } = useTranslation('staff');
   const { staff } = useAuth();
   const createPayment = useCreatePayment();
   const updateOrderStatus = useUpdateOrderStatus();
@@ -153,7 +155,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-bold">Process Payment (Cash)</h2>
+          <h2 className="text-xl font-bold">{t('payment.processPaymentCash')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-5 w-5" />
           </button>
@@ -166,14 +168,10 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
               <div className="flex items-center gap-2 text-green-700">
                 <CheckCircle className="h-5 w-5" />
                 <span className="font-medium">
-                  {isZeroTotal
-                    ? 'This order has no items to pay for.'
-                    : 'This order has been fully paid!'}
+                  {isZeroTotal ? t('payment.noItemsToPay') : t('payment.orderFullyPaid')}
                 </span>
               </div>
-              <p className="text-sm text-green-600 mt-2">
-                Click "Complete Order" to close this order.
-              </p>
+              <p className="text-sm text-green-600 mt-2">{t('payment.clickComplete')}</p>
             </div>
           )}
 
@@ -182,7 +180,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
             {cafeSettings?.tax_enabled && (
               <>
                 <div className="flex justify-between items-center text-sm text-gray-600 mb-1">
-                  <span>Subtotal</span>
+                  <span>{t('subtotal', { ns: 'common' })}</span>
                   <span>{formatPrice(orderSubtotal)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
@@ -194,19 +192,19 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
             <div
               className={`flex justify-between items-center text-sm font-medium mb-2 ${cafeSettings?.tax_enabled ? 'pt-2 border-t' : ''}`}
             >
-              <span>Order Total</span>
+              <span>{t('payment.orderTotal')}</span>
               <span>{formatPrice(orderTotal)}</span>
             </div>
             {remainingBalance !== undefined && remainingBalance < orderTotal && (
               <>
                 <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
-                  <span>Already Paid</span>
+                  <span>{t('payment.alreadyPaid')}</span>
                   <span className="font-medium text-green-600">
                     {formatPrice(orderTotal - remainingBalance)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center font-medium">
-                  <span>Remaining Balance</span>
+                  <span>{t('payment.remainingBalance')}</span>
                   <span className={isFullyPaid ? 'text-green-600' : 'text-orange-600'}>
                     {formatPrice(remainingBalance)}
                   </span>
@@ -217,7 +215,9 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
 
           {/* Payment Mode Selection */}
           <div className="space-y-3 mb-6">
-            <label className="block text-sm font-medium text-gray-700">Payment Type</label>
+            <label className="block text-sm font-medium text-gray-700">
+              {t('payment.paymentType')}
+            </label>
             <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => setPaymentMode('full')}
@@ -228,7 +228,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
                 }`}
               >
                 <DollarSign className="h-5 w-5 mx-auto mb-1" />
-                <div className="text-sm font-medium">Full Payment</div>
+                <div className="text-sm font-medium">{t('payment.fullPayment')}</div>
                 <div className="text-xs text-gray-600">
                   {formatPrice(remainingBalance ?? orderTotal)}
                 </div>
@@ -243,8 +243,8 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
                 }`}
               >
                 <DollarSign className="h-5 w-5 mx-auto mb-1" />
-                <div className="text-sm font-medium">Partial Amount</div>
-                <div className="text-xs text-gray-600">Custom amount</div>
+                <div className="text-sm font-medium">{t('payment.partialAmount')}</div>
+                <div className="text-xs text-gray-600">{t('payment.customAmount')}</div>
               </button>
 
               <button
@@ -256,8 +256,8 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
                 }`}
               >
                 <CheckCircle className="h-5 w-5 mx-auto mb-1" />
-                <div className="text-sm font-medium">Specific Items</div>
-                <div className="text-xs text-gray-600">Select items</div>
+                <div className="text-sm font-medium">{t('payment.specificItems')}</div>
+                <div className="text-xs text-gray-600">{t('payment.selectItems')}</div>
               </button>
             </div>
           </div>
@@ -265,7 +265,9 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
           {/* Partial Amount Input */}
           {paymentMode === 'partial' && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Amount to Pay</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('payment.amountToPay')}
+              </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
                   $
@@ -287,7 +289,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
           {paymentMode === 'items' && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Items to Pay For
+                {t('payment.selectItemsToPay')}
               </label>
               <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
                 {order.order_items?.map((item: OrderItem) => (
@@ -315,7 +317,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
               </div>
               {selectedItems.size > 0 && (
                 <div className="mt-2 text-sm font-medium text-blue-700">
-                  Total: {formatPrice(calculateSelectedItemsTotal())}
+                  {t('total', { ns: 'common' })}: {formatPrice(calculateSelectedItemsTotal())}
                 </div>
               )}
             </div>
@@ -325,7 +327,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
           {cafeSettings?.tips_enabled && !isFullyPaid && !isZeroTotal && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Add Tip (optional)
+                {t('payment.addTip')}
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
@@ -343,7 +345,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
               </div>
               {parseFloat(tipAmount) > 0 && (
                 <div className="mt-2 text-sm text-green-600">
-                  Tip: {formatPrice(parseFloat(tipAmount))}
+                  {t('orders.tip')}: {formatPrice(parseFloat(tipAmount))}
                 </div>
               )}
             </div>
@@ -354,19 +356,19 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
           {/* Payment Summary with Tip */}
           <div className="space-y-2 mb-4">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Payment</span>
+              <span className="text-gray-600">{t('payment.paymentType')}</span>
               <span className="font-medium">{formatPrice(getPaymentAmount())}</span>
             </div>
             {cafeSettings?.tips_enabled && parseFloat(tipAmount) > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Tip</span>
+                <span className="text-gray-600">{t('orders.tip')}</span>
                 <span className="font-medium text-green-600">
                   {formatPrice(parseFloat(tipAmount))}
                 </span>
               </div>
             )}
             <div className="flex justify-between items-center pt-2 border-t">
-              <span className="text-lg font-medium">Total to Collect</span>
+              <span className="text-lg font-medium">{t('payment.totalToCollect')}</span>
               <span
                 className={`text-2xl font-bold ${isFullyPaid ? 'text-green-600' : 'text-blue-600'}`}
               >
@@ -376,7 +378,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
           </div>
           <div className="flex gap-3">
             <Button variant="outline" onClick={onClose} disabled={loading} className="flex-1">
-              Cancel
+              {t('cancel', { ns: 'common' })}
             </Button>
             {isFullyPaid || isZeroTotal ? (
               <Button
@@ -385,7 +387,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
                 className="flex-1 bg-green-600 hover:bg-green-700"
               >
                 <Check className="h-4 w-4 mr-2" />
-                {loading ? 'Completing...' : 'Complete Order'}
+                {loading ? t('payment.completing') : t('payment.completeOrder')}
               </Button>
             ) : (
               <Button
@@ -393,7 +395,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
                 disabled={getPaymentAmount() <= 0 || loading || !staff?.id}
                 className="flex-1"
               >
-                {loading ? 'Processing...' : 'Process Payment'}
+                {loading ? t('payment.processing') : t('payment.processPaymentBtn')}
               </Button>
             )}
           </div>

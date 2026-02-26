@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
@@ -16,6 +17,7 @@ interface ExpenseCategoryModalProps {
 }
 
 export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
+  const { t } = useTranslation('staff');
   const { data: categories = [], isLoading } = useExpenseCategories();
   const createCategory = useCreateExpenseCategory();
   const updateCategory = useUpdateExpenseCategory();
@@ -33,7 +35,7 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
 
   const handleAdd = async () => {
     if (!formData.name.trim()) {
-      toast.error('Name is required');
+      toast.error(t('expenses.nameRequired'));
       return;
     }
 
@@ -44,10 +46,10 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
         icon: formData.icon || null,
         is_active: true,
       });
-      toast.success('Category created!');
+      toast.success(t('expenses.categoryCreated'));
       resetForm();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create category');
+      toast.error(error.message || t('expenses.failedCreateCategory'));
     }
   };
 
@@ -63,23 +65,23 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
           icon: formData.icon || null,
         },
       });
-      toast.success('Category updated!');
+      toast.success(t('expenses.categoryUpdated'));
       resetForm();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to update category');
+      toast.error(error.message || t('expenses.failedUpdateCategory'));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this category? Expenses will keep their data but show no category.')) {
+    if (!confirm(t('expenses.deleteCategoryConfirm'))) {
       return;
     }
 
     try {
       await deleteCategory.mutateAsync(id);
-      toast.success('Category deleted!');
+      toast.success(t('expenses.categoryDeleted'));
     } catch (error: any) {
-      toast.error(error.message || 'Failed to delete category');
+      toast.error(error.message || t('expenses.failedDeleteCategory'));
     }
   };
 
@@ -93,7 +95,7 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Expense Categories</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t('expenses.expenseCategories')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
             &times;
           </button>
@@ -102,7 +104,7 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
         <div className="p-6 space-y-4">
           {/* Category List */}
           {isLoading ? (
-            <p className="text-gray-500 text-center py-4">Loading...</p>
+            <p className="text-gray-500 text-center py-4">{t('loading', { ns: 'common' })}...</p>
           ) : (
             <div className="space-y-2">
               {categories.map((cat: any) => (
@@ -117,14 +119,14 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         className="w-full px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                        placeholder="Category name"
+                        placeholder={t('expenses.categoryName')}
                       />
                       <div className="flex gap-2">
                         <Button size="sm" onClick={handleUpdate}>
-                          Save
+                          {t('save', { ns: 'common' })}
                         </Button>
                         <Button size="sm" variant="outline" onClick={resetForm}>
-                          Cancel
+                          {t('cancel', { ns: 'common' })}
                         </Button>
                       </div>
                     </div>
@@ -150,7 +152,7 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
                 </div>
               ))}
               {categories.length === 0 && (
-                <p className="text-gray-500 text-center py-4">No categories yet</p>
+                <p className="text-gray-500 text-center py-4">{t('expenses.noCategories')}</p>
               )}
             </div>
           )}
@@ -163,21 +165,21 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Category name"
+                placeholder={t('expenses.categoryName')}
               />
               <input
                 type="text"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Description (optional)"
+                placeholder={`${t('description', { ns: 'common' })} (${t('optional', { ns: 'common' }).toLowerCase()})`}
               />
               <div className="flex gap-2">
                 <Button onClick={handleAdd} className="flex-1">
-                  Add Category
+                  {t('expenses.addCategory')}
                 </Button>
                 <Button variant="outline" onClick={resetForm} className="flex-1">
-                  Cancel
+                  {t('cancel', { ns: 'common' })}
                 </Button>
               </div>
             </div>
@@ -190,7 +192,7 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
               className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
             >
               <Plus className="h-4 w-4" />
-              Add Category
+              {t('expenses.addCategory')}
             </button>
           )}
         </div>
@@ -198,7 +200,7 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
         {/* Close */}
         <div className="border-t px-6 py-4">
           <Button variant="outline" onClick={onClose} className="w-full">
-            Done
+            {t('expenses.done')}
           </Button>
         </div>
       </div>

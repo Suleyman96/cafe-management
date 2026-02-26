@@ -14,6 +14,7 @@
     "@cafe-idare/api-client": "workspace:*",
     "@cafe-idare/core": "workspace:*",
     "@cafe-idare/database": "workspace:*",
+    "@cafe-idare/i18n": "workspace:*",
     "@cafe-idare/ui": "workspace:*",
     "@supabase/supabase-js": "^2.45.0",
     "@tanstack/react-query": "^5.56.0",

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -15,6 +16,7 @@ export function StaffResetPasswordModal({
   staffName,
   onClose,
 }: StaffResetPasswordModalProps) {
+  const { t } = useTranslation('staff');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,12 +27,12 @@ export function StaffResetPasswordModal({
     setError('');
 
     if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(t('staffMgmt.passwordMinLength'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('staffMgmt.passwordsDoNotMatch'));
       return;
     }
 
@@ -46,14 +48,14 @@ export function StaffResetPasswordModal({
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Failed to reset password');
+        setError(data.error || t('staffMgmt.failedResetPassword'));
         return;
       }
 
-      toast.success(`Password reset for ${staffName}`);
+      toast.success(t('staffMgmt.resetPasswordSuccess'));
       onClose();
     } catch (_err) {
-      setError('An unexpected error occurred');
+      setError(t('staffMgmt.unexpectedError'));
     } finally {
       setLoading(false);
     }
@@ -62,9 +64,9 @@ export function StaffResetPasswordModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-md w-full p-6">
-        <h2 className="text-xl font-bold mb-2">Reset Password</h2>
+        <h2 className="text-xl font-bold mb-2">{t('staffMgmt.resetPassword')}</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Set a new password for <strong>{staffName}</strong>
+          {t('staffMgmt.setNewPasswordFor')} <strong>{staffName}</strong>
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -75,13 +77,15 @@ export function StaffResetPasswordModal({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">New Password *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('staffMgmt.newPasswordFor')} *
+            </label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Minimum 6 characters"
+              placeholder={t('staffMgmt.minSixChars')}
               minLength={6}
               required
             />
@@ -89,14 +93,14 @@ export function StaffResetPasswordModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Confirm Password *
+              {t('staffMgmt.confirmPassword')} *
             </label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Re-enter password"
+              placeholder={t('staffMgmt.reenterPassword')}
               minLength={6}
               required
             />
@@ -110,10 +114,10 @@ export function StaffResetPasswordModal({
               disabled={loading}
               className="flex-1"
             >
-              Cancel
+              {t('cancel', { ns: 'common' })}
             </Button>
             <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? 'Resetting...' : 'Reset Password'}
+              {loading ? t('staffMgmt.resetting') : t('staffMgmt.resetPassword')}
             </Button>
           </div>
         </form>

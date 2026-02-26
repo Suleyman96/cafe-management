@@ -101,11 +101,8 @@ describe('Database Schemas', () => {
   describe('MenuItemSchema', () => {
     const validMenuItem = {
       id: uuid1,
-      name_en: 'Pizza Margherita',
-      name_az: null,
-      name_ru: null,
-      name_tr: null,
-      description_en: null,
+      name: 'Pizza Margherita',
+      description: null,
       price: 15.99,
       category_id: uuid2,
       image_url: null,

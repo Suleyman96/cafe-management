@@ -123,14 +123,8 @@ CREATE INDEX idx_tables_qr ON tables(qr_code);
 -- Categories
 CREATE TABLE categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name_en VARCHAR(100) NOT NULL,
-  name_az VARCHAR(100),
-  name_ru VARCHAR(100),
-  name_tr VARCHAR(100),
-  description_en TEXT,
-  description_az TEXT,
-  description_ru TEXT,
-  description_tr TEXT,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
   icon VARCHAR(50),
   display_order INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT true,
@@ -145,14 +139,8 @@ CREATE INDEX idx_categories_active ON categories(is_active);
 CREATE TABLE menu_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
-  name_en VARCHAR(255) NOT NULL,
-  name_az VARCHAR(255),
-  name_ru VARCHAR(255),
-  name_tr VARCHAR(255),
-  description_en TEXT,
-  description_az TEXT,
-  description_ru TEXT,
-  description_tr TEXT,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
   price DECIMAL(10, 2) NOT NULL,
   image_url TEXT,
   preparation_time INTEGER,
@@ -338,6 +326,7 @@ CREATE TABLE cafe_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   -- Restaurant info
   restaurant_name VARCHAR(255) NOT NULL DEFAULT 'Cafe Idare',
+  restaurant_address TEXT,
   -- Tax settings
   tax_enabled BOOLEAN NOT NULL DEFAULT true,
   tax_percentage DECIMAL(5, 2) NOT NULL DEFAULT 18.00,
@@ -365,7 +354,12 @@ CREATE TABLE cafe_settings (
   contact_website TEXT,
   social_instagram TEXT,
   social_whatsapp TEXT,
+  social_tiktok TEXT,
+  social_telegram TEXT,
+  social_line TEXT,
   location_maps_url TEXT,
+  -- Language
+  default_language VARCHAR(5) DEFAULT 'en',
   -- Tips
   tips_enabled BOOLEAN DEFAULT false,
   -- Delivery settings

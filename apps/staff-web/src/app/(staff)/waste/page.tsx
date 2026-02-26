@@ -1,6 +1,7 @@
 'use client';
 
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { LoadingSpinner } from '@cafe-idare/ui';
 import { DollarSign, Pencil, Plus, Trash2, TrendingDown } from 'lucide-react';
 import { useState } from 'react';
@@ -17,33 +18,34 @@ import {
 
 type WasteLog = Database['public']['Tables']['waste_logs']['Row'];
 
-const REASON_LABELS: Record<string, string> = {
-  expired: 'Expired',
-  spoiled: 'Spoiled',
-  overcooked: 'Overcooked',
-  dropped: 'Dropped',
-  returned_by_customer: 'Returned',
-  preparation_waste: 'Prep Waste',
-  other: 'Other',
-};
-
-const REASON_COLORS: Record<string, string> = {
-  expired: 'bg-red-100 text-red-700',
-  spoiled: 'bg-orange-100 text-orange-700',
-  overcooked: 'bg-yellow-100 text-yellow-700',
-  dropped: 'bg-purple-100 text-purple-700',
-  returned_by_customer: 'bg-blue-100 text-blue-700',
-  preparation_waste: 'bg-gray-100 text-gray-700',
-  other: 'bg-gray-100 text-gray-600',
-};
-
 export default function WastePage() {
+  const { t } = useTranslation('staff');
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [reasonFilter, setReasonFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingLog, setEditingLog] = useState<WasteLog | null>(null);
+
+  const REASON_LABELS: Record<string, string> = {
+    expired: t('waste.expired'),
+    spoiled: t('waste.spoiled'),
+    overcooked: t('waste.overcooked'),
+    dropped: t('waste.dropped'),
+    returned_by_customer: t('waste.returnedByCustomer'),
+    preparation_waste: t('waste.preparationWaste'),
+    other: t('waste.other'),
+  };
+
+  const REASON_COLORS: Record<string, string> = {
+    expired: 'bg-red-100 text-red-700',
+    spoiled: 'bg-orange-100 text-orange-700',
+    overcooked: 'bg-yellow-100 text-yellow-700',
+    dropped: 'bg-purple-100 text-purple-700',
+    returned_by_customer: 'bg-blue-100 text-blue-700',
+    preparation_waste: 'bg-gray-100 text-gray-700',
+    other: 'bg-gray-100 text-gray-600',
+  };
 
   const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
   const endMonth = selectedMonth === 12 ? 1 : selectedMonth + 1;
@@ -70,9 +72,9 @@ export default function WastePage() {
     if (!confirm('Are you sure you want to delete this waste log?')) return;
     try {
       await deleteWaste.mutateAsync(id);
-      toast.success('Waste log deleted');
+      toast.success(t('waste.wasteLogDeleted'));
     } catch (error: any) {
-      toast.error(error.message || 'Failed to delete');
+      toast.error(error.message || t('delete', { ns: 'common' }));
     }
   };
 
@@ -103,9 +105,7 @@ export default function WastePage() {
     return (
       <div className="p-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-800">
-            Waste tracking is currently disabled. An administrator can enable it from Cafe Settings.
-          </p>
+          <p className="text-yellow-800">{t('waste.disabledMessage')}</p>
         </div>
       </div>
     );
@@ -116,12 +116,12 @@ export default function WastePage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Waste Management</h1>
-          <p className="text-gray-500 mt-1">Track and reduce food waste</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('waste.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('waste.subtitle')}</p>
         </div>
         <Button onClick={() => setShowModal(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Log Waste
+          {t('waste.logWaste')}
         </Button>
       </div>
 
@@ -133,7 +133,7 @@ export default function WastePage() {
               <DollarSign className="h-5 w-5 text-red-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Monthly Waste Cost</p>
+              <p className="text-sm text-gray-500">{t('waste.monthlyWasteCost')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatPrice(summary?.totalCost || 0)}
               </p>
@@ -146,7 +146,7 @@ export default function WastePage() {
               <TrendingDown className="h-5 w-5 text-orange-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Waste Events</p>
+              <p className="text-sm text-gray-500">{t('waste.wasteEvents')}</p>
               <p className="text-2xl font-bold text-gray-900">{summary?.count || 0}</p>
             </div>
           </div>
@@ -157,7 +157,7 @@ export default function WastePage() {
               <Trash2 className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Top Reason</p>
+              <p className="text-sm text-gray-500">{t('waste.topReason')}</p>
               <p className="text-lg font-bold text-gray-900 truncate">
                 {summary?.byReason?.[0]
                   ? REASON_LABELS[summary.byReason[0].reason] || summary.byReason[0].reason
@@ -171,7 +171,7 @@ export default function WastePage() {
       {/* Reason Breakdown */}
       {summary?.byReason && summary.byReason.length > 0 && (
         <div className="bg-white rounded-lg border p-4 mb-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">By Reason</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-3">{t('waste.byReason')}</h3>
           <div className="space-y-2">
             {summary.byReason.map((item: any) => {
               const percentage = summary.totalCost > 0 ? (item.total / summary.totalCost) * 100 : 0;
@@ -231,7 +231,7 @@ export default function WastePage() {
           onChange={(e) => setReasonFilter(e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">All Reasons</option>
+          <option value="">{t('waste.allReasons')}</option>
           {Object.entries(REASON_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
@@ -246,13 +246,27 @@ export default function WastePage() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b">
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Date</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Item</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Qty</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Cost</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Reason</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">By</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Actions</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('date', { ns: 'common' })}
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('waste.menuItem')}
+                </th>
+                <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('quantity', { ns: 'common' })}
+                </th>
+                <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('amount', { ns: 'common' })}
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('waste.wasteReason')}
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('staffMgmt.staffMember')}
+                </th>
+                <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('actions', { ns: 'common' })}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -291,14 +305,14 @@ export default function WastePage() {
                           setShowModal(true);
                         }}
                         className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
-                        title="Edit"
+                        title={t('edit', { ns: 'common' })}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(log.id)}
                         className="p-1.5 text-gray-400 hover:text-red-600 rounded"
-                        title="Delete"
+                        title={t('delete', { ns: 'common' })}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -309,7 +323,7 @@ export default function WastePage() {
               {wasteLogs.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                    No waste logged for this period.
+                    {t('waste.noWaste')}
                   </td>
                 </tr>
               )}

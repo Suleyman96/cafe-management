@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { CheckCircle2, Clock, Hourglass, MapPin, Phone, Truck, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -13,6 +14,7 @@ interface DeliveryOrderStatusProps {
 }
 
 export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
+  const { t } = useTranslation('customer');
   const { data: order, isLoading } = useDeliveryOrder(orderId);
   const { data: settings } = useCafeSettings();
 
@@ -24,20 +26,20 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Order Not Found</h1>
-          <p className="text-muted-foreground">This order could not be found.</p>
+          <h1 className="text-2xl font-bold mb-2">{t('deliveryStatus.notFoundTitle')}</h1>
+          <p className="text-muted-foreground">{t('deliveryStatus.notFoundSubtext')}</p>
         </div>
       </div>
     );
   }
 
   const statusSteps = [
-    { key: 'pending_approval', label: 'Awaiting Approval', icon: Hourglass },
-    { key: 'new', label: 'Order Confirmed', icon: CheckCircle2 },
-    { key: 'preparing', label: 'Preparing', icon: Clock },
-    { key: 'ready', label: 'Ready for Pickup', icon: CheckCircle2 },
-    { key: 'out_for_delivery', label: 'Out for Delivery', icon: Truck },
-    { key: 'delivered', label: 'Delivered', icon: CheckCircle2 },
+    { key: 'pending_approval', label: t('deliveryStatus.step.awaitingApproval'), icon: Hourglass },
+    { key: 'new', label: t('deliveryStatus.step.orderConfirmed'), icon: CheckCircle2 },
+    { key: 'preparing', label: t('deliveryStatus.step.preparing'), icon: Clock },
+    { key: 'ready', label: t('deliveryStatus.step.readyForPickup'), icon: CheckCircle2 },
+    { key: 'out_for_delivery', label: t('deliveryStatus.step.outForDelivery'), icon: Truck },
+    { key: 'delivered', label: t('deliveryStatus.step.delivered'), icon: CheckCircle2 },
   ];
 
   const currentStepIndex = statusSteps.findIndex((step) => step.key === order.status);
@@ -48,18 +50,20 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
         {/* Order Header */}
         <div className="bg-card rounded-lg p-4 border">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-muted-foreground">Order Number</span>
+            <span className="text-sm text-muted-foreground">
+              {t('deliveryStatus.labelOrderNumber')}
+            </span>
             <Badge variant="outline">{order.order_number}</Badge>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Type</span>
+            <span className="text-sm text-muted-foreground">{t('deliveryStatus.labelType')}</span>
             <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
               <Truck className="h-3 w-3 mr-1" />
-              Delivery
+              {t('deliveryStatus.badgeDelivery')}
             </Badge>
           </div>
           <div className="flex items-center justify-between mt-2">
-            <span className="text-sm text-muted-foreground">Placed</span>
+            <span className="text-sm text-muted-foreground">{t('deliveryStatus.labelPlaced')}</span>
             <span className="font-medium">{timeAgo(order.created_at)}</span>
           </div>
         </div>
@@ -68,7 +72,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
         <div className="bg-card rounded-lg p-4 border">
           <h2 className="font-semibold mb-3 flex items-center gap-2">
             <MapPin className="h-4 w-4" />
-            Delivery Details
+            {t('deliveryStatus.deliveryDetails')}
           </h2>
           <div className="space-y-2 text-sm">
             <div className="flex items-center gap-2">
@@ -89,7 +93,11 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
             {(order as any).delivery_person?.full_name && (
               <div className="flex items-center gap-2 pt-2 border-t mt-2">
                 <Truck className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Driver: {(order as any).delivery_person.full_name}</span>
+                <span>
+                  {t('deliveryStatus.driver', {
+                    name: (order as any).delivery_person.full_name,
+                  })}
+                </span>
               </div>
             )}
           </div>
@@ -97,7 +105,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
 
         {/* Status Timeline */}
         <div className="bg-card rounded-lg p-6 border">
-          <h2 className="font-semibold mb-4">Delivery Progress</h2>
+          <h2 className="font-semibold mb-4">{t('deliveryStatus.progressTitle')}</h2>
           <div className="space-y-4">
             {statusSteps.map((step, index) => {
               const isActive = index === currentStepIndex;
@@ -119,7 +127,11 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
                   </div>
                   <div className="flex-1">
                     <p className={`font-medium ${isActive ? 'text-primary' : ''}`}>{step.label}</p>
-                    {isActive && <p className="text-sm text-muted-foreground">In progress...</p>}
+                    {isActive && (
+                      <p className="text-sm text-muted-foreground">
+                        {t('deliveryStatus.inProgress')}
+                      </p>
+                    )}
                   </div>
                   {isCompleted && <CheckCircle2 className="h-5 w-5 text-green-500" />}
                 </div>
@@ -130,7 +142,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
           {order.status === 'pending_approval' && (
             <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
               <p className="text-sm text-center font-medium text-amber-800 dark:text-amber-200">
-                Your order is waiting for staff approval
+                {t('deliveryStatus.banner.pendingApproval')}
               </p>
             </div>
           )}
@@ -138,7 +150,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
           {order.status === 'out_for_delivery' && (
             <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-950 rounded-lg border border-purple-200 dark:border-purple-800">
               <p className="text-sm text-center font-medium text-purple-800 dark:text-purple-200">
-                Your order is on the way!
+                {t('deliveryStatus.banner.outForDelivery')}
               </p>
             </div>
           )}
@@ -146,7 +158,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
           {order.status === 'delivered' && (
             <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
               <p className="text-sm text-center font-medium text-green-800 dark:text-green-200">
-                Your order has been delivered!
+                {t('deliveryStatus.banner.delivered')}
               </p>
             </div>
           )}
@@ -154,7 +166,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
 
         {/* Order Items */}
         <div className="bg-card rounded-lg p-4 border">
-          <h2 className="font-semibold mb-4">Order Items</h2>
+          <h2 className="font-semibold mb-4">{t('deliveryStatus.orderItemsTitle')}</h2>
           <div className="space-y-3">
             {order.order_items?.map((item: any) => (
               <div
@@ -183,7 +195,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
             {settings?.tax_enabled && settings?.show_tax_separately ? (
               <>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">{t('subtotal', { ns: 'common' })}</span>
                   <span>{formatPrice(order.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -196,12 +208,12 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
             ) : null}
             {order.delivery_fee > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Delivery Fee</span>
+                <span className="text-muted-foreground">{t('deliveryFee', { ns: 'common' })}</span>
                 <span>{formatPrice(order.delivery_fee)}</span>
               </div>
             )}
             <div className="flex justify-between text-lg font-bold">
-              <span>Total</span>
+              <span>{t('total', { ns: 'common' })}</span>
               <span className="text-primary">
                 {formatPrice(order.total + (order.delivery_fee || 0))}
               </span>

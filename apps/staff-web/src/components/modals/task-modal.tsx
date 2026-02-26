@@ -1,6 +1,7 @@
 'use client';
 
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -14,10 +15,10 @@ interface TaskModalProps {
 }
 
 const PRIORITIES = [
-  { value: 'low' as const, label: 'Low', color: 'bg-gray-100 text-gray-700' },
-  { value: 'normal' as const, label: 'Normal', color: 'bg-blue-100 text-blue-700' },
-  { value: 'high' as const, label: 'High', color: 'bg-orange-100 text-orange-700' },
-  { value: 'urgent' as const, label: 'Urgent', color: 'bg-red-100 text-red-700' },
+  { value: 'low' as const, color: 'bg-gray-100 text-gray-700' },
+  { value: 'normal' as const, color: 'bg-blue-100 text-blue-700' },
+  { value: 'high' as const, color: 'bg-orange-100 text-orange-700' },
+  { value: 'urgent' as const, color: 'bg-red-100 text-red-700' },
 ];
 
 const WEEKDAYS = [
@@ -37,6 +38,7 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 });
 
 export function TaskModal({ task, onClose }: TaskModalProps) {
+  const { t } = useTranslation('staff');
   const isEditing = !!task;
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -67,11 +69,11 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
     e.preventDefault();
 
     if (!formData.title.trim()) {
-      toast.error('Please enter a task title');
+      toast.error(t('tasks.titleRequired'));
       return;
     }
 
-    const toastId = toast.loading(isEditing ? 'Updating task...' : 'Creating task...');
+    const toastId = toast.loading(isEditing ? t('tasks.updatingTask') : t('tasks.creatingTask'));
 
     try {
       const data: any = {
@@ -101,15 +103,15 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
 
       if (isEditing) {
         await updateTask.mutateAsync({ id: task.id, updates: data });
-        toast.success('Task updated!', { id: toastId });
+        toast.success(t('tasks.taskUpdated'), { id: toastId });
       } else {
         await createTask.mutateAsync(data);
-        toast.success('Task created!', { id: toastId });
+        toast.success(t('tasks.taskCreated'), { id: toastId });
       }
 
       onClose();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to save task', { id: toastId });
+      toast.error(error.message || t('tasks.failedSave'), { id: toastId });
     }
   };
 
@@ -118,7 +120,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">
-            {isEditing ? 'Edit Task' : 'New Task'}
+            {isEditing ? t('tasks.editTask') : t('tasks.newTask')}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
             &times;
@@ -128,38 +130,44 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('tasks.taskTitle')} *
+            </label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="What needs to be done?"
+              placeholder={t('tasks.whatNeedsDone')}
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('description', { ns: 'common' })}
+            </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={2}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Optional description"
+              placeholder={t('tasks.optionalDescription')}
             />
           </div>
 
           {/* Assign To */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('tasks.assignTo')}
+            </label>
             <select
               value={formData.assigned_to}
               onChange={(e) => setFormData({ ...formData, assigned_to: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Unassigned</option>
+              <option value="">{t('tasks.unassigned')}</option>
               {staffList
                 .filter((s: any) => s.is_active)
                 .map((s: any) => (
@@ -172,7 +180,9 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
 
           {/* Priority */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('tasks.priority')}
+            </label>
             <div className="flex gap-2">
               {PRIORITIES.map((p) => (
                 <button
@@ -185,7 +195,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
                       : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
                   }`}
                 >
-                  {p.label}
+                  {t(`tasks.${p.value}`)}
                 </button>
               ))}
             </div>
@@ -195,7 +205,9 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
           {!formData.is_recurring && (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('tasks.dueDate')}
+                </label>
                 <input
                   type="date"
                   value={formData.due_date}
@@ -204,13 +216,15 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Due Time</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('tasks.dueTime')}
+                </label>
                 <select
                   value={formData.due_time}
                   onChange={(e) => setFormData({ ...formData, due_time: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">No time</option>
+                  <option value="">{t('tasks.noTime')}</option>
                   {TIME_OPTIONS.map((time) => (
                     <option key={time} value={time}>
                       {time}
@@ -240,7 +254,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
                 className="h-4 w-4 text-blue-600 border-gray-300 rounded"
               />
               <label htmlFor="is_recurring" className="text-sm font-medium text-gray-700">
-                Make this a recurring task
+                {t('tasks.makeRecurring')}
               </label>
             </div>
           )}
@@ -248,7 +262,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
           {/* Recurring settings */}
           {formData.is_recurring && isAdmin && (
             <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm font-medium text-blue-800">Recurrence Settings</p>
+              <p className="text-sm font-medium text-blue-800">{t('tasks.recurrenceSettings')}</p>
 
               {/* Pattern */}
               <div className="flex gap-2">
@@ -265,7 +279,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
                         : 'bg-white text-gray-700 hover:bg-gray-100'
                     }`}
                   >
-                    {pattern.charAt(0).toUpperCase() + pattern.slice(1)}
+                    {t(`tasks.${pattern}`)}
                   </button>
                 ))}
               </div>
@@ -273,7 +287,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
               {/* Weekly: day checkboxes */}
               {formData.recurrence_pattern === 'weekly' && (
                 <div>
-                  <label className="block text-sm text-blue-700 mb-2">Which days?</label>
+                  <label className="block text-sm text-blue-700 mb-2">{t('tasks.whichDays')}</label>
                   <div className="flex gap-1">
                     {WEEKDAYS.map((day) => (
                       <button
@@ -296,7 +310,9 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
               {/* Monthly: day of month */}
               {formData.recurrence_pattern === 'monthly' && (
                 <div>
-                  <label className="block text-sm text-blue-700 mb-2">Day of month</label>
+                  <label className="block text-sm text-blue-700 mb-2">
+                    {t('tasks.dayOfMonth')}
+                  </label>
                   <input
                     type="number"
                     min="1"
@@ -316,13 +332,15 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
 
               {/* Default due time */}
               <div>
-                <label className="block text-sm text-blue-700 mb-2">Default Due Time</label>
+                <label className="block text-sm text-blue-700 mb-2">
+                  {t('tasks.defaultDueTime')}
+                </label>
                 <select
                   value={formData.due_time}
                   onChange={(e) => setFormData({ ...formData, due_time: e.target.value })}
                   className="w-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">No time</option>
+                  <option value="">{t('tasks.noTime')}</option>
                   {TIME_OPTIONS.map((time) => (
                     <option key={time} value={time}>
                       {time}
@@ -336,10 +354,10 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
-              Cancel
+              {t('cancel', { ns: 'common' })}
             </Button>
             <Button type="submit" className="flex-1">
-              {isEditing ? 'Update' : 'Create Task'}
+              {isEditing ? t('tasks.update') : t('tasks.newTask')}
             </Button>
           </div>
         </form>

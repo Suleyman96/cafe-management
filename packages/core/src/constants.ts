@@ -61,14 +61,6 @@ export const WAITER_CALL_REASONS = [
   { value: 'complaint', label: 'Complaint', emoji: '⚠️' },
 ] as const;
 
-// Languages
-export const LANGUAGES = [
-  { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'az', name: 'Azərbaycan', flag: '🇦🇿' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-  { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
-] as const;
-
 // Tax rate
 export const TAX_RATE = 0.18; // 18%
 
@@ -110,7 +102,6 @@ export const SOUNDS = {
 
 // Local storage keys
 export const STORAGE_KEYS = {
-  LANGUAGE: 'cafe-language',
   CART: 'cafe-cart',
   AUTH_TOKEN: 'cafe-auth-token',
   USER: 'cafe-user',

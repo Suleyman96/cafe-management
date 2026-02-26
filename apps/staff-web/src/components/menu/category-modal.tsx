@@ -1,6 +1,7 @@
 'use client';
 
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -32,13 +33,14 @@ const COMMON_ICONS = [
 ];
 
 export function CategoryModal({ category, onClose }: CategoryModalProps) {
+  const { t } = useTranslation('staff');
   const isEditing = !!category;
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
 
   const [formData, setFormData] = useState({
-    name_en: category?.name_en || '',
-    description_en: category?.description_en || '',
+    name: category?.name || '',
+    description: category?.description || '',
     icon: category?.icon || '📁',
     display_order: category?.display_order?.toString() || '0',
     is_active: category?.is_active !== false,
@@ -47,19 +49,14 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const toastId = toast.loading(isEditing ? 'Updating category...' : 'Creating category...');
+    const toastId = toast.loading(
+      isEditing ? t('menu.updatingCategory') : t('menu.creatingCategory'),
+    );
 
     try {
       const categoryData = {
         ...formData,
         display_order: parseInt(formData.display_order, 10),
-        // Add missing multilingual fields with defaults
-        name_az: formData.name_en,
-        name_ru: formData.name_en,
-        name_tr: formData.name_en,
-        description_az: formData.description_en,
-        description_ru: formData.description_en,
-        description_tr: formData.description_en,
       };
 
       if (isEditing) {
@@ -67,10 +64,10 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
           id: category.id,
           updates: categoryData,
         });
-        toast.success('Category updated successfully!', { id: toastId });
+        toast.success(t('menu.categoryUpdatedSuccess'), { id: toastId });
       } else {
         await createCategory.mutateAsync(categoryData);
-        toast.success('Category created successfully!', { id: toastId });
+        toast.success(t('menu.categoryCreatedSuccess'), { id: toastId });
       }
 
       onClose();
@@ -81,9 +78,9 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
       const errorMessage = error.message || 'Failed to save category';
 
       if (errorMessage.includes('infinite recursion') || errorMessage.includes('policy')) {
-        toast.error('Database permission error. Please run the latest migration.', { id: toastId });
+        toast.error(t('menu.dbPermissionError'), { id: toastId });
       } else if (errorMessage.includes('duplicate')) {
-        toast.error('A category with this name already exists.', { id: toastId });
+        toast.error(t('menu.duplicateCategory'), { id: toastId });
       } else {
         toast.error(errorMessage, { id: toastId });
       }
@@ -95,7 +92,7 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">
-            {isEditing ? 'Edit Category' : 'Add Category'}
+            {isEditing ? t('menu.editCategory') : t('menu.addCategory')}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
             ×
@@ -105,7 +102,7 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Icon */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('menu.icon')}</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {COMMON_ICONS.map((icon) => (
                 <button
@@ -126,40 +123,46 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
               type="text"
               value={formData.icon}
               onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-              placeholder="Or enter custom emoji"
+              placeholder={t('menu.customEmoji')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('name', { ns: 'common' })} *
+            </label>
             <input
               type="text"
-              value={formData.name_en}
-              onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Category name"
+              placeholder={t('menu.categoryNamePlaceholder')}
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('description', { ns: 'common' })}
+            </label>
             <textarea
-              value={formData.description_en}
-              onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Category description"
+              placeholder={t('menu.categoryDescriptionPlaceholder')}
             />
           </div>
 
           {/* Display Order and Active */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Display Order</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('menu.displayOrder')}
+              </label>
               <input
                 type="number"
                 value={formData.display_order}
@@ -175,7 +178,9 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                 />
-                <span className="text-sm font-medium text-gray-700">Active</span>
+                <span className="text-sm font-medium text-gray-700">
+                  {t('active', { ns: 'common' })}
+                </span>
               </label>
             </div>
           </div>
@@ -183,10 +188,10 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
-              Cancel
+              {t('cancel', { ns: 'common' })}
             </Button>
             <Button type="submit" className="flex-1">
-              {isEditing ? 'Update Category' : 'Create Category'}
+              {isEditing ? t('menu.updateCategory') : t('menu.createCategory')}
             </Button>
           </div>
         </form>

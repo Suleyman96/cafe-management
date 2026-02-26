@@ -34,14 +34,8 @@ export interface Database {
       categories: {
         Row: {
           id: string;
-          name_en: string;
-          name_az: string | null;
-          name_ru: string | null;
-          name_tr: string | null;
-          description_en: string | null;
-          description_az: string | null;
-          description_ru: string | null;
-          description_tr: string | null;
+          name: string;
+          description: string | null;
           icon: string | null;
           display_order: number;
           is_active: boolean;
@@ -58,14 +52,8 @@ export interface Database {
         Row: {
           id: string;
           category_id: string | null;
-          name_en: string;
-          name_az: string | null;
-          name_ru: string | null;
-          name_tr: string | null;
-          description_en: string | null;
-          description_az: string | null;
-          description_ru: string | null;
-          description_tr: string | null;
+          name: string;
+          description: string | null;
           price: number;
           image_url: string | null;
           preparation_time: number | null;
@@ -188,6 +176,7 @@ export interface Database {
           updated_at: string;
           last_login_at: string | null;
           auth_user_id: string | null;
+          preferred_language: string;
         };
         Insert: Omit<
           Database['public']['Tables']['staff']['Row'],
@@ -307,12 +296,17 @@ export interface Database {
           delivery_fee_default: number;
           minimum_delivery_amount: number;
           delivery_zone_info: string | null;
+          restaurant_address: string | null;
           // Contact & social
           contact_phone: string | null;
           contact_website: string | null;
           social_instagram: string | null;
           social_whatsapp: string | null;
+          social_tiktok: string | null;
+          social_telegram: string | null;
+          social_line: string | null;
           location_maps_url: string | null;
+          default_language: string;
           created_at: string;
           updated_at: string;
         };

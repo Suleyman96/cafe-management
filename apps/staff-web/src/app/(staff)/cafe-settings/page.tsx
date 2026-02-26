@@ -1,5 +1,6 @@
 'use client';
 
+import { LANGUAGES, useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
   ClipboardList,
@@ -23,6 +24,7 @@ import { useCafeSettings, useUpdateCafeSettings } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 
 export default function CafeSettingsPage() {
+  const { t } = useTranslation('staff');
   const { staff } = useAuth();
   const { data: settings, isLoading } = useCafeSettings();
   const updateSettings = useUpdateCafeSettings();
@@ -31,6 +33,7 @@ export default function CafeSettingsPage() {
   const [formData, setFormData] = useState({
     // Basic info
     restaurant_name: '',
+    restaurant_address: null as string | null,
     // Tax settings
     tax_enabled: true,
     tax_percentage: 18,
@@ -68,7 +71,12 @@ export default function CafeSettingsPage() {
     contact_website: null as string | null,
     social_instagram: null as string | null,
     social_whatsapp: null as string | null,
+    social_tiktok: null as string | null,
+    social_telegram: null as string | null,
+    social_line: null as string | null,
     location_maps_url: null as string | null,
+    // Language
+    default_language: 'en',
   });
 
   const [hasChanges, setHasChanges] = useState(false);
@@ -79,6 +87,7 @@ export default function CafeSettingsPage() {
     if (settings) {
       setFormData({
         restaurant_name: settings.restaurant_name,
+        restaurant_address: settings.restaurant_address ?? null,
         tax_enabled: settings.tax_enabled,
         tax_percentage: settings.tax_percentage,
         tax_label: settings.tax_label,
@@ -108,7 +117,11 @@ export default function CafeSettingsPage() {
         contact_website: settings.contact_website,
         social_instagram: settings.social_instagram,
         social_whatsapp: settings.social_whatsapp,
+        social_tiktok: settings.social_tiktok,
+        social_telegram: settings.social_telegram,
+        social_line: settings.social_line,
         location_maps_url: settings.location_maps_url,
+        default_language: settings.default_language ?? 'en',
       });
       setHasChanges(false);
     }
@@ -119,10 +132,7 @@ export default function CafeSettingsPage() {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">
-            You don't have permission to access this page. Only administrators can manage cafe
-            settings.
-          </p>
+          <p className="text-red-800">{t('cafeSettings.noPermission')}</p>
         </div>
       </div>
     );
@@ -144,10 +154,10 @@ export default function CafeSettingsPage() {
   const handleSave = async () => {
     try {
       await updateSettings.mutateAsync(formData);
-      toast.success('Settings saved successfully');
+      toast.success(t('cafeSettings.settingsSaved'));
       setHasChanges(false);
     } catch (_error) {
-      toast.error('Failed to save settings');
+      toast.error(t('cafeSettings.failedSave'));
     }
   };
 
@@ -155,6 +165,7 @@ export default function CafeSettingsPage() {
     if (settings) {
       setFormData({
         restaurant_name: settings.restaurant_name,
+        restaurant_address: settings.restaurant_address ?? null,
         tax_enabled: settings.tax_enabled,
         tax_percentage: settings.tax_percentage,
         tax_label: settings.tax_label,
@@ -184,7 +195,11 @@ export default function CafeSettingsPage() {
         contact_website: settings.contact_website,
         social_instagram: settings.social_instagram,
         social_whatsapp: settings.social_whatsapp,
+        social_tiktok: settings.social_tiktok,
+        social_telegram: settings.social_telegram,
+        social_line: settings.social_line,
         location_maps_url: settings.location_maps_url,
+        default_language: settings.default_language ?? 'en',
       });
       setHasChanges(false);
     }
@@ -199,7 +214,7 @@ export default function CafeSettingsPage() {
   return (
     <div className="p-3 sm:p-6 max-w-4xl pb-24">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold">Cafe Settings</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">{t('cafeSettings.title')}</h1>
         {hasChanges && (
           <div className="flex gap-2">
             <Button
@@ -209,11 +224,13 @@ export default function CafeSettingsPage() {
               disabled={updateSettings.isPending}
             >
               <RotateCcw className="h-4 w-4 mr-2" />
-              Reset
+              {t('reset', { ns: 'common' })}
             </Button>
             <Button size="sm" onClick={handleSave} disabled={updateSettings.isPending}>
               <Save className="h-4 w-4 mr-2" />
-              {updateSettings.isPending ? 'Saving...' : 'Save Changes'}
+              {updateSettings.isPending
+                ? t('saving', { ns: 'common' })
+                : t('saveChanges', { ns: 'common' })}
             </Button>
           </div>
         )}
@@ -244,12 +261,12 @@ export default function CafeSettingsPage() {
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <Store className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold">Restaurant Information</h2>
+              <h2 className="text-lg font-semibold">{t('cafeSettings.restaurantInformation')}</h2>
             </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Restaurant Name
+                  {t('cafeSettings.restaurantName')}
                 </label>
                 <input
                   type="text"
@@ -258,6 +275,37 @@ export default function CafeSettingsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Restaurant Address
+                </label>
+                <input
+                  type="text"
+                  value={formData.restaurant_address || ''}
+                  onChange={(e) => handleChange('restaurant_address', e.target.value || null)}
+                  placeholder="123 Main Street, City, Country"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Default Menu Language
+                </label>
+                <p className="text-xs text-gray-500 mb-1">
+                  Language shown to customers when they first scan the QR code
+                </p>
+                <select
+                  value={formData.default_language}
+                  onChange={(e) => handleChange('default_language', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {LANGUAGES.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.flag} {lang.nativeName} ({lang.name})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -265,13 +313,15 @@ export default function CafeSettingsPage() {
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <Receipt className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold">Tax Settings</h2>
+              <h2 className="text-lg font-semibold">{t('cafeSettings.taxSettings')}</h2>
             </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Enable Tax</label>
-                  <p className="text-xs text-gray-500">Turn on to apply tax to orders</p>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {t('cafeSettings.enableTax')}
+                  </label>
+                  <p className="text-xs text-gray-500">{t('cafeSettings.turnOnTax')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -289,7 +339,7 @@ export default function CafeSettingsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Tax Percentage
+                        {t('cafeSettings.taxPercentage')}
                       </label>
                       <div className="relative">
                         <input
@@ -308,7 +358,7 @@ export default function CafeSettingsPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Tax Label
+                        {t('cafeSettings.taxLabel')}
                       </label>
                       <input
                         type="text"
@@ -321,9 +371,11 @@ export default function CafeSettingsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
-                        Prices Include Tax
+                        {t('cafeSettings.pricesIncludeTax')}
                       </label>
-                      <p className="text-xs text-gray-500">Menu prices already have tax included</p>
+                      <p className="text-xs text-gray-500">
+                        {t('cafeSettings.menuPricesTaxIncluded')}
+                      </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -338,9 +390,9 @@ export default function CafeSettingsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
-                        Show Tax Separately
+                        {t('cafeSettings.showTaxSeparately')}
                       </label>
-                      <p className="text-xs text-gray-500">Display tax as a separate line</p>
+                      <p className="text-xs text-gray-500">{t('cafeSettings.displayTaxLine')}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -361,13 +413,13 @@ export default function CafeSettingsPage() {
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <DollarSign className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold">Currency Settings</h2>
+              <h2 className="text-lg font-semibold">{t('cafeSettings.currencySettings')}</h2>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Currency Symbol
+                    {t('cafeSettings.currencySymbol')}
                   </label>
                   <input
                     type="text"
@@ -378,7 +430,7 @@ export default function CafeSettingsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Currency Code
+                    {t('cafeSettings.currencyCode')}
                   </label>
                   <input
                     type="text"
@@ -392,20 +444,20 @@ export default function CafeSettingsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Symbol Position
+                    {t('cafeSettings.symbolPosition')}
                   </label>
                   <select
                     value={formData.currency_position}
                     onChange={(e) => handleChange('currency_position', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="before">Before ($10)</option>
-                    <option value="after">After (10₼)</option>
+                    <option value="before">{t('cafeSettings.before')}</option>
+                    <option value="after">{t('cafeSettings.after')}</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Decimal Places
+                    {t('cafeSettings.decimalPlaces')}
                   </label>
                   <select
                     value={formData.currency_decimal_places}
@@ -427,12 +479,12 @@ export default function CafeSettingsPage() {
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <ClipboardList className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold">Order Settings</h2>
+              <h2 className="text-lg font-semibold">{t('cafeSettings.orderSettings')}</h2>
             </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Minimum Order Amount
+                  {t('cafeSettings.minimumOrderAmount')}
                 </label>
                 <div className="relative w-48">
                   <span className="absolute left-3 top-2 text-gray-500">
@@ -453,9 +505,9 @@ export default function CafeSettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Allow Item Notes
+                    {t('cafeSettings.allowItemNotes')}
                   </label>
-                  <p className="text-xs text-gray-500">Customers can add notes to items</p>
+                  <p className="text-xs text-gray-500">{t('cafeSettings.customersNotesItems')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -470,9 +522,9 @@ export default function CafeSettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Allow Order Notes
+                    {t('cafeSettings.allowOrderNotes')}
                   </label>
-                  <p className="text-xs text-gray-500">Customers can add notes to orders</p>
+                  <p className="text-xs text-gray-500">{t('cafeSettings.customersNotesOrders')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -486,10 +538,10 @@ export default function CafeSettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Enable Tips</label>
-                  <p className="text-xs text-gray-500">
-                    Allow staff to collect tips during payment
-                  </p>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {t('cafeSettings.enableTips')}
+                  </label>
+                  <p className="text-xs text-gray-500">{t('cafeSettings.allowStaffTips')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -503,10 +555,10 @@ export default function CafeSettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Waste Tracking</label>
-                  <p className="text-xs text-gray-500">
-                    Track food waste to identify patterns and reduce costs
-                  </p>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {t('cafeSettings.wasteTracking')}
+                  </label>
+                  <p className="text-xs text-gray-500">{t('cafeSettings.trackFoodWaste')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -524,15 +576,15 @@ export default function CafeSettingsPage() {
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <Truck className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold">Delivery Settings</h2>
+              <h2 className="text-lg font-semibold">{t('cafeSettings.deliverySettings')}</h2>
             </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Enable Delivery</label>
-                  <p className="text-xs text-gray-500">
-                    Allow customers to order for delivery via direct link
-                  </p>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {t('cafeSettings.enableDelivery')}
+                  </label>
+                  <p className="text-xs text-gray-500">{t('cafeSettings.allowDeliveryOrders')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -550,7 +602,7 @@ export default function CafeSettingsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Default Delivery Fee
+                        {t('cafeSettings.defaultDeliveryFee')}
                       </label>
                       <div className="relative">
                         <span className="absolute left-3 top-2 text-gray-500">
@@ -570,7 +622,7 @@ export default function CafeSettingsPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Minimum Delivery Amount
+                        {t('cafeSettings.minimumDeliveryAmount')}
                       </label>
                       <div className="relative">
                         <span className="absolute left-3 top-2 text-gray-500">
@@ -591,15 +643,15 @@ export default function CafeSettingsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Delivery Zone Info
+                      {t('cafeSettings.deliveryZoneInfo')}
                     </label>
                     <p className="text-xs text-gray-500 mb-1">
-                      Describe your delivery area (shown to customers)
+                      {t('cafeSettings.deliveryZoneDescribe')}
                     </p>
                     <textarea
                       value={formData.delivery_zone_info || ''}
                       onChange={(e) => handleChange('delivery_zone_info', e.target.value || null)}
-                      placeholder="e.g., We deliver within 5km of our restaurant..."
+                      placeholder={t('cafeSettings.deliveryZonePlaceholder')}
                       rows={2}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -618,22 +670,22 @@ export default function CafeSettingsPage() {
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <Palette className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold">Logo & Images</h2>
+              <h2 className="text-lg font-semibold">{t('cafeSettings.logoImages')}</h2>
             </div>
             <div className="grid sm:grid-cols-2 gap-6">
               <ImageUpload
                 value={formData.cafe_logo_url}
                 onChange={(url) => handleChange('cafe_logo_url', url)}
-                label="Restaurant Logo"
-                hint="Recommended: Square image, 512x512px"
+                label={t('cafeSettings.restaurantLogo')}
+                hint={t('cafeSettings.logoHint')}
                 aspectRatio="square"
                 folder="logos"
               />
               <ImageUpload
                 value={formData.hero_image_url}
                 onChange={(url) => handleChange('hero_image_url', url)}
-                label="Hero Background"
-                hint="Displayed on customer landing page"
+                label={t('cafeSettings.heroBackground')}
+                hint={t('cafeSettings.heroHint')}
                 aspectRatio="wide"
                 folder="backgrounds"
               />
@@ -642,20 +694,18 @@ export default function CafeSettingsPage() {
 
           {/* Brand Colors */}
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 className="text-lg font-semibold mb-4">Brand Colors</h2>
-            <p className="text-sm text-gray-500 mb-4">
-              These colors will be used for buttons and accents on the customer menu.
-            </p>
+            <h2 className="text-lg font-semibold mb-4">{t('cafeSettings.brandColors')}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t('cafeSettings.colorsInfo')}</p>
             <div className="grid sm:grid-cols-2 gap-6">
               <ColorPicker
                 value={formData.brand_primary_color}
                 onChange={(color) => handleChange('brand_primary_color', color)}
-                label="Primary Color"
+                label={t('cafeSettings.primaryColor')}
               />
               <ColorPicker
                 value={formData.brand_secondary_color}
                 onChange={(color) => handleChange('brand_secondary_color', color)}
-                label="Secondary Color"
+                label={t('cafeSettings.secondaryColor')}
               />
             </div>
           </div>
@@ -664,32 +714,30 @@ export default function CafeSettingsPage() {
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <MessageSquare className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold">Welcome Screen</h2>
+              <h2 className="text-lg font-semibold">{t('cafeSettings.welcomeScreen')}</h2>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
-              Customize what customers see when they scan the QR code.
-            </p>
+            <p className="text-sm text-gray-500 mb-4">{t('cafeSettings.customizeWelcome')}</p>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Welcome Heading
+                  {t('cafeSettings.welcomeHeading')}
                 </label>
                 <input
                   type="text"
                   value={formData.welcome_heading || ''}
                   onChange={(e) => handleChange('welcome_heading', e.target.value || null)}
-                  placeholder="e.g., Welcome! / Xoş gəlmisiniz!"
+                  placeholder={t('cafeSettings.welcomeHeadingPlaceholder')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Welcome Message
+                  {t('cafeSettings.welcomeMessage')}
                 </label>
                 <textarea
                   value={formData.welcome_message || ''}
                   onChange={(e) => handleChange('welcome_message', e.target.value || null)}
-                  placeholder="e.g., WiFi: CafeGuest / Pass: 12345"
+                  placeholder={t('cafeSettings.welcomeMessagePlaceholder')}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -701,16 +749,14 @@ export default function CafeSettingsPage() {
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <QrCode className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold">QR Menu Features</h2>
+              <h2 className="text-lg font-semibold">{t('cafeSettings.qrMenuFeatures')}</h2>
             </div>
             <div className="flex items-center justify-between">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Enable QR Ordering
+                  {t('cafeSettings.enableQrOrdering')}
                 </label>
-                <p className="text-xs text-gray-500">
-                  Allow customers to place orders from QR menu. Disable for view-only menu.
-                </p>
+                <p className="text-xs text-gray-500">{t('cafeSettings.qrOrderingInfo')}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -733,14 +779,14 @@ export default function CafeSettingsPage() {
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <Phone className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold">Contact Information</h2>
+              <h2 className="text-lg font-semibold">{t('cafeSettings.contactInformation')}</h2>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
-              These will appear as clickable icons on the customer menu.
-            </p>
+            <p className="text-sm text-gray-500 mb-4">{t('cafeSettings.contactInfo')}</p>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('cafeSettings.phoneNumber')}
+                </label>
                 <input
                   type="tel"
                   value={formData.contact_phone || ''}
@@ -750,7 +796,9 @@ export default function CafeSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('cafeSettings.website')}
+                </label>
                 <input
                   type="url"
                   value={formData.contact_website || ''}
@@ -766,11 +814,13 @@ export default function CafeSettingsPage() {
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <Globe className="h-5 w-5 text-gray-600" />
-              <h2 className="text-lg font-semibold">Social Media</h2>
+              <h2 className="text-lg font-semibold">{t('cafeSettings.socialMedia')}</h2>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Instagram</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('cafeSettings.instagram')}
+                </label>
                 <input
                   type="url"
                   value={formData.social_instagram || ''}
@@ -780,7 +830,9 @@ export default function CafeSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('cafeSettings.whatsapp')}
+                </label>
                 <input
                   type="url"
                   value={formData.social_whatsapp || ''}
@@ -790,7 +842,39 @@ export default function CafeSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Google Maps</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">TikTok</label>
+                <input
+                  type="url"
+                  value={formData.social_tiktok || ''}
+                  onChange={(e) => handleChange('social_tiktok', e.target.value || null)}
+                  placeholder="https://tiktok.com/@yourrestaurant"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Telegram</label>
+                <input
+                  type="url"
+                  value={formData.social_telegram || ''}
+                  onChange={(e) => handleChange('social_telegram', e.target.value || null)}
+                  placeholder="https://t.me/yourrestaurant"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">LINE</label>
+                <input
+                  type="url"
+                  value={formData.social_line || ''}
+                  onChange={(e) => handleChange('social_line', e.target.value || null)}
+                  placeholder="https://line.me/R/ti/p/@yourrestaurant"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('cafeSettings.googleMaps')}
+                </label>
                 <input
                   type="url"
                   value={formData.location_maps_url || ''}
@@ -814,10 +898,12 @@ export default function CafeSettingsPage() {
               onClick={handleReset}
               disabled={updateSettings.isPending}
             >
-              Reset
+              {t('reset', { ns: 'common' })}
             </Button>
             <Button className="flex-1" onClick={handleSave} disabled={updateSettings.isPending}>
-              {updateSettings.isPending ? 'Saving...' : 'Save Changes'}
+              {updateSettings.isPending
+                ? t('saving', { ns: 'common' })
+                : t('saveChanges', { ns: 'common' })}
             </Button>
           </div>
         </div>

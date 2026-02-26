@@ -1,6 +1,7 @@
 'use client';
 
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ interface StockMovementModalProps {
 }
 
 export function StockMovementModal({ item, defaultType = 'in', onClose }: StockMovementModalProps) {
+  const { t } = useTranslation('staff');
   const adjustStock = useAdjustStock();
   const { staff } = useAuth();
 
@@ -36,16 +38,16 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
 
     const qty = Number.parseFloat(formData.quantity);
     if (!qty || qty <= 0) {
-      toast.error('Please enter a valid quantity');
+      toast.error(t('stock.validQuantity'));
       return;
     }
 
     if (formData.type === 'out' && qty > item.quantity) {
-      toast.error('Cannot remove more than current stock');
+      toast.error(t('stock.cannotRemoveMore'));
       return;
     }
 
-    const toastId = toast.loading('Adjusting stock...');
+    const toastId = toast.loading(t('stock.adjusting'));
 
     try {
       await adjustStock.mutateAsync({
@@ -57,10 +59,10 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
           performedBy: staff?.id,
         },
       });
-      toast.success('Stock adjusted!', { id: toastId });
+      toast.success(t('stock.adjusted'), { id: toastId });
       onClose();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to adjust stock', { id: toastId });
+      toast.error(error.message || t('stock.failedAdjust'), { id: toastId });
     }
   };
 
@@ -68,7 +70,9 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
         <div className="border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Adjust Stock: {item.name}</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            {t('stock.adjustStock', { name: item.name })}
+          </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
             &times;
           </button>
@@ -77,7 +81,7 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Current Stock */}
           <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <p className="text-sm text-gray-500">Current Stock</p>
+            <p className="text-sm text-gray-500">{t('stock.currentStock')}</p>
             <p className="text-2xl font-bold text-gray-900">
               {item.quantity} {item.unit}
             </p>
@@ -85,7 +89,9 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
 
           {/* Movement Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('stock.movementType')}
+            </label>
             <div className="grid grid-cols-3 gap-2">
               {(['in', 'out', 'adjustment'] as const).map((type) => (
                 <button
@@ -102,7 +108,11 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
                       : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                   }`}
                 >
-                  {type === 'in' ? 'Add (+)' : type === 'out' ? 'Remove (-)' : 'Set to'}
+                  {type === 'in'
+                    ? t('stock.addPlus')
+                    : type === 'out'
+                      ? t('stock.removeMinus')
+                      : t('stock.setTo')}
                 </button>
               ))}
             </div>
@@ -111,7 +121,9 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
           {/* Quantity */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {formData.type === 'adjustment' ? 'New Quantity' : 'Quantity'}
+              {formData.type === 'adjustment'
+                ? t('stock.newQuantity')
+                : t('stock.movementQuantity')}
             </label>
             <input
               type="number"
@@ -121,14 +133,14 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
               onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder={`Enter ${formData.type === 'adjustment' ? 'new quantity' : 'quantity'}`}
+              placeholder={`${formData.type === 'adjustment' ? t('stock.newQuantity').toLowerCase() : t('stock.movementQuantity').toLowerCase()}`}
             />
           </div>
 
           {/* New Stock Preview */}
           {formData.quantity && (
             <div className="bg-blue-50 rounded-lg p-3 text-center">
-              <p className="text-sm text-blue-600">New Stock Level</p>
+              <p className="text-sm text-blue-600">{t('stock.newStockLevel')}</p>
               <p className="text-xl font-bold text-blue-900">
                 {getNewQuantity().toFixed(2)} {item.unit}
               </p>
@@ -137,23 +149,25 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
 
           {/* Reason */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('reports.reason')}
+            </label>
             <input
               type="text"
               value={formData.reason}
               onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Optional reason for adjustment"
+              placeholder={t('stock.reasonPlaceholder')}
             />
           </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
-              Cancel
+              {t('cancel', { ns: 'common' })}
             </Button>
             <Button type="submit" className="flex-1">
-              Confirm
+              {t('confirm', { ns: 'common' })}
             </Button>
           </div>
         </form>

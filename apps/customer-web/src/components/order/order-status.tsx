@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { ArrowLeft, Bell, CheckCircle2, Clock, Hourglass, MessageSquare, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -20,6 +21,7 @@ interface OrderStatusProps {
 
 export function OrderStatus({ tableId }: OrderStatusProps) {
   const router = useRouter();
+  const { t } = useTranslation('customer');
 
   // Fetch table to get the actual UUID for database operations
   const { data: table, isLoading: tableLoading } = useTable(tableId);
@@ -40,22 +42,22 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold mb-2">No Active Order</h1>
-          <p className="text-muted-foreground">You don't have any active orders yet.</p>
+          <h1 className="text-2xl font-bold mb-2">{t('orderStatus.noOrderTitle')}</h1>
+          <p className="text-muted-foreground">{t('orderStatus.noOrderSubtext')}</p>
         </div>
         <Button size="lg" onClick={() => router.push(`/table/${tableId}/menu`)}>
-          Browse Menu
+          {t('orderStatus.browseMenu')}
         </Button>
       </div>
     );
   }
 
   const statusSteps = [
-    { key: 'pending_approval', label: 'Awaiting Approval', icon: Hourglass },
-    { key: 'new', label: 'Order Confirmed', icon: CheckCircle2 },
-    { key: 'preparing', label: 'Preparing', icon: Clock },
-    { key: 'ready', label: 'Ready', icon: CheckCircle2 },
-    { key: 'served', label: 'Served', icon: CheckCircle2 },
+    { key: 'pending_approval', label: t('orderStatus.step.awaitingApproval'), icon: Hourglass },
+    { key: 'new', label: t('orderStatus.step.orderConfirmed'), icon: CheckCircle2 },
+    { key: 'preparing', label: t('orderStatus.step.preparing'), icon: Clock },
+    { key: 'ready', label: t('orderStatus.step.ready'), icon: CheckCircle2 },
+    { key: 'served', label: t('orderStatus.step.served'), icon: CheckCircle2 },
   ];
 
   const currentStepIndex = statusSteps.findIndex((step) => step.key === order.status);
@@ -68,7 +70,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold">Order Status</h1>
+          <h1 className="text-xl font-bold">{t('orderStatus.header')}</h1>
           <div className="w-10" />
         </div>
       </div>
@@ -77,22 +79,24 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
         {/* Order Header */}
         <div className="bg-card rounded-lg p-4 border">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-muted-foreground">Order Number</span>
+            <span className="text-sm text-muted-foreground">
+              {t('orderStatus.labelOrderNumber')}
+            </span>
             <Badge variant="outline">{order.order_number}</Badge>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Table</span>
+            <span className="text-sm text-muted-foreground">{t('orderStatus.labelTable')}</span>
             <span className="font-medium">{order.table.table_number}</span>
           </div>
           <div className="flex items-center justify-between mt-2">
-            <span className="text-sm text-muted-foreground">Placed</span>
+            <span className="text-sm text-muted-foreground">{t('orderStatus.labelPlaced')}</span>
             <span className="font-medium">{timeAgo(order.created_at)}</span>
           </div>
         </div>
 
         {/* Status Timeline */}
         <div className="bg-card rounded-lg p-6 border">
-          <h2 className="font-semibold mb-4">Order Progress</h2>
+          <h2 className="font-semibold mb-4">{t('orderStatus.progressTitle')}</h2>
           <div className="space-y-4">
             {statusSteps.map((step, index) => {
               const isActive = index === currentStepIndex;
@@ -114,7 +118,9 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
                   </div>
                   <div className="flex-1">
                     <p className={`font-medium ${isActive ? 'text-primary' : ''}`}>{step.label}</p>
-                    {isActive && <p className="text-sm text-muted-foreground">In progress...</p>}
+                    {isActive && (
+                      <p className="text-sm text-muted-foreground">{t('orderStatus.inProgress')}</p>
+                    )}
                   </div>
                   {isCompleted && <CheckCircle2 className="h-5 w-5 text-green-500" />}
                 </div>
@@ -125,10 +131,10 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
           {order.status === 'pending_approval' && (
             <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
               <p className="text-sm text-center font-medium text-amber-800 dark:text-amber-200">
-                ⏳ Your order is waiting for staff approval
+                ⏳ {t('orderStatus.banner.pendingApproval')}
               </p>
               <p className="text-xs text-center text-amber-600 dark:text-amber-400 mt-1">
-                A staff member will confirm your order shortly
+                {t('orderStatus.banner.pendingApprovalSub')}
               </p>
             </div>
           )}
@@ -136,29 +142,27 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
           {order.status === 'new' && (
             <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-center font-medium text-blue-800 dark:text-blue-200">
-                ✓ Your order has been confirmed!
+                ✓ {t('orderStatus.banner.confirmed')}
               </p>
             </div>
           )}
 
           {order.status === 'preparing' && (
             <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
-              <p className="text-sm text-center">🔥 Your order is being prepared in the kitchen</p>
+              <p className="text-sm text-center">🔥 {t('orderStatus.banner.preparing')}</p>
             </div>
           )}
 
           {order.status === 'ready' && (
             <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 rounded-lg">
-              <p className="text-sm text-center font-medium">
-                ✨ Your order is ready! A waiter will serve you shortly.
-              </p>
+              <p className="text-sm text-center font-medium">✨ {t('orderStatus.banner.ready')}</p>
             </div>
           )}
         </div>
 
         {/* Order Items */}
         <div className="bg-card rounded-lg p-4 border">
-          <h2 className="font-semibold mb-4">Order Items</h2>
+          <h2 className="font-semibold mb-4">{t('orderStatus.orderItemsTitle')}</h2>
           <div className="space-y-3">
             {order.order_items.map((item) => (
               <div
@@ -189,7 +193,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
             {settings?.tax_enabled && settings?.show_tax_separately ? (
               <>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">{t('subtotal', { ns: 'common' })}</span>
                   <span>{formatPrice(order.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -201,7 +205,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
               </>
             ) : null}
             <div className="flex justify-between text-lg font-bold">
-              <span>Total</span>
+              <span>{t('total', { ns: 'common' })}</span>
               <span className="text-primary">{formatPrice(order.total)}</span>
             </div>
           </div>
@@ -229,7 +233,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
               onClick={() => setShowCallStaffModal(true)}
             >
               <Bell className="mr-2 h-5 w-5" />
-              Call Staff
+              {t('orderStatus.callStaff')}
             </Button>
 
             <Button
@@ -239,7 +243,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
               onClick={() => setShowFeedbackForm(true)}
             >
               <MessageSquare className="mr-2 h-5 w-5" />
-              Send Feedback
+              {t('orderStatus.sendFeedback')}
             </Button>
 
             {(order.status === 'pending_approval' || order.status === 'new') && (
@@ -250,7 +254,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
                 onClick={() => router.push(`/table/${tableId}/menu`)}
               >
                 <Plus className="mr-2 h-5 w-5" />
-                Add More Items
+                {t('orderStatus.addMoreItems')}
               </Button>
             )}
           </div>
