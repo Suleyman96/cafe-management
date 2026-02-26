@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { Bell, BellOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation('staff');
   const [audioEnabled, setAudioEnabled] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('staff-audio-enabled');
@@ -130,14 +132,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         .play()
         .then(() => {
           audioUnlockedRef.current = true;
-          toast.success('Notifications enabled!');
+          toast.success(t('notifications.enabled'));
         })
         .catch((err) => {
           console.error('Audio play failed:', err.message);
-          toast.error('Could not enable sound. Try clicking again.');
+          toast.error(t('notifications.enableFailed'));
         });
     } else if (!newState) {
-      toast.info('Notifications muted');
+      toast.info(t('notifications.muted'));
     }
   };
 
@@ -153,8 +155,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           console.log('[Notifications] waiter_calls event:', payload.eventType);
           if (payload.eventType === 'INSERT') {
             playSound(waiterCallAudioRef.current);
-            toast.info('New staff call!', {
-              description: 'Table needs assistance',
+            toast.info(t('notifications.newStaffCall'), {
+              description: t('notifications.tableNeedsAssistance'),
               duration: 5000,
             });
           }
@@ -167,7 +169,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [playSound]);
+  }, [playSound, t]);
 
   // Orders subscription
   useEffect(() => {
@@ -180,14 +182,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           const newOrder = payload.new as any;
           if (newOrder.status === 'pending_approval') {
             playSound(notificationAudioRef.current);
-            toast.info('New QR Order!', {
-              description: 'Customer placed an order via QR code',
+            toast.info(t('notifications.newQrOrder'), {
+              description: t('notifications.qrOrderDescription'),
               duration: 5000,
             });
           } else {
             playSound(orderAudioRef.current);
-            toast.info('New Order!', {
-              description: 'New order created',
+            toast.info(t('notifications.newOrder'), {
+              description: t('notifications.newOrderDescription'),
               duration: 3000,
             });
           }
@@ -198,8 +200,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           if (newOrder.status === 'ready' && oldOrder.status !== 'ready') {
             console.log('[Notifications] Order ready!');
             playSound(notificationAudioRef.current);
-            toast.success('Order Ready!', {
-              description: 'An order is ready to be served',
+            toast.success(t('notifications.orderReady'), {
+              description: t('notifications.orderReadyDescription'),
               duration: 5000,
             });
           }
@@ -212,7 +214,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [playSound]);
+  }, [playSound, t]);
 
   // Order items subscription (for items added to existing orders)
   useEffect(() => {
@@ -223,8 +225,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         console.log('[Notifications] order_items event:', payload.eventType);
         if (payload.eventType === 'INSERT') {
           playSound(orderAudioRef.current);
-          toast.info('New items added!', {
-            description: 'Items were added to an order',
+          toast.info(t('notifications.newItemsAdded'), {
+            description: t('notifications.itemsAddedDescription'),
             duration: 3000,
           });
         }
@@ -236,7 +238,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [playSound]);
+  }, [playSound, t]);
 
   return (
     <>
@@ -251,7 +253,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             : 'bg-gray-500 hover:bg-gray-600 text-white'
         }`}
         title={
-          audioEnabled ? 'Notifications ON (click to mute)' : 'Notifications OFF (click to enable)'
+          audioEnabled
+            ? t('notifications.notificationsOnTitle')
+            : t('notifications.notificationsOffTitle')
         }
       >
         {audioEnabled ? (
@@ -260,7 +264,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           <BellOff className="h-5 w-5" />
         )}
         <span className="text-sm font-medium hidden sm:inline">
-          {audioEnabled ? 'Sound ON' : 'Sound OFF'}
+          {audioEnabled ? t('notifications.soundOn') : t('notifications.soundOff')}
         </span>
       </button>
     </>

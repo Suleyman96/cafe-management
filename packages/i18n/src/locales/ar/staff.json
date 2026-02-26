@@ -787,5 +787,23 @@
   "stock.optionalNotes": "ملاحظات اختيارية",
   "stock.optionalSupplier": "اسم المورد (اختياري)",
   "stock.coffeeBeans": "مثال: حبوب القهوة",
-  "stock.costPricePerUnit": "سعر التكلفة لكل وحدة"
+  "stock.costPricePerUnit": "سعر التكلفة لكل وحدة",
+
+  "notifications.soundOn": "الصوت مفعّل",
+  "notifications.soundOff": "الصوت مُعطّل",
+  "notifications.notificationsOnTitle": "الإشعارات مفعّلة (اضغط لكتم الصوت)",
+  "notifications.notificationsOffTitle": "الإشعارات مُعطّلة (اضغط للتفعيل)",
+  "notifications.enabled": "تم تفعيل الإشعارات!",
+  "notifications.muted": "تم كتم الإشعارات",
+  "notifications.enableFailed": "تعذّر تفعيل الصوت. حاول الضغط مرة أخرى.",
+  "notifications.newStaffCall": "استدعاء جديد للموظف!",
+  "notifications.tableNeedsAssistance": "الطاولة تحتاج مساعدة",
+  "notifications.newQrOrder": "طلب QR جديد!",
+  "notifications.qrOrderDescription": "قام العميل بتقديم طلب عبر رمز QR",
+  "notifications.newOrder": "طلب جديد!",
+  "notifications.newOrderDescription": "تم إنشاء طلب جديد",
+  "notifications.orderReady": "الطلب جاهز!",
+  "notifications.orderReadyDescription": "هناك طلب جاهز للتقديم",
+  "notifications.newItemsAdded": "تمت إضافة أصناف جديدة!",
+  "notifications.itemsAddedDescription": "تمت إضافة أصناف إلى طلب"
 }

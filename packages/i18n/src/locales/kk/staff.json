@@ -787,5 +787,23 @@
   "stock.optionalNotes": "Қосымша жазбалар",
   "stock.optionalSupplier": "Жеткізуші атауы (міндетті емес)",
   "stock.coffeeBeans": "мыс., Кофе дәндері",
-  "stock.costPricePerUnit": "Бірлік құны"
+  "stock.costPricePerUnit": "Бірлік құны",
+
+  "notifications.soundOn": "Дыбыс ҚОСУЛДЫ",
+  "notifications.soundOff": "Дыбыс ӨШІРІЛДІ",
+  "notifications.notificationsOnTitle": "Хабарландырулар ҚОСУЛДЫ (өшіру үшін басыңыз)",
+  "notifications.notificationsOffTitle": "Хабарландырулар ӨШІРІЛДІ (қосу үшін басыңыз)",
+  "notifications.enabled": "Хабарландырулар қосылды!",
+  "notifications.muted": "Хабарландырулар өшірілді",
+  "notifications.enableFailed": "Дыбысты қосу мүмкін болмады. Қайта басып көріңіз.",
+  "notifications.newStaffCall": "Жаңа қызметкер шақыруы!",
+  "notifications.tableNeedsAssistance": "Үстелге көмек қажет",
+  "notifications.newQrOrder": "Жаңа QR тапсырыс!",
+  "notifications.qrOrderDescription": "Тұтынушы QR код арқылы тапсырыс берді",
+  "notifications.newOrder": "Жаңа тапсырыс!",
+  "notifications.newOrderDescription": "Жаңа тапсырыс жасалды",
+  "notifications.orderReady": "Тапсырыс дайын!",
+  "notifications.orderReadyDescription": "Тапсырыс беруге дайын",
+  "notifications.newItemsAdded": "Жаңа тауарлар қосылды!",
+  "notifications.itemsAddedDescription": "Тапсырысқа тауарлар қосылды"
 }

@@ -787,5 +787,23 @@
   "stock.optionalNotes": "Нотатки (необов'язково)",
   "stock.optionalSupplier": "Постачальник (необов'язково)",
   "stock.coffeeBeans": "Напр., Кавові зерна",
-  "stock.costPricePerUnit": "Собівартість за одиницю"
+  "stock.costPricePerUnit": "Собівартість за одиницю",
+
+  "notifications.soundOn": "Звук УВІМК",
+  "notifications.soundOff": "Звук ВИМК",
+  "notifications.notificationsOnTitle": "Сповіщення УВІМК (натисніть, щоб вимкнути звук)",
+  "notifications.notificationsOffTitle": "Сповіщення ВИМК (натисніть, щоб увімкнути)",
+  "notifications.enabled": "Сповіщення увімкнено!",
+  "notifications.muted": "Сповіщення вимкнено",
+  "notifications.enableFailed": "Не вдалося увімкнути звук. Спробуйте натиснути ще раз.",
+  "notifications.newStaffCall": "Новий виклик персоналу!",
+  "notifications.tableNeedsAssistance": "Стіл потребує допомоги",
+  "notifications.newQrOrder": "Нове QR-замовлення!",
+  "notifications.qrOrderDescription": "Клієнт зробив замовлення через QR-код",
+  "notifications.newOrder": "Нове замовлення!",
+  "notifications.newOrderDescription": "Створено нове замовлення",
+  "notifications.orderReady": "Замовлення готове!",
+  "notifications.orderReadyDescription": "Замовлення готове до подачі",
+  "notifications.newItemsAdded": "Додано нові позиції!",
+  "notifications.itemsAddedDescription": "До замовлення додано позиції"
 }

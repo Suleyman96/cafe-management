@@ -787,5 +787,23 @@
   "stock.optionalNotes": "Заметки (необязательно)",
   "stock.optionalSupplier": "Поставщик (необязательно)",
   "stock.coffeeBeans": "Напр., Кофейные зёрна",
-  "stock.costPricePerUnit": "Себестоимость за единицу"
+  "stock.costPricePerUnit": "Себестоимость за единицу",
+
+  "notifications.soundOn": "Звук ВКЛ",
+  "notifications.soundOff": "Звук ВЫКЛ",
+  "notifications.notificationsOnTitle": "Уведомления ВКЛ (нажмите, чтобы отключить звук)",
+  "notifications.notificationsOffTitle": "Уведомления ВЫКЛ (нажмите, чтобы включить)",
+  "notifications.enabled": "Уведомления включены!",
+  "notifications.muted": "Уведомления отключены",
+  "notifications.enableFailed": "Не удалось включить звук. Попробуйте нажать ещё раз.",
+  "notifications.newStaffCall": "Новый вызов персонала!",
+  "notifications.tableNeedsAssistance": "Столу требуется помощь",
+  "notifications.newQrOrder": "Новый QR-заказ!",
+  "notifications.qrOrderDescription": "Клиент сделал заказ через QR-код",
+  "notifications.newOrder": "Новый заказ!",
+  "notifications.newOrderDescription": "Создан новый заказ",
+  "notifications.orderReady": "Заказ готов!",
+  "notifications.orderReadyDescription": "Заказ готов к подаче",
+  "notifications.newItemsAdded": "Добавлены новые позиции!",
+  "notifications.itemsAddedDescription": "В заказ добавлены позиции"
 }

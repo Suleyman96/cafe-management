@@ -787,5 +787,23 @@
   "stock.optionalNotes": "บันทึก (ไม่จำเป็น)",
   "stock.optionalSupplier": "ชื่อผู้จัดจำหน่าย (ไม่จำเป็น)",
   "stock.coffeeBeans": "เช่น เมล็ดกาแฟ",
-  "stock.costPricePerUnit": "ราคาทุนต่อหน่วย"
+  "stock.costPricePerUnit": "ราคาทุนต่อหน่วย",
+
+  "notifications.soundOn": "เสียง เปิด",
+  "notifications.soundOff": "เสียง ปิด",
+  "notifications.notificationsOnTitle": "การแจ้งเตือน เปิด (คลิกเพื่อปิดเสียง)",
+  "notifications.notificationsOffTitle": "การแจ้งเตือน ปิด (คลิกเพื่อเปิด)",
+  "notifications.enabled": "เปิดการแจ้งเตือนแล้ว!",
+  "notifications.muted": "ปิดเสียงการแจ้งเตือนแล้ว",
+  "notifications.enableFailed": "ไม่สามารถเปิดเสียงได้ กรุณาลองคลิกอีกครั้ง",
+  "notifications.newStaffCall": "มีการเรียกพนักงานใหม่!",
+  "notifications.tableNeedsAssistance": "โต๊ะต้องการความช่วยเหลือ",
+  "notifications.newQrOrder": "คำสั่งซื้อ QR ใหม่!",
+  "notifications.qrOrderDescription": "ลูกค้าสั่งซื้อผ่าน QR โค้ด",
+  "notifications.newOrder": "คำสั่งซื้อใหม่!",
+  "notifications.newOrderDescription": "มีคำสั่งซื้อใหม่",
+  "notifications.orderReady": "คำสั่งซื้อพร้อมแล้ว!",
+  "notifications.orderReadyDescription": "คำสั่งซื้อพร้อมเสิร์ฟแล้ว",
+  "notifications.newItemsAdded": "เพิ่มรายการใหม่แล้ว!",
+  "notifications.itemsAddedDescription": "มีการเพิ่มรายการในคำสั่งซื้อ"
 }

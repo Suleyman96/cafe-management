@@ -787,5 +787,23 @@
   "stock.optionalNotes": "Note facoltative",
   "stock.optionalSupplier": "Nome fornitore facoltativo",
   "stock.coffeeBeans": "es. Chicchi di Caffè",
-  "stock.costPricePerUnit": "Prezzo di Costo per Unità"
+  "stock.costPricePerUnit": "Prezzo di Costo per Unità",
+
+  "notifications.soundOn": "Suono ATTIVO",
+  "notifications.soundOff": "Suono DISATTIVO",
+  "notifications.notificationsOnTitle": "Notifiche ATTIVE (clicca per silenziare)",
+  "notifications.notificationsOffTitle": "Notifiche DISATTIVE (clicca per attivare)",
+  "notifications.enabled": "Notifiche attivate!",
+  "notifications.muted": "Notifiche silenziate",
+  "notifications.enableFailed": "Impossibile attivare il suono. Prova a cliccare di nuovo.",
+  "notifications.newStaffCall": "Nuova chiamata al personale!",
+  "notifications.tableNeedsAssistance": "Un tavolo ha bisogno di assistenza",
+  "notifications.newQrOrder": "Nuovo ordine QR!",
+  "notifications.qrOrderDescription": "Un cliente ha effettuato un ordine tramite codice QR",
+  "notifications.newOrder": "Nuovo ordine!",
+  "notifications.newOrderDescription": "Nuovo ordine creato",
+  "notifications.orderReady": "Ordine pronto!",
+  "notifications.orderReadyDescription": "Un ordine è pronto per essere servito",
+  "notifications.newItemsAdded": "Nuovi articoli aggiunti!",
+  "notifications.itemsAddedDescription": "Sono stati aggiunti articoli a un ordine"
 }

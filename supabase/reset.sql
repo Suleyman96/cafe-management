@@ -358,6 +358,8 @@ CREATE TABLE cafe_settings (
   social_telegram TEXT,
   social_line TEXT,
   location_maps_url TEXT,
+  -- Language
+  default_language VARCHAR(5) DEFAULT 'en',
   -- Tips
   tips_enabled BOOLEAN DEFAULT false,
   -- Delivery settings

@@ -787,5 +787,23 @@
   "stock.optionalNotes": "선택 메모",
   "stock.optionalSupplier": "공급업체 이름 (선택사항)",
   "stock.coffeeBeans": "예: 원두",
-  "stock.costPricePerUnit": "단위당 원가"
+  "stock.costPricePerUnit": "단위당 원가",
+
+  "notifications.soundOn": "소리 켜짐",
+  "notifications.soundOff": "소리 꺼짐",
+  "notifications.notificationsOnTitle": "알림 켜짐 (클릭하여 음소거)",
+  "notifications.notificationsOffTitle": "알림 꺼짐 (클릭하여 활성화)",
+  "notifications.enabled": "알림이 활성화되었습니다!",
+  "notifications.muted": "알림이 음소거되었습니다",
+  "notifications.enableFailed": "소리를 활성화할 수 없습니다. 다시 클릭해 주세요.",
+  "notifications.newStaffCall": "새 직원 호출!",
+  "notifications.tableNeedsAssistance": "테이블에서 도움을 요청합니다",
+  "notifications.newQrOrder": "새 QR 주문!",
+  "notifications.qrOrderDescription": "고객이 QR 코드로 주문했습니다",
+  "notifications.newOrder": "새 주문!",
+  "notifications.newOrderDescription": "새 주문이 생성되었습니다",
+  "notifications.orderReady": "주문 준비 완료!",
+  "notifications.orderReadyDescription": "주문 서빙 준비가 완료되었습니다",
+  "notifications.newItemsAdded": "새 항목이 추가되었습니다!",
+  "notifications.itemsAddedDescription": "주문에 항목이 추가되었습니다"
 }

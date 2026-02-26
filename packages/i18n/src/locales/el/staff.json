@@ -787,5 +787,23 @@
   "stock.optionalNotes": "Προαιρετικές σημειώσεις",
   "stock.optionalSupplier": "Προαιρετικό όνομα προμηθευτή",
   "stock.coffeeBeans": "π.χ. Κόκκοι Καφέ",
-  "stock.costPricePerUnit": "Τιμή Κόστους ανά Μονάδα"
+  "stock.costPricePerUnit": "Τιμή Κόστους ανά Μονάδα",
+
+  "notifications.soundOn": "Ήχος ΕΝΕΡΓΟΣ",
+  "notifications.soundOff": "Ήχος ΑΝΕΝΕΡΓΟΣ",
+  "notifications.notificationsOnTitle": "Ειδοποιήσεις ΕΝΕΡΓΕΣ (κλικ για σίγαση)",
+  "notifications.notificationsOffTitle": "Ειδοποιήσεις ΑΝΕΝΕΡΓΕΣ (κλικ για ενεργοποίηση)",
+  "notifications.enabled": "Οι ειδοποιήσεις ενεργοποιήθηκαν!",
+  "notifications.muted": "Οι ειδοποιήσεις σιγήθηκαν",
+  "notifications.enableFailed": "Δεν ήταν δυνατή η ενεργοποίηση του ήχου. Δοκιμάστε να κάνετε κλικ ξανά.",
+  "notifications.newStaffCall": "Νέα κλήση προσωπικού!",
+  "notifications.tableNeedsAssistance": "Ένα τραπέζι χρειάζεται βοήθεια",
+  "notifications.newQrOrder": "Νέα Παραγγελία QR!",
+  "notifications.qrOrderDescription": "Ο πελάτης έκανε παραγγελία μέσω κωδικού QR",
+  "notifications.newOrder": "Νέα Παραγγελία!",
+  "notifications.newOrderDescription": "Δημιουργήθηκε νέα παραγγελία",
+  "notifications.orderReady": "Παραγγελία Έτοιμη!",
+  "notifications.orderReadyDescription": "Μια παραγγελία είναι έτοιμη για σερβίρισμα",
+  "notifications.newItemsAdded": "Προστέθηκαν νέα είδη!",
+  "notifications.itemsAddedDescription": "Προστέθηκαν είδη σε μια παραγγελία"
 }

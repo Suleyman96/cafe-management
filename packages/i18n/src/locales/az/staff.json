@@ -787,5 +787,23 @@
   "stock.optionalNotes": "İstəyə bağlı qeydlər",
   "stock.optionalSupplier": "İstəyə bağlı tədarükçü adı",
   "stock.coffeeBeans": "Məs., Qəhvə Dənləri",
-  "stock.costPricePerUnit": "Vahid Dəyər Qiyməti"
+  "stock.costPricePerUnit": "Vahid Dəyər Qiyməti",
+
+  "notifications.soundOn": "Səs AÇIQ",
+  "notifications.soundOff": "Səs BAĞLI",
+  "notifications.notificationsOnTitle": "Bildirişlər AÇIQ (susdurma üçün basın)",
+  "notifications.notificationsOffTitle": "Bildirişlər BAĞLI (aktivləşdirmək üçün basın)",
+  "notifications.enabled": "Bildirişlər aktivləşdirildi!",
+  "notifications.muted": "Bildirişlər susduruldu",
+  "notifications.enableFailed": "Səsi aktivləşdirmək mümkün olmadı. Yenidən basın.",
+  "notifications.newStaffCall": "Yeni personal çağrısı!",
+  "notifications.tableNeedsAssistance": "Masa köməyə ehtiyac duyur",
+  "notifications.newQrOrder": "Yeni QR Sifariş!",
+  "notifications.qrOrderDescription": "Müştəri QR kod vasitəsilə sifariş verdi",
+  "notifications.newOrder": "Yeni Sifariş!",
+  "notifications.newOrderDescription": "Yeni sifariş yaradıldı",
+  "notifications.orderReady": "Sifariş Hazırdır!",
+  "notifications.orderReadyDescription": "Sifariş servis edilməyə hazırdır",
+  "notifications.newItemsAdded": "Yeni məhsullar əlavə edildi!",
+  "notifications.itemsAddedDescription": "Sifarişə məhsullar əlavə edildi"
 }

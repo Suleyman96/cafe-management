@@ -787,5 +787,23 @@
   "stock.optionalNotes": "შენიშვნები (არასავალდებულო)",
   "stock.optionalSupplier": "მომწოდებელი (არასავალდებულო)",
   "stock.coffeeBeans": "მაგ., ყავის მარცვლები",
-  "stock.costPricePerUnit": "თვითღირებულება ერთეულზე"
+  "stock.costPricePerUnit": "თვითღირებულება ერთეულზე",
+
+  "notifications.soundOn": "ხმა ჩართული",
+  "notifications.soundOff": "ხმა გამორთული",
+  "notifications.notificationsOnTitle": "შეტყობინებები ჩართული (გამორთვისთვის დააჭირეთ)",
+  "notifications.notificationsOffTitle": "შეტყობინებები გამორთული (ჩასართავად დააჭირეთ)",
+  "notifications.enabled": "შეტყობინებები ჩართულია!",
+  "notifications.muted": "შეტყობინებები გამორთულია",
+  "notifications.enableFailed": "ხმის ჩართვა ვერ მოხერხდა. სცადეთ ხელახლა დაჭერა.",
+  "notifications.newStaffCall": "ახალი პერსონალის გამოძახება!",
+  "notifications.tableNeedsAssistance": "მაგიდას დახმარება სჭირდება",
+  "notifications.newQrOrder": "ახალი QR შეკვეთა!",
+  "notifications.qrOrderDescription": "კლიენტმა QR კოდით შეკვეთა გააკეთა",
+  "notifications.newOrder": "ახალი შეკვეთა!",
+  "notifications.newOrderDescription": "შეიქმნა ახალი შეკვეთა",
+  "notifications.orderReady": "შეკვეთა მზადაა!",
+  "notifications.orderReadyDescription": "შეკვეთა მირთმევისთვის მზადაა",
+  "notifications.newItemsAdded": "ახალი ერთეულები დაემატა!",
+  "notifications.itemsAddedDescription": "შეკვეთას ერთეულები დაემატა"
 }

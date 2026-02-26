@@ -787,5 +787,23 @@
   "stock.optionalNotes": "İsteğe bağlı notlar",
   "stock.optionalSupplier": "İsteğe bağlı tedarikçi adı",
   "stock.coffeeBeans": "Örn., Kahve Çekirdeği",
-  "stock.costPricePerUnit": "Birim Maliyet Fiyatı"
+  "stock.costPricePerUnit": "Birim Maliyet Fiyatı",
+
+  "notifications.soundOn": "Ses AÇIK",
+  "notifications.soundOff": "Ses KAPALI",
+  "notifications.notificationsOnTitle": "Bildirimler AÇIK (sessize almak için tıklayın)",
+  "notifications.notificationsOffTitle": "Bildirimler KAPALI (etkinleştirmek için tıklayın)",
+  "notifications.enabled": "Bildirimler etkinleştirildi!",
+  "notifications.muted": "Bildirimler sessize alındı",
+  "notifications.enableFailed": "Ses etkinleştirilemedi. Tekrar tıklamayı deneyin.",
+  "notifications.newStaffCall": "Yeni personel çağrısı!",
+  "notifications.tableNeedsAssistance": "Masa yardım bekliyor",
+  "notifications.newQrOrder": "Yeni QR Sipariş!",
+  "notifications.qrOrderDescription": "Müşteri QR kod ile sipariş verdi",
+  "notifications.newOrder": "Yeni Sipariş!",
+  "notifications.newOrderDescription": "Yeni sipariş oluşturuldu",
+  "notifications.orderReady": "Sipariş Hazır!",
+  "notifications.orderReadyDescription": "Bir sipariş servis edilmeye hazır",
+  "notifications.newItemsAdded": "Yeni ürünler eklendi!",
+  "notifications.itemsAddedDescription": "Siparişe ürünler eklendi"
 }

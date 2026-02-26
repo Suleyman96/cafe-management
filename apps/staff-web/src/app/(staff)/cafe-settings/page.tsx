@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
+import { LANGUAGES, useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
   ClipboardList,
@@ -75,6 +75,8 @@ export default function CafeSettingsPage() {
     social_telegram: null as string | null,
     social_line: null as string | null,
     location_maps_url: null as string | null,
+    // Language
+    default_language: 'en',
   });
 
   const [hasChanges, setHasChanges] = useState(false);
@@ -119,6 +121,7 @@ export default function CafeSettingsPage() {
         social_telegram: settings.social_telegram,
         social_line: settings.social_line,
         location_maps_url: settings.location_maps_url,
+        default_language: settings.default_language ?? 'en',
       });
       setHasChanges(false);
     }
@@ -196,6 +199,7 @@ export default function CafeSettingsPage() {
         social_telegram: settings.social_telegram,
         social_line: settings.social_line,
         location_maps_url: settings.location_maps_url,
+        default_language: settings.default_language ?? 'en',
       });
       setHasChanges(false);
     }
@@ -282,6 +286,25 @@ export default function CafeSettingsPage() {
                   placeholder="123 Main Street, City, Country"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Default Menu Language
+                </label>
+                <p className="text-xs text-gray-500 mb-1">
+                  Language shown to customers when they first scan the QR code
+                </p>
+                <select
+                  value={formData.default_language}
+                  onChange={(e) => handleChange('default_language', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {LANGUAGES.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.flag} {lang.nativeName} ({lang.name})
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

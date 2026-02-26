@@ -787,5 +787,23 @@
   "stock.optionalNotes": "任意のメモ",
   "stock.optionalSupplier": "サプライヤー名（任意）",
   "stock.coffeeBeans": "例: コーヒー豆",
-  "stock.costPricePerUnit": "単位あたりの原価"
+  "stock.costPricePerUnit": "単位あたりの原価",
+
+  "notifications.soundOn": "サウンド ON",
+  "notifications.soundOff": "サウンド OFF",
+  "notifications.notificationsOnTitle": "通知 ON（クリックでミュート）",
+  "notifications.notificationsOffTitle": "通知 OFF（クリックで有効化）",
+  "notifications.enabled": "通知が有効になりました！",
+  "notifications.muted": "通知がミュートされました",
+  "notifications.enableFailed": "サウンドを有効にできませんでした。もう一度クリックしてください。",
+  "notifications.newStaffCall": "新しいスタッフ呼出！",
+  "notifications.tableNeedsAssistance": "テーブルがサポートを必要としています",
+  "notifications.newQrOrder": "新しいQR注文！",
+  "notifications.qrOrderDescription": "お客様がQRコードから注文しました",
+  "notifications.newOrder": "新しい注文！",
+  "notifications.newOrderDescription": "新しい注文が作成されました",
+  "notifications.orderReady": "注文準備完了！",
+  "notifications.orderReadyDescription": "注文の提供準備が整いました",
+  "notifications.newItemsAdded": "新しい品目が追加されました！",
+  "notifications.itemsAddedDescription": "注文に品目が追加されました"
 }

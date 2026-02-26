@@ -787,5 +787,23 @@
   "stock.optionalNotes": "Catatan opsional",
   "stock.optionalSupplier": "Nama pemasok opsional",
   "stock.coffeeBeans": "mis. Biji Kopi",
-  "stock.costPricePerUnit": "Harga Pokok per Unit"
+  "stock.costPricePerUnit": "Harga Pokok per Unit",
+
+  "notifications.soundOn": "Suara AKTIF",
+  "notifications.soundOff": "Suara MATI",
+  "notifications.notificationsOnTitle": "Notifikasi AKTIF (klik untuk membisukan)",
+  "notifications.notificationsOffTitle": "Notifikasi MATI (klik untuk mengaktifkan)",
+  "notifications.enabled": "Notifikasi diaktifkan!",
+  "notifications.muted": "Notifikasi dibisukan",
+  "notifications.enableFailed": "Tidak dapat mengaktifkan suara. Coba klik lagi.",
+  "notifications.newStaffCall": "Panggilan staf baru!",
+  "notifications.tableNeedsAssistance": "Meja membutuhkan bantuan",
+  "notifications.newQrOrder": "Pesanan QR Baru!",
+  "notifications.qrOrderDescription": "Pelanggan memesan melalui kode QR",
+  "notifications.newOrder": "Pesanan Baru!",
+  "notifications.newOrderDescription": "Pesanan baru dibuat",
+  "notifications.orderReady": "Pesanan Siap!",
+  "notifications.orderReadyDescription": "Pesanan siap untuk disajikan",
+  "notifications.newItemsAdded": "Item baru ditambahkan!",
+  "notifications.itemsAddedDescription": "Item ditambahkan ke pesanan"
 }

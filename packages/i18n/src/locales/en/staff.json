@@ -787,5 +787,23 @@
   "stock.optionalNotes": "Optional notes",
   "stock.optionalSupplier": "Optional supplier name",
   "stock.coffeeBeans": "e.g. Coffee Beans",
-  "stock.costPricePerUnit": "Cost Price per Unit"
+  "stock.costPricePerUnit": "Cost Price per Unit",
+
+  "notifications.soundOn": "Sound ON",
+  "notifications.soundOff": "Sound OFF",
+  "notifications.notificationsOnTitle": "Notifications ON (click to mute)",
+  "notifications.notificationsOffTitle": "Notifications OFF (click to enable)",
+  "notifications.enabled": "Notifications enabled!",
+  "notifications.muted": "Notifications muted",
+  "notifications.enableFailed": "Could not enable sound. Try clicking again.",
+  "notifications.newStaffCall": "New staff call!",
+  "notifications.tableNeedsAssistance": "Table needs assistance",
+  "notifications.newQrOrder": "New QR Order!",
+  "notifications.qrOrderDescription": "Customer placed an order via QR code",
+  "notifications.newOrder": "New Order!",
+  "notifications.newOrderDescription": "New order created",
+  "notifications.orderReady": "Order Ready!",
+  "notifications.orderReadyDescription": "An order is ready to be served",
+  "notifications.newItemsAdded": "New items added!",
+  "notifications.itemsAddedDescription": "Items were added to an order"
 }

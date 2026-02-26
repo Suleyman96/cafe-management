@@ -306,6 +306,7 @@ export interface Database {
           social_telegram: string | null;
           social_line: string | null;
           location_maps_url: string | null;
+          default_language: string;
           created_at: string;
           updated_at: string;
         };

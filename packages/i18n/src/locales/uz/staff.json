@@ -787,5 +787,23 @@
   "stock.optionalNotes": "Ixtiyoriy izohlar",
   "stock.optionalSupplier": "Yetkazib beruvchi nomi (ixtiyoriy)",
   "stock.coffeeBeans": "masalan, Kofe donalari",
-  "stock.costPricePerUnit": "Birlik narxi"
+  "stock.costPricePerUnit": "Birlik narxi",
+
+  "notifications.soundOn": "Ovoz YOQILDI",
+  "notifications.soundOff": "Ovoz O'CHIRILDI",
+  "notifications.notificationsOnTitle": "Bildirishnomalar YOQILGAN (o'chirish uchun bosing)",
+  "notifications.notificationsOffTitle": "Bildirishnomalar O'CHIRILGAN (yoqish uchun bosing)",
+  "notifications.enabled": "Bildirishnomalar yoqildi!",
+  "notifications.muted": "Bildirishnomalar o'chirildi",
+  "notifications.enableFailed": "Ovozni yoqib bo'lmadi. Qayta bosib ko'ring.",
+  "notifications.newStaffCall": "Yangi xodim chaqiruvi!",
+  "notifications.tableNeedsAssistance": "Stolga yordam kerak",
+  "notifications.newQrOrder": "Yangi QR buyurtma!",
+  "notifications.qrOrderDescription": "Mijoz QR kod orqali buyurtma berdi",
+  "notifications.newOrder": "Yangi buyurtma!",
+  "notifications.newOrderDescription": "Yangi buyurtma yaratildi",
+  "notifications.orderReady": "Buyurtma tayyor!",
+  "notifications.orderReadyDescription": "Buyurtma berishga tayyor",
+  "notifications.newItemsAdded": "Yangi mahsulotlar qo'shildi!",
+  "notifications.itemsAddedDescription": "Buyurtmaga mahsulotlar qo'shildi"
 }

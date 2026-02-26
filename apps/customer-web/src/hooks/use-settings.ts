@@ -41,6 +41,7 @@ export interface CafeSettings {
   social_telegram: string | null;
   social_line: string | null;
   location_maps_url: string | null;
+  default_language: string;
 }
 
 const SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
@@ -86,6 +87,7 @@ const DEFAULT_SETTINGS: CafeSettings = {
   social_telegram: null,
   social_line: null,
   location_maps_url: null,
+  default_language: 'en',
 };
 
 export function useCafeSettings() {

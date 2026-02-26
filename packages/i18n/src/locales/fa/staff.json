@@ -787,5 +787,23 @@
   "stock.optionalNotes": "یادداشت‌های اختیاری",
   "stock.optionalSupplier": "نام تامین‌کننده (اختیاری)",
   "stock.coffeeBeans": "مثلاً دانه‌های قهوه",
-  "stock.costPricePerUnit": "قیمت تمام‌شده هر واحد"
+  "stock.costPricePerUnit": "قیمت تمام‌شده هر واحد",
+
+  "notifications.soundOn": "صدا روشن",
+  "notifications.soundOff": "صدا خاموش",
+  "notifications.notificationsOnTitle": "اعلان‌ها روشن (برای بی‌صدا کردن کلیک کنید)",
+  "notifications.notificationsOffTitle": "اعلان‌ها خاموش (برای فعال‌سازی کلیک کنید)",
+  "notifications.enabled": "اعلان‌ها فعال شدند!",
+  "notifications.muted": "اعلان‌ها بی‌صدا شدند",
+  "notifications.enableFailed": "فعال‌سازی صدا ممکن نشد. دوباره کلیک کنید.",
+  "notifications.newStaffCall": "درخواست جدید کارکنان!",
+  "notifications.tableNeedsAssistance": "میز نیاز به کمک دارد",
+  "notifications.newQrOrder": "سفارش QR جدید!",
+  "notifications.qrOrderDescription": "مشتری از طریق کد QR سفارش داد",
+  "notifications.newOrder": "سفارش جدید!",
+  "notifications.newOrderDescription": "سفارش جدیدی ایجاد شد",
+  "notifications.orderReady": "سفارش آماده است!",
+  "notifications.orderReadyDescription": "یک سفارش آماده سرو است",
+  "notifications.newItemsAdded": "آیتم‌های جدید اضافه شدند!",
+  "notifications.itemsAddedDescription": "آیتم‌هایی به سفارش اضافه شدند"
 }

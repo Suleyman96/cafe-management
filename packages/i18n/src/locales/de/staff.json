@@ -787,5 +787,23 @@
   "stock.optionalNotes": "Optionale Notizen",
   "stock.optionalSupplier": "Optionaler Lieferantenname",
   "stock.coffeeBeans": "z.B. Kaffeebohnen",
-  "stock.costPricePerUnit": "Einkaufspreis pro Einheit"
+  "stock.costPricePerUnit": "Einkaufspreis pro Einheit",
+
+  "notifications.soundOn": "Ton EIN",
+  "notifications.soundOff": "Ton AUS",
+  "notifications.notificationsOnTitle": "Benachrichtigungen EIN (klicken zum Stummschalten)",
+  "notifications.notificationsOffTitle": "Benachrichtigungen AUS (klicken zum Aktivieren)",
+  "notifications.enabled": "Benachrichtigungen aktiviert!",
+  "notifications.muted": "Benachrichtigungen stummgeschaltet",
+  "notifications.enableFailed": "Ton konnte nicht aktiviert werden. Versuchen Sie es erneut.",
+  "notifications.newStaffCall": "Neuer Personalruf!",
+  "notifications.tableNeedsAssistance": "Tisch benötigt Hilfe",
+  "notifications.newQrOrder": "Neue QR-Bestellung!",
+  "notifications.qrOrderDescription": "Ein Kunde hat eine Bestellung per QR-Code aufgegeben",
+  "notifications.newOrder": "Neue Bestellung!",
+  "notifications.newOrderDescription": "Neue Bestellung erstellt",
+  "notifications.orderReady": "Bestellung bereit!",
+  "notifications.orderReadyDescription": "Eine Bestellung ist bereit zum Servieren",
+  "notifications.newItemsAdded": "Neue Artikel hinzugefügt!",
+  "notifications.itemsAddedDescription": "Artikel wurden einer Bestellung hinzugefügt"
 }
