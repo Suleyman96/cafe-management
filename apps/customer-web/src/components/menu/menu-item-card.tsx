@@ -47,7 +47,7 @@ export function MenuItemCard({ item }: MenuItemCardProps) {
         {/* Image */}
         {item.image_url && (
           <div className="relative h-40 w-full bg-muted">
-            <Image src={item.image_url} alt={name} fill className="object-cover" />
+            <Image src={item.image_url} alt={name} fill className="object-cover" unoptimized />
             {/* Badges on image */}
             <div className="absolute top-2 left-2 flex flex-wrap gap-1">
               {item.is_popular && (

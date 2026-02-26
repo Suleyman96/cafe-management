@@ -63,7 +63,7 @@ export function MenuItemModal({ item, isOpen, onClose }: MenuItemModalProps) {
           {/* Image */}
           {item.image_url && (
             <div className="relative h-64 w-full bg-muted">
-              <Image src={item.image_url} alt={name} fill className="object-cover" />
+              <Image src={item.image_url} alt={name} fill className="object-cover" unoptimized />
             </div>
           )}
 

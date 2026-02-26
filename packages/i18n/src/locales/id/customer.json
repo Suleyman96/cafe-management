@@ -4,6 +4,7 @@
   "table.logoAlt": "Restoran",
   "table.restaurantFallback": "Restoran",
   "table.welcomeFallback": "Selamat Datang!",
+  "table.tagline": "Dibuat dengan penuh semangat, disajikan dengan cinta",
   "table.yourTable": "Meja Anda",
   "table.capacity": "Kapasitas: {{count}} tamu",
   "table.activeOrderTitle": "Pesanan Aktif",

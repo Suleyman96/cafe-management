@@ -4,6 +4,7 @@
   "table.logoAlt": "Ресторан",
   "table.restaurantFallback": "Ресторан",
   "table.welcomeFallback": "Ласкаво просимо!",
+  "table.tagline": "Створено з пристрастю, подано з любов'ю",
   "table.yourTable": "Ваш стіл",
   "table.capacity": "Місткість: {{count}} гостей",
   "table.activeOrderTitle": "Активне замовлення",

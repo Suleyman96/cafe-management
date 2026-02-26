@@ -4,6 +4,7 @@
   "table.logoAlt": "레스토랑",
   "table.restaurantFallback": "레스토랑",
   "table.welcomeFallback": "환영합니다!",
+  "table.tagline": "열정으로 만들고, 사랑으로 대접합니다",
   "table.yourTable": "좌석",
   "table.capacity": "수용 인원: {{count}}명",
   "table.activeOrderTitle": "진행 중인 주문",

@@ -4,6 +4,7 @@
   "table.logoAlt": "Restaurant",
   "table.restaurantFallback": "Restaurant",
   "table.welcomeFallback": "Bienvenue !",
+  "table.tagline": "Créé avec passion, servi avec amour",
   "table.yourTable": "Votre table",
   "table.capacity": "Capacité : {{count}} personnes",
   "table.activeOrderTitle": "Commande en cours",

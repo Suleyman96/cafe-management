@@ -119,10 +119,13 @@ export async function loadAndSwitchLanguage(lang: string) {
     return;
   }
 
-  const bundles = await loader();
-
-  i18n.addResourceBundle(lang, 'common', bundles.common);
-  i18n.addResourceBundle(lang, 'customer', bundles.customer);
-
-  i18n.changeLanguage(lang);
+  try {
+    const bundles = await loader();
+    i18n.addResourceBundle(lang, 'common', bundles.common);
+    i18n.addResourceBundle(lang, 'customer', bundles.customer);
+    i18n.changeLanguage(lang);
+  } catch (err) {
+    console.warn(`Failed to load translations for ${lang}, falling back to English`, err);
+    i18n.changeLanguage('en');
+  }
 }

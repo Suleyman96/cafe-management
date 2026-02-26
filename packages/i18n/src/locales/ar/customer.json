@@ -4,6 +4,7 @@
   "table.logoAlt": "مطعم",
   "table.restaurantFallback": "مطعم",
   "table.welcomeFallback": "أهلاً وسهلاً!",
+  "table.tagline": "صُنع بشغف، يُقدَّم بحب",
   "table.yourTable": "طاولتك",
   "table.capacity": "السعة: {{count}} ضيوف",
   "table.activeOrderTitle": "طلب نشط",

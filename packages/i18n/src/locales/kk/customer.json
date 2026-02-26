@@ -4,6 +4,7 @@
   "table.logoAlt": "Мейрамхана",
   "table.restaurantFallback": "Мейрамхана",
   "table.welcomeFallback": "Қош келдіңіз!",
+  "table.tagline": "Құмарлықпен жасалған, сүйіспеншілікпен ұсынылған",
   "table.yourTable": "Сіздің үстеліңіз",
   "table.capacity": "Сыйымдылық: {{count}} қонақ",
   "table.activeOrderTitle": "Белсенді тапсырыс",

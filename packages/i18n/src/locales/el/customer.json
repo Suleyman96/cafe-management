@@ -4,6 +4,7 @@
   "table.logoAlt": "Εστιατόριο",
   "table.restaurantFallback": "Εστιατόριο",
   "table.welcomeFallback": "Καλώς ήρθατε!",
+  "table.tagline": "Δημιουργημένο με πάθος, σερβιρισμένο με αγάπη",
   "table.yourTable": "Το Τραπέζι σας",
   "table.capacity": "Χωρητικότητα: {{count}} άτομα",
   "table.activeOrderTitle": "Ενεργή Παραγγελία",

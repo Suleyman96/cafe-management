@@ -4,6 +4,7 @@
   "table.logoAlt": "رستوران",
   "table.restaurantFallback": "رستوران",
   "table.welcomeFallback": "خوش آمدید!",
+  "table.tagline": "با اشتیاق ساخته شده، با عشق سرو می‌شود",
   "table.yourTable": "میز شما",
   "table.capacity": "ظرفیت: {{count}} مهمان",
   "table.activeOrderTitle": "سفارش فعال",

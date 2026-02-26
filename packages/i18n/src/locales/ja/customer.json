@@ -4,6 +4,7 @@
   "table.logoAlt": "レストラン",
   "table.restaurantFallback": "レストラン",
   "table.welcomeFallback": "ようこそ！",
+  "table.tagline": "情熱を込めて作り、愛を込めてお届け",
   "table.yourTable": "お席",
   "table.capacity": "定員: {{count}}名",
   "table.activeOrderTitle": "注文中",

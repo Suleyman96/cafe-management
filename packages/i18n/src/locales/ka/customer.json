@@ -4,6 +4,7 @@
   "table.logoAlt": "რესტორანი",
   "table.restaurantFallback": "რესტორანი",
   "table.welcomeFallback": "კეთილი იყოს თქვენი მობრძანება!",
+  "table.tagline": "შექმნილია გატაცებით, მოწოდებულია სიყვარულით",
   "table.yourTable": "თქვენი მაგიდა",
   "table.capacity": "ტევადობა: {{count}} სტუმარი",
   "table.activeOrderTitle": "აქტიური შეკვეთა",

@@ -4,6 +4,7 @@
   "table.logoAlt": "Restoran",
   "table.restaurantFallback": "Restoran",
   "table.welcomeFallback": "Hoş geldiniz!",
+  "table.tagline": "Tutkuyla hazırlanır, sevgiyle sunulur",
   "table.yourTable": "Masanız",
   "table.capacity": "Kapasite: {{count}} kişi",
   "table.activeOrderTitle": "Aktif Sipariş",
