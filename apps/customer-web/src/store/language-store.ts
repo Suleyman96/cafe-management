@@ -1,6 +1,6 @@
+import type { Language } from '@cafe-idare/i18n';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Language } from '@/types';
 
 interface LanguageStore {
   language: Language;

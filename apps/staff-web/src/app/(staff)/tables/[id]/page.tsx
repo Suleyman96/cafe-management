@@ -1,6 +1,7 @@
 'use client';
 
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
   AlertCircle,
@@ -56,6 +57,7 @@ export default function TableDetailPage() {
   const router = useRouter();
   const tableId = params.id as string;
   const { staff: currentStaff } = useAuth();
+  const { t } = useTranslation('staff');
 
   const { data: table, isLoading: tableLoading } = useTable(tableId);
   const { data: orders, refetch: refetchOrders } = useOrders();
@@ -115,7 +117,7 @@ export default function TableDetailPage() {
   // Create order with items (for new orders on free tables)
   const handleCreateOrderWithItems = async () => {
     if (cart.length === 0) {
-      toast.error('Please add at least one item');
+      toast.error(t('orders.addAtLeastOneItem'));
       return;
     }
 
@@ -134,7 +136,7 @@ export default function TableDetailPage() {
       const orderItems = cart.map((item) => ({
         order_id: newOrder.id,
         menu_item_id: item.menuItem.id,
-        item_name: item.menuItem.name_en,
+        item_name: item.menuItem.name,
         quantity: item.quantity,
         item_price: item.menuItem.price,
         notes: null,
@@ -142,13 +144,13 @@ export default function TableDetailPage() {
       }));
 
       await addOrderItems.mutateAsync(orderItems);
-      toast.success('Order created');
+      toast.success(t('orders.orderCreatedSuccess'));
       setCart([]);
       setOrderNotes('');
       refetchOrders();
     } catch (error: any) {
       console.error('Failed to create order:', error);
-      toast.error('Failed to create order');
+      toast.error(t('orders.failedCreateOrder'));
     } finally {
       setSubmitting(false);
     }
@@ -235,12 +237,12 @@ export default function TableDetailPage() {
   // Submit cart items to existing order
   const handleAddItemsToOrder = async () => {
     if (cart.length === 0) {
-      toast.error('Please add at least one item');
+      toast.error(t('orders.addAtLeastOneItem'));
       return;
     }
 
     if (!activeOrder) {
-      toast.error('No active order');
+      toast.error(t('orders.noActiveOrder'));
       return;
     }
 
@@ -249,7 +251,7 @@ export default function TableDetailPage() {
       const orderItems = cart.map((item) => ({
         order_id: activeOrder.id,
         menu_item_id: item.menuItem.id,
-        item_name: item.menuItem.name_en,
+        item_name: item.menuItem.name,
         quantity: item.quantity,
         item_price: item.menuItem.price,
         notes: null,
@@ -257,12 +259,12 @@ export default function TableDetailPage() {
       }));
 
       await addOrderItems.mutateAsync(orderItems);
-      toast.success('Items added to order');
+      toast.success(t('orders.itemsAddedToOrder'));
       setCart([]);
       refetchOrders();
     } catch (error) {
       console.error('Failed to add items:', error);
-      toast.error('Failed to add items');
+      toast.error(t('orders.failedAddItems'));
     } finally {
       setSubmitting(false);
     }
@@ -276,10 +278,10 @@ export default function TableDetailPage() {
         orderId: activeOrder.id,
         status: newStatus as any,
       });
-      toast.success(`Order status updated to ${newStatus.toLowerCase()}`);
+      toast.success(`${t('orders.statusUpdated')} ${newStatus.toLowerCase()}`);
       refetchOrders();
     } catch (_error) {
-      toast.error('Failed to update order status');
+      toast.error(t('orders.failedUpdateStatus'));
     }
   };
 
@@ -318,28 +320,28 @@ export default function TableDetailPage() {
           bg: 'bg-gray-100',
           text: 'text-gray-700',
           icon: <AlertCircle className="h-3 w-3" />,
-          label: 'Pending',
+          label: t('pending', { ns: 'common' }),
         };
       case 'preparing':
         return {
           bg: 'bg-yellow-100',
           text: 'text-yellow-800',
           icon: <ChefHat className="h-3 w-3" />,
-          label: 'Preparing',
+          label: t('orders.preparing'),
         };
       case 'ready':
         return {
           bg: 'bg-green-100',
           text: 'text-green-800',
           icon: <CheckCircle className="h-3 w-3" />,
-          label: 'Ready',
+          label: t('orders.ready'),
         };
       case 'served':
         return {
           bg: 'bg-purple-100',
           text: 'text-purple-800',
           icon: <UtensilsCrossed className="h-3 w-3" />,
-          label: 'Served',
+          label: t('orders.served'),
         };
       default:
         return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, label: status };
@@ -353,17 +355,17 @@ export default function TableDetailPage() {
         itemId,
         status: newStatus as 'pending' | 'preparing' | 'ready' | 'served',
       });
-      toast.success(`Item marked as ${newStatus}`);
+      toast.success(t('orders.itemMarkedAs', { status: newStatus }));
       refetchOrders();
     } catch (_error) {
-      toast.error('Failed to update item status');
+      toast.error(t('orders.failedUpdateItemStatus'));
     }
   };
 
   // Handle order cancellation
   const handleCancelOrder = async () => {
     if (!activeOrder || !cancelReason.trim()) {
-      toast.error('Please provide a cancellation reason');
+      toast.error(t('orders.reasonProvide'));
       return;
     }
 
@@ -374,7 +376,7 @@ export default function TableDetailPage() {
         reason: cancelReason.trim(),
         tableId: activeOrder.table_id,
       });
-      toast.success('Order cancelled');
+      toast.success(t('orders.orderCancelled'));
       setShowCancelModal(false);
       setCancelReason('');
       refetchOrders();
@@ -385,7 +387,7 @@ export default function TableDetailPage() {
       }
     } catch (error) {
       console.error('Failed to cancel order:', error);
-      toast.error('Failed to cancel order');
+      toast.error(t('orders.failedCancel'));
     } finally {
       setCancelling(false);
     }
@@ -402,7 +404,7 @@ export default function TableDetailPage() {
   if (!table) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-red-500">Table not found</p>
+        <p className="text-red-500">{t('tables.tableNotFound')}</p>
       </div>
     );
   }
@@ -414,7 +416,7 @@ export default function TableDetailPage() {
         <div className="flex items-center gap-2 sm:gap-4">
           <Button variant="ghost" size="sm" onClick={() => router.push('/tables')}>
             <ArrowLeft className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Back</span>
+            <span className="hidden sm:inline">{t('back', { ns: 'common' })}</span>
           </Button>
           <h1 className="text-xl sm:text-2xl font-bold">{table.table_number}</h1>
           {activeOrder && (
@@ -433,9 +435,11 @@ export default function TableDetailPage() {
           <div className="flex items-center gap-2 mb-2">
             <Layers className="h-4 w-4 text-amber-600" />
             <span className="text-sm font-medium text-amber-800">
-              {activeOrders.length} orders on this table
+              {activeOrders.length} {t('tables.ordersOnTable')}
             </span>
-            <span className="text-sm text-amber-600">(Combined: {formatPrice(combinedTotal)})</span>
+            <span className="text-sm text-amber-600">
+              ({t('tables.combinedTotal')}: {formatPrice(combinedTotal)})
+            </span>
           </div>
           <div className="flex gap-2 flex-wrap">
             {activeOrders.map((order: any, index: number) => {
@@ -454,7 +458,7 @@ export default function TableDetailPage() {
                       : 'bg-white text-amber-700 hover:bg-amber-100 border border-amber-300'
                   }`}
                 >
-                  Order #{index + 1} ({formatPrice(orderItemsTotal)})
+                  {t('orders.order')} #{index + 1} ({formatPrice(orderItemsTotal)})
                 </button>
               );
             })}
@@ -481,7 +485,7 @@ export default function TableDetailPage() {
                   <span className="flex items-center gap-1">
                     <UserCheck className="h-4 w-4 text-green-600" />
                     <span className="text-green-700">
-                      Taken by: {(activeOrder as any).assigned_waiter.full_name}
+                      {t('orders.takenBy')} {(activeOrder as any).assigned_waiter.full_name}
                     </span>
                   </span>
                 )}
@@ -490,7 +494,8 @@ export default function TableDetailPage() {
               {(activeOrder as any).customer_notes && (
                 <div className="mt-2 p-2 bg-amber-100 rounded-lg border border-amber-300">
                   <p className="text-sm text-amber-800">
-                    <span className="font-medium">Note:</span> {(activeOrder as any).customer_notes}
+                    <span className="font-medium">{t('notes', { ns: 'common' })}:</span>{' '}
+                    {(activeOrder as any).customer_notes}
                   </p>
                 </div>
               )}
@@ -505,12 +510,12 @@ export default function TableDetailPage() {
                     onClick={() => handleStatusUpdate('NEW')}
                   >
                     <ThumbsUp className="h-4 w-4 mr-1" />
-                    Approve
+                    {t('approve', { ns: 'common' })}
                   </Button>
                   {(activeOrder as any).source === 'customer' && (
                     <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
                       <Smartphone className="h-3 w-3" />
-                      QR Order
+                      {t('orders.qrOrder')}
                     </span>
                   )}
                 </>
@@ -518,25 +523,28 @@ export default function TableDetailPage() {
               {activeOrder.status === 'new' && (
                 <Button size="sm" onClick={() => handleStatusUpdate('PREPARING')}>
                   <ChefHat className="h-4 w-4 mr-1" />
-                  <span className="hidden xs:inline">Start </span>Preparing
+                  <span className="hidden xs:inline">{t('start', { ns: 'common' })} </span>
+                  {t('orders.preparing')}
                 </Button>
               )}
               {activeOrder.status === 'preparing' && (
                 <Button size="sm" onClick={() => handleStatusUpdate('READY')}>
                   <CheckCircle className="h-4 w-4 mr-1" />
-                  <span className="hidden xs:inline">Mark </span>Ready
+                  <span className="hidden xs:inline">{t('mark', { ns: 'common' })} </span>
+                  {t('orders.ready')}
                 </Button>
               )}
               {activeOrder.status === 'ready' && (
                 <Button size="sm" onClick={() => handleStatusUpdate('SERVED')}>
                   <CheckCircle className="h-4 w-4 mr-1" />
-                  <span className="hidden xs:inline">Mark </span>Served
+                  <span className="hidden xs:inline">{t('mark', { ns: 'common' })} </span>
+                  {t('orders.served')}
                 </Button>
               )}
               {activeOrder.status === 'served' && (
                 <Button size="sm" onClick={() => router.push(`/orders/${activeOrder.id}`)}>
                   <CreditCard className="h-4 w-4 mr-1" />
-                  Payment
+                  {t('orders.payment')}
                 </Button>
               )}
               {/* Cancel/Reject button - available for active orders */}
@@ -545,7 +553,9 @@ export default function TableDetailPage() {
               ) && (
                 <Button size="sm" variant="destructive" onClick={() => setShowCancelModal(true)}>
                   <XCircle className="h-4 w-4 mr-1" />
-                  {activeOrder.status === 'pending_approval' ? 'Reject' : 'Cancel'}
+                  {activeOrder.status === 'pending_approval'
+                    ? t('reject', { ns: 'common' })
+                    : t('cancel', { ns: 'common' })}
                 </Button>
               )}
             </div>
@@ -554,7 +564,7 @@ export default function TableDetailPage() {
           {/* Current order items */}
           {activeOrder.order_items && activeOrder.order_items.length > 0 && (
             <div className="mt-4 border-t pt-4">
-              <h3 className="font-medium mb-2">Current Items</h3>
+              <h3 className="font-medium mb-2">{t('orders.currentItems')}</h3>
               <div className="space-y-2">
                 {activeOrder.order_items.map((item: OrderItem) => {
                   const statusBadge = getItemStatusBadge(item.status);
@@ -579,7 +589,7 @@ export default function TableDetailPage() {
                             className="px-2 py-1 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
                           >
                             <CheckCircle className="h-3 w-3" />
-                            Ready
+                            {t('orders.ready')}
                           </button>
                         )}
                         {item.status === 'ready' && (
@@ -591,7 +601,7 @@ export default function TableDetailPage() {
                             className="px-2 py-1 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
                           >
                             <UtensilsCrossed className="h-3 w-3" />
-                            Served
+                            {t('orders.served')}
                           </button>
                         )}
                         {item.status === 'served' && (
@@ -599,7 +609,7 @@ export default function TableDetailPage() {
                             className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}
                           >
                             {statusBadge.icon}
-                            Done
+                            {t('orders.done')}
                           </span>
                         )}
                       </div>
@@ -625,7 +635,7 @@ export default function TableDetailPage() {
           onClick={() => setSelectedCategory(null)}
           className="flex-shrink-0"
         >
-          All
+          {t('all', { ns: 'common' })}
         </Button>
         {categories?.map((category: Category) => (
           <Button
@@ -635,7 +645,7 @@ export default function TableDetailPage() {
             onClick={() => setSelectedCategory(category.id)}
             className="flex-shrink-0"
           >
-            {category.name_en}
+            {category.name}
           </Button>
         ))}
       </div>
@@ -655,16 +665,16 @@ export default function TableDetailPage() {
                   onClick={() => addToCart(item)}
                 >
                   <div className="flex justify-between items-start mb-1 sm:mb-2">
-                    <h3 className="font-medium text-xs sm:text-sm line-clamp-2">{item.name_en}</h3>
+                    <h3 className="font-medium text-xs sm:text-sm line-clamp-2">{item.name}</h3>
                     {quantity > 0 && (
                       <span className="bg-blue-500 text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ml-1 flex-shrink-0">
                         {quantity}
                       </span>
                     )}
                   </div>
-                  {item.description_en && (
+                  {item.description && (
                     <p className="text-xs text-gray-500 mb-1 sm:mb-2 line-clamp-2 hidden sm:block">
-                      {item.description_en}
+                      {item.description}
                     </p>
                   )}
                   <p className="font-semibold text-blue-600 text-sm sm:text-base">
@@ -681,12 +691,12 @@ export default function TableDetailPage() {
           <div className="border rounded-lg p-3 sm:p-4 lg:sticky lg:top-4 bg-white">
             <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
-              {activeOrder ? 'Add Items' : 'New Order'} (
+              {activeOrder ? t('orders.addItems') : t('orders.new')} (
               {cart.reduce((sum, item) => sum + item.quantity, 0)})
             </h2>
 
             {cart.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">Click on menu items to add them</p>
+              <p className="text-gray-500 text-center py-8">{t('orders.clickToAdd')}</p>
             ) : (
               <>
                 <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
@@ -696,7 +706,7 @@ export default function TableDetailPage() {
                       className="flex items-center justify-between border-b pb-3"
                     >
                       <div className="flex-1">
-                        <p className="font-medium text-sm">{item.menuItem.name_en}</p>
+                        <p className="font-medium text-sm">{item.menuItem.name}</p>
                         <p className="text-sm text-gray-600">
                           {formatPrice(item.menuItem.price)} x {item.quantity}
                         </p>
@@ -735,7 +745,7 @@ export default function TableDetailPage() {
                   <textarea
                     value={orderNotes}
                     onChange={(e) => setOrderNotes(e.target.value)}
-                    placeholder="Notes from customers"
+                    placeholder={t('orders.customerNotesPlaceholder')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
                     rows={2}
                   />
@@ -743,7 +753,7 @@ export default function TableDetailPage() {
 
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center mb-4">
-                    <span className="font-semibold">Total</span>
+                    <span className="font-semibold">{t('total', { ns: 'common' })}</span>
                     <span className="font-semibold text-lg">{formatPrice(cartTotal)}</span>
                   </div>
                   <Button
@@ -754,17 +764,17 @@ export default function TableDetailPage() {
                     {submitting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {activeOrder ? 'Adding...' : 'Creating...'}
+                        {activeOrder ? t('orders.adding') : t('orders.creating')}
                       </>
                     ) : activeOrder ? (
                       <>
                         <Check className="h-4 w-4 mr-2" />
-                        Add to Order #{selectedOrderIndex + 1}
+                        {t('orders.addToOrder')} #{selectedOrderIndex + 1}
                       </>
                     ) : (
                       <>
                         <Plus className="h-4 w-4 mr-2" />
-                        Create Order
+                        {t('orders.createOrder')}
                       </>
                     )}
                   </Button>
@@ -780,7 +790,7 @@ export default function TableDetailPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-red-600">Cancel Order</h2>
+              <h2 className="text-lg font-semibold text-red-600">{t('orders.cancelOrder')}</h2>
               <button
                 onClick={() => {
                   setShowCancelModal(false);
@@ -792,18 +802,16 @@ export default function TableDetailPage() {
               </button>
             </div>
 
-            <p className="text-gray-600 mb-4">
-              Please provide a reason for cancelling this order. This action cannot be undone.
-            </p>
+            <p className="text-gray-600 mb-4">{t('orders.reasonRequired')}</p>
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cancellation Reason <span className="text-red-500">*</span>
+                {t('orders.cancellationReason')} <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Enter reason for cancellation..."
+                placeholder={t('orders.reasonPlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
                 rows={3}
               />
@@ -819,7 +827,7 @@ export default function TableDetailPage() {
                 }}
                 disabled={cancelling}
               >
-                Keep Order
+                {t('orders.keepOrder')}
               </Button>
               <Button
                 variant="destructive"
@@ -830,12 +838,12 @@ export default function TableDetailPage() {
                 {cancelling ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Cancelling...
+                    {t('orders.cancelling')}
                   </>
                 ) : (
                   <>
                     <XCircle className="h-4 w-4 mr-2" />
-                    Cancel Order
+                    {t('orders.cancelOrder')}
                   </>
                 )}
               </Button>

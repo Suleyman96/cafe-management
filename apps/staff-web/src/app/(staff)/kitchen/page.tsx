@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { LoadingSpinner } from '@cafe-idare/ui';
 import {
   AlertCircle,
@@ -17,6 +18,7 @@ import { useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hoo
 import { supabase } from '@/lib/supabase/client';
 
 export default function KitchenDisplayPage() {
+  const { t } = useTranslation('staff');
   const { data: orders, isLoading: loading, error, refetch } = useOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
@@ -123,11 +125,11 @@ export default function KitchenDisplayPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'new':
-        return 'NEW ORDER';
+        return t('kitchen.newStatus');
       case 'preparing':
-        return 'COOKING';
+        return t('kitchen.cookingStatus');
       case 'ready':
-        return 'READY';
+        return t('kitchen.readyStatus');
       default:
         return status.toUpperCase();
     }
@@ -159,7 +161,7 @@ export default function KitchenDisplayPage() {
       });
       // Don't show toast in kitchen view to avoid distractions
     } catch (_error) {
-      toast.error('Failed to update order');
+      toast.error(t('delivery.failedUpdate'));
     }
   };
 
@@ -172,7 +174,7 @@ export default function KitchenDisplayPage() {
           border: 'border-gray-300',
           text: 'text-gray-700',
           icon: <AlertCircle className="h-4 w-4" />,
-          label: 'Pending',
+          label: t('pending', { ns: 'common' }),
         };
       case 'preparing':
         return {
@@ -180,7 +182,7 @@ export default function KitchenDisplayPage() {
           border: 'border-yellow-400',
           text: 'text-yellow-800',
           icon: <ChefHat className="h-4 w-4" />,
-          label: 'Cooking',
+          label: t('kitchen.cooking'),
         };
       case 'ready':
         return {
@@ -188,7 +190,7 @@ export default function KitchenDisplayPage() {
           border: 'border-green-400',
           text: 'text-green-800',
           icon: <CheckCircle className="h-4 w-4" />,
-          label: 'Ready',
+          label: t('orders.ready'),
         };
       case 'served':
         return {
@@ -196,7 +198,7 @@ export default function KitchenDisplayPage() {
           border: 'border-purple-400',
           text: 'text-purple-800',
           icon: <UtensilsCrossed className="h-4 w-4" />,
-          label: 'Served',
+          label: t('orders.served'),
         };
       default:
         return {
@@ -257,7 +259,7 @@ export default function KitchenDisplayPage() {
 
       // No toast for kitchen - faster feedback via visual change
     } catch (_error) {
-      toast.error('Failed to update item');
+      toast.error(t('delivery.failedUpdate'));
     }
   };
 
@@ -272,7 +274,7 @@ export default function KitchenDisplayPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900">
-        <p className="text-red-500">Error loading orders</p>
+        <p className="text-red-500">{t('error', { ns: 'common' })}</p>
       </div>
     );
   }
@@ -283,7 +285,7 @@ export default function KitchenDisplayPage() {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-2 sm:gap-4">
           <Utensils className="h-6 sm:h-10 w-6 sm:w-10 text-white" />
-          <h1 className="text-xl sm:text-3xl font-bold text-white">Kitchen</h1>
+          <h1 className="text-xl sm:text-3xl font-bold text-white">{t('kitchen.title')}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-6">
           {/* Status Summary */}
@@ -291,17 +293,23 @@ export default function KitchenDisplayPage() {
             <div className="flex items-center gap-1 sm:gap-2 bg-blue-600 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg">
               <AlertCircle className="h-4 sm:h-6 w-4 sm:w-6 text-white" />
               <span className="text-white font-bold text-base sm:text-xl">{newOrdersCount}</span>
-              <span className="text-blue-200 text-xs sm:text-sm hidden xs:inline">NEW</span>
+              <span className="text-blue-200 text-xs sm:text-sm hidden xs:inline">
+                {t('kitchen.newOrders')}
+              </span>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 bg-yellow-500 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg">
               <ChefHat className="h-4 sm:h-6 w-4 sm:w-6 text-black" />
               <span className="text-black font-bold text-base sm:text-xl">{preparingCount}</span>
-              <span className="text-yellow-800 text-xs sm:text-sm hidden xs:inline">COOK</span>
+              <span className="text-yellow-800 text-xs sm:text-sm hidden xs:inline">
+                {t('kitchen.cooking')}
+              </span>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 bg-green-600 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg">
               <CheckCircle className="h-4 sm:h-6 w-4 sm:w-6 text-white" />
               <span className="text-white font-bold text-base sm:text-xl">{readyCount}</span>
-              <span className="text-green-200 text-xs sm:text-sm hidden xs:inline">READY</span>
+              <span className="text-green-200 text-xs sm:text-sm hidden xs:inline">
+                {t('kitchen.readyLabel')}
+              </span>
             </div>
           </div>
         </div>
@@ -334,7 +342,7 @@ export default function KitchenDisplayPage() {
                     ) : (
                       <span className="flex items-center gap-1 sm:gap-2 text-orange-700">
                         <Package className="h-4 sm:h-5 w-4 sm:w-5" />
-                        TAKEOUT
+                        {t('tables.takeout').toUpperCase()}
                       </span>
                     )}
                   </h3>
@@ -363,10 +371,10 @@ export default function KitchenDisplayPage() {
                 <span className={`text-lg sm:text-xl font-bold ${timeColor}`}>
                   {elapsedMinutes}
                 </span>
-                <span className={`text-xs sm:text-sm ${timeColor}`}>min</span>
+                <span className={`text-xs sm:text-sm ${timeColor}`}>{t('kitchen.min')}</span>
                 {elapsedMinutes > 15 && (
                   <span className="ml-auto text-red-600 text-xs sm:text-sm font-bold animate-pulse">
-                    URGENT!
+                    {t('kitchen.urgent')}
                   </span>
                 )}
               </div>
@@ -387,7 +395,9 @@ export default function KitchenDisplayPage() {
               {/* Order Notes */}
               {order.customer_notes && (
                 <div className="mb-3 p-2 bg-red-200 rounded-lg border-2 border-red-400">
-                  <p className="text-sm font-bold text-red-800">📝 NOTE: {order.customer_notes}</p>
+                  <p className="text-sm font-bold text-red-800">
+                    📝 {t('kitchen.orderNotes')} {order.customer_notes}
+                  </p>
                 </div>
               )}
 
@@ -406,7 +416,7 @@ export default function KitchenDisplayPage() {
                           {item.quantity}x
                         </span>
                         <span className="flex-1 text-sm font-semibold text-gray-800 min-w-0">
-                          {item.menu_item?.name_en}
+                          {item.menu_item?.name}
                         </span>
                         {/* Action Buttons for Item */}
                         <div className="flex-shrink-0">
@@ -416,7 +426,7 @@ export default function KitchenDisplayPage() {
                               className="px-1.5 py-0.5 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-xs font-bold rounded transition-colors shadow flex items-center gap-0.5"
                             >
                               <CheckCircle className="h-3 w-3" />
-                              Ready
+                              {t('orders.ready')}
                             </button>
                           )}
                           {item.status === 'ready' && (
@@ -425,7 +435,7 @@ export default function KitchenDisplayPage() {
                               className="px-1.5 py-0.5 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-xs font-bold rounded transition-colors shadow flex items-center gap-0.5"
                             >
                               <UtensilsCrossed className="h-3 w-3" />
-                              Served
+                              {t('orders.served')}
                             </button>
                           )}
                           {item.status === 'served' && (
@@ -446,7 +456,7 @@ export default function KitchenDisplayPage() {
                     className="w-full py-2.5 bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 text-black text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
                   >
                     <ChefHat className="h-5 w-5" />
-                    START COOKING
+                    {t('kitchen.startCooking')}
                   </button>
                 )}
                 {order.status === 'preparing' && (
@@ -455,7 +465,7 @@ export default function KitchenDisplayPage() {
                     className="w-full py-2.5 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
                   >
                     <CheckCircle className="h-5 w-5" />
-                    ALL ITEMS READY
+                    {t('kitchen.allItemsReady')}
                   </button>
                 )}
                 {order.status === 'ready' && (
@@ -464,7 +474,7 @@ export default function KitchenDisplayPage() {
                     className="w-full py-2.5 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
                   >
                     <UtensilsCrossed className="h-5 w-5" />
-                    ALL SERVED
+                    {t('kitchen.allServed')}
                   </button>
                 )}
               </div>
@@ -478,8 +488,8 @@ export default function KitchenDisplayPage() {
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
             <ChefHat className="h-32 w-32 mx-auto mb-6 text-gray-500" />
-            <p className="text-4xl font-bold text-gray-400 mb-2">No Active Orders</p>
-            <p className="text-xl text-gray-500">Waiting for new orders...</p>
+            <p className="text-4xl font-bold text-gray-400 mb-2">{t('kitchen.noActiveOrders')}</p>
+            <p className="text-xl text-gray-500">{t('kitchen.waitingForOrders')}</p>
           </div>
         </div>
       )}

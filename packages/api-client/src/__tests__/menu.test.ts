@@ -4,7 +4,7 @@ import { createMockContext } from './helpers/mock-supabase';
 
 const validMenuItem = {
   id: '123e4567-e89b-12d3-a456-426614174000',
-  name_en: 'Pizza Margherita',
+  name: 'Pizza Margherita',
   price: 15.99,
   category_id: '123e4567-e89b-12d3-a456-426614174001',
   is_available: true,
@@ -12,7 +12,7 @@ const validMenuItem = {
 
 const validCategory = {
   id: '123e4567-e89b-12d3-a456-426614174001',
-  name_en: 'Main Dishes',
+  name: 'Main Dishes',
   display_order: 1,
   is_active: true,
 };
@@ -72,7 +72,7 @@ describe('MenuItemsWrapper', () => {
     });
     const items = createMenuItemsWrapper(createCtx);
     const result = await items.create({
-      name_en: 'Pizza',
+      name: 'Pizza',
       price: 15.99,
       category_id: validCategory.id,
     } as any);
@@ -156,7 +156,7 @@ describe('CategoriesWrapper', () => {
       },
     });
     const cats = createCategoriesWrapper(createCtx);
-    const result = await cats.create({ name_en: 'Main Dishes' } as any);
+    const result = await cats.create({ name: 'Main Dishes' } as any);
     expect(result).toEqual(validCategory);
     expect(createCtx.getCalls()[0].method).toBe('insert');
   });
@@ -164,12 +164,12 @@ describe('CategoriesWrapper', () => {
   it('update modifies category', async () => {
     const updateCtx = createMockContext({
       responses: {
-        categories: { data: { ...validCategory, name_en: 'Appetizers' }, error: null },
+        categories: { data: { ...validCategory, name: 'Appetizers' }, error: null },
       },
     });
     const cats = createCategoriesWrapper(updateCtx);
-    const result = await cats.update(validCategory.id, { name_en: 'Appetizers' });
-    expect(result.name_en).toBe('Appetizers');
+    const result = await cats.update(validCategory.id, { name: 'Appetizers' });
+    expect(result.name).toBe('Appetizers');
   });
 
   it('delete removes category', async () => {

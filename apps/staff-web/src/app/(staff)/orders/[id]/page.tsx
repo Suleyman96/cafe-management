@@ -2,6 +2,7 @@
 
 import type { ORDER_STATUS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
   AlertCircle,
@@ -72,6 +73,7 @@ export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
+  const { t } = useTranslation('staff');
 
   const { data: orderData, isLoading: loading, error, refetch } = useOrder(orderId);
   const { data: paymentsData } = useOrderPayments(orderId);
@@ -228,28 +230,28 @@ export default function OrderDetailPage() {
           bg: 'bg-gray-100',
           text: 'text-gray-700',
           icon: <AlertCircle className="h-3 w-3" />,
-          label: 'Pending',
+          label: t('orders.pending'),
         };
       case 'preparing':
         return {
           bg: 'bg-yellow-100',
           text: 'text-yellow-800',
           icon: <ChefHat className="h-3 w-3" />,
-          label: 'Preparing',
+          label: t('orders.preparing'),
         };
       case 'ready':
         return {
           bg: 'bg-green-100',
           text: 'text-green-800',
           icon: <CheckCircle className="h-3 w-3" />,
-          label: 'Ready',
+          label: t('orders.ready'),
         };
       case 'served':
         return {
           bg: 'bg-purple-100',
           text: 'text-purple-800',
           icon: <UtensilsCrossed className="h-3 w-3" />,
-          label: 'Served',
+          label: t('orders.served'),
         };
       default:
         return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, label: status };
@@ -257,10 +259,14 @@ export default function OrderDetailPage() {
   };
 
   const itemStatusOptions = [
-    { value: 'pending', label: 'Pending', icon: <AlertCircle className="h-3.5 w-3.5" /> },
-    { value: 'preparing', label: 'Preparing', icon: <ChefHat className="h-3.5 w-3.5" /> },
-    { value: 'ready', label: 'Ready', icon: <CheckCircle className="h-3.5 w-3.5" /> },
-    { value: 'served', label: 'Served', icon: <UtensilsCrossed className="h-3.5 w-3.5" /> },
+    { value: 'pending', label: t('orders.pending'), icon: <AlertCircle className="h-3.5 w-3.5" /> },
+    { value: 'preparing', label: t('orders.preparing'), icon: <ChefHat className="h-3.5 w-3.5" /> },
+    { value: 'ready', label: t('orders.ready'), icon: <CheckCircle className="h-3.5 w-3.5" /> },
+    {
+      value: 'served',
+      label: t('orders.served'),
+      icon: <UtensilsCrossed className="h-3.5 w-3.5" />,
+    },
   ];
 
   // Handle item status update
@@ -271,9 +277,9 @@ export default function OrderDetailPage() {
         status: newStatus as 'pending' | 'preparing' | 'ready' | 'served',
       });
       setOpenItemMenu(null);
-      toast.success(`Item status updated to ${newStatus}`);
+      toast.success(t('orders.itemStatusUpdated', { status: newStatus }));
     } catch (_error) {
-      toast.error('Failed to update item status');
+      toast.error(t('orders.failedUpdateItemStatus'));
     }
   };
 
@@ -284,9 +290,9 @@ export default function OrderDetailPage() {
         orderId,
         status: newStatus,
       });
-      toast.success(`Order status updated to ${String(newStatus).toLowerCase()}`);
+      toast.success(`${t('orders.statusUpdated')} ${String(newStatus).toLowerCase()}`);
     } catch (_error) {
-      toast.error('Failed to update order status');
+      toast.error(t('orders.failedUpdateStatus'));
     }
   };
 
@@ -301,7 +307,7 @@ export default function OrderDetailPage() {
   if (error || !order) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-red-500">Error loading order</p>
+        <p className="text-red-500">{t('orders.errorLoading')}</p>
       </div>
     );
   }
@@ -318,14 +324,14 @@ export default function OrderDetailPage() {
         <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Back</span>
+            <span className="hidden sm:inline">{t('back', { ns: 'common' })}</span>
           </Button>
           <h1 className="text-lg sm:text-2xl font-bold">
             {order.order_type === 'delivery'
-              ? 'Delivery'
+              ? t('orders.delivery')
               : order.table
                 ? order.table.table_number
-                : 'Takeout'}
+                : t('orders.takeout')}
           </h1>
           <span
             className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(order.status)}`}
@@ -342,18 +348,18 @@ export default function OrderDetailPage() {
       <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           <div>
-            <p className="text-sm text-gray-600">Order ID</p>
+            <p className="text-sm text-gray-600">{t('orders.orderId')}</p>
             <p className="font-mono text-sm">#{order.id.slice(0, 8)}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Created</p>
+            <p className="text-sm text-gray-600">{t('created', { ns: 'common' })}</p>
             <p className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {formatDate(order.created_at)}
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Order Type</p>
+            <p className="text-sm text-gray-600">{t('orders.orderType')}</p>
             <p className="flex items-center gap-1">
               {order.order_type === 'delivery' ? (
                 <Truck className="h-4 w-4 text-purple-600" />
@@ -363,27 +369,27 @@ export default function OrderDetailPage() {
                 <User className="h-4 w-4" />
               )}
               {order.order_type === 'delivery'
-                ? 'Delivery'
+                ? t('orders.delivery')
                 : order.order_type === 'takeout'
-                  ? 'Takeout'
-                  : 'Dine-in'}
+                  ? t('orders.takeout')
+                  : t('orders.dineIn')}
             </p>
           </div>
           {order.customer_name && (
             <div>
-              <p className="text-sm text-gray-600">Customer</p>
+              <p className="text-sm text-gray-600">{t('orders.customer')}</p>
               <p>{order.customer_name}</p>
             </div>
           )}
           {order.customer_phone && (
             <div>
-              <p className="text-sm text-gray-600">Phone</p>
+              <p className="text-sm text-gray-600">{t('phone', { ns: 'common' })}</p>
               <p>{order.customer_phone}</p>
             </div>
           )}
           {order.assigned_waiter && (
             <div>
-              <p className="text-sm text-gray-600">Order Taken By</p>
+              <p className="text-sm text-gray-600">{t('orders.orderTakenBy')}</p>
               <p className="flex items-center gap-1">
                 <User className="h-3 w-3 text-blue-500" />
                 {order.assigned_waiter.full_name}
@@ -395,7 +401,7 @@ export default function OrderDetailPage() {
         {order.customer_notes && (
           <div className="mt-4 p-3 bg-amber-100 rounded-lg border border-amber-300">
             <p className="text-sm text-amber-800">
-              <span className="font-medium">Customer Note:</span> {order.customer_notes}
+              <span className="font-medium">{t('orders.customerNote')}</span> {order.customer_notes}
             </p>
           </div>
         )}
@@ -406,7 +412,7 @@ export default function OrderDetailPage() {
         <div className="bg-purple-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 border border-purple-200">
           <h3 className="font-semibold mb-3 flex items-center gap-2 text-purple-800">
             <Truck className="h-4 w-4" />
-            Delivery Information
+            {t('orders.deliveryInformation')}
           </h3>
           <div className="space-y-2 text-sm">
             {order.delivery_address && (
@@ -439,16 +445,17 @@ export default function OrderDetailPage() {
               <div className="flex items-center gap-2 pt-2 border-t border-purple-200">
                 <CreditCard className="h-4 w-4 text-purple-500 flex-shrink-0" />
                 <span>
-                  Delivery Fee: <strong>{formatPrice(order.delivery_fee)}</strong>
+                  {t('deliveryFee', { ns: 'common' })}:{' '}
+                  <strong>{formatPrice(order.delivery_fee)}</strong>
                 </span>
               </div>
             )}
             <div className="flex items-center gap-2 pt-2 border-t border-purple-200">
               <Truck className="h-4 w-4 text-purple-500 flex-shrink-0" />
-              <span className="text-sm">Driver:</span>
+              <span className="text-sm">{t('delivery.driver')}</span>
               {['delivered', 'cancelled'].includes(order.status) ? (
                 <span className="font-medium">
-                  {(order as any).delivery_person?.full_name || 'Not assigned'}
+                  {(order as any).delivery_person?.full_name || t('orders.notAssigned')}
                 </span>
               ) : (
                 <select
@@ -462,14 +469,14 @@ export default function OrderDetailPage() {
                         orderId: order.id,
                         staffId,
                       });
-                      toast.success('Delivery person assigned');
+                      toast.success(t('orders.deliveryPersonAssigned'));
                       refetch();
                     } catch {
-                      toast.error('Failed to assign delivery person');
+                      toast.error(t('orders.failedAssignDriver'));
                     }
                   }}
                 >
-                  <option value="">Select driver...</option>
+                  <option value="">{t('orders.selectDriver')}</option>
                   {staffList?.map((s: any) => (
                     <option key={s.id} value={s.id}>
                       {s.full_name}
@@ -487,12 +494,14 @@ export default function OrderDetailPage() {
         <div className="bg-blue-50 rounded-lg p-4 mb-6">
           <h3 className="font-semibold mb-2 flex items-center gap-2">
             <ArrowRight className="h-4 w-4" />
-            Table Transfer History
+            {t('orders.tableTransferHistory')}
           </h3>
           {transferHistory.map((transfer: TableTransfer) => (
             <div key={transfer.id} className="text-sm">
-              Transferred from {transfer.from_table?.table_number} to{' '}
-              {transfer.to_table?.table_number}
+              {t('orders.transferredFromTo', {
+                from: transfer.from_table?.table_number,
+                to: transfer.to_table?.table_number,
+              })}
               {transfer.reason && ` - ${transfer.reason}`}
               <span className="text-gray-600 ml-2">({formatTime(transfer.created_at)})</span>
             </div>
@@ -503,7 +512,7 @@ export default function OrderDetailPage() {
       {/* Order Items */}
       <div className="border rounded-lg mb-4 sm:mb-6">
         <div className="border-b px-3 sm:px-4 py-2 sm:py-3">
-          <h2 className="font-semibold text-sm sm:text-base">Order Items</h2>
+          <h2 className="font-semibold text-sm sm:text-base">{t('orders.orderItems')}</h2>
         </div>
         <div className="divide-y">
           {order.order_items?.map((item: OrderItem) => {
@@ -516,9 +525,7 @@ export default function OrderDetailPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm sm:text-base">{item.quantity}x</span>
-                      <span className="text-sm sm:text-base truncate">
-                        {item.menu_item?.name_en}
-                      </span>
+                      <span className="text-sm sm:text-base truncate">{item.menu_item?.name}</span>
                     </div>
                     {item.notes && (
                       <p className="text-xs sm:text-sm text-gray-600 mt-1 flex items-start gap-1">
@@ -567,7 +574,9 @@ export default function OrderDetailPage() {
 
                   <div className="text-right flex-shrink-0">
                     <p className="font-medium">{formatPrice(item.quantity * item.item_price)}</p>
-                    <p className="text-sm text-gray-600">{formatPrice(item.item_price)} each</p>
+                    <p className="text-sm text-gray-600">
+                      {formatPrice(item.item_price)} {t('each', { ns: 'common' })}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -578,11 +587,13 @@ export default function OrderDetailPage() {
           {cafeSettings?.tax_enabled && (
             <>
               <div className="flex justify-between items-center text-sm text-gray-600">
-                <span>Subtotal</span>
+                <span>{t('subtotal', { ns: 'common' })}</span>
                 <span>{formatPrice(calculateSubtotal())}</span>
               </div>
               <div className="flex justify-between items-center text-sm text-gray-600">
-                <span>Tax ({cafeSettings.tax_percentage}%)</span>
+                <span>
+                  {t('orders.tax')} ({cafeSettings.tax_percentage}%)
+                </span>
                 <span>{formatPrice(calculateTax())}</span>
               </div>
             </>
@@ -590,7 +601,7 @@ export default function OrderDetailPage() {
           <div
             className={`flex justify-between items-center text-lg font-semibold ${cafeSettings?.tax_enabled ? 'pt-2 border-t' : ''}`}
           >
-            <span>Total</span>
+            <span>{t('total', { ns: 'common' })}</span>
             <span>{formatPrice(total)}</span>
           </div>
         </div>
@@ -600,7 +611,7 @@ export default function OrderDetailPage() {
       {payments && payments.length > 0 && (
         <div className="border rounded-lg mb-6">
           <div className="border-b px-4 py-3">
-            <h2 className="font-semibold">Payment History</h2>
+            <h2 className="font-semibold">{t('orders.paymentHistory')}</h2>
           </div>
           <div className="divide-y">
             {payments.map((payment: Payment) => (
@@ -611,18 +622,21 @@ export default function OrderDetailPage() {
                     {(payment as { tip_amount?: number }).tip_amount &&
                       (payment as { tip_amount?: number }).tip_amount! > 0 && (
                         <p className="text-sm text-green-600">
-                          + {formatPrice((payment as { tip_amount?: number }).tip_amount!)} tip
+                          + {formatPrice((payment as { tip_amount?: number }).tip_amount!)}{' '}
+                          {t('orders.tip')}
                         </p>
                       )}
                     <p className="text-sm text-gray-600 capitalize">{payment.payment_method}</p>
                     <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
                       <CreditCard className="h-3 w-3 text-green-500" />
-                      Received by: {payment.received_by_staff?.full_name || 'Unknown'}
+                      {t('orders.receivedBy')} {payment.received_by_staff?.full_name || 'Unknown'}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">{formatTime(payment.created_at)}</p>
                   </div>
                   {payment.items_paid && payment.items_paid.length > 0 && (
-                    <div className="text-sm text-gray-600">{payment.items_paid.length} items</div>
+                    <div className="text-sm text-gray-600">
+                      {payment.items_paid.length} {t('items', { ns: 'common' })}
+                    </div>
                   )}
                 </div>
               </div>
@@ -630,12 +644,12 @@ export default function OrderDetailPage() {
           </div>
           <div className="border-t px-4 py-3">
             <div className="flex justify-between items-center">
-              <span className="font-semibold">Total Paid</span>
+              <span className="font-semibold">{t('orders.totalPaid')}</span>
               <span className="font-semibold text-green-600">{formatPrice(paid)}</span>
             </div>
             {remaining > 0 && (
               <div className="flex justify-between items-center mt-2">
-                <span className="font-semibold">Remaining</span>
+                <span className="font-semibold">{t('orders.remaining')}</span>
                 <span className="font-semibold text-orange-600">{formatPrice(remaining)}</span>
               </div>
             )}
@@ -654,12 +668,12 @@ export default function OrderDetailPage() {
               onClick={() => handleStatusUpdate('NEW')}
             >
               <ThumbsUp className="h-4 w-4" />
-              Approve
+              {t('approve', { ns: 'common' })}
             </Button>
             {(order as any).source === 'customer' && (
               <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
                 <Smartphone className="h-3 w-3" />
-                QR Order
+                {t('orders.qrOrder')}
               </span>
             )}
           </>
@@ -671,7 +685,7 @@ export default function OrderDetailPage() {
             className="flex items-center gap-1 sm:gap-2"
           >
             <ChefHat className="h-4 w-4" />
-            <span className="hidden xs:inline">Start </span>Preparing
+            {t('orders.startPreparing')}
           </Button>
         )}
         {order.status === 'preparing' && (
@@ -681,7 +695,7 @@ export default function OrderDetailPage() {
             className="flex items-center gap-1 sm:gap-2"
           >
             <CheckCircle className="h-4 w-4" />
-            Ready
+            {t('orders.ready')}
           </Button>
         )}
         {order.status === 'ready' && order.table && order.order_type !== 'delivery' && (
@@ -691,7 +705,7 @@ export default function OrderDetailPage() {
             className="flex items-center gap-1 sm:gap-2"
           >
             <CheckCircle className="h-4 w-4" />
-            Served
+            {t('orders.served')}
           </Button>
         )}
         {/* Delivery: Out for Delivery when ready */}
@@ -702,7 +716,7 @@ export default function OrderDetailPage() {
             className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-1 sm:gap-2"
           >
             <Truck className="h-4 w-4" />
-            Out for Delivery
+            {t('orders.outForDelivery')}
           </Button>
         )}
         {/* Delivery: Mark Delivered */}
@@ -713,7 +727,7 @@ export default function OrderDetailPage() {
             className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-1 sm:gap-2"
           >
             <CheckCircle className="h-4 w-4" />
-            Mark Delivered
+            {t('orders.markDelivered')}
           </Button>
         )}
         {(order.status === 'served' || order.status === 'ready') &&
@@ -725,7 +739,7 @@ export default function OrderDetailPage() {
               className="flex items-center gap-1 sm:gap-2"
             >
               <CreditCard className="h-4 w-4" />
-              Payment
+              {t('orders.payment')}
             </Button>
           )}
         {isFullyPaid && order.status !== 'closed' && order.status !== 'cancelled' && (
@@ -735,7 +749,7 @@ export default function OrderDetailPage() {
             className="flex items-center gap-1 sm:gap-2"
           >
             <CheckCircle className="h-4 w-4" />
-            Close
+            {t('close', { ns: 'common' })}
           </Button>
         )}
         {['pending_approval', 'new', 'preparing', 'ready', 'served', 'out_for_delivery'].includes(
@@ -748,7 +762,9 @@ export default function OrderDetailPage() {
             className="flex items-center gap-1 sm:gap-2"
           >
             <XCircle className="h-4 w-4" />
-            {order.status === 'pending_approval' ? 'Reject' : 'Cancel'}
+            {order.status === 'pending_approval'
+              ? t('reject', { ns: 'common' })
+              : t('cancel', { ns: 'common' })}
           </Button>
         )}
       </div>
@@ -759,7 +775,7 @@ export default function OrderDetailPage() {
         order={order}
         onSuccess={() => {
           setIsPaymentModalOpen(false);
-          toast.success('Payment processed successfully');
+          toast.success(t('orders.paymentProcessed'));
           refetch();
         }}
       />

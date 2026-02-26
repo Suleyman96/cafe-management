@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -14,9 +15,10 @@ import {
 import { useAuthStore } from '@/store/auth-store';
 
 type FeedbackStatus = 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
-type CustomerFeedbackWithTable = any; // We'll get this from the query
+type CustomerFeedbackWithTable = any;
 
 export default function FeedbackPage() {
+  const { t } = useTranslation('staff');
   const [selectedStatus, setSelectedStatus] = useState<FeedbackStatus | 'all'>('pending');
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [responseText, setResponseText] = useState('');
@@ -34,30 +36,24 @@ export default function FeedbackPage() {
 
   const handleAcknowledge = async (feedbackId: string) => {
     if (!staff?.id) {
-      toast.error('You must be logged in to acknowledge feedback');
+      toast.error(t('feedback.failedAcknowledge'));
       return;
     }
-
     try {
-      await acknowledgeFeedback.mutateAsync({
-        feedbackId,
-        staffId: staff.id,
-      });
-      toast.success('Feedback acknowledged');
+      await acknowledgeFeedback.mutateAsync({ feedbackId, staffId: staff.id });
+      toast.success(t('feedback.feedbackAcknowledged'));
     } catch (error) {
       console.error('Error acknowledging feedback:', error);
-      toast.error('Failed to acknowledge feedback');
+      toast.error(t('feedback.failedAcknowledge'));
     }
   };
 
   const handleRespond = async (feedbackId: string) => {
     if (!responseText.trim()) return;
-
     if (!staff?.id) {
-      toast.error('You must be logged in to respond to feedback');
+      toast.error(t('feedback.failedRespond'));
       return;
     }
-
     try {
       await respondToFeedback.mutateAsync({
         feedbackId,
@@ -67,22 +63,21 @@ export default function FeedbackPage() {
       });
       setRespondingTo(null);
       setResponseText('');
-      toast.success('Response sent successfully');
+      toast.success(t('feedback.responseSent'));
     } catch (error) {
       console.error('Error responding to feedback:', error);
-      toast.error('Failed to send response');
+      toast.error(t('feedback.failedRespond'));
     }
   };
 
   const handleDismiss = async (feedbackId: string) => {
     if (!confirm('Are you sure you want to dismiss this feedback?')) return;
-
     try {
       await dismissFeedback.mutateAsync(feedbackId);
-      toast.success('Feedback dismissed');
+      toast.success(t('feedback.feedbackDismissed'));
     } catch (error) {
       console.error('Error dismissing feedback:', error);
-      toast.error('Failed to dismiss feedback');
+      toast.error(t('feedback.failedDismiss'));
     }
   };
 
@@ -114,25 +109,21 @@ export default function FeedbackPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="mb-4 sm:mb-8">
           <h1 className="text-xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
-            Customer Feedback
+            {t('feedback.title')}
           </h1>
-          <p className="text-sm sm:text-base text-gray-600">
-            Manage complaints, questions, and requests from customers
-          </p>
+          <p className="text-sm sm:text-base text-gray-600">{t('feedback.subtitle')}</p>
         </div>
 
-        {/* Status Tabs */}
         <div className="bg-white rounded-lg shadow-sm border mb-4 sm:mb-6">
           <div className="flex overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
             {[
-              { value: 'all', label: 'All' },
-              { value: 'pending', label: 'Pending', count: pendingCount },
-              { value: 'acknowledged', label: 'Ack.' },
-              { value: 'resolved', label: 'Resolved' },
-              { value: 'dismissed', label: 'Dismissed' },
+              { value: 'all', label: t('feedback.allTab') },
+              { value: 'pending', label: t('feedback.pendingTab'), count: pendingCount },
+              { value: 'acknowledged', label: t('feedback.acknowledgedTab') },
+              { value: 'resolved', label: t('feedback.resolvedTab') },
+              { value: 'dismissed', label: t('feedback.dismissedTab') },
             ].map((tab) => (
               <button
                 key={tab.value}
@@ -154,16 +145,17 @@ export default function FeedbackPage() {
           </div>
         </div>
 
-        {/* Feedback List */}
         {isLoading ? (
           <div className="text-center py-8 sm:py-12">
             <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-3 sm:mt-4 text-sm sm:text-base text-gray-600">Loading feedback...</p>
+            <p className="mt-3 sm:mt-4 text-sm sm:text-base text-gray-600">
+              {t('loading', { ns: 'common' })}...
+            </p>
           </div>
         ) : !feedback || feedback.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border p-8 sm:p-12 text-center">
             <div className="text-4xl sm:text-6xl mb-3 sm:mb-4">📝</div>
-            <p className="text-sm sm:text-base text-gray-600">No feedback to display</p>
+            <p className="text-sm sm:text-base text-gray-600">{t('feedback.noFeedback')}</p>
           </div>
         ) : (
           <div className="space-y-3 sm:space-y-4">
@@ -173,13 +165,9 @@ export default function FeedbackPage() {
 
               return (
                 <div key={item.id} className="bg-white rounded-lg shadow-sm border p-3 sm:p-6">
-                  {/* Header */}
                   <div className="flex items-start justify-between mb-3 sm:mb-4">
                     <div className="flex items-start gap-2 sm:gap-4 flex-1">
-                      {/* Type Icon */}
                       <div className="text-2xl sm:text-3xl flex-shrink-0">{typeInfo.icon}</div>
-
-                      {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                           <h3 className="font-semibold text-sm sm:text-lg">
@@ -191,12 +179,10 @@ export default function FeedbackPage() {
                             {item.status}
                           </span>
                         </div>
-
                         <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
                           {item.table && <span>🪑 {item.table.table_number}</span>}
                           <span>📅 {formatDateTime(item.created_at)}</span>
                         </div>
-
                         <p className="text-xs sm:text-base text-gray-700 whitespace-pre-wrap">
                           {item.message}
                         </p>
@@ -204,16 +190,15 @@ export default function FeedbackPage() {
                     </div>
                   </div>
 
-                  {/* Response Section */}
                   {item.response && (
                     <div className="ml-0 sm:ml-14 bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
                       <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
                         <span className="text-xs sm:text-sm font-medium text-blue-900">
-                          Staff Response:
+                          {t('feedback.staffResponse')}
                         </span>
                         {item.responded_by_staff && (
                           <span className="text-xs sm:text-sm text-blue-700">
-                            by {item.responded_by_staff.full_name}
+                            {t('feedback.by')} {item.responded_by_staff.full_name}
                           </span>
                         )}
                       </div>
@@ -221,13 +206,12 @@ export default function FeedbackPage() {
                     </div>
                   )}
 
-                  {/* Response Input */}
                   {isResponding && (
                     <div className="ml-0 sm:ml-14 mb-3 sm:mb-4">
                       <textarea
                         value={responseText}
                         onChange={(e) => setResponseText(e.target.value)}
-                        placeholder="Write your response to the customer..."
+                        placeholder={t('feedback.writeResponse')}
                         className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
                         rows={3}
                         maxLength={500}
@@ -236,7 +220,6 @@ export default function FeedbackPage() {
                     </div>
                   )}
 
-                  {/* Actions */}
                   <div className="ml-0 sm:ml-14 flex flex-wrap gap-2">
                     {item.status === 'pending' && !isResponding && (
                       <>
@@ -247,15 +230,15 @@ export default function FeedbackPage() {
                           disabled={acknowledgeFeedback.isPending}
                           className="text-xs sm:text-sm"
                         >
-                          👁️ <span className="hidden sm:inline">Acknowledge</span>
-                          <span className="sm:hidden">Ack</span>
+                          👁️ <span className="hidden sm:inline">{t('feedback.acknowledge')}</span>
+                          <span className="sm:hidden">{t('feedback.ackShort')}</span>
                         </Button>
                         <Button
                           size="sm"
                           onClick={() => setRespondingTo(item.id)}
                           className="text-xs sm:text-sm"
                         >
-                          💬 Respond
+                          💬 {t('feedback.respond')}
                         </Button>
                         <Button
                           size="sm"
@@ -264,7 +247,7 @@ export default function FeedbackPage() {
                           onClick={() => handleDismiss(item.id)}
                           disabled={dismissFeedback.isPending}
                         >
-                          ✕ Dismiss
+                          ✕ {t('feedback.dismiss')}
                         </Button>
                       </>
                     )}
@@ -276,8 +259,9 @@ export default function FeedbackPage() {
                           onClick={() => setRespondingTo(item.id)}
                           className="text-xs sm:text-sm"
                         >
-                          💬 <span className="hidden sm:inline">Respond & Resolve</span>
-                          <span className="sm:hidden">Respond</span>
+                          💬{' '}
+                          <span className="hidden sm:inline">{t('feedback.respondResolve')}</span>
+                          <span className="sm:hidden">{t('feedback.respond')}</span>
                         </Button>
                         <Button
                           size="sm"
@@ -286,7 +270,7 @@ export default function FeedbackPage() {
                           onClick={() => handleDismiss(item.id)}
                           disabled={dismissFeedback.isPending}
                         >
-                          ✕ Dismiss
+                          ✕ {t('feedback.dismiss')}
                         </Button>
                       </>
                     )}
@@ -299,7 +283,9 @@ export default function FeedbackPage() {
                           disabled={!responseText.trim() || respondToFeedback.isPending}
                           className="text-xs sm:text-sm"
                         >
-                          {respondToFeedback.isPending ? 'Sending...' : 'Send Response'}
+                          {respondToFeedback.isPending
+                            ? t('feedback.sending')
+                            : t('feedback.sendResponse')}
                         </Button>
                         <Button
                           size="sm"
@@ -311,7 +297,7 @@ export default function FeedbackPage() {
                           disabled={respondToFeedback.isPending}
                           className="text-xs sm:text-sm"
                         >
-                          Cancel
+                          {t('cancel', { ns: 'common' })}
                         </Button>
                       </>
                     )}

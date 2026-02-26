@@ -1,6 +1,7 @@
 'use client';
 
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -20,16 +21,17 @@ interface WasteLogModalProps {
 }
 
 const WASTE_REASONS = [
-  { value: 'expired', label: 'Expired' },
-  { value: 'spoiled', label: 'Spoiled' },
-  { value: 'overcooked', label: 'Overcooked' },
-  { value: 'dropped', label: 'Dropped' },
-  { value: 'returned_by_customer', label: 'Returned by Customer' },
-  { value: 'preparation_waste', label: 'Preparation Waste' },
-  { value: 'other', label: 'Other' },
+  { value: 'expired', i18nKey: 'waste.expired' },
+  { value: 'spoiled', i18nKey: 'waste.spoiled' },
+  { value: 'overcooked', i18nKey: 'waste.overcooked' },
+  { value: 'dropped', i18nKey: 'waste.dropped' },
+  { value: 'returned_by_customer', i18nKey: 'waste.returnedByCustomer' },
+  { value: 'preparation_waste', i18nKey: 'waste.preparationWaste' },
+  { value: 'other', i18nKey: 'waste.other' },
 ];
 
 export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
+  const { t } = useTranslation('staff');
   const isEditing = !!wasteLog;
   const createWaste = useCreateWasteLog();
   const updateWaste = useUpdateWasteLog();
@@ -97,11 +99,11 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
 
     const quantity = Number.parseFloat(formData.quantity);
     if (!quantity || quantity <= 0) {
-      toast.error('Please enter a valid quantity');
+      toast.error(t('waste.validQuantity'));
       return;
     }
 
-    const toastId = toast.loading(isEditing ? 'Updating waste log...' : 'Logging waste...');
+    const toastId = toast.loading(isEditing ? t('waste.updatingWaste') : t('waste.loggingWaste'));
 
     try {
       const data = {
@@ -120,7 +122,7 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
 
       if (isEditing) {
         await updateWaste.mutateAsync({ id: wasteLog.id, updates: data });
-        toast.success('Waste log updated!', { id: toastId });
+        toast.success(t('waste.wasteLogUpdated'), { id: toastId });
       } else {
         await createWaste.mutateAsync(data);
 
@@ -137,16 +139,16 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
               },
             });
           } catch {
-            toast.error('Waste logged but failed to deduct from stock');
+            toast.error(t('waste.wasteButNoStock'));
           }
         }
 
-        toast.success('Waste logged!', { id: toastId });
+        toast.success(t('waste.wasteLogged'), { id: toastId });
       }
 
       onClose();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to save waste log', { id: toastId });
+      toast.error(error.message || t('waste.failedLog'), { id: toastId });
     }
   };
 
@@ -155,7 +157,7 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">
-            {isEditing ? 'Edit Waste Log' : 'Log Waste'}
+            {isEditing ? t('waste.editWasteLog') : t('waste.logWaste')}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
             &times;
@@ -166,14 +168,14 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
           {/* Stock Item Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Link to Stock Item
+              {t('waste.linkToStockItem')}
             </label>
             <select
               value={formData.stock_item_id}
               onChange={(e) => handleStockItemSelect(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Manual entry (no stock item)</option>
+              <option value="">{t('waste.manualEntry')}</option>
               {stockItems.map((item: any) => (
                 <option key={item.id} value={item.id}>
                   {item.name} ({item.quantity} {item.unit} in stock)
@@ -184,21 +186,25 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
 
           {/* Item Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Item Name *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('waste.itemName')} *
+            </label>
             <input
               type="text"
               value={formData.item_name}
               onChange={(e) => setFormData({ ...formData, item_name: e.target.value })}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="What was wasted?"
+              placeholder={t('waste.whatWasWasted')}
             />
           </div>
 
           {/* Quantity + Unit */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Quantity *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('quantity', { ns: 'common' })} *
+              </label>
               <input
                 type="number"
                 step="0.01"
@@ -211,7 +217,9 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('stock.unit')}
+              </label>
               <input
                 type="text"
                 value={formData.unit}
@@ -225,7 +233,9 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
           {/* Cost */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Cost per Unit</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('waste.costPerUnit')}
+              </label>
               <input
                 type="number"
                 step="0.01"
@@ -236,7 +246,9 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Total Cost</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('waste.totalCost')}
+              </label>
               <input
                 type="number"
                 step="0.01"
@@ -251,7 +263,9 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
           {/* Reason + Date */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Reason *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('waste.wasteReason')} *
+              </label>
               <select
                 value={formData.reason}
                 onChange={(e) =>
@@ -261,13 +275,15 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
               >
                 {WASTE_REASONS.map((r) => (
                   <option key={r.value} value={r.value}>
-                    {r.label}
+                    {t(r.i18nKey)}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Waste Date *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('waste.wasteDate')} *
+              </label>
               <input
                 type="date"
                 value={formData.waste_date}
@@ -289,30 +305,32 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
                 className="h-4 w-4 text-blue-600 border-gray-300 rounded"
               />
               <label htmlFor="deduct_stock" className="text-sm text-gray-700">
-                Deduct from stock inventory
+                {t('waste.deductFromStock')}
               </label>
             </div>
           )}
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('notes', { ns: 'common' })}
+            </label>
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={2}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Optional notes"
+              placeholder={t('notes', { ns: 'common' })}
             />
           </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
-              Cancel
+              {t('cancel', { ns: 'common' })}
             </Button>
             <Button type="submit" className="flex-1">
-              {isEditing ? 'Update' : 'Log Waste'}
+              {isEditing ? t('tasks.update') : t('waste.logWaste')}
             </Button>
           </div>
         </form>

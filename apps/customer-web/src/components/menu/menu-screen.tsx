@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { ArrowLeft, Flame, Leaf, Search, ShoppingCart, Wheat, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -8,8 +9,6 @@ import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useCategories, useMenuItems } from '@/hooks/use-menu';
 import { useCartStore } from '@/store/cart-store';
-import { useLanguageStore } from '@/store/language-store';
-import { getLocalizedField } from '@/types';
 import { MenuItemCard } from './menu-item-card';
 
 interface MenuScreenProps {
@@ -20,7 +19,7 @@ type DietaryFilter = 'vegetarian' | 'vegan' | 'gluten_free' | 'spicy';
 
 export function MenuScreen({ tableId }: MenuScreenProps) {
   const router = useRouter();
-  const { language } = useLanguageStore();
+  const { t } = useTranslation('customer');
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
@@ -40,8 +39,8 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
     return menuItems.filter((item) => {
       // Search filter
       if (searchQuery) {
-        const name = getLocalizedField(item, 'name', language).toLowerCase();
-        const description = getLocalizedField(item, 'description', language).toLowerCase();
+        const name = (item.name || '').toLowerCase();
+        const description = (item.description || '').toLowerCase();
         const query = searchQuery.toLowerCase();
 
         if (!name.includes(query) && !description.includes(query)) {
@@ -59,7 +58,7 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
 
       return true;
     });
-  }, [menuItems, searchQuery, dietaryFilters, language]);
+  }, [menuItems, searchQuery, dietaryFilters]);
 
   const toggleDietaryFilter = (filter: DietaryFilter) => {
     setDietaryFilters((prev) =>
@@ -94,7 +93,7 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Search menu..."
+                  placeholder={t('menu.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-9 py-2 rounded-full border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
@@ -110,7 +109,7 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
               </div>
             </div>
           ) : (
-            <h1 className="text-xl font-bold">Menu</h1>
+            <h1 className="text-xl font-bold">{t('menu.title')}</h1>
           )}
 
           <div className="flex items-center gap-1">
@@ -145,7 +144,7 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
             className="whitespace-nowrap flex-shrink-0"
           >
             <Leaf className="h-3.5 w-3.5 mr-1 text-green-600" />
-            Vegetarian
+            {t('menu.filterVegetarian')}
           </Button>
           <Button
             variant={dietaryFilters.includes('vegan') ? 'default' : 'outline'}
@@ -154,7 +153,7 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
             className="whitespace-nowrap flex-shrink-0"
           >
             <Leaf className="h-3.5 w-3.5 mr-1 text-green-700" />
-            Vegan
+            {t('menu.filterVegan')}
           </Button>
           <Button
             variant={dietaryFilters.includes('gluten_free') ? 'default' : 'outline'}
@@ -163,7 +162,7 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
             className="whitespace-nowrap flex-shrink-0"
           >
             <Wheat className="h-3.5 w-3.5 mr-1" />
-            Gluten Free
+            {t('menu.filterGlutenFree')}
           </Button>
           <Button
             variant={dietaryFilters.includes('spicy') ? 'default' : 'outline'}
@@ -172,7 +171,7 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
             className="whitespace-nowrap flex-shrink-0"
           >
             <Flame className="h-3.5 w-3.5 mr-1 text-red-600" />
-            Spicy
+            {t('menu.filterSpicy')}
           </Button>
         </div>
 
@@ -184,7 +183,7 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
             onClick={() => setSelectedCategory(undefined)}
             className="whitespace-nowrap flex-shrink-0"
           >
-            All
+            {t('menu.categoryAll')}
           </Button>
           {categories?.map((category) => (
             <Button
@@ -195,7 +194,7 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
               className="whitespace-nowrap flex-shrink-0"
             >
               {category.icon && <span className="mr-1">{category.icon}</span>}
-              {getLocalizedField(category, 'name', language)}
+              {category.name}
             </Button>
           ))}
         </div>
@@ -204,10 +203,10 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
         {hasActiveFilters && (
           <div className="px-4 pb-2 flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
-              {filteredItems.length} items found
+              {t('menu.itemsFound', { count: filteredItems.length })}
             </span>
             <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-6">
-              Clear filters
+              {t('menu.clearFilters')}
             </Button>
           </div>
         )}
@@ -220,11 +219,11 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
         ) : (
           <div className="col-span-full text-center py-12">
             <p className="text-muted-foreground mb-4">
-              {hasActiveFilters ? 'No items match your filters' : 'No menu items available'}
+              {hasActiveFilters ? t('menu.noItemsFiltered') : t('menu.noItemsAvailable')}
             </p>
             {hasActiveFilters && (
               <Button variant="outline" onClick={clearFilters}>
-                Clear filters
+                {t('menu.clearFilters')}
               </Button>
             )}
           </div>
@@ -236,7 +235,7 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t">
           <Button size="xl" className="w-full" onClick={() => router.push(cartPath)}>
             <ShoppingCart className="mr-2 h-5 w-5" />
-            View Cart ({itemCount} items)
+            {t('menu.viewCart', { count: itemCount })}
           </Button>
         </div>
       )}

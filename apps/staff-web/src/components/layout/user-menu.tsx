@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { ChevronDown, LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 
 export function UserMenu() {
+  const { t } = useTranslation('nav');
   const { staff, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -70,7 +72,7 @@ export function UserMenu() {
             className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
           >
             <Settings className="h-4 w-4" />
-            Account Settings
+            {t('accountSettings', { ns: 'nav' })}
           </Link>
 
           <button
@@ -81,7 +83,7 @@ export function UserMenu() {
             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
           >
             <LogOut className="h-4 w-4" />
-            Sign out
+            {t('signOut', { ns: 'nav' })}
           </button>
         </div>
       )}

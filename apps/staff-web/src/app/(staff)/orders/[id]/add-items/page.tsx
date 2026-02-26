@@ -1,13 +1,16 @@
 'use client';
 
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { ArrowLeft, Check, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
+  formatPriceWithSettings,
   useAddOrderItems,
+  useCafeSettings,
   useCategories,
   useMenuItems,
   useOrder,
@@ -26,12 +29,21 @@ export default function AddItemsPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
+  const { t } = useTranslation('staff');
 
   const { data: order, isLoading: orderLoading } = useOrder(orderId);
   const { data: menuItems, isLoading: menuLoading } = useMenuItems({ isAvailable: true });
   const { data: categories } = useCategories();
   const addOrderItems = useAddOrderItems();
   const updateOrderNotes = useUpdateOrderNotes();
+  const { data: cafeSettings } = useCafeSettings();
+
+  const formatPrice = (amount: number) => {
+    if (cafeSettings) {
+      return formatPriceWithSettings(amount, cafeSettings);
+    }
+    return `$${amount.toFixed(2)}`;
+  };
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -87,7 +99,7 @@ export default function AddItemsPage() {
   // Submit order items
   const handleSubmit = async () => {
     if (cart.length === 0) {
-      toast.error('Please add at least one item');
+      toast.error(t('orders.addAtLeastOneItem'));
       return;
     }
 
@@ -96,7 +108,7 @@ export default function AddItemsPage() {
       const orderItems = cart.map((item) => ({
         order_id: orderId,
         menu_item_id: item.menuItem.id,
-        item_name: item.menuItem.name_en,
+        item_name: item.menuItem.name,
         quantity: item.quantity,
         item_price: item.menuItem.price,
         notes: null,
@@ -114,11 +126,11 @@ export default function AddItemsPage() {
         });
       }
 
-      toast.success('Items added to order');
+      toast.success(t('orders.itemsAddedToOrder'));
       router.push(`/orders/${orderId}`);
     } catch (error) {
       console.error('Failed to add items:', error);
-      toast.error('Failed to add items. Please try again.');
+      toast.error(t('orders.failedAddItems'));
     } finally {
       setSubmitting(false);
     }
@@ -135,7 +147,7 @@ export default function AddItemsPage() {
   if (!order) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-red-500">Order not found</p>
+        <p className="text-red-500">{t('orders.orderNotFound')}</p>
       </div>
     );
   }
@@ -147,11 +159,13 @@ export default function AddItemsPage() {
         <div className="flex items-center gap-2 sm:gap-4">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Back</span>
+            <span className="hidden sm:inline">{t('back', { ns: 'common' })}</span>
           </Button>
           <h1 className="text-lg sm:text-2xl font-bold">
-            Add Items -{' '}
-            {(order as any).table?.table_number ? (order as any).table.table_number : 'Takeout'}
+            {t('orders.addItems')} -{' '}
+            {(order as any).table?.table_number
+              ? (order as any).table.table_number
+              : t('tables.takeout')}
           </h1>
         </div>
       </div>
@@ -164,7 +178,7 @@ export default function AddItemsPage() {
           onClick={() => setSelectedCategory(null)}
           className="flex-shrink-0"
         >
-          All
+          {t('all', { ns: 'common' })}
         </Button>
         {categories?.map((category: Category) => (
           <Button
@@ -174,7 +188,7 @@ export default function AddItemsPage() {
             onClick={() => setSelectedCategory(category.id)}
             className="flex-shrink-0"
           >
-            {category.name_en}
+            {category.name}
           </Button>
         ))}
       </div>
@@ -194,20 +208,20 @@ export default function AddItemsPage() {
                   onClick={() => addToCart(item)}
                 >
                   <div className="flex justify-between items-start mb-1 sm:mb-2">
-                    <h3 className="font-medium text-xs sm:text-sm line-clamp-2">{item.name_en}</h3>
+                    <h3 className="font-medium text-xs sm:text-sm line-clamp-2">{item.name}</h3>
                     {quantity > 0 && (
                       <span className="bg-blue-500 text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ml-1 flex-shrink-0">
                         {quantity}
                       </span>
                     )}
                   </div>
-                  {item.description_en && (
+                  {item.description && (
                     <p className="text-xs text-gray-500 mb-1 sm:mb-2 line-clamp-2 hidden sm:block">
-                      {item.description_en}
+                      {item.description}
                     </p>
                   )}
                   <p className="font-semibold text-blue-600 text-sm sm:text-base">
-                    ${item.price.toFixed(2)}
+                    {formatPrice(item.price)}
                   </p>
                 </div>
               );
@@ -220,12 +234,13 @@ export default function AddItemsPage() {
           <div className="border rounded-lg p-3 sm:p-4 lg:sticky lg:top-4 bg-white">
             <h2 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4 flex items-center gap-2">
               <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
-              Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)
+              {t('orders.cart')} ({cart.reduce((sum, item) => sum + item.quantity, 0)}{' '}
+              {t('tables.items')})
             </h2>
 
             {cart.length === 0 ? (
               <p className="text-gray-500 text-center py-4 sm:py-8 text-sm">
-                Click on menu items to add them to the order
+                {t('orders.clickToAdd')}
               </p>
             ) : (
               <>
@@ -237,10 +252,10 @@ export default function AddItemsPage() {
                     >
                       <div className="flex-1 min-w-0 mr-2">
                         <p className="font-medium text-xs sm:text-sm truncate">
-                          {item.menuItem.name_en}
+                          {item.menuItem.name}
                         </p>
                         <p className="text-xs sm:text-sm text-gray-600">
-                          ${item.menuItem.price.toFixed(2)} x {item.quantity}
+                          {formatPrice(item.menuItem.price)} x {item.quantity}
                         </p>
                       </div>
                       <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -277,7 +292,7 @@ export default function AddItemsPage() {
                   <textarea
                     value={customerNotes}
                     onChange={(e) => setCustomerNotes(e.target.value)}
-                    placeholder="Notes from customer..."
+                    placeholder={t('orders.customerNotesPlaceholder')}
                     className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-xs sm:text-sm"
                     rows={2}
                   />
@@ -285,9 +300,11 @@ export default function AddItemsPage() {
 
                 <div className="border-t pt-3 sm:pt-4">
                   <div className="flex justify-between items-center mb-3 sm:mb-4">
-                    <span className="font-semibold text-sm sm:text-base">Total</span>
+                    <span className="font-semibold text-sm sm:text-base">
+                      {t('total', { ns: 'common' })}
+                    </span>
                     <span className="font-semibold text-base sm:text-lg">
-                      ${cartTotal.toFixed(2)}
+                      {formatPrice(cartTotal)}
                     </span>
                   </div>
                   <Button
@@ -296,11 +313,11 @@ export default function AddItemsPage() {
                     disabled={submitting || cart.length === 0}
                   >
                     {submitting ? (
-                      'Adding...'
+                      t('orders.adding')
                     ) : (
                       <>
                         <Check className="h-4 w-4 mr-2" />
-                        Add to Order
+                        {t('orders.addToOrder')}
                       </>
                     )}
                   </Button>

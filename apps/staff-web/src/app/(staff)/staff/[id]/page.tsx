@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
   ArrowLeft,
@@ -50,6 +51,8 @@ export default function StaffDetailPage() {
   const params = useParams();
   const staffId = params.id as string;
   const { staff: currentUser } = useAuth();
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
 
   const {
     data: staffMember,
@@ -149,7 +152,7 @@ export default function StaffDetailPage() {
     return (
       <div className="p-3 sm:p-6">
         <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm">
-          Access denied. Only administrators can view staff details.
+          {t('staffMgmt.accessDenied')}
         </div>
       </div>
     );
@@ -167,7 +170,7 @@ export default function StaffDetailPage() {
     return (
       <div className="p-3 sm:p-6">
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg text-sm">
-          Staff member not found.
+          {t('staffMgmt.noStaff')}
         </div>
       </div>
     );
@@ -217,7 +220,7 @@ export default function StaffDetailPage() {
         className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Staff
+        {tCommon('back')} {t('staffMgmt.title')}
       </Link>
 
       {/* Profile Card */}
@@ -239,12 +242,12 @@ export default function StaffDetailPage() {
                 {member.is_active ? (
                   <span className="inline-flex items-center gap-1 text-green-600 text-xs">
                     <UserCheck className="h-3 w-3" />
-                    Active
+                    {tCommon('active')}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-gray-400 text-xs">
                     <UserX className="h-3 w-3" />
-                    Inactive
+                    {tCommon('inactive')}
                   </span>
                 )}
               </div>
@@ -261,12 +264,12 @@ export default function StaffDetailPage() {
                 )}
                 <div className="flex items-center gap-2">
                   <Calendar className="h-3.5 w-3.5" />
-                  Member since {new Date(member.created_at).toLocaleDateString()}
+                  {t('staffMgmt.memberSince')} {new Date(member.created_at).toLocaleDateString()}
                 </div>
                 {member.last_login_at && (
                   <div className="flex items-center gap-2">
                     <Clock className="h-3.5 w-3.5" />
-                    Last login: {new Date(member.last_login_at).toLocaleString()}
+                    {t('staffMgmt.lastLogin')} {new Date(member.last_login_at).toLocaleString()}
                   </div>
                 )}
               </div>
@@ -280,7 +283,7 @@ export default function StaffDetailPage() {
               className="text-xs"
             >
               <Edit2 className="h-3.5 w-3.5 mr-1" />
-              Edit
+              {tCommon('edit')}
             </Button>
             <Button
               variant="outline"
@@ -289,7 +292,7 @@ export default function StaffDetailPage() {
               className="text-xs"
             >
               <Key className="h-3.5 w-3.5 mr-1" />
-              Reset Password
+              {t('staffMgmt.resetPassword')}
             </Button>
           </div>
         </div>
@@ -301,28 +304,36 @@ export default function StaffDetailPage() {
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center gap-2 text-blue-600 mb-1">
               <ShoppingBag className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase text-gray-500">Orders Handled</span>
+              <span className="text-xs font-medium uppercase text-gray-500">
+                {t('reports.ordersHandled')}
+              </span>
             </div>
             <p className="text-2xl font-bold">{stats.ordersHandled}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center gap-2 text-green-600 mb-1">
               <TrendingUp className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase text-gray-500">Revenue</span>
+              <span className="text-xs font-medium uppercase text-gray-500">
+                {t('reports.revenue')}
+              </span>
             </div>
             <p className="text-2xl font-bold">{formatPrice(stats.revenue)}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center gap-2 text-purple-600 mb-1">
               <ShoppingBag className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase text-gray-500">Items Sold</span>
+              <span className="text-xs font-medium uppercase text-gray-500">
+                {t('reports.itemsSold')}
+              </span>
             </div>
             <p className="text-2xl font-bold">{stats.itemsSold}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center gap-2 text-indigo-600 mb-1">
               <UserCheck className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase text-gray-500">Completion Rate</span>
+              <span className="text-xs font-medium uppercase text-gray-500">
+                {t('reports.completionRate')}
+              </span>
             </div>
             <p className="text-2xl font-bold">{stats.completionRate}%</p>
           </div>
@@ -332,36 +343,36 @@ export default function StaffDetailPage() {
       {/* Recent Orders */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-4 sm:px-6 py-3 border-b">
-          <h2 className="text-lg font-semibold">Recent Orders</h2>
+          <h2 className="text-lg font-semibold">{t('staffMgmt.recentOrders')}</h2>
         </div>
         {ordersLoading ? (
           <div className="p-6 flex justify-center">
             <LoadingSpinner />
           </div>
         ) : recentOrders.length === 0 ? (
-          <div className="p-6 text-center text-sm text-gray-500">No orders found</div>
+          <div className="p-6 text-center text-sm text-gray-500">{t('staffMgmt.noOrders')}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Order #
+                    {t('staffMgmt.orderNumber')}
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Table
+                    {t('staffMgmt.table')}
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Status
+                    {tCommon('status')}
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Items
+                    {t('tables.items')}
                   </th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                    Total
+                    {tCommon('total')}
                   </th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                    Date
+                    {tCommon('date')}
                   </th>
                 </tr>
               </thead>
@@ -382,7 +393,9 @@ export default function StaffDetailPage() {
                         #{order.order_number || order.id.slice(0, 6)}
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-600">
-                        {order.table?.table_number ? `Table ${order.table.table_number}` : '-'}
+                        {order.table?.table_number
+                          ? `${t('staffMgmt.table')} ${order.table.table_number}`
+                          : '-'}
                       </td>
                       <td className="px-4 py-2">
                         <span
@@ -410,30 +423,30 @@ export default function StaffDetailPage() {
       {/* Recent Payments */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-4 sm:px-6 py-3 border-b">
-          <h2 className="text-lg font-semibold">Recent Payments Received</h2>
+          <h2 className="text-lg font-semibold">{t('staffMgmt.recentPayments')}</h2>
         </div>
         {paymentsLoading ? (
           <div className="p-6 flex justify-center">
             <LoadingSpinner />
           </div>
         ) : !recentPayments || recentPayments.length === 0 ? (
-          <div className="p-6 text-center text-sm text-gray-500">No payments found</div>
+          <div className="p-6 text-center text-sm text-gray-500">{t('staffMgmt.noPayments')}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Order
+                    {t('orders.order')}
                   </th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                    Amount
+                    {tCommon('amount')}
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Method
+                    {t('expenses.paymentMethod')}
                   </th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                    Date
+                    {tCommon('date')}
                   </th>
                 </tr>
               </thead>
@@ -468,14 +481,18 @@ export default function StaffDetailPage() {
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center gap-2 text-blue-600 mb-1">
             <Clock className="h-4 w-4" />
-            <span className="text-xs font-medium uppercase text-gray-500">This Week</span>
+            <span className="text-xs font-medium uppercase text-gray-500">
+              {tCommon('thisWeek')}
+            </span>
           </div>
           <p className="text-2xl font-bold">{weeklyHours}h</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center gap-2 text-green-600 mb-1">
             <Calendar className="h-4 w-4" />
-            <span className="text-xs font-medium uppercase text-gray-500">This Month</span>
+            <span className="text-xs font-medium uppercase text-gray-500">
+              {tCommon('thisMonth')}
+            </span>
           </div>
           <p className="text-2xl font-bold">{monthlyHours}h</p>
         </div>
@@ -484,29 +501,31 @@ export default function StaffDetailPage() {
       {/* Upcoming Schedule */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-4 sm:px-6 py-3 border-b">
-          <h2 className="text-lg font-semibold">Upcoming Schedule</h2>
+          <h2 className="text-lg font-semibold">{t('staffMgmt.upcomingSchedule')}</h2>
         </div>
         {!upcomingSchedules || upcomingSchedules.length === 0 ? (
-          <div className="p-6 text-center text-sm text-gray-500">No upcoming schedules</div>
+          <div className="p-6 text-center text-sm text-gray-500">
+            {t('staffMgmt.noUpcomingSchedules')}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Date
+                    {tCommon('date')}
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Planned
+                    {t('schedules.planned')}
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Actual Start
+                    {t('schedules.actualStart')}
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Actual End
+                    {t('schedules.actualEnd')}
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Status
+                    {tCommon('status')}
                   </th>
                 </tr>
               </thead>

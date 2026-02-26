@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -11,6 +12,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+  const { t } = useTranslation('auth');
   const { staff, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -46,8 +48,10 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
       return (
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-            <p className="text-gray-600">You don't have permission to access this page.</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              {t('accessDenied', { ns: 'auth' })}
+            </h1>
+            <p className="text-gray-600">{t('noPermission', { ns: 'auth' })}</p>
           </div>
         </div>
       );

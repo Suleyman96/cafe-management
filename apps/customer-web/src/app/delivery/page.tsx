@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { MapPin, Phone, Truck, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -10,6 +11,7 @@ import { useDeliveryStore } from '@/store/delivery-store';
 
 export default function DeliveryPage() {
   const router = useRouter();
+  const { t } = useTranslation('customer');
   const { data: settings, isLoading } = useCafeSettings();
   const { customerName, customerPhone, deliveryAddress, deliveryNotes, setCustomerInfo } =
     useDeliveryStore();
@@ -28,25 +30,23 @@ export default function DeliveryPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <Truck className="h-16 w-16 text-muted-foreground mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Delivery Not Available</h1>
-        <p className="text-muted-foreground">
-          Delivery ordering is currently not available. Please try again later.
-        </p>
+        <h1 className="text-2xl font-bold mb-2">{t('deliveryLanding.unavailableTitle')}</h1>
+        <p className="text-muted-foreground">{t('deliveryLanding.unavailableSubtext')}</p>
       </div>
     );
   }
 
   const handleContinue = () => {
     if (!name.trim()) {
-      setError('Please enter your name');
+      setError(t('deliveryLanding.errorName'));
       return;
     }
     if (!phone.trim()) {
-      setError('Please enter your phone number');
+      setError(t('deliveryLanding.errorPhone'));
       return;
     }
     if (!address.trim()) {
-      setError('Please enter your delivery address');
+      setError(t('deliveryLanding.errorAddress'));
       return;
     }
     setError('');
@@ -62,8 +62,8 @@ export default function DeliveryPage() {
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Truck className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Order for Delivery</h1>
-          <p className="text-muted-foreground">Fill in your details and browse our menu</p>
+          <h1 className="text-2xl font-bold mb-2">{t('deliveryLanding.heroTitle')}</h1>
+          <p className="text-muted-foreground">{t('deliveryLanding.heroSubtext')}</p>
         </div>
 
         {/* Delivery zone info */}
@@ -84,41 +84,47 @@ export default function DeliveryPage() {
           )}
 
           <div>
-            <label className="text-sm font-medium mb-1.5 block">Name *</label>
+            <label className="text-sm font-medium mb-1.5 block">
+              {t('deliveryLanding.labelName')}
+            </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your full name"
+                placeholder={t('deliveryLanding.namePlaceholder')}
                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-1.5 block">Phone *</label>
+            <label className="text-sm font-medium mb-1.5 block">
+              {t('deliveryLanding.labelPhone')}
+            </label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+994 XX XXX XX XX"
+                placeholder={t('deliveryLanding.phonePlaceholder')}
                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-1.5 block">Delivery Address *</label>
+            <label className="text-sm font-medium mb-1.5 block">
+              {t('deliveryLanding.labelAddress')}
+            </label>
             <div className="relative">
               <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <textarea
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Full delivery address"
+                placeholder={t('deliveryLanding.addressPlaceholder')}
                 rows={3}
                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               />
@@ -126,26 +132,33 @@ export default function DeliveryPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-1.5 block">Delivery Notes (optional)</label>
+            <label className="text-sm font-medium mb-1.5 block">
+              {t('deliveryLanding.labelNotes')}
+            </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Floor number, door code, landmarks..."
+              placeholder={t('deliveryLanding.notesPlaceholder')}
               rows={2}
               className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary resize-none"
             />
           </div>
 
           <Button size="xl" className="w-full mt-4" onClick={handleContinue}>
-            Browse Menu
+            {t('deliveryLanding.browseMenu')}
           </Button>
 
           {/* Delivery fee info */}
           {settings.delivery_fee_default > 0 && (
             <p className="text-xs text-center text-muted-foreground">
-              Delivery fee: {settings.delivery_fee_default.toFixed(2)} {settings.currency_symbol}
-              {settings.minimum_delivery_amount > 0 &&
-                ` · Minimum order: ${settings.minimum_delivery_amount.toFixed(2)} ${settings.currency_symbol}`}
+              {t('deliveryLanding.deliveryFeeInfo', {
+                fee: settings.delivery_fee_default.toFixed(2),
+                currency: settings.currency_symbol,
+                min:
+                  settings.minimum_delivery_amount > 0
+                    ? settings.minimum_delivery_amount.toFixed(2)
+                    : '0',
+              })}
             </p>
           )}
         </div>

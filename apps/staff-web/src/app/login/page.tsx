@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { CafeManLogo } from '@/components/ui/cafe-man-logo';
@@ -8,6 +9,7 @@ import { useAuthStore } from '@/store/auth-store';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useTranslation('auth');
   const { staff, setStaff } = useAuthStore();
 
   const [email, setEmail] = useState('');
@@ -41,7 +43,7 @@ export default function LoginPage() {
       }
 
       if (!authData.user) {
-        setError('Login failed. Please try again.');
+        setError(t('loginFailed'));
         setLoading(false);
         return;
       }
@@ -57,7 +59,7 @@ export default function LoginPage() {
       if (staffError || !staffData) {
         // Sign out if no valid staff record
         await supabase.auth.signOut();
-        setError('No active staff account found for this email.');
+        setError(t('noActiveStaff'));
         setLoading(false);
         return;
       }
@@ -83,7 +85,7 @@ export default function LoginPage() {
       router.push('/');
     } catch (err) {
       console.error('Login error:', err);
-      setError('An unexpected error occurred. Please try again.');
+      setError(t('unexpectedError'));
     } finally {
       setLoading(false);
     }
@@ -95,8 +97,8 @@ export default function LoginPage() {
         <div className="flex justify-center">
           <CafeManLogo size={56} showText={false} />
         </div>
-        <h1 className="mt-4 text-center text-3xl font-bold text-gray-900">Cafe-Man</h1>
-        <p className="mt-1 text-center text-sm text-gray-500">Staff Portal</p>
+        <h1 className="mt-4 text-center text-3xl font-bold text-gray-900">{t('cafeManTitle')}</h1>
+        <p className="mt-1 text-center text-sm text-gray-500">{t('staffPortal')}</p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -110,7 +112,7 @@ export default function LoginPage() {
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+                {t('emailAddress')}
               </label>
               <div className="mt-1">
                 <input
@@ -122,14 +124,14 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="appearance-none block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all"
-                  placeholder="staff@example.com"
+                  placeholder={t('placeholderEmail')}
                 />
               </div>
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                {t('password')}
               </label>
               <div className="mt-1">
                 <input
@@ -141,7 +143,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="appearance-none block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all"
-                  placeholder="Enter your password"
+                  placeholder={t('placeholderPassword')}
                 />
               </div>
             </div>
@@ -152,7 +154,7 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-xl"
               >
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? t('signingIn') : t('signIn')}
               </button>
             </div>
           </form>

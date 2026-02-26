@@ -34,14 +34,8 @@ export interface Database {
       categories: {
         Row: {
           id: string;
-          name_en: string;
-          name_az: string | null;
-          name_ru: string | null;
-          name_tr: string | null;
-          description_en: string | null;
-          description_az: string | null;
-          description_ru: string | null;
-          description_tr: string | null;
+          name: string;
+          description: string | null;
           icon: string | null;
           display_order: number;
           is_active: boolean;
@@ -58,14 +52,8 @@ export interface Database {
         Row: {
           id: string;
           category_id: string | null;
-          name_en: string;
-          name_az: string | null;
-          name_ru: string | null;
-          name_tr: string | null;
-          description_en: string | null;
-          description_az: string | null;
-          description_ru: string | null;
-          description_tr: string | null;
+          name: string;
+          description: string | null;
           price: number;
           image_url: string | null;
           preparation_time: number | null;
@@ -188,6 +176,7 @@ export interface Database {
           updated_at: string;
           last_login_at: string | null;
           auth_user_id: string | null;
+          preferred_language: string;
         };
         Insert: Omit<
           Database['public']['Tables']['staff']['Row'],

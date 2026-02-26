@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { MapPin, Phone, StickyNote, Truck, User, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ interface CreateDeliveryModalProps {
 }
 
 export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDeliveryModalProps) {
+  const { t } = useTranslation('staff');
   const createOrder = useCreateOrder();
   const { data: settings } = useCafeSettings();
 
@@ -67,7 +69,7 @@ export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDelive
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
             <Truck className="h-5 w-5 text-purple-600" />
-            <h2 className="text-xl font-bold">Create Delivery Order</h2>
+            <h2 className="text-xl font-bold">{t('delivery.createDeliveryOrder')}</h2>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-5 w-5" />
@@ -78,12 +80,12 @@ export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDelive
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <User className="inline h-4 w-4 mr-1" />
-              Customer Name <span className="text-red-500">*</span>
+              {t('delivery.customerName')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Customer name"
+              placeholder={t('delivery.customerName')}
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
             />
@@ -92,7 +94,7 @@ export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDelive
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Phone className="inline h-4 w-4 mr-1" />
-              Phone Number <span className="text-red-500">*</span>
+              {t('delivery.phoneNumber')} <span className="text-red-500">*</span>
             </label>
             <input
               type="tel"
@@ -106,11 +108,11 @@ export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDelive
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <MapPin className="inline h-4 w-4 mr-1" />
-              Delivery Address <span className="text-red-500">*</span>
+              {t('delivery.deliveryAddress')} <span className="text-red-500">*</span>
             </label>
             <textarea
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-              placeholder="Full delivery address"
+              placeholder={t('delivery.fullDeliveryAddress')}
               rows={2}
               value={deliveryAddress}
               onChange={(e) => setDeliveryAddress(e.target.value)}
@@ -120,11 +122,11 @@ export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDelive
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <StickyNote className="inline h-4 w-4 mr-1" />
-              Delivery Notes (optional)
+              {t('delivery.deliveryNotes')}
             </label>
             <textarea
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-              placeholder="e.g., Ring doorbell, leave at door..."
+              placeholder={t('delivery.ringDoorbell')}
               rows={2}
               value={deliveryNotes}
               onChange={(e) => setDeliveryNotes(e.target.value)}
@@ -134,7 +136,7 @@ export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDelive
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Truck className="inline h-4 w-4 mr-1" />
-              Delivery Fee
+              {t('delivery.deliveryFee')}
             </label>
             <input
               type="number"
@@ -153,22 +155,21 @@ export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDelive
         </div>
 
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
-          <p className="text-sm text-purple-800">
-            This will create a new delivery order. You can add items to the order in the next
-            screen.
-          </p>
+          <p className="text-sm text-purple-800">{t('delivery.deliveryHint')}</p>
         </div>
 
         <div className="flex gap-3 mt-6">
           <Button variant="outline" onClick={onClose} disabled={loading} className="flex-1">
-            Cancel
+            {t('cancel', { ns: 'common' })}
           </Button>
           <Button
             onClick={handleCreate}
             disabled={!isValid || loading}
             className="flex-1 bg-purple-600 hover:bg-purple-700"
           >
-            {loading ? 'Creating...' : 'Create Order'}
+            {loading
+              ? `${t('delivery.createDeliveryOrder')}...`
+              : t('delivery.createDeliveryOrder')}
           </Button>
         </div>
       </div>

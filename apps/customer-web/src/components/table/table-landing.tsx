@@ -1,5 +1,7 @@
 'use client';
 
+import type { Language } from '@cafe-idare/i18n';
+import { LANGUAGES, useTranslation } from '@cafe-idare/i18n';
 import {
   CheckCircle,
   ChefHat,
@@ -25,7 +27,6 @@ import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
 import { setTableContext } from '@/lib/supabase';
 import { useLanguageStore } from '@/store/language-store';
-import type { Language } from '@/types';
 
 interface TableLandingProps {
   tableId: string;
@@ -34,6 +35,7 @@ interface TableLandingProps {
 
 export function TableLanding({ tableId, token }: TableLandingProps) {
   const router = useRouter();
+  const { t } = useTranslation('customer');
   const { data: table, isLoading, error } = useTable(tableId);
   const { language, setLanguage } = useLanguageStore();
   const { data: settings } = useCafeSettings();
@@ -56,13 +58,13 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
   const getOrderStatusInfo = (status: string) => {
     switch (status) {
       case 'new':
-        return { label: 'Order Placed', icon: ClipboardList, color: 'bg-blue-500' };
+        return { label: t('table.status.orderPlaced'), icon: ClipboardList, color: 'bg-blue-500' };
       case 'preparing':
-        return { label: 'Preparing', icon: ChefHat, color: 'bg-yellow-500' };
+        return { label: t('table.status.preparing'), icon: ChefHat, color: 'bg-yellow-500' };
       case 'ready':
-        return { label: 'Ready to Serve', icon: CheckCircle, color: 'bg-green-500' };
+        return { label: t('table.status.readyToServe'), icon: CheckCircle, color: 'bg-green-500' };
       case 'served':
-        return { label: 'Served', icon: CheckCircle, color: 'bg-green-600' };
+        return { label: t('table.status.served'), icon: CheckCircle, color: 'bg-green-600' };
       default:
         return { label: status, icon: Clock, color: 'bg-gray-500' };
     }
@@ -71,10 +73,8 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
   if (error || !table) {
     return (
       <div className="flex h-screen flex-col items-center justify-center p-4">
-        <h1 className="text-2xl font-bold text-destructive">Invalid Table</h1>
-        <p className="mt-2 text-muted-foreground">
-          This table QR code is not valid. Please scan a valid QR code.
-        </p>
+        <h1 className="text-2xl font-bold text-destructive">{t('table.invalidTitle')}</h1>
+        <p className="mt-2 text-muted-foreground">{t('table.invalidDescription')}</p>
       </div>
     );
   }
@@ -165,7 +165,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             <div className="mb-4">
               <Image
                 src={settings.cafe_logo_url}
-                alt={settings?.restaurant_name || 'Restaurant'}
+                alt={settings?.restaurant_name || t('table.restaurantFallback')}
                 width={120}
                 height={120}
                 className="mx-auto rounded-2xl shadow-lg object-contain"
@@ -173,9 +173,11 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             </div>
           ) : null}
           <h1 className="text-3xl font-bold" style={{ color: primaryColor }}>
-            {settings?.restaurant_name || 'Restaurant'}
+            {settings?.restaurant_name || t('table.restaurantFallback')}
           </h1>
-          <p className="mt-2 text-muted-foreground">{settings?.welcome_heading || 'Welcome!'}</p>
+          <p className="mt-2 text-muted-foreground">
+            {settings?.welcome_heading || t('table.welcomeFallback')}
+          </p>
           {settings?.welcome_message && (
             <p className="mt-1 text-sm text-muted-foreground/80 max-w-xs mx-auto">
               {settings.welcome_message}
@@ -188,7 +190,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-3xl font-bold">{table.table_number}</h2>
-              <p className="text-sm text-muted-foreground">Your Table</p>
+              <p className="text-sm text-muted-foreground">{t('table.yourTable')}</p>
             </div>
             <Users className="h-8 w-8" style={{ color: primaryColor }} />
           </div>
@@ -201,7 +203,9 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
           )}
 
           <div className="mt-4 pt-4 border-t">
-            <p className="text-sm text-muted-foreground">Capacity: {table.capacity} guests</p>
+            <p className="text-sm text-muted-foreground">
+              {t('table.capacity', { count: table.capacity })}
+            </p>
           </div>
         </div>
 
@@ -223,7 +227,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                         <StatusIcon className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="font-semibold">Active Order</p>
+                        <p className="font-semibold">{t('table.activeOrderTitle')}</p>
                         <p className="text-sm text-muted-foreground">
                           {statusInfo.label} • {activeOrder.order_items?.length || 0} items
                         </p>
@@ -245,32 +249,25 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                 router.push(`/table/${tableId}/order`);
               }}
             >
-              View Order Status
+              {t('table.viewOrderStatus')}
             </Button>
           </div>
         )}
 
         {/* Language Selector */}
         <div className="w-full mb-6">
-          <p className="text-sm font-medium mb-2 text-center">Select Language / Dil seçin</p>
+          <p className="text-sm font-medium mb-2 text-center">{t('table.selectLanguage')}</p>
           <div className="grid grid-cols-4 gap-2">
-            {(
-              [
-                { code: 'en', label: 'EN' },
-                { code: 'az', label: 'AZ' },
-                { code: 'ru', label: 'RU' },
-                { code: 'tr', label: 'TR' },
-              ] as const
-            ).map((lang) => (
+            {LANGUAGES.map((lang) => (
               <Button
                 key={lang.code}
                 variant={language === lang.code ? 'default' : 'outline'}
-                size="lg"
+                size="sm"
                 onClick={() => setLanguage(lang.code as Language)}
-                className="font-semibold"
+                className="font-medium text-xs"
                 style={language === lang.code ? { backgroundColor: primaryColor } : {}}
               >
-                {lang.label}
+                {lang.flag} {lang.code.toUpperCase()}
               </Button>
             ))}
           </div>
@@ -289,7 +286,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             }
             onClick={() => router.push(`/table/${tableId}/menu`)}
           >
-            {activeOrder ? 'Add More Items' : 'Browse Menu'}
+            {activeOrder ? t('table.addMoreItems') : t('table.browseMenu')}
           </Button>
         ) : (
           <Button
@@ -298,16 +295,16 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             style={{ backgroundColor: primaryColor }}
             onClick={() => router.push(`/table/${tableId}/menu`)}
           >
-            View Menu
+            {t('table.viewMenu')}
           </Button>
         )}
 
         <p className="mt-4 text-sm text-center text-muted-foreground">
           {settings?.qr_ordering_enabled === false
-            ? 'Browse our menu items'
+            ? t('table.hintBrowse')
             : activeOrder
-              ? 'Tap above to add more items to your order'
-              : 'Scan the QR code on your table to order'}
+              ? t('table.hintAddMore')
+              : t('table.hintScanQR')}
         </p>
       </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { LoadingSpinner } from '@cafe-idare/ui';
 import {
   AlertTriangle,
@@ -54,6 +55,7 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
 type TabView = 'today' | 'all' | 'my' | 'templates';
 
 export default function TasksPage() {
+  const { t } = useTranslation('staff');
   const { staff } = useAuth();
   const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
   const searchParams = useSearchParams();
@@ -79,7 +81,6 @@ export default function TasksPage() {
   const markCancelled = useMarkTaskCancelled();
   const deleteTask = useDeleteTask();
 
-  // Auto-generate recurring tasks on page load (once)
   const hasGenerated = useRef(false);
   useEffect(() => {
     if (hasGenerated.current) return;
@@ -97,16 +98,16 @@ export default function TasksPage() {
     try {
       if (action === 'start') {
         await markInProgress.mutateAsync(taskId);
-        toast.success('Task started');
+        toast.success(t('tasks.taskStarted'));
       } else if (action === 'complete') {
         await markCompleted.mutateAsync(taskId);
-        toast.success('Task completed');
+        toast.success(t('tasks.taskCompleted'));
       } else if (action === 'cancel') {
         await markCancelled.mutateAsync(taskId);
-        toast.success('Task cancelled');
+        toast.success(t('tasks.taskCancelled'));
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to update task');
+      toast.error(error.message || t('tasks.failedUpdateTask'));
     }
   };
 
@@ -114,9 +115,9 @@ export default function TasksPage() {
     if (!confirm('Are you sure you want to delete this task?')) return;
     try {
       await deleteTask.mutateAsync(id);
-      toast.success('Task deleted');
+      toast.success(t('tasks.taskDeleted'));
     } catch (error: any) {
-      toast.error(error.message || 'Failed to delete');
+      toast.error(error.message || t('tasks.failedUpdateTask'));
     }
   };
 
@@ -145,9 +146,9 @@ export default function TasksPage() {
   };
 
   const RECURRENCE_LABELS: Record<string, string> = {
-    daily: 'Daily',
-    weekly: 'Weekly',
-    monthly: 'Monthly',
+    daily: t('tasks.daily'),
+    weekly: t('tasks.weekly'),
+    monthly: t('tasks.monthly'),
   };
 
   const getWeekdayLabels = (days: number[]) => {
@@ -165,19 +166,17 @@ export default function TasksPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
-          <p className="text-gray-500 mt-1">Manage daily operations and staff assignments</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('tasks.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('tasks.subtitle')}</p>
         </div>
         <Button onClick={() => setShowTaskModal(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          New Task
+          {t('tasks.newTask')}
         </Button>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-3">
@@ -185,7 +184,7 @@ export default function TasksPage() {
               <ListTodo className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Open Tasks</p>
+              <p className="text-sm text-gray-500">{t('tasks.openTasks')}</p>
               <p className="text-2xl font-bold text-gray-900">{openTasks}</p>
             </div>
           </div>
@@ -196,7 +195,7 @@ export default function TasksPage() {
               <AlertTriangle className="h-5 w-5 text-red-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Overdue</p>
+              <p className="text-sm text-gray-500">{t('tasks.overdue')}</p>
               <p className="text-2xl font-bold text-red-600">{overdueCount}</p>
             </div>
           </div>
@@ -207,21 +206,20 @@ export default function TasksPage() {
               <CheckCircle2 className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Completed Today</p>
+              <p className="text-sm text-gray-500">{t('tasks.completedToday')}</p>
               <p className="text-2xl font-bold text-gray-900">{completedToday}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 mb-4 border-b">
         {(
           [
-            { key: 'today', label: "Today's Tasks" },
-            { key: 'all', label: 'All Tasks' },
-            { key: 'my', label: 'My Tasks' },
-            ...(isAdmin ? [{ key: 'templates', label: 'Recurring Templates' }] : []),
+            { key: 'today', label: t('tasks.todayTasks') },
+            { key: 'all', label: t('tasks.allTasks') },
+            { key: 'my', label: t('tasks.myTasks') },
+            ...(isAdmin ? [{ key: 'templates', label: t('tasks.recurringTemplates') }] : []),
           ] as { key: TabView; label: string }[]
         ).map((tab) => (
           <button
@@ -238,7 +236,6 @@ export default function TasksPage() {
         ))}
       </div>
 
-      {/* Filters (for all/my tabs) */}
       {(activeTab === 'all' || activeTab === 'my') && (
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <select
@@ -246,27 +243,26 @@ export default function TasksPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="">{t('tasks.allStatuses')}</option>
+            <option value="pending">{t('pending', { ns: 'common' })}</option>
+            <option value="in_progress">{t('tasks.inProgress')}</option>
+            <option value="completed">{t('completed', { ns: 'common' })}</option>
+            <option value="cancelled">{t('tasks.cancelled')}</option>
           </select>
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">All Priorities</option>
-            <option value="low">Low</option>
-            <option value="normal">Normal</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
+            <option value="">{t('tasks.allPriorities')}</option>
+            <option value="low">{t('tasks.low')}</option>
+            <option value="normal">{t('tasks.normal')}</option>
+            <option value="high">{t('tasks.high')}</option>
+            <option value="urgent">{t('tasks.urgent')}</option>
           </select>
         </div>
       )}
 
-      {/* Task List */}
       <div className="space-y-3">
         {displayTasks.map((task: any) => (
           <div
@@ -276,10 +272,7 @@ export default function TasksPage() {
             }`}
           >
             <div className="flex items-start gap-3">
-              {/* Status Icon */}
               <div className="mt-0.5">{STATUS_ICONS[task.status] || STATUS_ICONS.pending}</div>
-
-              {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-medium text-gray-900">{task.title}</h3>
@@ -289,27 +282,20 @@ export default function TasksPage() {
                     </span>
                   )}
                 </div>
-
                 {task.description && (
                   <p className="text-sm text-gray-500 mt-0.5 truncate">{task.description}</p>
                 )}
-
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  {/* Priority badge */}
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_COLORS[task.priority]}`}
                   >
                     {task.priority}
                   </span>
-
-                  {/* Assignee */}
                   {task.assigned_to_staff?.full_name && (
                     <span className="text-xs text-gray-500">
                       {task.assigned_to_staff.full_name}
                     </span>
                   )}
-
-                  {/* Due date */}
                   {task.due_date && !task.is_recurring && (
                     <span
                       className={`text-xs flex items-center gap-1 ${isOverdue(task) ? 'text-red-600 font-medium' : 'text-gray-500'}`}
@@ -319,8 +305,6 @@ export default function TasksPage() {
                       {task.due_time && ` ${task.due_time.slice(0, 5)}`}
                     </span>
                   )}
-
-                  {/* Recurrence info (for templates) */}
                   {task.is_recurring && (
                     <span className="text-xs text-blue-600 flex items-center gap-1">
                       <Repeat className="h-3 w-3" />
@@ -336,14 +320,12 @@ export default function TasksPage() {
                   )}
                 </div>
               </div>
-
-              {/* Actions */}
               <div className="flex items-center gap-1 flex-shrink-0">
                 {task.status === 'pending' && !task.is_recurring && (
                   <button
                     onClick={() => handleQuickAction(task.id, 'start')}
                     className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
-                    title="Start"
+                    title={t('start', { ns: 'common' })}
                   >
                     <Play className="h-4 w-4" />
                   </button>
@@ -353,7 +335,7 @@ export default function TasksPage() {
                     <button
                       onClick={() => handleQuickAction(task.id, 'complete')}
                       className="p-1.5 text-gray-400 hover:text-green-600 rounded"
-                      title="Complete"
+                      title={t('complete', { ns: 'common' })}
                     >
                       <CheckCircle2 className="h-4 w-4" />
                     </button>
@@ -364,7 +346,7 @@ export default function TasksPage() {
                     setShowTaskModal(true);
                   }}
                   className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
-                  title="Edit"
+                  title={t('edit', { ns: 'common' })}
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
@@ -372,7 +354,7 @@ export default function TasksPage() {
                   <button
                     onClick={() => handleDelete(task.id)}
                     className="p-1.5 text-gray-400 hover:text-red-600 rounded"
-                    title="Delete"
+                    title={t('delete', { ns: 'common' })}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -384,14 +366,11 @@ export default function TasksPage() {
 
         {displayTasks.length === 0 && (
           <div className="bg-white rounded-lg border p-8 text-center text-gray-500">
-            {activeTab === 'templates'
-              ? 'No recurring templates. Create one to auto-generate daily tasks.'
-              : 'No tasks found.'}
+            {activeTab === 'templates' ? t('tasks.noTemplates') : t('tasks.noTasks')}
           </div>
         )}
       </div>
 
-      {/* Task Modal */}
       {showTaskModal && (
         <TaskModal
           task={editingTask || undefined}

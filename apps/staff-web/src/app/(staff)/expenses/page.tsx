@@ -1,6 +1,7 @@
 'use client';
 
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { LoadingSpinner } from '@cafe-idare/ui';
 import { DollarSign, FolderOpen, Pencil, Plus, Settings, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -20,14 +21,8 @@ import {
 
 type Expense = Database['public']['Tables']['expenses']['Row'];
 
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  cash: 'Cash',
-  card: 'Card',
-  digital: 'Digital',
-  bank_transfer: 'Bank Transfer',
-};
-
 export default function ExpensesPage() {
+  const { t } = useTranslation('staff');
   const { staff } = useAuth();
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
@@ -37,6 +32,13 @@ export default function ExpensesPage() {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+
+  const PAYMENT_METHOD_LABELS: Record<string, string> = {
+    cash: t('cash', { ns: 'common' }),
+    card: t('card', { ns: 'common' }),
+    digital: t('digital', { ns: 'common' }),
+    bank_transfer: t('bankTransfer', { ns: 'common' }),
+  };
 
   const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
   const endMonth = selectedMonth === 12 ? 1 : selectedMonth + 1;
@@ -65,7 +67,7 @@ export default function ExpensesPage() {
   if (staff && staff.role !== 'admin' && staff.role !== 'owner') {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Admin access required</p>
+        <p className="text-gray-500">{t('staffMgmt.accessDenied')}</p>
       </div>
     );
   }
@@ -74,9 +76,9 @@ export default function ExpensesPage() {
     if (!confirm('Are you sure you want to delete this expense?')) return;
     try {
       await deleteExpense.mutateAsync(id);
-      toast.success('Expense deleted');
+      toast.success(t('expenses.expenseDeleted'));
     } catch (error: any) {
-      toast.error(error.message || 'Failed to delete');
+      toast.error(error.message || t('delete', { ns: 'common' }));
     }
   };
 
@@ -109,17 +111,17 @@ export default function ExpensesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Expenses</h1>
-          <p className="text-gray-500 mt-1">Track and manage operational costs</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('expenses.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('expenses.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowCategoryModal(true)}>
             <Settings className="h-4 w-4 mr-2" />
-            Categories
+            {t('expenses.categories')}
           </Button>
           <Button onClick={() => setShowExpenseModal(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Expense
+            {t('expenses.addExpense')}
           </Button>
         </div>
       </div>
@@ -132,7 +134,7 @@ export default function ExpensesPage() {
               <DollarSign className="h-5 w-5 text-red-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total This Month</p>
+              <p className="text-sm text-gray-500">{t('expenses.totalThisMonth')}</p>
               <p className="text-2xl font-bold text-gray-900">{formatPrice(summary?.total || 0)}</p>
             </div>
           </div>
@@ -143,7 +145,7 @@ export default function ExpensesPage() {
               <FolderOpen className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Transactions</p>
+              <p className="text-sm text-gray-500">{t('expenses.transactions')}</p>
               <p className="text-2xl font-bold text-gray-900">{summary?.count || 0}</p>
             </div>
           </div>
@@ -154,7 +156,7 @@ export default function ExpensesPage() {
               <FolderOpen className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Top Category</p>
+              <p className="text-sm text-gray-500">{t('expenses.topCategory')}</p>
               <p className="text-lg font-bold text-gray-900 truncate">
                 {summary?.byCategory?.[0]?.name || '-'}
               </p>
@@ -166,7 +168,7 @@ export default function ExpensesPage() {
       {/* Category Breakdown */}
       {summary?.byCategory && summary.byCategory.length > 0 && (
         <div className="bg-white rounded-lg border p-4 mb-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">By Category</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-3">{t('expenses.byCategory')}</h3>
           <div className="space-y-2">
             {summary.byCategory.map((cat: any) => {
               const percentage = summary.total > 0 ? (cat.total / summary.total) * 100 : 0;
@@ -224,7 +226,7 @@ export default function ExpensesPage() {
           onChange={(e) => setCategoryFilter(e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">All Categories</option>
+          <option value="">{t('expenses.allCategories')}</option>
           {categories.map((cat: any) => (
             <option key={cat.id} value={cat.id}>
               {cat.name}
@@ -236,11 +238,12 @@ export default function ExpensesPage() {
           onChange={(e) => setPaymentFilter(e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">All Payment Methods</option>
-          <option value="cash">Cash</option>
-          <option value="card">Card</option>
-          <option value="digital">Digital</option>
-          <option value="bank_transfer">Bank Transfer</option>
+          <option value="">{t('expenses.allPaymentMethods')}</option>
+          {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -250,15 +253,27 @@ export default function ExpensesPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b">
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Date</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
-                  Description
+                  {t('date', { ns: 'common' })}
                 </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Category</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Amount</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Payment</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">By</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Actions</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('description', { ns: 'common' })}
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('category', { ns: 'common' })}
+                </th>
+                <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('amount', { ns: 'common' })}
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('expenses.paymentMethod')}
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('staffMgmt.staffMember')}
+                </th>
+                <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">
+                  {t('actions', { ns: 'common' })}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -295,14 +310,14 @@ export default function ExpensesPage() {
                           setShowExpenseModal(true);
                         }}
                         className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
-                        title="Edit"
+                        title={t('edit', { ns: 'common' })}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(expense.id)}
                         className="p-1.5 text-gray-400 hover:text-red-600 rounded"
-                        title="Delete"
+                        title={t('delete', { ns: 'common' })}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -313,7 +328,7 @@ export default function ExpensesPage() {
               {expenses.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                    No expenses recorded for this period.
+                    {t('expenses.noExpenses')}
                   </td>
                 </tr>
               )}

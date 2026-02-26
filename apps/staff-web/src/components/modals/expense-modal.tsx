@@ -1,6 +1,7 @@
 'use client';
 
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ const PAYMENT_METHODS = [
 ];
 
 export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
+  const { t } = useTranslation('staff');
   const isEditing = !!expense;
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
@@ -41,11 +43,13 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
 
     const amount = Number.parseFloat(formData.amount);
     if (!amount || amount <= 0) {
-      toast.error('Please enter a valid amount');
+      toast.error(t('expenses.validAmount'));
       return;
     }
 
-    const toastId = toast.loading(isEditing ? 'Updating expense...' : 'Creating expense...');
+    const toastId = toast.loading(
+      isEditing ? t('expenses.updatingExpense') : t('expenses.creatingExpense'),
+    );
 
     try {
       const data = {
@@ -61,15 +65,15 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
 
       if (isEditing) {
         await updateExpense.mutateAsync({ id: expense.id, updates: data });
-        toast.success('Expense updated!', { id: toastId });
+        toast.success(t('expenses.expenseUpdated'), { id: toastId });
       } else {
         await createExpense.mutateAsync(data);
-        toast.success('Expense created!', { id: toastId });
+        toast.success(t('expenses.expenseCreated'), { id: toastId });
       }
 
       onClose();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to save expense', { id: toastId });
+      toast.error(error.message || t('expenses.failedSave'), { id: toastId });
     }
   };
 
@@ -78,7 +82,7 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">
-            {isEditing ? 'Edit Expense' : 'Add Expense'}
+            {isEditing ? t('expenses.editExpense') : t('expenses.addExpense')}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
             &times;
@@ -88,7 +92,9 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Amount *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('expenses.expenseAmount')} *
+            </label>
             <input
               type="number"
               step="0.01"
@@ -103,27 +109,31 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('expenses.expenseDescription')} *
+            </label>
             <input
               type="text"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="What was this expense for?"
+              placeholder={t('expenses.whatExpenseFor')}
             />
           </div>
 
           {/* Category + Payment Method */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('category', { ns: 'common' })}
+              </label>
               <select
                 value={formData.category_id}
                 onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">No category</option>
+                <option value="">{t('expenses.noCategory')}</option>
                 {categories.map((cat: any) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.name}
@@ -133,7 +143,7 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Payment Method *
+                {t('expenses.paymentMethod')} *
               </label>
               <select
                 value={formData.payment_method}
@@ -147,7 +157,9 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
               >
                 {PAYMENT_METHODS.map((pm) => (
                   <option key={pm.value} value={pm.value}>
-                    {pm.label}
+                    {pm.value === 'bank_transfer'
+                      ? t('bankTransfer', { ns: 'common' })
+                      : t(pm.value, { ns: 'common' })}
                   </option>
                 ))}
               </select>
@@ -156,7 +168,9 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
 
           {/* Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('expenses.expenseDate')} *
+            </label>
             <input
               type="date"
               value={formData.expense_date}
@@ -168,23 +182,25 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('notes', { ns: 'common' })}
+            </label>
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={2}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Optional notes"
+              placeholder={t('expenses.optionalNotes')}
             />
           </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
-              Cancel
+              {t('cancel', { ns: 'common' })}
             </Button>
             <Button type="submit" className="flex-1">
-              {isEditing ? 'Update Expense' : 'Add Expense'}
+              {isEditing ? t('expenses.updateExpense') : t('expenses.addExpense')}
             </Button>
           </div>
         </form>

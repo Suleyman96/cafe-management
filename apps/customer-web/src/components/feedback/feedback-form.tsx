@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@cafe-idare/i18n';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { db } from '@/lib/supabase';
@@ -19,16 +20,8 @@ interface FeedbackFormProps {
   onCancel?: () => void;
 }
 
-const FEEDBACK_TYPES: Array<{ value: FeedbackType; label: string; icon: string }> = [
-  { value: 'complaint_food', label: 'Issue with Food Quality', icon: '🍽️' },
-  { value: 'complaint_service', label: 'Issue with Service', icon: '⚠️' },
-  { value: 'complaint_staff', label: 'Issue with Staff', icon: '👤' },
-  { value: 'question_menu', label: 'Question about Menu', icon: '❓' },
-  { value: 'request_general', label: 'General Request', icon: '📝' },
-  { value: 'praise', label: 'Give a Compliment', icon: '⭐' },
-];
-
 export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: FeedbackFormProps) {
+  const { t } = useTranslation('customer');
   const [feedbackType, setFeedbackType] = useState<FeedbackType>('request_general');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -36,11 +29,20 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const FEEDBACK_TYPES: Array<{ value: FeedbackType; label: string; icon: string }> = [
+    { value: 'complaint_food', label: t('feedback.type.foodQuality'), icon: '🍽️' },
+    { value: 'complaint_service', label: t('feedback.type.service'), icon: '⚠️' },
+    { value: 'complaint_staff', label: t('feedback.type.staff'), icon: '👤' },
+    { value: 'question_menu', label: t('feedback.type.menuQuestion'), icon: '❓' },
+    { value: 'request_general', label: t('feedback.type.general'), icon: '📝' },
+    { value: 'praise', label: t('feedback.type.praise'), icon: '⭐' },
+  ];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!message.trim()) {
-      alert('Please enter your feedback message');
+      alert(t('feedback.errorEmpty'));
       return;
     }
 
@@ -62,7 +64,7 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
       }, 2000);
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      alert('Failed to submit feedback. Please try again.');
+      alert(t('feedback.errorSubmit'));
     } finally {
       setIsSubmitting(false);
     }
@@ -72,11 +74,9 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">✅</div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h3>
-        <p className="text-gray-600">
-          Your feedback has been sent to our staff.
-          <br />
-          We appreciate your input!
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('feedback.successTitle')}</h3>
+        <p className="text-gray-600" style={{ whiteSpace: 'pre-line' }}>
+          {t('feedback.successMessage')}
         </p>
       </div>
     );
@@ -87,7 +87,7 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
       {/* Feedback Type Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          What would you like to share?
+          {t('feedback.typeLabel')}
         </label>
         <div className="grid grid-cols-1 gap-3">
           {FEEDBACK_TYPES.map((type) => (
@@ -122,14 +122,14 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
       {/* Subject (Optional) */}
       <div>
         <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-          Subject (Optional)
+          {t('feedback.subjectLabel')}
         </label>
         <input
           type="text"
           id="subject"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          placeholder="Brief title for your feedback"
+          placeholder={t('feedback.subjectPlaceholder')}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           maxLength={255}
         />
@@ -138,13 +138,13 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
       {/* Message (Required) */}
       <div>
         <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-          Your Message *
+          {t('feedback.messageLabel')}
         </label>
         <textarea
           id="message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Please describe your feedback in detail..."
+          placeholder={t('feedback.messagePlaceholder')}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
           rows={6}
           maxLength={1000}
@@ -163,7 +163,7 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
             className="flex-1"
             disabled={isSubmitting}
           >
-            Cancel
+            {t('feedback.cancel')}
           </Button>
         )}
         <Button
@@ -171,7 +171,7 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
           className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
           disabled={isSubmitting || !message.trim()}
         >
-          {isSubmitting ? 'Sending...' : 'Submit Feedback'}
+          {isSubmitting ? t('feedback.submitting') : t('feedback.submit')}
         </Button>
       </div>
     </form>

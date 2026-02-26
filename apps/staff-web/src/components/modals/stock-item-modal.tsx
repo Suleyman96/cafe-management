@@ -1,6 +1,7 @@
 'use client';
 
 import type { Database } from '@cafe-idare/database';
+import { useTranslation } from '@cafe-idare/i18n';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ const CATEGORIES = [
 ];
 
 export function StockItemModal({ item, onClose }: StockItemModalProps) {
+  const { t } = useTranslation('staff');
   const isEditing = !!item;
   const createStockItem = useCreateStockItem();
   const updateStockItem = useUpdateStockItem();
@@ -47,7 +49,7 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const toastId = toast.loading(isEditing ? 'Updating item...' : 'Creating item...');
+    const toastId = toast.loading(isEditing ? t('stock.updatingItem') : t('stock.creatingItem'));
 
     try {
       const data = {
@@ -65,15 +67,15 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
 
       if (isEditing) {
         await updateStockItem.mutateAsync({ id: item.id, updates: data });
-        toast.success('Stock item updated!', { id: toastId });
+        toast.success(t('stock.itemUpdated'), { id: toastId });
       } else {
         await createStockItem.mutateAsync(data);
-        toast.success('Stock item created!', { id: toastId });
+        toast.success(t('stock.itemCreated'), { id: toastId });
       }
 
       onClose();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to save item', { id: toastId });
+      toast.error(error.message || t('stock.failedSave'), { id: toastId });
     }
   };
 
@@ -82,7 +84,7 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">
-            {isEditing ? 'Edit Stock Item' : 'Add Stock Item'}
+            {isEditing ? t('stock.editStockItem') : t('stock.addStockItem')}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
             &times;
@@ -92,33 +94,39 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('name', { ns: 'common' })} *
+            </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g. Coffee Beans"
+              placeholder={t('stock.itemName')}
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('description', { ns: 'common' })}
+            </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={2}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Optional description"
+              placeholder={`${t('description', { ns: 'common' })} (${t('optional', { ns: 'common' }).toLowerCase()})`}
             />
           </div>
 
           {/* Category + Unit */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('category', { ns: 'common' })} *
+              </label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -132,7 +140,9 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Unit *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('stock.unit')} *
+              </label>
               <select
                 value={formData.unit}
                 onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
@@ -152,7 +162,7 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
             {!isEditing && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Initial Quantity
+                  {t('stock.initialQuantity')}
                 </label>
                 <input
                   type="number"
@@ -165,7 +175,7 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
             )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cost Price per Unit
+                {t('stock.costPerUnit')}
               </label>
               <input
                 type="number"
@@ -180,7 +190,7 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
           {/* Minimum Stock Level */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Minimum Stock Level (for low-stock alerts)
+              {t('stock.minStockLevel')}
             </label>
             <input
               type="number"
@@ -193,35 +203,39 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
 
           {/* Supplier */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Supplier Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('stock.supplierName')}
+            </label>
             <input
               type="text"
               value={formData.supplier_name}
               onChange={(e) => setFormData({ ...formData, supplier_name: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Optional supplier name"
+              placeholder={`${t('stock.supplierName')} (${t('optional', { ns: 'common' }).toLowerCase()})`}
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('notes', { ns: 'common' })}
+            </label>
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={2}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Optional notes"
+              placeholder={`${t('notes', { ns: 'common' })} (${t('optional', { ns: 'common' }).toLowerCase()})`}
             />
           </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
-              Cancel
+              {t('cancel', { ns: 'common' })}
             </Button>
             <Button type="submit" className="flex-1">
-              {isEditing ? 'Update Item' : 'Create Item'}
+              {isEditing ? t('stock.updateItem') : t('stock.createItem')}
             </Button>
           </div>
         </form>

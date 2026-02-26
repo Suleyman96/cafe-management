@@ -44,11 +44,8 @@ export const TableSchema = z.object({
 // Menu item schemas
 export const MenuItemSchema = z.object({
   id: z.string().uuid(),
-  name_en: z.string(),
-  name_az: z.string().nullable(),
-  name_ru: z.string().nullable(),
-  name_tr: z.string().nullable(),
-  description_en: z.string().nullable(),
+  name: z.string(),
+  description: z.string().nullable(),
   price: z.number().positive(),
   category_id: z.string().uuid(),
   image_url: z.string().nullable(),

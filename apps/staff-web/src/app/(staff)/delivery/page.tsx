@@ -1,6 +1,7 @@
 'use client';
 
 import { ORDER_STATUS } from '@cafe-idare/core';
+import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
   CheckCircle,
@@ -41,6 +42,7 @@ type DeliveryStatus =
   | 'cancelled';
 
 export default function DeliveryPage() {
+  const { t } = useTranslation('staff');
   const { data: orders, isLoading: loading, error, refetch } = useDeliveryOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const markOutForDelivery = useMarkOutForDelivery();
@@ -126,37 +128,37 @@ export default function DeliveryPage() {
         orderId,
         status: statusKey as keyof typeof ORDER_STATUS,
       });
-      toast.success(`Order status updated to ${newStatus.replace(/_/g, ' ')}`);
+      toast.success(`${t('orders.statusUpdated')} ${newStatus.replace(/_/g, ' ')}`);
     } catch (_error) {
-      toast.error('Failed to update order status');
+      toast.error(t('delivery.failedUpdate'));
     }
   };
 
   const handleMarkOutForDelivery = async (orderId: string, deliveryPersonId?: string) => {
     if (!deliveryPersonId) {
-      toast.error('Please assign a delivery person first');
+      toast.error(t('delivery.failedUpdate'));
       return;
     }
     try {
       await markOutForDelivery.mutateAsync({ orderId, deliveryPersonId });
-      toast.success('Order is out for delivery');
+      toast.success(t('delivery.outForDelivery'));
     } catch (_error) {
-      toast.error('Failed to update order');
+      toast.error(t('delivery.failedUpdate'));
     }
   };
 
   const handleMarkDelivered = async (orderId: string) => {
     try {
       await markDelivered.mutateAsync(orderId);
-      toast.success('Order marked as delivered');
+      toast.success(t('delivery.markDelivered'));
     } catch (_error) {
-      toast.error('Failed to update order');
+      toast.error(t('delivery.failedUpdate'));
     }
   };
 
   const handleCancelOrder = async () => {
     if (!cancelOrderTarget || !cancelReason.trim()) {
-      toast.error('Please provide a cancellation reason');
+      toast.error(t('orders.reasonRequired'));
       return;
     }
 
@@ -167,13 +169,13 @@ export default function DeliveryPage() {
         reason: cancelReason.trim(),
         tableId: null,
       });
-      toast.success('Order cancelled');
+      toast.success(t('orders.orderCancelled'));
       setShowCancelModal(false);
       setCancelOrderTarget(null);
       setCancelReason('');
       refetch();
     } catch (_error) {
-      toast.error('Failed to cancel order');
+      toast.error(t('orders.failedCancel'));
     } finally {
       setCancelling(false);
     }
@@ -209,7 +211,9 @@ export default function DeliveryPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-red-500">Error loading delivery orders: {(error as Error).message}</p>
+        <p className="text-red-500">
+          {t('error', { ns: 'common' })}: {(error as Error).message}
+        </p>
       </div>
     );
   }
@@ -219,10 +223,10 @@ export default function DeliveryPage() {
       <div className="flex justify-between items-center mb-4 sm:mb-6">
         <div className="flex items-center gap-3">
           <Truck className="h-6 w-6 text-purple-600" />
-          <h1 className="text-xl sm:text-2xl font-bold">Delivery Orders</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{t('delivery.title')}</h1>
           {activeCount > 0 && (
             <span className="bg-purple-100 text-purple-700 text-sm font-medium px-2.5 py-0.5 rounded-full">
-              {activeCount} active
+              {activeCount} {t('delivery.activeCount')}
             </span>
           )}
         </div>
@@ -231,8 +235,8 @@ export default function DeliveryPage() {
           className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">New Delivery Order</span>
-          <span className="sm:hidden">New</span>
+          <span className="hidden sm:inline">{t('delivery.newDeliveryOrder')}</span>
+          <span className="sm:hidden">{t('orders.new')}</span>
         </Button>
       </div>
 
@@ -243,7 +247,7 @@ export default function DeliveryPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
-              placeholder="Search by name, phone, address..."
+              placeholder={t('delivery.searchDelivery')}
               className="w-full pl-10 pr-3 py-2 border rounded-lg text-sm sm:text-base"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -255,14 +259,14 @@ export default function DeliveryPage() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
           >
-            <option value="all">All Status</option>
-            <option value="pending_approval">Pending Approval</option>
-            <option value="new">New</option>
-            <option value="preparing">Preparing</option>
-            <option value="ready">Ready</option>
-            <option value="out_for_delivery">Out for Delivery</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="all">{t('orders.allStatus')}</option>
+            <option value="pending_approval">{t('orders.pendingApproval')}</option>
+            <option value="new">{t('orders.new')}</option>
+            <option value="preparing">{t('orders.preparing')}</option>
+            <option value="ready">{t('orders.ready')}</option>
+            <option value="out_for_delivery">{t('orders.outForDelivery')}</option>
+            <option value="delivered">{t('orders.delivered')}</option>
+            <option value="cancelled">{t('orders.cancelled')}</option>
           </select>
         </div>
       </div>
@@ -271,11 +275,9 @@ export default function DeliveryPage() {
       {(!filteredOrders || filteredOrders.length === 0) && (
         <div className="text-center py-12 text-gray-500">
           <Truck className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-          <p className="text-lg font-medium">No delivery orders</p>
+          <p className="text-lg font-medium">{t('delivery.noDeliveryOrders')}</p>
           <p className="text-sm mt-1">
-            {statusFilter !== 'all'
-              ? 'No orders match the selected filter'
-              : 'Delivery orders will appear here when customers order via the delivery link'}
+            {statusFilter !== 'all' ? t('delivery.noOrdersMatch') : t('delivery.ordersAppear')}
           </p>
         </div>
       )}
@@ -333,7 +335,8 @@ export default function DeliveryPage() {
                   </div>
                   {deliveryFee > 0 && (
                     <div className="text-xs text-gray-500">
-                      incl. {formatPrice(deliveryFee)} delivery
+                      {t('orders.inclDelivery')} {formatPrice(deliveryFee)}{' '}
+                      {t('deliveryFee', { ns: 'common' }).toLowerCase()}
                     </div>
                   )}
                 </div>
@@ -351,7 +354,9 @@ export default function DeliveryPage() {
               {order.delivery_person?.full_name && (
                 <div className="mb-3 text-sm text-gray-600 flex items-center gap-2">
                   <Truck className="h-3.5 w-3.5" />
-                  <span>Driver: {order.delivery_person.full_name}</span>
+                  <span>
+                    {t('delivery.driver')} {order.delivery_person.full_name}
+                  </span>
                 </div>
               )}
 
@@ -359,7 +364,7 @@ export default function DeliveryPage() {
               <div className="mb-3 text-sm text-gray-600">
                 {order.order_items?.slice(0, 3).map((item: any) => (
                   <div key={item.id}>
-                    {item.quantity}x {item.menu_item?.name_en || item.item_name}
+                    {item.quantity}x {item.menu_item?.name || item.item_name}
                     {item.notes && <span className="text-xs text-gray-500"> ({item.notes})</span>}
                   </div>
                 ))}
@@ -377,7 +382,7 @@ export default function DeliveryPage() {
                     onClick={() => handleStatusUpdate(order.id, 'new')}
                   >
                     <ThumbsUp className="h-4 w-4 mr-1" />
-                    Approve
+                    {t('approve', { ns: 'common' })}
                   </Button>
                 )}
                 {order.status === 'new' && (
@@ -387,7 +392,7 @@ export default function DeliveryPage() {
                     onClick={() => handleStatusUpdate(order.id, 'preparing')}
                   >
                     <ChefHat className="h-4 w-4 mr-1" />
-                    Start Preparing
+                    {t('orders.startPreparing')}
                   </Button>
                 )}
                 {order.status === 'preparing' && (
@@ -397,7 +402,7 @@ export default function DeliveryPage() {
                     onClick={() => handleStatusUpdate(order.id, 'ready')}
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    Ready
+                    {t('orders.ready')}
                   </Button>
                 )}
                 {order.status === 'ready' && (
@@ -407,7 +412,7 @@ export default function DeliveryPage() {
                     onClick={() => handleMarkOutForDelivery(order.id, order.delivery_person_id)}
                   >
                     <Truck className="h-4 w-4 mr-1" />
-                    Out for Delivery
+                    {t('delivery.outForDelivery')}
                   </Button>
                 )}
                 {order.status === 'out_for_delivery' && (
@@ -417,7 +422,7 @@ export default function DeliveryPage() {
                     onClick={() => handleMarkDelivered(order.id)}
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    Mark Delivered
+                    {t('delivery.markDelivered')}
                   </Button>
                 )}
                 {['pending_approval', 'new', 'preparing', 'ready', 'out_for_delivery'].includes(
@@ -432,7 +437,9 @@ export default function DeliveryPage() {
                     }}
                   >
                     <XCircle className="h-4 w-4 mr-1" />
-                    {order.status === 'pending_approval' ? 'Reject' : 'Cancel'}
+                    {order.status === 'pending_approval'
+                      ? t('reject', { ns: 'common' })
+                      : t('cancel', { ns: 'common' })}
                   </Button>
                 )}
               </div>
@@ -446,7 +453,9 @@ export default function DeliveryPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-red-600">Cancel Delivery Order</h2>
+              <h2 className="text-lg font-semibold text-red-600">
+                {t('delivery.cancelDeliveryOrder')}
+              </h2>
               <button
                 onClick={() => {
                   setShowCancelModal(false);
@@ -461,23 +470,23 @@ export default function DeliveryPage() {
 
             {cancelOrderTarget && (
               <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium">{cancelOrderTarget.customer_name || 'Delivery Order'}</p>
+                <p className="font-medium">
+                  {cancelOrderTarget.customer_name || t('delivery.title')}
+                </p>
                 <p className="text-sm text-gray-500">#{cancelOrderTarget.id.slice(0, 8)}</p>
               </div>
             )}
 
-            <p className="text-gray-600 mb-4">
-              Please provide a reason for cancelling this order. This action cannot be undone.
-            </p>
+            <p className="text-gray-600 mb-4">{t('orders.reasonRequired')}</p>
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cancellation Reason <span className="text-red-500">*</span>
+                {t('orders.cancellationReason')} <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Enter reason for cancellation..."
+                placeholder={t('orders.reasonPlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
                 rows={3}
               />
@@ -494,7 +503,7 @@ export default function DeliveryPage() {
                 }}
                 disabled={cancelling}
               >
-                Keep Order
+                {t('orders.keepOrder')}
               </Button>
               <Button
                 variant="destructive"
@@ -505,12 +514,12 @@ export default function DeliveryPage() {
                 {cancelling ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Cancelling...
+                    {t('orders.cancelling')}
                   </>
                 ) : (
                   <>
                     <XCircle className="h-4 w-4 mr-2" />
-                    Cancel Order
+                    {t('orders.cancelOrder')}
                   </>
                 )}
               </Button>
@@ -524,7 +533,7 @@ export default function DeliveryPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={(orderId) => {
           setIsCreateModalOpen(false);
-          toast.success('Delivery order created');
+          toast.success(t('orders.orderCreated'));
           window.location.href = `/orders/${orderId}/add-items`;
         }}
       />
