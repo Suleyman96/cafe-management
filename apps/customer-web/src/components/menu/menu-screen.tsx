@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useCategories, useMenuItems } from '@/hooks/use-menu';
 import { useAddOrderItems, useCreateOrder, useOrder } from '@/hooks/use-order';
@@ -328,7 +328,12 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: menuItems, isLoading: itemsLoading } = useMenuItems(selectedCategory);
   const { data: settings } = useCafeSettings();
-  const itemCount = useCartStore((state) => state.getItemCount());
+  const storeItemCount = useCartStore((state) => state.getItemCount());
+  const [itemCount, setItemCount] = useState(0);
+
+  useEffect(() => {
+    setItemCount(storeItemCount);
+  }, [storeItemCount]);
 
   const accentColor = settings?.brand_primary_color || '#C8A97E';
   const isLoading = categoriesLoading || itemsLoading;
