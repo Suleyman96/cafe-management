@@ -1,31 +1,33 @@
 'use client';
 
 import { useTranslation } from '@cafe-idare/i18n';
-import { Flame, Leaf, Plus, Star } from 'lucide-react';
+import { Clock, Flame, Leaf, Plus, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import { formatPrice as formatPriceWithSettings, useCafeSettings } from '@/hooks/use-settings';
 import { formatPrice } from '@/lib/utils';
 import { useCartStore } from '@/store/cart-store';
-import type { MenuItemWithCategory } from '@/types';
+import { useLanguageStore } from '@/store/language-store';
+import { getLocalizedField, type MenuItemWithCategory } from '@/types';
 import { MenuItemModal } from './menu-item-modal';
 
 interface MenuItemCardProps {
   item: MenuItemWithCategory;
+  accentColor: string;
+  priority?: boolean;
 }
 
-export function MenuItemCard({ item }: MenuItemCardProps) {
+export function MenuItemCard({ item, accentColor, priority = false }: MenuItemCardProps) {
   const { t } = useTranslation('customer');
   const addItem = useCartStore((state) => state.addItem);
   const [showModal, setShowModal] = useState(false);
   const { data: settings } = useCafeSettings();
+  const { language } = useLanguageStore();
 
-  const name = item.name;
-  const description = item.description;
+  const name = getLocalizedField(item, 'name', language);
+  const description = getLocalizedField(item, 'description', language);
 
-  // Format price using cafe settings or fallback
   const displayPrice = (amount: number) => {
     if (settings) {
       return formatPriceWithSettings(amount, settings);
@@ -36,82 +38,156 @@ export function MenuItemCard({ item }: MenuItemCardProps) {
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
     addItem(item, 1);
+    toast.success(t('menuItem.addedToCart', { count: 1, name }));
   };
 
   return (
     <>
       <div
-        className="bg-card rounded-lg overflow-hidden shadow-sm border hover:shadow-md transition-shadow cursor-pointer"
+        className="rounded-2xl overflow-hidden cursor-pointer transition-all active:scale-[0.98]"
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+        }}
         onClick={() => setShowModal(true)}
       >
-        {/* Image */}
-        {item.image_url && (
-          <div className="relative h-40 w-full bg-muted">
-            <Image src={item.image_url} alt={name} fill className="object-cover" unoptimized />
-            {/* Badges on image */}
-            <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-              {item.is_popular && (
-                <Badge variant="warning" className="backdrop-blur-sm">
-                  <Star className="h-3 w-3 mr-1" />
-                  {t('menuItem.badgePopular')}
-                </Badge>
-              )}
-              {item.is_daily_special && (
-                <Badge variant="success" className="backdrop-blur-sm">
-                  {t('menuItem.badgeTodaySpecial')}
-                </Badge>
-              )}
+        {/* Image Section */}
+        <div className="relative aspect-video bg-white/[0.03]">
+          {item.image_url ? (
+            <>
+              <Image
+                src={item.image_url}
+                alt={name}
+                fill
+                className="object-cover"
+                unoptimized
+                priority={priority}
+              />
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+            </>
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-4xl opacity-30">{item.category?.icon || '🍽️'}</span>
             </div>
+          )}
+
+          {/* Badges on image */}
+          <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+            {item.is_popular && (
+              <span
+                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold backdrop-blur-md"
+                style={{
+                  background: `${accentColor}cc`,
+                  color: '#0C0C0E',
+                }}
+              >
+                <Star className="h-2.5 w-2.5" />
+                {t('menuItem.badgePopular')}
+              </span>
+            )}
+            {item.is_daily_special && (
+              <span className="flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-md">
+                {t('menuItem.badgeTodaySpecial')}
+              </span>
+            )}
           </div>
-        )}
+
+          {/* Quick Add FAB */}
+          <button
+            onClick={handleQuickAdd}
+            className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full shadow-lg transition-all active:scale-90 hover:shadow-xl"
+            style={{
+              background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
+              color: '#0C0C0E',
+              boxShadow: `0 4px 12px ${accentColor}40`,
+            }}
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.5} />
+          </button>
+        </div>
 
         {/* Content */}
-        <div className="p-4">
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg line-clamp-1">{name}</h3>
-              {description && (
-                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{description}</p>
+        <div className="p-2.5">
+          <h3 className="font-semibold text-[13px] text-white line-clamp-1">{name}</h3>
+          {description && (
+            <p className="text-xs text-white/40 line-clamp-1 mt-0.5">{description}</p>
+          )}
+
+          {/* Price + Prep time row */}
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-sm font-bold" style={{ color: accentColor }}>
+              {displayPrice(item.price)}
+            </span>
+            {item.preparation_time && (
+              <span className="flex items-center gap-1 text-[11px] text-white/30">
+                <Clock className="h-3 w-3" />~{item.preparation_time} min
+              </span>
+            )}
+          </div>
+
+          {/* Dietary badges */}
+          {(item.is_vegetarian || item.is_vegan || item.is_spicy || item.is_gluten_free) && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {item.is_vegetarian && (
+                <span
+                  className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] text-green-400"
+                  style={{
+                    background: 'rgba(34,197,94,0.1)',
+                    border: '1px solid rgba(34,197,94,0.2)',
+                  }}
+                >
+                  <Leaf className="h-2.5 w-2.5" />
+                  {t('menuItem.badgeVeg')}
+                </span>
+              )}
+              {item.is_vegan && (
+                <span
+                  className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] text-green-400"
+                  style={{
+                    background: 'rgba(34,197,94,0.1)',
+                    border: '1px solid rgba(34,197,94,0.2)',
+                  }}
+                >
+                  <Leaf className="h-2.5 w-2.5" />
+                  {t('menuItem.badgeVegan')}
+                </span>
+              )}
+              {item.is_spicy && (
+                <span
+                  className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] text-red-400"
+                  style={{
+                    background: 'rgba(239,68,68,0.1)',
+                    border: '1px solid rgba(239,68,68,0.2)',
+                  }}
+                >
+                  <Flame className="h-2.5 w-2.5" />
+                  {t('menuItem.badgeSpicy')}
+                </span>
+              )}
+              {item.is_gluten_free && (
+                <span
+                  className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] text-amber-400"
+                  style={{
+                    background: 'rgba(217,119,6,0.1)',
+                    border: '1px solid rgba(217,119,6,0.2)',
+                  }}
+                >
+                  {t('menuItem.badgeGlutenFree')}
+                </span>
               )}
             </div>
-          </div>
-
-          {/* Icons for dietary info */}
-          <div className="flex gap-2 mb-3">
-            {item.is_vegetarian && (
-              <Badge variant="outline" className="text-xs">
-                <Leaf className="h-3 w-3 mr-1 text-green-600" />
-                {t('menuItem.badgeVeg')}
-              </Badge>
-            )}
-            {item.is_spicy && (
-              <Badge variant="outline" className="text-xs">
-                <Flame className="h-3 w-3 mr-1 text-red-600" />
-                {t('menuItem.badgeSpicy')}
-              </Badge>
-            )}
-          </div>
-
-          {/* Price and Add Button */}
-          <div className="flex items-center justify-between">
-            <span className="text-xl font-bold text-primary">{displayPrice(item.price)}</span>
-            <Button size="sm" onClick={handleQuickAdd} className="touch-target">
-              <Plus className="h-4 w-4 mr-1" />
-              {t('menuItem.buttonAdd')}
-            </Button>
-          </div>
-
-          {/* Prep time */}
-          {item.preparation_time && (
-            <p className="text-xs text-muted-foreground mt-2">
-              ⏱️ {t('menuItem.prepTime', { count: item.preparation_time })}
-            </p>
           )}
         </div>
       </div>
 
       {/* Detail Modal */}
-      <MenuItemModal item={item} isOpen={showModal} onClose={() => setShowModal(false)} />
+      <MenuItemModal
+        item={item}
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        accentColor={accentColor}
+      />
     </>
   );
 }

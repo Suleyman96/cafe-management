@@ -30,6 +30,17 @@ export interface CartItem {
   notes?: string;
 }
 
+// Helper to get localized field from a menu item or category
+// Currently DB has single-language fields (name, description),
+// so this returns the field directly with a fallback to empty string.
+export function getLocalizedField(
+  item: Record<string, any>,
+  field: 'name' | 'description',
+  _language?: string,
+): string {
+  return (item?.[field] as string) ?? '';
+}
+
 // Order status type
 export type OrderStatus = Order['status'];
 

@@ -9,7 +9,6 @@
   "table.activeOrderTitle": "Active Order",
   "table.activeOrderSubtext": "{{status}} \u2022 {{count}} items",
   "table.viewOrderStatus": "View Order Status",
-  "table.selectLanguage": "Select Language / Dil se\u00e7in",
   "table.browseMenu": "Browse Menu",
   "table.addMoreItems": "Add More Items",
   "table.viewMenu": "View Menu",

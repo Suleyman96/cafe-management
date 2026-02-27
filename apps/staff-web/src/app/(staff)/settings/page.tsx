@@ -233,9 +233,7 @@ export default function SettingsPage() {
                     size="sm"
                     className="flex-1 sm:flex-none text-xs sm:text-sm"
                   >
-                    {passwordLoading
-                      ? t('saving', { ns: 'common' })
-                      : t('settings.updatePassword')}
+                    {passwordLoading ? t('saving', { ns: 'common' }) : t('settings.updatePassword')}
                   </Button>
                 </div>
               </form>
