@@ -10,6 +10,10 @@ export const metadata: Metadata = {
   title: 'Café İdarə - Order',
   description: 'In-store ordering system',
   manifest: '/manifest.json',
+  icons: { icon: '/favicon.ico' },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

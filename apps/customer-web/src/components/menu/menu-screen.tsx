@@ -580,8 +580,8 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
               <SkeletonCard />
             </>
           ) : filteredItems.length > 0 ? (
-            filteredItems.map((item) => (
-              <MenuItemCard key={item.id} item={item} accentColor={accentColor} />
+            filteredItems.map((item, index) => (
+              <MenuItemCard key={item.id} item={item} accentColor={accentColor} priority={index < 4} />
             ))
           ) : (
             <div className="col-span-full text-center py-16">

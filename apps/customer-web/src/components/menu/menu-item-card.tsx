@@ -15,9 +15,10 @@ import { MenuItemModal } from './menu-item-modal';
 interface MenuItemCardProps {
   item: MenuItemWithCategory;
   accentColor: string;
+  priority?: boolean;
 }
 
-export function MenuItemCard({ item, accentColor }: MenuItemCardProps) {
+export function MenuItemCard({ item, accentColor, priority = false }: MenuItemCardProps) {
   const { t } = useTranslation('customer');
   const addItem = useCartStore((state) => state.addItem);
   const [showModal, setShowModal] = useState(false);
@@ -60,6 +61,7 @@ export function MenuItemCard({ item, accentColor }: MenuItemCardProps) {
                 fill
                 className="object-cover"
                 unoptimized
+                priority={priority}
               />
               {/* Gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
