@@ -111,7 +111,11 @@ function MenuItemCard({
         </div>
 
         {/* Dietary badges */}
-        {(item.is_popular || item.is_vegetarian || item.is_vegan || item.is_gluten_free || item.is_spicy) && (
+        {(item.is_popular ||
+          item.is_vegetarian ||
+          item.is_vegan ||
+          item.is_gluten_free ||
+          item.is_spicy) && (
           <div className="flex flex-wrap gap-1 mt-2">
             {item.is_popular && (
               <span className="px-1.5 py-0.5 text-[10px] font-medium bg-yellow-50 text-yellow-700 rounded-full">
@@ -253,8 +257,7 @@ export default function MenuPage() {
     const q = searchQuery.toLowerCase();
     return menuItems.filter(
       (item: MenuItem) =>
-        item.name.toLowerCase().includes(q) ||
-        (item.description && item.description.toLowerCase().includes(q)),
+        item.name.toLowerCase().includes(q) || item.description?.toLowerCase().includes(q),
     );
   }, [menuItems, searchQuery]);
 
@@ -420,8 +423,8 @@ export default function MenuPage() {
         {isLoading ? (
           /* Skeleton loading */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <SkeletonCard key={i} />
+            {['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8'].map((id) => (
+              <SkeletonCard key={id} />
             ))}
           </div>
         ) : (
@@ -438,7 +441,9 @@ export default function MenuPage() {
                       <MenuItemCard
                         key={item.id}
                         item={item}
-                        categoryIcon={item.category_id ? categoryMap.get(item.category_id) : undefined}
+                        categoryIcon={
+                          item.category_id ? categoryMap.get(item.category_id) : undefined
+                        }
                         settings={settings}
                         onEdit={() => {
                           setEditingItem(item);
@@ -457,9 +462,7 @@ export default function MenuPage() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">
                     {t('menu.noSearchResults')}
                   </h3>
-                  <p className="text-sm text-gray-500">
-                    {t('menu.tryDifferentSearch')}
-                  </p>
+                  <p className="text-sm text-gray-500">{t('menu.tryDifferentSearch')}</p>
                 </div>
               )
             ) : (
@@ -481,9 +484,7 @@ export default function MenuPage() {
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <span className="text-xl">{category.icon || '📁'}</span>
-                          <h2 className="text-base font-semibold text-gray-900">
-                            {category.name}
-                          </h2>
+                          <h2 className="text-base font-semibold text-gray-900">{category.name}</h2>
                           <span className="text-xs text-gray-400">
                             · {items.length} {t('menu.items')}
                           </span>

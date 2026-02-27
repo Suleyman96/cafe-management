@@ -100,7 +100,10 @@ export function MenuItemModal({ item, isOpen, onClose, accentColor }: MenuItemMo
                 {item.is_vegetarian && (
                   <span
                     className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-green-400"
-                    style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.2)' }}
+                    style={{
+                      background: 'rgba(34,197,94,0.12)',
+                      border: '1px solid rgba(34,197,94,0.2)',
+                    }}
                   >
                     <Leaf className="h-3 w-3" />
                     {t('menuItem.badgeVegetarian')}
@@ -109,7 +112,10 @@ export function MenuItemModal({ item, isOpen, onClose, accentColor }: MenuItemMo
                 {item.is_vegan && (
                   <span
                     className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-green-400"
-                    style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.2)' }}
+                    style={{
+                      background: 'rgba(34,197,94,0.12)',
+                      border: '1px solid rgba(34,197,94,0.2)',
+                    }}
                   >
                     <Leaf className="h-3 w-3" />
                     {t('menuItem.badgeVegan')}
@@ -118,7 +124,10 @@ export function MenuItemModal({ item, isOpen, onClose, accentColor }: MenuItemMo
                 {item.is_spicy && (
                   <span
                     className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-red-400"
-                    style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.2)' }}
+                    style={{
+                      background: 'rgba(239,68,68,0.12)',
+                      border: '1px solid rgba(239,68,68,0.2)',
+                    }}
                   >
                     <Flame className="h-3 w-3" />
                     {t('menuItem.badgeSpicy')}
@@ -127,7 +136,10 @@ export function MenuItemModal({ item, isOpen, onClose, accentColor }: MenuItemMo
                 {item.is_gluten_free && (
                   <span
                     className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-amber-400"
-                    style={{ background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.2)' }}
+                    style={{
+                      background: 'rgba(217,119,6,0.12)',
+                      border: '1px solid rgba(217,119,6,0.2)',
+                    }}
                   >
                     {t('menuItem.badgeGlutenFree')}
                   </span>
@@ -136,7 +148,9 @@ export function MenuItemModal({ item, isOpen, onClose, accentColor }: MenuItemMo
             </div>
 
             {/* Description */}
-            {description && <p className="text-sm text-white/50 mb-4 leading-relaxed">{description}</p>}
+            {description && (
+              <p className="text-sm text-white/50 mb-4 leading-relaxed">{description}</p>
+            )}
 
             {/* Allergens */}
             {item.allergens && item.allergens.length > 0 && (

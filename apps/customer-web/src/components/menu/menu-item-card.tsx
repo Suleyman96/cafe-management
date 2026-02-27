@@ -68,9 +68,7 @@ export function MenuItemCard({ item, accentColor, priority = false }: MenuItemCa
             </>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-4xl opacity-30">
-                {item.category?.icon || '🍽️'}
-              </span>
+              <span className="text-4xl opacity-30">{item.category?.icon || '🍽️'}</span>
             </div>
           )}
 
@@ -123,8 +121,7 @@ export function MenuItemCard({ item, accentColor, priority = false }: MenuItemCa
             </span>
             {item.preparation_time && (
               <span className="flex items-center gap-1 text-[11px] text-white/30">
-                <Clock className="h-3 w-3" />
-                ~{item.preparation_time} min
+                <Clock className="h-3 w-3" />~{item.preparation_time} min
               </span>
             )}
           </div>
@@ -133,32 +130,48 @@ export function MenuItemCard({ item, accentColor, priority = false }: MenuItemCa
           {(item.is_vegetarian || item.is_vegan || item.is_spicy || item.is_gluten_free) && (
             <div className="flex flex-wrap gap-1 mt-2">
               {item.is_vegetarian && (
-                <span className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] text-green-400"
-                  style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}
+                <span
+                  className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] text-green-400"
+                  style={{
+                    background: 'rgba(34,197,94,0.1)',
+                    border: '1px solid rgba(34,197,94,0.2)',
+                  }}
                 >
                   <Leaf className="h-2.5 w-2.5" />
                   {t('menuItem.badgeVeg')}
                 </span>
               )}
               {item.is_vegan && (
-                <span className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] text-green-400"
-                  style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}
+                <span
+                  className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] text-green-400"
+                  style={{
+                    background: 'rgba(34,197,94,0.1)',
+                    border: '1px solid rgba(34,197,94,0.2)',
+                  }}
                 >
                   <Leaf className="h-2.5 w-2.5" />
                   {t('menuItem.badgeVegan')}
                 </span>
               )}
               {item.is_spicy && (
-                <span className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] text-red-400"
-                  style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}
+                <span
+                  className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] text-red-400"
+                  style={{
+                    background: 'rgba(239,68,68,0.1)',
+                    border: '1px solid rgba(239,68,68,0.2)',
+                  }}
                 >
                   <Flame className="h-2.5 w-2.5" />
                   {t('menuItem.badgeSpicy')}
                 </span>
               )}
               {item.is_gluten_free && (
-                <span className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] text-amber-400"
-                  style={{ background: 'rgba(217,119,6,0.1)', border: '1px solid rgba(217,119,6,0.2)' }}
+                <span
+                  className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] text-amber-400"
+                  style={{
+                    background: 'rgba(217,119,6,0.1)',
+                    border: '1px solid rgba(217,119,6,0.2)',
+                  }}
                 >
                   {t('menuItem.badgeGlutenFree')}
                 </span>

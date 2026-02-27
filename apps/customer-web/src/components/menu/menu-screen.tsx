@@ -3,8 +3,8 @@
 import { useTranslation } from '@cafe-idare/i18n';
 import {
   ArrowLeft,
-  Flame,
   Filter,
+  Flame,
   Leaf,
   Minus,
   Plus,
@@ -245,10 +245,7 @@ function CartContent({ tableId, accentColor, onOrderPlaced }: CartContentProps) 
       </div>
 
       {/* Price Summary + Place Order */}
-      <div
-        className="px-4 pt-3 pb-4"
-        style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
-      >
+      <div className="px-4 pt-3 pb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="space-y-1.5 mb-3">
           {settings?.tax_enabled && settings?.show_tax_separately ? (
             <>
@@ -467,12 +464,32 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
           {/* Dietary Filters (collapsible) */}
           {showFilters && (
             <div className="flex gap-2 overflow-x-auto px-4 pb-2 scrollbar-hide">
-              {([
-                { key: 'vegetarian' as DietaryFilter, icon: Leaf, color: '#22c55e', label: t('menu.filterVegetarian') },
-                { key: 'vegan' as DietaryFilter, icon: Leaf, color: '#16a34a', label: t('menu.filterVegan') },
-                { key: 'gluten_free' as DietaryFilter, icon: Wheat, color: '#d97706', label: t('menu.filterGlutenFree') },
-                { key: 'spicy' as DietaryFilter, icon: Flame, color: '#ef4444', label: t('menu.filterSpicy') },
-              ]).map(({ key, icon: Icon, color, label }) => {
+              {[
+                {
+                  key: 'vegetarian' as DietaryFilter,
+                  icon: Leaf,
+                  color: '#22c55e',
+                  label: t('menu.filterVegetarian'),
+                },
+                {
+                  key: 'vegan' as DietaryFilter,
+                  icon: Leaf,
+                  color: '#16a34a',
+                  label: t('menu.filterVegan'),
+                },
+                {
+                  key: 'gluten_free' as DietaryFilter,
+                  icon: Wheat,
+                  color: '#d97706',
+                  label: t('menu.filterGlutenFree'),
+                },
+                {
+                  key: 'spicy' as DietaryFilter,
+                  icon: Flame,
+                  color: '#ef4444',
+                  label: t('menu.filterSpicy'),
+                },
+              ].map(({ key, icon: Icon, color, label }) => {
                 const isActive = dietaryFilters.includes(key);
                 return (
                   <button
@@ -581,7 +598,12 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
             </>
           ) : filteredItems.length > 0 ? (
             filteredItems.map((item, index) => (
-              <MenuItemCard key={item.id} item={item} accentColor={accentColor} priority={index < 4} />
+              <MenuItemCard
+                key={item.id}
+                item={item}
+                accentColor={accentColor}
+                priority={index < 4}
+              />
             ))
           ) : (
             <div className="col-span-full text-center py-16">
@@ -608,10 +630,10 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
 
         {/* Mobile: Floating Cart Pill */}
         {itemCount > 0 && (
-          <div className="fixed bottom-5 left-0 right-0 z-20 flex justify-center px-4 lg:hidden">
+          <div className="fixed bottom-5 left-32 right-4 z-20 flex justify-center lg:hidden">
             <button
               onClick={() => setShowMobileCart(true)}
-              className="flex items-center gap-2.5 rounded-full px-6 py-3.5 text-sm font-semibold shadow-2xl transition-all active:scale-[0.97] backdrop-blur-sm"
+              className="flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold shadow-2xl transition-all active:scale-[0.97] backdrop-blur-sm"
               style={{
                 background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
                 color: '#0C0C0E',

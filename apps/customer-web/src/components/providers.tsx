@@ -5,8 +5,8 @@ import { I18nextProvider, i18n } from '@cafe-idare/i18n';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import '@/lib/i18n';
-import { loadAndSwitchLanguage } from '@/lib/i18n';
 import { useCafeSettings } from '@/hooks/use-settings';
+import { loadAndSwitchLanguage } from '@/lib/i18n';
 import { useLanguageStore } from '@/store/language-store';
 
 function LanguageSync() {
