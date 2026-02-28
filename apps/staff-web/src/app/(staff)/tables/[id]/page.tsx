@@ -6,6 +6,7 @@ import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowRightLeft,
   Check,
   CheckCircle,
   ChefHat,
@@ -27,11 +28,14 @@ import {
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/modals/confirm-dialog';
+import { ItemTransferModal } from '@/components/modals/item-transfer-modal';
 import {
   formatPriceWithSettings,
   useAddOrderItems,
   useCafeSettings,
   useCancelOrder,
+  useCancelOrderItem,
   useCategories,
   useCreateOrder,
   useMenuItems,
@@ -69,6 +73,7 @@ export default function TableDetailPage() {
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const cancelOrder = useCancelOrder();
+  const cancelOrderItem = useCancelOrderItem();
   const { data: cafeSettings } = useCafeSettings();
 
   // Format price using cafe settings or fallback
@@ -87,6 +92,9 @@ export default function TableDetailPage() {
   const [cancelling, setCancelling] = useState(false);
   const [orderNotes, setOrderNotes] = useState('');
   const [selectedOrderIndex, setSelectedOrderIndex] = useState(0);
+  const [cancelItemConfirm, setCancelItemConfirm] = useState<OrderItem | null>(null);
+  const [cancellingItem, setCancellingItem] = useState(false);
+  const [showItemTransferModal, setShowItemTransferModal] = useState(false);
 
   // Get ALL active orders for this table (including pending_approval)
   const activeOrders = useMemo(() => {
@@ -343,6 +351,13 @@ export default function TableDetailPage() {
           icon: <UtensilsCrossed className="h-3 w-3" />,
           label: t('orders.served'),
         };
+      case 'cancelled':
+        return {
+          bg: 'bg-red-100',
+          text: 'text-red-700',
+          icon: <XCircle className="h-3 w-3" />,
+          label: t('orders.cancelled'),
+        };
       default:
         return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, label: status };
     }
@@ -359,6 +374,23 @@ export default function TableDetailPage() {
       refetchOrders();
     } catch (_error) {
       toast.error(t('orders.failedUpdateItemStatus'));
+    }
+  };
+
+  // Handle individual item cancellation
+  const handleCancelItem = async () => {
+    if (!cancelItemConfirm || !activeOrder) return;
+
+    setCancellingItem(true);
+    try {
+      await cancelOrderItem.mutateAsync({ itemId: cancelItemConfirm.id });
+      toast.success(t('orders.itemCancelled', { item: cancelItemConfirm.item_name }));
+      setCancelItemConfirm(null);
+      refetchOrders();
+    } catch (error: any) {
+      toast.error(error.message || t('orders.failedCancelItem'));
+    } finally {
+      setCancellingItem(false);
     }
   };
 
@@ -547,6 +579,13 @@ export default function TableDetailPage() {
                   {t('orders.payment')}
                 </Button>
               )}
+              {/* Transfer Items button */}
+              {activeOrder.order_items?.some((i: OrderItem) => i.status !== 'cancelled') && (
+                <Button size="sm" variant="outline" onClick={() => setShowItemTransferModal(true)}>
+                  <ArrowRightLeft className="h-4 w-4 mr-1" />
+                  {t('tables.transferItems')}
+                </Button>
+              )}
               {/* Cancel/Reject button - available for active orders */}
               {['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(
                 activeOrder.status,
@@ -568,53 +607,80 @@ export default function TableDetailPage() {
               <div className="space-y-2">
                 {activeOrder.order_items.map((item: OrderItem) => {
                   const statusBadge = getItemStatusBadge(item.status);
+                  const isCancelled = item.status === 'cancelled';
 
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between text-sm gap-2 py-1"
+                      className={`flex items-center justify-between text-sm gap-2 py-1 ${isCancelled ? 'opacity-50' : ''}`}
                     >
-                      <span className="flex-1">
+                      <span className={`flex-1 ${isCancelled ? 'line-through text-gray-400' : ''}`}>
                         {item.quantity}x {item.item_name}
                       </span>
 
                       {/* Quick Action Buttons */}
                       <div className="flex items-center gap-1.5">
-                        {(item.status === 'pending' || item.status === 'preparing') && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleItemStatusUpdate(item.id, 'ready');
-                            }}
-                            className="px-2 py-1 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-                          >
-                            <CheckCircle className="h-3 w-3" />
-                            {t('orders.ready')}
-                          </button>
-                        )}
-                        {item.status === 'ready' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleItemStatusUpdate(item.id, 'served');
-                            }}
-                            className="px-2 py-1 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-                          >
-                            <UtensilsCrossed className="h-3 w-3" />
-                            {t('orders.served')}
-                          </button>
-                        )}
-                        {item.status === 'served' && (
+                        {isCancelled ? (
                           <span
                             className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}
                           >
                             {statusBadge.icon}
-                            {t('orders.done')}
+                            {statusBadge.label}
                           </span>
+                        ) : (
+                          <>
+                            {(item.status === 'pending' || item.status === 'preparing') && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleItemStatusUpdate(item.id, 'ready');
+                                }}
+                                className="px-2 py-1 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+                              >
+                                <CheckCircle className="h-3 w-3" />
+                                {t('orders.ready')}
+                              </button>
+                            )}
+                            {item.status === 'ready' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleItemStatusUpdate(item.id, 'served');
+                                }}
+                                className="px-2 py-1 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
+                              >
+                                <UtensilsCrossed className="h-3 w-3" />
+                                {t('orders.served')}
+                              </button>
+                            )}
+                            {item.status === 'served' && (
+                              <span
+                                className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}
+                              >
+                                {statusBadge.icon}
+                                {t('orders.done')}
+                              </span>
+                            )}
+                            {/* Cancel item button — not shown for served items */}
+                            {item.status !== 'served' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCancelItemConfirm(item);
+                                }}
+                                className="px-1.5 py-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+                                title={t('orders.cancelItem')}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
 
-                      <span className="text-gray-600 w-16 text-right">
+                      <span
+                        className={`w-16 text-right ${isCancelled ? 'line-through text-gray-400' : 'text-gray-600'}`}
+                      >
                         {formatPrice(item.quantity * item.item_price)}
                       </span>
                     </div>
@@ -850,6 +916,33 @@ export default function TableDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Cancel Item Confirmation */}
+      <ConfirmDialog
+        isOpen={!!cancelItemConfirm}
+        onClose={() => setCancelItemConfirm(null)}
+        onConfirm={handleCancelItem}
+        title={t('orders.cancelItem')}
+        message={`${t('orders.cancelItemConfirm')} ${cancelItemConfirm?.quantity}x ${cancelItemConfirm?.item_name}?`}
+        confirmLabel={t('orders.cancelItem')}
+        cancelLabel={t('orders.keepItem')}
+        loading={cancellingItem}
+      />
+
+      {/* Item Transfer Modal */}
+      {activeOrder && (
+        <ItemTransferModal
+          isOpen={showItemTransferModal}
+          onClose={() => setShowItemTransferModal(false)}
+          order={activeOrder}
+          sourceTableId={tableId}
+          onSuccess={() => {
+            setShowItemTransferModal(false);
+            toast.success(t('tables.itemsTransferred'));
+            refetchOrders();
+          }}
+        />
       )}
     </div>
   );

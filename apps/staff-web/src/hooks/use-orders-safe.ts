@@ -128,6 +128,20 @@ export function useDeleteOrderItem() {
   });
 }
 
+export function useCancelOrderItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ itemId }: { itemId: string }) => db.orderItems.cancel(itemId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+    },
+  });
+}
+
 export function useCancelOrder() {
   const queryClient = useQueryClient();
 

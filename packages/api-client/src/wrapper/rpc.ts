@@ -41,6 +41,25 @@ export function createRpcWrapper(ctx: WrapperContext) {
       if (error) throw handleSupabaseError(error);
       return (data as string) || '';
     },
+
+    transferOrderItems: async (params: {
+      sourceOrderId: string;
+      destinationTableId: string;
+      items: Array<{ item_id: string; quantity: number }>;
+      staffId: string;
+      reason?: string;
+    }): Promise<string> => {
+      const { data, error } = await ctx.anyClient.rpc('transfer_order_items', {
+        p_source_order_id: params.sourceOrderId,
+        p_destination_table_id: params.destinationTableId,
+        p_items: JSON.stringify(params.items),
+        p_staff_id: params.staffId,
+        p_reason: params.reason,
+      });
+
+      if (error) throw handleSupabaseError(error);
+      return (data as string) || '';
+    },
   };
 }
 

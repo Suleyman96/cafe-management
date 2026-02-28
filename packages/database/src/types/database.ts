@@ -131,7 +131,7 @@ export interface Database {
           item_price: number;
           quantity: number;
           notes: string | null;
-          status: 'pending' | 'preparing' | 'ready' | 'served';
+          status: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled';
           created_at: string;
           updated_at: string;
         };

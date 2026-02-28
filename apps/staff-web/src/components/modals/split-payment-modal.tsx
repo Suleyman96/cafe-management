@@ -4,7 +4,7 @@ import type { ORDER_STATUS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
-import { Check, CheckCircle, DollarSign, X } from 'lucide-react';
+import { Check, CheckCircle, DollarSign, Minus, Plus, X } from 'lucide-react';
 import { useState } from 'react';
 import {
   calculateTax as calculateTaxFromSettings,
@@ -51,16 +51,22 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
 
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('full');
   const [partialAmount, setPartialAmount] = useState<string>('');
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  // Map of itemId → selected quantity (0 means not selected)
+  const [selectedItemQuantities, setSelectedItemQuantities] = useState<Map<string, number>>(
+    new Map(),
+  );
   const [tipAmount, setTipAmount] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
-  // Calculate subtotal from items (before tax)
-  const orderSubtotal =
-    order?.order_items?.reduce(
-      (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
-      0,
-    ) || 0;
+  // Filter out cancelled items for payment
+  const payableItems =
+    order?.order_items?.filter((item: OrderItem) => item.status !== 'cancelled') || [];
+
+  // Calculate subtotal from non-cancelled items (before tax)
+  const orderSubtotal = payableItems.reduce(
+    (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
+    0,
+  );
 
   // Calculate tax based on cafe settings
   const orderTax = cafeSettings?.tax_enabled
@@ -72,10 +78,25 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   const orderTotal = order?.total || orderSubtotal + orderTax;
 
   const calculateSelectedItemsTotal = () => {
-    if (!order?.order_items) return 0;
-    return order.order_items
-      .filter((item: OrderItem) => selectedItems.has(item.id))
-      .reduce((sum: number, item: OrderItem) => sum + item.quantity * item.item_price, 0);
+    let total = 0;
+    for (const [itemId, qty] of selectedItemQuantities) {
+      if (qty <= 0) continue;
+      const item = payableItems.find((i: OrderItem) => i.id === itemId);
+      if (item) {
+        total += qty * item.item_price;
+      }
+    }
+    return total;
+  };
+
+  // Check if all selected items are at full quantity (for specific_items payment type)
+  const allSelectedAtFullQuantity = () => {
+    for (const [itemId, qty] of selectedItemQuantities) {
+      if (qty <= 0) continue;
+      const item = payableItems.find((i: OrderItem) => i.id === itemId);
+      if (item && qty < item.quantity) return false;
+    }
+    return true;
   };
 
   const getPaymentAmount = () => {
@@ -93,21 +114,37 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
     const amount = getPaymentAmount();
     if (amount <= 0 || !staff?.id) return;
 
+    // Determine payment type for items mode
+    let paymentType: 'full' | 'partial_amount' | 'specific_items';
+    let orderItemIds: string[] | null = null;
+
+    if (paymentMode === 'full') {
+      paymentType = 'full';
+    } else if (paymentMode === 'partial') {
+      paymentType = 'partial_amount';
+    } else {
+      // Items mode: use specific_items only if all selected items are at full quantity
+      if (allSelectedAtFullQuantity()) {
+        paymentType = 'specific_items';
+        orderItemIds = Array.from(selectedItemQuantities.entries())
+          .filter(([, qty]) => qty > 0)
+          .map(([id]) => id);
+      } else {
+        // Partial quantities — use partial_amount to avoid strict DB validation
+        paymentType = 'partial_amount';
+      }
+    }
+
     setLoading(true);
     try {
       await createPayment.mutateAsync({
         order_id: order?.id || '',
         received_by: staff.id,
-        payment_type:
-          paymentMode === 'full'
-            ? 'full'
-            : paymentMode === 'partial'
-              ? 'partial_amount'
-              : 'specific_items',
+        payment_type: paymentType,
         amount,
         tip_amount: parseFloat(tipAmount) || 0,
         payment_method: 'cash',
-        order_item_ids: paymentMode === 'items' ? Array.from(selectedItems) : null,
+        order_item_ids: orderItemIds,
         notes: null,
       });
       onSuccess();
@@ -118,14 +155,18 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
     }
   };
 
-  const toggleItemSelection = (itemId: string) => {
-    const newSelection = new Set(selectedItems);
-    if (newSelection.has(itemId)) {
-      newSelection.delete(itemId);
-    } else {
-      newSelection.add(itemId);
-    }
-    setSelectedItems(newSelection);
+  const updateItemQuantity = (itemId: string, maxQty: number, delta: number) => {
+    setSelectedItemQuantities((prev) => {
+      const newMap = new Map(prev);
+      const current = newMap.get(itemId) || 0;
+      const next = Math.max(0, Math.min(maxQty, current + delta));
+      if (next === 0) {
+        newMap.delete(itemId);
+      } else {
+        newMap.set(itemId, next);
+      }
+      return newMap;
+    });
   };
 
   // Complete order (mark as paid) - used when order is fully paid or has $0 total
@@ -150,6 +191,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
 
   const isFullyPaid = remainingBalance !== undefined && remainingBalance <= 0;
   const isZeroTotal = orderTotal === 0;
+  const hasSelectedItems = Array.from(selectedItemQuantities.values()).some((q) => q > 0);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -270,7 +312,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                  $
+                  {cafeSettings?.currency_symbol || '$'}
                 </span>
                 <input
                   type="number"
@@ -285,37 +327,61 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
             </div>
           )}
 
-          {/* Item Selection */}
+          {/* Item Selection with Quantity Controls */}
           {paymentMode === 'items' && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('payment.selectItemsToPay')}
               </label>
-              <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                {order.order_items?.map((item: OrderItem) => (
-                  <label
-                    key={item.id}
-                    className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.has(item.id)}
-                      onChange={() => toggleItemSelection(item.id)}
-                      className="h-4 w-4 text-blue-600"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">
-                        {item.quantity}x {item.item_name}
+              <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                {payableItems.map((item: OrderItem) => {
+                  const selectedQty = selectedItemQuantities.get(item.id) || 0;
+                  const isSelected = selectedQty > 0;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`flex items-center gap-3 p-2 rounded transition-colors ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">
+                          {item.quantity}x {item.item_name}
+                        </div>
+                        {item.notes && <div className="text-xs text-gray-500">{item.notes}</div>}
+                        <div className="text-xs text-gray-500">
+                          {formatPrice(item.item_price)} {t('payment.each')}
+                        </div>
                       </div>
-                      {item.notes && <div className="text-xs text-gray-600">{item.notes}</div>}
+
+                      {/* Quantity selector */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => updateItemQuantity(item.id, item.quantity, -1)}
+                          disabled={selectedQty <= 0}
+                          className="h-7 w-7 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="w-6 text-center text-sm font-medium">{selectedQty}</span>
+                        <button
+                          onClick={() => updateItemQuantity(item.id, item.quantity, 1)}
+                          disabled={selectedQty >= item.quantity}
+                          className="h-7 w-7 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="font-medium text-sm w-20 text-right">
+                        {isSelected
+                          ? formatPrice(selectedQty * item.item_price)
+                          : formatPrice(item.quantity * item.item_price)}
+                      </div>
                     </div>
-                    <div className="font-medium">
-                      {formatPrice(item.quantity * item.item_price)}
-                    </div>
-                  </label>
-                ))}
+                  );
+                })}
               </div>
-              {selectedItems.size > 0 && (
+              {hasSelectedItems && (
                 <div className="mt-2 text-sm font-medium text-blue-700">
                   {t('total', { ns: 'common' })}: {formatPrice(calculateSelectedItemsTotal())}
                 </div>

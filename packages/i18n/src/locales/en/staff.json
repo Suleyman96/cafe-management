@@ -112,6 +112,11 @@
   "orders.notAssigned": "Not assigned",
   "orders.itemStatusUpdated": "Item status updated to {{status}}",
   "orders.tax": "Tax",
+  "orders.cancelItem": "Cancel Item",
+  "orders.cancelItemConfirm": "Are you sure you want to cancel",
+  "orders.itemCancelled": "{{item}} cancelled",
+  "orders.failedCancelItem": "Failed to cancel item",
+  "orders.keepItem": "Keep Item",
 
   "kitchen.title": "Kitchen",
   "kitchen.noActiveOrders": "No Active Orders",
@@ -592,6 +597,7 @@
   "payment.completing": "Completing...",
   "payment.processing": "Processing...",
   "payment.processPaymentBtn": "Process Payment",
+  "payment.each": "each",
 
   "tables.editTable": "Edit {{table}}",
   "tables.addNewTable": "Add New Table",
@@ -613,6 +619,12 @@
   "tables.transferTableBtn": "Transfer Table",
   "tables.mainArea": "Main area",
   "tables.reasonOptional": "Reason (optional)",
+  "tables.transferItems": "Transfer Items",
+  "tables.selectItemsToTransfer": "Select items to transfer",
+  "tables.transferSummary": "Transfer Summary",
+  "tables.transferItemsBtn": "Transfer Items",
+  "tables.itemsTransferred": "Items transferred successfully",
+  "tables.transferReasonPlaceholder": "e.g., Customer moved to another table...",
 
   "tables.createOrderFor": "Create Order for {{table}}",
   "tables.notesOptional": "Notes (optional)",
