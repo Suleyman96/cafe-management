@@ -44,6 +44,7 @@ export const ORDER_ITEM_STATUS = {
   PREPARING: 'preparing',
   READY: 'ready',
   SERVED: 'served',
+  CANCELLED: 'cancelled',
 } as const;
 
 // Waiter call statuses

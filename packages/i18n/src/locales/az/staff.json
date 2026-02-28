@@ -112,6 +112,11 @@
   "orders.notAssigned": "Təyin edilməyib",
   "orders.itemStatusUpdated": "Məhsul statusu {{status}} olaraq yeniləndi",
   "orders.tax": "Vergi",
+  "orders.cancelItem": "Məhsulu Ləğv Et",
+  "orders.cancelItemConfirm": "Bu məhsulu ləğv etmək istədiyinizə əminsiniz?",
+  "orders.itemCancelled": "{{item}} ləğv edildi",
+  "orders.failedCancelItem": "Məhsulu ləğv etmək mümkün olmadı",
+  "orders.keepItem": "Saxla",
 
   "kitchen.title": "Mətbəx",
   "kitchen.noActiveOrders": "Aktiv Sifariş Yoxdur",
@@ -592,6 +597,7 @@
   "payment.completing": "Tamamlanır...",
   "payment.processing": "Emal edilir...",
   "payment.processPaymentBtn": "Ödənişi Emal Et",
+  "payment.each": "ədədi",
 
   "tables.editTable": "{{table}} Redaktə Et",
   "tables.addNewTable": "Yeni Masa Əlavə Et",
@@ -613,6 +619,12 @@
   "tables.transferTableBtn": "Masanı Köçür",
   "tables.mainArea": "Əsas məkan",
   "tables.reasonOptional": "Səbəb (istəyə bağlı)",
+  "tables.transferItems": "Məhsulları Köçür",
+  "tables.selectItemsToTransfer": "Köçürüləcək məhsulları seçin",
+  "tables.transferSummary": "Köçürmə Xülasəsi",
+  "tables.transferItemsBtn": "Məhsulları Köçür",
+  "tables.itemsTransferred": "Məhsullar uğurla köçürüldü",
+  "tables.transferReasonPlaceholder": "Məs., Müştəri başqa masaya keçdi...",
 
   "tables.createOrderFor": "{{table}} üçün Sifariş Yarat",
   "tables.notesOptional": "Qeydlər (istəyə bağlı)",

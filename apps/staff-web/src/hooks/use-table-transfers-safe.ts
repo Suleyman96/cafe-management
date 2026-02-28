@@ -44,6 +44,27 @@ export function useTransferTable() {
   });
 }
 
+export function useTransferOrderItems() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: {
+      sourceOrderId: string;
+      destinationTableId: string;
+      items: Array<{ item_id: string; quantity: number }>;
+      staffId: string;
+      reason?: string;
+    }) => db.rpc.transferOrderItems(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+      queryClient.invalidateQueries({ queryKey: ['table_transfers'] });
+    },
+  });
+}
+
 // Helper to format transfer reason
 export function formatTransferReason(reason?: string | null): string {
   if (!reason) return 'No reason provided';

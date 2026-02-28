@@ -338,6 +338,19 @@ export function createOrderItemsWrapper(ctx: WrapperContext) {
 
       if (error) throw handleSupabaseError(error);
     },
+
+    cancel: async (id: string) => {
+      const { data, error } = await ctx.anyClient
+        .from('order_items')
+        .update({ status: 'cancelled' })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isOrderItem(data)) throw new Error('Invalid order item data');
+      return data as OrderItemRow;
+    },
   };
 }
 
