@@ -17,6 +17,14 @@ const nextConfig = {
   reactStrictMode: true,
   // Enable SWC minification for faster builds
   swcMinify: true,
+  // Important: transpile workspace packages
+  transpilePackages: [
+    '@cafe-idare/api-client',
+    '@cafe-idare/core',
+    '@cafe-idare/database',
+    '@cafe-idare/i18n',
+    '@cafe-idare/ui',
+  ],
 };
 
 module.exports = nextConfig;

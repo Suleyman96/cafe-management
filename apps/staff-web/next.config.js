@@ -20,6 +20,7 @@ const nextConfig = {
     '@cafe-idare/api-client',
     '@cafe-idare/core',
     '@cafe-idare/database',
+    '@cafe-idare/i18n',
     '@cafe-idare/ui',
   ],
 };
