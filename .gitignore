@@ -52,6 +52,12 @@ coverage/
 # TypeScript
 *.tsbuildinfo
 
+# Supabase
+supabase/.temp/
+
+# Vercel
+.vercel/
+
 # Misc
 .cache/
 *.pem
