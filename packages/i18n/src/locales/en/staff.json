@@ -20,6 +20,8 @@
   "tables.createdOrder": "Order created for",
   "tables.failedCreateOrder": "Failed to create order. Please try again.",
   "tables.cannotDeleteActiveOrder": "Cannot delete table with active order",
+  "tables.deleteTable": "Delete Table",
+  "tables.deleteTableConfirm": "Are you sure you want to delete",
   "tables.tableDeleted": "deleted",
   "tables.failedDeleteTable": "Failed to delete table",
   "tables.tableNotFound": "Table not found",

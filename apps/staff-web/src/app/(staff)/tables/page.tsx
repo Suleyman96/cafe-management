@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { CreateTakeoutModal } from '@/components/modals/create-takeout-modal';
 import { TableModal } from '@/components/modals/table-modal';
 import { TableTransferModal } from '@/components/modals/table-transfer-modal';
@@ -56,6 +57,8 @@ export default function TablesPage() {
   const [editingTable, setEditingTable] = useState<any>(null);
   const [creatingOrderForTable, setCreatingOrderForTable] = useState<string | null>(null);
   const [tableMenuOpen, setTableMenuOpen] = useState<string | null>(null);
+  const [deleteConfirmTable, setDeleteConfirmTable] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const createOrder = useCreateOrder();
   const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
@@ -289,24 +292,28 @@ export default function TablesPage() {
     }
   };
 
-  // Handle delete table
-  const handleDeleteTable = async (table: any) => {
+  // Handle delete table — open confirmation modal
+  const handleDeleteTable = (table: any) => {
     const activeOrders = getActiveOrdersForTable(table.id);
     if (activeOrders.length > 0) {
       toast.error(t('tables.cannotDeleteActiveOrder'));
       return;
     }
+    setDeleteConfirmTable(table);
+  };
 
-    if (!confirm(`Are you sure you want to delete ${table.table_number}?`)) {
-      return;
-    }
-
+  const confirmDeleteTable = async () => {
+    if (!deleteConfirmTable) return;
+    setIsDeleting(true);
     try {
-      await deleteTable.mutateAsync(table.id);
-      toast.success(`${table.table_number} ${t('tables.tableDeleted')}`);
+      await deleteTable.mutateAsync(deleteConfirmTable.id);
+      toast.success(`${deleteConfirmTable.table_number} ${t('tables.tableDeleted')}`);
       refetchTables();
     } catch (error: any) {
       toast.error(error.message || t('tables.failedDeleteTable'));
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmTable(null);
     }
   };
 
@@ -644,6 +651,17 @@ export default function TablesPage() {
           toast.success(t('orders.orderCreated'));
           window.location.href = `/orders/${orderId}/add-items`;
         }}
+      />
+
+      <ConfirmDialog
+        isOpen={!!deleteConfirmTable}
+        onClose={() => setDeleteConfirmTable(null)}
+        onConfirm={confirmDeleteTable}
+        title={t('tables.deleteTable')}
+        message={`${t('tables.deleteTableConfirm')} ${deleteConfirmTable?.table_number}?`}
+        confirmLabel={t('delete', { ns: 'common' })}
+        cancelLabel={t('cancel', { ns: 'common' })}
+        loading={isDeleting}
       />
     </div>
   );
