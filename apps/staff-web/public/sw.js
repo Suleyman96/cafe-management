@@ -1,7 +1,7 @@
-const CACHE_NAME = 'cafe-man-v1';
-const STATIC_ASSETS = ['/', '/login', '/manifest.json'];
+const CACHE_NAME = 'cafe-man-v2';
+const STATIC_ASSETS = ['/manifest.json'];
 
-// Install event - cache static assets
+// Install event - cache only truly static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -23,44 +23,43 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - network first, fall back to cache
+// Fetch event - only cache icons/images, let Next.js/Vercel handle everything else
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
 
-  // Skip Supabase API calls - always fetch from network
+  // Skip Supabase API calls
   if (event.request.url.includes('supabase.co')) return;
 
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Clone the response before caching
-        const responseClone = response.clone();
+  // Skip Next.js assets - Vercel CDN handles caching with content hashes
+  if (event.request.url.includes('/_next/')) return;
 
-        // Cache successful responses
+  // Skip HTML navigation requests - prevents stale page shells after deploys
+  if (event.request.mode === 'navigate') return;
+
+  // Only cache static assets (icons, sounds, manifest)
+  const url = new URL(event.request.url);
+  const isStaticAsset =
+    url.pathname.startsWith('/icons/') ||
+    url.pathname.startsWith('/sounds/') ||
+    url.pathname === '/manifest.json';
+
+  if (!isStaticAsset) return;
+
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) return cachedResponse;
+
+      return fetch(event.request).then((response) => {
         if (response.status === 200) {
+          const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
           });
         }
-
         return response;
-      })
-      .catch(() => {
-        // Network failed, try cache
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-
-          // Return offline page for navigation requests
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
-          }
-
-          return new Response('Offline', { status: 503 });
-        });
-      }),
+      });
+    }),
   );
 });
 
