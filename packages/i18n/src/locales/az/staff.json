@@ -20,6 +20,8 @@
   "tables.createdOrder": "Sifariş yaradıldı:",
   "tables.failedCreateOrder": "Sifariş yaratmaq mümkün olmadı. Yenidən cəhd edin.",
   "tables.cannotDeleteActiveOrder": "Aktiv sifarişli masanı silmək olmaz",
+  "tables.deleteTable": "Masanı Sil",
+  "tables.deleteTableConfirm": "Bu masanı silmək istədiyinizə əminsiniz?",
   "tables.tableDeleted": "silindi",
   "tables.failedDeleteTable": "Masanı silmək mümkün olmadı",
   "tables.tableNotFound": "Masa tapılmadı",
