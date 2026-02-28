@@ -71,21 +71,10 @@ export function ConfirmDialog({
         </div>
 
         <div className="flex gap-3 justify-end pt-2">
-          <Button
-            ref={cancelRef}
-            variant="outline"
-            size="sm"
-            onClick={onClose}
-            disabled={loading}
-          >
+          <Button ref={cancelRef} variant="outline" size="sm" onClick={onClose} disabled={loading}>
             {cancelLabel}
           </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={onConfirm}
-            disabled={loading}
-          >
+          <Button variant="destructive" size="sm" onClick={onConfirm} disabled={loading}>
             {loading ? 'Deleting...' : confirmLabel}
           </Button>
         </div>
