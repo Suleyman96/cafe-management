@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@cafe-idare/i18n';
-import { MapPin, Phone, StickyNote, Truck, User, X } from 'lucide-react';
+import { Map as MapIcon, MapPin, Phone, StickyNote, Truck, User, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useCafeSettings, useCreateOrder } from '@/hooks';
@@ -110,13 +110,26 @@ export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDelive
               <MapPin className="inline h-4 w-4 mr-1" />
               {t('delivery.deliveryAddress')} <span className="text-red-500">*</span>
             </label>
-            <textarea
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-              placeholder={t('delivery.fullDeliveryAddress')}
-              rows={2}
-              value={deliveryAddress}
-              onChange={(e) => setDeliveryAddress(e.target.value)}
-            />
+            <div className="relative">
+              <textarea
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                placeholder={t('delivery.fullDeliveryAddress')}
+                rows={2}
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+              />
+              {deliveryAddress.trim() && (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(deliveryAddress.trim())}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute right-2 top-2 p-1.5 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-md transition-colors"
+                  title={t('delivery.openInMaps')}
+                >
+                  <MapIcon className="h-4 w-4" />
+                </a>
+              )}
+            </div>
           </div>
 
           <div>

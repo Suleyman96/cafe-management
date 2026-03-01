@@ -84,6 +84,32 @@ export function useCreateOrder() {
   });
 }
 
+export function useCancelOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ orderId, tableId }: { orderId: string; tableId?: string | null }) => {
+      return db.orders.cancelOrder(orderId, 'Cancelled by customer', tableId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+    },
+  });
+}
+
+export function useCancelOrderItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ itemId, cancelQty }: { itemId: string; cancelQty?: number }) => {
+      return db.orderItems.cancel(itemId, cancelQty);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+    },
+  });
+}
+
 export function useAddOrderItems() {
   const queryClient = useQueryClient();
 

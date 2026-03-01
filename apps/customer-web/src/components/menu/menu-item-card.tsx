@@ -28,11 +28,14 @@ export function MenuItemCard({ item, accentColor, priority = false }: MenuItemCa
   const name = getLocalizedField(item, 'name', language);
   const description = getLocalizedField(item, 'description', language);
 
+  const taxMultiplier =
+    settings?.tax_enabled && settings.tax_percentage > 0 ? 1 + settings.tax_percentage / 100 : 1;
+
   const displayPrice = (amount: number) => {
     if (settings) {
-      return formatPriceWithSettings(amount, settings);
+      return formatPriceWithSettings(amount * taxMultiplier, settings);
     }
-    return formatPrice(amount);
+    return formatPrice(amount * taxMultiplier);
   };
 
   const handleQuickAdd = (e: React.MouseEvent) => {

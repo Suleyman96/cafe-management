@@ -52,9 +52,9 @@ export function createRpcWrapper(ctx: WrapperContext) {
       const { data, error } = await ctx.anyClient.rpc('transfer_order_items', {
         p_source_order_id: params.sourceOrderId,
         p_destination_table_id: params.destinationTableId,
-        p_items: JSON.stringify(params.items),
+        p_items: params.items,
         p_staff_id: params.staffId,
-        p_reason: params.reason,
+        p_reason: params.reason || null,
       });
 
       if (error) throw handleSupabaseError(error);

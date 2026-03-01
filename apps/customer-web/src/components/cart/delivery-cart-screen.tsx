@@ -32,6 +32,9 @@ export function DeliveryCartScreen() {
   const addDeliveryOrderItems = useAddDeliveryOrderItems();
   const { data: settings } = useCafeSettings();
 
+  const taxMultiplier =
+    settings?.tax_enabled && settings.tax_percentage > 0 ? 1 + settings.tax_percentage / 100 : 1;
+
   const cartSubtotal = getTotal();
   const deliveryFee = settings?.delivery_fee_default || 0;
   const displaySubtotal = settings ? getDisplaySubtotal(cartSubtotal, settings) : cartSubtotal;
@@ -158,7 +161,8 @@ export function DeliveryCartScreen() {
                   <div className="flex-1">
                     <h3 className="font-semibold">{name}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {formatPrice(item.menuItem.price)} {t('each', { ns: 'common' })}
+                      {formatPrice(item.menuItem.price * taxMultiplier)}{' '}
+                      {t('each', { ns: 'common' })}
                     </p>
                   </div>
                   <Button
@@ -264,7 +268,7 @@ export function DeliveryCartScreen() {
                     </Button>
                   </div>
                   <span className="font-bold text-lg">
-                    {formatPrice(item.menuItem.price * item.quantity)}
+                    {formatPrice(item.menuItem.price * item.quantity * taxMultiplier)}
                   </span>
                 </div>
               </div>

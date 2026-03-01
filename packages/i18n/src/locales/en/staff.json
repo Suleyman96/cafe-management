@@ -117,6 +117,7 @@
   "orders.itemCancelled": "{{item}} cancelled",
   "orders.failedCancelItem": "Failed to cancel item",
   "orders.keepItem": "Keep Item",
+  "orders.cancelQuantity": "How many to cancel?",
 
   "kitchen.title": "Kitchen",
   "kitchen.noActiveOrders": "No Active Orders",
@@ -597,6 +598,8 @@
   "payment.completing": "Completing...",
   "payment.processing": "Processing...",
   "payment.processPaymentBtn": "Process Payment",
+  "payment.exceedsBalance": "Payment amount {{amount}} exceeds remaining balance {{balance}}",
+  "payment.paymentFailed": "Payment failed",
   "payment.each": "each",
 
   "tables.editTable": "Edit {{table}}",
@@ -639,6 +642,7 @@
   "delivery.deliveryHint": "This will create a new delivery order. You can add items to the order in the next screen.",
   "delivery.fullDeliveryAddress": "Full delivery address",
   "delivery.ringDoorbell": "e.g., Ring doorbell, leave at door...",
+  "delivery.openInMaps": "Open in Google Maps",
 
   "expenses.editExpense": "Edit Expense",
   "expenses.validAmount": "Please enter a valid amount",

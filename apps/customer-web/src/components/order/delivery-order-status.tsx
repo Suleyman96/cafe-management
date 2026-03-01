@@ -192,7 +192,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
           </div>
 
           <div className="mt-4 pt-4 border-t space-y-2">
-            {settings?.tax_enabled && settings?.show_tax_separately ? (
+            {order.tax > 0 ? (
               <>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t('subtotal', { ns: 'common' })}</span>
@@ -200,7 +200,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    {settings.tax_label} ({settings.tax_percentage}%)
+                    {settings?.tax_label || t('orders.tax', { ns: 'staff' })}
                   </span>
                   <span>{formatPrice(order.tax)}</span>
                 </div>

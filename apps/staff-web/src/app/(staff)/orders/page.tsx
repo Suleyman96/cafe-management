@@ -41,7 +41,7 @@ type OrderStatus =
   | 'delivered'
   | 'paid'
   | 'cancelled';
-type OrderSource = 'customer' | 'waiter' | 'phone';
+type OrderSource = 'customer' | 'waiter' | 'phone' | 'delivery';
 
 export default function OrdersPage() {
   const { t } = useTranslation('staff');
@@ -204,7 +204,9 @@ export default function OrdersPage() {
   // Filter orders
   const filteredOrders = orders?.filter((order: any) => {
     if (statusFilter !== 'all' && order.status !== statusFilter) return false;
-    if (sourceFilter !== 'all' && order.source !== sourceFilter) return false;
+    if (sourceFilter === 'delivery' && order.order_type !== 'delivery') return false;
+    if (sourceFilter !== 'all' && sourceFilter !== 'delivery' && order.source !== sourceFilter)
+      return false;
     if (
       selectedTableFilter !== 'all' &&
       order.table?.table_number !== parseInt(selectedTableFilter, 10)
@@ -285,6 +287,7 @@ export default function OrdersPage() {
               <option value="customer">{t('orders.customer')}</option>
               <option value="waiter">{t('orders.waiter')}</option>
               <option value="phone">{t('orders.takeout')}</option>
+              <option value="delivery">{t('orders.delivery')}</option>
             </select>
           </div>
 

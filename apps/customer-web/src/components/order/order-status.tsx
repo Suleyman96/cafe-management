@@ -1,7 +1,19 @@
 'use client';
 
 import { useTranslation } from '@cafe-idare/i18n';
-import { ArrowLeft, Bell, CheckCircle2, Clock, Hourglass, MessageSquare, Plus } from 'lucide-react';
+import {
+  ArrowLeft,
+  Bell,
+  CheckCircle2,
+  Clock,
+  Hourglass,
+  MessageSquare,
+  Minus,
+  Plus,
+  Trash2,
+  X,
+  XCircle,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { FeedbackForm } from '@/components/feedback/feedback-form';
@@ -10,10 +22,10 @@ import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { PlatformFooter } from '@/components/ui/platform-footer';
 import { CallStaffModal } from '@/components/waiter/call-staff-modal';
-import { useOrder } from '@/hooks/use-order';
+import { useCancelOrder, useCancelOrderItem, useOrder } from '@/hooks/use-order';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
-import { formatPrice, getStatusColor, timeAgo } from '@/lib/utils';
+import { formatPrice, timeAgo } from '@/lib/utils';
 
 interface OrderStatusProps {
   tableId: string; // This is the table_number from URL (e.g., "T01")
@@ -29,10 +41,57 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
 
   const { data: order, isLoading: orderLoading } = useOrder(actualTableId);
   const { data: settings } = useCafeSettings();
+
+  const cancelOrder = useCancelOrder();
+  const cancelItem = useCancelOrderItem();
   const [showCallStaffModal, setShowCallStaffModal] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [showCancelOrderConfirm, setShowCancelOrderConfirm] = useState(false);
+  const [cancelItemModal, setCancelItemModal] = useState<{
+    id: string;
+    name: string;
+    quantity: number;
+  } | null>(null);
+  const [cancelItemQty, setCancelItemQty] = useState(1);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const isLoading = tableLoading || orderLoading;
+
+  const canCancel = order?.status === 'pending_approval' || order?.status === 'new';
+
+  const handleCancelOrder = async () => {
+    if (!order) return;
+    setCancelLoading(true);
+    try {
+      await cancelOrder.mutateAsync({
+        orderId: order.id,
+        tableId: order.table_id,
+      });
+      setShowCancelOrderConfirm(false);
+      router.push(`/table/${tableId}/menu`);
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  const handleCancelItem = async () => {
+    if (!cancelItemModal) return;
+    setCancelLoading(true);
+    try {
+      await cancelItem.mutateAsync({
+        itemId: cancelItemModal.id,
+        cancelQty: cancelItemQty,
+      });
+      setCancelItemModal(null);
+      setCancelItemQty(1);
+    } catch (error) {
+      console.error('Failed to cancel item:', error);
+    } finally {
+      setCancelLoading(false);
+    }
+  };
 
   if (isLoading) {
     return <LoadingSpinner fullScreen />;
@@ -61,6 +120,42 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
   ];
 
   const currentStepIndex = statusSteps.findIndex((step) => step.key === order.status);
+  // "served" is a final state — all steps are completed
+  const isOrderCompleted = order.status === 'served';
+
+  const getItemStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return t('orderStatus.itemStatus.pending');
+      case 'preparing':
+        return t('orderStatus.itemStatus.preparing');
+      case 'ready':
+        return t('orderStatus.itemStatus.ready');
+      case 'served':
+        return t('orderStatus.itemStatus.served');
+      case 'cancelled':
+        return t('orderStatus.cancelled');
+      default:
+        return status;
+    }
+  };
+
+  const getItemBadgeColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-gray-100 text-gray-700 border-gray-300';
+      case 'preparing':
+        return 'bg-yellow-50 text-yellow-700 border-yellow-300';
+      case 'ready':
+        return 'bg-green-50 text-green-700 border-green-300';
+      case 'served':
+        return 'bg-purple-50 text-purple-700 border-purple-300';
+      case 'cancelled':
+        return 'bg-red-50 text-red-600 border-red-200';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-300';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -99,8 +194,8 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
           <h2 className="font-semibold mb-4">{t('orderStatus.progressTitle')}</h2>
           <div className="space-y-4">
             {statusSteps.map((step, index) => {
-              const isActive = index === currentStepIndex;
-              const isCompleted = index < currentStepIndex;
+              const isActive = !isOrderCompleted && index === currentStepIndex;
+              const isCompleted = isOrderCompleted || index < currentStepIndex;
               const Icon = step.icon;
 
               return (
@@ -158,39 +253,73 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
               <p className="text-sm text-center font-medium">✨ {t('orderStatus.banner.ready')}</p>
             </div>
           )}
+
+          {order.status === 'served' && (
+            <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-950 rounded-lg border border-purple-200 dark:border-purple-800">
+              <p className="text-sm text-center font-medium text-purple-800 dark:text-purple-200">
+                {t('orderStatus.banner.served')}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Order Items */}
         <div className="bg-card rounded-lg p-4 border">
           <h2 className="font-semibold mb-4">{t('orderStatus.orderItemsTitle')}</h2>
           <div className="space-y-3">
-            {order.order_items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-start justify-between pb-3 border-b last:border-0 last:pb-0"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{item.quantity}x</span>
-                    <span>{item.item_name}</span>
+            {order.order_items.map((item) => {
+              const isCancelled = item.status === 'cancelled';
+              return (
+                <div
+                  key={item.id}
+                  className={`flex items-start justify-between pb-3 border-b last:border-0 last:pb-0 ${isCancelled ? 'opacity-50' : ''}`}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-medium ${isCancelled ? 'line-through' : ''}`}>
+                        {item.quantity}x
+                      </span>
+                      <span className={isCancelled ? 'line-through' : ''}>{item.item_name}</span>
+                    </div>
+                    {item.notes && (
+                      <p className="text-sm text-muted-foreground mt-1">📝 {item.notes}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge
+                        variant="outline"
+                        className={`text-xs ${getItemBadgeColor(item.status)}`}
+                      >
+                        {getItemStatusLabel(item.status)}
+                      </Badge>
+                    </div>
                   </div>
-                  {item.notes && (
-                    <p className="text-sm text-muted-foreground mt-1">📝 {item.notes}</p>
-                  )}
-                  <Badge
-                    variant="outline"
-                    className={`mt-2 text-xs ${getStatusColor(item.status)}`}
-                  >
-                    {item.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <span className={`font-medium ${isCancelled ? 'line-through' : ''}`}>
+                      {formatPrice(item.item_price * item.quantity)}
+                    </span>
+                    {canCancel && !isCancelled && (
+                      <button
+                        onClick={() => {
+                          setCancelItemModal({
+                            id: item.id,
+                            name: item.item_name,
+                            quantity: item.quantity,
+                          });
+                          setCancelItemQty(item.quantity > 1 ? 1 : item.quantity);
+                        }}
+                        className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <span className="font-medium">{formatPrice(item.item_price * item.quantity)}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="mt-4 pt-4 border-t space-y-2">
-            {settings?.tax_enabled && settings?.show_tax_separately ? (
+            {order.tax > 0 ? (
               <>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t('subtotal', { ns: 'common' })}</span>
@@ -198,7 +327,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    {settings.tax_label} ({settings.tax_percentage}%)
+                    {settings?.tax_label || t('orders.tax', { ns: 'staff' })}
                   </span>
                   <span>{formatPrice(order.tax)}</span>
                 </div>
@@ -257,6 +386,18 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
                 {t('orderStatus.addMoreItems')}
               </Button>
             )}
+
+            {canCancel && (
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                onClick={() => setShowCancelOrderConfirm(true)}
+              >
+                <Trash2 className="mr-2 h-5 w-5" />
+                {t('orderStatus.cancelOrder')}
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -267,6 +408,109 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
         isOpen={showCallStaffModal}
         onClose={() => setShowCallStaffModal(false)}
       />
+
+      {/* Cancel Order Confirmation Modal */}
+      {showCancelOrderConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-background rounded-lg max-w-sm w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-100 rounded-full">
+                <XCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold">{t('orderStatus.cancelOrder')}</h3>
+            </div>
+            <p className="text-muted-foreground mb-6">{t('orderStatus.cancelOrderConfirm')}</p>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowCancelOrderConfirm(false)}
+                disabled={cancelLoading}
+              >
+                {t('orderStatus.keepOrder')}
+              </Button>
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                onClick={handleCancelOrder}
+                disabled={cancelLoading}
+              >
+                {cancelLoading ? t('orderStatus.cancelling') : t('orderStatus.confirmCancel')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Item Modal */}
+      {cancelItemModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-background rounded-lg max-w-sm w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-100 rounded-full">
+                <X className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold">{t('orderStatus.cancelItem')}</h3>
+            </div>
+            <p className="text-muted-foreground mb-4">
+              {t('orderStatus.cancelItemConfirm', { name: cancelItemModal.name })}
+            </p>
+
+            {cancelItemModal.quantity > 1 && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">
+                  {t('orderStatus.cancelQuantity')}
+                </label>
+                <div className="flex items-center justify-center gap-4">
+                  <button
+                    onClick={() => setCancelItemQty(Math.max(1, cancelItemQty - 1))}
+                    disabled={cancelItemQty <= 1}
+                    className="h-10 w-10 flex items-center justify-center rounded-full border border-border hover:bg-muted disabled:opacity-30 transition-colors"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="text-2xl font-bold w-12 text-center">{cancelItemQty}</span>
+                  <button
+                    onClick={() =>
+                      setCancelItemQty(Math.min(cancelItemModal.quantity, cancelItemQty + 1))
+                    }
+                    disabled={cancelItemQty >= cancelItemModal.quantity}
+                    className="h-10 w-10 flex items-center justify-center rounded-full border border-border hover:bg-muted disabled:opacity-30 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-center text-muted-foreground mt-1">
+                  {t('orderStatus.outOf', {
+                    count: cancelItemQty,
+                    total: cancelItemModal.quantity,
+                  })}
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setCancelItemModal(null);
+                  setCancelItemQty(1);
+                }}
+                disabled={cancelLoading}
+              >
+                {t('orderStatus.keepItem')}
+              </Button>
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                onClick={handleCancelItem}
+                disabled={cancelLoading}
+              >
+                {cancelLoading ? t('orderStatus.cancelling') : t('orderStatus.confirmCancel')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Platform Footer */}
       <PlatformFooter className="pb-4" />

@@ -41,6 +41,9 @@ export function CartScreen({ tableId }: CartScreenProps) {
   // Fetch cafe settings from database
   const { data: settings } = useCafeSettings();
 
+  const taxMultiplier =
+    settings?.tax_enabled && settings.tax_percentage > 0 ? 1 + settings.tax_percentage / 100 : 1;
+
   const cartSubtotal = getTotal();
   const displaySubtotal = settings ? getDisplaySubtotal(cartSubtotal, settings) : cartSubtotal;
   const tax = settings ? calculateTax(cartSubtotal, settings) : 0;
@@ -158,7 +161,9 @@ export function CartScreen({ tableId }: CartScreenProps) {
                   <div className="flex-1">
                     <h3 className="font-semibold">{name}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {t('cart.priceEach', { price: formatPrice(item.menuItem.price) })}
+                      {t('cart.priceEach', {
+                        price: formatPrice(item.menuItem.price * taxMultiplier),
+                      })}
                     </p>
                   </div>
                   <Button
@@ -274,7 +279,7 @@ export function CartScreen({ tableId }: CartScreenProps) {
                     </Button>
                   </div>
                   <span className="font-bold text-lg">
-                    {formatPrice(item.menuItem.price * item.quantity)}
+                    {formatPrice(item.menuItem.price * item.quantity * taxMultiplier)}
                   </span>
                 </div>
               </div>
