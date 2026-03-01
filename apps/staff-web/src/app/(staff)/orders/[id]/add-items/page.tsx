@@ -93,8 +93,15 @@ export default function AddItemsPage() {
     return cart.find((item) => item.menuItem.id === menuItemId)?.quantity || 0;
   };
 
-  // Calculate cart total
-  const cartTotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
+  // Tax multiplier for displaying tax-inclusive prices
+  const taxMultiplier =
+    cafeSettings?.tax_enabled && cafeSettings.tax_percentage > 0
+      ? 1 + cafeSettings.tax_percentage / 100
+      : 1;
+
+  // Calculate cart total (tax-inclusive)
+  const cartTotal =
+    cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0) * taxMultiplier;
 
   // Submit order items
   const handleSubmit = async () => {
@@ -221,7 +228,7 @@ export default function AddItemsPage() {
                     </p>
                   )}
                   <p className="font-semibold text-blue-600 text-sm sm:text-base">
-                    {formatPrice(item.price)}
+                    {formatPrice(item.price * taxMultiplier)}
                   </p>
                 </div>
               );
@@ -255,7 +262,7 @@ export default function AddItemsPage() {
                           {item.menuItem.name}
                         </p>
                         <p className="text-xs sm:text-sm text-gray-600">
-                          {formatPrice(item.menuItem.price)} x {item.quantity}
+                          {formatPrice(item.menuItem.price * taxMultiplier)} x {item.quantity}
                         </p>
                       </div>
                       <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">

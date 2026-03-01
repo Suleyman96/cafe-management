@@ -339,7 +339,44 @@ export function createOrderItemsWrapper(ctx: WrapperContext) {
       if (error) throw handleSupabaseError(error);
     },
 
-    cancel: async (id: string) => {
+    cancel: async (id: string, cancelQty?: number) => {
+      if (cancelQty !== undefined && cancelQty > 0) {
+        // Partial cancel: fetch current item, reduce quantity, or cancel if all
+        const { data: current, error: fetchError } = await ctx.client
+          .from('order_items')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (fetchError) throw handleSupabaseError(fetchError);
+        if (!current) throw new Error('Order item not found');
+
+        if (cancelQty >= current.quantity) {
+          // Cancel entire item
+          const { data, error } = await ctx.anyClient
+            .from('order_items')
+            .update({ status: 'cancelled' })
+            .eq('id', id)
+            .select()
+            .single();
+          if (error) throw handleSupabaseError(error);
+          if (!isOrderItem(data)) throw new Error('Invalid order item data');
+          return data as OrderItemRow;
+        }
+
+        // Reduce quantity
+        const { data, error } = await ctx.anyClient
+          .from('order_items')
+          .update({ quantity: current.quantity - cancelQty })
+          .eq('id', id)
+          .select()
+          .single();
+        if (error) throw handleSupabaseError(error);
+        if (!isOrderItem(data)) throw new Error('Invalid order item data');
+        return data as OrderItemRow;
+      }
+
+      // Cancel entire item (no quantity specified)
       const { data, error } = await ctx.anyClient
         .from('order_items')
         .update({ status: 'cancelled' })

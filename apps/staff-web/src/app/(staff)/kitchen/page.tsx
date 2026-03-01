@@ -149,12 +149,37 @@ export default function KitchenDisplayPage() {
     }
   };
 
-  // Handle status update
+  // Handle status update — also updates all item statuses to stay in sync
   const handleStatusUpdate = async (
     orderId: string,
     newStatus: 'PREPARING' | 'READY' | 'SERVED',
   ) => {
     try {
+      const order = kitchenOrders?.find((o: any) => o.id === orderId);
+
+      // Update all item statuses to match the order-level action
+      if (order?.order_items) {
+        const targetItemStatus =
+          newStatus === 'PREPARING' ? 'preparing' : newStatus === 'READY' ? 'ready' : 'served';
+
+        for (const item of order.order_items) {
+          // Skip items that are already at or past the target status, and skip cancelled
+          if (item.status === 'cancelled' || item.status === targetItemStatus) continue;
+          if (targetItemStatus === 'preparing' && item.status !== 'pending') continue;
+          if (
+            targetItemStatus === 'ready' &&
+            item.status !== 'pending' &&
+            item.status !== 'preparing'
+          )
+            continue;
+
+          await updateItemStatus.mutateAsync({
+            itemId: item.id,
+            status: targetItemStatus as 'pending' | 'preparing' | 'ready' | 'served',
+          });
+        }
+      }
+
       await updateOrderStatus.mutateAsync({
         orderId,
         status: newStatus,

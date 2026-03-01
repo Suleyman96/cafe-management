@@ -8,6 +8,7 @@ import {
   ChefHat,
   Clock,
   Loader2,
+  Map as MapIcon,
   MapPin,
   Phone,
   Plus,
@@ -346,7 +347,17 @@ export default function DeliveryPage() {
               {order.delivery_address && (
                 <div className="mb-3 text-sm text-purple-700 bg-purple-50 rounded px-3 py-2 flex items-start gap-2">
                   <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                  <span className="line-clamp-2">{order.delivery_address}</span>
+                  <span className="line-clamp-2 flex-1">{order.delivery_address}</span>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.delivery_address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex-shrink-0 text-purple-500 hover:text-purple-800 transition-colors"
+                    title={t('delivery.openInMaps')}
+                  >
+                    <MapIcon className="h-3.5 w-3.5" />
+                  </a>
                 </div>
               )}
 

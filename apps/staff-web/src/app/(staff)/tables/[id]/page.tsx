@@ -28,7 +28,6 @@ import {
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { ItemTransferModal } from '@/components/modals/item-transfer-modal';
 import {
   formatPriceWithSettings,
@@ -93,6 +92,7 @@ export default function TableDetailPage() {
   const [orderNotes, setOrderNotes] = useState('');
   const [selectedOrderIndex, setSelectedOrderIndex] = useState(0);
   const [cancelItemConfirm, setCancelItemConfirm] = useState<OrderItem | null>(null);
+  const [cancelItemQty, setCancelItemQty] = useState(1);
   const [cancellingItem, setCancellingItem] = useState(false);
   const [showItemTransferModal, setShowItemTransferModal] = useState(false);
 
@@ -217,8 +217,15 @@ export default function TableDetailPage() {
     return cart.find((item) => item.menuItem.id === menuItemId)?.quantity || 0;
   };
 
-  // Calculate cart total
-  const cartTotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
+  // Tax multiplier for displaying tax-inclusive prices
+  const taxMultiplier =
+    cafeSettings?.tax_enabled && cafeSettings.tax_percentage > 0
+      ? 1 + cafeSettings.tax_percentage / 100
+      : 1;
+
+  // Calculate cart total (tax-inclusive)
+  const cartTotal =
+    cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0) * taxMultiplier;
 
   // Get order total from database (includes tax) for consistency
   // Fall back to calculating from items if total is not set
@@ -363,13 +370,47 @@ export default function TableDetailPage() {
     }
   };
 
-  // Handle item status update
+  // Handle item status update — also syncs order-level status based on collective item states
   const handleItemStatusUpdate = async (itemId: string, newStatus: string) => {
     try {
       await updateItemStatus.mutateAsync({
         itemId,
         status: newStatus as 'pending' | 'preparing' | 'ready' | 'served',
       });
+
+      // Sync order status based on updated item states
+      if (activeOrder?.order_items) {
+        const updatedItems = activeOrder.order_items.map((item: OrderItem) =>
+          item.id === itemId ? { ...item, status: newStatus } : item,
+        );
+        type ItemWithStatus = { status: string };
+        const nonCancelled = updatedItems.filter((i: ItemWithStatus) => i.status !== 'cancelled');
+
+        if (nonCancelled.length > 0) {
+          const allServed = nonCancelled.every((i: ItemWithStatus) => i.status === 'served');
+          const allReadyOrServed = nonCancelled.every(
+            (i: ItemWithStatus) => i.status === 'ready' || i.status === 'served',
+          );
+          const anyPreparing = nonCancelled.some((i: ItemWithStatus) => i.status === 'preparing');
+
+          let targetStatus: string | null = null;
+          if (allServed && activeOrder.status !== 'served') {
+            targetStatus = 'SERVED';
+          } else if (allReadyOrServed && !allServed && activeOrder.status !== 'ready') {
+            targetStatus = 'READY';
+          } else if (anyPreparing && activeOrder.status === 'new') {
+            targetStatus = 'PREPARING';
+          }
+
+          if (targetStatus) {
+            await updateOrderStatus.mutateAsync({
+              orderId: activeOrder.id,
+              status: targetStatus as any,
+            });
+          }
+        }
+      }
+
       toast.success(t('orders.itemMarkedAs', { status: newStatus }));
       refetchOrders();
     } catch (_error) {
@@ -377,15 +418,23 @@ export default function TableDetailPage() {
     }
   };
 
-  // Handle individual item cancellation
+  // Handle individual item cancellation (supports partial quantity)
   const handleCancelItem = async () => {
     if (!cancelItemConfirm || !activeOrder) return;
 
     setCancellingItem(true);
     try {
-      await cancelOrderItem.mutateAsync({ itemId: cancelItemConfirm.id });
-      toast.success(t('orders.itemCancelled', { item: cancelItemConfirm.item_name }));
+      await cancelOrderItem.mutateAsync({
+        itemId: cancelItemConfirm.id,
+        cancelQty: cancelItemQty,
+      });
+      toast.success(
+        t('orders.itemCancelled', {
+          item: `${cancelItemQty}x ${cancelItemConfirm.item_name}`,
+        }),
+      );
       setCancelItemConfirm(null);
+      setCancelItemQty(1);
       refetchOrders();
     } catch (error: any) {
       toast.error(error.message || t('orders.failedCancelItem'));
@@ -667,6 +716,7 @@ export default function TableDetailPage() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setCancelItemConfirm(item);
+                                  setCancelItemQty(1);
                                 }}
                                 className="px-1.5 py-1 text-red-500 hover:bg-red-50 rounded transition-colors"
                                 title={t('orders.cancelItem')}
@@ -744,7 +794,7 @@ export default function TableDetailPage() {
                     </p>
                   )}
                   <p className="font-semibold text-blue-600 text-sm sm:text-base">
-                    {formatPrice(item.price)}
+                    {formatPrice(item.price * taxMultiplier)}
                   </p>
                 </div>
               );
@@ -774,7 +824,7 @@ export default function TableDetailPage() {
                       <div className="flex-1">
                         <p className="font-medium text-sm">{item.menuItem.name}</p>
                         <p className="text-sm text-gray-600">
-                          {formatPrice(item.menuItem.price)} x {item.quantity}
+                          {formatPrice(item.menuItem.price * taxMultiplier)} x {item.quantity}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -918,17 +968,72 @@ export default function TableDetailPage() {
         </div>
       )}
 
-      {/* Cancel Item Confirmation */}
-      <ConfirmDialog
-        isOpen={!!cancelItemConfirm}
-        onClose={() => setCancelItemConfirm(null)}
-        onConfirm={handleCancelItem}
-        title={t('orders.cancelItem')}
-        message={`${t('orders.cancelItemConfirm')} ${cancelItemConfirm?.quantity}x ${cancelItemConfirm?.item_name}?`}
-        confirmLabel={t('orders.cancelItem')}
-        cancelLabel={t('orders.keepItem')}
-        loading={cancellingItem}
-      />
+      {/* Cancel Item Confirmation with Quantity Selector */}
+      {cancelItemConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-sm w-full p-6">
+            <h3 className="text-lg font-bold mb-2">{t('orders.cancelItem')}</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              {t('orders.cancelItemConfirm')} <strong>{cancelItemConfirm.item_name}</strong>?
+            </p>
+
+            {/* Quantity selector — only show if item has quantity > 1 */}
+            {cancelItemConfirm.quantity > 1 && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('orders.cancelQuantity')}
+                </label>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => setCancelItemQty((q) => Math.max(1, q - 1))}
+                    disabled={cancelItemQty <= 1}
+                    className="h-8 w-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="text-lg font-bold w-8 text-center">{cancelItemQty}</span>
+                  <button
+                    onClick={() =>
+                      setCancelItemQty((q) => Math.min(cancelItemConfirm.quantity, q + 1))
+                    }
+                    disabled={cancelItemQty >= cancelItemConfirm.quantity}
+                    className="h-8 w-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                  <span className="text-sm text-gray-500">/ {cancelItemConfirm.quantity}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setCancelItemConfirm(null);
+                  setCancelItemQty(1);
+                }}
+                disabled={cancellingItem}
+              >
+                {t('orders.keepItem')}
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleCancelItem}
+                disabled={cancellingItem}
+              >
+                {cancellingItem ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  `${t('orders.cancelItem')} (${cancelItemQty})`
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Item Transfer Modal */}
       {activeOrder && (

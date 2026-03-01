@@ -117,6 +117,7 @@
   "orders.itemCancelled": "{{item}} ləğv edildi",
   "orders.failedCancelItem": "Məhsulu ləğv etmək mümkün olmadı",
   "orders.keepItem": "Saxla",
+  "orders.cancelQuantity": "Neçəsini ləğv edək?",
 
   "kitchen.title": "Mətbəx",
   "kitchen.noActiveOrders": "Aktiv Sifariş Yoxdur",
@@ -597,6 +598,8 @@
   "payment.completing": "Tamamlanır...",
   "payment.processing": "Emal edilir...",
   "payment.processPaymentBtn": "Ödənişi Emal Et",
+  "payment.exceedsBalance": "Ödəniş məbləği {{amount}} qalıq balansdan {{balance}} artıqdır",
+  "payment.paymentFailed": "Ödəniş uğursuz oldu",
   "payment.each": "ədədi",
 
   "tables.editTable": "{{table}} Redaktə Et",
@@ -639,6 +642,7 @@
   "delivery.deliveryHint": "Bu yeni çatdırılma sifarişi yaradacaq. Növbəti ekranda sifarişə məhsullar əlavə edə biləcəksiniz.",
   "delivery.fullDeliveryAddress": "Tam çatdırılma ünvanı",
   "delivery.ringDoorbell": "Məs., Zəngi basın, qapıda buraxın...",
+  "delivery.openInMaps": "Google Maps-də aç",
 
   "expenses.editExpense": "Xərci Redaktə Et",
   "expenses.validAmount": "Düzgün məbləğ daxil edin",

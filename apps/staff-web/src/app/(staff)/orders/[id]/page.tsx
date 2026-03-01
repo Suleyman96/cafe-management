@@ -14,6 +14,7 @@ import {
   Clock,
   CreditCard,
   FileText,
+  Map as MapIcon,
   MapPin,
   Package,
   Phone,
@@ -167,13 +168,6 @@ export default function OrderDetailPage() {
     return subtotal;
   };
 
-  // Calculate tax amount based on cafe settings
-  const calculateTax = () => {
-    if (!cafeSettings?.tax_enabled) return 0;
-    const subtotal = calculateSubtotal();
-    return calculateTaxFromSettings(subtotal, cafeSettings);
-  };
-
   const calculatePaidAmount = () => {
     if (!payments) return 0;
     return payments.reduce((sum: number, payment: Payment) => sum + payment.amount, 0);
@@ -269,7 +263,7 @@ export default function OrderDetailPage() {
     },
   ];
 
-  // Handle item status update
+  // Handle item status update — also syncs order-level status based on collective item states
   const handleItemStatusUpdate = async (itemId: string, newStatus: string) => {
     try {
       await updateItemStatus.mutateAsync({
@@ -277,6 +271,40 @@ export default function OrderDetailPage() {
         status: newStatus as 'pending' | 'preparing' | 'ready' | 'served',
       });
       setOpenItemMenu(null);
+
+      // Sync order status based on updated item states
+      if (order?.order_items) {
+        const updatedItems = order.order_items.map((item: OrderItem) =>
+          item.id === itemId ? { ...item, status: newStatus } : item,
+        );
+        type ItemWithStatus = { status: string };
+        const nonCancelled = updatedItems.filter((i: ItemWithStatus) => i.status !== 'cancelled');
+
+        if (nonCancelled.length > 0) {
+          const allServed = nonCancelled.every((i: ItemWithStatus) => i.status === 'served');
+          const allReadyOrServed = nonCancelled.every(
+            (i: ItemWithStatus) => i.status === 'ready' || i.status === 'served',
+          );
+          const anyPreparing = nonCancelled.some((i: ItemWithStatus) => i.status === 'preparing');
+
+          let targetStatus: string | null = null;
+          if (allServed && order.status !== 'served') {
+            targetStatus = 'SERVED';
+          } else if (allReadyOrServed && !allServed && order.status !== 'ready') {
+            targetStatus = 'READY';
+          } else if (anyPreparing && order.status === 'new') {
+            targetStatus = 'PREPARING';
+          }
+
+          if (targetStatus) {
+            await updateOrderStatus.mutateAsync({
+              orderId,
+              status: targetStatus as any,
+            });
+          }
+        }
+      }
+
       toast.success(t('orders.itemStatusUpdated', { status: newStatus }));
     } catch (_error) {
       toast.error(t('orders.failedUpdateItemStatus'));
@@ -418,7 +446,16 @@ export default function OrderDetailPage() {
             {order.delivery_address && (
               <div className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                <span>{order.delivery_address}</span>
+                <span className="flex-1">{order.delivery_address}</span>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.delivery_address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 text-purple-500 hover:text-purple-800 transition-colors"
+                  title={t('delivery.openInMaps')}
+                >
+                  <MapIcon className="h-4 w-4" />
+                </a>
               </div>
             )}
             {order.customer_name && (
@@ -584,22 +621,20 @@ export default function OrderDetailPage() {
           })}
         </div>
         <div className="border-t px-4 py-3 space-y-2">
-          {cafeSettings?.tax_enabled && (
+          {order && order.tax > 0 && (
             <>
               <div className="flex justify-between items-center text-sm text-gray-600">
                 <span>{t('subtotal', { ns: 'common' })}</span>
-                <span>{formatPrice(calculateSubtotal())}</span>
+                <span>{formatPrice(order.subtotal)}</span>
               </div>
               <div className="flex justify-between items-center text-sm text-gray-600">
-                <span>
-                  {t('orders.tax')} ({cafeSettings.tax_percentage}%)
-                </span>
-                <span>{formatPrice(calculateTax())}</span>
+                <span>{t('orders.tax')}</span>
+                <span>{formatPrice(order.tax)}</span>
               </div>
             </>
           )}
           <div
-            className={`flex justify-between items-center text-lg font-semibold ${cafeSettings?.tax_enabled ? 'pt-2 border-t' : ''}`}
+            className={`flex justify-between items-center text-lg font-semibold ${order && order.tax > 0 ? 'pt-2 border-t' : ''}`}
           >
             <span>{t('total', { ns: 'common' })}</span>
             <span>{formatPrice(total)}</span>
@@ -614,33 +649,44 @@ export default function OrderDetailPage() {
             <h2 className="font-semibold">{t('orders.paymentHistory')}</h2>
           </div>
           <div className="divide-y">
-            {payments.map((payment: Payment) => (
-              <div key={payment.id} className="px-4 py-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium">{formatPrice(payment.amount)}</p>
-                    {(payment as { tip_amount?: number }).tip_amount &&
-                      (payment as { tip_amount?: number }).tip_amount! > 0 && (
-                        <p className="text-sm text-green-600">
-                          + {formatPrice((payment as { tip_amount?: number }).tip_amount!)}{' '}
-                          {t('orders.tip')}
+            {payments.map((payment: Payment, index: number) => {
+              const paymentTypeLabel =
+                payment.payment_type === 'full'
+                  ? t('payment.fullPayment')
+                  : payment.payment_type === 'specific_items'
+                    ? t('payment.specificItems')
+                    : t('payment.partialAmount');
+
+              return (
+                <div key={payment.id} className="px-4 py-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium">{formatPrice(payment.amount)}</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                          {paymentTypeLabel}
+                        </span>
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 capitalize">
+                          {payment.payment_method}
+                        </span>
+                      </div>
+                      {Number((payment as any).tip_amount) > 0 && (
+                        <p className="text-sm text-green-600 mt-0.5">
+                          + {formatPrice((payment as any).tip_amount)} {t('orders.tip')}
                         </p>
                       )}
-                    <p className="text-sm text-gray-600 capitalize">{payment.payment_method}</p>
-                    <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                      <CreditCard className="h-3 w-3 text-green-500" />
-                      {t('orders.receivedBy')} {payment.received_by_staff?.full_name || 'Unknown'}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">{formatTime(payment.created_at)}</p>
-                  </div>
-                  {payment.items_paid && payment.items_paid.length > 0 && (
-                    <div className="text-sm text-gray-600">
-                      {payment.items_paid.length} {t('items', { ns: 'common' })}
+                      <p className="text-xs text-gray-500 mt-1">
+                        {payment.received_by_staff?.full_name || 'Unknown'} &middot;{' '}
+                        {formatTime(payment.created_at)}
+                      </p>
                     </div>
-                  )}
+                    <div className="text-right flex-shrink-0">
+                      <span className="text-xs text-gray-400">#{index + 1}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="border-t px-4 py-3">
             <div className="flex justify-between items-center">

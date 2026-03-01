@@ -49,6 +49,9 @@ function MenuItemCard({
     return `$${price.toFixed(2)}`;
   };
 
+  const taxMultiplier =
+    settings?.tax_enabled && settings.tax_percentage > 0 ? 1 + settings.tax_percentage / 100 : 1;
+
   return (
     <div
       className={`group relative bg-white rounded-xl border overflow-hidden transition-all hover:shadow-lg ${
@@ -100,7 +103,7 @@ function MenuItemCard({
         {/* Price + prep time */}
         <div className="flex items-center gap-2 mt-2">
           <span className="text-base font-bold text-blue-600">
-            {formatPrice(parseFloat(item.price.toString()))}
+            {formatPrice(parseFloat(item.price.toString()) * taxMultiplier)}
           </span>
           {item.preparation_time && (
             <span className="flex items-center gap-0.5 text-xs text-gray-400">

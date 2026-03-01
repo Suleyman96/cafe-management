@@ -5,12 +5,13 @@ import type { Database } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { Check, CheckCircle, DollarSign, Minus, Plus, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import {
-  calculateTax as calculateTaxFromSettings,
   formatPriceWithSettings,
   useCafeSettings,
   useCreatePayment,
+  useOrderPayments,
   useOrderRemainingBalance,
   useUpdateOrderStatus,
 } from '@/hooks';
@@ -39,6 +40,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   const createPayment = useCreatePayment();
   const updateOrderStatus = useUpdateOrderStatus();
   const { data: remainingBalance } = useOrderRemainingBalance(order?.id || '');
+  const { data: existingPayments } = useOrderPayments(order?.id || '');
   const { data: cafeSettings } = useCafeSettings();
 
   // Format price using cafe settings or fallback
@@ -58,30 +60,51 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   const [tipAmount, setTipAmount] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
+  // Reset selection state when modal opens to clear stale data from previous sessions
+  useEffect(() => {
+    if (isOpen) {
+      setPaymentMode('full');
+      setPartialAmount('');
+      setSelectedItemQuantities(new Map());
+      setTipAmount('');
+    }
+  }, [isOpen]);
+
+  // Collect item IDs that have already been fully paid via specific_items payments
+  const paidItemIds = new Set<string>();
+  if (existingPayments) {
+    for (const payment of existingPayments) {
+      if (payment.payment_type === 'specific_items' && payment.order_item_ids) {
+        for (const id of payment.order_item_ids) {
+          paidItemIds.add(id);
+        }
+      }
+    }
+  }
+
   // Filter out cancelled items for payment
   const payableItems =
     order?.order_items?.filter((item: OrderItem) => item.status !== 'cancelled') || [];
 
-  // Calculate subtotal from non-cancelled items (before tax)
-  const orderSubtotal = payableItems.reduce(
+  // Items available for selection in "Specific Items" mode (exclude already-paid items)
+  const unpaidItems = payableItems.filter((item: OrderItem) => !paidItemIds.has(item.id));
+
+  // Use stored order data for consistency — the order's subtotal/tax/total were calculated
+  // at creation time and should be used as-is, regardless of current tax settings
+  const itemsSubtotalCalc = payableItems.reduce(
     (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
     0,
   );
-
-  // Calculate tax based on cafe settings
-  const orderTax = cafeSettings?.tax_enabled
-    ? calculateTaxFromSettings(orderSubtotal, cafeSettings)
-    : 0;
-
-  // Use the order.total from database (includes tax) for consistency with remaining balance calculation
-  // Fall back to calculating from items + tax if total is not set
+  const orderSubtotal = order?.subtotal || itemsSubtotalCalc;
+  const orderTax = order?.tax || 0;
   const orderTotal = order?.total || orderSubtotal + orderTax;
 
-  const calculateSelectedItemsTotal = () => {
+  // Calculate subtotal of selected items (before tax)
+  const calculateSelectedItemsSubtotal = () => {
     let total = 0;
     for (const [itemId, qty] of selectedItemQuantities) {
       if (qty <= 0) continue;
-      const item = payableItems.find((i: OrderItem) => i.id === itemId);
+      const item = unpaidItems.find((i: OrderItem) => i.id === itemId);
       if (item) {
         total += qty * item.item_price;
       }
@@ -89,11 +112,24 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
     return total;
   };
 
+  // Calculate proportional tax for selected items based on stored order tax
+  const calculateSelectedItemsTax = () => {
+    if (orderTax <= 0 || orderSubtotal <= 0) return 0;
+    const itemsSubtotal = calculateSelectedItemsSubtotal();
+    // Proportional share of the stored order tax
+    return Math.round((itemsSubtotal / orderSubtotal) * orderTax * 100) / 100;
+  };
+
+  // Total for selected items including proportional tax
+  const calculateSelectedItemsTotal = () => {
+    return calculateSelectedItemsSubtotal() + calculateSelectedItemsTax();
+  };
+
   // Check if all selected items are at full quantity (for specific_items payment type)
   const allSelectedAtFullQuantity = () => {
     for (const [itemId, qty] of selectedItemQuantities) {
       if (qty <= 0) continue;
-      const item = payableItems.find((i: OrderItem) => i.id === itemId);
+      const item = unpaidItems.find((i: OrderItem) => i.id === itemId);
       if (item && qty < item.quantity) return false;
     }
     return true;
@@ -111,8 +147,26 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   };
 
   const handlePayment = async () => {
-    const amount = getPaymentAmount();
+    let amount = getPaymentAmount();
     if (amount <= 0 || !staff?.id) return;
+
+    const balance = remainingBalance ?? orderTotal;
+
+    // Reject if payment exceeds remaining balance (allow tiny rounding tolerance of 0.01)
+    if (amount > balance + 0.01) {
+      toast.error(
+        t('payment.exceedsBalance', {
+          amount: formatPrice(amount),
+          balance: formatPrice(balance),
+        }),
+      );
+      return;
+    }
+
+    // Cap at remaining balance to handle rounding edge cases
+    if (amount > balance) {
+      amount = balance;
+    }
 
     // Determine payment type for items mode
     let paymentType: 'full' | 'partial_amount' | 'specific_items';
@@ -123,15 +177,22 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
     } else if (paymentMode === 'partial') {
       paymentType = 'partial_amount';
     } else {
-      // Items mode: use specific_items only if all selected items are at full quantity
-      if (allSelectedAtFullQuantity()) {
+      // Items mode
+      const balance = remainingBalance ?? orderTotal;
+      const hasTax = orderTax > 0;
+
+      // Use specific_items only when no tax (DB trigger validates amount == items subtotal without tax)
+      // and all selected items are at full quantity
+      if (!hasTax && allSelectedAtFullQuantity() && amount <= balance) {
         paymentType = 'specific_items';
+        const unpaidItemIds = new Set(unpaidItems.map((i: OrderItem) => i.id));
         orderItemIds = Array.from(selectedItemQuantities.entries())
-          .filter(([, qty]) => qty > 0)
+          .filter(([id, qty]) => qty > 0 && unpaidItemIds.has(id))
           .map(([id]) => id);
       } else {
-        // Partial quantities — use partial_amount to avoid strict DB validation
+        // Use partial_amount — amount includes proportional tax, capped at remaining balance
         paymentType = 'partial_amount';
+        amount = Math.min(amount, balance);
       }
     }
 
@@ -148,8 +209,10 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
         notes: null,
       });
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to process payment:', error);
+      const message = error?.message || t('payment.paymentFailed');
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -219,20 +282,20 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
 
           {/* Order Summary */}
           <div className="mb-6">
-            {cafeSettings?.tax_enabled && (
+            {orderTax > 0 && (
               <>
                 <div className="flex justify-between items-center text-sm text-gray-600 mb-1">
                   <span>{t('subtotal', { ns: 'common' })}</span>
                   <span>{formatPrice(orderSubtotal)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
-                  <span>Tax ({cafeSettings.tax_percentage}%)</span>
+                  <span>{t('orders.tax')}</span>
                   <span>{formatPrice(orderTax)}</span>
                 </div>
               </>
             )}
             <div
-              className={`flex justify-between items-center text-sm font-medium mb-2 ${cafeSettings?.tax_enabled ? 'pt-2 border-t' : ''}`}
+              className={`flex justify-between items-center text-sm font-medium mb-2 ${orderTax > 0 ? 'pt-2 border-t' : ''}`}
             >
               <span>{t('payment.orderTotal')}</span>
               <span>{formatPrice(orderTotal)}</span>
@@ -324,6 +387,14 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
                   max={remainingBalance ?? orderTotal}
                 />
               </div>
+              {(parseFloat(partialAmount) || 0) > (remainingBalance ?? orderTotal) && (
+                <p className="text-sm text-red-600 mt-1">
+                  {t('payment.exceedsBalance', {
+                    amount: formatPrice(parseFloat(partialAmount) || 0),
+                    balance: formatPrice(remainingBalance ?? orderTotal),
+                  })}
+                </p>
+              )}
             </div>
           )}
 
@@ -334,7 +405,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
                 {t('payment.selectItemsToPay')}
               </label>
               <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                {payableItems.map((item: OrderItem) => {
+                {unpaidItems.map((item: OrderItem) => {
                   const selectedQty = selectedItemQuantities.get(item.id) || 0;
                   const isSelected = selectedQty > 0;
 
@@ -382,8 +453,10 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
                 })}
               </div>
               {hasSelectedItems && (
-                <div className="mt-2 text-sm font-medium text-blue-700">
-                  {t('total', { ns: 'common' })}: {formatPrice(calculateSelectedItemsTotal())}
+                <div className="mt-2">
+                  <div className="text-sm font-medium text-blue-700">
+                    {t('total', { ns: 'common' })}: {formatPrice(calculateSelectedItemsTotal())}
+                  </div>
                 </div>
               )}
             </div>
@@ -458,7 +531,12 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
             ) : (
               <Button
                 onClick={handlePayment}
-                disabled={getPaymentAmount() <= 0 || loading || !staff?.id}
+                disabled={
+                  getPaymentAmount() <= 0 ||
+                  getPaymentAmount() > (remainingBalance ?? orderTotal) + 0.01 ||
+                  loading ||
+                  !staff?.id
+                }
                 className="flex-1"
               >
                 {loading ? t('payment.processing') : t('payment.processPaymentBtn')}

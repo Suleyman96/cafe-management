@@ -72,12 +72,21 @@ export function CreateTakeoutModal({
     );
   };
 
+  const taxMultiplier =
+    cafeSettings?.tax_enabled && cafeSettings.tax_percentage > 0
+      ? 1 + cafeSettings.tax_percentage / 100
+      : 1;
+
   const calculateTotal = () => {
     const subtotal = selectedItems.reduce(
       (sum, item) => sum + item.menuItem.price * item.quantity,
       0,
     );
-    const tax = subtotal * 0.18;
+    const taxRate =
+      cafeSettings?.tax_enabled && cafeSettings.tax_percentage > 0
+        ? cafeSettings.tax_percentage / 100
+        : 0;
+    const tax = subtotal * taxRate;
     return { subtotal, tax, total: subtotal + tax };
   };
 
@@ -268,7 +277,7 @@ export function CreateTakeoutModal({
                           <div className="text-xs text-red-600">{t('orders.unavailable')}</div>
                         )}
                       </div>
-                      <div className="font-semibold">{formatPrice(item.price)}</div>
+                      <div className="font-semibold">{formatPrice(item.price * taxMultiplier)}</div>
                     </button>
                   ))}
 
@@ -299,7 +308,8 @@ export function CreateTakeoutModal({
                           <div className="flex-1">
                             <div className="font-medium">{item.menuItem.name}</div>
                             <div className="text-sm text-gray-600">
-                              {formatPrice(item.menuItem.price)} {t('each', { ns: 'common' })}
+                              {formatPrice(item.menuItem.price * taxMultiplier)}{' '}
+                              {t('each', { ns: 'common' })}
                             </div>
                           </div>
                           <button
@@ -326,7 +336,7 @@ export function CreateTakeoutModal({
                             +
                           </button>
                           <span className="ml-auto font-semibold">
-                            {formatPrice(item.menuItem.price * item.quantity)}
+                            {formatPrice(item.menuItem.price * item.quantity * taxMultiplier)}
                           </span>
                         </div>
 
@@ -356,7 +366,10 @@ export function CreateTakeoutModal({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">
-                        {t('orders.taxPercent', { percent: '18' })}:
+                        {t('orders.taxPercent', {
+                          percent: String(cafeSettings?.tax_percentage ?? 18),
+                        })}
+                        :
                       </span>
                       <span className="font-medium">{formatPrice(tax)}</span>
                     </div>
