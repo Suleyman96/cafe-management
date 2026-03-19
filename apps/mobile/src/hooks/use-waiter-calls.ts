@@ -41,7 +41,7 @@ export function useWaiterCalls(status: string = 'pending') {
               .single();
 
             if (tableData) {
-              await notifyWaiterCall(tableData.table_number, (payload.new as any).reason);
+              await notifyWaiterCall((tableData as any).table_number, (payload.new as any).reason);
             }
 
             queryClient.invalidateQueries({ queryKey: ['waiter_calls'] });
