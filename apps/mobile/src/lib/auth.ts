@@ -24,10 +24,9 @@ export async function login({ email, password }: LoginCredentials) {
   if (staffError) throw staffError;
 
   // Update last login
-  await supabase
-    .from('staff')
+  await (supabase.from('staff') as any)
     .update({ last_login_at: new Date().toISOString() })
-    .eq('id', staffData.id);
+    .eq('id', (staffData as any).id);
 
   return { user: data.user, staff: staffData as Staff };
 }

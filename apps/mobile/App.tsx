@@ -7,11 +7,13 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SnackbarProvider } from './src/components/providers/SnackbarProvider';
 import { getCurrentUser, onAuthStateChange } from './src/lib/auth';
 import { registerForPushNotifications } from './src/lib/notifications';
 import { setupSounds } from './src/lib/sound';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { useAuthStore } from './src/store/auth-store';
+import { lightTheme } from './src/theme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,11 +56,13 @@ export default function App() {
     <SafeAreaProvider>
       <I18nextProvider i18n={i18n}>
         <QueryClientProvider client={queryClient}>
-          <PaperProvider>
-            <NavigationContainer>
-              <RootNavigator />
-              <StatusBar style="auto" />
-            </NavigationContainer>
+          <PaperProvider theme={lightTheme}>
+            <SnackbarProvider>
+              <NavigationContainer>
+                <RootNavigator />
+                <StatusBar style="auto" />
+              </NavigationContainer>
+            </SnackbarProvider>
           </PaperProvider>
         </QueryClientProvider>
       </I18nextProvider>

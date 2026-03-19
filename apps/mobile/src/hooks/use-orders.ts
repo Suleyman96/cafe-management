@@ -44,7 +44,10 @@ export function useOrders(status?: string[]) {
               .single();
 
             if (tableData) {
-              await notifyNewOrder((payload.new as any).order_number, tableData.table_number);
+              await notifyNewOrder(
+                (payload.new as any).order_number,
+                (tableData as any).table_number,
+              );
             }
 
             queryClient.invalidateQueries({ queryKey: ['orders'] });
