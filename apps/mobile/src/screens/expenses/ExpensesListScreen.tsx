@@ -38,7 +38,7 @@ export default function ExpensesListScreen() {
   const { data: categories } = useExpenseCategories();
   const { data: settings } = useCafeSettings();
   const createExpense = useCreateExpense();
-  const deleteExpense = useDeleteExpense();
+  const _deleteExpense = useDeleteExpense();
 
   const currencySymbol = (settings as any)?.currency_symbol || '$';
 
@@ -51,7 +51,7 @@ export default function ExpensesListScreen() {
 
   const handleCreate = async () => {
     const amount = parseFloat(newExpense.amount);
-    if (isNaN(amount) || amount <= 0) {
+    if (Number.isNaN(amount) || amount <= 0) {
       showError('Enter a valid amount');
       return;
     }

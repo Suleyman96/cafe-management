@@ -68,13 +68,13 @@ export function MenuItemModal({
         is_daily_special: false,
       });
     }
-  }, [initialData, visible]);
+  }, [initialData]);
 
   const handleSubmit = () => {
     onSubmit({
       ...form,
       price: parseFloat(form.price) || 0,
-      preparation_time: parseInt(form.preparation_time) || null,
+      preparation_time: parseInt(form.preparation_time, 10) || null,
       category_id: form.category_id || null,
     });
   };

@@ -45,7 +45,7 @@ export default function OrderPaymentScreen() {
 
   const handleSubmit = async () => {
     const paymentAmount = parseFloat(amount);
-    if (isNaN(paymentAmount) || paymentAmount <= 0) {
+    if (Number.isNaN(paymentAmount) || paymentAmount <= 0) {
       showError('Please enter a valid amount');
       return;
     }

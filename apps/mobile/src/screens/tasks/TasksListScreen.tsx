@@ -12,7 +12,7 @@ import {
   TextInput,
 } from 'react-native-paper';
 import { TaskCard } from '@/components/tasks/TaskCard';
-import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
+import { EmptyState, LoadingScreen } from '@/components/ui';
 import {
   useCreateTask,
   useGenerateRecurringTasks,
@@ -58,7 +58,7 @@ export default function TasksListScreen() {
   // Generate recurring tasks on mount
   useEffect(() => {
     generateRecurring.mutate(new Date().toISOString().split('T')[0]);
-  }, []);
+  }, [generateRecurring.mutate]);
 
   const currentData = tab === 'today' ? todayTasks : tab === 'mine' ? myTasks : allTasks;
   const isLoading = tab === 'today' ? loadingToday : tab === 'mine' ? loadingMine : loadingAll;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, Divider, Switch, Text, TextInput } from 'react-native-paper';
+import { Button, Card, Switch, Text, TextInput } from 'react-native-paper';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useCafeSettings, useUpdateCafeSettings } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
@@ -143,7 +143,7 @@ export default function CafeSettingsScreen() {
             <TextInput
               label="Decimal Places"
               value={String(form.decimal_places ?? '')}
-              onChangeText={(v) => updateField('decimal_places', parseInt(v) || 0)}
+              onChangeText={(v) => updateField('decimal_places', parseInt(v, 10) || 0)}
               mode="outlined"
               keyboardType="number-pad"
               dense

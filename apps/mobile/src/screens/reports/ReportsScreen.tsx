@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Card, Chip, Divider, Text } from 'react-native-paper';
+import { Card, Chip, Text } from 'react-native-paper';
 import { MetricCard } from '@/components/reports/MetricCard';
 import { LoadingScreen } from '@/components/ui';
 import { useExpenses, useOrders, useStaff, useWasteLogs } from '@/hooks';

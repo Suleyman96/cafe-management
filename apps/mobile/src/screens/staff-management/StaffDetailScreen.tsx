@@ -3,7 +3,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, Divider, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { Button, Card, Chip, Modal, Portal, Text, TextInput } from 'react-native-paper';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useOrders, usePaymentsByStaff, useStaffMember, useUpdateStaff } from '@/hooks';
 import { useCafeSettings } from '@/hooks/use-cafe-settings';

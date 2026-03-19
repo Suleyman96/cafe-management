@@ -58,7 +58,7 @@ export default function StockListScreen() {
         name: newItem.name,
         category: newItem.category || undefined,
         unit: newItem.unit,
-        minimum_stock_level: parseInt(newItem.minimum_stock_level) || 0,
+        minimum_stock_level: parseInt(newItem.minimum_stock_level, 10) || 0,
         cost_price: parseFloat(newItem.cost_price) || 0,
         quantity: 0,
       });
@@ -73,7 +73,7 @@ export default function StockListScreen() {
   const handleMovement = async () => {
     if (!movementModal) return;
     const qty = parseFloat(movementQty);
-    if (isNaN(qty) || qty <= 0) {
+    if (Number.isNaN(qty) || qty <= 0) {
       showError('Enter a valid quantity');
       return;
     }

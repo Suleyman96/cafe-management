@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, FAB, Modal, Portal, Text, TextInput } from 'react-native-paper';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
@@ -83,7 +83,7 @@ export default function WasteListScreen() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const _handleDelete = async (id: string) => {
     try {
       await deleteWaste.mutateAsync(id);
       showSuccess('Waste log deleted');

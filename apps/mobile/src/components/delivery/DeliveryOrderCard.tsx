@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, Text } from 'react-native-paper';
+import { Button, Card, Text } from 'react-native-paper';
 import { StatusBadge, TimeElapsed } from '@/components/ui';
 
 interface DeliveryOrderCardProps {
