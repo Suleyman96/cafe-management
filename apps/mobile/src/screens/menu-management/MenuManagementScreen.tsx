@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { Chip, FAB, Searchbar, Text } from 'react-native-paper';
+import { Chip, FAB, Searchbar } from 'react-native-paper';
 import { MenuItemManageCard } from '@/components/menu-management/MenuItemManageCard';
 import { MenuItemModal } from '@/components/menu-management/MenuItemModal';
 import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';

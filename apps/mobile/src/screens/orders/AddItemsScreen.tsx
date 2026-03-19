@@ -3,7 +3,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useMemo, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Chip, Text } from 'react-native-paper';
+import { Button, Chip } from 'react-native-paper';
 import { MenuItemCard } from '@/components/orders/MenuItemCard';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useAddOrderItems, useCategories, useMenuItems } from '@/hooks';

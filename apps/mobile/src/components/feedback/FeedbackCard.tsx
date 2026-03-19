@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Text, TextInput } from 'react-native-paper';
 import { TimeElapsed } from '@/components/ui';
 
-const FEEDBACK_TYPE_ICONS: Record<string, string> = {
+const _FEEDBACK_TYPE_ICONS: Record<string, string> = {
   compliment: 'thumb-up',
   complaint: 'thumb-down',
   suggestion: 'lightbulb',

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { Chip, Text } from 'react-native-paper';
+import { Chip } from 'react-native-paper';
 import { DeliveryOrderCard } from '@/components/delivery/DeliveryOrderCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import {

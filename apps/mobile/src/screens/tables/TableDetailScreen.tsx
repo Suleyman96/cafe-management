@@ -3,7 +3,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, FAB, List, Text } from 'react-native-paper';
+import { Button, Card, Chip, FAB, Text } from 'react-native-paper';
 import {
   ConfirmDialog,
   ErrorScreen,

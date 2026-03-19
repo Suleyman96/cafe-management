@@ -78,7 +78,7 @@ export default function SchedulesScreen() {
   if (isLoading) return <LoadingScreen message="Loading schedules..." />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
-  const dateObj = new Date(selectedDate + 'T00:00:00');
+  const dateObj = new Date(`${selectedDate}T00:00:00`);
   const isToday = selectedDate === today;
 
   return (
