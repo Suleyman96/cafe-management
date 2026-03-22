@@ -15,10 +15,17 @@ import {
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
-import type { OrdersStackParamList } from '@/types';
+import type { Order, OrderItemWithMenuItem, OrderPayment, OrdersStackParamList } from '@/types';
 
 type Route = RouteProp<OrdersStackParamList, 'OrderDetail'>;
 type Nav = StackNavigationProp<OrdersStackParamList, 'OrderDetail'>;
+
+// The wrapper's findById returns joined data beyond the base Order type
+type OrderWithJoins = Order & {
+  table?: { table_number: string; location: string | null };
+  order_items?: OrderItemWithMenuItem[];
+  assigned_waiter?: { full_name: string } | null;
+};
 
 export default function OrderDetailScreen() {
   const route = useRoute<Route>();
@@ -32,20 +39,26 @@ export default function OrderDetailScreen() {
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
 
+  // Cast order to include join fields (wrapper's select includes table, order_items, assigned_waiter)
+  const details = order as OrderWithJoins | undefined;
+
   const totalPaid = useMemo(
-    () => payments?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || 0,
+    () => payments?.reduce((sum: number, p: OrderPayment) => sum + (p.amount || 0), 0) || 0,
     [payments],
   );
 
   const remaining = (order?.total || 0) - totalPaid;
-  const items = (order as any)?.order_items || [];
+  const items = details?.order_items || [];
 
   const handleUpdateStatus = async (newStatus: string) => {
     try {
-      await updateOrderStatus.mutateAsync({ orderId, status: newStatus });
+      await updateOrderStatus.mutateAsync({
+        orderId,
+        status: newStatus as Order['status'],
+      });
       showSuccess(`Order ${newStatus}`);
-    } catch (err: any) {
-      showError(err?.message || 'Failed to update status');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to update status');
     }
   };
 
@@ -53,16 +66,16 @@ export default function OrderDetailScreen() {
     try {
       await updateItemStatus.mutateAsync({ itemId, status: 'ready' });
       showSuccess('Item marked as ready');
-    } catch (err: any) {
-      showError(err?.message || 'Failed to update item');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to update item');
     }
   };
 
   if (isLoading) return <LoadingScreen />;
   if (error || !order) return <ErrorScreen error={error || 'Order not found'} onRetry={refetch} />;
 
-  const tableLabel = (order as any).table
-    ? `Table #${(order as any).table.table_number}`
+  const tableLabel = details?.table
+    ? `Table #${details.table.table_number}`
     : order.order_type === 'takeout'
       ? 'Takeout'
       : order.order_type === 'delivery'
@@ -73,7 +86,7 @@ export default function OrderDetailScreen() {
     <View style={styles.container}>
       <FlatList
         data={items}
-        keyExtractor={(item: any) => item.id}
+        keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         ListHeaderComponent={
           <View>
@@ -89,9 +102,9 @@ export default function OrderDetailScreen() {
                 <Text variant="bodyMedium" style={styles.muted}>
                   {tableLabel}
                 </Text>
-                {(order as any).assigned_waiter?.full_name && (
+                {details?.assigned_waiter?.full_name && (
                   <Text variant="bodySmall" style={styles.muted}>
-                    Waiter: {(order as any).assigned_waiter.full_name}
+                    Waiter: {details.assigned_waiter.full_name}
                   </Text>
                 )}
                 <TimeElapsed createdAt={order.created_at} />
@@ -154,7 +167,7 @@ export default function OrderDetailScreen() {
             </Text>
           </View>
         }
-        renderItem={({ item }: { item: any }) => (
+        renderItem={({ item }: { item: OrderItemWithMenuItem }) => (
           <View style={styles.itemWrapper}>
             <OrderItemRow
               item={item}

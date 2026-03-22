@@ -45,15 +45,19 @@ export default function SchedulesScreen() {
     try {
       await createSchedule.mutateAsync({
         staff_id: newSchedule.staff_id,
+        date: selectedDate,
         planned_start: `${selectedDate}T${newSchedule.planned_start}:00`,
         planned_end: `${selectedDate}T${newSchedule.planned_end}:00`,
-        notes: newSchedule.notes || undefined,
+        notes: newSchedule.notes || null,
+        status: 'scheduled',
+        actual_start: null,
+        actual_end: null,
       });
       showSuccess('Schedule created');
       setShowCreateModal(false);
       setNewSchedule({ staff_id: '', planned_start: '09:00', planned_end: '17:00', notes: '' });
-    } catch (err: any) {
-      showError(err?.message || 'Failed to create schedule');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to create schedule');
     }
   };
 
@@ -61,8 +65,8 @@ export default function SchedulesScreen() {
     try {
       await markInProgress.mutateAsync({ id, actualStart: new Date().toISOString() });
       showSuccess('Shift started');
-    } catch (err: any) {
-      showError(err?.message || 'Failed to start shift');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to start shift');
     }
   };
 
@@ -70,8 +74,8 @@ export default function SchedulesScreen() {
     try {
       await markCompleted.mutateAsync({ id, actualEnd: new Date().toISOString() });
       showSuccess('Shift completed');
-    } catch (err: any) {
-      showError(err?.message || 'Failed to complete shift');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to complete shift');
     }
   };
 
@@ -109,7 +113,7 @@ export default function SchedulesScreen() {
 
       <FlatList
         data={schedules || []}
-        keyExtractor={(item: any) => item.id}
+        keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         renderItem={({ item }) => (
           <ScheduleCard
@@ -143,9 +147,9 @@ export default function SchedulesScreen() {
             Staff Member
           </Text>
           <View style={styles.chipRow}>
-            {(staffList as any[])
-              ?.filter((s: any) => s.is_active !== false)
-              .map((s: any) => (
+            {staffList
+              ?.filter((s) => s.is_active !== false)
+              .map((s) => (
                 <Chip
                   key={s.id}
                   compact

@@ -3,8 +3,10 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
+type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
 interface EmptyStateProps {
-  icon: string;
+  icon: IconName;
   title: string;
   description?: string;
   action?: { label: string; onPress: () => void };
@@ -18,7 +20,7 @@ export const EmptyState = React.memo(function EmptyState({
 }: EmptyStateProps) {
   return (
     <View style={styles.container}>
-      <MaterialCommunityIcons name={icon as any} size={64} color="#9ca3af" />
+      <MaterialCommunityIcons name={icon} size={64} color="#9ca3af" />
       <Text variant="titleMedium" style={styles.title}>
         {title}
       </Text>

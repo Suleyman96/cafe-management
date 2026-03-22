@@ -6,6 +6,7 @@ import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useUpdateWaiterCall, useWaiterCalls } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
+import type { WaiterCall } from '@/types';
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
@@ -16,7 +17,7 @@ const STATUS_OPTIONS = [
 export default function WaiterCallsScreen() {
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
-  const [statusFilter, setStatusFilter] = useState('pending');
+  const [statusFilter, setStatusFilter] = useState<WaiterCall['status']>('pending');
 
   const { data: calls, isLoading, error, refetch } = useWaiterCalls(statusFilter);
   const updateCall = useUpdateWaiterCall();
@@ -46,7 +47,7 @@ export default function WaiterCallsScreen() {
     <View style={styles.container}>
       <SegmentedButtons
         value={statusFilter}
-        onValueChange={setStatusFilter}
+        onValueChange={(v) => setStatusFilter(v as WaiterCall['status'])}
         buttons={STATUS_OPTIONS}
         style={styles.tabs}
       />

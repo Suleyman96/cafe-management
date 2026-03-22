@@ -13,8 +13,9 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
+import type { WasteLog } from '@/types';
 
-const REASONS = [
+const REASONS: WasteLog['reason'][] = [
   'expired',
   'spoiled',
   'overcooked',
@@ -47,10 +48,17 @@ export default function WasteListScreen() {
   const createWaste = useCreateWasteLog();
   const deleteWaste = useDeleteWasteLog();
 
-  const currencySymbol = (settings as any)?.currency_symbol || '$';
+  const currencySymbol = settings?.currency_symbol || '$';
 
   // Create modal state
-  const [newItem, setNewItem] = useState({
+  const [newItem, setNewItem] = useState<{
+    item_name: string;
+    quantity: string;
+    unit: string;
+    cost: string;
+    reason: WasteLog['reason'];
+    notes: string;
+  }>({
     item_name: '',
     quantity: '',
     unit: 'pcs',
@@ -61,13 +69,20 @@ export default function WasteListScreen() {
 
   const handleCreate = async () => {
     try {
+      const qty = parseFloat(newItem.quantity) || 0;
+      const costPerUnit = parseFloat(newItem.cost) || 0;
       await createWaste.mutateAsync({
-        quantity: parseFloat(newItem.quantity) || 0,
+        item_name: newItem.item_name || 'Unknown',
+        category: '',
+        quantity: qty,
         unit: newItem.unit,
-        cost: parseFloat(newItem.cost) || 0,
+        cost_per_unit: costPerUnit,
+        total_cost: costPerUnit * qty,
         reason: newItem.reason,
-        notes: newItem.notes || undefined,
-        recorded_by: staff?.id,
+        notes: newItem.notes || null,
+        logged_by: staff?.id ?? null,
+        waste_date: new Date().toISOString().split('T')[0],
+        stock_item_id: null,
       });
       showSuccess('Waste log created');
       setShowCreateModal(false);
@@ -79,8 +94,8 @@ export default function WasteListScreen() {
         reason: 'other',
         notes: '',
       });
-    } catch (err: any) {
-      showError(err?.message || 'Failed to create waste log');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to create waste log');
     }
   };
 
@@ -88,8 +103,8 @@ export default function WasteListScreen() {
     try {
       await deleteWaste.mutateAsync(id);
       showSuccess('Waste log deleted');
-    } catch (err: any) {
-      showError(err?.message || 'Failed to delete');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to delete');
     }
   };
 
@@ -135,7 +150,7 @@ export default function WasteListScreen() {
               </Text>
               <Text variant="titleMedium" style={{ fontWeight: '700', color: '#ef4444' }}>
                 {currencySymbol}
-                {((summary as any).totalCost || 0).toFixed(2)}
+                {(summary.totalCost || 0).toFixed(2)}
               </Text>
             </Card.Content>
           </Card>
@@ -145,7 +160,7 @@ export default function WasteListScreen() {
                 Entries
               </Text>
               <Text variant="titleMedium" style={{ fontWeight: '700' }}>
-                {(summary as any).count || 0}
+                {summary.count || 0}
               </Text>
             </Card.Content>
           </Card>

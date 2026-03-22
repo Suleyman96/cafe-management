@@ -5,6 +5,14 @@ import { MetricCard } from '@/components/reports/MetricCard';
 import { LoadingScreen } from '@/components/ui';
 import { useExpenses, useOrders, useStaff, useWasteLogs } from '@/hooks';
 import { useCafeSettings } from '@/hooks/use-cafe-settings';
+import type { Order, OrderItemWithMenuItem } from '@/types';
+
+// The wrapper's findAll returns joined data beyond the base Order type
+type OrderWithJoins = Order & {
+  table?: { table_number: string; location: string | null };
+  order_items?: OrderItemWithMenuItem[];
+  assigned_waiter?: { full_name: string } | null;
+};
 
 const PRESETS = [
   { label: 'Today', days: 0 },
@@ -42,12 +50,12 @@ export default function ReportsScreen() {
   const { data: wasteLogs } = useWasteLogs({ startDate: range.startDate, endDate: range.endDate });
   const { data: settings } = useCafeSettings();
 
-  const currencySymbol = (settings as any)?.currency_symbol || '$';
+  const currencySymbol = settings?.currency_symbol || '$';
 
   // Filter orders by date range
   const filteredOrders = useMemo(() => {
-    if (!orders) return [];
-    return (orders as any[]).filter((o) => {
+    if (!orders) return [] as OrderWithJoins[];
+    return (orders as OrderWithJoins[]).filter((o) => {
       const created = o.created_at?.split('T')[0];
       return created >= range.startDate && created <= range.endDate;
     });
@@ -55,8 +63,8 @@ export default function ReportsScreen() {
 
   // Key metrics
   const metrics = useMemo(() => {
-    const paidOrders = filteredOrders.filter((o) => o.status === 'paid' || o.status === 'served');
-    const revenue = paidOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+    const paidOrders = filteredOrders.filter((o) => o.status === 'closed' || o.status === 'served');
+    const revenue = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
     const orderCount = filteredOrders.length;
     const avgOrderValue = orderCount > 0 ? revenue / paidOrders.length : 0;
     const completedCount = paidOrders.length;
@@ -79,11 +87,11 @@ export default function ReportsScreen() {
   const topItems = useMemo(() => {
     const itemMap: Record<string, { name: string; qty: number; revenue: number }> = {};
     filteredOrders.forEach((o) => {
-      (o.order_items || []).forEach((item: any) => {
-        const name = item.menu_item?.name_en || 'Unknown';
+      (o.order_items || []).forEach((item: OrderItemWithMenuItem) => {
+        const name = item.menu_item?.name || 'Unknown';
         if (!itemMap[name]) itemMap[name] = { name, qty: 0, revenue: 0 };
         itemMap[name].qty += item.quantity || 0;
-        itemMap[name].revenue += (item.unit_price || 0) * (item.quantity || 0);
+        itemMap[name].revenue += (item.item_price || 0) * (item.quantity || 0);
       });
     });
     return Object.values(itemMap)
@@ -98,10 +106,10 @@ export default function ReportsScreen() {
     filteredOrders.forEach((o) => {
       const wId = o.assigned_waiter_id;
       if (!wId) return;
-      const s = (staffList as any[]).find((st) => st.id === wId);
+      const s = staffList.find((st) => st.id === wId);
       if (!perf[wId]) perf[wId] = { name: s?.full_name || 'Unknown', orders: 0, revenue: 0 };
       perf[wId].orders++;
-      perf[wId].revenue += o.total_amount || 0;
+      perf[wId].revenue += o.total || 0;
     });
     return Object.values(perf)
       .sort((a, b) => b.revenue - a.revenue)
@@ -110,12 +118,15 @@ export default function ReportsScreen() {
 
   // Expense total
   const expenseTotal = useMemo(() => {
-    return (expenses as any[])?.reduce((sum, e) => sum + (e.amount || 0), 0) || 0;
+    return expenses?.reduce((sum: number, e: { amount: number }) => sum + (e.amount || 0), 0) || 0;
   }, [expenses]);
 
   // Waste total
   const wasteTotal = useMemo(() => {
-    return (wasteLogs as any[])?.reduce((sum, w) => sum + (w.cost || 0), 0) || 0;
+    return (
+      wasteLogs?.reduce((sum: number, w: { total_cost: number }) => sum + (w.total_cost || 0), 0) ||
+      0
+    );
   }, [wasteLogs]);
 
   if (loadingOrders) return <LoadingScreen message="Loading reports..." />;
@@ -243,13 +254,13 @@ export default function ReportsScreen() {
           label="Expenses"
           value={`${currencySymbol}${expenseTotal.toFixed(0)}`}
           color="#ef4444"
-          subtitle={`${(expenses as any[])?.length || 0} transactions`}
+          subtitle={`${expenses?.length || 0} transactions`}
         />
         <MetricCard
           label="Waste"
           value={`${currencySymbol}${wasteTotal.toFixed(0)}`}
           color="#f59e0b"
-          subtitle={`${(wasteLogs as any[])?.length || 0} entries`}
+          subtitle={`${wasteLogs?.length || 0} entries`}
         />
       </View>
 

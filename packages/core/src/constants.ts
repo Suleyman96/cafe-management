@@ -120,6 +120,10 @@ export const QUERY_KEYS = {
   TASKS: 'tasks',
   TASK: 'task',
   OVERDUE_TASKS_COUNT: 'overdue_tasks_count',
+  PAYMENTS: 'payments',
+  FEEDBACK: 'feedback',
+  STAFF_MEMBER: 'staff_member',
+  PAYMENTS_BY_STAFF: 'payments_by_staff',
 } as const;
 
 // 30-minute interval time slots (00:00 to 23:30)

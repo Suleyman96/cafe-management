@@ -60,7 +60,7 @@ export default function AddItemsScreen() {
           menuItemId: item.id,
           quantity: (existing?.quantity || 0) + 1,
           price: item.price,
-          name: item.name_en || 'Item',
+          name: item.name || 'Item',
         },
       };
     });
@@ -85,9 +85,10 @@ export default function AddItemsScreen() {
       order_id: orderId,
       menu_item_id: c.menuItemId,
       quantity: c.quantity,
-      unit_price: c.price,
-      total_price: c.price * c.quantity,
-      status: 'new',
+      item_name: c.name,
+      item_price: c.price,
+      notes: null as string | null,
+      status: 'pending' as const,
     }));
 
     if (items.length === 0) return;

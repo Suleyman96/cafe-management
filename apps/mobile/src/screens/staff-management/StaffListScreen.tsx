@@ -6,23 +6,23 @@ import { Chip, Searchbar } from 'react-native-paper';
 import { StaffCard } from '@/components/staff-management/StaffCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useStaff } from '@/hooks';
-import type { StaffManagementStackParamList } from '@/types';
+import type { Staff, StaffManagementStackParamList } from '@/types';
 
 type NavProp = StackNavigationProp<StaffManagementStackParamList, 'StaffList'>;
 
-const ROLES = ['waiter', 'kitchen', 'admin', 'owner'];
+const ROLES: Staff['role'][] = ['waiter', 'kitchen', 'admin', 'owner'];
 
 export default function StaffListScreen() {
   const navigation = useNavigation<NavProp>();
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string | undefined>();
+  const [roleFilter, setRoleFilter] = useState<Staff['role'] | undefined>();
 
   const { data: staffList, isLoading, error, refetch } = useStaff(roleFilter);
 
   const filtered = useMemo(() => {
     if (!staffList) return [];
     if (!search) return staffList;
-    return (staffList as any[]).filter(
+    return staffList.filter(
       (s) =>
         s.full_name?.toLowerCase().includes(search.toLowerCase()) ||
         s.email?.toLowerCase().includes(search.toLowerCase()),
@@ -59,7 +59,7 @@ export default function StaffListScreen() {
 
       <FlatList
         data={filtered}
-        keyExtractor={(item: any) => item.id}
+        keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         renderItem={({ item }) => (
           <StaffCard

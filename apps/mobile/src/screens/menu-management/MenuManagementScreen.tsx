@@ -30,28 +30,26 @@ export default function MenuManagementScreen() {
   const deleteItem = useDeleteMenuItem();
   const toggleAvailability = useToggleMenuItemAvailability();
 
-  const currencySymbol = (settings as any)?.currency_symbol || '$';
+  const currencySymbol = settings?.currency_symbol || '$';
 
   const filtered = useMemo(() => {
     if (!items) return [];
     if (!search) return items;
-    return (items as any[]).filter(
-      (i) =>
-        (i.name_en || '').toLowerCase().includes(search.toLowerCase()) ||
-        (i.name_az || '').toLowerCase().includes(search.toLowerCase()),
+    return items.filter((i: { name?: string }) =>
+      (i.name || '').toLowerCase().includes(search.toLowerCase()),
     );
   }, [items, search]);
 
   const handleToggle = async (id: string) => {
     try {
       await toggleAvailability.mutateAsync(id);
-    } catch (err: any) {
-      showError(err?.message || 'Failed to toggle');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to toggle');
     }
   };
 
   const handleEdit = (id: string) => {
-    const item = (items as any[])?.find((i) => i.id === id);
+    const item = items?.find((i: { id: string }) => i.id === id);
     if (item) {
       setEditItem(item);
       setShowItemModal(true);
@@ -69,8 +67,8 @@ export default function MenuManagementScreen() {
       }
       setShowItemModal(false);
       setEditItem(null);
-    } catch (err: any) {
-      showError(err?.message || 'Failed to save item');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to save item');
     }
   };
 
@@ -80,8 +78,8 @@ export default function MenuManagementScreen() {
       await deleteItem.mutateAsync(deleteItemId);
       showSuccess('Item deleted');
       setDeleteItemId(null);
-    } catch (err: any) {
-      showError(err?.message || 'Failed to delete');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to delete');
     }
   };
 
@@ -112,7 +110,7 @@ export default function MenuManagementScreen() {
         >
           All ({(items || []).length})
         </Chip>
-        {(categories || []).map((c: any) => (
+        {(categories || []).map((c: { id: string; name: string }) => (
           <Chip
             key={c.id}
             compact
@@ -120,14 +118,14 @@ export default function MenuManagementScreen() {
             onPress={() => setCategoryFilter(categoryFilter === c.id ? undefined : c.id)}
             style={styles.categoryChip}
           >
-            {c.name_en || c.name_az || '—'}
+            {c.name || '--'}
           </Chip>
         ))}
       </ScrollView>
 
       <FlatList
         data={filtered}
-        keyExtractor={(item: any) => item.id}
+        keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         renderItem={({ item }) => (
           <MenuItemManageCard

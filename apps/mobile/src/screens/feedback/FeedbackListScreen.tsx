@@ -11,6 +11,7 @@ import {
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
+import type { CustomerFeedback } from '@/types';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All' },
@@ -23,7 +24,7 @@ const STATUS_OPTIONS = [
 export default function FeedbackListScreen() {
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
-  const [statusFilter, setStatusFilter] = useState('pending');
+  const [statusFilter, setStatusFilter] = useState<CustomerFeedback['status'] | ''>('pending');
 
   const { data: feedbackList, isLoading, error, refetch } = useFeedback(statusFilter || undefined);
   const acknowledgeFeedback = useAcknowledgeFeedback();
@@ -69,7 +70,7 @@ export default function FeedbackListScreen() {
     <View style={styles.container}>
       <SegmentedButtons
         value={statusFilter}
-        onValueChange={setStatusFilter}
+        onValueChange={(v) => setStatusFilter(v as CustomerFeedback['status'] | '')}
         buttons={STATUS_OPTIONS}
         style={styles.tabs}
         density="small"

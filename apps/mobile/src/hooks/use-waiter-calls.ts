@@ -1,19 +1,19 @@
+import { QUERY_KEYS } from '@cafe-idare/core';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { notifyWaiterCall } from '@/lib/notifications';
 import { playWaiterCallSound } from '@/lib/sound';
 import { db, supabase } from '@/lib/supabase';
-import type { WaiterCallWithTable } from '@/types';
+import type { WaiterCall } from '@/types';
 
-export function useWaiterCalls(status: string = 'pending') {
+export function useWaiterCalls(status?: WaiterCall['status']) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['waiter_calls', status],
-    queryFn: async () => {
-      const data = await db.waiterCalls.findAll(status as any);
-      return data as WaiterCallWithTable[];
+    queryKey: [QUERY_KEYS.WAITER_CALLS, status],
+    queryFn: async (): Promise<WaiterCall[]> => {
+      return await db.waiterCalls.findAll(status);
     },
   });
 
@@ -34,17 +34,20 @@ export function useWaiterCalls(status: string = 'pending') {
           async (payload) => {
             await playWaiterCallSound();
 
-            const { data: tableData } = await supabase
+            const newRecord = payload.new as Record<string, unknown>;
+            const { data } = await supabase
               .from('tables')
               .select('table_number')
-              .eq('id', (payload.new as any).table_id)
+              .eq('id', newRecord.table_id as string)
               .single();
 
+            const tableData = data as { table_number: string } | null;
+
             if (tableData) {
-              await notifyWaiterCall((tableData as any).table_number, (payload.new as any).reason);
+              await notifyWaiterCall(tableData.table_number, newRecord.reason as string);
             }
 
-            queryClient.invalidateQueries({ queryKey: ['waiter_calls'] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
           },
         )
         .on(
@@ -55,7 +58,7 @@ export function useWaiterCalls(status: string = 'pending') {
             table: 'waiter_calls',
           },
           () => {
-            queryClient.invalidateQueries({ queryKey: ['waiter_calls'] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
           },
         )
         .subscribe();
@@ -96,7 +99,10 @@ export function useUpdateWaiterCall() {
       return await db.waiterCalls.acknowledge(callId, staffId || '');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['waiter_calls'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to update waiter call:', error.message);
     },
   });
 }

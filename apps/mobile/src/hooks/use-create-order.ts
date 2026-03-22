@@ -1,3 +1,5 @@
+import { QUERY_KEYS } from '@cafe-idare/core';
+import type { OrderItemsInsert, OrdersInsert } from '@cafe-idare/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase';
 
@@ -5,18 +7,15 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (orderData: {
-      table_id?: string;
-      order_type?: 'dine_in' | 'delivery' | 'takeaway';
-      status?: string;
-      assigned_waiter_id?: string;
-      customer_notes?: string;
-    }) => {
-      return await db.orders.create(orderData as any);
+    mutationFn: async (orderData: OrdersInsert) => {
+      return await db.orders.create(orderData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to create order:', error.message);
     },
   });
 }
@@ -25,21 +24,14 @@ export function useAddOrderItems() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (
-      items: Array<{
-        order_id: string;
-        menu_item_id: string;
-        quantity: number;
-        unit_price?: number;
-        total_price?: number;
-        status?: string;
-        notes?: string | null;
-      }>,
-    ) => {
-      return await db.orderItems.create(items as any);
+    mutationFn: async (items: OrderItemsInsert[]) => {
+      return await db.orderItems.create(items);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to add order items:', error.message);
     },
   });
 }

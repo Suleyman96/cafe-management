@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { login } from '@/lib/auth';
 import { Text, TextInput } from '@/lib/paper-compat';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth-store';
 
 export default function LoginScreen() {
@@ -32,14 +32,24 @@ export default function LoginScreen() {
 
       // Fire-and-forget: fill actual_start for today's schedule
       const today = new Date().toISOString().split('T')[0];
-      (supabase.from('staff_schedules') as any)
-        .update({ actual_start: new Date().toISOString(), status: 'in_progress' })
-        .eq('staff_id', staff.id)
-        .eq('date', today)
-        .eq('status', 'scheduled')
-        .then();
-    } catch (err: any) {
-      const message = err?.message || 'Login failed. Please try again.';
+      db.schedules
+        .findByStaffAndDate(staff.id, today)
+        .then((schedules) => {
+          const scheduled = schedules.find(
+            (s: Record<string, unknown>) => s.status === 'scheduled',
+          );
+          if (scheduled) {
+            return db.schedules.markInProgress(
+              (scheduled as Record<string, unknown>).id as string,
+              new Date().toISOString(),
+            );
+          }
+        })
+        .catch(() => {
+          // Schedule update is non-critical, silently ignore errors
+        });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
       showError(message);
     } finally {
       setLoading(false);
