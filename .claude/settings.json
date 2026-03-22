@@ -13,8 +13,6 @@
       "Bash(biome check:*)",
       "Bash(npx biome:*)"
     ],
-    "additionalDirectories": [
-      "/Users/kamilhajilov/Documents/github/cafe-idare"
-    ]
+    "additionalDirectories": ["/Users/kamilhajilov/Documents/github/cafe-idare"]
   }
 }
