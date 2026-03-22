@@ -61,8 +61,9 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
       });
       toast.success(t('stock.adjusted'), { id: toastId });
       onClose();
-    } catch (error: any) {
-      toast.error(error.message || t('stock.failedAdjust'), { id: toastId });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('stock.failedAdjust');
+      toast.error(message, { id: toastId });
     }
   };
 

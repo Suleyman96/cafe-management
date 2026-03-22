@@ -14,7 +14,7 @@ type Payment = Database['public']['Tables']['order_payments']['Row'];
 export function usePaymentsByStaff(staffId: string, limit = 5) {
   return useQuery({
     queryKey: ['staff_payments', staffId, limit],
-    queryFn: () => db.payments.findByReceivedBy(staffId, limit),
+    queryFn: async (): Promise<Payment[]> => db.payments.findByReceivedBy(staffId, limit),
     enabled: !!staffId,
   });
 }
@@ -22,7 +22,7 @@ export function usePaymentsByStaff(staffId: string, limit = 5) {
 export function useOrderPayments(orderId: string) {
   return useQuery({
     queryKey: ['order_payments', orderId],
-    queryFn: () => db.payments.findByOrderId(orderId),
+    queryFn: async (): Promise<Payment[]> => db.payments.findByOrderId(orderId),
     enabled: !!orderId,
   });
 }
@@ -30,7 +30,7 @@ export function useOrderPayments(orderId: string) {
 export function useOrderRemainingBalance(orderId: string) {
   return useQuery({
     queryKey: ['order_remaining_balance', orderId],
-    queryFn: () => db.rpc.getRemainingBalance(orderId),
+    queryFn: async (): Promise<number> => db.rpc.getRemainingBalance(orderId),
     enabled: !!orderId,
   });
 }

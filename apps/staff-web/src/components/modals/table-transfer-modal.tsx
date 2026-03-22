@@ -72,7 +72,7 @@ export function TableTransferModal({
     setLoading(true);
     try {
       await transferTable.mutateAsync({
-        orderId: (activeOrder as any).id,
+        orderId: activeOrder.id,
         fromTableId: sourceTable.id,
         toTableId: selectedTableId,
         staffId: staff?.id || '',

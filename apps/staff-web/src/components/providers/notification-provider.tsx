@@ -1,10 +1,13 @@
 'use client';
 
+import type { Database } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Bell, BellOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
+
+type OrderRow = Database['public']['Tables']['orders']['Row'];
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation('staff');
@@ -179,7 +182,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
         console.log('[Notifications] orders event:', payload.eventType, payload);
         if (payload.eventType === 'INSERT') {
-          const newOrder = payload.new as any;
+          const newOrder = payload.new as OrderRow;
           if (newOrder.status === 'pending_approval') {
             playSound(notificationAudioRef.current);
             toast.info(t('notifications.newQrOrder'), {
@@ -195,8 +198,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           }
         }
         if (payload.eventType === 'UPDATE') {
-          const newOrder = payload.new as any;
-          const oldOrder = payload.old as any;
+          const newOrder = payload.new as OrderRow;
+          const oldOrder = payload.old as Partial<OrderRow>;
           if (newOrder.status === 'ready' && oldOrder.status !== 'ready') {
             console.log('[Notifications] Order ready!');
             playSound(notificationAudioRef.current);

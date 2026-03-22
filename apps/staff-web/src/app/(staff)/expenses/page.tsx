@@ -69,8 +69,9 @@ export default function ExpensesPage() {
     try {
       await deleteExpense.mutateAsync(id);
       toast.success(t('expenses.expenseDeleted'));
-    } catch (error: any) {
-      toast.error(error.message || t('delete', { ns: 'common' }));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('delete', { ns: 'common' });
+      toast.error(message);
     }
   };
 

@@ -1,5 +1,6 @@
 'use client';
 
+import type { OrdersInsert } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { Package, Plus, RefreshCw } from 'lucide-react';
@@ -100,11 +101,12 @@ export default function TablesPage() {
   const _handleCreateOrderForTable = async (table: any) => {
     setCreatingOrderForTable(table.id);
     try {
+      // TODO: type properly - DB defaults handle missing required fields (subtotal, tax, total, etc.)
       const result = await createOrder.mutateAsync({
         table_id: table.id,
         order_type: 'dine_in',
         status: 'new',
-      } as any);
+      } as Partial<OrdersInsert> as OrdersInsert);
       toast.success(`${t('tables.createdOrder')} ${table.table_number}`);
       window.location.href = `/orders/${result.id}/add-items`;
     } catch (error) {
@@ -132,8 +134,9 @@ export default function TablesPage() {
       await deleteTable.mutateAsync(deleteConfirmTable.id);
       toast.success(`${deleteConfirmTable.table_number} ${t('tables.tableDeleted')}`);
       refetchTables();
-    } catch (error: any) {
-      toast.error(error.message || t('tables.failedDeleteTable'));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('tables.failedDeleteTable');
+      toast.error(message);
     } finally {
       setIsDeleting(false);
       setDeleteConfirmTable(null);

@@ -1,5 +1,6 @@
 'use client';
 
+import type { OrdersInsert } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Map as MapIcon, MapPin, Phone, StickyNote, Truck, User, X } from 'lucide-react';
 import { useState } from 'react';
@@ -31,6 +32,7 @@ export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDelive
 
     setLoading(true);
     try {
+      // TODO: type properly - DB defaults handle missing required fields (subtotal, tax, total, etc.)
       const result = await createOrder.mutateAsync({
         order_type: 'delivery',
         status: 'new',
@@ -39,7 +41,7 @@ export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDelive
         delivery_address: deliveryAddress.trim(),
         delivery_notes: deliveryNotes.trim() || null,
         delivery_fee: Number.parseFloat(deliveryFee) || 0,
-      } as any);
+      } as Partial<OrdersInsert> as OrdersInsert);
       onSuccess(result.id);
 
       // Reset form

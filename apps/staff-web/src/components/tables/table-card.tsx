@@ -17,6 +17,7 @@ import {
   Users,
   UtensilsCrossed,
 } from 'lucide-react';
+import type { OrderWithDetails } from '@/types';
 
 interface TableCardProps {
   table: any;
@@ -117,7 +118,7 @@ export function TableCard({
   const { t } = useTranslation('staff');
 
   const hasMultipleOrders = activeOrders.length > 1;
-  const activeOrder = activeOrders[0];
+  const activeOrder: OrderWithDetails | undefined = activeOrders[0];
   const hasActiveCalls = activeCalls.length > 0;
 
   const combinedTotal = activeOrders.reduce((total: number, order: any) => {
@@ -311,7 +312,7 @@ export function TableCard({
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="flex items-center gap-2 text-gray-600">
               <Clock className="h-4 w-4 text-gray-400" />
-              <span>{formatDuration((activeOrder as any).created_at)}</span>
+              <span>{activeOrder && formatDuration(activeOrder.created_at)}</span>
             </div>
             <div className="flex items-center gap-2 text-gray-600">
               <Package className="h-4 w-4 text-gray-400" />
@@ -342,10 +343,10 @@ export function TableCard({
           )}
 
           {/* Order Taken By */}
-          {(activeOrder as any).assigned_waiter && (
+          {activeOrder?.assigned_waiter && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <UserCheck className="h-4 w-4 text-green-500" />
-              <span>Taken by: {(activeOrder as any).assigned_waiter.full_name}</span>
+              <span>Taken by: {activeOrder.assigned_waiter.full_name}</span>
             </div>
           )}
         </div>

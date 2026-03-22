@@ -62,8 +62,9 @@ export default function WastePage() {
     try {
       await deleteWaste.mutateAsync(id);
       toast.success(t('waste.wasteLogDeleted'));
-    } catch (error: any) {
-      toast.error(error.message || t('delete', { ns: 'common' }));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('delete', { ns: 'common' });
+      toast.error(message);
     }
   };
 

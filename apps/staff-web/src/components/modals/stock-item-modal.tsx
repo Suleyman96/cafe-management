@@ -74,8 +74,9 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
       }
 
       onClose();
-    } catch (error: any) {
-      toast.error(error.message || t('stock.failedSave'), { id: toastId });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('stock.failedSave');
+      toast.error(message, { id: toastId });
     }
   };
 

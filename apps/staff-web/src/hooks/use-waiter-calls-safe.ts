@@ -9,20 +9,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateWaiterCalls } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
-type WaiterCallStatus = Database['public']['Tables']['waiter_calls']['Row']['status'];
+type WaiterCall = Database['public']['Tables']['waiter_calls']['Row'];
+type WaiterCallStatus = WaiterCall['status'];
 
 export function useWaiterCalls(status?: WaiterCallStatus) {
   return useQuery({
     queryKey: [QUERY_KEYS.WAITER_CALLS, status],
-    queryFn: () => db.waiterCalls.findAll(status),
+    queryFn: async (): Promise<WaiterCall[]> => db.waiterCalls.findAll(status),
     refetchInterval: REFRESH_INTERVALS.WAITER_CALLS,
   });
 }
 
 export function usePendingWaiterCallsCount() {
   return useQuery({
-    queryKey: ['waiter-calls-count', 'pending'],
-    queryFn: () => db.waiterCalls.getPendingCount(),
+    queryKey: [QUERY_KEYS.WAITER_CALLS_COUNT, 'pending'],
+    queryFn: async (): Promise<number> => db.waiterCalls.getPendingCount(),
     refetchInterval: REFRESH_INTERVALS.WAITER_CALLS,
   });
 }
@@ -56,7 +57,7 @@ export function useResolveWaiterCall() {
 export function useActiveCallsForTable(tableId: string) {
   const { data: allCalls, ...rest } = useWaiterCalls('pending');
 
-  const tableCalls = allCalls?.filter((call: any) => call.table_id === tableId) || [];
+  const tableCalls = allCalls?.filter((call) => call.table_id === tableId) || [];
 
   return {
     ...rest,

@@ -27,14 +27,14 @@ export function useMenuItems(options?: {
 }) {
   return useQuery({
     queryKey: [QUERY_KEYS.MENU_ITEMS, options],
-    queryFn: () => db.menuItems.findAll(options),
+    queryFn: async (): Promise<MenuItem[]> => db.menuItems.findAll(options),
   });
 }
 
 export function useMenuItem(id: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.MENU_ITEM, id],
-    queryFn: () => db.menuItems.findById(id),
+    queryFn: async (): Promise<MenuItem> => db.menuItems.findById(id),
     enabled: !!id,
   });
 }
@@ -88,7 +88,7 @@ export function useDeleteMenuItem() {
 export function useCategories() {
   return useQuery({
     queryKey: [QUERY_KEYS.CATEGORIES],
-    queryFn: () => db.categories.findAll(),
+    queryFn: async (): Promise<Category[]> => db.categories.findAll(),
   });
 }
 

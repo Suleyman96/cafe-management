@@ -72,8 +72,9 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
       }
 
       onClose();
-    } catch (error: any) {
-      toast.error(error.message || t('expenses.failedSave'), { id: toastId });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('expenses.failedSave');
+      toast.error(message, { id: toastId });
     }
   };
 

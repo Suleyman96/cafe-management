@@ -95,8 +95,9 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
       }
 
       onClose();
-    } catch (error: any) {
-      toast.error(error.message || t('tasks.failedSave'), { id: toastId });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('tasks.failedSave');
+      toast.error(message, { id: toastId });
     }
   };
 

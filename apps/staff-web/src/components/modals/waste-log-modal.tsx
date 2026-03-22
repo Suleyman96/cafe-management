@@ -58,17 +58,17 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
       setFormData({ ...formData, stock_item_id: '', deduct_from_stock: false });
       return;
     }
-    const item = stockItems.find((s: any) => s.id === stockItemId);
+    const item = stockItems.find((s) => s.id === stockItemId);
     if (item) {
       const qty = Number.parseFloat(formData.quantity) || 0;
       setFormData({
         ...formData,
         stock_item_id: stockItemId,
-        item_name: (item as any).name,
-        unit: (item as any).unit,
-        cost_per_unit: (item as any).cost_price?.toString() || '0',
-        total_cost: (qty * ((item as any).cost_price || 0)).toFixed(2),
-        category: (item as any).category || 'General',
+        item_name: item.name,
+        unit: item.unit,
+        cost_per_unit: item.cost_price?.toString() || '0',
+        total_cost: (qty * (item.cost_price || 0)).toFixed(2),
+        category: item.category || 'General',
         deduct_from_stock: true,
       });
     }
@@ -113,7 +113,7 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
         unit: formData.unit,
         cost_per_unit: Number.parseFloat(formData.cost_per_unit) || 0,
         total_cost: Number.parseFloat(formData.total_cost) || 0,
-        reason: formData.reason as any,
+        reason: formData.reason as WasteLog['reason'],
         stock_item_id: formData.stock_item_id || null,
         waste_date: formData.waste_date,
         notes: formData.notes || null,
@@ -147,8 +147,9 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
       }
 
       onClose();
-    } catch (error: any) {
-      toast.error(error.message || t('waste.failedLog'), { id: toastId });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('waste.failedLog');
+      toast.error(message, { id: toastId });
     }
   };
 
@@ -176,7 +177,7 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="">{t('waste.manualEntry')}</option>
-              {stockItems.map((item: any) => (
+              {stockItems.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name} ({item.quantity} {item.unit} in stock)
                 </option>

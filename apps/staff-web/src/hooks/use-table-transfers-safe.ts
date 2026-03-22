@@ -4,6 +4,7 @@
  */
 
 import { QUERY_KEYS } from '@cafe-idare/core';
+import type { OrderWithItems } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
 
@@ -20,7 +21,7 @@ export function useOrderTransferHistory(orderId: string) {
     queryKey: ['table_transfers', orderId],
     queryFn: async () => {
       // Get order details which includes transfer history
-      const order = (await db.orders.findById(orderId)) as any;
+      const order = (await db.orders.findById(orderId)) as OrderWithItems;
       return order.table_transfers || [];
     },
     enabled: !!orderId,

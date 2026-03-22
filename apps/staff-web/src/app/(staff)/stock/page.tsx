@@ -90,8 +90,9 @@ export default function StockPage() {
     try {
       await deleteStockItem.mutateAsync(id);
       toast.success(t('stock.stockItemDeleted'));
-    } catch (error: any) {
-      toast.error(error.message || t('delete', { ns: 'common' }));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('delete', { ns: 'common' });
+      toast.error(message);
     }
   };
 

@@ -16,7 +16,7 @@ export type { CafeSettings };
 export function useCafeSettings() {
   return useQuery({
     queryKey: [QUERY_KEYS.CAFE_SETTINGS],
-    queryFn: () => db.settings.get(),
+    queryFn: async (): Promise<CafeSettings> => db.settings.get(),
     staleTime: 1000 * 60 * 5, // Consider fresh for 5 minutes
   });
 }

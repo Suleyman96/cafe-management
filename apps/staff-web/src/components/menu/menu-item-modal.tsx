@@ -110,10 +110,10 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
       }
 
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving menu item:', error);
 
-      const errorMessage = error.message || 'Failed to save menu item';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save menu item';
 
       if (errorMessage.includes('infinite recursion') || errorMessage.includes('policy')) {
         toast.error(t('menu.dbPermissionError'), { id: toastId });

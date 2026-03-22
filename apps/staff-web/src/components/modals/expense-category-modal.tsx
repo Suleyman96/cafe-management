@@ -48,8 +48,9 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
       });
       toast.success(t('expenses.categoryCreated'));
       resetForm();
-    } catch (error: any) {
-      toast.error(error.message || t('expenses.failedCreateCategory'));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('expenses.failedCreateCategory');
+      toast.error(message);
     }
   };
 
@@ -67,8 +68,9 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
       });
       toast.success(t('expenses.categoryUpdated'));
       resetForm();
-    } catch (error: any) {
-      toast.error(error.message || t('expenses.failedUpdateCategory'));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('expenses.failedUpdateCategory');
+      toast.error(message);
     }
   };
 
@@ -80,8 +82,9 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
     try {
       await deleteCategory.mutateAsync(id);
       toast.success(t('expenses.categoryDeleted'));
-    } catch (error: any) {
-      toast.error(error.message || t('expenses.failedDeleteCategory'));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('expenses.failedDeleteCategory');
+      toast.error(message);
     }
   };
 

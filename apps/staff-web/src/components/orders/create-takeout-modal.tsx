@@ -1,12 +1,11 @@
 'use client';
 
-import type { MenuItem } from '@cafe-idare/database';
+import type { MenuItem, OrdersInsert } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { useState } from 'react';
-import { useCafeSettings } from '@/hooks';
+import { useAddOrderItems, useCafeSettings, useCreateOrder } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
-import { supabase } from '@/lib/supabase/client';
 
 interface CreateTakeoutModalProps {
   staffId: string;
@@ -38,6 +37,8 @@ export function CreateTakeoutModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: cafeSettings } = useCafeSettings();
   const formatPrice = useFormatPrice();
+  const createOrder = useCreateOrder();
+  const addOrderItems = useAddOrderItems();
 
   // Filter menu items by search
   const filteredItems = menuItems.filter((item) =>
@@ -108,45 +109,32 @@ export function CreateTakeoutModal({
     try {
       const { subtotal, tax, total } = calculateTotal();
 
-      // Create takeout order
-      const orderResponse = (await supabase
-        .from('orders')
-        .insert({
-          table_id: null, // No table for takeout
-          order_type: 'takeout',
-          customer_name: customerName.trim(),
-          customer_phone: customerPhone.trim(),
-          customer_notes: customerNotes.trim() || null,
-          assigned_waiter_id: staffId,
-          status: 'new',
-          subtotal,
-          tax,
-          total,
-        } as any)
-        .select('id')
-        .single()) as { data: { id: string } | null; error: any };
+      // Create takeout order via hook
+      const newOrder = await createOrder.mutateAsync({
+        table_id: null,
+        order_type: 'takeout',
+        customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim(),
+        customer_notes: customerNotes.trim() || null,
+        assigned_waiter_id: staffId,
+        status: 'new',
+        subtotal,
+        tax,
+        total,
+      } as Partial<OrdersInsert> as OrdersInsert);
 
-      if (orderResponse.error) throw orderResponse.error;
-      if (!orderResponse.data || !orderResponse.data.id) {
-        throw new Error('Failed to create order');
-      }
-
-      const orderId = orderResponse.data.id;
-
-      // Add order items
+      // Add order items via hook
       const orderItems = selectedItems.map((item) => ({
-        order_id: orderId,
+        order_id: newOrder.id,
         menu_item_id: item.menuItem.id,
         item_name: item.menuItem.name,
         item_price: item.menuItem.price,
         quantity: item.quantity,
         notes: item.notes || null,
-        status: 'pending',
+        status: 'pending' as const,
       }));
 
-      const { error: itemsError } = await supabase.from('order_items').insert(orderItems as any);
-
-      if (itemsError) throw itemsError;
+      await addOrderItems.mutateAsync(orderItems);
 
       // Reset form
       setCustomerName('');
@@ -155,7 +143,7 @@ export function CreateTakeoutModal({
       setSelectedItems([]);
       setSearchQuery('');
 
-      onSuccess?.(orderId);
+      onSuccess?.(newOrder.id);
       onClose();
     } catch (error) {
       console.error('Error creating takeout order:', error);

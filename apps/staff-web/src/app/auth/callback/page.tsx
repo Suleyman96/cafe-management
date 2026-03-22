@@ -68,14 +68,15 @@ function AuthCallbackContent() {
 
         // Redirect to home
         router.push('/');
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Auth callback error:', err);
-        setError(err.message || 'Authentication failed');
+        const message = err instanceof Error ? err.message : 'Authentication failed';
+        setError(message);
         setIsLoading(false);
 
         // Redirect to login after 3 seconds
         setTimeout(() => {
-          router.push(`/login?error=${encodeURIComponent(err.message || 'Authentication failed')}`);
+          router.push(`/login?error=${encodeURIComponent(message)}`);
         }, 3000);
       }
     };

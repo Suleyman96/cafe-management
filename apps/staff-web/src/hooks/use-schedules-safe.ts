@@ -9,13 +9,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateSchedules } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
+type StaffSchedule = Database['public']['Tables']['staff_schedules']['Row'];
 type StaffScheduleInsert = Database['public']['Tables']['staff_schedules']['Insert'];
 type StaffScheduleUpdate = Database['public']['Tables']['staff_schedules']['Update'];
 
 export function useSchedulesByDate(date: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.SCHEDULES, date],
-    queryFn: () => db.schedules.findByDate(date),
+    queryFn: async (): Promise<StaffSchedule[]> => db.schedules.findByDate(date),
     enabled: !!date,
   });
 }
@@ -23,7 +24,7 @@ export function useSchedulesByDate(date: string) {
 export function useSchedulesByDateRange(startDate: string, endDate: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.SCHEDULES, startDate, endDate],
-    queryFn: () => db.schedules.findByDateRange(startDate, endDate),
+    queryFn: async (): Promise<StaffSchedule[]> => db.schedules.findByDateRange(startDate, endDate),
     enabled: !!startDate && !!endDate,
   });
 }
@@ -31,7 +32,8 @@ export function useSchedulesByDateRange(startDate: string, endDate: string) {
 export function useMySchedule(staffId: string, startDate: string, endDate: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.MY_SCHEDULE, staffId, startDate, endDate],
-    queryFn: () => db.schedules.findByStaffRange(staffId, startDate, endDate),
+    queryFn: async (): Promise<StaffSchedule[]> =>
+      db.schedules.findByStaffRange(staffId, startDate, endDate),
     enabled: !!staffId && !!startDate && !!endDate,
   });
 }
@@ -40,7 +42,7 @@ export function useMyScheduleToday(staffId: string) {
   const today = new Date().toISOString().split('T')[0];
   return useQuery({
     queryKey: [QUERY_KEYS.MY_SCHEDULE, staffId, today],
-    queryFn: () => db.schedules.findByStaffAndDate(staffId, today),
+    queryFn: async (): Promise<StaffSchedule[]> => db.schedules.findByStaffAndDate(staffId, today),
     enabled: !!staffId,
   });
 }

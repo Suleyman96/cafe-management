@@ -186,7 +186,7 @@ export default function OrdersPage() {
             <select
               className="flex-1 sm:flex-none px-3 py-2 border rounded-lg text-sm sm:text-base"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'all')}
             >
               <option value="all">{t('orders.allStatus')}</option>
               <option value="pending_approval">⏳ {t('orders.pendingApproval')}</option>
@@ -203,7 +203,7 @@ export default function OrdersPage() {
             <select
               className="flex-1 sm:flex-none px-3 py-2 border rounded-lg text-sm sm:text-base"
               value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value as any)}
+              onChange={(e) => setSourceFilter(e.target.value as OrderSource | 'all')}
             >
               <option value="all">{t('orders.allSources')}</option>
               <option value="customer">{t('orders.customer')}</option>

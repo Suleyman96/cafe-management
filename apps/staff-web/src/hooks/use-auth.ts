@@ -3,7 +3,25 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { db } from '@/lib/supabase/wrapped-client';
 import { useAuthStore } from '@/store/auth-store';
+
+/** Fire-and-forget post-login side effects */
+export async function postLoginSideEffects(staffId: string) {
+  db.staff.updateLastLogin(staffId).catch(console.warn);
+
+  const today = new Date().toISOString().split('T')[0];
+  db.schedules
+    .findByStaffAndDate(staffId, today)
+    .then((schedules) => {
+      for (const schedule of schedules) {
+        if (schedule.status === 'scheduled') {
+          db.schedules.markInProgress(schedule.id, new Date().toISOString()).catch(console.warn);
+        }
+      }
+    })
+    .catch(console.warn);
+}
 
 // Global flag to prevent multiple concurrent session checks
 let sessionCheckInProgress = false;
@@ -42,14 +60,10 @@ export function useAuth() {
         }
 
         // Fetch staff record
-        const { data: staffData, error: staffError } = await supabase
-          .from('staff')
-          .select('*')
-          .eq('auth_user_id', session.user.id)
-          .eq('is_active', true)
-          .single();
-
-        if (staffError || !staffData) {
+        let staffData: Awaited<ReturnType<typeof db.staff.findByAuthId>> | null = null;
+        try {
+          staffData = await db.staff.findByAuthId(session.user.id);
+        } catch (staffError) {
           console.error('Staff fetch error:', staffError);
           await supabase.auth.signOut();
           clearAuth();
@@ -57,21 +71,7 @@ export function useAuth() {
         }
 
         setStaff(staffData);
-
-        // Fire-and-forget: update last_login_at
-        (supabase.from('staff') as any)
-          .update({ last_login_at: new Date().toISOString() })
-          .eq('id', (staffData as any).id)
-          .then();
-
-        // Fire-and-forget: fill actual_start for today's schedule
-        const today = new Date().toISOString().split('T')[0];
-        (supabase.from('staff_schedules') as any)
-          .update({ actual_start: new Date().toISOString(), status: 'in_progress' })
-          .eq('staff_id', (staffData as any).id)
-          .eq('date', today)
-          .eq('status', 'scheduled')
-          .then();
+        postLoginSideEffects(staffData.id);
       } catch (error) {
         console.error('Auth check error:', error);
         clearAuth();
@@ -91,31 +91,12 @@ export function useAuth() {
         clearAuth();
         router.push('/login');
       } else if (event === 'SIGNED_IN' && session.user) {
-        // Fetch staff record
-        const { data: staffData } = await supabase
-          .from('staff')
-          .select('*')
-          .eq('auth_user_id', session.user.id)
-          .eq('is_active', true)
-          .single();
-
-        if (staffData) {
+        try {
+          const staffData = await db.staff.findByAuthId(session.user.id);
           setStaff(staffData);
-
-          // Fire-and-forget: update last_login_at
-          (supabase.from('staff') as any)
-            .update({ last_login_at: new Date().toISOString() })
-            .eq('id', (staffData as any).id)
-            .then();
-
-          // Fire-and-forget: fill actual_start for today's schedule
-          const today = new Date().toISOString().split('T')[0];
-          (supabase.from('staff_schedules') as any)
-            .update({ actual_start: new Date().toISOString(), status: 'in_progress' })
-            .eq('staff_id', (staffData as any).id)
-            .eq('date', today)
-            .eq('status', 'scheduled')
-            .then();
+          postLoginSideEffects(staffData.id);
+        } catch {
+          // Staff record not found — ignore
         }
       }
     });

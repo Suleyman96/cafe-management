@@ -46,8 +46,8 @@ export default function AddItemsPage() {
 
   // Initialize customer notes from existing order
   useEffect(() => {
-    if (order && (order as any).customer_notes) {
-      setCustomerNotes((order as any).customer_notes);
+    if (order?.customer_notes) {
+      setCustomerNotes(order.customer_notes);
     }
   }, [order]);
 
@@ -119,7 +119,7 @@ export default function AddItemsPage() {
       await addOrderItems.mutateAsync(orderItems);
 
       // Update customer notes if changed
-      const existingNotes = (order as any)?.customer_notes || '';
+      const existingNotes = order?.customer_notes || '';
       if (customerNotes.trim() !== existingNotes) {
         await updateOrderNotes.mutateAsync({
           orderId,
@@ -164,9 +164,7 @@ export default function AddItemsPage() {
           </Button>
           <h1 className="text-lg sm:text-2xl font-bold">
             {t('orders.addItems')} -{' '}
-            {(order as any).table?.table_number
-              ? (order as any).table.table_number
-              : t('tables.takeout')}
+            {order.table?.table_number ? order.table.table_number : t('tables.takeout')}
           </h1>
         </div>
       </div>
