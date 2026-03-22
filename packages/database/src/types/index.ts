@@ -156,15 +156,8 @@ export interface CartItem {
   notes?: string;
 }
 
-// Status types - commented out to avoid conflict with enum exports
-// export type OrderStatus = Order['status'];
-export type OrderType = Order['order_type'];
-// export type TableStatus = Table['status'];
-export type UserRole = Staff['role'];
-export type FeedbackType = CustomerFeedback['feedback_type'];
-export type FeedbackStatus = CustomerFeedback['status'];
-export type PaymentType = OrderPayment['payment_type'];
-export type PaymentMethod = OrderPayment['payment_method'];
+// Status types are now exported from schemas/index.ts via Zod inference.
+// Only export aliases that don't conflict with schema exports.
 export type CallType = WaiterCall['call_type'];
 export type CallPriority = WaiterCall['priority'];
 
