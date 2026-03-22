@@ -1,5 +1,6 @@
+import { QUERY_KEYS } from '@cafe-idare/core';
 import { useQuery } from '@tanstack/react-query';
-import { QUERY_KEYS, STALE_TIMES } from '@/lib/query-keys';
+import { STALE_TIMES } from '@/lib/query-keys';
 import { db } from '@/lib/supabase';
 import type { Table } from '@/types';
 
@@ -15,21 +16,18 @@ const isUUID = (str: string) =>
 export function useTable(tableNumber: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.TABLE, tableNumber],
-    queryFn: async () => {
+    queryFn: async (): Promise<Table> => {
       // If it looks like a UUID, query by id directly
       if (isUUID(tableNumber)) {
-        const data = await db.tables.findById(tableNumber);
-        return data as Table;
+        return db.tables.findById(tableNumber);
       }
 
       // Try to find by table_number (for friendly URLs)
       try {
-        const data = await db.tables.findByTableNumber(tableNumber);
-        return data as Table;
+        return await db.tables.findByTableNumber(tableNumber);
       } catch {
         // If not found by table_number, try by ID (for backwards compatibility)
-        const data = await db.tables.findById(tableNumber);
-        return data as Table;
+        return db.tables.findById(tableNumber);
       }
     },
     staleTime: STALE_TIMES.SHORT,

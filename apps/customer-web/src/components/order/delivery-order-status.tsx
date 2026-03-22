@@ -90,12 +90,12 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
             {order.delivery_notes && (
               <p className="text-muted-foreground pl-5">{order.delivery_notes}</p>
             )}
-            {(order as any).delivery_person?.full_name && (
+            {order.delivery_person?.full_name && (
               <div className="flex items-center gap-2 pt-2 border-t mt-2">
                 <Truck className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>
                   {t('deliveryStatus.driver', {
-                    name: (order as any).delivery_person.full_name,
+                    name: order.delivery_person.full_name,
                   })}
                 </span>
               </div>
@@ -168,7 +168,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
         <div className="bg-card rounded-lg p-4 border">
           <h2 className="font-semibold mb-4">{t('deliveryStatus.orderItemsTitle')}</h2>
           <div className="space-y-3">
-            {order.order_items?.map((item: any) => (
+            {order.order_items?.map((item) => (
               <div
                 key={item.id}
                 className="flex items-start justify-between pb-3 border-b last:border-0 last:pb-0"

@@ -16,8 +16,8 @@ initI18n({
 });
 
 type NamespaceBundles = {
-  common: any;
-  customer: any;
+  common: Record<string, unknown>;
+  customer: Record<string, unknown>;
 };
 
 // Static import map — webpack can resolve each path at build time

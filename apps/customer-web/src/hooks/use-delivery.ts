@@ -1,19 +1,17 @@
+import { QUERY_KEYS } from '@cafe-idare/core';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { QUERY_KEYS } from '@/lib/query-keys';
 import { db, supabase } from '@/lib/supabase';
-import type { Order, OrderItem, OrderWithItems } from '@/types';
+import type { DeliveryOrderWithDetails, Order, OrderItem } from '@/types';
 
 export function useDeliveryOrder(orderId: string) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderId],
-    queryFn: async () => {
-      const data = await db.orders.findDeliveryById(orderId);
-      return data as (OrderWithItems & { delivery_person?: { full_name: string } }) | null;
-    },
+    queryFn: async (): Promise<DeliveryOrderWithDetails | null> =>
+      db.orders.findDeliveryById(orderId) as Promise<DeliveryOrderWithDetails | null>,
     enabled: !!orderId,
     staleTime: 0,
   });
@@ -77,8 +75,8 @@ export function useCreateDeliveryOrder() {
       deliveryNotes: string;
       deliveryFee: number;
       orderNotes?: string;
-    }) => {
-      const order = await db.orders.create({
+    }): Promise<Order> =>
+      db.orders.create({
         table_id: null,
         order_type: 'delivery',
         source: 'customer',
@@ -92,9 +90,7 @@ export function useCreateDeliveryOrder() {
         subtotal: 0,
         tax: 0,
         total: 0,
-      });
-      return order as Order;
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER] });
     },
@@ -117,16 +113,14 @@ export function useAddDeliveryOrderItems() {
         quantity: number;
         notes?: string;
       }>;
-    }) => {
-      const data = await db.orderItems.create(
+    }): Promise<OrderItem[]> =>
+      db.orderItems.create(
         items.map((item) => ({
           order_id: orderId,
           ...item,
           status: 'pending',
         })),
-      );
-      return data as OrderItem[];
-    },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER] });
     },
