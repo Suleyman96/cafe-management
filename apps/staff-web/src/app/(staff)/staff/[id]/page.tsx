@@ -26,7 +26,7 @@ import { StaffEditModal } from '@/components/modals/staff-edit-modal';
 import { StaffResetPasswordModal } from '@/components/modals/staff-reset-password-modal';
 import { useMySchedule, useOrders, usePaymentsByStaff, useStaffMember } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
-import { formatPriceWithSettings, useCafeSettings } from '@/hooks/use-settings-safe';
+import { useFormatPrice } from '@/hooks/use-format-price';
 
 function calculateHoursWorked(schedules: any[] | undefined) {
   if (!schedules) return 0;
@@ -61,7 +61,7 @@ export default function StaffDetailPage() {
   } = useStaffMember(staffId);
   const { data: allOrders, isLoading: ordersLoading } = useOrders();
   const { data: recentPayments, isLoading: paymentsLoading } = usePaymentsByStaff(staffId);
-  const { data: cafeSettings } = useCafeSettings();
+  const formatPrice = useFormatPrice();
 
   // Schedule date ranges (computed once on mount)
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -102,11 +102,6 @@ export default function StaffDetailPage() {
 
   const weeklyHours = useMemo(() => calculateHoursWorked(weekSchedules), [weekSchedules]);
   const monthlyHours = useMemo(() => calculateHoursWorked(monthSchedules), [monthSchedules]);
-
-  const formatPrice = (amount: number) => {
-    if (!cafeSettings) return amount.toFixed(2);
-    return formatPriceWithSettings(amount, cafeSettings);
-  };
 
   // Calculate performance stats from orders
   const { stats, recentOrders } = useMemo(() => {

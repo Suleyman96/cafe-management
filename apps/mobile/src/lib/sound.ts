@@ -2,6 +2,7 @@ import { Audio } from 'expo-av';
 
 let newOrderSound: Audio.Sound | null = null;
 let waiterCallSound: Audio.Sound | null = null;
+let soundsAvailable = false;
 
 export async function setupSounds() {
   try {
@@ -10,39 +11,35 @@ export async function setupSounds() {
       staysActiveInBackground: false,
     });
 
-    // Load new order sound
     const { sound: orderSound } = await Audio.Sound.createAsync(
       require('../../assets/sounds/new-order.wav'),
     );
     newOrderSound = orderSound;
-
-    // Load waiter call sound
-    const { sound: callSound } = await Audio.Sound.createAsync(
-      require('../../assets/sounds/waiter-call.wav'),
-    );
-    waiterCallSound = callSound;
-  } catch (error) {
-    console.error('Error loading sounds:', error);
+    waiterCallSound = orderSound; // Reuse same sound until separate file is added
+    soundsAvailable = true;
+  } catch {
+    // Sound files may not be available in development/Expo Go — notifications still work without sound
+    soundsAvailable = false;
   }
 }
 
 export async function playNewOrderSound() {
   try {
-    if (newOrderSound) {
+    if (soundsAvailable && newOrderSound) {
       await newOrderSound.replayAsync();
     }
-  } catch (error) {
-    console.error('Error playing new order sound:', error);
+  } catch {
+    // Silently fail — sound is non-critical
   }
 }
 
 export async function playWaiterCallSound() {
   try {
-    if (waiterCallSound) {
+    if (soundsAvailable && waiterCallSound) {
       await waiterCallSound.replayAsync();
     }
-  } catch (error) {
-    console.error('Error playing waiter call sound:', error);
+  } catch {
+    // Silently fail — sound is non-critical
   }
 }
 

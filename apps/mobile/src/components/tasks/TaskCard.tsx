@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, Text } from 'react-native-paper';
+import { Button, Card, Chip } from 'react-native-paper';
+import { Text } from '@/lib/paper-compat';
 
 const PRIORITY_COLORS: Record<string, string> = {
   low: '#6b7280',

@@ -2,39 +2,17 @@
 
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
-import {
-  AlertCircle,
-  CheckCircle,
-  ChefHat,
-  Clock,
-  Edit2,
-  Hourglass,
-  Loader2,
-  MoreVertical,
-  Package,
-  Plus,
-  RefreshCw,
-  Trash2,
-  UserCheck,
-  Users,
-  UtensilsCrossed,
-} from 'lucide-react';
+import { Package, Plus, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { CreateTakeoutModal } from '@/components/modals/create-takeout-modal';
 import { TableModal } from '@/components/modals/table-modal';
 import { TableTransferModal } from '@/components/modals/table-transfer-modal';
-import {
-  formatPriceWithSettings,
-  useCafeSettings,
-  useCreateOrder,
-  useDeleteTable,
-  useOrders,
-  useTables,
-  useWaiterCalls,
-} from '@/hooks';
+import { TableCard } from '@/components/tables/table-card';
+import { useCreateOrder, useDeleteTable, useOrders, useTables, useWaiterCalls } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
+import { useFormatPrice } from '@/hooks/use-format-price';
 import { supabase } from '@/lib/supabase/client';
 
 export default function TablesPage() {
@@ -62,15 +40,7 @@ export default function TablesPage() {
 
   const createOrder = useCreateOrder();
   const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
-  const { data: cafeSettings } = useCafeSettings();
-
-  // Format price using cafe settings or fallback
-  const formatPrice = (amount: number) => {
-    if (cafeSettings) {
-      return formatPriceWithSettings(amount, cafeSettings);
-    }
-    return `$${amount.toFixed(2)}`;
-  };
+  const formatPrice = useFormatPrice();
 
   // Set up real-time subscriptions
   useEffect(() => {
@@ -124,153 +94,6 @@ export default function TablesPage() {
       waiterCalls?.filter((call: any) => call.table_id === tableId && call.status === 'pending') ||
       []
     );
-  };
-
-  // Get order total from database (includes tax) for consistency
-  // Fall back to calculating from items if total is not set
-  const calculateOrderTotal = (order: any) => {
-    if (order?.total) return order.total;
-    if (!order?.order_items) return 0;
-    return order.order_items.reduce(
-      (sum: number, item: any) => sum + item.quantity * item.item_price,
-      0,
-    );
-  };
-
-  // Format duration
-  const formatDuration = (createdAt: string) => {
-    const start = new Date(createdAt);
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - start.getTime()) / 1000 / 60);
-
-    if (diff < 60) {
-      return `${diff}m`;
-    } else {
-      const hours = Math.floor(diff / 60);
-      const mins = diff % 60;
-      return `${hours}h ${mins}m`;
-    }
-  };
-
-  // Get effective status based on item statuses
-  const getEffectiveOrderStatus = (order: any) => {
-    if (!order?.order_items || order.order_items.length === 0) {
-      return order.status;
-    }
-
-    const items = order.order_items;
-    const allServed = items.every((item: any) => item.status === 'served');
-    const allReady = items.every(
-      (item: any) => item.status === 'ready' || item.status === 'served',
-    );
-    const anyReady = items.some((item: any) => item.status === 'ready');
-    const anyPreparing = items.some((item: any) => item.status === 'preparing');
-
-    if (allServed) return 'served';
-    if (allReady) return 'ready';
-    if (anyReady) return 'partially_ready';
-    if (anyPreparing) return 'preparing';
-    return order.status;
-  };
-
-  // Get order status badge styling
-  const getOrderStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending_approval':
-        return {
-          bg: 'bg-amber-100',
-          text: 'text-amber-800',
-          border: 'border-amber-400',
-          icon: <Hourglass className="h-3.5 w-3.5" />,
-          label: `⏳ ${t('orders.pendingApproval')}`,
-        };
-      case 'new':
-        return {
-          bg: 'bg-blue-100',
-          text: 'text-blue-800',
-          border: 'border-blue-300',
-          icon: <AlertCircle className="h-3.5 w-3.5" />,
-          label: t('orders.new'),
-        };
-      case 'preparing':
-        return {
-          bg: 'bg-yellow-100',
-          text: 'text-yellow-800',
-          border: 'border-yellow-300',
-          icon: <ChefHat className="h-3.5 w-3.5" />,
-          label: t('orders.preparing'),
-        };
-      case 'ready':
-        return {
-          bg: 'bg-green-100',
-          text: 'text-green-800',
-          border: 'border-green-300',
-          icon: <CheckCircle className="h-3.5 w-3.5" />,
-          label: t('orders.ready'),
-        };
-      case 'served':
-        return {
-          bg: 'bg-purple-100',
-          text: 'text-purple-800',
-          border: 'border-purple-300',
-          icon: <UtensilsCrossed className="h-3.5 w-3.5" />,
-          label: t('orders.served'),
-        };
-      case 'partially_ready':
-        return {
-          bg: 'bg-lime-100',
-          text: 'text-lime-800',
-          border: 'border-lime-400',
-          icon: <CheckCircle className="h-3.5 w-3.5" />,
-          label: t('orders.ready'),
-        };
-      default:
-        return {
-          bg: 'bg-gray-100',
-          text: 'text-gray-800',
-          border: 'border-gray-300',
-          icon: null,
-          label: status,
-        };
-    }
-  };
-
-  // Get table card background based on status and orders
-  const getTableCardStyle = (table: any, activeOrders: any[]) => {
-    if (!table.is_active) {
-      return 'bg-gray-100 border-gray-300 opacity-60';
-    }
-    if (table.status === 'closed') {
-      return 'bg-gray-200 border-gray-400';
-    }
-    if (table.status === 'reserved') {
-      return 'bg-blue-50 border-blue-300';
-    }
-    if (table.status === 'occupied' && activeOrders.length > 0) {
-      // If multiple orders, use amber/orange to indicate complexity
-      if (activeOrders.length > 1) {
-        return 'bg-amber-50 border-amber-400';
-      }
-      const effectiveStatus = getEffectiveOrderStatus(activeOrders[0]);
-      if (effectiveStatus === 'served') {
-        return 'bg-purple-50 border-purple-400';
-      }
-      if (effectiveStatus === 'ready') {
-        return 'bg-green-50 border-green-400';
-      }
-      if (effectiveStatus === 'partially_ready') {
-        return 'bg-lime-50 border-lime-400';
-      }
-      if (effectiveStatus === 'preparing') {
-        return 'bg-yellow-50 border-yellow-400';
-      }
-      if (effectiveStatus === 'new') {
-        return 'bg-blue-50 border-blue-400';
-      }
-      return 'bg-orange-50 border-orange-300';
-    }
-    // Free table
-    return 'bg-white border-gray-200 hover:border-gray-400 hover:shadow-md';
   };
 
   // Handle creating order for a free table
@@ -378,235 +201,33 @@ export default function TablesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
         {tables?.map((table: any) => {
           const activeOrders = getActiveOrdersForTable(table.id);
-          const hasMultipleOrders = activeOrders.length > 1;
-          const activeOrder = activeOrders[0]; // First order for time display
           const activeCalls = getActiveCallsForTable(table.id);
-          const hasActiveCalls = activeCalls.length > 0;
-
-          // Calculate combined total for all orders
-          const combinedTotal = activeOrders.reduce((total: number, order: any) => {
-            return total + calculateOrderTotal(order);
-          }, 0);
-
-          // Calculate combined items count
-          const combinedItemsCount = activeOrders.reduce((count: number, order: any) => {
-            return count + (order.order_items?.length || 0);
-          }, 0);
 
           return (
-            <div
+            <TableCard
               key={table.id}
-              className={`
-                border-2 rounded-xl p-4 cursor-pointer transition-all relative shadow-sm
-                ${getTableCardStyle(table, activeOrders)}
-                ${hasActiveCalls ? 'ring-2 ring-red-500 ring-offset-2' : ''}
-              `}
-              onClick={() => {
-                if (creatingOrderForTable) return;
-                window.location.href = `/tables/${table.id}`;
+              table={table}
+              activeOrders={activeOrders}
+              activeCalls={activeCalls}
+              isAdmin={isAdmin}
+              creatingOrderForTable={creatingOrderForTable}
+              tableMenuOpen={tableMenuOpen}
+              onTableMenuToggle={setTableMenuOpen}
+              onEditTable={(t) => {
+                setEditingTable(t);
+                setIsTableModalOpen(true);
+                setTableMenuOpen(null);
               }}
-            >
-              {/* Admin actions menu */}
-              {isAdmin && (
-                <div className="absolute top-2 right-2" data-table-menu>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setTableMenuOpen(tableMenuOpen === table.id ? null : table.id);
-                    }}
-                    className="p-1.5 hover:bg-white/50 rounded-lg transition-colors"
-                  >
-                    <MoreVertical className="h-4 w-4 text-gray-500" />
-                  </button>
-
-                  {tableMenuOpen === table.id && (
-                    <div
-                      className="absolute right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 min-w-[120px]"
-                      data-table-menu
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingTable(table);
-                          setIsTableModalOpen(true);
-                          setTableMenuOpen(null);
-                        }}
-                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteTable(table);
-                          setTableMenuOpen(null);
-                        }}
-                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 text-red-600 flex items-center gap-2"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Table Header */}
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
-                    {table.table_number}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        table.status === 'free'
-                          ? 'bg-gray-100 text-gray-600'
-                          : table.status === 'occupied'
-                            ? 'bg-orange-100 text-orange-700'
-                            : table.status === 'reserved'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-gray-200 text-gray-600'
-                      }`}
-                    >
-                      {table.status.charAt(0).toUpperCase() + table.status.slice(1)}
-                    </span>
-                    {table.location && (
-                      <span className="text-xs text-gray-500">{table.location}</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    {table.capacity} {t('tables.seats')}
-                  </p>
-                </div>
-                {hasActiveCalls && (
-                  <div className="bg-red-500 text-white p-2 rounded-full animate-bounce">
-                    <AlertCircle className="h-5 w-5" />
-                  </div>
-                )}
-              </div>
-
-              {/* Active Order Info */}
-              {activeOrders.length > 0 && (
-                <div className="space-y-3 border-t border-gray-200/50 pt-3 mt-3">
-                  {/* Multiple Orders Indicator */}
-                  {hasMultipleOrders && (
-                    <div className="bg-amber-100 border border-amber-300 rounded-lg px-3 py-1.5 text-sm font-medium text-amber-800 flex items-center gap-2">
-                      <Package className="h-4 w-4" />
-                      {activeOrders.length} {t('tables.ordersOnTable')}
-                    </div>
-                  )}
-
-                  {/* Order Status Badges */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {activeOrders.map((order: any, index: number) => {
-                      const orderEffectiveStatus = getEffectiveOrderStatus(order);
-                      const orderStatusBadge = getOrderStatusBadge(orderEffectiveStatus);
-                      return (
-                        <div
-                          key={order.id}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold border ${orderStatusBadge.bg} ${orderStatusBadge.text} ${orderStatusBadge.border}`}
-                        >
-                          {orderStatusBadge.icon}
-                          {hasMultipleOrders
-                            ? `#${index + 1} ${orderStatusBadge.label}`
-                            : orderStatusBadge.label}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Order Details Grid */}
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      <span>{formatDuration((activeOrder as any).created_at)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Package className="h-4 w-4 text-gray-400" />
-                      <span>
-                        {combinedItemsCount} {t('tables.items')}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Total */}
-                  <div className="flex items-center justify-between bg-white/60 rounded-lg px-3 py-2">
-                    <span className="text-sm text-gray-600">
-                      {hasMultipleOrders ? t('tables.combinedTotal') : t('total', { ns: 'common' })}
-                    </span>
-                    <span className="text-lg font-bold text-gray-800">
-                      {formatPrice(combinedTotal)}
-                    </span>
-                  </div>
-
-                  {/* Individual Order Totals (if multiple) */}
-                  {hasMultipleOrders && (
-                    <div className="text-xs text-gray-500 space-y-0.5">
-                      {activeOrders.map((order: any, index: number) => (
-                        <div key={order.id} className="flex justify-between">
-                          <span>Order #{index + 1}</span>
-                          <span>{formatPrice(calculateOrderTotal(order))}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Order Taken By */}
-                  {(activeOrder as any).assigned_waiter && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <UserCheck className="h-4 w-4 text-green-500" />
-                      <span>Taken by: {(activeOrder as any).assigned_waiter.full_name}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Waiter Calls */}
-              {activeCalls.map((call: any) => (
-                <div key={call.id} className="mt-3 p-3 bg-red-100 border border-red-300 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-red-600" />
-                    <span className="font-semibold text-red-700 text-sm">
-                      {call.reason.toUpperCase()}
-                    </span>
-                  </div>
-                  {call.message && <p className="text-red-600 text-sm mt-1">{call.message}</p>}
-                </div>
-              ))}
-
-              {/* Actions */}
-              {creatingOrderForTable === table.id ? (
-                <div className="flex items-center justify-center gap-2 mt-4 text-blue-600">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">Creating order...</span>
-                </div>
-              ) : table.status === 'occupied' ? (
-                <div className="flex gap-2 mt-4">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedTable(table);
-                      setIsTransferModalOpen(true);
-                    }}
-                    className="flex-1"
-                  >
-                    {t('tables.transfer')}
-                  </Button>
-                </div>
-              ) : (
-                table.status === 'free' && (
-                  <div className="mt-4 pt-3 border-t border-gray-200">
-                    <p className="text-sm text-gray-500 text-center">{t('tables.clickToView')}</p>
-                  </div>
-                )
-              )}
-            </div>
+              onDeleteTable={(t) => {
+                handleDeleteTable(t);
+                setTableMenuOpen(null);
+              }}
+              onTransferTable={(t) => {
+                setSelectedTable(t);
+                setIsTransferModalOpen(true);
+              }}
+              formatPrice={formatPrice}
+            />
           );
         })}
       </div>

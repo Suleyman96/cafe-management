@@ -5,6 +5,7 @@
 import { QUERY_KEYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateTasks, refetchTasks } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
@@ -66,12 +67,10 @@ export function useCreateTask() {
   return useMutation({
     mutationFn: (data: TaskInsert) => db.tasks.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT] });
+      invalidateTasks(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.TASKS] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT] });
+      refetchTasks(queryClient);
     },
   });
 }
@@ -83,12 +82,10 @@ export function useUpdateTask() {
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Task> }) =>
       db.tasks.update(id, updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT] });
+      invalidateTasks(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.TASKS] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT] });
+      refetchTasks(queryClient);
     },
   });
 }
@@ -99,12 +96,10 @@ export function useDeleteTask() {
   return useMutation({
     mutationFn: (id: string) => db.tasks.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT] });
+      invalidateTasks(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.TASKS] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT] });
+      refetchTasks(queryClient);
     },
   });
 }
@@ -129,12 +124,10 @@ export function useMarkTaskCompleted() {
   return useMutation({
     mutationFn: (id: string) => db.tasks.markCompleted(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT] });
+      invalidateTasks(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.TASKS] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT] });
+      refetchTasks(queryClient);
     },
   });
 }
@@ -145,12 +138,10 @@ export function useMarkTaskCancelled() {
   return useMutation({
     mutationFn: (id: string) => db.tasks.markCancelled(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT] });
+      invalidateTasks(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.TASKS] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT] });
+      refetchTasks(queryClient);
     },
   });
 }
@@ -161,8 +152,7 @@ export function useGenerateRecurringTasks() {
   return useMutation({
     mutationFn: (date: string) => db.tasks.generateRecurringTasks(date),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT] });
+      invalidateTasks(queryClient);
     },
   });
 }

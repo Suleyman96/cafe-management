@@ -159,7 +159,7 @@ export default function SchedulesScreen() {
           <TextInput
             label="Start Time (HH:MM)"
             value={newSchedule.planned_start}
-            onChangeText={(v) => setNewSchedule({ ...newSchedule, planned_start: v })}
+            onChangeText={(v: string) => setNewSchedule({ ...newSchedule, planned_start: v })}
             mode="outlined"
             dense
             style={styles.input}
@@ -167,7 +167,7 @@ export default function SchedulesScreen() {
           <TextInput
             label="End Time (HH:MM)"
             value={newSchedule.planned_end}
-            onChangeText={(v) => setNewSchedule({ ...newSchedule, planned_end: v })}
+            onChangeText={(v: string) => setNewSchedule({ ...newSchedule, planned_end: v })}
             mode="outlined"
             dense
             style={styles.input}
@@ -175,7 +175,7 @@ export default function SchedulesScreen() {
           <TextInput
             label="Notes (optional)"
             value={newSchedule.notes}
-            onChangeText={(v) => setNewSchedule({ ...newSchedule, notes: v })}
+            onChangeText={(v: string) => setNewSchedule({ ...newSchedule, notes: v })}
             mode="outlined"
             dense
             multiline

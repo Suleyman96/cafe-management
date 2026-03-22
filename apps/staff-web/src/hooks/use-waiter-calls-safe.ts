@@ -6,6 +6,7 @@
 import { QUERY_KEYS, REFRESH_INTERVALS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateWaiterCalls } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type WaiterCallStatus = Database['public']['Tables']['waiter_calls']['Row']['status'];
@@ -33,8 +34,7 @@ export function useAcknowledgeWaiterCall() {
     mutationFn: ({ callId, staffId }: { callId: string; staffId: string }) =>
       db.waiterCalls.acknowledge(callId, staffId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
-      queryClient.invalidateQueries({ queryKey: ['waiter-calls-count'] });
+      invalidateWaiterCalls(queryClient);
     },
   });
 }
@@ -46,8 +46,7 @@ export function useResolveWaiterCall() {
     mutationFn: ({ callId, notes }: { callId: string; notes?: string }) =>
       db.waiterCalls.resolve(callId, notes),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
-      queryClient.invalidateQueries({ queryKey: ['waiter-calls-count'] });
+      invalidateWaiterCalls(queryClient);
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
     },
   });

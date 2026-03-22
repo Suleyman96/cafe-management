@@ -4,6 +4,7 @@ import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase/client';
 
 type StaffRole = 'waiter' | 'admin' | 'kitchen' | 'owner';
 
@@ -29,9 +30,16 @@ export function StaffCreateModal({ currentUserRole, onClose, onSuccess }: StaffC
     setLoading(true);
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       const response = await fetch('/api/staff', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token && { Authorization: `Bearer ${session.access_token}` }),
+        },
         body: JSON.stringify({
           email,
           password,

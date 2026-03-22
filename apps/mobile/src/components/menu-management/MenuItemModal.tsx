@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Chip, Modal, Portal, Switch, Text, TextInput } from 'react-native-paper';
+import { Button, Chip, Modal, Portal, Switch, Text } from 'react-native-paper';
+import { TextInput } from '@/lib/paper-compat';
 
 interface MenuItemModalProps {
   visible: boolean;
@@ -90,7 +91,7 @@ export function MenuItemModal({
           <TextInput
             label="Name"
             value={form.name}
-            onChangeText={(v) => setForm({ ...form, name: v })}
+            onChangeText={(v: string) => setForm({ ...form, name: v })}
             mode="outlined"
             dense
             style={styles.input}
@@ -98,7 +99,7 @@ export function MenuItemModal({
           <TextInput
             label="Description"
             value={form.description}
-            onChangeText={(v) => setForm({ ...form, description: v })}
+            onChangeText={(v: string) => setForm({ ...form, description: v })}
             mode="outlined"
             dense
             multiline
@@ -107,7 +108,7 @@ export function MenuItemModal({
           <TextInput
             label="Price"
             value={form.price}
-            onChangeText={(v) => setForm({ ...form, price: v })}
+            onChangeText={(v: string) => setForm({ ...form, price: v })}
             mode="outlined"
             keyboardType="decimal-pad"
             left={<TextInput.Affix text={currencySymbol} />}
@@ -117,7 +118,7 @@ export function MenuItemModal({
           <TextInput
             label="Prep Time (min)"
             value={form.preparation_time}
-            onChangeText={(v) => setForm({ ...form, preparation_time: v })}
+            onChangeText={(v: string) => setForm({ ...form, preparation_time: v })}
             mode="outlined"
             keyboardType="number-pad"
             dense
@@ -160,7 +161,10 @@ export function MenuItemModal({
           ).map((key) => (
             <View key={key} style={styles.switchRow}>
               <Text variant="bodyMedium">{key.replace(/^is_/, '').replace(/_/g, ' ')}</Text>
-              <Switch value={form[key]} onValueChange={(v) => setForm({ ...form, [key]: v })} />
+              <Switch
+                value={form[key]}
+                onValueChange={(v: boolean) => setForm({ ...form, [key]: v })}
+              />
             </View>
           ))}
 

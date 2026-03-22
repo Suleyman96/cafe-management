@@ -5,8 +5,8 @@ import { Clock, Flame, Leaf, Plus, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { formatPrice as formatPriceWithSettings, useCafeSettings } from '@/hooks/use-settings';
-import { formatPrice } from '@/lib/utils';
+import { useFormatPrice } from '@/hooks/use-format-price';
+import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
 import { useCartStore } from '@/store/cart-store';
 import { useLanguageStore } from '@/store/language-store';
 import { getLocalizedField, type MenuItemWithCategory } from '@/types';
@@ -22,21 +22,14 @@ export function MenuItemCard({ item, accentColor, priority = false }: MenuItemCa
   const { t } = useTranslation('customer');
   const addItem = useCartStore((state) => state.addItem);
   const [showModal, setShowModal] = useState(false);
-  const { data: settings } = useCafeSettings();
   const { language } = useLanguageStore();
+  const formatPrice = useFormatPrice();
+  const taxMultiplier = useTaxMultiplier();
 
   const name = getLocalizedField(item, 'name', language);
   const description = getLocalizedField(item, 'description', language);
 
-  const taxMultiplier =
-    settings?.tax_enabled && settings.tax_percentage > 0 ? 1 + settings.tax_percentage / 100 : 1;
-
-  const displayPrice = (amount: number) => {
-    if (settings) {
-      return formatPriceWithSettings(amount * taxMultiplier, settings);
-    }
-    return formatPrice(amount * taxMultiplier);
-  };
+  const displayPrice = (amount: number) => formatPrice(amount * taxMultiplier);
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();

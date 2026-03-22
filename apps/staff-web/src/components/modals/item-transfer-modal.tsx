@@ -5,13 +5,9 @@ import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { ArrowRight, Loader2, Minus, Plus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import {
-  formatPriceWithSettings,
-  useCafeSettings,
-  useTables,
-  useTransferOrderItems,
-} from '@/hooks';
+import { useTables, useTransferOrderItems } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
+import { useFormatPrice } from '@/hooks/use-format-price';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'];
 
@@ -34,20 +30,13 @@ export function ItemTransferModal({
   const { staff } = useAuth();
   const { data: tables } = useTables();
   const transferItems = useTransferOrderItems();
-  const { data: cafeSettings } = useCafeSettings();
+  const formatPrice = useFormatPrice();
 
   const [selectedTableId, setSelectedTableId] = useState<string>('');
   const [reason, setReason] = useState<string>('');
   const [loading, setLoading] = useState(false);
   // Map of itemId → quantity to transfer
   const [itemQuantities, setItemQuantities] = useState<Map<string, number>>(new Map());
-
-  const formatPrice = (amount: number) => {
-    if (cafeSettings) {
-      return formatPriceWithSettings(amount, cafeSettings);
-    }
-    return `$${amount.toFixed(2)}`;
-  };
 
   // Filter out cancelled items
   const transferableItems: OrderItem[] = useMemo(() => {

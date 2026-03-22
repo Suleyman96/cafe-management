@@ -1,6 +1,7 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { QUERY_KEYS } from '@/lib/query-keys';
 import { db, supabase } from '@/lib/supabase';
 import type { Order, OrderItem, OrderWithItems } from '@/types';
 
@@ -8,7 +9,7 @@ export function useDeliveryOrder(orderId: string) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['delivery_order', orderId],
+    queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderId],
     queryFn: async () => {
       const data = await db.orders.findDeliveryById(orderId);
       return data as (OrderWithItems & { delivery_person?: { full_name: string } }) | null;
@@ -35,7 +36,7 @@ export function useDeliveryOrder(orderId: string) {
             filter: `id=eq.${orderId}`,
           },
           () => {
-            queryClient.invalidateQueries({ queryKey: ['delivery_order', orderId] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderId] });
           },
         )
         .on(
@@ -47,7 +48,7 @@ export function useDeliveryOrder(orderId: string) {
             filter: `order_id=eq.${orderId}`,
           },
           () => {
-            queryClient.invalidateQueries({ queryKey: ['delivery_order', orderId] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderId] });
           },
         )
         .subscribe();
@@ -95,7 +96,7 @@ export function useCreateDeliveryOrder() {
       return order as Order;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['delivery_order'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER] });
     },
   });
 }
@@ -127,7 +128,7 @@ export function useAddDeliveryOrderItems() {
       return data as OrderItem[];
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['delivery_order'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER] });
     },
   });
 }

@@ -4,7 +4,8 @@ import type { MenuItem } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { useState } from 'react';
-import { formatPriceWithSettings, useCafeSettings } from '@/hooks';
+import { useCafeSettings } from '@/hooks';
+import { useFormatPrice } from '@/hooks/use-format-price';
 import { supabase } from '@/lib/supabase/client';
 
 interface CreateTakeoutModalProps {
@@ -36,6 +37,7 @@ export function CreateTakeoutModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: cafeSettings } = useCafeSettings();
+  const formatPrice = useFormatPrice();
 
   // Filter menu items by search
   const filteredItems = menuItems.filter((item) =>
@@ -166,16 +168,6 @@ export function CreateTakeoutModal({
   if (!isOpen) return null;
 
   const { subtotal, tax, total } = calculateTotal();
-
-  const formatPrice = (price: number) => {
-    if (cafeSettings) {
-      return formatPriceWithSettings(price, cafeSettings);
-    }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'AZN',
-    }).format(price);
-  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

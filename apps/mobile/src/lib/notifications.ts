@@ -6,7 +6,8 @@ import { Platform } from 'react-native';
 // Configure notification behavior
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -33,6 +34,19 @@ export async function registerForPushNotifications() {
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId;
 
+  // Skip push token registration in development (no valid EAS project)
+  if (!projectId || projectId === 'your-project-id') {
+    if (Platform.OS === 'android') {
+      Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      });
+    }
+    return null;
+  }
+
   try {
     const pushToken = await Notifications.getExpoPushTokenAsync({
       projectId,
@@ -48,8 +62,8 @@ export async function registerForPushNotifications() {
     }
 
     return pushToken.data;
-  } catch (error) {
-    console.error('Error getting push token:', error);
+  } catch {
+    // Push notifications not available in Expo Go — local notifications still work
     return null;
   }
 }

@@ -5,19 +5,18 @@ import { useTranslation } from '@cafe-idare/i18n';
 import { LoadingSpinner } from '@cafe-idare/ui';
 import { DollarSign, FolderOpen, Pencil, Plus, Settings, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { ExpenseCategoryModal } from '@/components/modals/expense-category-modal';
 import { ExpenseModal } from '@/components/modals/expense-modal';
 import { Button } from '@/components/ui/button';
 import {
-  formatPriceWithSettings,
   useAuth,
-  useCafeSettings,
   useDeleteExpense,
   useExpenseCategories,
   useExpenseMonthlySummary,
   useExpenses,
 } from '@/hooks';
+import { useFormatPrice } from '@/hooks/use-format-price';
 
 type Expense = Database['public']['Tables']['expenses']['Row'];
 
@@ -53,15 +52,8 @@ export default function ExpensesPage() {
   });
   const { data: categories = [] } = useExpenseCategories();
   const { data: summary } = useExpenseMonthlySummary(selectedYear, selectedMonth);
-  const { data: cafeSettings } = useCafeSettings();
+  const formatPrice = useFormatPrice();
   const deleteExpense = useDeleteExpense();
-
-  const formatPrice = (amount: number) => {
-    if (cafeSettings) {
-      return formatPriceWithSettings(amount, cafeSettings);
-    }
-    return `$${amount.toFixed(2)}`;
-  };
 
   // Redirect if not admin
   if (staff && staff.role !== 'admin' && staff.role !== 'owner') {

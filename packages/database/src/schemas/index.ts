@@ -7,6 +7,7 @@ import { z } from 'zod';
 // Order schemas
 export const OrderStatusSchema = z.enum([
   'new',
+  'pending_approval',
   'preparing',
   'ready',
   'served',

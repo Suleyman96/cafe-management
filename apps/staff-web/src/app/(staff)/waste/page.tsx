@@ -5,16 +5,11 @@ import { useTranslation } from '@cafe-idare/i18n';
 import { LoadingSpinner } from '@cafe-idare/ui';
 import { DollarSign, Pencil, Plus, Trash2, TrendingDown } from 'lucide-react';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { WasteLogModal } from '@/components/modals/waste-log-modal';
 import { Button } from '@/components/ui/button';
-import {
-  formatPriceWithSettings,
-  useCafeSettings,
-  useDeleteWasteLog,
-  useWasteLogs,
-  useWasteMonthlySummary,
-} from '@/hooks';
+import { useCafeSettings, useDeleteWasteLog, useWasteLogs, useWasteMonthlySummary } from '@/hooks';
+import { useFormatPrice } from '@/hooks/use-format-price';
 
 type WasteLog = Database['public']['Tables']['waste_logs']['Row'];
 
@@ -58,15 +53,9 @@ export default function WastePage() {
     reason: reasonFilter || undefined,
   });
   const { data: summary } = useWasteMonthlySummary(selectedYear, selectedMonth);
+  const formatPrice = useFormatPrice();
   const { data: cafeSettings } = useCafeSettings();
   const deleteWaste = useDeleteWasteLog();
-
-  const formatPrice = (amount: number) => {
-    if (cafeSettings) {
-      return formatPriceWithSettings(amount, cafeSettings);
-    }
-    return `$${amount.toFixed(2)}`;
-  };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this waste log?')) return;

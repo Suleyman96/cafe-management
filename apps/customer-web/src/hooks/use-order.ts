@@ -1,6 +1,7 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { QUERY_KEYS } from '@/lib/query-keys';
 import { db, supabase } from '@/lib/supabase';
 import type { Order, OrderItem, OrderWithItems } from '@/types';
 
@@ -8,7 +9,7 @@ export function useOrder(tableId: string) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['order', tableId],
+    queryKey: [QUERY_KEYS.ORDER, tableId],
     queryFn: async () => {
       const data = await db.orders.findActiveByTable(tableId);
       return data as OrderWithItems | null;
@@ -33,7 +34,7 @@ export function useOrder(tableId: string) {
             filter: `table_id=eq.${tableId}`,
           },
           () => {
-            queryClient.invalidateQueries({ queryKey: ['order', tableId] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, tableId] });
           },
         )
         .on(
@@ -44,7 +45,7 @@ export function useOrder(tableId: string) {
             table: 'order_items',
           },
           () => {
-            queryClient.invalidateQueries({ queryKey: ['order', tableId] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, tableId] });
           },
         )
         .subscribe();
@@ -79,7 +80,7 @@ export function useCreateOrder() {
       return data as Order;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['order', variables.tableId] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.tableId] });
     },
   });
 }
@@ -92,7 +93,7 @@ export function useCancelOrder() {
       return db.orders.cancelOrder(orderId, 'Cancelled by customer', tableId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['order'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
     },
   });
 }
@@ -105,7 +106,7 @@ export function useCancelOrderItem() {
       return db.orderItems.cancel(itemId, cancelQty);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['order'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
     },
   });
 }
@@ -137,7 +138,7 @@ export function useAddOrderItems() {
       return data as OrderItem[];
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['order'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
     },
   });
 }

@@ -5,6 +5,7 @@
 import { QUERY_KEYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateExpenses, refetchExpenses } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type Expense = Database['public']['Tables']['expenses']['Row'];
@@ -37,12 +38,10 @@ export function useCreateExpense() {
   return useMutation({
     mutationFn: (data: ExpenseInsert) => db.expenses.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
+      invalidateExpenses(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
+      refetchExpenses(queryClient);
     },
   });
 }
@@ -54,12 +53,10 @@ export function useUpdateExpense() {
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Expense> }) =>
       db.expenses.update(id, updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
+      invalidateExpenses(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
+      refetchExpenses(queryClient);
     },
   });
 }
@@ -70,12 +67,10 @@ export function useDeleteExpense() {
   return useMutation({
     mutationFn: (id: string) => db.expenses.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
+      invalidateExpenses(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
+      refetchExpenses(queryClient);
     },
   });
 }

@@ -2,10 +2,11 @@ import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, Divider, RadioButton, Text, TextInput } from 'react-native-paper';
+import { Button, Card, Divider, RadioButton, Text } from 'react-native-paper';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useCreatePayment, useOrder, useOrderPayments, useUpdateOrderStatus } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 import type { OrdersStackParamList } from '@/types';
 

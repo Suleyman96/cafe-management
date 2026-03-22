@@ -4,6 +4,7 @@ import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase/client';
 
 interface StaffResetPasswordModalProps {
   staffId: string;
@@ -39,9 +40,16 @@ export function StaffResetPasswordModal({
     setLoading(true);
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       const response = await fetch('/api/staff/reset-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token && { Authorization: `Bearer ${session.access_token}` }),
+        },
         body: JSON.stringify({ staffId, newPassword }),
       });
 

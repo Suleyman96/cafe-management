@@ -23,14 +23,13 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateDeliveryModal } from '@/components/modals/create-delivery-modal';
 import {
-  formatPriceWithSettings,
-  useCafeSettings,
   useCancelOrder,
   useDeliveryOrders,
   useMarkDelivered,
   useMarkOutForDelivery,
   useUpdateOrderStatus,
 } from '@/hooks';
+import { useFormatPrice } from '@/hooks/use-format-price';
 import { supabase } from '@/lib/supabase/client';
 
 type DeliveryStatus =
@@ -49,14 +48,7 @@ export default function DeliveryPage() {
   const markOutForDelivery = useMarkOutForDelivery();
   const markDelivered = useMarkDelivered();
   const cancelOrderMutation = useCancelOrder();
-  const { data: cafeSettings } = useCafeSettings();
-
-  const formatPrice = (amount: number) => {
-    if (cafeSettings) {
-      return formatPriceWithSettings(amount, cafeSettings);
-    }
-    return `$${amount.toFixed(2)}`;
-  };
+  const formatPrice = useFormatPrice();
 
   const [statusFilter, setStatusFilter] = useState<DeliveryStatus | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');

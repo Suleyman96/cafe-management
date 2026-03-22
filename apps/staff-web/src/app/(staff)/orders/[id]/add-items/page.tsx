@@ -8,7 +8,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  formatPriceWithSettings,
   useAddOrderItems,
   useCafeSettings,
   useCategories,
@@ -16,6 +15,7 @@ import {
   useOrder,
   useUpdateOrderNotes,
 } from '@/hooks';
+import { useFormatPrice } from '@/hooks/use-format-price';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -37,13 +37,7 @@ export default function AddItemsPage() {
   const addOrderItems = useAddOrderItems();
   const updateOrderNotes = useUpdateOrderNotes();
   const { data: cafeSettings } = useCafeSettings();
-
-  const formatPrice = (amount: number) => {
-    if (cafeSettings) {
-      return formatPriceWithSettings(amount, cafeSettings);
-    }
-    return `$${amount.toFixed(2)}`;
-  };
+  const formatPrice = useFormatPrice();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);

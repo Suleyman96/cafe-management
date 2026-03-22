@@ -5,8 +5,9 @@ import { AlertCircle, Flame, Leaf, Minus, Plus, Star, X } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { formatPrice as formatPriceWithSettings, useCafeSettings } from '@/hooks/use-settings';
-import { formatPrice } from '@/lib/utils';
+import { useFormatPrice } from '@/hooks/use-format-price';
+import { useCafeSettings } from '@/hooks/use-settings';
+import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
 import { useCartStore } from '@/store/cart-store';
 import { useLanguageStore } from '@/store/language-store';
 import { getLocalizedField, type MenuItemWithCategory } from '@/types';
@@ -29,15 +30,10 @@ export function MenuItemModal({ item, isOpen, onClose, accentColor }: MenuItemMo
   const name = getLocalizedField(item, 'name', language);
   const description = getLocalizedField(item, 'description', language);
 
-  const taxMultiplier =
-    settings?.tax_enabled && settings.tax_percentage > 0 ? 1 + settings.tax_percentage / 100 : 1;
+  const formatPrice = useFormatPrice();
+  const taxMultiplier = useTaxMultiplier();
 
-  const displayPrice = (amount: number) => {
-    if (settings) {
-      return formatPriceWithSettings(amount * taxMultiplier, settings);
-    }
-    return formatPrice(amount * taxMultiplier);
-  };
+  const displayPrice = (amount: number) => formatPrice(amount * taxMultiplier);
 
   const handleAdd = () => {
     addItem(item, quantity, notes);

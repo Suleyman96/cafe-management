@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, FAB, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { Button, Card, Chip, FAB, Modal, Portal, Text } from 'react-native-paper';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { WasteLogCard } from '@/components/waste/WasteLogCard';
 import {
@@ -11,6 +11,7 @@ import {
   useWasteMonthlySummary,
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 
 const REASONS = [
@@ -204,7 +205,7 @@ export default function WasteListScreen() {
           <TextInput
             label="Quantity"
             value={newItem.quantity}
-            onChangeText={(v) => setNewItem({ ...newItem, quantity: v })}
+            onChangeText={(v: string) => setNewItem({ ...newItem, quantity: v })}
             mode="outlined"
             keyboardType="decimal-pad"
             dense
@@ -213,7 +214,7 @@ export default function WasteListScreen() {
           <TextInput
             label="Unit"
             value={newItem.unit}
-            onChangeText={(v) => setNewItem({ ...newItem, unit: v })}
+            onChangeText={(v: string) => setNewItem({ ...newItem, unit: v })}
             mode="outlined"
             dense
             style={styles.input}
@@ -221,7 +222,7 @@ export default function WasteListScreen() {
           <TextInput
             label="Cost"
             value={newItem.cost}
-            onChangeText={(v) => setNewItem({ ...newItem, cost: v })}
+            onChangeText={(v: string) => setNewItem({ ...newItem, cost: v })}
             mode="outlined"
             keyboardType="decimal-pad"
             left={<TextInput.Affix text={currencySymbol} />}
@@ -244,7 +245,7 @@ export default function WasteListScreen() {
           <TextInput
             label="Notes (optional)"
             value={newItem.notes}
-            onChangeText={(v) => setNewItem({ ...newItem, notes: v })}
+            onChangeText={(v: string) => setNewItem({ ...newItem, notes: v })}
             mode="outlined"
             multiline
             dense

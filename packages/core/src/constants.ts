@@ -189,6 +189,35 @@ export const TASK_RECURRENCE = {
   MONTHLY: 'monthly',
 } as const;
 
+// 30-minute interval time slots (00:00 to 23:30)
+export const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const hours = String(Math.floor(i / 2)).padStart(2, '0');
+  const minutes = i % 2 === 0 ? '00' : '30';
+  return `${hours}:${minutes}`;
+});
+
+// Weekdays with Sunday=0 (matches JS Date.getDay())
+export const DAYS_OF_WEEK = [
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+  { value: 0, label: 'Sun' },
+] as const;
+
+// Weekdays with Sunday=7 (1-7 numbering for recurrence)
+export const WEEKDAYS = [
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+  { value: 7, label: 'Sun' },
+] as const;
+
 // UI constants
 export const UI = {
   MIN_TOUCH_TARGET: 44, // 44x44px minimum

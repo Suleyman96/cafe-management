@@ -43,6 +43,12 @@ const config: Config = {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        glass: {
+          subtle: 'rgba(255,255,255,0.04)',
+          border: 'rgba(255,255,255,0.06)',
+          light: 'rgba(255,255,255,0.08)',
+          medium: 'rgba(255,255,255,0.1)',
+        },
         status: {
           new: 'hsl(0, 84%, 60%)', // Red
           preparing: 'hsl(45, 93%, 47%)', // Orange

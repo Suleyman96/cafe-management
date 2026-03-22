@@ -3,7 +3,7 @@
 import type { Database } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   useAdjustStock,

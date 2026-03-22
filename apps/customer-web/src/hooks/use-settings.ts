@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { QUERY_KEYS, STALE_TIMES } from '@/lib/query-keys';
 import { db } from '@/lib/supabase';
 
 export interface CafeSettings {
@@ -92,7 +93,7 @@ const DEFAULT_SETTINGS: CafeSettings = {
 
 export function useCafeSettings() {
   return useQuery({
-    queryKey: ['cafe_settings'],
+    queryKey: [QUERY_KEYS.CAFE_SETTINGS],
     queryFn: async () => {
       try {
         const data = await db.settings.get();
@@ -102,7 +103,7 @@ export function useCafeSettings() {
         return DEFAULT_SETTINGS;
       }
     },
-    staleTime: 1000 * 60 * 5, // Consider fresh for 5 minutes
+    staleTime: STALE_TIMES.MEDIUM,
     placeholderData: DEFAULT_SETTINGS,
   });
 }

@@ -19,7 +19,7 @@ import {
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { TaskModal } from '@/components/modals/task-modal';
 import { Button } from '@/components/ui/button';
 import {

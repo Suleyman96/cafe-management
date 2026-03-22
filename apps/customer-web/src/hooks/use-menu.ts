@@ -1,21 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
+import { QUERY_KEYS, STALE_TIMES } from '@/lib/query-keys';
 import { db } from '@/lib/supabase';
 import type { Category, MenuItemWithCategory } from '@/types';
 
 export function useCategories() {
   return useQuery({
-    queryKey: ['categories'],
+    queryKey: [QUERY_KEYS.CATEGORIES],
     queryFn: async () => {
       const data = await db.categories.findAll({ isActive: true });
       return data as Category[];
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: STALE_TIMES.MEDIUM,
   });
 }
 
 export function useMenuItems(categoryId?: string) {
   return useQuery({
-    queryKey: ['menu_items', categoryId],
+    queryKey: [QUERY_KEYS.MENU_ITEMS, categoryId],
     queryFn: async () => {
       const data = await db.menuItems.findAll({
         categoryId,
@@ -23,17 +24,17 @@ export function useMenuItems(categoryId?: string) {
       });
       return data as MenuItemWithCategory[];
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: STALE_TIMES.MEDIUM,
   });
 }
 
 export function useMenuItem(itemId: string) {
   return useQuery({
-    queryKey: ['menu_item', itemId],
+    queryKey: [QUERY_KEYS.MENU_ITEM, itemId],
     queryFn: async () => {
       const data = await db.menuItems.findById(itemId);
       return data as MenuItemWithCategory;
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: STALE_TIMES.MEDIUM,
   });
 }

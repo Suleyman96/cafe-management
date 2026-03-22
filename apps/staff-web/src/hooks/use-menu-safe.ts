@@ -6,6 +6,7 @@
 import { QUERY_KEYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateMenuAndCategories } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
@@ -109,8 +110,7 @@ export function useUpdateCategory() {
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Category> }) =>
       db.categories.update(id, updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
+      invalidateMenuAndCategories(queryClient);
     },
   });
 }
@@ -121,8 +121,7 @@ export function useDeleteCategory() {
   return useMutation({
     mutationFn: (id: string) => db.categories.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
+      invalidateMenuAndCategories(queryClient);
     },
   });
 }
