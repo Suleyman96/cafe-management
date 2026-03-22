@@ -13,10 +13,7 @@ const nextConfig = {
       },
     ],
   },
-  // Enable React strict mode for better development experience
   reactStrictMode: true,
-  // Enable SWC minification for faster builds
-  swcMinify: true,
   // Important: transpile workspace packages
   transpilePackages: [
     '@cafe-idare/api-client',

@@ -128,7 +128,8 @@ export function useAddOrderItems() {
         items.map((item) => ({
           order_id: orderId,
           ...item,
-          status: 'pending',
+          notes: item.notes ?? null,
+          status: 'pending' as const,
         })),
       ),
     onSuccess: () => {

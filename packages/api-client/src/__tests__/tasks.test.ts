@@ -78,6 +78,7 @@ describe('TasksWrapper', () => {
     const result = await tasks.create({
       title: 'Clean coffee machine',
       description: 'Deep clean the espresso machine',
+      category_id: null,
       priority: 'normal',
       status: 'pending',
       assigned_to: validTask.assigned_to,

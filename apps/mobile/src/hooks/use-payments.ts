@@ -33,6 +33,7 @@ export function useCreatePayment() {
         payment_type: payment.payment_type ?? 'full',
         tip_amount: payment.tip_amount ?? 0,
         order_item_ids: payment.order_item_ids ?? null,
+        notes: payment.notes ?? null,
       });
     },
     onSuccess: (_data, variables) => {

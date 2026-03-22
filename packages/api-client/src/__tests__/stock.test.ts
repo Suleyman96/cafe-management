@@ -39,7 +39,7 @@ describe('StockItemsWrapper', () => {
       },
     });
     const stock = createStockItemsWrapper(ctx);
-    const result = await stock.findAll({ lowStockOnly: true });
+    const result = (await stock.findAll({ lowStockOnly: true })) as any[];
     expect(result).toHaveLength(1);
     expect(result[0].quantity).toBe(5);
   });
@@ -146,7 +146,7 @@ describe('StockItemsWrapper', () => {
       },
     });
     const stock = createStockItemsWrapper(ctx);
-    const result = await stock.getMovements(validItem.id);
+    const result = (await stock.getMovements(validItem.id)) as any[];
     expect(result).toHaveLength(1);
     expect(result[0].movement_type).toBe('in');
   });
