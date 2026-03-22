@@ -280,7 +280,7 @@ export function isDeliveryOrder(value: unknown): boolean {
     typeof value === 'object' &&
     value !== null &&
     'order_type' in value &&
-    (value as any).order_type === 'delivery'
+    (value as Record<string, unknown>).order_type === 'delivery'
   );
 }
 

@@ -95,6 +95,15 @@ export function createStaffWrapper(ctx: WrapperContext) {
       if (!isStaffArray(waiters)) throw new Error('Invalid staff data');
       return waiters;
     },
+
+    updateLastLogin: async (staffId: string) => {
+      const { error } = await ctx.anyClient
+        .from('staff')
+        .update({ last_login_at: new Date().toISOString() })
+        .eq('id', staffId);
+
+      if (error) throw handleSupabaseError(error);
+    },
   };
 }
 

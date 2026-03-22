@@ -4,76 +4,6 @@
  */
 
 /**
- * Format price with currency symbol
- */
-export function formatPrice(amount: number, currency: string = '€'): string {
-  return `${currency}${amount.toFixed(2)}`;
-}
-
-/**
- * Calculate elapsed time in minutes
- */
-export function getElapsedMinutes(timestamp: string): number {
-  const now = Date.now();
-  const then = new Date(timestamp).getTime();
-  return Math.floor((now - then) / 1000 / 60);
-}
-
-/**
- * Format time ago (e.g., "5 min ago", "2 hours ago")
- */
-export function timeAgo(timestamp: string): string {
-  const minutes = getElapsedMinutes(timestamp);
-
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-
-  const days = Math.floor(hours / 24);
-  return `${days} day${days > 1 ? 's' : ''} ago`;
-}
-
-/**
- * Get status color name
- */
-export function getStatusColor(status: string): string {
-  switch (status) {
-    case 'new':
-      return 'red';
-    case 'preparing':
-      return 'yellow';
-    case 'ready':
-      return 'green';
-    case 'served':
-      return 'gray';
-    default:
-      return 'gray';
-  }
-}
-
-/**
- * Get status emoji
- */
-export function getStatusEmoji(status: string): string {
-  switch (status) {
-    case 'new':
-      return '🔴';
-    case 'preparing':
-      return '🟡';
-    case 'ready':
-      return '🟢';
-    case 'served':
-      return '⚪';
-    case 'closed':
-      return '⚫';
-    default:
-      return '⚪';
-  }
-}
-
-/**
  * Calculate tax amount
  */
 export function calculateTax(subtotal: number, taxRate: number = 0.18): number {
@@ -87,45 +17,57 @@ export function calculateTotal(subtotal: number, taxRate: number = 0.18): number
   return subtotal + calculateTax(subtotal, taxRate);
 }
 
-// Removed formatDate and formatTime to avoid duplicates with formatters.ts
+// ─── Settings-Aware Pricing Utilities ─────────────────────────────
 
-/**
- * Debounce function
- */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number,
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout>;
-
-  return function executedFunction(...args: Parameters<T>) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
+/** Narrow interface so callers can pass full CafeSettings or just pricing fields */
+export interface PricingSettings {
+  currency_symbol: string;
+  currency_position: 'before' | 'after';
+  currency_decimal_places: number;
+  tax_enabled: boolean;
+  tax_percentage: number;
+  prices_include_tax: boolean;
 }
 
 /**
- * Generate initials from full name
+ * Format price using cafe settings (currency symbol, position, decimals)
  */
-export function getInitials(fullName: string): string {
-  return fullName
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+export function formatPriceWithSettings(amount: number, settings: PricingSettings): string {
+  const formatted = amount.toFixed(settings.currency_decimal_places);
+  return settings.currency_position === 'before'
+    ? `${settings.currency_symbol}${formatted}`
+    : `${formatted}${settings.currency_symbol}`;
 }
 
-// Removed isValidEmail to avoid duplicates with validators.ts
+/**
+ * Calculate tax amount based on cafe settings
+ * Handles both tax-inclusive and tax-exclusive pricing
+ */
+export function calculateTaxWithSettings(subtotal: number, settings: PricingSettings): number {
+  if (!settings.tax_enabled) return 0;
+  if (settings.prices_include_tax) {
+    const rate = settings.tax_percentage / 100;
+    return subtotal - subtotal / (1 + rate);
+  }
+  return subtotal * (settings.tax_percentage / 100);
+}
 
 /**
- * Generate random ID (for optimistic updates)
+ * Calculate total with tax based on cafe settings
+ * If prices already include tax, returns subtotal unchanged
  */
-export function generateTempId(): string {
-  return `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+export function calculateTotalWithSettings(subtotal: number, settings: PricingSettings): number {
+  if (!settings.tax_enabled || settings.prices_include_tax) return subtotal;
+  return subtotal + calculateTaxWithSettings(subtotal, settings);
+}
+
+/**
+ * Get display subtotal (without tax) when prices include tax
+ */
+export function getDisplaySubtotal(subtotal: number, settings: PricingSettings): number {
+  if (settings.prices_include_tax) {
+    const rate = settings.tax_percentage / 100;
+    return subtotal / (1 + rate);
+  }
+  return subtotal;
 }
