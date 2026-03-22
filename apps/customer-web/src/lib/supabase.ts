@@ -29,5 +29,6 @@ export const db = createSupabaseWrapper(supabase);
  */
 export async function setTableContext(qrToken: string) {
   // Set session variable for RLS
-  await (supabase as any).rpc('set_table_context', { qr_token: qrToken });
+  // Supabase client can't resolve RPC arg types — typed in Database['public']['Functions']
+  await (supabase.rpc as Function)('set_table_context', { qr_token: qrToken });
 }

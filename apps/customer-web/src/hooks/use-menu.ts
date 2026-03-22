@@ -1,15 +1,13 @@
+import { QUERY_KEYS } from '@cafe-idare/core';
 import { useQuery } from '@tanstack/react-query';
-import { QUERY_KEYS, STALE_TIMES } from '@/lib/query-keys';
+import { STALE_TIMES } from '@/lib/query-keys';
 import { db } from '@/lib/supabase';
 import type { Category, MenuItemWithCategory } from '@/types';
 
 export function useCategories() {
   return useQuery({
     queryKey: [QUERY_KEYS.CATEGORIES],
-    queryFn: async () => {
-      const data = await db.categories.findAll({ isActive: true });
-      return data as Category[];
-    },
+    queryFn: async (): Promise<Category[]> => db.categories.findAll({ isActive: true }),
     staleTime: STALE_TIMES.MEDIUM,
   });
 }
@@ -17,13 +15,11 @@ export function useCategories() {
 export function useMenuItems(categoryId?: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.MENU_ITEMS, categoryId],
-    queryFn: async () => {
-      const data = await db.menuItems.findAll({
+    queryFn: async (): Promise<MenuItemWithCategory[]> =>
+      db.menuItems.findAll({
         categoryId,
         isAvailable: true,
-      });
-      return data as MenuItemWithCategory[];
-    },
+      }),
     staleTime: STALE_TIMES.MEDIUM,
   });
 }
@@ -31,10 +27,8 @@ export function useMenuItems(categoryId?: string) {
 export function useMenuItem(itemId: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.MENU_ITEM, itemId],
-    queryFn: async () => {
-      const data = await db.menuItems.findById(itemId);
-      return data as MenuItemWithCategory;
-    },
+    queryFn: async (): Promise<MenuItemWithCategory> =>
+      db.menuItems.findById(itemId) as Promise<MenuItemWithCategory>,
     staleTime: STALE_TIMES.MEDIUM,
   });
 }

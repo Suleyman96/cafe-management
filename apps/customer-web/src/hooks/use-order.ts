@@ -1,7 +1,8 @@
+import { QUERY_KEYS } from '@cafe-idare/core';
+import type { OrdersInsert } from '@cafe-idare/database';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { QUERY_KEYS } from '@/lib/query-keys';
 import { db, supabase } from '@/lib/supabase';
 import type { Order, OrderItem, OrderWithItems } from '@/types';
 
@@ -10,10 +11,7 @@ export function useOrder(tableId: string) {
 
   const query = useQuery({
     queryKey: [QUERY_KEYS.ORDER, tableId],
-    queryFn: async () => {
-      const data = await db.orders.findActiveByTable(tableId);
-      return data as OrderWithItems | null;
-    },
+    queryFn: async (): Promise<OrderWithItems | null> => db.orders.findActiveByTable(tableId),
     enabled: !!tableId,
     staleTime: 0,
   });
@@ -67,8 +65,8 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ tableId, notes }: { tableId: string; notes?: string }) => {
-      const data = await db.orders.create({
+    mutationFn: async ({ tableId, notes }: { tableId: string; notes?: string }): Promise<Order> =>
+      db.orders.create({
         table_id: tableId,
         customer_notes: notes,
         status: 'pending_approval',
@@ -76,9 +74,7 @@ export function useCreateOrder() {
         subtotal: 0,
         tax: 0,
         total: 0,
-      });
-      return data as Order;
-    },
+      } as Partial<OrdersInsert> as OrdersInsert),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.tableId] });
     },
@@ -127,16 +123,14 @@ export function useAddOrderItems() {
         quantity: number;
         notes?: string;
       }>;
-    }) => {
-      const data = await db.orderItems.create(
+    }): Promise<OrderItem[]> =>
+      db.orderItems.create(
         items.map((item) => ({
           order_id: orderId,
           ...item,
           status: 'pending',
         })),
-      );
-      return data as OrderItem[];
-    },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
     },

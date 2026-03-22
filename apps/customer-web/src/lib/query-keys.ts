@@ -1,18 +1,7 @@
 /**
- * Centralized query key constants for customer-web.
- * Single source of truth — prevents typo bugs and makes refactoring safe.
+ * Query configuration for customer-web.
+ * QUERY_KEYS are imported from @cafe-idare/core.
  */
-
-export const QUERY_KEYS = {
-  TABLE: 'table',
-  ORDER: 'order',
-  DELIVERY_ORDER: 'delivery_order',
-  CATEGORIES: 'categories',
-  MENU_ITEMS: 'menu_items',
-  MENU_ITEM: 'menu_item',
-  WAITER_CALLS: 'waiter_calls',
-  CAFE_SETTINGS: 'cafe_settings',
-} as const;
 
 /** Stale time presets (ms) */
 export const STALE_TIMES = {

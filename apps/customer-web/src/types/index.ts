@@ -19,6 +19,11 @@ export interface OrderWithItems extends Order {
   table: Pick<Table, 'table_number' | 'location'>;
 }
 
+export interface DeliveryOrderWithDetails extends Order {
+  order_items: OrderItem[];
+  delivery_person?: Pick<Staff, 'full_name'>;
+}
+
 export interface OrderItemWithMenuItem extends OrderItem {
   menu_item: MenuItem;
 }
@@ -34,7 +39,7 @@ export interface CartItem {
 // Currently DB has single-language fields (name, description),
 // so this returns the field directly with a fallback to empty string.
 export function getLocalizedField(
-  item: Record<string, any>,
+  item: { name?: string | null; description?: string | null },
   field: 'name' | 'description',
   _language?: string,
 ): string {
