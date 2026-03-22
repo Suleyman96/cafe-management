@@ -8,27 +8,28 @@ import type { Database } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
 
+type Staff = Database['public']['Tables']['staff']['Row'];
 type StaffInsert = Database['public']['Tables']['staff']['Insert'];
 type StaffUpdate = Database['public']['Tables']['staff']['Update'];
 
 export function useStaff(role?: keyof typeof USER_ROLE) {
   return useQuery({
     queryKey: [QUERY_KEYS.STAFF, role],
-    queryFn: () => db.staff.findAll(role ? USER_ROLE[role] : undefined),
+    queryFn: async (): Promise<Staff[]> => db.staff.findAll(role ? USER_ROLE[role] : undefined),
   });
 }
 
 export function useActiveWaiters() {
   return useQuery({
     queryKey: [QUERY_KEYS.STAFF, 'waiters'],
-    queryFn: () => db.staff.getActiveWaiters(),
+    queryFn: async (): Promise<Staff[]> => db.staff.getActiveWaiters(),
   });
 }
 
 export function useStaffMember(id: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.STAFF, id],
-    queryFn: () => db.staff.findById(id),
+    queryFn: async (): Promise<Staff> => db.staff.findById(id),
     enabled: !!id,
   });
 }
@@ -36,7 +37,7 @@ export function useStaffMember(id: string) {
 export function useStaffByEmail(email: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.STAFF, 'email', email],
-    queryFn: () => db.staff.findByEmail(email),
+    queryFn: async (): Promise<Staff> => db.staff.findByEmail(email),
     enabled: !!email,
   });
 }

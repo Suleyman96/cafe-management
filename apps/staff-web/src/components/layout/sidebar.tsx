@@ -434,7 +434,7 @@ function TodayShiftIndicator({ staffId }: { staffId: string }) {
 
   if (!todaySchedules || todaySchedules.length === 0) return null;
 
-  const shift = todaySchedules[0] as any;
+  const shift = todaySchedules[0];
   const statusColors: Record<string, string> = {
     scheduled: 'bg-gray-50 border-gray-200 text-gray-600',
     in_progress: 'bg-blue-50 border-blue-200 text-blue-700',

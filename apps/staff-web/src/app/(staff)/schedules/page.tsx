@@ -1,5 +1,6 @@
 'use client';
 
+import type { StaffSchedule } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, User } from 'lucide-react';
@@ -104,10 +105,10 @@ export default function SchedulesPage() {
       }
     }
 
-    for (const sched of schedules) {
-      const sid = (sched as any).staff_id;
+    for (const sched of schedules as StaffSchedule[]) {
+      const sid = sched.staff_id;
       if (map[sid]) {
-        const dateKey = (sched as any).date;
+        const dateKey = sched.date;
         if (!map[sid].schedules[dateKey]) map[sid].schedules[dateKey] = [];
         map[sid].schedules[dateKey].push(sched);
       }
@@ -125,9 +126,9 @@ export default function SchedulesPage() {
   // Monthly view: group schedules by date
   const monthlyByDate = useMemo(() => {
     if (!schedules) return {};
-    const map: Record<string, any[]> = {};
-    for (const sched of schedules) {
-      const dateKey = (sched as any).date;
+    const map: Record<string, StaffSchedule[]> = {};
+    for (const sched of schedules as StaffSchedule[]) {
+      const dateKey = sched.date;
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(sched);
     }

@@ -1,6 +1,12 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+declare module 'jspdf' {
+  interface jsPDF {
+    lastAutoTable: { finalY: number };
+  }
+}
+
 interface SalesMetrics {
   totalRevenue: number;
   totalOrders: number;
@@ -101,7 +107,7 @@ export function exportReportToPDF({
   });
 
   // Profit & Loss Section
-  const plStartY = (doc as any).lastAutoTable.finalY + 15;
+  const plStartY = doc.lastAutoTable.finalY + 15;
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('Profit & Loss', 14, plStartY);
@@ -129,7 +135,7 @@ export function exportReportToPDF({
   });
 
   if (profitMetrics.byCategory.length > 0) {
-    const catStartY = (doc as any).lastAutoTable.finalY + 10;
+    const catStartY = doc.lastAutoTable.finalY + 10;
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text('Expense Breakdown by Category', 14, catStartY);
@@ -153,7 +159,7 @@ export function exportReportToPDF({
 
   // Waste Summary Section
   if (wasteMetrics.totalItems > 0) {
-    const wasteStartY = (doc as any).lastAutoTable.finalY + 15;
+    const wasteStartY = doc.lastAutoTable.finalY + 15;
     if (wasteStartY > 240) doc.addPage();
     const wasteY = wasteStartY > 240 ? 20 : wasteStartY;
     doc.setFontSize(14);
@@ -176,7 +182,7 @@ export function exportReportToPDF({
     });
 
     if (wasteMetrics.byReason.length > 0) {
-      const reasonStartY = (doc as any).lastAutoTable.finalY + 10;
+      const reasonStartY = doc.lastAutoTable.finalY + 10;
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('Waste by Reason', 14, reasonStartY);
@@ -199,7 +205,7 @@ export function exportReportToPDF({
     }
 
     if (wasteMetrics.topItems.length > 0) {
-      const topWasteStartY = (doc as any).lastAutoTable.finalY + 10;
+      const topWasteStartY = doc.lastAutoTable.finalY + 10;
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('Top Wasted Items', 14, topWasteStartY);
@@ -223,7 +229,7 @@ export function exportReportToPDF({
   }
 
   // Top Items Section
-  const topItemsStartY = (doc as any).lastAutoTable.finalY + 15;
+  const topItemsStartY = doc.lastAutoTable.finalY + 15;
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('Sold Items', 14, topItemsStartY);
@@ -252,7 +258,7 @@ export function exportReportToPDF({
 
   // Staff Performance Section
   if (staffPerformance.length > 0) {
-    const staffStartY = (doc as any).lastAutoTable?.finalY + 15 || topItemsStartY + 20;
+    const staffStartY = doc.lastAutoTable?.finalY + 15 || topItemsStartY + 20;
 
     const staffTableStartY = staffStartY > 240 ? 24 : staffStartY + 4;
     if (staffStartY > 240) doc.addPage();

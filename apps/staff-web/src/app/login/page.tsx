@@ -4,7 +4,9 @@ import { useTranslation } from '@cafe-idare/i18n';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { CafeManLogo } from '@/components/ui/cafe-man-logo';
+import { postLoginSideEffects } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
+import { db } from '@/lib/supabase/wrapped-client';
 import { useAuthStore } from '@/store/auth-store';
 
 export default function LoginPage() {
@@ -49,14 +51,10 @@ export default function LoginPage() {
       }
 
       // Fetch staff record linked to this auth user
-      const { data: staffData, error: staffError } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('auth_user_id', authData.user.id)
-        .eq('is_active', true)
-        .single();
-
-      if (staffError || !staffData) {
+      let staffData: Awaited<ReturnType<typeof db.staff.findByAuthId>> | null = null;
+      try {
+        staffData = await db.staff.findByAuthId(authData.user.id);
+      } catch {
         // Sign out if no valid staff record
         await supabase.auth.signOut();
         setError(t('noActiveStaff'));
@@ -66,21 +64,7 @@ export default function LoginPage() {
 
       // Set staff in store and redirect
       setStaff(staffData);
-
-      // Fire-and-forget: update last_login_at
-      (supabase.from('staff') as any)
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', (staffData as any).id)
-        .then();
-
-      // Fire-and-forget: fill actual_start for today's schedule
-      const today = new Date().toISOString().split('T')[0];
-      (supabase.from('staff_schedules') as any)
-        .update({ actual_start: new Date().toISOString(), status: 'in_progress' })
-        .eq('staff_id', (staffData as any).id)
-        .eq('date', today)
-        .eq('status', 'scheduled')
-        .then();
+      postLoginSideEffects(staffData.id);
 
       router.push('/');
     } catch (err) {

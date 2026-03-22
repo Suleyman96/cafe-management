@@ -3,22 +3,24 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
+import type { Database } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
 
+type CustomerFeedback = Database['public']['Tables']['customer_feedback']['Row'];
 type FeedbackStatus = 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
 
 export function useFeedback(status?: FeedbackStatus) {
   return useQuery({
     queryKey: ['feedback', status],
-    queryFn: () => db.feedback.findAll(status),
+    queryFn: async (): Promise<CustomerFeedback[]> => db.feedback.findAll(status),
   });
 }
 
 export function usePendingFeedbackCount() {
   return useQuery({
     queryKey: ['feedback-count', 'pending'],
-    queryFn: () => db.feedback.getPendingCount(),
+    queryFn: async (): Promise<number> => db.feedback.getPendingCount(),
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 }

@@ -7,11 +7,12 @@ import { QUERY_KEYS } from '@cafe-idare/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateDeliveryOrders } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
+import type { OrderWithDetails } from '@/types';
 
 export function useDeliveryOrders() {
   return useQuery({
     queryKey: [QUERY_KEYS.DELIVERY_ORDERS],
-    queryFn: () => db.orders.findDeliveryOrders(),
+    queryFn: async (): Promise<OrderWithDetails[]> => db.orders.findDeliveryOrders(),
   });
 }
 

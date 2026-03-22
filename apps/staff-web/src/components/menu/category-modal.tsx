@@ -71,11 +71,11 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
       }
 
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving category:', error);
 
       // Show user-friendly error message
-      const errorMessage = error.message || 'Failed to save category';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save category';
 
       if (errorMessage.includes('infinite recursion') || errorMessage.includes('policy')) {
         toast.error(t('menu.dbPermissionError'), { id: toastId });

@@ -8,19 +8,20 @@ import type { Database } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
 
-type TableStatus = Database['public']['Tables']['tables']['Row']['status'];
+type TableRow = Database['public']['Tables']['tables']['Row'];
+type TableStatus = TableRow['status'];
 
 export function useTables() {
   return useQuery({
     queryKey: [QUERY_KEYS.TABLES],
-    queryFn: () => db.tables.findAll(),
+    queryFn: async (): Promise<TableRow[]> => db.tables.findAll(),
   });
 }
 
 export function useTable(id: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.TABLE, id],
-    queryFn: () => db.tables.findById(id),
+    queryFn: async (): Promise<TableRow> => db.tables.findById(id),
     enabled: !!id,
   });
 }
@@ -28,7 +29,7 @@ export function useTable(id: string) {
 export function useTableByQrCode(qrCode: string) {
   return useQuery({
     queryKey: ['table-qr', qrCode],
-    queryFn: () => db.tables.findByQrCode(qrCode),
+    queryFn: async (): Promise<TableRow> => db.tables.findByQrCode(qrCode),
     enabled: !!qrCode,
   });
 }

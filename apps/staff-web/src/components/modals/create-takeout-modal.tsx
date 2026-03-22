@@ -1,5 +1,6 @@
 'use client';
 
+import type { OrdersInsert } from '@cafe-idare/database';
 import { Phone, User, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -23,12 +24,13 @@ export function CreateTakeoutModal({ isOpen, onClose, onSuccess }: CreateTakeout
 
     setLoading(true);
     try {
+      // TODO: type properly - DB defaults handle missing required fields (subtotal, tax, total, etc.)
       const result = await createOrder.mutateAsync({
         order_type: 'takeout',
         status: 'new',
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim() || null,
-      } as any);
+      } as Partial<OrdersInsert> as OrdersInsert);
       onSuccess(result.id);
 
       // Reset form

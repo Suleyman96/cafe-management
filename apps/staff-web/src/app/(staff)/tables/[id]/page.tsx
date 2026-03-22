@@ -1,6 +1,7 @@
 'use client';
 
-import type { Database } from '@cafe-idare/database';
+import type { ORDER_STATUS } from '@cafe-idare/core';
+import type { Database, OrdersInsert } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
@@ -43,6 +44,7 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { supabase } from '@/lib/supabase/client';
+import type { OrderWithDetails } from '@/types';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -88,10 +90,10 @@ export default function TableDetailPage() {
   const [showItemTransferModal, setShowItemTransferModal] = useState(false);
 
   // Get ALL active orders for this table (including pending_approval)
-  const activeOrders = useMemo(() => {
+  const activeOrders = useMemo((): OrderWithDetails[] => {
     return (
       orders?.filter(
-        (order: any) =>
+        (order) =>
           order.table_id === tableId &&
           ['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status),
       ) || []
@@ -127,9 +129,15 @@ export default function TableDetailPage() {
         table_id: tableId,
         order_type: 'dine_in',
         status: 'new',
+        source: 'waiter',
         assigned_waiter_id: currentStaff?.id || null,
         customer_notes: orderNotes.trim() || null,
-      } as any);
+        customer_name: null,
+        customer_phone: null,
+        subtotal: 0,
+        tax: 0,
+        total: 0,
+      } as Partial<OrdersInsert> as OrdersInsert);
 
       // Then add the items
       const orderItems = cart.map((item) => ({
@@ -147,7 +155,7 @@ export default function TableDetailPage() {
       setCart([]);
       setOrderNotes('');
       refetchOrders();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to create order:', error);
       toast.error(t('orders.failedCreateOrder'));
     } finally {
@@ -229,7 +237,7 @@ export default function TableDetailPage() {
     0;
 
   // Calculate combined total for all orders on this table
-  const combinedTotal = activeOrders.reduce((total: number, order: any) => {
+  const combinedTotal = activeOrders.reduce((total: number, order) => {
     const orderSum =
       order.total ||
       order.order_items?.reduce(
@@ -277,12 +285,12 @@ export default function TableDetailPage() {
   };
 
   // Handle status update
-  const handleStatusUpdate = async (newStatus: string) => {
+  const handleStatusUpdate = async (newStatus: keyof typeof ORDER_STATUS) => {
     if (!activeOrder) return;
     try {
       await updateOrderStatus.mutateAsync({
         orderId: activeOrder.id,
-        status: newStatus as any,
+        status: newStatus,
       });
       toast.success(`${t('orders.statusUpdated')} ${newStatus.toLowerCase()}`);
       refetchOrders();
@@ -341,7 +349,7 @@ export default function TableDetailPage() {
           );
           const anyPreparing = nonCancelled.some((i: ItemWithStatus) => i.status === 'preparing');
 
-          let targetStatus: string | null = null;
+          let targetStatus: keyof typeof ORDER_STATUS | null = null;
           if (allServed && activeOrder.status !== 'served') {
             targetStatus = 'SERVED';
           } else if (allReadyOrServed && !allServed && activeOrder.status !== 'ready') {
@@ -353,7 +361,7 @@ export default function TableDetailPage() {
           if (targetStatus) {
             await updateOrderStatus.mutateAsync({
               orderId: activeOrder.id,
-              status: targetStatus as any,
+              status: targetStatus,
             });
           }
         }
@@ -384,8 +392,9 @@ export default function TableDetailPage() {
       setCancelItemConfirm(null);
       setCancelItemQty(1);
       refetchOrders();
-    } catch (error: any) {
-      toast.error(error.message || t('orders.failedCancelItem'));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('orders.failedCancelItem');
+      toast.error(message);
     } finally {
       setCancellingItem(false);
     }
@@ -471,7 +480,7 @@ export default function TableDetailPage() {
             </span>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {activeOrders.map((order: any, index: number) => {
+            {activeOrders.map((order, index) => {
               const orderItemsTotal =
                 order.order_items?.reduce(
                   (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
@@ -510,21 +519,21 @@ export default function TableDetailPage() {
                   {formatPrice(orderTotal)}
                 </span>
                 {/* Order Taken By */}
-                {(activeOrder as any).assigned_waiter && (
+                {activeOrder.assigned_waiter && (
                   <span className="flex items-center gap-1">
                     <UserCheck className="h-4 w-4 text-green-600" />
                     <span className="text-green-700">
-                      {t('orders.takenBy')} {(activeOrder as any).assigned_waiter.full_name}
+                      {t('orders.takenBy')} {activeOrder.assigned_waiter.full_name}
                     </span>
                   </span>
                 )}
               </div>
               {/* Customer Notes */}
-              {(activeOrder as any).customer_notes && (
+              {activeOrder.customer_notes && (
                 <div className="mt-2 p-2 bg-amber-100 rounded-lg border border-amber-300">
                   <p className="text-sm text-amber-800">
                     <span className="font-medium">{t('notes', { ns: 'common' })}:</span>{' '}
-                    {(activeOrder as any).customer_notes}
+                    {activeOrder.customer_notes}
                   </p>
                 </div>
               )}
@@ -541,7 +550,7 @@ export default function TableDetailPage() {
                     <ThumbsUp className="h-4 w-4 mr-1" />
                     {t('approve', { ns: 'common' })}
                   </Button>
-                  {(activeOrder as any).source === 'customer' && (
+                  {activeOrder.source === 'customer' && (
                     <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
                       <Smartphone className="h-3 w-3" />
                       {t('orders.qrOrder')}

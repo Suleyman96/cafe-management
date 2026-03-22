@@ -8,6 +8,7 @@ import type { Database } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateOrders, invalidateOrdersAndTables } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
+import type { OrderWithDetails } from '@/types';
 
 type OrderStatus = Database['public']['Tables']['orders']['Row']['status'];
 type OrderInsert = Database['public']['Tables']['orders']['Insert'];
@@ -20,14 +21,15 @@ type OrderFilters = {
 export function useOrders(filters?: OrderFilters) {
   return useQuery({
     queryKey: [QUERY_KEYS.ORDERS, filters],
-    queryFn: () => db.orders.findAll(filters),
+    queryFn: async (): Promise<OrderWithDetails[]> => db.orders.findAll(filters),
   });
 }
 
 export function useOrder(orderId: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.ORDER, orderId],
-    queryFn: () => db.orders.findById(orderId),
+    queryFn: async (): Promise<OrderWithDetails> =>
+      db.orders.findById(orderId) as Promise<OrderWithDetails>,
     enabled: !!orderId,
   });
 }
@@ -35,7 +37,7 @@ export function useOrder(orderId: string) {
 export function useActiveOrders() {
   return useQuery({
     queryKey: [QUERY_KEYS.ACTIVE_ORDERS],
-    queryFn: () => db.orders.getActiveOrders(),
+    queryFn: async (): Promise<OrderWithDetails[]> => db.orders.getActiveOrders(),
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 }

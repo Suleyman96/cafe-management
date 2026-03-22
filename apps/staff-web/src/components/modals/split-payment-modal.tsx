@@ -205,9 +205,9 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
         notes: null,
       });
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to process payment:', error);
-      const message = error?.message || t('payment.paymentFailed');
+      const message = error instanceof Error ? error.message : t('payment.paymentFailed');
       toast.error(message);
     } finally {
       setLoading(false);

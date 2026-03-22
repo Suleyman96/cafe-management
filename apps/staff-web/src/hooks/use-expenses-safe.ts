@@ -20,14 +20,14 @@ export function useExpenses(options?: {
 }) {
   return useQuery({
     queryKey: [QUERY_KEYS.EXPENSES, options],
-    queryFn: () => db.expenses.findAll(options),
+    queryFn: async (): Promise<Expense[]> => db.expenses.findAll(options),
   });
 }
 
 export function useExpense(id: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.EXPENSE, id],
-    queryFn: () => db.expenses.findById(id),
+    queryFn: async (): Promise<Expense> => db.expenses.findById(id),
     enabled: !!id,
   });
 }
@@ -75,10 +75,12 @@ export function useDeleteExpense() {
   });
 }
 
+type ExpenseCategory = Database['public']['Tables']['expense_categories']['Row'];
+
 export function useExpenseCategories() {
   return useQuery({
     queryKey: [QUERY_KEYS.EXPENSE_CATEGORIES],
-    queryFn: () => db.expenseCategories.findAll(),
+    queryFn: async (): Promise<ExpenseCategory[]> => db.expenseCategories.findAll(),
   });
 }
 

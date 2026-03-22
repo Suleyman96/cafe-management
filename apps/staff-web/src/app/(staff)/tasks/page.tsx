@@ -106,8 +106,9 @@ export default function TasksPage() {
         await markCancelled.mutateAsync(taskId);
         toast.success(t('tasks.taskCancelled'));
       }
-    } catch (error: any) {
-      toast.error(error.message || t('tasks.failedUpdateTask'));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('tasks.failedUpdateTask');
+      toast.error(message);
     }
   };
 
@@ -116,8 +117,9 @@ export default function TasksPage() {
     try {
       await deleteTask.mutateAsync(id);
       toast.success(t('tasks.taskDeleted'));
-    } catch (error: any) {
-      toast.error(error.message || t('tasks.failedUpdateTask'));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('tasks.failedUpdateTask');
+      toast.error(message);
     }
   };
 

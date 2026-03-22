@@ -1,6 +1,6 @@
 'use client';
 
-import { calculateProfitMetrics } from '@cafe-idare/core';
+import { calculateProfitMetrics, type ExpenseEntry } from '@cafe-idare/core';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
@@ -305,7 +305,7 @@ export default function ReportsPage() {
 
   // Calculate profit/loss metrics
   const profitMetrics = useMemo(
-    () => calculateProfitMetrics(metrics.totalRevenue, expenses as any[]),
+    () => calculateProfitMetrics(metrics.totalRevenue, expenses as ExpenseEntry[]),
     [expenses, metrics.totalRevenue],
   );
 

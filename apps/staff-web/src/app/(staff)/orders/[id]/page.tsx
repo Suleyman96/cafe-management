@@ -51,9 +51,9 @@ type Payment = Database['public']['Tables']['order_payments']['Row'] & {
 type Table = Database['public']['Tables']['tables']['Row'];
 
 type TableTransfer = Database['public']['Tables']['table_transfers']['Row'] & {
-  from_table?: Table;
-  to_table?: Table;
-  transferred_by_staff?: Database['public']['Tables']['staff']['Row'];
+  from_table?: Pick<Table, 'table_number' | 'location'>;
+  to_table?: Pick<Table, 'table_number' | 'location'>;
+  transferred_by_staff?: Pick<Database['public']['Tables']['staff']['Row'], 'full_name'>;
 };
 
 // Complex order type with all joined relations
@@ -275,7 +275,7 @@ export default function OrderDetailPage() {
           );
           const anyPreparing = nonCancelled.some((i: ItemWithStatus) => i.status === 'preparing');
 
-          let targetStatus: string | null = null;
+          let targetStatus: keyof typeof ORDER_STATUS | null = null;
           if (allServed && order.status !== 'served') {
             targetStatus = 'SERVED';
           } else if (allReadyOrServed && !allServed && order.status !== 'ready') {
@@ -287,7 +287,7 @@ export default function OrderDetailPage() {
           if (targetStatus) {
             await updateOrderStatus.mutateAsync({
               orderId,
-              status: targetStatus as any,
+              status: targetStatus,
             });
           }
         }
@@ -426,7 +426,7 @@ export default function OrderDetailPage() {
       {/* Delivery Info Section */}
       {order.order_type === 'delivery' && (
         <OrderDetailDelivery
-          order={order as any}
+          order={order}
           staffList={staffList}
           onAssignDriver={assignDeliveryPerson.mutateAsync}
           onRefetch={refetch}
@@ -578,9 +578,9 @@ export default function OrderDetailPage() {
                           {payment.payment_method}
                         </span>
                       </div>
-                      {Number((payment as any).tip_amount) > 0 && (
+                      {Number(payment.tip_amount) > 0 && (
                         <p className="text-sm text-green-600 mt-0.5">
-                          + {formatPrice((payment as any).tip_amount)} {t('orders.tip')}
+                          + {formatPrice(payment.tip_amount)} {t('orders.tip')}
                         </p>
                       )}
                       <p className="text-xs text-gray-500 mt-1">
@@ -613,7 +613,7 @@ export default function OrderDetailPage() {
 
       {/* Action Buttons */}
       <OrderDetailActions
-        order={order as any}
+        order={order}
         isFullyPaid={isFullyPaid}
         onStatusUpdate={handleStatusUpdate}
         onOpenPayment={() => setIsPaymentModalOpen(true)}

@@ -81,8 +81,9 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
         toast.success(t('tables.tableCreated'));
       }
       onSuccess();
-    } catch (error: any) {
-      toast.error(error.message || t('tables.failedSaveTable'));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('tables.failedSaveTable');
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -153,7 +154,7 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
             </label>
             <select
               value={status}
-              onChange={(e) => setStatus(e.target.value as any)}
+              onChange={(e) => setStatus(e.target.value as typeof status)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="free">{t('tables.free')}</option>

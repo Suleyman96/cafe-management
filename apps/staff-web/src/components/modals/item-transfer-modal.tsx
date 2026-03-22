@@ -113,7 +113,7 @@ export function ItemTransferModal({
         reason: reason.trim() || undefined,
       });
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to transfer items:', error);
     } finally {
       setLoading(false);

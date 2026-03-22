@@ -125,7 +125,7 @@ export default function StaffDetailPage() {
 
       totalRevenue += orderTotal;
       totalItemsSold += itemCount;
-      if ((order as any).status === 'closed') completedOrders++;
+      if (order.status === 'closed') completedOrders++;
     }
 
     const completionRate =
@@ -171,7 +171,7 @@ export default function StaffDetailPage() {
     );
   }
 
-  const member = staffMember as any;
+  const member = staffMember;
 
   const getRoleIcon = (role: string) => {
     switch (role) {

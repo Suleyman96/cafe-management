@@ -20,14 +20,14 @@ export function useTasks(options?: {
 }) {
   return useQuery({
     queryKey: [QUERY_KEYS.TASKS, options],
-    queryFn: () => db.tasks.findAll(options),
+    queryFn: async (): Promise<Task[]> => db.tasks.findAll(options),
   });
 }
 
 export function useTask(id: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.TASK, id],
-    queryFn: () => db.tasks.findById(id),
+    queryFn: async (): Promise<Task> => db.tasks.findById(id),
     enabled: !!id,
   });
 }
@@ -35,7 +35,7 @@ export function useTask(id: string) {
 export function useMyTasks(staffId: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.TASKS, 'my', staffId],
-    queryFn: () => db.tasks.findMyTasks(staffId),
+    queryFn: async (): Promise<Task[]> => db.tasks.findMyTasks(staffId),
     enabled: !!staffId,
   });
 }
@@ -43,21 +43,21 @@ export function useMyTasks(staffId: string) {
 export function useTodaysTasks() {
   return useQuery({
     queryKey: [QUERY_KEYS.TASKS, 'today'],
-    queryFn: () => db.tasks.getTodaysTasks(),
+    queryFn: async (): Promise<Task[]> => db.tasks.getTodaysTasks(),
   });
 }
 
 export function useOverdueTasksCount() {
   return useQuery({
     queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT],
-    queryFn: () => db.tasks.getOverdueCount(),
+    queryFn: async (): Promise<number> => db.tasks.getOverdueCount(),
   });
 }
 
 export function useRecurringTemplates() {
   return useQuery({
     queryKey: [QUERY_KEYS.TASKS, 'templates'],
-    queryFn: () => db.tasks.getRecurringTemplates(),
+    queryFn: async (): Promise<Task[]> => db.tasks.getRecurringTemplates(),
   });
 }
 

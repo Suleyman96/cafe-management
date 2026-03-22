@@ -14,14 +14,14 @@ type StockItemInsert = Database['public']['Tables']['stock_items']['Insert'];
 export function useStockItems(options?: { category?: string; lowStockOnly?: boolean }) {
   return useQuery({
     queryKey: [QUERY_KEYS.STOCK_ITEMS, options],
-    queryFn: () => db.stockItems.findAll(options),
+    queryFn: async (): Promise<StockItem[]> => db.stockItems.findAll(options),
   });
 }
 
 export function useStockItem(id: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.STOCK_ITEM, id],
-    queryFn: () => db.stockItems.findById(id),
+    queryFn: async (): Promise<StockItem> => db.stockItems.findById(id),
     enabled: !!id,
   });
 }

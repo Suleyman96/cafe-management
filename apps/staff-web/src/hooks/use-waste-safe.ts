@@ -19,14 +19,14 @@ export function useWasteLogs(options?: {
 }) {
   return useQuery({
     queryKey: [QUERY_KEYS.WASTE_LOGS, options],
-    queryFn: () => db.waste.findAll(options),
+    queryFn: async (): Promise<WasteLog[]> => db.waste.findAll(options),
   });
 }
 
 export function useWasteLog(id: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.WASTE_LOG, id],
-    queryFn: () => db.waste.findById(id),
+    queryFn: async (): Promise<WasteLog> => db.waste.findById(id),
     enabled: !!id,
   });
 }

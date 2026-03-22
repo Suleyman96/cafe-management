@@ -1,6 +1,7 @@
 'use client';
 
 import { DAYS_OF_WEEK, TIME_OPTIONS } from '@cafe-idare/core';
+import type { StaffScheduleInsert } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { X } from 'lucide-react';
@@ -116,9 +117,11 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
                 date: dateStr,
                 planned_start: plannedStart,
                 planned_end: plannedEnd,
+                actual_start: null,
+                actual_end: null,
                 status: 'scheduled',
                 notes: notes || null,
-              } as any),
+              } satisfies StaffScheduleInsert),
             );
           }
         }
@@ -131,15 +134,18 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
           date,
           planned_start: plannedStart,
           planned_end: plannedEnd,
+          actual_start: null,
+          actual_end: null,
           status: 'scheduled',
           notes: notes || null,
-        } as any);
+        } satisfies StaffScheduleInsert);
         toast.success(t('schedules.scheduleCreated'));
       }
 
       onSuccess();
-    } catch (err: any) {
-      setError(err?.message || t('schedules.failedSave'));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('schedules.failedSave');
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -154,8 +160,9 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
       await deleteSchedule.mutateAsync(schedule.id);
       toast.success(t('schedules.scheduleDeleted'));
       onSuccess();
-    } catch (err: any) {
-      setError(err?.message || t('schedules.failedDelete'));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('schedules.failedDelete');
+      setError(message);
     } finally {
       setLoading(false);
     }

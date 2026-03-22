@@ -98,7 +98,7 @@ export function invalidateSchedules(qc: QueryClient) {
 
 export function invalidateWaiterCalls(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
-  qc.invalidateQueries({ queryKey: ['waiter-calls-count'] });
+  qc.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS_COUNT] });
 }
 
 // ─── Menu ───────────────────────────────────────────────────────────────────

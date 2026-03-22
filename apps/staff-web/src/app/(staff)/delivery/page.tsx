@@ -250,7 +250,7 @@ export default function DeliveryPage() {
           <select
             className="px-3 py-2 border rounded-lg text-sm sm:text-base"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
+            onChange={(e) => setStatusFilter(e.target.value as DeliveryStatus | 'all')}
           >
             <option value="all">{t('orders.allStatus')}</option>
             <option value="pending_approval">{t('orders.pendingApproval')}</option>

@@ -73,12 +73,13 @@ export function DevLoginButton() {
 
       // If no tokens, show error
       throw new Error(data.error || 'No access token received');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Dev login error:', err);
-      if (err.name === 'AbortError') {
+      if (err instanceof Error && err.name === 'AbortError') {
         setError('Request timed out. Is Supabase running?');
       } else {
-        setError(err.message || 'Login failed');
+        const message = err instanceof Error ? err.message : 'Login failed';
+        setError(message);
       }
     } finally {
       setIsLoading(false);

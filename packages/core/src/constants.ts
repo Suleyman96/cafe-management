@@ -124,6 +124,7 @@ export const QUERY_KEYS = {
   FEEDBACK: 'feedback',
   STAFF_MEMBER: 'staff_member',
   PAYMENTS_BY_STAFF: 'payments_by_staff',
+  WAITER_CALLS_COUNT: 'waiter_calls_count',
 } as const;
 
 // 30-minute interval time slots (00:00 to 23:30)

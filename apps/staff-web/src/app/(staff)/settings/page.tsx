@@ -63,8 +63,9 @@ export default function SettingsPage() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error: any) {
-      toast.error(error.message || t('settings.failedChangePassword'));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('settings.failedChangePassword');
+      toast.error(message);
     } finally {
       setPasswordLoading(false);
     }

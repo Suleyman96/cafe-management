@@ -1,5 +1,6 @@
 'use client';
 
+import type { OrdersInsert } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { UtensilsCrossed, X } from 'lucide-react';
 import { useState } from 'react';
@@ -33,12 +34,13 @@ export function CreateTableOrderModal({
     console.log('Creating order for table:', table.id);
     setLoading(true);
     try {
+      // TODO: type properly - DB defaults handle missing required fields (subtotal, tax, total, etc.)
       const result = await createOrder.mutateAsync({
         table_id: table.id,
         order_type: 'dine_in',
         status: 'new',
         internal_notes: notes.trim() || null,
-      } as any);
+      } as Partial<OrdersInsert> as OrdersInsert);
       console.log('Order created:', result);
       onSuccess(result.id);
 
