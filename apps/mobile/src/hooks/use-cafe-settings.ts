@@ -1,10 +1,14 @@
+import { QUERY_KEYS } from '@cafe-idare/core';
+import type { Database } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase';
 
+type CafeSettings = Database['public']['Tables']['cafe_settings']['Row'];
+
 export function useCafeSettings() {
   return useQuery({
-    queryKey: ['cafe-settings'],
-    queryFn: () => db.settings.get(),
+    queryKey: [QUERY_KEYS.CAFE_SETTINGS],
+    queryFn: async (): Promise<CafeSettings> => db.settings.get(),
   });
 }
 
@@ -12,9 +16,12 @@ export function useUpdateCafeSettings() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: any) => db.settings.update(data),
+    mutationFn: (data: Record<string, unknown>) => db.settings.update(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cafe-settings'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CAFE_SETTINGS] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to update cafe settings:', error.message);
     },
   });
 }

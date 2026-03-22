@@ -8,10 +8,12 @@ interface OrderItemRowProps {
     id: string;
     quantity: number;
     unit_price?: number | null;
+    item_price?: number | null;
     total_price?: number | null;
     status: string;
     notes?: string | null;
     menu_item?: {
+      name?: string | null;
       name_en?: string | null;
     } | null;
   };
@@ -24,7 +26,7 @@ export const OrderItemRow = React.memo(function OrderItemRow({
   showActions = false,
   onMarkReady,
 }: OrderItemRowProps) {
-  const name = item.menu_item?.name_en || 'Unknown Item';
+  const name = item.menu_item?.name || item.menu_item?.name_en || 'Unknown Item';
 
   return (
     <View style={styles.container}>
@@ -41,7 +43,10 @@ export const OrderItemRow = React.memo(function OrderItemRow({
         </View>
         <View style={styles.right}>
           <Text variant="bodyMedium" style={styles.price}>
-            ${(item.total_price || (item.unit_price || 0) * item.quantity).toFixed(2)}
+            $
+            {(
+              item.total_price || (item.item_price || item.unit_price || 0) * item.quantity
+            ).toFixed(2)}
           </Text>
           <StatusBadge status={item.status} type="orderItem" />
         </View>

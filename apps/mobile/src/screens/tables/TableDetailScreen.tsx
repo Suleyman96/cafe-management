@@ -22,10 +22,17 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
 import { TABLE_STATUS_COLORS } from '@/theme';
-import type { TablesStackParamList } from '@/types';
+import type { Order, OrderItemWithMenuItem, Table, TablesStackParamList } from '@/types';
 
 type Route = RouteProp<TablesStackParamList, 'TableDetail'>;
 type Nav = StackNavigationProp<TablesStackParamList, 'TableDetail'>;
+
+// The wrapper's findAll returns joined data beyond the base Order type
+type OrderWithJoins = Order & {
+  table?: { table_number: string; location: string | null };
+  order_items?: OrderItemWithMenuItem[];
+  assigned_waiter?: { full_name: string } | null;
+};
 
 const ACTIVE_STATUSES = ['pending_approval', 'new', 'preparing', 'ready', 'served'];
 const TABLE_STATUSES = ['free', 'occupied', 'reserved', 'closed'] as const;
@@ -44,15 +51,18 @@ export default function TableDetailScreen() {
   const updateTableStatus = useUpdateTableStatus();
   const updateWaiterCall = useUpdateWaiterCall();
 
-  const [statusConfirm, setStatusConfirm] = useState<string | null>(null);
+  const [statusConfirm, setStatusConfirm] = useState<Table['status'] | null>(null);
 
   const activeOrders = useMemo(
-    () => orders?.filter((o) => o.table_id === tableId && ACTIVE_STATUSES.includes(o.status)) || [],
+    () =>
+      (orders as OrderWithJoins[] | undefined)?.filter(
+        (o) => o.table_id === tableId && ACTIVE_STATUSES.includes(o.status),
+      ) || [],
     [orders, tableId],
   );
 
   const pendingCalls = useMemo(
-    () => waiterCalls?.filter((c) => c.table_id === tableId) || [],
+    () => waiterCalls?.filter((c: { table_id: string }) => c.table_id === tableId) || [],
     [waiterCalls, tableId],
   );
 
@@ -62,24 +72,44 @@ export default function TableDetailScreen() {
         table_id: tableId,
         order_type: 'dine_in',
         status: 'new',
-        assigned_waiter_id: staff?.id,
+        source: 'waiter',
+        assigned_waiter_id: staff?.id ?? null,
+        customer_name: null,
+        customer_phone: null,
+        subtotal: 0,
+        tax: 0,
+        total: 0,
+        customer_notes: null,
+        internal_notes: null,
+        payment_method: null,
+        preparing_at: null,
+        ready_at: null,
+        served_at: null,
+        closed_at: null,
+        paid_at: null,
+        delivery_address: null,
+        delivery_fee: 0,
+        delivery_notes: null,
+        estimated_delivery_time: null,
+        delivered_at: null,
+        delivery_person_id: null,
       });
       navigation.getParent()?.navigate('OrdersTab', {
         screen: 'AddItems',
         params: { orderId: order.id },
       });
-    } catch (err: any) {
-      showError(err?.message || 'Failed to create order');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to create order');
     }
   };
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusChange = async (newStatus: Table['status']) => {
     try {
       await updateTableStatus.mutateAsync({ tableId, status: newStatus });
       showSuccess(`Table set to ${newStatus}`);
       setStatusConfirm(null);
-    } catch (err: any) {
-      showError(err?.message || 'Failed to update status');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to update status');
     }
   };
 
@@ -91,8 +121,8 @@ export default function TableDetailScreen() {
         staffId: staff?.id,
       });
       showSuccess('Call acknowledged');
-    } catch (err: any) {
-      showError(err?.message || 'Failed to respond');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to respond');
     }
   };
 
@@ -153,19 +183,21 @@ export default function TableDetailScreen() {
                   <Text variant="titleMedium" style={styles.bold}>
                     Waiter Calls
                   </Text>
-                  {pendingCalls.map((call) => (
-                    <View key={call.id} style={styles.callItem}>
-                      <View style={styles.callInfo}>
-                        <Chip compact style={styles.reasonChip}>
-                          {call.reason || 'Assistance'}
-                        </Chip>
-                        <TimeElapsed createdAt={call.created_at} />
+                  {pendingCalls.map(
+                    (call: { id: string; reason: string | null; created_at: string }) => (
+                      <View key={call.id} style={styles.callItem}>
+                        <View style={styles.callInfo}>
+                          <Chip compact style={styles.reasonChip}>
+                            {call.reason || 'Assistance'}
+                          </Chip>
+                          <TimeElapsed createdAt={call.created_at} />
+                        </View>
+                        <Button compact mode="contained" onPress={() => handleRespondCall(call.id)}>
+                          Respond
+                        </Button>
                       </View>
-                      <Button compact mode="contained" onPress={() => handleRespondCall(call.id)}>
-                        Respond
-                      </Button>
-                    </View>
-                  ))}
+                    ),
+                  )}
                 </Card.Content>
               </Card>
             )}
@@ -190,13 +222,13 @@ export default function TableDetailScreen() {
             <Card.Content>
               <View style={styles.row}>
                 <Text variant="titleMedium" style={styles.bold}>
-                  #{order.order_number || '—'}
+                  #{order.order_number || '--'}
                 </Text>
                 <StatusBadge status={order.status} type="order" />
               </View>
               <View style={styles.row}>
                 <Text variant="bodySmall" style={styles.muted}>
-                  {(order as any).order_items?.length || 0} items
+                  {order.order_items?.length || 0} items
                 </Text>
                 <Text variant="bodyMedium" style={styles.bold}>
                   ${(order.total || 0).toFixed(2)}

@@ -1,10 +1,12 @@
+import { QUERY_KEYS } from '@cafe-idare/core';
+import type { OrderPayment } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase';
 
 export function useOrderPayments(orderId: string) {
   return useQuery({
-    queryKey: ['payments', orderId],
-    queryFn: async () => {
+    queryKey: [QUERY_KEYS.PAYMENTS, orderId],
+    queryFn: async (): Promise<OrderPayment[]> => {
       return await db.payments.findByOrderId(orderId);
     },
     enabled: !!orderId,
@@ -18,16 +20,28 @@ export function useCreatePayment() {
     mutationFn: async (payment: {
       order_id: string;
       amount: number;
-      payment_method: 'cash' | 'card' | 'digital';
+      payment_method: OrderPayment['payment_method'];
       received_by?: string;
+      payment_type?: OrderPayment['payment_type'];
+      tip_amount?: number;
+      order_item_ids?: string[] | null;
       notes?: string | null;
     }) => {
-      return await db.payments.create(payment as any);
+      return await db.payments.create({
+        ...payment,
+        received_by: payment.received_by ?? '',
+        payment_type: payment.payment_type ?? 'full',
+        tip_amount: payment.tip_amount ?? 0,
+        order_item_ids: payment.order_item_ids ?? null,
+      });
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['payments', variables.order_id] });
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: ['order', variables.order_id] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PAYMENTS, variables.order_id] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.order_id] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to create payment:', error.message);
     },
   });
 }

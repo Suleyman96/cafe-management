@@ -7,9 +7,16 @@ import { OrderCard } from '@/components/orders/OrderCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useOrders } from '@/hooks';
 import { ORDER_STATUS_COLORS } from '@/theme';
-import type { OrdersStackParamList } from '@/types';
+import type { Order, OrderItemWithMenuItem, OrdersStackParamList } from '@/types';
 
 type Nav = StackNavigationProp<OrdersStackParamList, 'OrdersList'>;
+
+// The wrapper's findAll returns joined data beyond the base Order type
+type OrderWithJoins = Order & {
+  table?: { table_number: string; location: string | null };
+  order_items?: OrderItemWithMenuItem[];
+  assigned_waiter?: { full_name: string } | null;
+};
 
 const STATUS_FILTERS = ['all', 'new', 'preparing', 'ready', 'served', 'paid', 'cancelled'] as const;
 
@@ -23,7 +30,7 @@ export default function OrdersListScreen() {
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
 
-    let filtered = orders;
+    let filtered = orders as OrderWithJoins[];
 
     if (selectedStatus !== 'all') {
       filtered = filtered.filter((o) => o.status === selectedStatus);
@@ -33,8 +40,7 @@ export default function OrdersListScreen() {
       const q = search.trim().toLowerCase();
       filtered = filtered.filter(
         (o) =>
-          o.order_number?.toString().includes(q) ||
-          (o as any).table?.table_number?.toString().includes(q),
+          o.order_number?.toString().includes(q) || o.table?.table_number?.toString().includes(q),
       );
     }
 

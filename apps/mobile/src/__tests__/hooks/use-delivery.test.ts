@@ -23,7 +23,7 @@ describe('useMarkOutForDelivery', () => {
     await result.current.mutateAsync({ orderId: 'o1', deliveryPersonId: 'dp1' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['delivery-orders']);
+    expect(keys).toContainEqual(['delivery_orders']);
     expect(keys).toContainEqual(['orders']);
   });
 });
@@ -36,7 +36,7 @@ describe('useMarkDelivered', () => {
     await result.current.mutateAsync('o1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['delivery-orders']);
+    expect(keys).toContainEqual(['delivery_orders']);
     expect(keys).toContainEqual(['orders']);
   });
 });
@@ -49,7 +49,7 @@ describe('useCancelOrder', () => {
     await result.current.mutateAsync({ orderId: 'o1', reason: 'test' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['delivery-orders']);
+    expect(keys).toContainEqual(['delivery_orders']);
     expect(keys).toContainEqual(['orders']);
   });
 });

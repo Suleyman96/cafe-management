@@ -36,20 +36,20 @@ export default function DeliveryListScreen() {
   const markDelivered = useMarkDelivered();
   const cancelOrder = useCancelOrder();
 
-  const currencySymbol = (settings as any)?.currency_symbol || '$';
+  const currencySymbol = settings?.currency_symbol || '$';
 
   const filtered = useMemo(() => {
     if (!orders) return [];
     if (statusFilter === 'all') return orders;
-    return (orders as any[]).filter((o) => o.status === statusFilter);
+    return orders.filter((o: { status: string }) => o.status === statusFilter);
   }, [orders, statusFilter]);
 
   const handleApprove = async (orderId: string) => {
     try {
       await updateOrderStatus.mutateAsync({ orderId, status: 'new' });
       showSuccess('Order approved');
-    } catch (err: any) {
-      showError(err?.message || 'Failed to approve');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to approve');
     }
   };
 
@@ -57,8 +57,8 @@ export default function DeliveryListScreen() {
     try {
       await updateOrderStatus.mutateAsync({ orderId, status: 'preparing' });
       showSuccess('Preparing started');
-    } catch (err: any) {
-      showError(err?.message || 'Failed to start preparing');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to start preparing');
     }
   };
 
@@ -66,8 +66,8 @@ export default function DeliveryListScreen() {
     try {
       await updateOrderStatus.mutateAsync({ orderId, status: 'ready' });
       showSuccess('Order marked ready');
-    } catch (err: any) {
-      showError(err?.message || 'Failed to mark ready');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to mark ready');
     }
   };
 
@@ -75,8 +75,8 @@ export default function DeliveryListScreen() {
     try {
       await markOutForDelivery.mutateAsync({ orderId, deliveryPersonId: staff?.id || '' });
       showSuccess('Order sent out for delivery');
-    } catch (err: any) {
-      showError(err?.message || 'Failed to send out');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to send out');
     }
   };
 
@@ -84,8 +84,8 @@ export default function DeliveryListScreen() {
     try {
       await markDelivered.mutateAsync(orderId);
       showSuccess('Order delivered');
-    } catch (err: any) {
-      showError(err?.message || 'Failed to mark delivered');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to mark delivered');
     }
   };
 
@@ -93,8 +93,8 @@ export default function DeliveryListScreen() {
     try {
       await cancelOrder.mutateAsync({ orderId, reason: 'Cancelled from mobile app' });
       showSuccess('Order cancelled');
-    } catch (err: any) {
-      showError(err?.message || 'Failed to cancel');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to cancel');
     }
   };
 
@@ -119,7 +119,7 @@ export default function DeliveryListScreen() {
 
       <FlatList
         data={filtered}
-        keyExtractor={(item: any) => item.id}
+        keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         renderItem={({ item }) => (
           <DeliveryOrderCard

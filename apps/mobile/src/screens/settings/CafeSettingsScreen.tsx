@@ -11,17 +11,17 @@ export default function CafeSettingsScreen() {
   const { data: settings, isLoading, error, refetch } = useCafeSettings();
   const updateSettings = useUpdateCafeSettings();
 
-  const [form, setForm] = useState<Record<string, any>>({});
+  const [form, setForm] = useState<Record<string, unknown>>({});
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     if (settings) {
-      setForm(settings as any);
+      setForm(settings);
       setHasChanges(false);
     }
   }, [settings]);
 
-  const updateField = (key: string, value: any) => {
+  const updateField = (key: string, value: unknown) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setHasChanges(true);
   };
@@ -31,14 +31,14 @@ export default function CafeSettingsScreen() {
       await updateSettings.mutateAsync(form);
       showSuccess('Settings saved');
       setHasChanges(false);
-    } catch (err: any) {
-      showError(err?.message || 'Failed to save settings');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to save settings');
     }
   };
 
   const handleReset = () => {
     if (settings) {
-      setForm(settings as any);
+      setForm(settings);
       setHasChanges(false);
     }
   };
@@ -57,7 +57,7 @@ export default function CafeSettingsScreen() {
             </Text>
             <TextInput
               label="Restaurant Name"
-              value={form.restaurant_name || ''}
+              value={(form.restaurant_name as string) || ''}
               onChangeText={(v: string) => updateField('restaurant_name', v)}
               mode="outlined"
               dense
@@ -65,7 +65,7 @@ export default function CafeSettingsScreen() {
             />
             <TextInput
               label="Address"
-              value={form.address || ''}
+              value={(form.address as string) || ''}
               onChangeText={(v: string) => updateField('address', v)}
               mode="outlined"
               dense
@@ -88,7 +88,7 @@ export default function CafeSettingsScreen() {
                 onValueChange={(v: boolean) => updateField('tax_enabled', v)}
               />
             </View>
-            {form.tax_enabled && (
+            {!!form.tax_enabled && (
               <>
                 <TextInput
                   label="Tax Percentage"
@@ -101,7 +101,7 @@ export default function CafeSettingsScreen() {
                 />
                 <TextInput
                   label="Tax Label"
-                  value={form.tax_label || ''}
+                  value={(form.tax_label as string) || ''}
                   onChangeText={(v: string) => updateField('tax_label', v)}
                   mode="outlined"
                   dense
@@ -127,7 +127,7 @@ export default function CafeSettingsScreen() {
             </Text>
             <TextInput
               label="Currency Symbol"
-              value={form.currency_symbol || ''}
+              value={(form.currency_symbol as string) || ''}
               onChangeText={(v: string) => updateField('currency_symbol', v)}
               mode="outlined"
               dense
@@ -135,7 +135,7 @@ export default function CafeSettingsScreen() {
             />
             <TextInput
               label="Currency Code"
-              value={form.currency_code || ''}
+              value={(form.currency_code as string) || ''}
               onChangeText={(v: string) => updateField('currency_code', v)}
               mode="outlined"
               dense
@@ -203,7 +203,7 @@ export default function CafeSettingsScreen() {
                 onValueChange={(v: boolean) => updateField('delivery_enabled', v)}
               />
             </View>
-            {form.delivery_enabled && (
+            {!!form.delivery_enabled && (
               <>
                 <TextInput
                   label="Default Delivery Fee"
@@ -240,7 +240,7 @@ export default function CafeSettingsScreen() {
             </Text>
             <TextInput
               label="Phone"
-              value={form.phone || ''}
+              value={(form.phone as string) || ''}
               onChangeText={(v: string) => updateField('phone', v)}
               mode="outlined"
               keyboardType="phone-pad"
@@ -249,7 +249,7 @@ export default function CafeSettingsScreen() {
             />
             <TextInput
               label="Website"
-              value={form.website || ''}
+              value={(form.website as string) || ''}
               onChangeText={(v: string) => updateField('website', v)}
               mode="outlined"
               keyboardType="url"
@@ -258,7 +258,7 @@ export default function CafeSettingsScreen() {
             />
             <TextInput
               label="Instagram"
-              value={form.instagram_url || ''}
+              value={(form.instagram_url as string) || ''}
               onChangeText={(v: string) => updateField('instagram_url', v)}
               mode="outlined"
               dense
@@ -266,7 +266,7 @@ export default function CafeSettingsScreen() {
             />
             <TextInput
               label="WhatsApp"
-              value={form.whatsapp_number || ''}
+              value={(form.whatsapp_number as string) || ''}
               onChangeText={(v: string) => updateField('whatsapp_number', v)}
               mode="outlined"
               dense
@@ -274,7 +274,7 @@ export default function CafeSettingsScreen() {
             />
             <TextInput
               label="Google Maps URL"
-              value={form.google_maps_url || ''}
+              value={(form.google_maps_url as string) || ''}
               onChangeText={(v: string) => updateField('google_maps_url', v)}
               mode="outlined"
               dense

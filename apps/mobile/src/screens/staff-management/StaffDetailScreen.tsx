@@ -9,7 +9,7 @@ import { useOrders, usePaymentsByStaff, useStaffMember, useUpdateStaff } from '@
 import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { TextInput } from '@/lib/paper-compat';
-import type { StaffManagementStackParamList } from '@/types';
+import type { Staff, StaffManagementStackParamList } from '@/types';
 
 type Route = RouteProp<StaffManagementStackParamList, 'StaffDetail'>;
 
@@ -31,26 +31,32 @@ export default function StaffDetailScreen() {
   const { data: settings } = useCafeSettings();
   const updateStaff = useUpdateStaff();
 
-  const currencySymbol = (settings as any)?.currency_symbol || '$';
+  const currencySymbol = settings?.currency_symbol || '$';
 
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editForm, setEditForm] = useState({ full_name: '', phone: '', role: '' });
+  const [editForm, setEditForm] = useState<{
+    full_name: string;
+    phone: string;
+    role: Staff['role'];
+  }>({ full_name: '', phone: '', role: 'waiter' });
 
   const staffOrders = useMemo(() => {
     if (!orders || !staffId) return [];
-    return (orders as any[]).filter((o) => o.assigned_waiter_id === staffId).slice(0, 10);
+    return orders
+      .filter((o: { assigned_waiter_id: string | null }) => o.assigned_waiter_id === staffId)
+      .slice(0, 10);
   }, [orders, staffId]);
 
   const totalRevenue = useMemo(() => {
-    return (payments as any[])?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || 0;
+    return payments?.reduce((sum: number, p: { amount: number }) => sum + (p.amount || 0), 0) || 0;
   }, [payments]);
 
   const openEdit = () => {
     if (member) {
       setEditForm({
-        full_name: (member as any).full_name || '',
-        phone: (member as any).phone || '',
-        role: (member as any).role || '',
+        full_name: member.full_name || '',
+        phone: member.phone || '',
+        role: member.role || '',
       });
       setShowEditModal(true);
     }
@@ -61,16 +67,15 @@ export default function StaffDetailScreen() {
       await updateStaff.mutateAsync({ id: staffId, data: editForm });
       showSuccess('Staff updated');
       setShowEditModal(false);
-    } catch (err: any) {
-      showError(err?.message || 'Failed to update');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to update');
     }
   };
 
   if (isLoading) return <LoadingScreen />;
   if (error || !member) return <ErrorScreen error={error || 'Staff not found'} onRetry={refetch} />;
 
-  const m = member as any;
-  const roleColor = ROLE_COLORS[m.role] || '#6b7280';
+  const roleColor = ROLE_COLORS[member.role] || '#6b7280';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -79,25 +84,25 @@ export default function StaffDetailScreen() {
         <Card.Content style={styles.profileContent}>
           <MaterialCommunityIcons name="account-circle" size={64} color={roleColor} />
           <Text variant="headlineSmall" style={styles.name}>
-            {m.full_name}
+            {member.full_name}
           </Text>
           <Chip
             compact
             style={[styles.roleChip, { backgroundColor: roleColor }]}
             textStyle={{ color: '#fff', fontWeight: '600' }}
           >
-            {m.role}
+            {member.role}
           </Chip>
           <Text variant="bodyMedium" style={styles.muted}>
-            {m.email}
+            {member.email}
           </Text>
-          {m.phone && (
+          {member.phone && (
             <Text variant="bodySmall" style={styles.muted}>
-              {m.phone}
+              {member.phone}
             </Text>
           )}
           <Text variant="bodySmall" style={styles.muted}>
-            Member since {new Date(m.created_at).toLocaleDateString()}
+            Member since {new Date(member.created_at).toLocaleDateString()}
           </Text>
           <Button mode="outlined" onPress={openEdit} style={styles.editBtn}>
             Edit Profile
@@ -131,7 +136,7 @@ export default function StaffDetailScreen() {
             </View>
             <View style={styles.stat}>
               <Text variant="titleLarge" style={styles.statValue}>
-                {(payments as any[])?.length || 0}
+                {payments?.length || 0}
               </Text>
               <Text variant="bodySmall" style={styles.muted}>
                 Payments
@@ -148,9 +153,9 @@ export default function StaffDetailScreen() {
             <Text variant="titleMedium" style={styles.sectionTitle}>
               Recent Orders
             </Text>
-            {staffOrders.map((o: any) => (
+            {staffOrders.map((o: { id: string; order_number: string | null; status: string }) => (
               <View key={o.id} style={styles.listItem}>
-                <Text variant="bodyMedium">#{o.order_number || '—'}</Text>
+                <Text variant="bodyMedium">#{o.order_number || '--'}</Text>
                 <Text variant="bodySmall" style={styles.muted}>
                   {o.status}
                 </Text>
@@ -161,23 +166,25 @@ export default function StaffDetailScreen() {
       )}
 
       {/* Recent Payments */}
-      {(payments as any[])?.length > 0 && (
+      {(payments?.length ?? 0) > 0 && (
         <Card style={styles.card}>
           <Card.Content>
             <Text variant="titleMedium" style={styles.sectionTitle}>
               Recent Payments
             </Text>
-            {(payments as any[]).map((p: any) => (
-              <View key={p.id} style={styles.listItem}>
-                <Text variant="bodyMedium">
-                  {p.payment_method} — {currencySymbol}
-                  {p.amount?.toFixed(2)}
-                </Text>
-                <Text variant="bodySmall" style={styles.muted}>
-                  {new Date(p.created_at).toLocaleDateString()}
-                </Text>
-              </View>
-            ))}
+            {payments?.map(
+              (p: { id: string; payment_method: string; amount: number; created_at: string }) => (
+                <View key={p.id} style={styles.listItem}>
+                  <Text variant="bodyMedium">
+                    {p.payment_method} — {currencySymbol}
+                    {p.amount?.toFixed(2)}
+                  </Text>
+                  <Text variant="bodySmall" style={styles.muted}>
+                    {new Date(p.created_at).toLocaleDateString()}
+                  </Text>
+                </View>
+              ),
+            )}
           </Card.Content>
         </Card>
       )}
@@ -213,7 +220,7 @@ export default function StaffDetailScreen() {
             Role
           </Text>
           <View style={styles.chipRow}>
-            {['waiter', 'kitchen', 'admin'].map((r) => (
+            {(['waiter', 'kitchen', 'admin'] as Staff['role'][]).map((r) => (
               <Chip
                 key={r}
                 selected={editForm.role === r}

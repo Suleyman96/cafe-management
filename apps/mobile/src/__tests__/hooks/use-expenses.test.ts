@@ -45,7 +45,7 @@ describe('useCreateExpense', () => {
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual(['expenses']);
-    expect(keys).toContainEqual(['expense-summary']);
+    expect(keys).toContainEqual(['expense_monthly_summary']);
   });
 });
 
@@ -58,6 +58,6 @@ describe('useDeleteExpense', () => {
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual(['expenses']);
-    expect(keys).toContainEqual(['expense-summary']);
+    expect(keys).toContainEqual(['expense_monthly_summary']);
   });
 });

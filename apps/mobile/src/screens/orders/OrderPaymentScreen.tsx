@@ -61,7 +61,7 @@ export default function OrderPaymentScreen() {
 
       const newRemaining = remaining - paymentAmount;
       if (newRemaining <= 0) {
-        await updateOrderStatus.mutateAsync({ orderId, status: 'paid' });
+        await updateOrderStatus.mutateAsync({ orderId, status: 'closed' });
         showSuccess('Payment complete — order paid');
       } else {
         showSuccess(`Payment of $${paymentAmount.toFixed(2)} recorded`);

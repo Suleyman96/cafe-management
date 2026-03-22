@@ -1,23 +1,22 @@
+import { QUERY_KEYS } from '@cafe-idare/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase';
 import type { Table } from '@/types';
 
 export function useTables() {
   return useQuery({
-    queryKey: ['tables'],
-    queryFn: async () => {
-      const data = await db.tables.findAll();
-      return data as Table[];
+    queryKey: [QUERY_KEYS.TABLES],
+    queryFn: async (): Promise<Table[]> => {
+      return await db.tables.findAll();
     },
   });
 }
 
 export function useTable(tableId: string) {
   return useQuery({
-    queryKey: ['table', tableId],
-    queryFn: async () => {
-      const data = await db.tables.findById(tableId);
-      return data as Table;
+    queryKey: [QUERY_KEYS.TABLE, tableId],
+    queryFn: async (): Promise<Table> => {
+      return await db.tables.findById(tableId);
     },
   });
 }
@@ -26,12 +25,14 @@ export function useUpdateTableStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ tableId, status }: { tableId: string; status: string }) => {
-      const data = await db.tables.updateStatus(tableId, status as any);
-      return data as Table;
+    mutationFn: async ({ tableId, status }: { tableId: string; status: Table['status'] }) => {
+      return await db.tables.updateStatus(tableId, status);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to update table status:', error.message);
     },
   });
 }

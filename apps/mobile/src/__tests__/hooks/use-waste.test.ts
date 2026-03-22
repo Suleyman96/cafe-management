@@ -36,8 +36,8 @@ describe('useCreateWasteLog', () => {
     await result.current.mutateAsync({ item_name: 'Milk', quantity: 2 });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['waste-logs']);
-    expect(keys).toContainEqual(['waste-summary']);
+    expect(keys).toContainEqual(['waste_logs']);
+    expect(keys).toContainEqual(['waste_summary']);
   });
 });
 
@@ -49,7 +49,7 @@ describe('useDeleteWasteLog', () => {
     await result.current.mutateAsync('w1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['waste-logs']);
-    expect(keys).toContainEqual(['waste-summary']);
+    expect(keys).toContainEqual(['waste_logs']);
+    expect(keys).toContainEqual(['waste_summary']);
   });
 });

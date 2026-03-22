@@ -42,7 +42,7 @@ describe('useUpdateStaff', () => {
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual(['staff']);
-    expect(keys).toContainEqual(['staff-member']);
+    expect(keys).toContainEqual(['staff_member']);
   });
 });
 

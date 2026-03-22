@@ -34,9 +34,9 @@ export default function StockListScreen() {
   const adjustStock = useAdjustStock();
   const createItem = useCreateStockItem();
 
-  const currencySymbol = (settings as any)?.currency_symbol || '$';
+  const currencySymbol = settings?.currency_symbol || '$';
 
-  const filtered = (items || []).filter((i: any) =>
+  const filtered = (items || []).filter((i: { name: string }) =>
     i.name?.toLowerCase().includes(search.toLowerCase()),
   );
 
@@ -57,17 +57,21 @@ export default function StockListScreen() {
     try {
       await createItem.mutateAsync({
         name: newItem.name,
-        category: newItem.category || undefined,
+        category: newItem.category || '',
         unit: newItem.unit,
         minimum_stock_level: parseInt(newItem.minimum_stock_level, 10) || 0,
         cost_price: parseFloat(newItem.cost_price) || 0,
         quantity: 0,
+        is_active: true,
+        description: null,
+        notes: null,
+        supplier_name: null,
       });
       showSuccess('Item created');
       setShowCreateModal(false);
       setNewItem({ name: '', category: '', unit: 'pcs', minimum_stock_level: '', cost_price: '' });
-    } catch (err: any) {
-      showError(err?.message || 'Failed to create item');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to create item');
     }
   };
 
@@ -93,8 +97,8 @@ export default function StockListScreen() {
       setMovementModal(null);
       setMovementQty('');
       setMovementReason('');
-    } catch (err: any) {
-      showError(err?.message || 'Failed to adjust stock');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to adjust stock');
     }
   };
 
@@ -132,7 +136,7 @@ export default function StockListScreen() {
             </Text>
             <Text variant="titleMedium" style={{ fontWeight: '700' }}>
               {currencySymbol}
-              {((totalValue as any) || 0).toFixed(0)}
+              {(totalValue || 0).toFixed(0)}
             </Text>
           </Card.Content>
         </Card>
@@ -147,7 +151,7 @@ export default function StockListScreen() {
 
       <FlatList
         data={filtered}
-        keyExtractor={(item: any) => item.id}
+        keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         renderItem={({ item }) => (
           <StockItemCard
@@ -275,24 +279,34 @@ export default function StockListScreen() {
           {(movements || []).length === 0 ? (
             <Text style={styles.muted}>No movements recorded</Text>
           ) : (
-            (movements as any[])?.slice(0, 20).map((m: any) => (
-              <View key={m.id} style={styles.historyRow}>
-                <View>
-                  <Text variant="bodyMedium">
-                    {m.type === 'in' ? '+' : '-'}
-                    {m.quantity} ({m.type})
-                  </Text>
-                  {m.reason && (
+            movements
+              ?.slice(0, 20)
+              .map(
+                (m: {
+                  id: string;
+                  movement_type: string;
+                  quantity_change: number;
+                  reason: string | null;
+                  created_at: string;
+                }) => (
+                  <View key={m.id} style={styles.historyRow}>
+                    <View>
+                      <Text variant="bodyMedium">
+                        {m.movement_type === 'in' ? '+' : '-'}
+                        {m.quantity_change} ({m.movement_type})
+                      </Text>
+                      {m.reason && (
+                        <Text variant="bodySmall" style={styles.muted}>
+                          {m.reason}
+                        </Text>
+                      )}
+                    </View>
                     <Text variant="bodySmall" style={styles.muted}>
-                      {m.reason}
+                      {new Date(m.created_at).toLocaleDateString()}
                     </Text>
-                  )}
-                </View>
-                <Text variant="bodySmall" style={styles.muted}>
-                  {new Date(m.created_at).toLocaleDateString()}
-                </Text>
-              </View>
-            ))
+                  </View>
+                ),
+              )
           )}
           <Button onPress={() => setHistoryItemId(undefined)} style={{ marginTop: 8 }}>
             Close

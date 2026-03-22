@@ -18,6 +18,6 @@ describe('useUpdateCafeSettings', () => {
     await result.current.mutateAsync({ restaurant_name: 'New Name' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['cafe-settings']);
+    expect(keys).toContainEqual(['cafe_settings']);
   });
 });

@@ -18,7 +18,7 @@ describe('useCreateMenuItem', () => {
     await result.current.mutateAsync({ name: 'Espresso', price: 3 });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['menu-items']);
+    expect(keys).toContainEqual(['menu_items']);
   });
 });
 
@@ -30,7 +30,7 @@ describe('useUpdateMenuItem', () => {
     await result.current.mutateAsync({ id: 'm1', data: { name: 'Updated' } });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['menu-items']);
+    expect(keys).toContainEqual(['menu_items']);
   });
 });
 
@@ -42,7 +42,7 @@ describe('useDeleteMenuItem', () => {
     await result.current.mutateAsync('m1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['menu-items']);
+    expect(keys).toContainEqual(['menu_items']);
   });
 });
 
@@ -54,7 +54,7 @@ describe('useToggleMenuItemAvailability', () => {
     await result.current.mutateAsync('m1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['menu-items']);
+    expect(keys).toContainEqual(['menu_items']);
   });
 });
 
@@ -91,6 +91,6 @@ describe('useDeleteCategory', () => {
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual(['categories']);
-    expect(keys).toContainEqual(['menu-items']);
+    expect(keys).toContainEqual(['menu_items']);
   });
 });

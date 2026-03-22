@@ -149,7 +149,7 @@ export function createExpensesWrapper(ctx: WrapperContext) {
       const endDate =
         month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`;
 
-      const { data, error } = await ctx.client
+      const { data, error } = await ctx.anyClient
         .from('expenses')
         .select(`
           amount,
@@ -160,13 +160,14 @@ export function createExpensesWrapper(ctx: WrapperContext) {
 
       if (error) throw handleSupabaseError(error);
 
-      const expenses = data || [];
-      const total = expenses.reduce((sum: number, e: any) => sum + e.amount, 0);
+      type ExpenseSummaryRow = { amount: number; category: { id: string; name: string } | null };
+      const expenses = (data || []) as unknown as ExpenseSummaryRow[];
+      const total = expenses.reduce((sum, e) => sum + e.amount, 0);
       const byCategory: Record<string, { name: string; total: number; count: number }> = {};
 
       for (const e of expenses) {
-        const catName = (e as any).category?.name || 'Uncategorized';
-        const catId = (e as any).category?.id || 'uncategorized';
+        const catName = e.category?.name || 'Uncategorized';
+        const catId = e.category?.id || 'uncategorized';
         if (!byCategory[catId]) {
           byCategory[catId] = { name: catName, total: 0, count: 0 };
         }

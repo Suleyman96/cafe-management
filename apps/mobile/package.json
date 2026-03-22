@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@cafe-idare/api-client": "workspace:*",
+    "@cafe-idare/core": "workspace:*",
     "@cafe-idare/database": "workspace:*",
     "@cafe-idare/i18n": "workspace:*",
     "@expo/vector-icons": "^15.1.1",

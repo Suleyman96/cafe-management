@@ -14,8 +14,9 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
+import type { Expense } from '@/types';
 
-const PAYMENT_METHODS = ['cash', 'card', 'digital', 'bank_transfer'];
+const PAYMENT_METHODS: Expense['payment_method'][] = ['cash', 'card', 'digital', 'bank_transfer'];
 
 export default function ExpensesListScreen() {
   const staff = useAuthStore((s) => s.staff);
@@ -41,9 +42,14 @@ export default function ExpensesListScreen() {
   const createExpense = useCreateExpense();
   const _deleteExpense = useDeleteExpense();
 
-  const currencySymbol = (settings as any)?.currency_symbol || '$';
+  const currencySymbol = settings?.currency_symbol || '$';
 
-  const [newExpense, setNewExpense] = useState({
+  const [newExpense, setNewExpense] = useState<{
+    description: string;
+    amount: string;
+    payment_method: Expense['payment_method'];
+    category_id: string;
+  }>({
     description: '',
     amount: '',
     payment_method: 'cash',
@@ -61,14 +67,17 @@ export default function ExpensesListScreen() {
         description: newExpense.description,
         amount,
         payment_method: newExpense.payment_method,
-        category_id: newExpense.category_id || undefined,
-        created_by: staff?.id,
+        category_id: newExpense.category_id || null,
+        created_by: staff?.id ?? null,
+        expense_date: new Date().toISOString().split('T')[0],
+        receipt_url: null,
+        notes: null,
       });
       showSuccess('Expense recorded');
       setShowCreateModal(false);
       setNewExpense({ description: '', amount: '', payment_method: 'cash', category_id: '' });
-    } catch (err: any) {
-      showError(err?.message || 'Failed to create expense');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to create expense');
     }
   };
 
@@ -114,7 +123,7 @@ export default function ExpensesListScreen() {
               </Text>
               <Text variant="titleMedium" style={{ fontWeight: '700', color: '#ef4444' }}>
                 {currencySymbol}
-                {((summary as any).total || 0).toFixed(2)}
+                {(summary.total || 0).toFixed(2)}
               </Text>
             </Card.Content>
           </Card>
@@ -124,7 +133,7 @@ export default function ExpensesListScreen() {
                 Transactions
               </Text>
               <Text variant="titleMedium" style={{ fontWeight: '700' }}>
-                {(summary as any).count || 0}
+                {summary.count || 0}
               </Text>
             </Card.Content>
           </Card>
@@ -150,7 +159,7 @@ export default function ExpensesListScreen() {
 
       <FlatList
         data={expenses || []}
-        keyExtractor={(item: any) => item.id}
+        keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         renderItem={({ item }) => <ExpenseCard expense={item} currencySymbol={currencySymbol} />}
         ListEmptyComponent={
@@ -207,13 +216,13 @@ export default function ExpensesListScreen() {
               </Chip>
             ))}
           </View>
-          {categories && (categories as any[]).length > 0 && (
+          {categories && categories.length > 0 && (
             <>
               <Text variant="bodySmall" style={[styles.muted, { marginBottom: 4 }]}>
                 Category
               </Text>
               <View style={styles.chipRow}>
-                {(categories as any[]).map((c: any) => (
+                {categories.map((c: { id: string; name: string }) => (
                   <Chip
                     key={c.id}
                     compact

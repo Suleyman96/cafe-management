@@ -26,6 +26,7 @@ import {
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
+import type { Task } from '@/types';
 
 const TAB_OPTIONS = [
   { value: 'today', label: 'Today' },
@@ -33,7 +34,7 @@ const TAB_OPTIONS = [
   { value: 'mine', label: 'My Tasks' },
 ];
 
-const PRIORITIES = ['low', 'normal', 'high', 'urgent'];
+const PRIORITIES: Task['priority'][] = ['low', 'normal', 'high', 'urgent'];
 
 export default function TasksListScreen() {
   const staff = useAuthStore((s) => s.staff);
@@ -68,17 +69,31 @@ export default function TasksListScreen() {
     return (todayTasks || []).filter((t: any) => t.status === 'completed').length;
   }, [todayTasks]);
 
-  const [newTask, setNewTask] = useState({ title: '', description: '', priority: 'normal' });
+  const [newTask, setNewTask] = useState<{
+    title: string;
+    description: string;
+    priority: Task['priority'];
+  }>({ title: '', description: '', priority: 'normal' });
 
   const handleCreate = async () => {
     if (!newTask.title.trim()) return;
     try {
       await createTask.mutateAsync({
         title: newTask.title.trim(),
-        description: newTask.description.trim() || undefined,
+        description: newTask.description.trim() || null,
         priority: newTask.priority,
-        created_by: staff?.id,
+        created_by: staff?.id ?? null,
         due_date: new Date().toISOString().split('T')[0],
+        status: 'pending',
+        is_recurring: false,
+        category_id: null,
+        assigned_to: null,
+        due_time: null,
+        completed_at: null,
+        recurrence_pattern: null,
+        recurrence_days: null,
+        parent_task_id: null,
+        notes: null,
       });
       showSuccess('Task created');
       setShowCreateModal(false);

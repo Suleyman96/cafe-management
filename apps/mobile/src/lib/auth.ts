@@ -1,5 +1,5 @@
 import type { Staff } from '@/types';
-import { supabase } from './supabase';
+import { db, supabase } from './supabase';
 
 export interface LoginCredentials {
   email: string;
@@ -14,21 +14,13 @@ export async function login({ email, password }: LoginCredentials) {
 
   if (error) throw error;
 
-  // Fetch staff profile
-  const { data: staffData, error: staffError } = await supabase
-    .from('staff')
-    .select('*')
-    .eq('auth_user_id', data.user.id)
-    .single();
-
-  if (staffError) throw staffError;
+  // Fetch staff profile via wrapper
+  const staff = await db.staff.findByAuthId(data.user.id);
 
   // Update last login
-  await (supabase.from('staff') as any)
-    .update({ last_login_at: new Date().toISOString() })
-    .eq('id', (staffData as any).id);
+  await db.staff.updateLastLogin(staff.id);
 
-  return { user: data.user, staff: staffData as Staff };
+  return { user: data.user, staff };
 }
 
 export async function logout() {
@@ -36,7 +28,7 @@ export async function logout() {
   if (error) throw error;
 }
 
-export async function getCurrentUser() {
+export async function getCurrentUser(): Promise<Staff | null> {
   const {
     data: { user },
     error,
@@ -44,26 +36,22 @@ export async function getCurrentUser() {
 
   if (error || !user) return null;
 
-  // Fetch staff profile
-  const { data: staffData } = await supabase
-    .from('staff')
-    .select('*')
-    .eq('auth_user_id', user.id)
-    .single();
-
-  return staffData as Staff | null;
+  try {
+    return await db.staff.findByAuthId(user.id);
+  } catch {
+    return null;
+  }
 }
 
 export function onAuthStateChange(callback: (staff: Staff | null) => void) {
   return supabase.auth.onAuthStateChange(async (_event, session) => {
     if (session?.user) {
-      const { data } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('auth_user_id', session.user.id)
-        .single();
-
-      callback(data as Staff | null);
+      try {
+        const staff = await db.staff.findByAuthId(session.user.id);
+        callback(staff);
+      } catch {
+        callback(null);
+      }
     } else {
       callback(null);
     }

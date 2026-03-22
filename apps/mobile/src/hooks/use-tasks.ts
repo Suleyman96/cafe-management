@@ -1,39 +1,42 @@
+import { QUERY_KEYS } from '@cafe-idare/core';
+import type { TaskInsert } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase';
+import type { Task } from '@/types';
 
 export function useTodaysTasks() {
   return useQuery({
-    queryKey: ['tasks', 'today'],
-    queryFn: () => db.tasks.getTodaysTasks(),
+    queryKey: [QUERY_KEYS.TASKS, 'today'],
+    queryFn: async (): Promise<Task[]> => db.tasks.getTodaysTasks(),
   });
 }
 
 export function useTasks(options?: { status?: string; priority?: string; isTemplate?: boolean }) {
   return useQuery({
-    queryKey: ['tasks', options],
-    queryFn: () => db.tasks.findAll(options as any),
+    queryKey: [QUERY_KEYS.TASKS, options],
+    queryFn: async (): Promise<Task[]> => db.tasks.findAll(options),
   });
 }
 
 export function useMyTasks(staffId: string | undefined) {
   return useQuery({
-    queryKey: ['tasks', 'my', staffId],
-    queryFn: () => db.tasks.findMyTasks(staffId!),
+    queryKey: [QUERY_KEYS.TASKS, 'my', staffId],
+    queryFn: async (): Promise<Task[]> => db.tasks.findMyTasks(staffId!),
     enabled: !!staffId,
   });
 }
 
 export function useOverdueTasksCount() {
   return useQuery({
-    queryKey: ['tasks', 'overdue-count'],
-    queryFn: () => db.tasks.getOverdueCount(),
+    queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT],
+    queryFn: async (): Promise<number> => db.tasks.getOverdueCount(),
   });
 }
 
 export function useRecurringTemplates() {
   return useQuery({
-    queryKey: ['tasks', 'recurring'],
-    queryFn: () => db.tasks.getRecurringTemplates(),
+    queryKey: [QUERY_KEYS.TASKS, 'recurring'],
+    queryFn: async (): Promise<Task[]> => db.tasks.getRecurringTemplates(),
   });
 }
 
@@ -41,9 +44,12 @@ export function useCreateTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: any) => db.tasks.create(data),
+    mutationFn: (data: TaskInsert) => db.tasks.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to create task:', error.message);
     },
   });
 }
@@ -54,7 +60,10 @@ export function useDeleteTask() {
   return useMutation({
     mutationFn: (id: string) => db.tasks.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to delete task:', error.message);
     },
   });
 }
@@ -65,7 +74,10 @@ export function useMarkTaskInProgress() {
   return useMutation({
     mutationFn: (id: string) => db.tasks.markInProgress(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to mark task in progress:', error.message);
     },
   });
 }
@@ -76,7 +88,10 @@ export function useMarkTaskCompleted() {
   return useMutation({
     mutationFn: (id: string) => db.tasks.markCompleted(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to mark task completed:', error.message);
     },
   });
 }
@@ -87,7 +102,10 @@ export function useMarkTaskCancelled() {
   return useMutation({
     mutationFn: (id: string) => db.tasks.markCancelled(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to mark task cancelled:', error.message);
     },
   });
 }
@@ -98,7 +116,10 @@ export function useGenerateRecurringTasks() {
   return useMutation({
     mutationFn: (date: string) => db.tasks.generateRecurringTasks(date),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to generate recurring tasks:', error.message);
     },
   });
 }
