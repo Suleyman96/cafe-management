@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QUERY_KEYS } from '@/lib/query-keys';
 import { db } from '@/lib/supabase';
 import type { WaiterCall } from '@/types';
 
@@ -7,7 +8,7 @@ type CallPriority = 'low' | 'normal' | 'high' | 'urgent';
 
 export function useWaiterCalls(tableId: string) {
   return useQuery({
-    queryKey: ['waiter_calls', tableId],
+    queryKey: [QUERY_KEYS.WAITER_CALLS, tableId],
     queryFn: async () => {
       const data = await db.waiterCalls.findByTable(tableId, 'pending');
       return data as WaiterCall[];
@@ -38,7 +39,7 @@ export function useCreateWaiterCall() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ['waiter_calls', variables.tableId],
+        queryKey: [QUERY_KEYS.WAITER_CALLS, variables.tableId],
       });
     },
   });

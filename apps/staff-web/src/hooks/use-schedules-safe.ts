@@ -6,6 +6,7 @@
 import { QUERY_KEYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateSchedules } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type StaffScheduleInsert = Database['public']['Tables']['staff_schedules']['Insert'];
@@ -50,8 +51,7 @@ export function useCreateSchedule() {
   return useMutation({
     mutationFn: (data: StaffScheduleInsert) => db.schedules.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SCHEDULES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MY_SCHEDULE] });
+      invalidateSchedules(queryClient);
     },
   });
 }
@@ -63,8 +63,7 @@ export function useUpdateSchedule() {
     mutationFn: ({ id, data }: { id: string; data: StaffScheduleUpdate }) =>
       db.schedules.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SCHEDULES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MY_SCHEDULE] });
+      invalidateSchedules(queryClient);
     },
   });
 }
@@ -75,8 +74,7 @@ export function useDeleteSchedule() {
   return useMutation({
     mutationFn: (id: string) => db.schedules.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SCHEDULES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MY_SCHEDULE] });
+      invalidateSchedules(queryClient);
     },
   });
 }

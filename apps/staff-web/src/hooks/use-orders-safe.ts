@@ -6,6 +6,7 @@
 import { ORDER_STATUS, QUERY_KEYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateOrders, invalidateOrdersAndTables } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type OrderStatus = Database['public']['Tables']['orders']['Row']['status'];
@@ -48,9 +49,7 @@ export function useUpdateOrderStatus() {
       return db.orders.updateStatus(orderId, statusValue);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+      invalidateOrdersAndTables(queryClient);
     },
   });
 }
@@ -76,11 +75,7 @@ export function useAddOrderItems() {
     onSuccess: (_, variables) => {
       // Get the order_id from the first item to invalidate that specific order
       const orderId = variables[0]?.order_id;
-      if (orderId) {
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, orderId] });
-      }
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+      invalidateOrders(queryClient, orderId || undefined);
     },
   });
 }
@@ -92,9 +87,7 @@ export function useAssignWaiter() {
     mutationFn: ({ orderId, waiterId }: { orderId: string; waiterId: string | null }) =>
       db.orders.assignWaiter(orderId, waiterId),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.orderId] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+      invalidateOrders(queryClient, variables.orderId);
     },
   });
 }
@@ -108,9 +101,7 @@ export function useUpdateOrderItemStatus() {
     mutationFn: ({ itemId, status }: { itemId: string; status: OrderItemStatus }) =>
       db.orderItems.updateStatus(itemId, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+      invalidateOrdersAndTables(queryClient);
     },
   });
 }
@@ -121,9 +112,7 @@ export function useDeleteOrderItem() {
   return useMutation({
     mutationFn: (itemId: string) => db.orderItems.delete(itemId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+      invalidateOrdersAndTables(queryClient);
     },
   });
 }
@@ -135,10 +124,7 @@ export function useCancelOrderItem() {
     mutationFn: ({ itemId, cancelQty }: { itemId: string; cancelQty?: number }) =>
       db.orderItems.cancel(itemId, cancelQty),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+      invalidateOrdersAndTables(queryClient);
     },
   });
 }
@@ -157,10 +143,7 @@ export function useCancelOrder() {
       tableId?: string | null;
     }) => db.orders.cancelOrder(orderId, reason, tableId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+      invalidateOrdersAndTables(queryClient);
     },
   });
 }
@@ -177,9 +160,7 @@ export function useUpdateOrderNotes() {
       notes: { customer_notes?: string | null; internal_notes?: string | null };
     }) => db.orders.updateNotes(orderId, notes),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.orderId] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+      invalidateOrders(queryClient, variables.orderId);
     },
   });
 }

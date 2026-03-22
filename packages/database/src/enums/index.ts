@@ -4,6 +4,7 @@
 
 export const ORDER_STATUS = {
   NEW: 'new',
+  PENDING_APPROVAL: 'pending_approval',
   PREPARING: 'preparing',
   READY: 'ready',
   SERVED: 'served',

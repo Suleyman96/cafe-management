@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Card, IconButton, Text } from 'react-native-paper';
+import { Card, IconButton } from 'react-native-paper';
+import { Text } from '@/lib/paper-compat';
 
 interface MenuItemCardProps {
   menuItem: {

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Text, TextInput } from 'react-native-paper';
+import { Button } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { login } from '@/lib/auth';
+import { Text, TextInput } from '@/lib/paper-compat';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth-store';
 

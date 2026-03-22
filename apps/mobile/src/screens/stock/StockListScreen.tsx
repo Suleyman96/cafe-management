@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { Button, Card, FAB, Modal, Portal, Searchbar, Text, TextInput } from 'react-native-paper';
+import { Button, Card, FAB, Modal, Portal, Searchbar, Text } from 'react-native-paper';
 import { StockItemCard } from '@/components/stock/StockItemCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
@@ -13,6 +13,7 @@ import {
   useStockTotalValue,
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 
 export default function StockListScreen() {
@@ -176,7 +177,7 @@ export default function StockListScreen() {
           <TextInput
             label="Name"
             value={newItem.name}
-            onChangeText={(v) => setNewItem({ ...newItem, name: v })}
+            onChangeText={(v: string) => setNewItem({ ...newItem, name: v })}
             mode="outlined"
             dense
             style={styles.input}
@@ -184,7 +185,7 @@ export default function StockListScreen() {
           <TextInput
             label="Category"
             value={newItem.category}
-            onChangeText={(v) => setNewItem({ ...newItem, category: v })}
+            onChangeText={(v: string) => setNewItem({ ...newItem, category: v })}
             mode="outlined"
             dense
             style={styles.input}
@@ -192,7 +193,7 @@ export default function StockListScreen() {
           <TextInput
             label="Unit"
             value={newItem.unit}
-            onChangeText={(v) => setNewItem({ ...newItem, unit: v })}
+            onChangeText={(v: string) => setNewItem({ ...newItem, unit: v })}
             mode="outlined"
             dense
             style={styles.input}
@@ -200,7 +201,7 @@ export default function StockListScreen() {
           <TextInput
             label="Minimum Stock Level"
             value={newItem.minimum_stock_level}
-            onChangeText={(v) => setNewItem({ ...newItem, minimum_stock_level: v })}
+            onChangeText={(v: string) => setNewItem({ ...newItem, minimum_stock_level: v })}
             mode="outlined"
             keyboardType="number-pad"
             dense
@@ -209,7 +210,7 @@ export default function StockListScreen() {
           <TextInput
             label="Cost Price"
             value={newItem.cost_price}
-            onChangeText={(v) => setNewItem({ ...newItem, cost_price: v })}
+            onChangeText={(v: string) => setNewItem({ ...newItem, cost_price: v })}
             mode="outlined"
             keyboardType="decimal-pad"
             dense

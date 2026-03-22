@@ -5,6 +5,7 @@
 import { QUERY_KEYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateStock, refetchStock } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type StockItem = Database['public']['Tables']['stock_items']['Row'];
@@ -31,12 +32,10 @@ export function useCreateStockItem() {
   return useMutation({
     mutationFn: (data: StockItemInsert) => db.stockItems.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+      invalidateStock(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+      refetchStock(queryClient);
     },
   });
 }
@@ -48,12 +47,10 @@ export function useUpdateStockItem() {
     mutationFn: ({ id, updates }: { id: string; updates: Partial<StockItem> }) =>
       db.stockItems.update(id, updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+      invalidateStock(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+      refetchStock(queryClient);
     },
   });
 }
@@ -64,12 +61,10 @@ export function useDeleteStockItem() {
   return useMutation({
     mutationFn: (id: string) => db.stockItems.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+      invalidateStock(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+      refetchStock(queryClient);
     },
   });
 }
@@ -91,14 +86,10 @@ export function useAdjustStock() {
       };
     }) => db.stockItems.adjustStock(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_MOVEMENTS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+      invalidateStock(queryClient, true);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.STOCK_MOVEMENTS] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+      refetchStock(queryClient, true);
     },
   });
 }

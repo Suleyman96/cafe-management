@@ -3,11 +3,12 @@ import type { RouteProp } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { Button, Card, Chip, Modal, Portal, Text } from 'react-native-paper';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useOrders, usePaymentsByStaff, useStaffMember, useUpdateStaff } from '@/hooks';
 import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { TextInput } from '@/lib/paper-compat';
 import type { StaffManagementStackParamList } from '@/types';
 
 type Route = RouteProp<StaffManagementStackParamList, 'StaffDetail'>;
@@ -194,7 +195,7 @@ export default function StaffDetailScreen() {
           <TextInput
             label="Full Name"
             value={editForm.full_name}
-            onChangeText={(v) => setEditForm({ ...editForm, full_name: v })}
+            onChangeText={(v: string) => setEditForm({ ...editForm, full_name: v })}
             mode="outlined"
             dense
             style={styles.input}
@@ -202,7 +203,7 @@ export default function StaffDetailScreen() {
           <TextInput
             label="Phone"
             value={editForm.phone}
-            onChangeText={(v) => setEditForm({ ...editForm, phone: v })}
+            onChangeText={(v: string) => setEditForm({ ...editForm, phone: v })}
             mode="outlined"
             keyboardType="phone-pad"
             dense

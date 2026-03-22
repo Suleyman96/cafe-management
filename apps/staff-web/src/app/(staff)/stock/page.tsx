@@ -16,7 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { StockItemModal } from '@/components/modals/stock-item-modal';
 import { StockMovementModal } from '@/components/modals/stock-movement-modal';
 import { Button } from '@/components/ui/button';

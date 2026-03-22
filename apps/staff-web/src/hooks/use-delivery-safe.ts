@@ -5,6 +5,7 @@
 
 import { QUERY_KEYS } from '@cafe-idare/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateDeliveryOrders } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 export function useDeliveryOrders() {
@@ -21,9 +22,7 @@ export function useAssignDeliveryPerson() {
     mutationFn: ({ orderId, staffId }: { orderId: string; staffId: string }) =>
       db.orders.assignDeliveryPerson(orderId, staffId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
+      invalidateDeliveryOrders(queryClient);
     },
   });
 }
@@ -35,9 +34,7 @@ export function useUpdateDeliveryFee() {
     mutationFn: ({ orderId, fee }: { orderId: string; fee: number }) =>
       db.orders.updateDeliveryFee(orderId, fee),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
+      invalidateDeliveryOrders(queryClient);
     },
   });
 }
@@ -49,9 +46,7 @@ export function useMarkOutForDelivery() {
     mutationFn: ({ orderId, deliveryPersonId }: { orderId: string; deliveryPersonId: string }) =>
       db.orders.markOutForDelivery(orderId, deliveryPersonId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
+      invalidateDeliveryOrders(queryClient);
     },
   });
 }
@@ -62,9 +57,7 @@ export function useMarkDelivered() {
   return useMutation({
     mutationFn: (orderId: string) => db.orders.markDelivered(orderId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
+      invalidateDeliveryOrders(queryClient);
     },
   });
 }

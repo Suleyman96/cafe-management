@@ -129,16 +129,3 @@ export type ReportsStackParamList = {
 export type CafeSettingsStackParamList = {
   CafeSettings: undefined;
 };
-
-// Helper type guards
-export function isWaiter(staff: Staff): boolean {
-  return staff.role === 'waiter';
-}
-
-export function isAdmin(staff: Staff): boolean {
-  return staff.role === 'admin';
-}
-
-export function isKitchen(staff: Staff): boolean {
-  return staff.role === 'kitchen';
-}

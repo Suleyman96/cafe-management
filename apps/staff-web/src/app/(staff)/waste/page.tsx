@@ -5,7 +5,7 @@ import { useTranslation } from '@cafe-idare/i18n';
 import { LoadingSpinner } from '@cafe-idare/ui';
 import { DollarSign, Pencil, Plus, Trash2, TrendingDown } from 'lucide-react';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { WasteLogModal } from '@/components/modals/waste-log-modal';
 import { Button } from '@/components/ui/button';
 import { useCafeSettings, useDeleteWasteLog, useWasteLogs, useWasteMonthlySummary } from '@/hooks';

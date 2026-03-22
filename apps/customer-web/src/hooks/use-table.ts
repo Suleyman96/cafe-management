@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { QUERY_KEYS, STALE_TIMES } from '@/lib/query-keys';
 import { db } from '@/lib/supabase';
 import type { Table } from '@/types';
 
@@ -13,7 +14,7 @@ const isUUID = (str: string) =>
  */
 export function useTable(tableNumber: string) {
   return useQuery({
-    queryKey: ['table', tableNumber],
+    queryKey: [QUERY_KEYS.TABLE, tableNumber],
     queryFn: async () => {
       // If it looks like a UUID, query by id directly
       if (isUUID(tableNumber)) {
@@ -31,6 +32,6 @@ export function useTable(tableNumber: string) {
         return data as Table;
       }
     },
-    staleTime: 1000 * 60, // 1 minute
+    staleTime: STALE_TIMES.SHORT,
   });
 }

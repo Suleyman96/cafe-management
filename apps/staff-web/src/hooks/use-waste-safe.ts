@@ -5,6 +5,7 @@
 import { QUERY_KEYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateWaste, refetchWaste } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type WasteLogInsert = Database['public']['Tables']['waste_logs']['Insert'];
@@ -36,13 +37,11 @@ export function useCreateWasteLog() {
   return useMutation({
     mutationFn: (data: WasteLogInsert) => db.waste.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WASTE_LOGS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WASTE_SUMMARY] });
+      invalidateWaste(queryClient);
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.WASTE_LOGS] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.WASTE_SUMMARY] });
+      refetchWaste(queryClient);
     },
   });
 }
@@ -54,12 +53,10 @@ export function useUpdateWasteLog() {
     mutationFn: ({ id, updates }: { id: string; updates: Partial<WasteLog> }) =>
       db.waste.update(id, updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WASTE_LOGS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WASTE_SUMMARY] });
+      invalidateWaste(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.WASTE_LOGS] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.WASTE_SUMMARY] });
+      refetchWaste(queryClient);
     },
   });
 }
@@ -70,12 +67,10 @@ export function useDeleteWasteLog() {
   return useMutation({
     mutationFn: (id: string) => db.waste.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WASTE_LOGS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WASTE_SUMMARY] });
+      invalidateWaste(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.WASTE_LOGS] });
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.WASTE_SUMMARY] });
+      refetchWaste(queryClient);
     },
   });
 }

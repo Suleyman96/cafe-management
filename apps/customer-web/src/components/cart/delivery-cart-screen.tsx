@@ -1,12 +1,11 @@
 'use client';
 
 import { useTranslation } from '@cafe-idare/i18n';
-import { ArrowLeft, Edit3, MapPin, Minus, Phone, Plus, Trash2, Truck, User } from 'lucide-react';
+import { ArrowLeft, Edit3, MapPin, Phone, Truck, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAddDeliveryOrderItems, useCreateDeliveryOrder } from '@/hooks/use-delivery';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import {
@@ -18,6 +17,8 @@ import {
 import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
 import { useCartStore } from '@/store/cart-store';
 import { useDeliveryStore } from '@/store/delivery-store';
+import { CartItemCard } from './cart-item-card';
+import { CartPriceSummary } from './cart-price-summary';
 
 export function DeliveryCartScreen() {
   const router = useRouter();
@@ -151,129 +152,30 @@ export function DeliveryCartScreen() {
 
         {/* Cart Items */}
         <div className="space-y-4 mb-6">
-          {items.map((item) => {
-            const name = item.menuItem.name;
-            const isEditingThisItem = editingNotes === item.menuItem.id;
-
-            return (
-              <div key={item.menuItem.id} className="bg-card rounded-lg p-4 border">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {formatPrice(item.menuItem.price * taxMultiplier)}{' '}
-                      {t('each', { ns: 'common' })}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeItem(item.menuItem.id)}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Item Notes */}
-                {settings?.allow_item_notes !== false && (
-                  <div className="mb-3">
-                    {!isEditingThisItem ? (
-                      <div>
-                        {item.notes ? (
-                          <div className="flex items-start gap-2 p-2 bg-muted rounded-md">
-                            <span className="text-sm">{item.notes}</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 ml-auto"
-                              onClick={() => {
-                                setEditingNotes(item.menuItem.id);
-                                setTempNotes({
-                                  ...tempNotes,
-                                  [item.menuItem.id]: item.notes || '',
-                                });
-                              }}
-                            >
-                              <Edit3 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full text-xs"
-                            onClick={() => {
-                              setEditingNotes(item.menuItem.id);
-                              setTempNotes({ ...tempNotes, [item.menuItem.id]: '' });
-                            }}
-                          >
-                            <Edit3 className="h-3 w-3 mr-1" />
-                            {t('deliveryCart.addSpecialNotes')}
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <textarea
-                          className="w-full min-h-[60px] p-2 text-sm rounded-md border border-input bg-background"
-                          placeholder={t('deliveryCart.notesPlaceholder')}
-                          value={tempNotes[item.menuItem.id] || ''}
-                          onChange={(e) =>
-                            setTempNotes({ ...tempNotes, [item.menuItem.id]: e.target.value })
-                          }
-                          maxLength={200}
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => setEditingNotes(null)}
-                          >
-                            {t('cancel', { ns: 'common' })}
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => {
-                              updateNotes(item.menuItem.id, tempNotes[item.menuItem.id] || '');
-                              setEditingNotes(null);
-                            }}
-                          >
-                            {t('save', { ns: 'common' })}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(item.menuItem.id, item.quantity - 1)}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="font-bold w-8 text-center">{item.quantity}</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(item.menuItem.id, item.quantity + 1)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <span className="font-bold text-lg">
-                    {formatPrice(item.menuItem.price * item.quantity * taxMultiplier)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+          {items.map((item) => (
+            <CartItemCard
+              key={item.menuItem.id}
+              item={item}
+              taxMultiplier={taxMultiplier}
+              allowItemNotes={settings?.allow_item_notes !== false}
+              editingNotes={editingNotes}
+              tempNotes={tempNotes}
+              onEditNotes={(id, notes) => {
+                setEditingNotes(id);
+                setTempNotes({ ...tempNotes, [id]: notes });
+              }}
+              onCancelEditNotes={() => setEditingNotes(null)}
+              onSaveNotes={(id, notes) => {
+                updateNotes(id, notes);
+                setEditingNotes(null);
+              }}
+              onTempNotesChange={(id, value) => setTempNotes({ ...tempNotes, [id]: value })}
+              onRemoveItem={removeItem}
+              onUpdateQuantity={updateQuantity}
+              formatPrice={formatPrice}
+              priceLabel={`${formatPrice(item.menuItem.price * taxMultiplier)} ${t('each', { ns: 'common' })}`}
+            />
+          ))}
         </div>
 
         {/* Order Notes */}
@@ -290,64 +192,28 @@ export function DeliveryCartScreen() {
         )}
       </div>
 
-      {/* Price Summary (Fixed Bottom) */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4">
-        <div className="space-y-2 mb-4">
-          {settings?.tax_enabled && settings?.show_tax_separately ? (
-            <>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t('subtotal', { ns: 'common' })}</span>
-                <span>{formatPrice(displaySubtotal)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {settings.tax_label} ({settings.tax_percentage}%)
-                </span>
-                <span>{formatPrice(tax)}</span>
-              </div>
-            </>
-          ) : null}
-          {deliveryFee > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t('deliveryFee', { ns: 'common' })}</span>
-              <span>{formatPrice(deliveryFee)}</span>
-            </div>
-          )}
-          <div className="flex justify-between text-lg font-bold pt-2 border-t">
-            <span>{t('total', { ns: 'common' })}</span>
-            <span className="text-primary">{formatPrice(grandTotal)}</span>
-          </div>
-        </div>
-
-        {/* Minimum Order Warning */}
-        {!minimumMet && settings?.minimum_delivery_amount && (
-          <div className="mb-3 p-2 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
-            <p className="text-sm text-amber-700 dark:text-amber-300 text-center">
-              {t('deliveryCart.minimumDelivery', {
+      <CartPriceSummary
+        displaySubtotal={displaySubtotal}
+        tax={tax}
+        total={grandTotal}
+        deliveryFee={deliveryFee}
+        showTaxSeparately={!!(settings?.tax_enabled && settings?.show_tax_separately)}
+        taxLabel={settings?.tax_label}
+        taxPercentage={settings?.tax_percentage}
+        minimumAmount={settings?.minimum_delivery_amount}
+        minimumMet={minimumMet}
+        minimumWarning={
+          settings?.minimum_delivery_amount
+            ? t('deliveryCart.minimumDelivery', {
                 amount: formatPrice(settings.minimum_delivery_amount),
-              })}
-            </p>
-          </div>
-        )}
-
-        <Button
-          size="xl"
-          className="w-full"
-          onClick={handlePlaceOrder}
-          disabled={isLoading || !minimumMet}
-        >
-          {isLoading ? (
-            <>
-              <LoadingSpinner size="sm" className="mr-2" />
-              {t('placingOrder', { ns: 'common' })}
-            </>
-          ) : !minimumMet ? (
-            t('minimumOrderNotMet', { ns: 'common' })
-          ) : (
-            t('deliveryCart.placeOrder', { price: formatPrice(grandTotal) })
-          )}
-        </Button>
-      </div>
+              })
+            : undefined
+        }
+        isLoading={isLoading}
+        onPlaceOrder={handlePlaceOrder}
+        placeOrderLabel={t('deliveryCart.placeOrder', { price: formatPrice(grandTotal) })}
+        formatPrice={formatPrice}
+      />
     </div>
   );
 }

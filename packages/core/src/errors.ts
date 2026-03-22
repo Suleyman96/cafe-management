@@ -94,7 +94,7 @@ export function handleSupabaseError(error: any): AppError {
   }
 
   // Network errors
-  if (!navigator.onLine || error?.code === 'NETWORK_ERROR') {
+  if ((typeof navigator !== 'undefined' && !navigator.onLine) || error?.code === 'NETWORK_ERROR') {
     return new NetworkError();
   }
 

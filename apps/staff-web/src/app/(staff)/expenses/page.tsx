@@ -5,7 +5,7 @@ import { useTranslation } from '@cafe-idare/i18n';
 import { LoadingSpinner } from '@cafe-idare/ui';
 import { DollarSign, FolderOpen, Pencil, Plus, Settings, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { ExpenseCategoryModal } from '@/components/modals/expense-category-modal';
 import { ExpenseModal } from '@/components/modals/expense-modal';
 import { Button } from '@/components/ui/button';

@@ -196,7 +196,7 @@ export default function TasksListScreen() {
           <TextInput
             label="Title"
             value={newTask.title}
-            onChangeText={(v) => setNewTask({ ...newTask, title: v })}
+            onChangeText={(v: string) => setNewTask({ ...newTask, title: v })}
             mode="outlined"
             dense
             style={styles.input}
@@ -204,7 +204,7 @@ export default function TasksListScreen() {
           <TextInput
             label="Description (optional)"
             value={newTask.description}
-            onChangeText={(v) => setNewTask({ ...newTask, description: v })}
+            onChangeText={(v: string) => setNewTask({ ...newTask, description: v })}
             mode="outlined"
             dense
             multiline

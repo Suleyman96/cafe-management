@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, FAB, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { Button, Card, Chip, FAB, Modal, Portal, Text } from 'react-native-paper';
 import { ExpenseCard } from '@/components/expenses/ExpenseCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
@@ -12,6 +12,7 @@ import {
   useExpenses,
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 
 const PAYMENT_METHODS = ['cash', 'card', 'digital', 'bank_transfer'];
@@ -176,7 +177,7 @@ export default function ExpensesListScreen() {
           <TextInput
             label="Description"
             value={newExpense.description}
-            onChangeText={(v) => setNewExpense({ ...newExpense, description: v })}
+            onChangeText={(v: string) => setNewExpense({ ...newExpense, description: v })}
             mode="outlined"
             dense
             style={styles.input}
@@ -184,7 +185,7 @@ export default function ExpensesListScreen() {
           <TextInput
             label="Amount"
             value={newExpense.amount}
-            onChangeText={(v) => setNewExpense({ ...newExpense, amount: v })}
+            onChangeText={(v: string) => setNewExpense({ ...newExpense, amount: v })}
             mode="outlined"
             keyboardType="decimal-pad"
             left={<TextInput.Affix text={currencySymbol} />}

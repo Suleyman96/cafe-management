@@ -4,7 +4,7 @@ import type { ORDER_STATUS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
-import { Check, CheckCircle, DollarSign, Minus, Plus, X } from 'lucide-react';
+import { Check, CheckCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -16,6 +16,9 @@ import {
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { ItemPaymentForm } from './payment/item-payment-form';
+import { PartialPaymentForm } from './payment/partial-payment-form';
+import { PaymentModeSelector } from './payment/payment-mode-selector';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
   menu_item?: Database['public']['Tables']['menu_items']['Row'];
@@ -312,147 +315,39 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
           </div>
 
           {/* Payment Mode Selection */}
-          <div className="space-y-3 mb-6">
-            <label className="block text-sm font-medium text-gray-700">
-              {t('payment.paymentType')}
-            </label>
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                onClick={() => setPaymentMode('full')}
-                className={`p-3 border rounded-lg text-center transition-colors ${
-                  paymentMode === 'full'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <DollarSign className="h-5 w-5 mx-auto mb-1" />
-                <div className="text-sm font-medium">{t('payment.fullPayment')}</div>
-                <div className="text-xs text-gray-600">
-                  {formatPrice(remainingBalance ?? orderTotal)}
-                </div>
-              </button>
-
-              <button
-                onClick={() => setPaymentMode('partial')}
-                className={`p-3 border rounded-lg text-center transition-colors ${
-                  paymentMode === 'partial'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <DollarSign className="h-5 w-5 mx-auto mb-1" />
-                <div className="text-sm font-medium">{t('payment.partialAmount')}</div>
-                <div className="text-xs text-gray-600">{t('payment.customAmount')}</div>
-              </button>
-
-              <button
-                onClick={() => setPaymentMode('items')}
-                className={`p-3 border rounded-lg text-center transition-colors ${
-                  paymentMode === 'items'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <CheckCircle className="h-5 w-5 mx-auto mb-1" />
-                <div className="text-sm font-medium">{t('payment.specificItems')}</div>
-                <div className="text-xs text-gray-600">{t('payment.selectItems')}</div>
-              </button>
-            </div>
-          </div>
+          <PaymentModeSelector
+            paymentMode={paymentMode}
+            onModeChange={setPaymentMode}
+            remainingBalance={remainingBalance}
+            orderTotal={orderTotal}
+            formatPrice={formatPrice}
+            t={t}
+          />
 
           {/* Partial Amount Input */}
           {paymentMode === 'partial' && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('payment.amountToPay')}
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                  {cafeSettings?.currency_symbol || '$'}
-                </span>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="0.00"
-                  value={partialAmount}
-                  onChange={(e) => setPartialAmount(e.target.value)}
-                  max={remainingBalance ?? orderTotal}
-                />
-              </div>
-              {(parseFloat(partialAmount) || 0) > (remainingBalance ?? orderTotal) && (
-                <p className="text-sm text-red-600 mt-1">
-                  {t('payment.exceedsBalance', {
-                    amount: formatPrice(parseFloat(partialAmount) || 0),
-                    balance: formatPrice(remainingBalance ?? orderTotal),
-                  })}
-                </p>
-              )}
-            </div>
+            <PartialPaymentForm
+              partialAmount={partialAmount}
+              onAmountChange={setPartialAmount}
+              remainingBalance={remainingBalance}
+              orderTotal={orderTotal}
+              currencySymbol={cafeSettings?.currency_symbol || '$'}
+              formatPrice={formatPrice}
+              t={t}
+            />
           )}
 
           {/* Item Selection with Quantity Controls */}
           {paymentMode === 'items' && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('payment.selectItemsToPay')}
-              </label>
-              <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                {unpaidItems.map((item: OrderItem) => {
-                  const selectedQty = selectedItemQuantities.get(item.id) || 0;
-                  const isSelected = selectedQty > 0;
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={`flex items-center gap-3 p-2 rounded transition-colors ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">
-                          {item.quantity}x {item.item_name}
-                        </div>
-                        {item.notes && <div className="text-xs text-gray-500">{item.notes}</div>}
-                        <div className="text-xs text-gray-500">
-                          {formatPrice(item.item_price)} {t('payment.each')}
-                        </div>
-                      </div>
-
-                      {/* Quantity selector */}
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => updateItemQuantity(item.id, item.quantity, -1)}
-                          disabled={selectedQty <= 0}
-                          className="h-7 w-7 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <Minus className="h-3.5 w-3.5" />
-                        </button>
-                        <span className="w-6 text-center text-sm font-medium">{selectedQty}</span>
-                        <button
-                          onClick={() => updateItemQuantity(item.id, item.quantity, 1)}
-                          disabled={selectedQty >= item.quantity}
-                          className="h-7 w-7 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-
-                      <div className="font-medium text-sm w-20 text-right">
-                        {isSelected
-                          ? formatPrice(selectedQty * item.item_price)
-                          : formatPrice(item.quantity * item.item_price)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              {hasSelectedItems && (
-                <div className="mt-2">
-                  <div className="text-sm font-medium text-blue-700">
-                    {t('total', { ns: 'common' })}: {formatPrice(calculateSelectedItemsTotal())}
-                  </div>
-                </div>
-              )}
-            </div>
+            <ItemPaymentForm
+              unpaidItems={unpaidItems}
+              selectedItemQuantities={selectedItemQuantities}
+              onUpdateQuantity={updateItemQuantity}
+              selectedItemsTotal={calculateSelectedItemsTotal()}
+              hasSelectedItems={hasSelectedItems}
+              formatPrice={formatPrice}
+              t={t}
+            />
           )}
 
           {/* Tip Input - only shown when tips are enabled */}

@@ -2,6 +2,7 @@
 
 import { useTranslation } from '@cafe-idare/i18n';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { db } from '@/lib/supabase';
 
@@ -42,7 +43,7 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
     e.preventDefault();
 
     if (!message.trim()) {
-      alert(t('feedback.errorEmpty'));
+      toast.error(t('feedback.errorEmpty'));
       return;
     }
 
@@ -64,7 +65,7 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
       }, 2000);
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      alert(t('feedback.errorSubmit'));
+      toast.error(t('feedback.errorSubmit'));
     } finally {
       setIsSubmitting(false);
     }

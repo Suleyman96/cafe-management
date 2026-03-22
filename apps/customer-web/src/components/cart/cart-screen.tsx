@@ -1,12 +1,11 @@
 'use client';
 
 import { useTranslation } from '@cafe-idare/i18n';
-import { ArrowLeft, ClipboardList, Edit3, Minus, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ClipboardList } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useAddOrderItems, useCreateOrder, useOrder } from '@/hooks/use-order';
 import {
@@ -18,9 +17,11 @@ import {
 import { useTable } from '@/hooks/use-table';
 import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
 import { useCartStore } from '@/store/cart-store';
+import { CartItemCard } from './cart-item-card';
+import { CartPriceSummary } from './cart-price-summary';
 
 interface CartScreenProps {
-  tableId: string; // This is the table_number from URL (e.g., "T01")
+  tableId: string;
 }
 
 export function CartScreen({ tableId }: CartScreenProps) {
@@ -31,15 +32,12 @@ export function CartScreen({ tableId }: CartScreenProps) {
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [tempNotes, setTempNotes] = useState<Record<string, string>>({});
 
-  // Fetch table to get the actual UUID for database operations
   const { data: table } = useTable(tableId);
-  const actualTableId = table?.id || ''; // UUID for database operations
-
+  const actualTableId = table?.id || '';
   const { data: existingOrder } = useOrder(actualTableId);
   const createOrder = useCreateOrder();
   const addOrderItems = useAddOrderItems();
 
-  // Fetch cafe settings from database
   const { data: settings } = useCafeSettings();
   const formatPrice = useFormatPrice();
   const taxMultiplier = useTaxMultiplier();
@@ -49,13 +47,11 @@ export function CartScreen({ tableId }: CartScreenProps) {
   const tax = settings ? calculateTax(cartSubtotal, settings) : 0;
   const total = settings ? calculateTotal(cartSubtotal, settings) : cartSubtotal;
 
-  // Check if minimum order amount is met
   const minimumOrderMet = !settings?.minimum_order_amount || total >= settings.minimum_order_amount;
 
   const handlePlaceOrder = async () => {
     if (items.length === 0 || !actualTableId) return;
 
-    // Check minimum order amount
     if (settings?.minimum_order_amount && total < settings.minimum_order_amount) {
       const minAmount =
         settings.currency_position === 'before'
@@ -68,16 +64,14 @@ export function CartScreen({ tableId }: CartScreenProps) {
     try {
       let orderId = existingOrder?.id;
 
-      // Create new order if none exists
       if (!orderId) {
         const newOrder = await createOrder.mutateAsync({
-          tableId: actualTableId, // Use UUID for database
+          tableId: actualTableId,
           notes: orderNotes,
         });
         orderId = newOrder.id;
       }
 
-      // Add items to order
       await addOrderItems.mutateAsync({
         orderId,
         items: items.map((item) => ({
@@ -151,143 +145,39 @@ export function CartScreen({ tableId }: CartScreenProps) {
       <div className="p-4">
         {/* Cart Items */}
         <div className="space-y-4 mb-6">
-          {items.map((item) => {
-            const name = item.menuItem.name;
-            const isEditingThisItem = editingNotes === item.menuItem.id;
-
-            return (
-              <div key={item.menuItem.id} className="bg-card rounded-lg p-4 border">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {t('cart.priceEach', {
-                        price: formatPrice(item.menuItem.price * taxMultiplier),
-                      })}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeItem(item.menuItem.id)}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Item Notes Section - Only show if allow_item_notes is enabled */}
-                {settings?.allow_item_notes !== false && (
-                  <div className="mb-3">
-                    {!isEditingThisItem ? (
-                      <div>
-                        {item.notes ? (
-                          <div className="flex items-start gap-2 p-2 bg-muted rounded-md">
-                            <span className="text-sm">📝 {item.notes}</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 ml-auto"
-                              onClick={() => {
-                                setEditingNotes(item.menuItem.id);
-                                setTempNotes({
-                                  ...tempNotes,
-                                  [item.menuItem.id]: item.notes || '',
-                                });
-                              }}
-                            >
-                              <Edit3 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full text-xs"
-                            onClick={() => {
-                              setEditingNotes(item.menuItem.id);
-                              setTempNotes({
-                                ...tempNotes,
-                                [item.menuItem.id]: '',
-                              });
-                            }}
-                          >
-                            <Edit3 className="h-3 w-3 mr-1" />
-                            {t('cart.addSpecialNotes')}
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <textarea
-                          className="w-full min-h-[60px] p-2 text-sm rounded-md border border-input bg-background"
-                          placeholder={t('cart.notesPlaceholder')}
-                          value={tempNotes[item.menuItem.id] || ''}
-                          onChange={(e) =>
-                            setTempNotes({
-                              ...tempNotes,
-                              [item.menuItem.id]: e.target.value,
-                            })
-                          }
-                          maxLength={200}
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => {
-                              setEditingNotes(null);
-                              const { [item.menuItem.id]: _, ...rest } = tempNotes;
-                              setTempNotes(rest);
-                            }}
-                          >
-                            {t('cancel', { ns: 'common' })}
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => {
-                              updateNotes(item.menuItem.id, tempNotes[item.menuItem.id] || '');
-                              setEditingNotes(null);
-                            }}
-                          >
-                            {t('save', { ns: 'common' })}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(item.menuItem.id, item.quantity - 1)}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="font-bold w-8 text-center">{item.quantity}</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(item.menuItem.id, item.quantity + 1)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <span className="font-bold text-lg">
-                    {formatPrice(item.menuItem.price * item.quantity * taxMultiplier)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+          {items.map((item) => (
+            <CartItemCard
+              key={item.menuItem.id}
+              item={item}
+              taxMultiplier={taxMultiplier}
+              allowItemNotes={settings?.allow_item_notes !== false}
+              editingNotes={editingNotes}
+              tempNotes={tempNotes}
+              onEditNotes={(id, notes) => {
+                setEditingNotes(id);
+                setTempNotes({ ...tempNotes, [id]: notes });
+              }}
+              onCancelEditNotes={(id) => {
+                setEditingNotes(null);
+                const { [id]: _, ...rest } = tempNotes;
+                setTempNotes(rest);
+              }}
+              onSaveNotes={(id, notes) => {
+                updateNotes(id, notes);
+                setEditingNotes(null);
+              }}
+              onTempNotesChange={(id, value) => setTempNotes({ ...tempNotes, [id]: value })}
+              onRemoveItem={removeItem}
+              onUpdateQuantity={updateQuantity}
+              formatPrice={formatPrice}
+              priceLabel={t('cart.priceEach', {
+                price: formatPrice(item.menuItem.price * taxMultiplier),
+              })}
+            />
+          ))}
         </div>
 
-        {/* Order Notes - Only show if allow_order_notes is enabled */}
+        {/* Order Notes */}
         {settings?.allow_order_notes !== false && (
           <div className="mb-6">
             <label className="text-sm font-medium mb-2 block">{t('cart.orderNotes')}</label>
@@ -301,66 +191,30 @@ export function CartScreen({ tableId }: CartScreenProps) {
         )}
       </div>
 
-      {/* Price Summary (Fixed Bottom) */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4">
-        <div className="space-y-2 mb-4">
-          {settings?.tax_enabled && settings?.show_tax_separately ? (
-            <>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t('subtotal', { ns: 'common' })}</span>
-                <span>{formatPrice(displaySubtotal)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {settings.tax_label} ({settings.tax_percentage}%)
-                </span>
-                <span>{formatPrice(tax)}</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                <span>{t('total', { ns: 'common' })}</span>
-                <span className="text-primary">{formatPrice(total)}</span>
-              </div>
-            </>
-          ) : (
-            <div className="flex justify-between text-lg font-bold">
-              <span>{t('total', { ns: 'common' })}</span>
-              <span className="text-primary">{formatPrice(total)}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Minimum Order Warning */}
-        {settings?.minimum_order_amount && !minimumOrderMet && (
-          <div className="mb-3 p-2 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
-            <p className="text-sm text-amber-700 dark:text-amber-300 text-center">
-              {t('cart.minimumOrder', {
+      <CartPriceSummary
+        displaySubtotal={displaySubtotal}
+        tax={tax}
+        total={total}
+        showTaxSeparately={!!(settings?.tax_enabled && settings?.show_tax_separately)}
+        taxLabel={settings?.tax_label}
+        taxPercentage={settings?.tax_percentage}
+        minimumAmount={settings?.minimum_order_amount}
+        minimumMet={minimumOrderMet}
+        minimumWarning={
+          settings?.minimum_order_amount
+            ? t('cart.minimumOrder', {
                 amount:
                   settings.currency_position === 'before'
                     ? `${settings.currency_symbol}${settings.minimum_order_amount.toFixed(settings.currency_decimal_places)}`
                     : `${settings.minimum_order_amount.toFixed(settings.currency_decimal_places)}${settings.currency_symbol}`,
-              })}
-            </p>
-          </div>
-        )}
-
-        <Button
-          size="xl"
-          className="w-full"
-          onClick={handlePlaceOrder}
-          disabled={isLoading || !minimumOrderMet}
-        >
-          {isLoading ? (
-            <>
-              <LoadingSpinner size="sm" className="mr-2" />
-              {t('placingOrder', { ns: 'common' })}
-            </>
-          ) : !minimumOrderMet ? (
-            t('minimumOrderNotMet', { ns: 'common' })
-          ) : (
-            t('cart.placeOrder', { price: formatPrice(total) })
-          )}
-        </Button>
-      </div>
+              })
+            : undefined
+        }
+        isLoading={isLoading}
+        onPlaceOrder={handlePlaceOrder}
+        placeOrderLabel={t('cart.placeOrder', { price: formatPrice(total) })}
+        formatPrice={formatPrice}
+      />
     </div>
   );
 }

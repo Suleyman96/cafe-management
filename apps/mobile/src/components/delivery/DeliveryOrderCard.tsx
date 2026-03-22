@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Card, Text } from 'react-native-paper';
+import { Button, Card } from 'react-native-paper';
 import { StatusBadge, TimeElapsed } from '@/components/ui';
+import { Text } from '@/lib/paper-compat';
 
 interface DeliveryOrderCardProps {
   order: {

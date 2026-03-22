@@ -12,24 +12,19 @@ import {
   ChefHat,
   ChevronDown,
   Clock,
-  CreditCard,
   FileText,
-  Map as MapIcon,
-  MapPin,
   Package,
-  Phone,
   RefreshCw,
-  Smartphone,
-  ThumbsUp,
   Truck,
   User,
   UtensilsCrossed,
-  XCircle,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
+import { OrderDetailActions } from '@/components/orders/order-detail-actions';
+import { OrderDetailDelivery } from '@/components/orders/order-detail-delivery';
 import {
   calculateTax as calculateTaxFromSettings,
   useAssignDeliveryPerson,
@@ -430,93 +425,13 @@ export default function OrderDetailPage() {
 
       {/* Delivery Info Section */}
       {order.order_type === 'delivery' && (
-        <div className="bg-purple-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 border border-purple-200">
-          <h3 className="font-semibold mb-3 flex items-center gap-2 text-purple-800">
-            <Truck className="h-4 w-4" />
-            {t('orders.deliveryInformation')}
-          </h3>
-          <div className="space-y-2 text-sm">
-            {order.delivery_address && (
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                <span className="flex-1">{order.delivery_address}</span>
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.delivery_address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-shrink-0 text-purple-500 hover:text-purple-800 transition-colors"
-                  title={t('delivery.openInMaps')}
-                >
-                  <MapIcon className="h-4 w-4" />
-                </a>
-              </div>
-            )}
-            {order.customer_name && (
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                <span>{order.customer_name}</span>
-              </div>
-            )}
-            {order.customer_phone && (
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                <a href={`tel:${order.customer_phone}`} className="text-blue-600 underline">
-                  {order.customer_phone}
-                </a>
-              </div>
-            )}
-            {order.delivery_notes && (
-              <div className="flex items-start gap-2">
-                <FileText className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-600">{order.delivery_notes}</span>
-              </div>
-            )}
-            {order.delivery_fee > 0 && (
-              <div className="flex items-center gap-2 pt-2 border-t border-purple-200">
-                <CreditCard className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                <span>
-                  {t('deliveryFee', { ns: 'common' })}:{' '}
-                  <strong>{formatPrice(order.delivery_fee)}</strong>
-                </span>
-              </div>
-            )}
-            <div className="flex items-center gap-2 pt-2 border-t border-purple-200">
-              <Truck className="h-4 w-4 text-purple-500 flex-shrink-0" />
-              <span className="text-sm">{t('delivery.driver')}</span>
-              {['delivered', 'cancelled'].includes(order.status) ? (
-                <span className="font-medium">
-                  {(order as any).delivery_person?.full_name || t('orders.notAssigned')}
-                </span>
-              ) : (
-                <select
-                  className="flex-1 px-2 py-1 border border-purple-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  value={order.delivery_person_id || ''}
-                  onChange={async (e) => {
-                    const staffId = e.target.value;
-                    if (!staffId) return;
-                    try {
-                      await assignDeliveryPerson.mutateAsync({
-                        orderId: order.id,
-                        staffId,
-                      });
-                      toast.success(t('orders.deliveryPersonAssigned'));
-                      refetch();
-                    } catch {
-                      toast.error(t('orders.failedAssignDriver'));
-                    }
-                  }}
-                >
-                  <option value="">{t('orders.selectDriver')}</option>
-                  {staffList?.map((s: any) => (
-                    <option key={s.id} value={s.id}>
-                      {s.full_name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          </div>
-        </div>
+        <OrderDetailDelivery
+          order={order as any}
+          staffList={staffList}
+          onAssignDriver={assignDeliveryPerson.mutateAsync}
+          onRefetch={refetch}
+          formatPrice={formatPrice}
+        />
       )}
 
       {/* Table Transfer History */}
@@ -697,116 +612,12 @@ export default function OrderDetailPage() {
       )}
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2 sm:gap-3">
-        {/* Pending Approval: Show approve button */}
-        {order.status === 'pending_approval' && (
-          <>
-            <Button
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 flex items-center gap-1 sm:gap-2"
-              onClick={() => handleStatusUpdate('NEW')}
-            >
-              <ThumbsUp className="h-4 w-4" />
-              {t('approve', { ns: 'common' })}
-            </Button>
-            {(order as any).source === 'customer' && (
-              <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
-                <Smartphone className="h-3 w-3" />
-                {t('orders.qrOrder')}
-              </span>
-            )}
-          </>
-        )}
-        {order.status === 'new' && (
-          <Button
-            size="sm"
-            onClick={() => handleStatusUpdate('PREPARING')}
-            className="flex items-center gap-1 sm:gap-2"
-          >
-            <ChefHat className="h-4 w-4" />
-            {t('orders.startPreparing')}
-          </Button>
-        )}
-        {order.status === 'preparing' && (
-          <Button
-            size="sm"
-            onClick={() => handleStatusUpdate('READY')}
-            className="flex items-center gap-1 sm:gap-2"
-          >
-            <CheckCircle className="h-4 w-4" />
-            {t('orders.ready')}
-          </Button>
-        )}
-        {order.status === 'ready' && order.table && order.order_type !== 'delivery' && (
-          <Button
-            size="sm"
-            onClick={() => handleStatusUpdate('SERVED')}
-            className="flex items-center gap-1 sm:gap-2"
-          >
-            <CheckCircle className="h-4 w-4" />
-            {t('orders.served')}
-          </Button>
-        )}
-        {/* Delivery: Out for Delivery when ready */}
-        {order.status === 'ready' && order.order_type === 'delivery' && (
-          <Button
-            size="sm"
-            onClick={() => handleStatusUpdate('OUT_FOR_DELIVERY')}
-            className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-1 sm:gap-2"
-          >
-            <Truck className="h-4 w-4" />
-            {t('orders.outForDelivery')}
-          </Button>
-        )}
-        {/* Delivery: Mark Delivered */}
-        {order.status === 'out_for_delivery' && order.order_type === 'delivery' && (
-          <Button
-            size="sm"
-            onClick={() => handleStatusUpdate('DELIVERED')}
-            className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-1 sm:gap-2"
-          >
-            <CheckCircle className="h-4 w-4" />
-            {t('orders.markDelivered')}
-          </Button>
-        )}
-        {(order.status === 'served' || order.status === 'ready') &&
-          !isFullyPaid &&
-          order.order_type !== 'delivery' && (
-            <Button
-              size="sm"
-              onClick={() => setIsPaymentModalOpen(true)}
-              className="flex items-center gap-1 sm:gap-2"
-            >
-              <CreditCard className="h-4 w-4" />
-              {t('orders.payment')}
-            </Button>
-          )}
-        {isFullyPaid && order.status !== 'closed' && order.status !== 'cancelled' && (
-          <Button
-            size="sm"
-            onClick={() => handleStatusUpdate('CLOSED')}
-            className="flex items-center gap-1 sm:gap-2"
-          >
-            <CheckCircle className="h-4 w-4" />
-            {t('close', { ns: 'common' })}
-          </Button>
-        )}
-        {['pending_approval', 'new', 'preparing', 'ready', 'served', 'out_for_delivery'].includes(
-          order.status,
-        ) && (
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => handleStatusUpdate('CANCELLED')}
-            className="flex items-center gap-1 sm:gap-2"
-          >
-            <XCircle className="h-4 w-4" />
-            {order.status === 'pending_approval'
-              ? t('reject', { ns: 'common' })
-              : t('cancel', { ns: 'common' })}
-          </Button>
-        )}
-      </div>
+      <OrderDetailActions
+        order={order as any}
+        isFullyPaid={isFullyPaid}
+        onStatusUpdate={handleStatusUpdate}
+        onOpenPayment={() => setIsPaymentModalOpen(true)}
+      />
 
       <SplitPaymentModal
         isOpen={isPaymentModalOpen}

@@ -3,7 +3,7 @@
 import { useTranslation } from '@cafe-idare/i18n';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   useCreateExpenseCategory,

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, Switch, Text, TextInput } from 'react-native-paper';
+import { Button, Card, Switch, Text } from 'react-native-paper';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useCafeSettings, useUpdateCafeSettings } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { TextInput } from '@/lib/paper-compat';
 
 export default function CafeSettingsScreen() {
   const { showSuccess, showError } = useSnackbar();
@@ -57,7 +58,7 @@ export default function CafeSettingsScreen() {
             <TextInput
               label="Restaurant Name"
               value={form.restaurant_name || ''}
-              onChangeText={(v) => updateField('restaurant_name', v)}
+              onChangeText={(v: string) => updateField('restaurant_name', v)}
               mode="outlined"
               dense
               style={styles.input}
@@ -65,7 +66,7 @@ export default function CafeSettingsScreen() {
             <TextInput
               label="Address"
               value={form.address || ''}
-              onChangeText={(v) => updateField('address', v)}
+              onChangeText={(v: string) => updateField('address', v)}
               mode="outlined"
               dense
               multiline
@@ -84,7 +85,7 @@ export default function CafeSettingsScreen() {
               <Text variant="bodyMedium">Enable Tax</Text>
               <Switch
                 value={!!form.tax_enabled}
-                onValueChange={(v) => updateField('tax_enabled', v)}
+                onValueChange={(v: boolean) => updateField('tax_enabled', v)}
               />
             </View>
             {form.tax_enabled && (
@@ -92,7 +93,7 @@ export default function CafeSettingsScreen() {
                 <TextInput
                   label="Tax Percentage"
                   value={String(form.tax_percentage || '')}
-                  onChangeText={(v) => updateField('tax_percentage', parseFloat(v) || 0)}
+                  onChangeText={(v: string) => updateField('tax_percentage', parseFloat(v) || 0)}
                   mode="outlined"
                   keyboardType="decimal-pad"
                   dense
@@ -101,7 +102,7 @@ export default function CafeSettingsScreen() {
                 <TextInput
                   label="Tax Label"
                   value={form.tax_label || ''}
-                  onChangeText={(v) => updateField('tax_label', v)}
+                  onChangeText={(v: string) => updateField('tax_label', v)}
                   mode="outlined"
                   dense
                   style={styles.input}
@@ -110,7 +111,7 @@ export default function CafeSettingsScreen() {
                   <Text variant="bodyMedium">Prices Include Tax</Text>
                   <Switch
                     value={!!form.prices_include_tax}
-                    onValueChange={(v) => updateField('prices_include_tax', v)}
+                    onValueChange={(v: boolean) => updateField('prices_include_tax', v)}
                   />
                 </View>
               </>
@@ -127,7 +128,7 @@ export default function CafeSettingsScreen() {
             <TextInput
               label="Currency Symbol"
               value={form.currency_symbol || ''}
-              onChangeText={(v) => updateField('currency_symbol', v)}
+              onChangeText={(v: string) => updateField('currency_symbol', v)}
               mode="outlined"
               dense
               style={styles.input}
@@ -135,7 +136,7 @@ export default function CafeSettingsScreen() {
             <TextInput
               label="Currency Code"
               value={form.currency_code || ''}
-              onChangeText={(v) => updateField('currency_code', v)}
+              onChangeText={(v: string) => updateField('currency_code', v)}
               mode="outlined"
               dense
               style={styles.input}
@@ -143,7 +144,7 @@ export default function CafeSettingsScreen() {
             <TextInput
               label="Decimal Places"
               value={String(form.decimal_places ?? '')}
-              onChangeText={(v) => updateField('decimal_places', parseInt(v, 10) || 0)}
+              onChangeText={(v: string) => updateField('decimal_places', parseInt(v, 10) || 0)}
               mode="outlined"
               keyboardType="number-pad"
               dense
@@ -162,28 +163,28 @@ export default function CafeSettingsScreen() {
               <Text variant="bodyMedium">Allow Item Notes</Text>
               <Switch
                 value={!!form.allow_item_notes}
-                onValueChange={(v) => updateField('allow_item_notes', v)}
+                onValueChange={(v: boolean) => updateField('allow_item_notes', v)}
               />
             </View>
             <View style={styles.switchRow}>
               <Text variant="bodyMedium">Allow Order Notes</Text>
               <Switch
                 value={!!form.allow_order_notes}
-                onValueChange={(v) => updateField('allow_order_notes', v)}
+                onValueChange={(v: boolean) => updateField('allow_order_notes', v)}
               />
             </View>
             <View style={styles.switchRow}>
               <Text variant="bodyMedium">Tips Enabled</Text>
               <Switch
                 value={!!form.tips_enabled}
-                onValueChange={(v) => updateField('tips_enabled', v)}
+                onValueChange={(v: boolean) => updateField('tips_enabled', v)}
               />
             </View>
             <View style={styles.switchRow}>
               <Text variant="bodyMedium">Waste Tracking</Text>
               <Switch
                 value={!!form.waste_tracking_enabled}
-                onValueChange={(v) => updateField('waste_tracking_enabled', v)}
+                onValueChange={(v: boolean) => updateField('waste_tracking_enabled', v)}
               />
             </View>
           </Card.Content>
@@ -199,7 +200,7 @@ export default function CafeSettingsScreen() {
               <Text variant="bodyMedium">Enable Delivery</Text>
               <Switch
                 value={!!form.delivery_enabled}
-                onValueChange={(v) => updateField('delivery_enabled', v)}
+                onValueChange={(v: boolean) => updateField('delivery_enabled', v)}
               />
             </View>
             {form.delivery_enabled && (
@@ -207,7 +208,9 @@ export default function CafeSettingsScreen() {
                 <TextInput
                   label="Default Delivery Fee"
                   value={String(form.default_delivery_fee || '')}
-                  onChangeText={(v) => updateField('default_delivery_fee', parseFloat(v) || 0)}
+                  onChangeText={(v: string) =>
+                    updateField('default_delivery_fee', parseFloat(v) || 0)
+                  }
                   mode="outlined"
                   keyboardType="decimal-pad"
                   dense
@@ -216,7 +219,9 @@ export default function CafeSettingsScreen() {
                 <TextInput
                   label="Minimum Delivery Amount"
                   value={String(form.minimum_delivery_amount || '')}
-                  onChangeText={(v) => updateField('minimum_delivery_amount', parseFloat(v) || 0)}
+                  onChangeText={(v: string) =>
+                    updateField('minimum_delivery_amount', parseFloat(v) || 0)
+                  }
                   mode="outlined"
                   keyboardType="decimal-pad"
                   dense
@@ -236,7 +241,7 @@ export default function CafeSettingsScreen() {
             <TextInput
               label="Phone"
               value={form.phone || ''}
-              onChangeText={(v) => updateField('phone', v)}
+              onChangeText={(v: string) => updateField('phone', v)}
               mode="outlined"
               keyboardType="phone-pad"
               dense
@@ -245,7 +250,7 @@ export default function CafeSettingsScreen() {
             <TextInput
               label="Website"
               value={form.website || ''}
-              onChangeText={(v) => updateField('website', v)}
+              onChangeText={(v: string) => updateField('website', v)}
               mode="outlined"
               keyboardType="url"
               dense
@@ -254,7 +259,7 @@ export default function CafeSettingsScreen() {
             <TextInput
               label="Instagram"
               value={form.instagram_url || ''}
-              onChangeText={(v) => updateField('instagram_url', v)}
+              onChangeText={(v: string) => updateField('instagram_url', v)}
               mode="outlined"
               dense
               style={styles.input}
@@ -262,7 +267,7 @@ export default function CafeSettingsScreen() {
             <TextInput
               label="WhatsApp"
               value={form.whatsapp_number || ''}
-              onChangeText={(v) => updateField('whatsapp_number', v)}
+              onChangeText={(v: string) => updateField('whatsapp_number', v)}
               mode="outlined"
               dense
               style={styles.input}
@@ -270,7 +275,7 @@ export default function CafeSettingsScreen() {
             <TextInput
               label="Google Maps URL"
               value={form.google_maps_url || ''}
-              onChangeText={(v) => updateField('google_maps_url', v)}
+              onChangeText={(v: string) => updateField('google_maps_url', v)}
               mode="outlined"
               dense
               style={styles.input}

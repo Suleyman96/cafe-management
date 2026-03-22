@@ -4,7 +4,7 @@ import type { Database } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useCreateMenuItem, useUpdateMenuItem } from '@/hooks';
 import { supabase } from '@/lib/supabase/client';
 

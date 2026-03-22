@@ -5,7 +5,7 @@ import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useCreateSchedule, useDeleteSchedule, useStaff, useUpdateSchedule } from '@/hooks';
 
 interface ScheduleModalProps {

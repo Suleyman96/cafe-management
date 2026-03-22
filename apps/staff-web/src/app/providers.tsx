@@ -4,8 +4,7 @@ import { I18nextProvider, i18n } from '@cafe-idare/i18n';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useState } from 'react';
-import { Toaster } from 'react-hot-toast';
-import { Toaster as Sonner } from 'sonner';
+import { Toaster } from 'sonner';
 import '@/lib/i18n';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -26,31 +25,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
         {children}
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-            success: {
-              duration: 3000,
-              iconTheme: {
-                primary: '#10b981',
-                secondary: '#fff',
-              },
-            },
-            error: {
-              duration: 4000,
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#fff',
-              },
-            },
-          }}
-        />
-        <Sonner position="bottom-right" />
+        <Toaster position="bottom-right" />
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </I18nextProvider>
