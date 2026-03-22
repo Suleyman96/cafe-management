@@ -3,58 +3,33 @@
  * Used across all platforms
  */
 
-// Order statuses
-export const ORDER_STATUS = {
-  PENDING_APPROVAL: 'pending_approval',
-  NEW: 'new',
-  PREPARING: 'preparing',
-  READY: 'ready',
-  SERVED: 'served',
-  OUT_FOR_DELIVERY: 'out_for_delivery',
-  DELIVERED: 'delivered',
-  CLOSED: 'closed',
-  CANCELLED: 'cancelled',
-} as const;
+// Re-export all DB enums from the single source of truth
+export {
+  CURRENCY_POSITION,
+  EXPENSE_PAYMENT_METHOD,
+  FEEDBACK_STATUS,
+  FEEDBACK_TYPE,
+  ORDER_ITEM_STATUS,
+  ORDER_SOURCE,
+  ORDER_STATUS,
+  ORDER_TYPE,
+  PAYMENT_METHOD,
+  PAYMENT_TYPE,
+  SCHEDULE_STATUS,
+  STOCK_MOVEMENT_TYPE,
+  STOCK_UNIT,
+  TABLE_STATUS,
+  TASK_PRIORITY,
+  TASK_RECURRENCE,
+  TASK_STATUS,
+  USER_ROLE,
+  WAITER_CALL_PRIORITY,
+  WAITER_CALL_REASON,
+  WAITER_CALL_STATUS,
+  WASTE_REASON,
+} from '@cafe-idare/database';
 
-export const ORDER_TYPE = {
-  DINE_IN: 'dine_in',
-  TAKEOUT: 'takeout',
-  DELIVERY: 'delivery',
-} as const;
-
-// Table statuses
-export const TABLE_STATUS = {
-  FREE: 'free',
-  OCCUPIED: 'occupied',
-  RESERVED: 'reserved',
-  CLOSED: 'closed',
-} as const;
-
-// User roles
-export const USER_ROLE = {
-  WAITER: 'waiter',
-  ADMIN: 'admin',
-  KITCHEN: 'kitchen',
-  OWNER: 'owner',
-} as const;
-
-// Order item statuses
-export const ORDER_ITEM_STATUS = {
-  PENDING: 'pending',
-  PREPARING: 'preparing',
-  READY: 'ready',
-  SERVED: 'served',
-  CANCELLED: 'cancelled',
-} as const;
-
-// Waiter call statuses
-export const WAITER_CALL_STATUS = {
-  PENDING: 'pending',
-  ACKNOWLEDGED: 'acknowledged',
-  RESOLVED: 'resolved',
-} as const;
-
-// Waiter call reasons
+// Waiter call reasons (UI-specific with labels and emojis)
 export const WAITER_CALL_REASONS = [
   { value: 'assistance', label: 'General Help', emoji: '💬' },
   { value: 'bill', label: 'Request Bill', emoji: '🧾' },
@@ -84,14 +59,6 @@ export const STATUS_COLORS = {
   out_for_delivery: '#8B5CF6', // purple-500
   delivered: '#10B981', // green-500
   cancelled: '#9CA3AF', // gray-400
-} as const;
-
-// Schedule statuses
-export const SCHEDULE_STATUS = {
-  SCHEDULED: 'scheduled',
-  IN_PROGRESS: 'in_progress',
-  COMPLETED: 'completed',
-  MISSED: 'missed',
 } as const;
 
 // Notification sounds
@@ -153,40 +120,6 @@ export const QUERY_KEYS = {
   TASKS: 'tasks',
   TASK: 'task',
   OVERDUE_TASKS_COUNT: 'overdue_tasks_count',
-} as const;
-
-// Waste reasons
-export const WASTE_REASON = {
-  EXPIRED: 'expired',
-  SPOILED: 'spoiled',
-  OVERCOOKED: 'overcooked',
-  DROPPED: 'dropped',
-  RETURNED_BY_CUSTOMER: 'returned_by_customer',
-  PREPARATION_WASTE: 'preparation_waste',
-  OTHER: 'other',
-} as const;
-
-// Task statuses
-export const TASK_STATUS = {
-  PENDING: 'pending',
-  IN_PROGRESS: 'in_progress',
-  COMPLETED: 'completed',
-  CANCELLED: 'cancelled',
-} as const;
-
-// Task priorities
-export const TASK_PRIORITY = {
-  LOW: 'low',
-  NORMAL: 'normal',
-  HIGH: 'high',
-  URGENT: 'urgent',
-} as const;
-
-// Task recurrence patterns
-export const TASK_RECURRENCE = {
-  DAILY: 'daily',
-  WEEKLY: 'weekly',
-  MONTHLY: 'monthly',
 } as const;
 
 // 30-minute interval time slots (00:00 to 23:30)
