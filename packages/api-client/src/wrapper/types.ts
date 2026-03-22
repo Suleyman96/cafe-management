@@ -46,7 +46,12 @@ export type TaskRow = Tables['tasks']['Row'];
 export type TaskInsert = Tables['tasks']['Insert'];
 export type TaskUpdate = Tables['tasks']['Update'];
 
-// Helper type for Supabase client that bypasses strict typing
+/**
+ * Supabase client that bypasses strict typing.
+ * Required for INSERT/UPDATE/DELETE operations (Supabase SDK limitation with
+ * .select() chains after mutations) and for querying database views
+ * (active_orders_view, etc.) that are not in the generated Database type.
+ */
 export type AnySupabaseClient = SupabaseClient<any>;
 export type TypedSupabaseClient = SupabaseClient<Database>;
 

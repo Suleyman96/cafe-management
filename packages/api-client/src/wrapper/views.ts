@@ -1,5 +1,8 @@
 /**
  * Database views wrapper module
+ *
+ * Uses anyClient because views (active_orders_view, sales_summary_view,
+ * order_payment_summary) are not represented in the generated Database type.
  */
 
 import { handleSupabaseError } from '@cafe-idare/core';

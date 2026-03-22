@@ -105,6 +105,17 @@ describe('StaffWrapper', () => {
     expect(result).toEqual([validStaff]);
   });
 
+  it('updateLastLogin updates the last_login_at field', async () => {
+    const loginCtx = createMockContext({
+      responses: { staff: { data: null, error: null } },
+    });
+    const loginStaff = createStaffWrapper(loginCtx);
+    await loginStaff.updateLastLogin(validStaff.id);
+    const calls = loginCtx.getCalls();
+    expect(calls[0].table).toBe('staff');
+    expect(calls[0].method).toBe('update');
+  });
+
   it('throws on supabase error', async () => {
     const errorCtx = createMockContext({
       responses: { staff: { data: null, error: { code: '23505', message: 'duplicate' } } },
