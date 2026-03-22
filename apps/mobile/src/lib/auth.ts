@@ -15,7 +15,7 @@ export async function login({ email, password }: LoginCredentials) {
   if (error) throw error;
 
   // Fetch staff profile via wrapper
-  const staff = await db.staff.findByAuthId(data.user.id);
+  const staff = (await db.staff.findByAuthId(data.user.id)) as Staff;
 
   // Update last login
   await db.staff.updateLastLogin(staff.id);
@@ -37,7 +37,7 @@ export async function getCurrentUser(): Promise<Staff | null> {
   if (error || !user) return null;
 
   try {
-    return await db.staff.findByAuthId(user.id);
+    return (await db.staff.findByAuthId(user.id)) as Staff;
   } catch {
     return null;
   }
@@ -47,7 +47,7 @@ export function onAuthStateChange(callback: (staff: Staff | null) => void) {
   return supabase.auth.onAuthStateChange(async (_event, session) => {
     if (session?.user) {
       try {
-        const staff = await db.staff.findByAuthId(session.user.id);
+        const staff = (await db.staff.findByAuthId(session.user.id)) as Staff;
         callback(staff);
       } catch {
         callback(null);

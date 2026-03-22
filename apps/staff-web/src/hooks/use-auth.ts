@@ -1,18 +1,21 @@
 'use client';
 
+import type { Database } from '@cafe-idare/database';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/wrapped-client';
 import { useAuthStore } from '@/store/auth-store';
 
+type Staff = Database['public']['Tables']['staff']['Row'];
+type StaffSchedule = Database['public']['Tables']['staff_schedules']['Row'];
+
 /** Fire-and-forget post-login side effects */
 export async function postLoginSideEffects(staffId: string) {
   db.staff.updateLastLogin(staffId).catch(console.warn);
 
   const today = new Date().toISOString().split('T')[0];
-  db.schedules
-    .findByStaffAndDate(staffId, today)
+  (db.schedules.findByStaffAndDate(staffId, today) as Promise<StaffSchedule[]>)
     .then((schedules) => {
       for (const schedule of schedules) {
         if (schedule.status === 'scheduled') {
@@ -60,9 +63,9 @@ export function useAuth() {
         }
 
         // Fetch staff record
-        let staffData: Awaited<ReturnType<typeof db.staff.findByAuthId>> | null = null;
+        let staffData: Staff | null = null;
         try {
-          staffData = await db.staff.findByAuthId(session.user.id);
+          staffData = (await db.staff.findByAuthId(session.user.id)) as Staff;
         } catch (staffError) {
           console.error('Staff fetch error:', staffError);
           await supabase.auth.signOut();
@@ -92,7 +95,7 @@ export function useAuth() {
         router.push('/login');
       } else if (event === 'SIGNED_IN' && session.user) {
         try {
-          const staffData = await db.staff.findByAuthId(session.user.id);
+          const staffData = (await db.staff.findByAuthId(session.user.id)) as Staff;
           setStaff(staffData);
           postLoginSideEffects(staffData.id);
         } catch {

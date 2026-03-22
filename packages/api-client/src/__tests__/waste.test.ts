@@ -151,7 +151,7 @@ describe('WasteWrapper', () => {
       },
     });
     const waste = createWasteWrapper(ctx);
-    const result = await waste.getTopWastedItems(5);
+    const result = (await waste.getTopWastedItems(5)) as any[];
     expect(result).toHaveLength(2);
     expect(result[0].item_name).toBe('Tomatoes');
   });

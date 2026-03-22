@@ -91,10 +91,10 @@ jobs:
         run: pnpm build --filter=@cafe-idare/database --filter=@cafe-idare/core --filter=@cafe-idare/api-client --filter=@cafe-idare/ui
 
       - name: Type check
-        run: pnpm type-check --filter=@cafe-idare/staff-web --filter=cafe-idare-customer
+        run: pnpm type-check --filter=@cafe-idare/staff-web --filter=@cafe-idare/customer-web
 
       - name: Build apps
-        run: pnpm build --filter=@cafe-idare/staff-web --filter=cafe-idare-customer
+        run: pnpm build --filter=@cafe-idare/staff-web --filter=@cafe-idare/customer-web
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}

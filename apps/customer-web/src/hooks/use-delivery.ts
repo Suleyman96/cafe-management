@@ -1,4 +1,5 @@
 import { QUERY_KEYS } from '@cafe-idare/core';
+import type { OrdersInsert } from '@cafe-idare/database';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
@@ -90,7 +91,7 @@ export function useCreateDeliveryOrder() {
         subtotal: 0,
         tax: 0,
         total: 0,
-      }),
+      } as Partial<OrdersInsert> as OrdersInsert),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER] });
     },
@@ -118,7 +119,8 @@ export function useAddDeliveryOrderItems() {
         items.map((item) => ({
           order_id: orderId,
           ...item,
-          status: 'pending',
+          notes: item.notes ?? null,
+          status: 'pending' as const,
         })),
       ),
     onSuccess: () => {

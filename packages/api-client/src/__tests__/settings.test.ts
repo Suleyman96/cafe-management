@@ -4,7 +4,7 @@ import { createMockContext } from './helpers/mock-supabase';
 
 const validSettings = {
   id: '00000000-0000-0000-0000-000000000001',
-  cafe_name: 'Test Cafe',
+  restaurant_name: 'Test Cafe',
   currency: 'AZN',
   tax_rate: 0.18,
   language: 'az',
@@ -24,15 +24,15 @@ describe('SettingsWrapper', () => {
   });
 
   it('update modifies cafe settings', async () => {
-    const updatedSettings = { ...validSettings, cafe_name: 'Updated Cafe' };
+    const updatedSettings = { ...validSettings, restaurant_name: 'Updated Cafe' };
     const ctx = createMockContext({
       responses: {
         cafe_settings: { data: updatedSettings, error: null },
       },
     });
     const settings = createSettingsWrapper(ctx);
-    const result = await settings.update({ cafe_name: 'Updated Cafe' } as any);
-    expect(result.cafe_name).toBe('Updated Cafe');
+    const result = await settings.update({ restaurant_name: 'Updated Cafe' } as any);
+    expect(result.restaurant_name).toBe('Updated Cafe');
     expect(ctx.getCalls()[0].method).toBe('update');
   });
 
@@ -53,6 +53,6 @@ describe('SettingsWrapper', () => {
       },
     });
     const settings = createSettingsWrapper(ctx);
-    await expect(settings.update({ cafe_name: 'Fail' } as any)).rejects.toThrow();
+    await expect(settings.update({ restaurant_name: 'Fail' } as any)).rejects.toThrow();
   });
 });

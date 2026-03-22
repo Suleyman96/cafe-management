@@ -1,5 +1,6 @@
 'use client';
 
+import type { Database } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -8,6 +9,8 @@ import { postLoginSideEffects } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/wrapped-client';
 import { useAuthStore } from '@/store/auth-store';
+
+type Staff = Database['public']['Tables']['staff']['Row'];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -51,9 +54,9 @@ export default function LoginPage() {
       }
 
       // Fetch staff record linked to this auth user
-      let staffData: Awaited<ReturnType<typeof db.staff.findByAuthId>> | null = null;
+      let staffData: Staff | null = null;
       try {
-        staffData = await db.staff.findByAuthId(authData.user.id);
+        staffData = (await db.staff.findByAuthId(authData.user.id)) as Staff;
       } catch {
         // Sign out if no valid staff record
         await supabase.auth.signOut();

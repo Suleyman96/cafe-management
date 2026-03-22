@@ -38,7 +38,7 @@ describe('RealtimeWrapper', () => {
     const channel = realtime.subscribeToTables(callback);
     realtime.unsubscribe(channel);
     const calls = ctx.getCalls();
-    const removeCall = calls.find((c) => c.method === 'removeChannel');
+    const removeCall = calls.find((c: { method: string }) => c.method === 'removeChannel');
     expect(removeCall).toBeDefined();
   });
 });
