@@ -17,17 +17,17 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useFormatPrice } from '@/hooks/use-format-price';
 import { useCategories, useMenuItems } from '@/hooks/use-menu';
 import { useAddOrderItems, useCreateOrder, useOrder } from '@/hooks/use-order';
 import {
   calculateTax,
   calculateTotal,
-  formatPrice as formatPriceWithSettings,
   getDisplaySubtotal,
   useCafeSettings,
 } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
-import { cn, formatPrice } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { useCartStore } from '@/store/cart-store';
 import { useLanguageStore } from '@/store/language-store';
 import { getLocalizedField } from '@/types';
@@ -90,10 +90,7 @@ function CartContent({ tableId, accentColor, onOrderPlaced }: CartContentProps) 
   const total = settings ? calculateTotal(cartSubtotal, settings) : cartSubtotal;
   const minimumOrderMet = !settings?.minimum_order_amount || total >= settings.minimum_order_amount;
 
-  const priceDisplay = (amount: number) => {
-    if (settings) return formatPriceWithSettings(amount, settings);
-    return formatPrice(amount);
-  };
+  const priceDisplay = useFormatPrice();
 
   const handlePlaceOrder = async () => {
     if (items.length === 0 || (!isDelivery && !actualTableId)) return;

@@ -8,7 +8,6 @@ import { Check, CheckCircle, DollarSign, Minus, Plus, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  formatPriceWithSettings,
   useCafeSettings,
   useCreatePayment,
   useOrderPayments,
@@ -16,6 +15,7 @@ import {
   useUpdateOrderStatus,
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
+import { useFormatPrice } from '@/hooks/use-format-price';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
   menu_item?: Database['public']['Tables']['menu_items']['Row'];
@@ -41,15 +41,8 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   const updateOrderStatus = useUpdateOrderStatus();
   const { data: remainingBalance } = useOrderRemainingBalance(order?.id || '');
   const { data: existingPayments } = useOrderPayments(order?.id || '');
+  const formatPrice = useFormatPrice();
   const { data: cafeSettings } = useCafeSettings();
-
-  // Format price using cafe settings or fallback
-  const formatPrice = (amount: number) => {
-    if (cafeSettings) {
-      return formatPriceWithSettings(amount, cafeSettings);
-    }
-    return `$${amount.toFixed(2)}`;
-  };
 
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('full');
   const [partialAmount, setPartialAmount] = useState<string>('');

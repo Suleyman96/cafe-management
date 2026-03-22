@@ -21,14 +21,13 @@ import { StockItemModal } from '@/components/modals/stock-item-modal';
 import { StockMovementModal } from '@/components/modals/stock-movement-modal';
 import { Button } from '@/components/ui/button';
 import {
-  formatPriceWithSettings,
   useAuth,
-  useCafeSettings,
   useDeleteStockItem,
   useLowStockCount,
   useStockItems,
   useStockMovements,
 } from '@/hooks';
+import { useFormatPrice } from '@/hooks/use-format-price';
 
 type StockItem = Database['public']['Tables']['stock_items']['Row'];
 
@@ -47,15 +46,8 @@ export default function StockPage() {
 
   const { data: stockItems = [], isLoading } = useStockItems();
   const { data: lowStockCount = 0 } = useLowStockCount();
-  const { data: cafeSettings } = useCafeSettings();
+  const formatPrice = useFormatPrice();
   const deleteStockItem = useDeleteStockItem();
-
-  const formatPrice = (amount: number) => {
-    if (cafeSettings) {
-      return formatPriceWithSettings(amount, cafeSettings);
-    }
-    return `$${amount.toFixed(2)}`;
-  };
 
   // Redirect if not admin
   if (staff && staff.role !== 'admin' && staff.role !== 'owner') {

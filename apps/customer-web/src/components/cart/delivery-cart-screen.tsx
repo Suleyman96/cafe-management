@@ -8,13 +8,14 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAddDeliveryOrderItems, useCreateDeliveryOrder } from '@/hooks/use-delivery';
+import { useFormatPrice } from '@/hooks/use-format-price';
 import {
   calculateTax,
   calculateTotal,
   getDisplaySubtotal,
   useCafeSettings,
 } from '@/hooks/use-settings';
-import { formatPrice } from '@/lib/utils';
+import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
 import { useCartStore } from '@/store/cart-store';
 import { useDeliveryStore } from '@/store/delivery-store';
 
@@ -31,9 +32,8 @@ export function DeliveryCartScreen() {
   const createDeliveryOrder = useCreateDeliveryOrder();
   const addDeliveryOrderItems = useAddDeliveryOrderItems();
   const { data: settings } = useCafeSettings();
-
-  const taxMultiplier =
-    settings?.tax_enabled && settings.tax_percentage > 0 ? 1 + settings.tax_percentage / 100 : 1;
+  const formatPrice = useFormatPrice();
+  const taxMultiplier = useTaxMultiplier();
 
   const cartSubtotal = getTotal();
   const deliveryFee = settings?.delivery_fee_default || 0;

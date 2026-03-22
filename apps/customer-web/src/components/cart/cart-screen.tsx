@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useFormatPrice } from '@/hooks/use-format-price';
 import { useAddOrderItems, useCreateOrder, useOrder } from '@/hooks/use-order';
 import {
   calculateTax,
@@ -15,7 +16,7 @@ import {
   useCafeSettings,
 } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
-import { formatPrice } from '@/lib/utils';
+import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
 import { useCartStore } from '@/store/cart-store';
 
 interface CartScreenProps {
@@ -40,9 +41,8 @@ export function CartScreen({ tableId }: CartScreenProps) {
 
   // Fetch cafe settings from database
   const { data: settings } = useCafeSettings();
-
-  const taxMultiplier =
-    settings?.tax_enabled && settings.tax_percentage > 0 ? 1 + settings.tax_percentage / 100 : 1;
+  const formatPrice = useFormatPrice();
+  const taxMultiplier = useTaxMultiplier();
 
   const cartSubtotal = getTotal();
   const displaySubtotal = settings ? getDisplaySubtotal(cartSubtotal, settings) : cartSubtotal;

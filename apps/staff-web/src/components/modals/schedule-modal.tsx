@@ -1,5 +1,6 @@
 'use client';
 
+import { DAYS_OF_WEEK, TIME_OPTIONS } from '@cafe-idare/core';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import { X } from 'lucide-react';
@@ -13,24 +14,6 @@ interface ScheduleModalProps {
   onClose: () => void;
   onSuccess: () => void;
 }
-
-// Generate 30-minute time slots from 00:00 to 23:30
-const TIME_OPTIONS: string[] = [];
-for (let h = 0; h < 24; h++) {
-  for (const m of [0, 30]) {
-    TIME_OPTIONS.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
-  }
-}
-
-const DAYS_OF_WEEK = [
-  { value: 1, label: 'Mon' },
-  { value: 2, label: 'Tue' },
-  { value: 3, label: 'Wed' },
-  { value: 4, label: 'Thu' },
-  { value: 5, label: 'Fri' },
-  { value: 6, label: 'Sat' },
-  { value: 0, label: 'Sun' },
-];
 
 export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: ScheduleModalProps) {
   const { t } = useTranslation('staff');

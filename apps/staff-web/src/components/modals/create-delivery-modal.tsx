@@ -5,7 +5,7 @@ import { Map as MapIcon, MapPin, Phone, StickyNote, Truck, User, X } from 'lucid
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useCafeSettings, useCreateOrder } from '@/hooks';
-import { formatPriceWithSettings } from '@/hooks/use-settings-safe';
+import { useFormatPrice } from '@/hooks/use-format-price';
 
 interface CreateDeliveryModalProps {
   isOpen: boolean;
@@ -17,18 +17,14 @@ export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDelive
   const { t } = useTranslation('staff');
   const createOrder = useCreateOrder();
   const { data: settings } = useCafeSettings();
+  const formatPrice = useFormatPrice();
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
-  const [deliveryFee, setDeliveryFee] = useState(settings?.delivery_fee_default?.toString() || '0');
+  const [deliveryFee, setDeliveryFee] = useState('0');
   const [loading, setLoading] = useState(false);
-
-  const formatPrice = (amount: number) => {
-    if (settings) return formatPriceWithSettings(amount, settings);
-    return `$${amount.toFixed(2)}`;
-  };
 
   const handleCreate = async () => {
     if (!customerName.trim() || !customerPhone.trim() || !deliveryAddress.trim()) return;

@@ -22,13 +22,8 @@ import {
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
-import {
-  formatPriceWithSettings,
-  useCafeSettings,
-  useCancelOrder,
-  useOrders,
-  useUpdateOrderStatus,
-} from '@/hooks';
+import { useCancelOrder, useOrders, useUpdateOrderStatus } from '@/hooks';
+import { useFormatPrice } from '@/hooks/use-format-price';
 import { supabase } from '@/lib/supabase/client';
 
 type OrderStatus =
@@ -48,15 +43,7 @@ export default function OrdersPage() {
   const { data: orders, isLoading: loading, error, refetch } = useOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const cancelOrderMutation = useCancelOrder();
-  const { data: cafeSettings } = useCafeSettings();
-
-  // Format price using cafe settings or fallback
-  const formatPrice = (amount: number) => {
-    if (cafeSettings) {
-      return formatPriceWithSettings(amount, cafeSettings);
-    }
-    return `$${amount.toFixed(2)}`;
-  };
+  const formatPrice = useFormatPrice();
 
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);

@@ -1,5 +1,6 @@
 'use client';
 
+import { TIME_OPTIONS, WEEKDAYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { useState } from 'react';
@@ -20,22 +21,6 @@ const PRIORITIES = [
   { value: 'high' as const, color: 'bg-orange-100 text-orange-700' },
   { value: 'urgent' as const, color: 'bg-red-100 text-red-700' },
 ];
-
-const WEEKDAYS = [
-  { value: 1, label: 'Mon' },
-  { value: 2, label: 'Tue' },
-  { value: 3, label: 'Wed' },
-  { value: 4, label: 'Thu' },
-  { value: 5, label: 'Fri' },
-  { value: 6, label: 'Sat' },
-  { value: 7, label: 'Sun' },
-];
-
-const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
-  const hours = String(Math.floor(i / 2)).padStart(2, '0');
-  const minutes = i % 2 === 0 ? '00' : '30';
-  return `${hours}:${minutes}`;
-});
 
 export function TaskModal({ task, onClose }: TaskModalProps) {
   const { t } = useTranslation('staff');

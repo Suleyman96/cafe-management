@@ -25,16 +25,9 @@ import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { CreateTakeoutModal } from '@/components/modals/create-takeout-modal';
 import { TableModal } from '@/components/modals/table-modal';
 import { TableTransferModal } from '@/components/modals/table-transfer-modal';
-import {
-  formatPriceWithSettings,
-  useCafeSettings,
-  useCreateOrder,
-  useDeleteTable,
-  useOrders,
-  useTables,
-  useWaiterCalls,
-} from '@/hooks';
+import { useCreateOrder, useDeleteTable, useOrders, useTables, useWaiterCalls } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
+import { useFormatPrice } from '@/hooks/use-format-price';
 import { supabase } from '@/lib/supabase/client';
 
 export default function TablesPage() {
@@ -62,15 +55,7 @@ export default function TablesPage() {
 
   const createOrder = useCreateOrder();
   const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
-  const { data: cafeSettings } = useCafeSettings();
-
-  // Format price using cafe settings or fallback
-  const formatPrice = (amount: number) => {
-    if (cafeSettings) {
-      return formatPriceWithSettings(amount, cafeSettings);
-    }
-    return `$${amount.toFixed(2)}`;
-  };
+  const formatPrice = useFormatPrice();
 
   // Set up real-time subscriptions
   useEffect(() => {

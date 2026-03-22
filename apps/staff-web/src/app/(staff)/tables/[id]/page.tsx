@@ -4,10 +4,8 @@ import type { Database } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
-  AlertCircle,
   ArrowLeft,
   ArrowRightLeft,
-  Check,
   CheckCircle,
   ChefHat,
   Clock,
@@ -17,11 +15,9 @@ import {
   Loader2,
   Minus,
   Plus,
-  ShoppingCart,
   Smartphone,
   ThumbsUp,
   UserCheck,
-  UtensilsCrossed,
   X,
   XCircle,
 } from 'lucide-react';
@@ -29,8 +25,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ItemTransferModal } from '@/components/modals/item-transfer-modal';
+import { OrderItemsList } from '@/components/tables/order-items-list';
+import { TableCart } from '@/components/tables/table-cart';
 import {
-  formatPriceWithSettings,
   useAddOrderItems,
   useCafeSettings,
   useCancelOrder,
@@ -44,6 +41,7 @@ import {
   useUpdateOrderStatus,
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
+import { useFormatPrice } from '@/hooks/use-format-price';
 import { supabase } from '@/lib/supabase/client';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
@@ -74,14 +72,7 @@ export default function TableDetailPage() {
   const cancelOrder = useCancelOrder();
   const cancelOrderItem = useCancelOrderItem();
   const { data: cafeSettings } = useCafeSettings();
-
-  // Format price using cafe settings or fallback
-  const formatPrice = (amount: number) => {
-    if (cafeSettings) {
-      return formatPriceWithSettings(amount, cafeSettings);
-    }
-    return `$${amount.toFixed(2)}`;
-  };
+  const formatPrice = useFormatPrice();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -324,49 +315,6 @@ export default function TableDetailPage() {
         return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // Get item status badge
-  const getItemStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return {
-          bg: 'bg-gray-100',
-          text: 'text-gray-700',
-          icon: <AlertCircle className="h-3 w-3" />,
-          label: t('pending', { ns: 'common' }),
-        };
-      case 'preparing':
-        return {
-          bg: 'bg-yellow-100',
-          text: 'text-yellow-800',
-          icon: <ChefHat className="h-3 w-3" />,
-          label: t('orders.preparing'),
-        };
-      case 'ready':
-        return {
-          bg: 'bg-green-100',
-          text: 'text-green-800',
-          icon: <CheckCircle className="h-3 w-3" />,
-          label: t('orders.ready'),
-        };
-      case 'served':
-        return {
-          bg: 'bg-purple-100',
-          text: 'text-purple-800',
-          icon: <UtensilsCrossed className="h-3 w-3" />,
-          label: t('orders.served'),
-        };
-      case 'cancelled':
-        return {
-          bg: 'bg-red-100',
-          text: 'text-red-700',
-          icon: <XCircle className="h-3 w-3" />,
-          label: t('orders.cancelled'),
-        };
-      default:
-        return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, label: status };
     }
   };
 
@@ -650,95 +598,15 @@ export default function TableDetailPage() {
           </div>
 
           {/* Current order items */}
-          {activeOrder.order_items && activeOrder.order_items.length > 0 && (
-            <div className="mt-4 border-t pt-4">
-              <h3 className="font-medium mb-2">{t('orders.currentItems')}</h3>
-              <div className="space-y-2">
-                {activeOrder.order_items.map((item: OrderItem) => {
-                  const statusBadge = getItemStatusBadge(item.status);
-                  const isCancelled = item.status === 'cancelled';
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={`flex items-center justify-between text-sm gap-2 py-1 ${isCancelled ? 'opacity-50' : ''}`}
-                    >
-                      <span className={`flex-1 ${isCancelled ? 'line-through text-gray-400' : ''}`}>
-                        {item.quantity}x {item.item_name}
-                      </span>
-
-                      {/* Quick Action Buttons */}
-                      <div className="flex items-center gap-1.5">
-                        {isCancelled ? (
-                          <span
-                            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}
-                          >
-                            {statusBadge.icon}
-                            {statusBadge.label}
-                          </span>
-                        ) : (
-                          <>
-                            {(item.status === 'pending' || item.status === 'preparing') && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleItemStatusUpdate(item.id, 'ready');
-                                }}
-                                className="px-2 py-1 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-                              >
-                                <CheckCircle className="h-3 w-3" />
-                                {t('orders.ready')}
-                              </button>
-                            )}
-                            {item.status === 'ready' && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleItemStatusUpdate(item.id, 'served');
-                                }}
-                                className="px-2 py-1 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-                              >
-                                <UtensilsCrossed className="h-3 w-3" />
-                                {t('orders.served')}
-                              </button>
-                            )}
-                            {item.status === 'served' && (
-                              <span
-                                className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}
-                              >
-                                {statusBadge.icon}
-                                {t('orders.done')}
-                              </span>
-                            )}
-                            {/* Cancel item button — not shown for served items */}
-                            {item.status !== 'served' && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCancelItemConfirm(item);
-                                  setCancelItemQty(1);
-                                }}
-                                className="px-1.5 py-1 text-red-500 hover:bg-red-50 rounded transition-colors"
-                                title={t('orders.cancelItem')}
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      <span
-                        className={`w-16 text-right ${isCancelled ? 'line-through text-gray-400' : 'text-gray-600'}`}
-                      >
-                        {formatPrice(item.quantity * item.item_price)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <OrderItemsList
+            items={activeOrder.order_items || []}
+            onItemStatusUpdate={handleItemStatusUpdate}
+            onCancelItem={(item) => {
+              setCancelItemConfirm(item);
+              setCancelItemQty(1);
+            }}
+            formatPrice={formatPrice}
+          />
         </div>
       )}
 
@@ -803,102 +671,20 @@ export default function TableDetailPage() {
         </div>
 
         {/* Cart Sidebar */}
-        <div className="lg:col-span-1 order-1 lg:order-2">
-          <div className="border rounded-lg p-3 sm:p-4 lg:sticky lg:top-4 bg-white">
-            <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              {activeOrder ? t('orders.addItems') : t('orders.new')} (
-              {cart.reduce((sum, item) => sum + item.quantity, 0)})
-            </h2>
-
-            {cart.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">{t('orders.clickToAdd')}</p>
-            ) : (
-              <>
-                <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
-                  {cart.map((item) => (
-                    <div
-                      key={item.menuItem.id}
-                      className="flex items-center justify-between border-b pb-3"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{item.menuItem.name}</p>
-                        <p className="text-sm text-gray-600">
-                          {formatPrice(item.menuItem.price * taxMultiplier)} x {item.quantity}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeFromCart(item.menuItem.id);
-                          }}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-8 text-center">{item.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToCart(item.menuItem);
-                          }}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Order Notes */}
-                <div className="mb-4">
-                  <textarea
-                    value={orderNotes}
-                    onChange={(e) => setOrderNotes(e.target.value)}
-                    placeholder={t('orders.customerNotesPlaceholder')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
-                    rows={2}
-                  />
-                </div>
-
-                <div className="border-t pt-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="font-semibold">{t('total', { ns: 'common' })}</span>
-                    <span className="font-semibold text-lg">{formatPrice(cartTotal)}</span>
-                  </div>
-                  <Button
-                    className="w-full"
-                    onClick={activeOrder ? handleAddItemsToOrder : handleCreateOrderWithItems}
-                    disabled={submitting || cart.length === 0}
-                  >
-                    {submitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {activeOrder ? t('orders.adding') : t('orders.creating')}
-                      </>
-                    ) : activeOrder ? (
-                      <>
-                        <Check className="h-4 w-4 mr-2" />
-                        {t('orders.addToOrder')} #{selectedOrderIndex + 1}
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4 mr-2" />
-                        {t('orders.createOrder')}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+        <TableCart
+          cart={cart}
+          activeOrder={activeOrder}
+          selectedOrderIndex={selectedOrderIndex}
+          submitting={submitting}
+          orderNotes={orderNotes}
+          cartTotal={cartTotal}
+          taxMultiplier={taxMultiplier}
+          formatPrice={formatPrice}
+          onAddToCart={addToCart}
+          onRemoveFromCart={removeFromCart}
+          onSetOrderNotes={setOrderNotes}
+          onSubmit={activeOrder ? handleAddItemsToOrder : handleCreateOrderWithItems}
+        />
       </div>
 
       {/* Cancel Order Modal */}

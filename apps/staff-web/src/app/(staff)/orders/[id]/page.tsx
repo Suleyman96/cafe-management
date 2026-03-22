@@ -32,7 +32,6 @@ import { toast } from 'sonner';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import {
   calculateTax as calculateTaxFromSettings,
-  formatPriceWithSettings,
   useAssignDeliveryPerson,
   useCafeSettings,
   useOrder,
@@ -42,6 +41,7 @@ import {
   useUpdateOrderItemStatus,
   useUpdateOrderStatus,
 } from '@/hooks';
+import { useFormatPrice } from '@/hooks/use-format-price';
 import { supabase } from '@/lib/supabase/client';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
@@ -80,6 +80,7 @@ export default function OrderDetailPage() {
   const { data: paymentsData } = useOrderPayments(orderId);
   const { data: transferHistory } = useOrderTransferHistory(orderId);
   const { data: cafeSettings } = useCafeSettings();
+  const formatPrice = useFormatPrice();
 
   // Type assertions for the complex joined data
   const order = orderData as OrderWithRelations | undefined;
@@ -88,14 +89,6 @@ export default function OrderDetailPage() {
   const updateItemStatus = useUpdateOrderItemStatus();
   const assignDeliveryPerson = useAssignDeliveryPerson();
   const { data: staffList } = useStaff();
-
-  // Format price using cafe settings or fallback
-  const formatPrice = (amount: number) => {
-    if (cafeSettings) {
-      return formatPriceWithSettings(amount, cafeSettings);
-    }
-    return `$${amount.toFixed(2)}`;
-  };
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [openItemMenu, setOpenItemMenu] = useState<string | null>(null);

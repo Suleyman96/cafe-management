@@ -11,7 +11,6 @@ import { CategoryModal } from '@/components/menu/category-modal';
 import { MenuItemModal } from '@/components/menu/menu-item-modal';
 import {
   type CafeSettings,
-  formatPriceWithSettings,
   useCafeSettings,
   useCategories,
   useDeleteCategory,
@@ -19,6 +18,7 @@ import {
   useMenuItems,
   useToggleMenuItemAvailability,
 } from '@/hooks';
+import { useFormatPrice } from '@/hooks/use-format-price';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -44,10 +44,7 @@ function MenuItemCard({
   onToggleAvailability: () => void;
   t: (key: string, opts?: any) => string;
 }) {
-  const formatPrice = (price: number) => {
-    if (settings) return formatPriceWithSettings(price, settings);
-    return `$${price.toFixed(2)}`;
-  };
+  const formatPrice = useFormatPrice();
 
   const taxMultiplier =
     settings?.tax_enabled && settings.tax_percentage > 0 ? 1 + settings.tax_percentage / 100 : 1;

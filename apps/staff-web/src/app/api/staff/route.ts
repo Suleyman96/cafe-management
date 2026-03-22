@@ -1,23 +1,14 @@
-import { createClient } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 
 export const dynamic = 'force-dynamic';
 
-function getSupabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    },
-  );
-}
-
 export async function POST(request: NextRequest) {
   try {
+    // Verify caller is an authenticated admin
+    const adminOrError = await verifyAdmin(request);
+    if (adminOrError instanceof NextResponse) return adminOrError;
+
     const body = await request.json();
     const { email, password, full_name, role, phone } = body;
 
