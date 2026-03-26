@@ -23,7 +23,6 @@
   "tables.tableDeleted": "ลบแล้ว",
   "tables.failedDeleteTable": "ลบโต๊ะไม่สำเร็จ",
   "tables.tableNotFound": "ไม่พบโต๊ะ",
-
   "orders.title": "จัดการคำสั่งซื้อ",
   "orders.orderCreated": "สร้างคำสั่งซื้อกลับบ้านแล้ว",
   "orders.searchOrders": "ค้นหาคำสั่งซื้อ...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "ยังไม่ได้กำหนด",
   "orders.itemStatusUpdated": "อัปเดตสถานะรายการเป็น {{status}}",
   "orders.tax": "ภาษี",
-
   "kitchen.title": "ครัว",
   "kitchen.noActiveOrders": "ไม่มีคำสั่งซื้อ",
   "kitchen.waitingForOrders": "รอคำสั่งซื้อใหม่...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "เวลาเตรียม",
   "kitchen.min": "นาที",
   "kitchen.elapsedTime": "เวลาที่ผ่านไป",
-
   "delivery.title": "คำสั่งจัดส่ง",
   "delivery.newDeliveryOrder": "คำสั่งจัดส่งใหม่",
   "delivery.searchDelivery": "ค้นหาด้วยชื่อ เบอร์โทร ที่อยู่...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "ยกเลิกคำสั่งจัดส่ง",
   "delivery.failedUpdate": "อัปเดตคำสั่งซื้อไม่สำเร็จ",
   "delivery.activeCount": "ใช้งาน",
-
   "menu.title": "จัดการเมนู",
   "menu.subtitle": "จัดการรายการเมนูและหมวดหมู่",
   "menu.addCategory": "เพิ่มหมวดหมู่",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "บันทึกรายการเมนูไม่สำเร็จ",
   "menu.failedSaveCategory": "บันทึกหมวดหมู่ไม่สำเร็จ",
   "menu.image": "รูปภาพ",
-
   "reports.title": "รายงานและการวิเคราะห์",
   "reports.ownerAccessRequired": "ต้องมีสิทธิ์เจ้าของ",
   "reports.salesReport": "รายงานยอดขาย",
@@ -260,7 +255,6 @@
   "reports.today": "วันนี้",
   "reports.from": "จาก",
   "reports.orders": "คำสั่งซื้อ",
-
   "expenses.title": "ค่าใช้จ่าย",
   "expenses.subtitle": "ติดตามและจัดการต้นทุนการดำเนินงาน",
   "expenses.categories": "หมวดหมู่",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "สร้างค่าใช้จ่ายแล้ว",
   "expenses.expenseUpdated": "อัปเดตค่าใช้จ่ายแล้ว",
   "expenses.failedSave": "บันทึกค่าใช้จ่ายไม่สำเร็จ",
-
   "stock.title": "จัดการสต๊อก",
   "stock.subtitle": "ติดตามสินค้าคงคลังและระดับสต๊อก",
   "stock.addItem": "เพิ่มรายการ",
@@ -320,7 +313,6 @@
   "stock.movementType": "ประเภทการเคลื่อนไหว",
   "stock.movementNotes": "บันทึก",
   "stock.movementRecorded": "บันทึกการเคลื่อนไหวสต๊อกแล้ว",
-
   "waste.title": "จัดการของเสีย",
   "waste.subtitle": "ติดตามและลดของเสียอาหาร",
   "waste.logWaste": "บันทึกของเสีย",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "ราคาต่อหน่วย",
   "waste.wasteLogged": "บันทึกของเสียแล้ว",
   "waste.failedLog": "บันทึกของเสียไม่สำเร็จ",
-
   "tasks.title": "งาน",
   "tasks.subtitle": "จัดการงานประจำวันและมอบหมายพนักงาน",
   "tasks.newTask": "งานใหม่",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "สร้างงานแล้ว",
   "tasks.taskUpdated": "อัปเดตงานแล้ว",
   "tasks.failedSave": "บันทึกงานไม่สำเร็จ",
-
   "schedules.title": "ตารางงานพนักงาน",
   "schedules.monthly": "รายเดือน",
   "schedules.weekly": "รายสัปดาห์",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "กำลังดำเนินการ",
   "schedules.completed": "เสร็จสิ้น",
   "schedules.missed": "ขาดงาน",
-
   "feedback.title": "ความคิดเห็นจากลูกค้า",
   "feedback.subtitle": "จัดการข้อร้องเรียน คำถาม และคำขอจากลูกค้า",
   "feedback.allTab": "ทั้งหมด",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "ส่งคำตอบไม่สำเร็จ",
   "feedback.failedDismiss": "ปัดตกความคิดเห็นไม่สำเร็จ",
   "feedback.noResponse": "ยังไม่มีคำตอบ",
-
   "calls.title": "เรียกพนักงาน",
   "calls.call": "ครั้ง",
   "calls.callsPlural": "ครั้ง",
@@ -446,7 +434,6 @@
   "calls.respond": "ตอบสนอง",
   "calls.respondedBy": "{{name}} ตอบสนองเมื่อ",
   "calls.noCalls": "ไม่มีการเรียก",
-
   "cafeSettings.title": "การตั้งค่าร้าน",
   "cafeSettings.restaurantInformation": "ข้อมูลร้านอาหาร",
   "cafeSettings.restaurantName": "ชื่อร้านอาหาร",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "บันทึกการตั้งค่าแล้ว",
   "cafeSettings.failedSave": "บันทึกการตั้งค่าไม่สำเร็จ",
   "cafeSettings.noPermission": "คุณไม่มีสิทธิ์เข้าถึงหน้านี้ เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถจัดการการตั้งค่าร้านได้",
-
   "settings.title": "การตั้งค่าบัญชี",
   "settings.profileInformation": "ข้อมูลโปรไฟล์",
   "settings.fullName": "ชื่อ-นามสกุล",
@@ -535,7 +521,6 @@
   "settings.language": "ภาษา",
   "settings.selectLanguage": "เลือกภาษาที่ต้องการ",
   "settings.languageChanged": "เปลี่ยนภาษาแล้ว",
-
   "staffMgmt.title": "จัดการพนักงาน",
   "staffMgmt.addStaff": "เพิ่มพนักงาน",
   "staffMgmt.accessDenied": "ถูกปฏิเสธการเข้าถึง เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถจัดการพนักงาน",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "ไม่พบคำสั่งซื้อ",
   "staffMgmt.orderNumber": "หมายเลขคำสั่งซื้อ",
   "staffMgmt.table": "โต๊ะ",
-
   "payment.processPaymentCash": "ชำระเงิน (เงินสด)",
   "payment.orderFullyPaid": "คำสั่งซื้อนี้ชำระครบแล้ว!",
   "payment.noItemsToPay": "คำสั่งซื้อนี้ไม่มีรายการที่ต้องชำระ",
@@ -590,7 +574,6 @@
   "payment.completing": "กำลังดำเนินการ...",
   "payment.processing": "กำลังประมวลผล...",
   "payment.processPaymentBtn": "ชำระเงิน",
-
   "tables.editTable": "แก้ไข {{table}}",
   "tables.addNewTable": "เพิ่มโต๊ะใหม่",
   "tables.capacitySeats": "ความจุ (ที่นั่ง)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "สร้างโต๊ะเรียบร้อยแล้ว",
   "tables.failedSaveTable": "บันทึกโต๊ะไม่สำเร็จ",
   "tables.closed": "ปิด",
-
   "tables.transferTable": "ย้าย {{table}}",
   "tables.transferToTable": "ย้ายไปโต๊ะ",
   "tables.selectTable": "เลือกโต๊ะ",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "ย้ายโต๊ะ",
   "tables.mainArea": "พื้นที่หลัก",
   "tables.reasonOptional": "เหตุผล (ไม่จำเป็น)",
-
   "tables.createOrderFor": "สร้างคำสั่งซื้อสำหรับ {{table}}",
   "tables.notesOptional": "บันทึก (ไม่จำเป็น)",
   "tables.specialRequests": "คำขอพิเศษ แพ้อาหาร ฯลฯ",
   "tables.createOrderHint": "สร้างคำสั่งซื้อทานที่ร้านสำหรับ {{table}} คุณสามารถเพิ่มรายการเมนูในหน้าถัดไป",
-
   "delivery.createDeliveryOrder": "สร้างคำสั่งจัดส่ง",
   "delivery.customerName": "ชื่อลูกค้า",
   "delivery.phoneNumber": "เบอร์โทรศัพท์",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "สร้างคำสั่งจัดส่งใหม่ คุณสามารถเพิ่มรายการในหน้าถัดไป",
   "delivery.fullDeliveryAddress": "ที่อยู่จัดส่งเต็ม",
   "delivery.ringDoorbell": "เช่น กดกริ่ง วางหน้าประตู...",
-
   "expenses.editExpense": "แก้ไขค่าใช้จ่าย",
   "expenses.validAmount": "กรุณาใส่จำนวนเงินที่ถูกต้อง",
   "expenses.updatingExpense": "กำลังอัปเดตค่าใช้จ่าย...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "ค่าใช้จ่ายนี้สำหรับอะไร?",
   "expenses.optionalNotes": "บันทึก (ไม่จำเป็น)",
   "expenses.updateExpense": "อัปเดตค่าใช้จ่าย",
-
   "expenses.expenseCategories": "หมวดหมู่ค่าใช้จ่าย",
   "expenses.nameRequired": "ต้องกรอกชื่อ",
   "expenses.categoryUpdated": "อัปเดตหมวดหมู่แล้ว!",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "ลบหมวดหมู่ไม่สำเร็จ",
   "expenses.noCategories": "ยังไม่มีหมวดหมู่",
   "expenses.done": "เสร็จสิ้น",
-
   "stock.editStockItem": "แก้ไขรายการสต๊อก",
   "stock.addStockItem": "เพิ่มรายการสต๊อก",
   "stock.updatingItem": "กำลังอัปเดตรายการ...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "ชื่อผู้จัดจำหน่าย",
   "stock.updateItem": "อัปเดตรายการ",
   "stock.createItem": "สร้างรายการ",
-
   "stock.adjustStock": "ปรับสต๊อก: {{name}}",
   "stock.currentStock": "สต๊อกปัจจุบัน",
   "stock.validQuantity": "กรุณาใส่จำนวนที่ถูกต้อง",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "จำนวนใหม่",
   "stock.newStockLevel": "ระดับสต๊อกใหม่",
   "stock.reasonPlaceholder": "เหตุผลการปรับปรุง (ไม่จำเป็น)",
-
   "schedules.editSchedule": "แก้ไขตารางงาน",
   "schedules.selectStaff": "เลือกพนักงาน...",
   "schedules.scheduleUpdated": "อัปเดตตารางงานแล้ว",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "เวลาเริ่มวางแผน",
   "schedules.plannedEnd": "เวลาสิ้นสุดวางแผน",
   "schedules.optionalNotes": "บันทึก (ไม่จำเป็น)...",
-
   "tasks.editTask": "แก้ไขงาน",
   "tasks.titleRequired": "กรุณาใส่ชื่องาน",
   "tasks.updatingTask": "กำลังอัปเดตงาน...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "เวลากำหนดส่งเริ่มต้น",
   "tasks.dueTime": "เวลากำหนดส่ง",
   "tasks.update": "อัปเดต",
-
   "waste.editWasteLog": "แก้ไขบันทึกของเสีย",
   "waste.linkToStockItem": "เชื่อมกับรายการสต๊อก",
   "waste.manualEntry": "กรอกเอง (ไม่มีรายการสต๊อก)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "อัปเดตบันทึกของเสียแล้ว!",
   "waste.wasteButNoStock": "บันทึกของเสียแล้วแต่หักจากสต๊อกไม่สำเร็จ",
   "waste.validQuantity": "กรุณาใส่จำนวนที่ถูกต้อง",
-
   "staffMgmt.addNewStaff": "เพิ่มพนักงานใหม่",
   "staffMgmt.unexpectedError": "เกิดข้อผิดพลาดที่ไม่คาดคิด",
   "staffMgmt.createAccount": "สร้างบัญชี",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "กำลังรีเซ็ต...",
   "staffMgmt.setNewPasswordFor": "ตั้งรหัสผ่านใหม่สำหรับ",
   "staffMgmt.saving": "กำลังบันทึก...",
-
   "menu.editMenuItem": "แก้ไขรายการเมนู",
   "menu.noCategory": "ไม่มีหมวดหมู่",
   "menu.itemNamePlaceholder": "ชื่อรายการ (เช่น คาปูชิโน ซีซาร์สลัด)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "มีหมวดหมู่ชื่อนี้อยู่แล้ว",
   "menu.available": "พร้อมให้บริการ",
   "menu.dailySpecial": "เมนูพิเศษวันนี้",
-
   "orders.createTakeoutOrder": "สร้างคำสั่งซื้อกลับบ้าน",
   "orders.forPhoneOrCounter": "สำหรับสั่งทางโทรศัพท์หรือเคาน์เตอร์",
   "orders.customerInformation": "ข้อมูลลูกค้า",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "ชื่อ-นามสกุล",
   "orders.enterNameAndPhone": "กรุณาใส่ชื่อและเบอร์โทรศัพท์ลูกค้า",
   "orders.failedCreateTakeout": "สร้างคำสั่งซื้อกลับบ้านไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
-
   "stock.optionalDescription": "คำอธิบาย (ไม่จำเป็น)",
   "stock.optionalNotes": "บันทึก (ไม่จำเป็น)",
   "stock.optionalSupplier": "ชื่อผู้จัดจำหน่าย (ไม่จำเป็น)",
   "stock.coffeeBeans": "เช่น เมล็ดกาแฟ",
   "stock.costPricePerUnit": "ราคาทุนต่อหน่วย",
-
   "notifications.soundOn": "เสียง เปิด",
   "notifications.soundOff": "เสียง ปิด",
   "notifications.notificationsOnTitle": "การแจ้งเตือน เปิด (คลิกเพื่อปิดเสียง)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "คำสั่งซื้อพร้อมแล้ว!",
   "notifications.orderReadyDescription": "คำสั่งซื้อพร้อมเสิร์ฟแล้ว",
   "notifications.newItemsAdded": "เพิ่มรายการใหม่แล้ว!",
-  "notifications.itemsAddedDescription": "มีการเพิ่มรายการในคำสั่งซื้อ"
+  "notifications.itemsAddedDescription": "มีการเพิ่มรายการในคำสั่งซื้อ",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

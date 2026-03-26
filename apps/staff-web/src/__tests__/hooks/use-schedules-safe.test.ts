@@ -59,7 +59,7 @@ describe('useMySchedule', () => {
 
 describe('useMyScheduleToday', () => {
   it('calls db.schedules.findByStaffAndDate with staffId and today', () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
     renderHookWithProviders(() => useMyScheduleToday('s1'));
     expect(db.schedules.findByStaffAndDate).toHaveBeenCalledWith('s1', today);
   });

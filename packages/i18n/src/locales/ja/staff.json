@@ -23,7 +23,6 @@
   "tables.tableDeleted": "削除しました",
   "tables.failedDeleteTable": "テーブルの削除に失敗しました",
   "tables.tableNotFound": "テーブルが見つかりません",
-
   "orders.title": "注文管理",
   "orders.orderCreated": "テイクアウト注文を作成しました",
   "orders.searchOrders": "注文を検索...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "未割り当て",
   "orders.itemStatusUpdated": "品目ステータスを{{status}}に更新しました",
   "orders.tax": "税金",
-
   "kitchen.title": "キッチン",
   "kitchen.noActiveOrders": "注文なし",
   "kitchen.waitingForOrders": "新しい注文を待っています...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "調理時間",
   "kitchen.min": "分",
   "kitchen.elapsedTime": "経過時間",
-
   "delivery.title": "デリバリー注文",
   "delivery.newDeliveryOrder": "新規デリバリー注文",
   "delivery.searchDelivery": "名前、電話番号、住所で検索...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "デリバリー注文をキャンセル",
   "delivery.failedUpdate": "注文の更新に失敗しました",
   "delivery.activeCount": "有効",
-
   "menu.title": "メニュー管理",
   "menu.subtitle": "メニュー品目とカテゴリの管理",
   "menu.addCategory": "カテゴリを追加",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "メニュー品目の保存に失敗しました",
   "menu.failedSaveCategory": "カテゴリの保存に失敗しました",
   "menu.image": "画像",
-
   "reports.title": "レポートと分析",
   "reports.ownerAccessRequired": "オーナー権限が必要です",
   "reports.salesReport": "売上レポート",
@@ -260,7 +255,6 @@
   "reports.today": "今日",
   "reports.from": "から",
   "reports.orders": "注文",
-
   "expenses.title": "経費",
   "expenses.subtitle": "運営コストの追跡と管理",
   "expenses.categories": "カテゴリ",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "経費を作成しました",
   "expenses.expenseUpdated": "経費を更新しました",
   "expenses.failedSave": "経費の保存に失敗しました",
-
   "stock.title": "在庫管理",
   "stock.subtitle": "在庫と在庫レベルの追跡",
   "stock.addItem": "品目を追加",
@@ -320,7 +313,6 @@
   "stock.movementType": "変動タイプ",
   "stock.movementNotes": "メモ",
   "stock.movementRecorded": "在庫変動を記録しました",
-
   "waste.title": "廃棄管理",
   "waste.subtitle": "食品廃棄の追跡と削減",
   "waste.logWaste": "廃棄を記録",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "単位あたりのコスト",
   "waste.wasteLogged": "廃棄を記録しました",
   "waste.failedLog": "廃棄の記録に失敗しました",
-
   "tasks.title": "タスク",
   "tasks.subtitle": "日常業務とスタッフ割り当ての管理",
   "tasks.newTask": "新規タスク",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "タスクを作成しました",
   "tasks.taskUpdated": "タスクを更新しました",
   "tasks.failedSave": "タスクの保存に失敗しました",
-
   "schedules.title": "スタッフシフト",
   "schedules.monthly": "月次",
   "schedules.weekly": "週次",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "進行中",
   "schedules.completed": "完了",
   "schedules.missed": "欠勤",
-
   "feedback.title": "お客様フィードバック",
   "feedback.subtitle": "お客様からの苦情、質問、リクエストの管理",
   "feedback.allTab": "すべて",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "回答の送信に失敗しました",
   "feedback.failedDismiss": "フィードバックの却下に失敗しました",
   "feedback.noResponse": "まだ回答がありません",
-
   "calls.title": "スタッフ呼出",
   "calls.call": "件",
   "calls.callsPlural": "件",
@@ -446,7 +434,6 @@
   "calls.respond": "対応",
   "calls.respondedBy": "{{name}}が対応:",
   "calls.noCalls": "呼出なし",
-
   "cafeSettings.title": "カフェ設定",
   "cafeSettings.restaurantInformation": "レストラン情報",
   "cafeSettings.restaurantName": "レストラン名",
@@ -464,7 +451,7 @@
   "cafeSettings.currencyCode": "通貨コード",
   "cafeSettings.symbolPosition": "記号の位置",
   "cafeSettings.before": "前 ($10)",
-  "cafeSettings.after": "後 (10\u20bc)",
+  "cafeSettings.after": "後 (10₼)",
   "cafeSettings.decimalPlaces": "小数点以下の桁数",
   "cafeSettings.orderSettings": "注文設定",
   "cafeSettings.minimumOrderAmount": "最低注文金額",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "設定を保存しました",
   "cafeSettings.failedSave": "設定の保存に失敗しました",
   "cafeSettings.noPermission": "このページへのアクセス権限がありません。管理者のみがカフェ設定を管理できます。",
-
   "settings.title": "アカウント設定",
   "settings.profileInformation": "プロフィール情報",
   "settings.fullName": "氏名",
@@ -535,7 +521,6 @@
   "settings.language": "言語",
   "settings.selectLanguage": "ご希望の言語を選択してください",
   "settings.languageChanged": "言語が変更されました",
-
   "staffMgmt.title": "スタッフ管理",
   "staffMgmt.addStaff": "スタッフを追加",
   "staffMgmt.accessDenied": "アクセスが拒否されました。管理者のみがスタッフを管理できます。",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "注文が見つかりません",
   "staffMgmt.orderNumber": "注文番号",
   "staffMgmt.table": "テーブル",
-
   "payment.processPaymentCash": "支払い処理（現金）",
   "payment.orderFullyPaid": "この注文は全額支払済みです！",
   "payment.noItemsToPay": "この注文には支払う品目がありません。",
@@ -590,7 +574,6 @@
   "payment.completing": "完了処理中...",
   "payment.processing": "処理中...",
   "payment.processPaymentBtn": "支払いを処理",
-
   "tables.editTable": "{{table}}を編集",
   "tables.addNewTable": "新規テーブルを追加",
   "tables.capacitySeats": "定員（席数）",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "テーブルを作成しました",
   "tables.failedSaveTable": "テーブルの保存に失敗しました",
   "tables.closed": "閉鎖",
-
   "tables.transferTable": "{{table}}を移動",
   "tables.transferToTable": "移動先テーブル",
   "tables.selectTable": "テーブルを選択",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "テーブルを移動",
   "tables.mainArea": "メインエリア",
   "tables.reasonOptional": "理由（任意）",
-
   "tables.createOrderFor": "{{table}}の注文を作成",
   "tables.notesOptional": "メモ（任意）",
   "tables.specialRequests": "特別なリクエスト、アレルギーなど",
   "tables.createOrderHint": "{{table}}の店内注文を作成します。次の画面でメニュー品目を追加できます。",
-
   "delivery.createDeliveryOrder": "デリバリー注文を作成",
   "delivery.customerName": "お客様名",
   "delivery.phoneNumber": "電話番号",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "新規デリバリー注文を作成します。次の画面で品目を追加できます。",
   "delivery.fullDeliveryAddress": "配達先の完全な住所",
   "delivery.ringDoorbell": "例: インターホンを鳴らす、ドア前に置く...",
-
   "expenses.editExpense": "経費を編集",
   "expenses.validAmount": "有効な金額を入力してください",
   "expenses.updatingExpense": "経費を更新中...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "この経費の内容は？",
   "expenses.optionalNotes": "任意のメモ",
   "expenses.updateExpense": "経費を更新",
-
   "expenses.expenseCategories": "経費カテゴリ",
   "expenses.nameRequired": "名前は必須です",
   "expenses.categoryUpdated": "カテゴリを更新しました！",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "カテゴリの削除に失敗しました",
   "expenses.noCategories": "カテゴリがありません",
   "expenses.done": "完了",
-
   "stock.editStockItem": "在庫品目を編集",
   "stock.addStockItem": "在庫品目を追加",
   "stock.updatingItem": "品目を更新中...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "サプライヤー名",
   "stock.updateItem": "品目を更新",
   "stock.createItem": "品目を作成",
-
   "stock.adjustStock": "在庫を調整: {{name}}",
   "stock.currentStock": "現在の在庫",
   "stock.validQuantity": "有効な数量を入力してください",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "新しい数量",
   "stock.newStockLevel": "新しい在庫レベル",
   "stock.reasonPlaceholder": "調整理由（任意）",
-
   "schedules.editSchedule": "シフトを編集",
   "schedules.selectStaff": "スタッフを選択...",
   "schedules.scheduleUpdated": "シフトを更新しました",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "予定開始",
   "schedules.plannedEnd": "予定終了",
   "schedules.optionalNotes": "任意のメモ...",
-
   "tasks.editTask": "タスクを編集",
   "tasks.titleRequired": "タスク名を入力してください",
   "tasks.updatingTask": "タスクを更新中...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "デフォルト期限時間",
   "tasks.dueTime": "期限時間",
   "tasks.update": "更新",
-
   "waste.editWasteLog": "廃棄記録を編集",
   "waste.linkToStockItem": "在庫品目にリンク",
   "waste.manualEntry": "手動入力（在庫品目なし）",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "廃棄記録を更新しました！",
   "waste.wasteButNoStock": "廃棄は記録されましたが在庫からの差し引きに失敗しました",
   "waste.validQuantity": "有効な数量を入力してください",
-
   "staffMgmt.addNewStaff": "新規スタッフを追加",
   "staffMgmt.unexpectedError": "予期しないエラーが発生しました",
   "staffMgmt.createAccount": "アカウントを作成",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "リセット中...",
   "staffMgmt.setNewPasswordFor": "新しいパスワードを設定:",
   "staffMgmt.saving": "保存中...",
-
   "menu.editMenuItem": "メニュー品目を編集",
   "menu.noCategory": "カテゴリなし",
   "menu.itemNamePlaceholder": "品目名（例: カプチーノ、シーザーサラダ）",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "同じ名前のカテゴリが既に存在します。",
   "menu.available": "利用可能",
   "menu.dailySpecial": "本日のおすすめ",
-
   "orders.createTakeoutOrder": "テイクアウト注文を作成",
   "orders.forPhoneOrCounter": "電話またはカウンター注文用",
   "orders.customerInformation": "お客様情報",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "氏名",
   "orders.enterNameAndPhone": "お客様の名前と電話番号を入力してください",
   "orders.failedCreateTakeout": "テイクアウト注文の作成に失敗しました。もう一度お試しください。",
-
   "stock.optionalDescription": "任意の説明",
   "stock.optionalNotes": "任意のメモ",
   "stock.optionalSupplier": "サプライヤー名（任意）",
   "stock.coffeeBeans": "例: コーヒー豆",
   "stock.costPricePerUnit": "単位あたりの原価",
-
   "notifications.soundOn": "サウンド ON",
   "notifications.soundOff": "サウンド OFF",
   "notifications.notificationsOnTitle": "通知 ON（クリックでミュート）",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "注文準備完了！",
   "notifications.orderReadyDescription": "注文の提供準備が整いました",
   "notifications.newItemsAdded": "新しい品目が追加されました！",
-  "notifications.itemsAddedDescription": "注文に品目が追加されました"
+  "notifications.itemsAddedDescription": "注文に品目が追加されました",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

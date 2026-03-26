@@ -23,7 +23,6 @@
   "tables.tableDeleted": "жойылды",
   "tables.failedDeleteTable": "Үстелді жою сәтсіз аяқталды",
   "tables.tableNotFound": "Үстел табылмады",
-
   "orders.title": "Тапсырыстарды басқару",
   "orders.orderCreated": "Алып кету тапсырысы жасалды",
   "orders.searchOrders": "Тапсырыстарды іздеу...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "Тағайындалмаған",
   "orders.itemStatusUpdated": "Тауар күйі {{status}} болып жаңартылды",
   "orders.tax": "Салық",
-
   "kitchen.title": "Ас үй",
   "kitchen.noActiveOrders": "Белсенді тапсырыстар жоқ",
   "kitchen.waitingForOrders": "Жаңа тапсырыстар күтілуде...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "Дайындау уақыты",
   "kitchen.min": "мин",
   "kitchen.elapsedTime": "Өткен уақыт",
-
   "delivery.title": "Жеткізу тапсырыстары",
   "delivery.newDeliveryOrder": "Жаңа жеткізу тапсырысы",
   "delivery.searchDelivery": "Аты, телефон, мекенжай бойынша іздеу...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "Жеткізу тапсырысынан бас тарту",
   "delivery.failedUpdate": "Тапсырысты жаңарту сәтсіз аяқталды",
   "delivery.activeCount": "белсенді",
-
   "menu.title": "Мәзірді басқару",
   "menu.subtitle": "Мәзір тауарлары мен санаттарын басқару",
   "menu.addCategory": "Санат қосу",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "Мәзір тауарын сақтау сәтсіз аяқталды",
   "menu.failedSaveCategory": "Санатты сақтау сәтсіз аяқталды",
   "menu.image": "Сурет",
-
   "reports.title": "Есептер мен аналитика",
   "reports.ownerAccessRequired": "Иесі қатынасы қажет",
   "reports.salesReport": "Сату есебі",
@@ -260,7 +255,6 @@
   "reports.today": "Бүгін",
   "reports.from": "бастап",
   "reports.orders": "тапсырыстар",
-
   "expenses.title": "Шығыстар",
   "expenses.subtitle": "Операциялық шығындарды бақылау және басқару",
   "expenses.categories": "Санаттар",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "Шығыс жасалды",
   "expenses.expenseUpdated": "Шығыс жаңартылды",
   "expenses.failedSave": "Шығысты сақтау сәтсіз аяқталды",
-
   "stock.title": "Қорды басқару",
   "stock.subtitle": "Тауар қорын бақылау",
   "stock.addItem": "Тауар қосу",
@@ -320,7 +313,6 @@
   "stock.movementType": "Қозғалыс түрі",
   "stock.movementNotes": "Жазбалар",
   "stock.movementRecorded": "Қор қозғалысы тіркелді",
-
   "waste.title": "Қалдықтарды басқару",
   "waste.subtitle": "Тамақ қалдығын бақылау және азайту",
   "waste.logWaste": "Қалдық тіркеу",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "Бірлік құны",
   "waste.wasteLogged": "Қалдық тіркелді",
   "waste.failedLog": "Қалдықты тіркеу сәтсіз аяқталды",
-
   "tasks.title": "Тапсырмалар",
   "tasks.subtitle": "Күнделікті операцияларды және қызметкер тағайындауларын басқару",
   "tasks.newTask": "Жаңа тапсырма",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "Тапсырма жасалды",
   "tasks.taskUpdated": "Тапсырма жаңартылды",
   "tasks.failedSave": "Тапсырманы сақтау сәтсіз аяқталды",
-
   "schedules.title": "Қызметкерлер кестесі",
   "schedules.monthly": "Айлық",
   "schedules.weekly": "Апталық",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "Орындалуда",
   "schedules.completed": "Аяқталды",
   "schedules.missed": "Жіберіп алынды",
-
   "feedback.title": "Тұтынушы пікірлері",
   "feedback.subtitle": "Тұтынушылардан келген шағымдарды, сұрақтарды және сұрауларды басқару",
   "feedback.allTab": "Барлығы",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "Жауап жіберу сәтсіз аяқталды",
   "feedback.failedDismiss": "Пікірді қабылдамау сәтсіз аяқталды",
   "feedback.noResponse": "Жауап әлі жоқ",
-
   "calls.title": "Даяшы шақырулары",
   "calls.call": "шақыру",
   "calls.callsPlural": "шақырулар",
@@ -446,7 +434,6 @@
   "calls.respond": "Жауап беру",
   "calls.respondedBy": "{{name}} жауап берді, уақыты:",
   "calls.noCalls": "Шақырулар жоқ",
-
   "cafeSettings.title": "Кафе параметрлері",
   "cafeSettings.restaurantInformation": "Мейрамхана ақпараты",
   "cafeSettings.restaurantName": "Мейрамхана атауы",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "Параметрлер сәтті сақталды",
   "cafeSettings.failedSave": "Параметрлерді сақтау сәтсіз аяқталды",
   "cafeSettings.noPermission": "Бұл бетке кіруге рұқсатыңыз жоқ. Тек әкімшілер кафе параметрлерін басқара алады.",
-
   "settings.title": "Аккаунт параметрлері",
   "settings.profileInformation": "Профиль ақпараты",
   "settings.fullName": "Толық аты-жөні",
@@ -535,7 +521,6 @@
   "settings.language": "Тіл",
   "settings.selectLanguage": "Қалаған тіліңізді таңдаңыз",
   "settings.languageChanged": "Тіл өзгертілді",
-
   "staffMgmt.title": "Қызметкерлерді басқару",
   "staffMgmt.addStaff": "Қызметкер қосу",
   "staffMgmt.accessDenied": "Кіруге рұқсат жоқ. Тек әкімшілер қызметкерлерді басқара алады.",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "Тапсырыстар табылмады",
   "staffMgmt.orderNumber": "Тапсырыс №",
   "staffMgmt.table": "Үстел",
-
   "payment.processPaymentCash": "Төлемді өңдеу (қолма-қол)",
   "payment.orderFullyPaid": "Бұл тапсырыс толық төленді!",
   "payment.noItemsToPay": "Бұл тапсырыста төленетін тауарлар жоқ.",
@@ -590,7 +574,6 @@
   "payment.completing": "Аяқталуда...",
   "payment.processing": "Өңделуде...",
   "payment.processPaymentBtn": "Төлемді өңдеу",
-
   "tables.editTable": "{{table}} өңдеу",
   "tables.addNewTable": "Жаңа үстел қосу",
   "tables.capacitySeats": "Сыйымдылық (орын)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "Үстел сәтті жасалды",
   "tables.failedSaveTable": "Үстелді сақтау сәтсіз аяқталды",
   "tables.closed": "Жабық",
-
   "tables.transferTable": "{{table}} ауыстыру",
   "tables.transferToTable": "Үстелге ауыстыру",
   "tables.selectTable": "Үстел таңдау",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "Үстелді ауыстыру",
   "tables.mainArea": "Негізгі аймақ",
   "tables.reasonOptional": "Себебі (міндетті емес)",
-
   "tables.createOrderFor": "{{table}} үшін тапсырыс жасау",
   "tables.notesOptional": "Жазбалар (міндетті емес)",
   "tables.specialRequests": "Арнайы тілектер, аллергиялар, т.б.",
   "tables.createOrderHint": "Бұл {{table}} үшін жаңа мейрамхана тапсырысын жасайды. Келесі экранда мәзір тауарларын қосуға болады.",
-
   "delivery.createDeliveryOrder": "Жеткізу тапсырысын жасау",
   "delivery.customerName": "Тұтынушы аты",
   "delivery.phoneNumber": "Телефон нөмірі",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "Бұл жаңа жеткізу тапсырысын жасайды. Келесі экранда тауарларды қосуға болады.",
   "delivery.fullDeliveryAddress": "Толық жеткізу мекенжайы",
   "delivery.ringDoorbell": "мыс., Қоңырау басу, есік алдына қалдыру...",
-
   "expenses.editExpense": "Шығысты өңдеу",
   "expenses.validAmount": "Жарамды сома енгізіңіз",
   "expenses.updatingExpense": "Шығыс жаңартылуда...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "Бұл шығыс не үшін болды?",
   "expenses.optionalNotes": "Қосымша жазбалар",
   "expenses.updateExpense": "Шығысты жаңарту",
-
   "expenses.expenseCategories": "Шығыс санаттары",
   "expenses.nameRequired": "Атау міндетті",
   "expenses.categoryUpdated": "Санат жаңартылды!",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "Санатты жою сәтсіз аяқталды",
   "expenses.noCategories": "Санаттар әлі жоқ",
   "expenses.done": "Дайын",
-
   "stock.editStockItem": "Қор тауарын өңдеу",
   "stock.addStockItem": "Қор тауарын қосу",
   "stock.updatingItem": "Тауар жаңартылуда...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "Жеткізуші атауы",
   "stock.updateItem": "Тауарды жаңарту",
   "stock.createItem": "Тауар жасау",
-
   "stock.adjustStock": "Қорды түзету: {{name}}",
   "stock.currentStock": "Ағымдағы қор",
   "stock.validQuantity": "Жарамды сан енгізіңіз",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "Жаңа сан",
   "stock.newStockLevel": "Жаңа қор деңгейі",
   "stock.reasonPlaceholder": "Түзету себебі (міндетті емес)",
-
   "schedules.editSchedule": "Кестені өңдеу",
   "schedules.selectStaff": "Қызметкер таңдау...",
   "schedules.scheduleUpdated": "Кесте жаңартылды",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "Жоспарланған басталуы",
   "schedules.plannedEnd": "Жоспарланған аяқталуы",
   "schedules.optionalNotes": "Қосымша жазбалар...",
-
   "tasks.editTask": "Тапсырманы өңдеу",
   "tasks.titleRequired": "Тапсырма тақырыбын енгізіңіз",
   "tasks.updatingTask": "Тапсырма жаңартылуда...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "Әдепкі мерзім уақыты",
   "tasks.dueTime": "Мерзім уақыты",
   "tasks.update": "Жаңарту",
-
   "waste.editWasteLog": "Қалдық жазбасын өңдеу",
   "waste.linkToStockItem": "Қор тауарына сілтеме",
   "waste.manualEntry": "Қолмен енгізу (қор тауарысыз)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "Қалдық жазбасы жаңартылды!",
   "waste.wasteButNoStock": "Қалдық тіркелді, бірақ қордан шегеру сәтсіз аяқталды",
   "waste.validQuantity": "Жарамды сан енгізіңіз",
-
   "staffMgmt.addNewStaff": "Жаңа қызметкер қосу",
   "staffMgmt.unexpectedError": "Күтпеген қате орын алды",
   "staffMgmt.createAccount": "Аккаунт жасау",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "Қалпына келтірілуде...",
   "staffMgmt.setNewPasswordFor": "Жаңа құпия сөз орнату:",
   "staffMgmt.saving": "Сақталуда...",
-
   "menu.editMenuItem": "Мәзір тауарын өңдеу",
   "menu.noCategory": "Санат жоқ",
   "menu.itemNamePlaceholder": "Тауар атауы (мыс., Капучино, Цезарь салаты)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "Бұл атаумен санат бұрыннан бар.",
   "menu.available": "Қолжетімді",
   "menu.dailySpecial": "Күнделікті ұсыныс",
-
   "orders.createTakeoutOrder": "Алып кету тапсырысын жасау",
   "orders.forPhoneOrCounter": "Телефон немесе прилавок тапсырыстары үшін",
   "orders.customerInformation": "Тұтынушы ақпараты",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "Толық аты",
   "orders.enterNameAndPhone": "Тұтынушы атын және телефон нөмірін енгізіңіз",
   "orders.failedCreateTakeout": "Алып кету тапсырысын жасау сәтсіз аяқталды. Қайта көріңіз.",
-
   "stock.optionalDescription": "Қосымша сипаттама",
   "stock.optionalNotes": "Қосымша жазбалар",
   "stock.optionalSupplier": "Жеткізуші атауы (міндетті емес)",
   "stock.coffeeBeans": "мыс., Кофе дәндері",
   "stock.costPricePerUnit": "Бірлік құны",
-
   "notifications.soundOn": "Дыбыс ҚОСУЛДЫ",
   "notifications.soundOff": "Дыбыс ӨШІРІЛДІ",
   "notifications.notificationsOnTitle": "Хабарландырулар ҚОСУЛДЫ (өшіру үшін басыңыз)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "Тапсырыс дайын!",
   "notifications.orderReadyDescription": "Тапсырыс беруге дайын",
   "notifications.newItemsAdded": "Жаңа тауарлар қосылды!",
-  "notifications.itemsAddedDescription": "Тапсырысқа тауарлар қосылды"
+  "notifications.itemsAddedDescription": "Тапсырысқа тауарлар қосылды",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

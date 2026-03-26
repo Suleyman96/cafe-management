@@ -23,7 +23,6 @@
   "tables.tableDeleted": "διαγράφηκε",
   "tables.failedDeleteTable": "Αποτυχία διαγραφής τραπεζιού",
   "tables.tableNotFound": "Το τραπέζι δεν βρέθηκε",
-
   "orders.title": "Διαχείριση Παραγγελιών",
   "orders.orderCreated": "Δημιουργήθηκε παραγγελία πακέτο",
   "orders.searchOrders": "Αναζήτηση παραγγελιών...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "Δεν έχει ανατεθεί",
   "orders.itemStatusUpdated": "Η κατάσταση είδους ενημερώθηκε σε {{status}}",
   "orders.tax": "Φόρος",
-
   "kitchen.title": "Κουζίνα",
   "kitchen.noActiveOrders": "Χωρίς Ενεργές Παραγγελίες",
   "kitchen.waitingForOrders": "Αναμονή νέων παραγγελιών...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "Χρόνος Προετοιμασίας",
   "kitchen.min": "λεπτά",
   "kitchen.elapsedTime": "Χρόνος που Πέρασε",
-
   "delivery.title": "Παραγγελίες Παράδοσης",
   "delivery.newDeliveryOrder": "Νέα Παραγγελία Παράδοσης",
   "delivery.searchDelivery": "Αναζήτηση με όνομα, τηλέφωνο, διεύθυνση...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "Ακύρωση Παραγγελίας Παράδοσης",
   "delivery.failedUpdate": "Αποτυχία ενημέρωσης παραγγελίας",
   "delivery.activeCount": "ενεργές",
-
   "menu.title": "Διαχείριση Μενού",
   "menu.subtitle": "Διαχείριση ειδών μενού και κατηγοριών",
   "menu.addCategory": "Προσθήκη Κατηγορίας",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "Αποτυχία αποθήκευσης είδους μενού",
   "menu.failedSaveCategory": "Αποτυχία αποθήκευσης κατηγορίας",
   "menu.image": "Εικόνα",
-
   "reports.title": "Αναφορές & Αναλυτικά",
   "reports.ownerAccessRequired": "Απαιτείται πρόσβαση ιδιοκτήτη",
   "reports.salesReport": "Αναφορά Πωλήσεων",
@@ -260,7 +255,6 @@
   "reports.today": "Σήμερα",
   "reports.from": "από",
   "reports.orders": "παραγγελίες",
-
   "expenses.title": "Έξοδα",
   "expenses.subtitle": "Παρακολούθηση και διαχείριση λειτουργικών εξόδων",
   "expenses.categories": "Κατηγορίες",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "Το έξοδο δημιουργήθηκε",
   "expenses.expenseUpdated": "Το έξοδο ενημερώθηκε",
   "expenses.failedSave": "Αποτυχία αποθήκευσης εξόδου",
-
   "stock.title": "Διαχείριση Αποθήκης",
   "stock.subtitle": "Παρακολούθηση αποθέματος και επιπέδων αποθήκης",
   "stock.addItem": "Προσθήκη Είδους",
@@ -320,7 +313,6 @@
   "stock.movementType": "Τύπος Κίνησης",
   "stock.movementNotes": "Σημειώσεις",
   "stock.movementRecorded": "Η κίνηση αποθήκης καταγράφηκε",
-
   "waste.title": "Διαχείριση Αποβλήτων",
   "waste.subtitle": "Παρακολούθηση και μείωση σπατάλης τροφίμων",
   "waste.logWaste": "Καταγραφή Αποβλήτου",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "Κόστος ανά Μονάδα",
   "waste.wasteLogged": "Το απόβλητο καταγράφηκε",
   "waste.failedLog": "Αποτυχία καταγραφής αποβλήτου",
-
   "tasks.title": "Εργασίες",
   "tasks.subtitle": "Διαχείριση καθημερινών λειτουργιών και ανάθεσης προσωπικού",
   "tasks.newTask": "Νέα Εργασία",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "Η εργασία δημιουργήθηκε",
   "tasks.taskUpdated": "Η εργασία ενημερώθηκε",
   "tasks.failedSave": "Αποτυχία αποθήκευσης εργασίας",
-
   "schedules.title": "Προγράμματα Προσωπικού",
   "schedules.monthly": "Μηνιαίο",
   "schedules.weekly": "Εβδομαδιαίο",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "Σε Εξέλιξη",
   "schedules.completed": "Ολοκληρωμένο",
   "schedules.missed": "Απουσία",
-
   "feedback.title": "Σχόλια Πελατών",
   "feedback.subtitle": "Διαχείριση παραπόνων, ερωτήσεων και αιτημάτων πελατών",
   "feedback.allTab": "Όλα",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "Αποτυχία αποστολής απάντησης",
   "feedback.failedDismiss": "Αποτυχία απόρριψης σχολίων",
   "feedback.noResponse": "Δεν υπάρχει απάντηση ακόμη",
-
   "calls.title": "Κλήσεις Σερβιτόρου",
   "calls.call": "κλήση",
   "calls.callsPlural": "κλήσεις",
@@ -446,7 +434,6 @@
   "calls.respond": "Απόκριση",
   "calls.respondedBy": "Απάντησε ο/η {{name}} στις",
   "calls.noCalls": "Δεν υπάρχουν κλήσεις",
-
   "cafeSettings.title": "Ρυθμίσεις Καφέ",
   "cafeSettings.restaurantInformation": "Πληροφορίες Εστιατορίου",
   "cafeSettings.restaurantName": "Όνομα Εστιατορίου",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "Οι ρυθμίσεις αποθηκεύτηκαν",
   "cafeSettings.failedSave": "Αποτυχία αποθήκευσης ρυθμίσεων",
   "cafeSettings.noPermission": "Δεν έχετε δικαίωμα πρόσβασης σε αυτή τη σελίδα. Μόνο οι διαχειριστές μπορούν να διαχειριστούν τις ρυθμίσεις.",
-
   "settings.title": "Ρυθμίσεις Λογαριασμού",
   "settings.profileInformation": "Πληροφορίες Προφίλ",
   "settings.fullName": "Ονοματεπώνυμο",
@@ -535,7 +521,6 @@
   "settings.language": "Γλώσσα",
   "settings.selectLanguage": "Επιλέξτε τη γλώσσα που προτιμάτε",
   "settings.languageChanged": "Η γλώσσα άλλαξε",
-
   "staffMgmt.title": "Διαχείριση Προσωπικού",
   "staffMgmt.addStaff": "Προσθήκη Προσωπικού",
   "staffMgmt.accessDenied": "Δεν επιτρέπεται η πρόσβαση. Μόνο οι διαχειριστές μπορούν να διαχειριστούν το προσωπικό.",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "Δεν βρέθηκαν παραγγελίες",
   "staffMgmt.orderNumber": "Παραγγελία #",
   "staffMgmt.table": "Τραπέζι",
-
   "payment.processPaymentCash": "Επεξεργασία Πληρωμής (Μετρητά)",
   "payment.orderFullyPaid": "Αυτή η παραγγελία έχει πληρωθεί πλήρως!",
   "payment.noItemsToPay": "Αυτή η παραγγελία δεν έχει είδη προς πληρωμή.",
@@ -590,7 +574,6 @@
   "payment.completing": "Ολοκλήρωση...",
   "payment.processing": "Επεξεργασία...",
   "payment.processPaymentBtn": "Επεξεργασία Πληρωμής",
-
   "tables.editTable": "Επεξεργασία {{table}}",
   "tables.addNewTable": "Προσθήκη Νέου Τραπεζιού",
   "tables.capacitySeats": "Χωρητικότητα (θέσεις)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "Το τραπέζι δημιουργήθηκε επιτυχώς",
   "tables.failedSaveTable": "Αποτυχία αποθήκευσης τραπεζιού",
   "tables.closed": "Κλειστό",
-
   "tables.transferTable": "Μεταφορά {{table}}",
   "tables.transferToTable": "Μεταφορά σε Τραπέζι",
   "tables.selectTable": "Επιλέξτε τραπέζι",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "Μεταφορά Τραπεζιού",
   "tables.mainArea": "Κεντρική περιοχή",
   "tables.reasonOptional": "Λόγος (προαιρετικά)",
-
   "tables.createOrderFor": "Δημιουργία Παραγγελίας για {{table}}",
   "tables.notesOptional": "Σημειώσεις (προαιρετικά)",
   "tables.specialRequests": "Ειδικά αιτήματα, αλλεργίες, κλπ.",
   "tables.createOrderHint": "Αυτό θα δημιουργήσει μια νέα παραγγελία κατανάλωσης για {{table}}. Μπορείτε να προσθέσετε είδη μενού στην επόμενη οθόνη.",
-
   "delivery.createDeliveryOrder": "Δημιουργία Παραγγελίας Παράδοσης",
   "delivery.customerName": "Όνομα Πελάτη",
   "delivery.phoneNumber": "Αριθμός Τηλεφώνου",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "Αυτό θα δημιουργήσει μια νέα παραγγελία παράδοσης. Μπορείτε να προσθέσετε είδη στην επόμενη οθόνη.",
   "delivery.fullDeliveryAddress": "Πλήρης διεύθυνση παράδοσης",
   "delivery.ringDoorbell": "π.χ. Χτυπήστε κουδούνι, αφήστε στην πόρτα...",
-
   "expenses.editExpense": "Επεξεργασία Εξόδου",
   "expenses.validAmount": "Παρακαλώ εισάγετε έγκυρο ποσό",
   "expenses.updatingExpense": "Ενημέρωση εξόδου...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "Για τι ήταν αυτό το έξοδο;",
   "expenses.optionalNotes": "Προαιρετικές σημειώσεις",
   "expenses.updateExpense": "Ενημέρωση Εξόδου",
-
   "expenses.expenseCategories": "Κατηγορίες Εξόδων",
   "expenses.nameRequired": "Το όνομα είναι υποχρεωτικό",
   "expenses.categoryUpdated": "Η κατηγορία ενημερώθηκε!",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "Αποτυχία διαγραφής κατηγορίας",
   "expenses.noCategories": "Δεν υπάρχουν κατηγορίες ακόμη",
   "expenses.done": "Ολοκληρώθηκε",
-
   "stock.editStockItem": "Επεξεργασία Είδους Αποθήκης",
   "stock.addStockItem": "Προσθήκη Είδους Αποθήκης",
   "stock.updatingItem": "Ενημέρωση είδους...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "Όνομα Προμηθευτή",
   "stock.updateItem": "Ενημέρωση Είδους",
   "stock.createItem": "Δημιουργία Είδους",
-
   "stock.adjustStock": "Προσαρμογή Αποθέματος: {{name}}",
   "stock.currentStock": "Τρέχον Απόθεμα",
   "stock.validQuantity": "Παρακαλώ εισάγετε έγκυρη ποσότητα",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "Νέα Ποσότητα",
   "stock.newStockLevel": "Νέο Επίπεδο Αποθέματος",
   "stock.reasonPlaceholder": "Προαιρετικός λόγος προσαρμογής",
-
   "schedules.editSchedule": "Επεξεργασία Προγράμματος",
   "schedules.selectStaff": "Επιλογή προσωπικού...",
   "schedules.scheduleUpdated": "Το πρόγραμμα ενημερώθηκε",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "Προγραμματισμένη Έναρξη",
   "schedules.plannedEnd": "Προγραμματισμένη Λήξη",
   "schedules.optionalNotes": "Προαιρετικές σημειώσεις...",
-
   "tasks.editTask": "Επεξεργασία Εργασίας",
   "tasks.titleRequired": "Παρακαλώ εισάγετε τίτλο εργασίας",
   "tasks.updatingTask": "Ενημέρωση εργασίας...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "Προεπιλεγμένη Ώρα Λήξης",
   "tasks.dueTime": "Ώρα Λήξης",
   "tasks.update": "Ενημέρωση",
-
   "waste.editWasteLog": "Επεξεργασία Εγγραφής Αποβλήτων",
   "waste.linkToStockItem": "Σύνδεση με Είδος Αποθήκης",
   "waste.manualEntry": "Χειροκίνητη εισαγωγή (χωρίς είδος αποθήκης)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "Η εγγραφή αποβλήτων ενημερώθηκε!",
   "waste.wasteButNoStock": "Το απόβλητο καταγράφηκε αλλά η αφαίρεση από το απόθεμα απέτυχε",
   "waste.validQuantity": "Παρακαλώ εισάγετε έγκυρη ποσότητα",
-
   "staffMgmt.addNewStaff": "Προσθήκη Νέου Μέλους Προσωπικού",
   "staffMgmt.unexpectedError": "Παρουσιάστηκε μη αναμενόμενο σφάλμα",
   "staffMgmt.createAccount": "Δημιουργία Λογαριασμού",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "Επαναφορά...",
   "staffMgmt.setNewPasswordFor": "Ορίστε νέο κωδικό για",
   "staffMgmt.saving": "Αποθήκευση...",
-
   "menu.editMenuItem": "Επεξεργασία Είδους Μενού",
   "menu.noCategory": "Χωρίς Κατηγορία",
   "menu.itemNamePlaceholder": "Όνομα είδους (π.χ. Καπουτσίνο, Σαλάτα Σίζαρ)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "Υπάρχει ήδη κατηγορία με αυτό το όνομα.",
   "menu.available": "Διαθέσιμο",
   "menu.dailySpecial": "Σπεσιαλιτέ Ημέρας",
-
   "orders.createTakeoutOrder": "Δημιουργία Παραγγελίας Πακέτο",
   "orders.forPhoneOrCounter": "Για τηλεφωνικές ή παραγγελίες πάγκου",
   "orders.customerInformation": "Πληροφορίες Πελάτη",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "Ονοματεπώνυμο",
   "orders.enterNameAndPhone": "Παρακαλώ εισάγετε όνομα και τηλέφωνο πελάτη",
   "orders.failedCreateTakeout": "Αποτυχία δημιουργίας παραγγελίας πακέτο. Παρακαλώ δοκιμάστε ξανά.",
-
   "stock.optionalDescription": "Προαιρετική περιγραφή",
   "stock.optionalNotes": "Προαιρετικές σημειώσεις",
   "stock.optionalSupplier": "Προαιρετικό όνομα προμηθευτή",
   "stock.coffeeBeans": "π.χ. Κόκκοι Καφέ",
   "stock.costPricePerUnit": "Τιμή Κόστους ανά Μονάδα",
-
   "notifications.soundOn": "Ήχος ΕΝΕΡΓΟΣ",
   "notifications.soundOff": "Ήχος ΑΝΕΝΕΡΓΟΣ",
   "notifications.notificationsOnTitle": "Ειδοποιήσεις ΕΝΕΡΓΕΣ (κλικ για σίγαση)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "Παραγγελία Έτοιμη!",
   "notifications.orderReadyDescription": "Μια παραγγελία είναι έτοιμη για σερβίρισμα",
   "notifications.newItemsAdded": "Προστέθηκαν νέα είδη!",
-  "notifications.itemsAddedDescription": "Προστέθηκαν είδη σε μια παραγγελία"
+  "notifications.itemsAddedDescription": "Προστέθηκαν είδη σε μια παραγγελία",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

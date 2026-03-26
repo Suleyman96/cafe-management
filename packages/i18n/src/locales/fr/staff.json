@@ -23,7 +23,6 @@
   "tables.tableDeleted": "supprimée",
   "tables.failedDeleteTable": "Échec de la suppression de la table",
   "tables.tableNotFound": "Table non trouvée",
-
   "orders.title": "Gestion des commandes",
   "orders.orderCreated": "Commande à emporter créée",
   "orders.searchOrders": "Rechercher des commandes...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "Non assigné",
   "orders.itemStatusUpdated": "Statut de l'article mis à jour en {{status}}",
   "orders.tax": "Taxe",
-
   "kitchen.title": "Cuisine",
   "kitchen.noActiveOrders": "Aucune commande active",
   "kitchen.waitingForOrders": "En attente de nouvelles commandes...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "Temps de préparation",
   "kitchen.min": "min",
   "kitchen.elapsedTime": "Temps écoulé",
-
   "delivery.title": "Commandes de livraison",
   "delivery.newDeliveryOrder": "Nouvelle commande de livraison",
   "delivery.searchDelivery": "Rechercher par nom, téléphone, adresse...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "Annuler la commande de livraison",
   "delivery.failedUpdate": "Échec de la mise à jour de la commande",
   "delivery.activeCount": "actives",
-
   "menu.title": "Gestion du menu",
   "menu.subtitle": "Gérer les articles et catégories du menu",
   "menu.addCategory": "Ajouter une catégorie",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "Échec de l'enregistrement de l'article",
   "menu.failedSaveCategory": "Échec de l'enregistrement de la catégorie",
   "menu.image": "Image",
-
   "reports.title": "Rapports et analyses",
   "reports.ownerAccessRequired": "Accès propriétaire requis",
   "reports.salesReport": "Rapport des ventes",
@@ -260,7 +255,6 @@
   "reports.today": "Aujourd'hui",
   "reports.from": "de",
   "reports.orders": "commandes",
-
   "expenses.title": "Dépenses",
   "expenses.subtitle": "Suivre et gérer les coûts opérationnels",
   "expenses.categories": "Catégories",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "Dépense créée",
   "expenses.expenseUpdated": "Dépense mise à jour",
   "expenses.failedSave": "Échec de l'enregistrement de la dépense",
-
   "stock.title": "Gestion des stocks",
   "stock.subtitle": "Suivre l'inventaire et les niveaux de stock",
   "stock.addItem": "Ajouter un article",
@@ -320,7 +313,6 @@
   "stock.movementType": "Type de mouvement",
   "stock.movementNotes": "Notes",
   "stock.movementRecorded": "Mouvement de stock enregistré",
-
   "waste.title": "Gestion du gaspillage",
   "waste.subtitle": "Suivre et réduire le gaspillage alimentaire",
   "waste.logWaste": "Enregistrer le gaspillage",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "Coût par unité",
   "waste.wasteLogged": "Gaspillage enregistré",
   "waste.failedLog": "Échec de l'enregistrement du gaspillage",
-
   "tasks.title": "Tâches",
   "tasks.subtitle": "Gérer les opérations quotidiennes et les affectations du personnel",
   "tasks.newTask": "Nouvelle tâche",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "Tâche créée",
   "tasks.taskUpdated": "Tâche mise à jour",
   "tasks.failedSave": "Échec de l'enregistrement de la tâche",
-
   "schedules.title": "Plannings du personnel",
   "schedules.monthly": "Mensuel",
   "schedules.weekly": "Hebdomadaire",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "En cours",
   "schedules.completed": "Terminé",
   "schedules.missed": "Manqué",
-
   "feedback.title": "Avis clients",
   "feedback.subtitle": "Gérer les réclamations, questions et demandes des clients",
   "feedback.allTab": "Tous",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "Échec de l'envoi de la réponse",
   "feedback.failedDismiss": "Échec du rejet de l'avis",
   "feedback.noResponse": "Aucune réponse pour le moment",
-
   "calls.title": "Appels serveur",
   "calls.call": "appel",
   "calls.callsPlural": "appels",
@@ -446,7 +434,6 @@
   "calls.respond": "Répondre",
   "calls.respondedBy": "Répondu par {{name}} à",
   "calls.noCalls": "Aucun appel",
-
   "cafeSettings.title": "Paramètres du café",
   "cafeSettings.restaurantInformation": "Informations sur le restaurant",
   "cafeSettings.restaurantName": "Nom du restaurant",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "Paramètres enregistrés avec succès",
   "cafeSettings.failedSave": "Échec de l'enregistrement des paramètres",
   "cafeSettings.noPermission": "Vous n'avez pas la permission d'accéder à cette page. Seuls les administrateurs peuvent gérer les paramètres du café.",
-
   "settings.title": "Paramètres du compte",
   "settings.profileInformation": "Informations du profil",
   "settings.fullName": "Nom complet",
@@ -535,7 +521,6 @@
   "settings.language": "Langue",
   "settings.selectLanguage": "Sélectionnez votre langue préférée",
   "settings.languageChanged": "Langue modifiée",
-
   "staffMgmt.title": "Gestion du personnel",
   "staffMgmt.addStaff": "Ajouter du personnel",
   "staffMgmt.accessDenied": "Accès refusé. Seuls les administrateurs peuvent gérer le personnel.",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "Aucune commande trouvée",
   "staffMgmt.orderNumber": "Commande #",
   "staffMgmt.table": "Table",
-
   "payment.processPaymentCash": "Traiter le paiement (Espèces)",
   "payment.orderFullyPaid": "Cette commande est entièrement payée !",
   "payment.noItemsToPay": "Cette commande n'a aucun article à payer.",
@@ -590,7 +574,6 @@
   "payment.completing": "Finalisation...",
   "payment.processing": "Traitement...",
   "payment.processPaymentBtn": "Traiter le paiement",
-
   "tables.editTable": "Modifier {{table}}",
   "tables.addNewTable": "Ajouter une nouvelle table",
   "tables.capacitySeats": "Capacité (places)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "Table créée avec succès",
   "tables.failedSaveTable": "Échec de l'enregistrement de la table",
   "tables.closed": "Fermée",
-
   "tables.transferTable": "Transférer {{table}}",
   "tables.transferToTable": "Transférer vers la table",
   "tables.selectTable": "Sélectionner une table",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "Transférer la table",
   "tables.mainArea": "Salle principale",
   "tables.reasonOptional": "Raison (facultatif)",
-
   "tables.createOrderFor": "Créer une commande pour {{table}}",
   "tables.notesOptional": "Notes (facultatif)",
   "tables.specialRequests": "Demandes spéciales, allergies, etc.",
   "tables.createOrderHint": "Ceci créera une nouvelle commande sur place pour {{table}}. Vous pourrez ajouter des articles dans l'écran suivant.",
-
   "delivery.createDeliveryOrder": "Créer une commande de livraison",
   "delivery.customerName": "Nom du client",
   "delivery.phoneNumber": "Numéro de téléphone",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "Ceci créera une nouvelle commande de livraison. Vous pourrez ajouter des articles dans l'écran suivant.",
   "delivery.fullDeliveryAddress": "Adresse de livraison complète",
   "delivery.ringDoorbell": "ex. : Sonner, laisser devant la porte...",
-
   "expenses.editExpense": "Modifier la dépense",
   "expenses.validAmount": "Veuillez entrer un montant valide",
   "expenses.updatingExpense": "Mise à jour de la dépense...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "À quoi correspond cette dépense ?",
   "expenses.optionalNotes": "Notes facultatives",
   "expenses.updateExpense": "Mettre à jour la dépense",
-
   "expenses.expenseCategories": "Catégories de dépenses",
   "expenses.nameRequired": "Le nom est obligatoire",
   "expenses.categoryUpdated": "Catégorie mise à jour !",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "Échec de la suppression de la catégorie",
   "expenses.noCategories": "Aucune catégorie",
   "expenses.done": "Terminé",
-
   "stock.editStockItem": "Modifier l'article en stock",
   "stock.addStockItem": "Ajouter un article en stock",
   "stock.updatingItem": "Mise à jour de l'article...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "Nom du fournisseur",
   "stock.updateItem": "Mettre à jour l'article",
   "stock.createItem": "Créer l'article",
-
   "stock.adjustStock": "Ajuster le stock : {{name}}",
   "stock.currentStock": "Stock actuel",
   "stock.validQuantity": "Veuillez entrer une quantité valide",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "Nouvelle quantité",
   "stock.newStockLevel": "Nouveau niveau de stock",
   "stock.reasonPlaceholder": "Raison facultative pour l'ajustement",
-
   "schedules.editSchedule": "Modifier le planning",
   "schedules.selectStaff": "Sélectionner le personnel...",
   "schedules.scheduleUpdated": "Planning mis à jour",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "Début prévu",
   "schedules.plannedEnd": "Fin prévue",
   "schedules.optionalNotes": "Notes facultatives...",
-
   "tasks.editTask": "Modifier la tâche",
   "tasks.titleRequired": "Veuillez entrer un titre de tâche",
   "tasks.updatingTask": "Mise à jour de la tâche...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "Heure d'échéance par défaut",
   "tasks.dueTime": "Heure d'échéance",
   "tasks.update": "Mettre à jour",
-
   "waste.editWasteLog": "Modifier l'enregistrement de gaspillage",
   "waste.linkToStockItem": "Lier à un article en stock",
   "waste.manualEntry": "Saisie manuelle (pas d'article en stock)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "Enregistrement de gaspillage mis à jour !",
   "waste.wasteButNoStock": "Gaspillage enregistré mais échec de la déduction du stock",
   "waste.validQuantity": "Veuillez entrer une quantité valide",
-
   "staffMgmt.addNewStaff": "Ajouter un nouveau membre du personnel",
   "staffMgmt.unexpectedError": "Une erreur inattendue s'est produite",
   "staffMgmt.createAccount": "Créer le compte",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "Réinitialisation...",
   "staffMgmt.setNewPasswordFor": "Définir un nouveau mot de passe pour",
   "staffMgmt.saving": "Enregistrement...",
-
   "menu.editMenuItem": "Modifier l'article du menu",
   "menu.noCategory": "Sans catégorie",
   "menu.itemNamePlaceholder": "Nom de l'article (ex. : Cappuccino, Salade César)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "Une catégorie avec ce nom existe déjà.",
   "menu.available": "Disponible",
   "menu.dailySpecial": "Plat du jour",
-
   "orders.createTakeoutOrder": "Créer une commande à emporter",
   "orders.forPhoneOrCounter": "Pour les commandes par téléphone ou au comptoir",
   "orders.customerInformation": "Informations client",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "Nom complet",
   "orders.enterNameAndPhone": "Veuillez entrer le nom et le numéro de téléphone du client",
   "orders.failedCreateTakeout": "Échec de la création de la commande à emporter. Veuillez réessayer.",
-
   "stock.optionalDescription": "Description facultative",
   "stock.optionalNotes": "Notes facultatives",
   "stock.optionalSupplier": "Nom du fournisseur (facultatif)",
   "stock.coffeeBeans": "ex. : Grains de café",
   "stock.costPricePerUnit": "Prix de revient par unité",
-
   "notifications.soundOn": "Son ACTIF",
   "notifications.soundOff": "Son INACTIF",
   "notifications.notificationsOnTitle": "Notifications ACTIVES (cliquer pour couper le son)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "Commande prête !",
   "notifications.orderReadyDescription": "Une commande est prête à être servie",
   "notifications.newItemsAdded": "Nouveaux articles ajoutés !",
-  "notifications.itemsAddedDescription": "Des articles ont été ajoutés à une commande"
+  "notifications.itemsAddedDescription": "Des articles ont été ajoutés à une commande",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

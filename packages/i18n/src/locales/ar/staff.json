@@ -23,7 +23,6 @@
   "tables.tableDeleted": "تم الحذف",
   "tables.failedDeleteTable": "فشل حذف الطاولة",
   "tables.tableNotFound": "لم يتم العثور على الطاولة",
-
   "orders.title": "إدارة الطلبات",
   "orders.orderCreated": "تم إنشاء طلب الاستلام",
   "orders.searchOrders": "البحث في الطلبات...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "غير معيّن",
   "orders.itemStatusUpdated": "تم تحديث حالة الصنف إلى {{status}}",
   "orders.tax": "الضريبة",
-
   "kitchen.title": "المطبخ",
   "kitchen.noActiveOrders": "لا توجد طلبات نشطة",
   "kitchen.waitingForOrders": "في انتظار طلبات جديدة...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "وقت التحضير",
   "kitchen.min": "دقيقة",
   "kitchen.elapsedTime": "الوقت المنقضي",
-
   "delivery.title": "طلبات التوصيل",
   "delivery.newDeliveryOrder": "طلب توصيل جديد",
   "delivery.searchDelivery": "البحث بالاسم أو الهاتف أو العنوان...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "إلغاء طلب التوصيل",
   "delivery.failedUpdate": "فشل تحديث الطلب",
   "delivery.activeCount": "نشط",
-
   "menu.title": "إدارة القائمة",
   "menu.subtitle": "إدارة أصناف القائمة والفئات",
   "menu.addCategory": "إضافة فئة",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "فشل حفظ صنف القائمة",
   "menu.failedSaveCategory": "فشل حفظ الفئة",
   "menu.image": "صورة",
-
   "reports.title": "التقارير والتحليلات",
   "reports.ownerAccessRequired": "مطلوب صلاحية المالك",
   "reports.salesReport": "تقرير المبيعات",
@@ -260,7 +255,6 @@
   "reports.today": "اليوم",
   "reports.from": "من",
   "reports.orders": "طلبات",
-
   "expenses.title": "المصروفات",
   "expenses.subtitle": "تتبع وإدارة التكاليف التشغيلية",
   "expenses.categories": "الفئات",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "تم إنشاء المصروف",
   "expenses.expenseUpdated": "تم تحديث المصروف",
   "expenses.failedSave": "فشل حفظ المصروف",
-
   "stock.title": "إدارة المخزون",
   "stock.subtitle": "تتبع المخزون ومستويات التخزين",
   "stock.addItem": "إضافة صنف",
@@ -320,7 +313,6 @@
   "stock.movementType": "نوع الحركة",
   "stock.movementNotes": "ملاحظات",
   "stock.movementRecorded": "تم تسجيل حركة المخزون",
-
   "waste.title": "إدارة الهدر",
   "waste.subtitle": "تتبع هدر الطعام والحد منه",
   "waste.logWaste": "تسجيل هدر",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "تكلفة الوحدة",
   "waste.wasteLogged": "تم تسجيل الهدر",
   "waste.failedLog": "فشل تسجيل الهدر",
-
   "tasks.title": "المهام",
   "tasks.subtitle": "إدارة العمليات اليومية وتوزيع المهام على الموظفين",
   "tasks.newTask": "مهمة جديدة",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "تم إنشاء المهمة",
   "tasks.taskUpdated": "تم تحديث المهمة",
   "tasks.failedSave": "فشل حفظ المهمة",
-
   "schedules.title": "جداول الموظفين",
   "schedules.monthly": "شهري",
   "schedules.weekly": "أسبوعي",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "قيد التنفيذ",
   "schedules.completed": "مكتمل",
   "schedules.missed": "فائت",
-
   "feedback.title": "ملاحظات العملاء",
   "feedback.subtitle": "إدارة الشكاوى والأسئلة والطلبات من العملاء",
   "feedback.allTab": "الكل",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "فشل إرسال الرد",
   "feedback.failedDismiss": "فشل رفض الملاحظة",
   "feedback.noResponse": "لا يوجد رد بعد",
-
   "calls.title": "استدعاءات النادل",
   "calls.call": "استدعاء",
   "calls.callsPlural": "استدعاءات",
@@ -446,7 +434,6 @@
   "calls.respond": "الرد",
   "calls.respondedBy": "رد {{name}} في",
   "calls.noCalls": "لا توجد استدعاءات",
-
   "cafeSettings.title": "إعدادات المقهى",
   "cafeSettings.restaurantInformation": "معلومات المطعم",
   "cafeSettings.restaurantName": "اسم المطعم",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "تم حفظ الإعدادات بنجاح",
   "cafeSettings.failedSave": "فشل حفظ الإعدادات",
   "cafeSettings.noPermission": "ليس لديك صلاحية الوصول إلى هذه الصفحة. يمكن للمشرفين فقط إدارة إعدادات المقهى.",
-
   "settings.title": "إعدادات الحساب",
   "settings.profileInformation": "معلومات الملف الشخصي",
   "settings.fullName": "الاسم الكامل",
@@ -535,7 +521,6 @@
   "settings.language": "اللغة",
   "settings.selectLanguage": "اختر لغتك المفضلة",
   "settings.languageChanged": "تم تغيير اللغة",
-
   "staffMgmt.title": "إدارة الموظفين",
   "staffMgmt.addStaff": "إضافة موظف",
   "staffMgmt.accessDenied": "تم رفض الوصول. يمكن للمشرفين فقط إدارة الموظفين.",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "لم يتم العثور على طلبات",
   "staffMgmt.orderNumber": "طلب رقم",
   "staffMgmt.table": "الطاولة",
-
   "payment.processPaymentCash": "معالجة الدفع (نقدي)",
   "payment.orderFullyPaid": "تم دفع هذا الطلب بالكامل!",
   "payment.noItemsToPay": "لا توجد أصناف للدفع في هذا الطلب.",
@@ -590,7 +574,6 @@
   "payment.completing": "جاري الإكمال...",
   "payment.processing": "جاري المعالجة...",
   "payment.processPaymentBtn": "معالجة الدفع",
-
   "tables.editTable": "تعديل {{table}}",
   "tables.addNewTable": "إضافة طاولة جديدة",
   "tables.capacitySeats": "السعة (مقاعد)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "تم إنشاء الطاولة بنجاح",
   "tables.failedSaveTable": "فشل حفظ الطاولة",
   "tables.closed": "مغلقة",
-
   "tables.transferTable": "نقل {{table}}",
   "tables.transferToTable": "النقل إلى طاولة",
   "tables.selectTable": "اختر طاولة",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "نقل الطاولة",
   "tables.mainArea": "المنطقة الرئيسية",
   "tables.reasonOptional": "السبب (اختياري)",
-
   "tables.createOrderFor": "إنشاء طلب لـ {{table}}",
   "tables.notesOptional": "ملاحظات (اختياري)",
   "tables.specialRequests": "طلبات خاصة، حساسية، إلخ.",
   "tables.createOrderHint": "سيتم إنشاء طلب جديد داخل المطعم لـ {{table}}. يمكنك إضافة أصناف القائمة في الشاشة التالية.",
-
   "delivery.createDeliveryOrder": "إنشاء طلب توصيل",
   "delivery.customerName": "اسم العميل",
   "delivery.phoneNumber": "رقم الهاتف",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "سيتم إنشاء طلب توصيل جديد. يمكنك إضافة الأصناف في الشاشة التالية.",
   "delivery.fullDeliveryAddress": "عنوان التوصيل الكامل",
   "delivery.ringDoorbell": "مثال: اضغط الجرس، اتركه عند الباب...",
-
   "expenses.editExpense": "تعديل المصروف",
   "expenses.validAmount": "يرجى إدخال مبلغ صالح",
   "expenses.updatingExpense": "جاري تحديث المصروف...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "ما هو هذا المصروف؟",
   "expenses.optionalNotes": "ملاحظات اختيارية",
   "expenses.updateExpense": "تحديث المصروف",
-
   "expenses.expenseCategories": "فئات المصروفات",
   "expenses.nameRequired": "الاسم مطلوب",
   "expenses.categoryUpdated": "تم تحديث الفئة!",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "فشل حذف الفئة",
   "expenses.noCategories": "لا توجد فئات بعد",
   "expenses.done": "تم",
-
   "stock.editStockItem": "تعديل صنف المخزون",
   "stock.addStockItem": "إضافة صنف مخزون",
   "stock.updatingItem": "جاري تحديث الصنف...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "اسم المورد",
   "stock.updateItem": "تحديث الصنف",
   "stock.createItem": "إنشاء صنف",
-
   "stock.adjustStock": "تعديل المخزون: {{name}}",
   "stock.currentStock": "المخزون الحالي",
   "stock.validQuantity": "يرجى إدخال كمية صالحة",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "الكمية الجديدة",
   "stock.newStockLevel": "مستوى المخزون الجديد",
   "stock.reasonPlaceholder": "سبب التعديل (اختياري)",
-
   "schedules.editSchedule": "تعديل الجدول",
   "schedules.selectStaff": "اختر موظفاً...",
   "schedules.scheduleUpdated": "تم تحديث الجدول",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "البدء المخطط",
   "schedules.plannedEnd": "الانتهاء المخطط",
   "schedules.optionalNotes": "ملاحظات اختيارية...",
-
   "tasks.editTask": "تعديل المهمة",
   "tasks.titleRequired": "يرجى إدخال عنوان المهمة",
   "tasks.updatingTask": "جاري تحديث المهمة...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "وقت الاستحقاق الافتراضي",
   "tasks.dueTime": "وقت الاستحقاق",
   "tasks.update": "تحديث",
-
   "waste.editWasteLog": "تعديل سجل الهدر",
   "waste.linkToStockItem": "ربط بصنف المخزون",
   "waste.manualEntry": "إدخال يدوي (بدون صنف مخزون)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "تم تحديث سجل الهدر!",
   "waste.wasteButNoStock": "تم تسجيل الهدر لكن فشل الخصم من المخزون",
   "waste.validQuantity": "يرجى إدخال كمية صالحة",
-
   "staffMgmt.addNewStaff": "إضافة موظف جديد",
   "staffMgmt.unexpectedError": "حدث خطأ غير متوقع",
   "staffMgmt.createAccount": "إنشاء حساب",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "جاري إعادة التعيين...",
   "staffMgmt.setNewPasswordFor": "تعيين كلمة مرور جديدة لـ",
   "staffMgmt.saving": "جاري الحفظ...",
-
   "menu.editMenuItem": "تعديل صنف القائمة",
   "menu.noCategory": "بدون فئة",
   "menu.itemNamePlaceholder": "اسم الصنف (مثال: كابتشينو، سلطة سيزر)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "توجد فئة بهذا الاسم بالفعل.",
   "menu.available": "متاح",
   "menu.dailySpecial": "عرض اليوم",
-
   "orders.createTakeoutOrder": "إنشاء طلب استلام",
   "orders.forPhoneOrCounter": "لطلبات الهاتف أو الكاونتر",
   "orders.customerInformation": "معلومات العميل",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "الاسم الكامل",
   "orders.enterNameAndPhone": "يرجى إدخال اسم العميل ورقم الهاتف",
   "orders.failedCreateTakeout": "فشل إنشاء طلب الاستلام. يرجى المحاولة مرة أخرى.",
-
   "stock.optionalDescription": "وصف اختياري",
   "stock.optionalNotes": "ملاحظات اختيارية",
   "stock.optionalSupplier": "اسم المورد (اختياري)",
   "stock.coffeeBeans": "مثال: حبوب القهوة",
   "stock.costPricePerUnit": "سعر التكلفة لكل وحدة",
-
   "notifications.soundOn": "الصوت مفعّل",
   "notifications.soundOff": "الصوت مُعطّل",
   "notifications.notificationsOnTitle": "الإشعارات مفعّلة (اضغط لكتم الصوت)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "الطلب جاهز!",
   "notifications.orderReadyDescription": "هناك طلب جاهز للتقديم",
   "notifications.newItemsAdded": "تمت إضافة أصناف جديدة!",
-  "notifications.itemsAddedDescription": "تمت إضافة أصناف إلى طلب"
+  "notifications.itemsAddedDescription": "تمت إضافة أصناف إلى طلب",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

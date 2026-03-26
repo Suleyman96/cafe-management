@@ -36,7 +36,7 @@ describe('postLoginSideEffects', () => {
   });
 
   it('finds today schedules and marks scheduled ones as in-progress', async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
     const scheduledEntry = { id: 'sched-1', status: 'scheduled' };
     const completedEntry = { id: 'sched-2', status: 'completed' };
 

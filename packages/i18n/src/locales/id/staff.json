@@ -23,7 +23,6 @@
   "tables.tableDeleted": "dihapus",
   "tables.failedDeleteTable": "Gagal menghapus meja",
   "tables.tableNotFound": "Meja tidak ditemukan",
-
   "orders.title": "Manajemen Pesanan",
   "orders.orderCreated": "Pesanan bawa pulang dibuat",
   "orders.searchOrders": "Cari pesanan...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "Belum ditugaskan",
   "orders.itemStatusUpdated": "Status item diperbarui menjadi {{status}}",
   "orders.tax": "Pajak",
-
   "kitchen.title": "Dapur",
   "kitchen.noActiveOrders": "Tidak Ada Pesanan Aktif",
   "kitchen.waitingForOrders": "Menunggu pesanan baru...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "Waktu Persiapan",
   "kitchen.min": "menit",
   "kitchen.elapsedTime": "Waktu Berlalu",
-
   "delivery.title": "Pesanan Pengiriman",
   "delivery.newDeliveryOrder": "Pesanan Pengiriman Baru",
   "delivery.searchDelivery": "Cari berdasarkan nama, telepon, alamat...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "Batalkan Pesanan Pengiriman",
   "delivery.failedUpdate": "Gagal memperbarui pesanan",
   "delivery.activeCount": "aktif",
-
   "menu.title": "Manajemen Menu",
   "menu.subtitle": "Kelola item menu dan kategori",
   "menu.addCategory": "Tambah Kategori",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "Gagal menyimpan item menu",
   "menu.failedSaveCategory": "Gagal menyimpan kategori",
   "menu.image": "Gambar",
-
   "reports.title": "Laporan & Analitik",
   "reports.ownerAccessRequired": "Diperlukan akses pemilik",
   "reports.salesReport": "Laporan Penjualan",
@@ -260,7 +255,6 @@
   "reports.today": "Hari Ini",
   "reports.from": "dari",
   "reports.orders": "pesanan",
-
   "expenses.title": "Pengeluaran",
   "expenses.subtitle": "Lacak dan kelola biaya operasional",
   "expenses.categories": "Kategori",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "Pengeluaran dibuat",
   "expenses.expenseUpdated": "Pengeluaran diperbarui",
   "expenses.failedSave": "Gagal menyimpan pengeluaran",
-
   "stock.title": "Manajemen Stok",
   "stock.subtitle": "Lacak inventaris dan tingkat stok",
   "stock.addItem": "Tambah Item",
@@ -320,7 +313,6 @@
   "stock.movementType": "Tipe Pergerakan",
   "stock.movementNotes": "Catatan",
   "stock.movementRecorded": "Pergerakan stok dicatat",
-
   "waste.title": "Manajemen Limbah",
   "waste.subtitle": "Lacak dan kurangi limbah makanan",
   "waste.logWaste": "Catat Limbah",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "Biaya per Unit",
   "waste.wasteLogged": "Limbah dicatat",
   "waste.failedLog": "Gagal mencatat limbah",
-
   "tasks.title": "Tugas",
   "tasks.subtitle": "Kelola operasional harian dan penugasan staf",
   "tasks.newTask": "Tugas Baru",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "Tugas dibuat",
   "tasks.taskUpdated": "Tugas diperbarui",
   "tasks.failedSave": "Gagal menyimpan tugas",
-
   "schedules.title": "Jadwal Staf",
   "schedules.monthly": "Bulanan",
   "schedules.weekly": "Mingguan",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "Sedang Berjalan",
   "schedules.completed": "Selesai",
   "schedules.missed": "Tidak Hadir",
-
   "feedback.title": "Umpan Balik Pelanggan",
   "feedback.subtitle": "Kelola keluhan, pertanyaan, dan permintaan dari pelanggan",
   "feedback.allTab": "Semua",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "Gagal mengirim respons",
   "feedback.failedDismiss": "Gagal menolak umpan balik",
   "feedback.noResponse": "Belum ada respons",
-
   "calls.title": "Panggilan Pelayan",
   "calls.call": "panggilan",
   "calls.callsPlural": "panggilan",
@@ -446,7 +434,6 @@
   "calls.respond": "Respons",
   "calls.respondedBy": "Direspons oleh {{name}} pada",
   "calls.noCalls": "Tidak ada panggilan",
-
   "cafeSettings.title": "Pengaturan Kafe",
   "cafeSettings.restaurantInformation": "Informasi Restoran",
   "cafeSettings.restaurantName": "Nama Restoran",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "Pengaturan berhasil disimpan",
   "cafeSettings.failedSave": "Gagal menyimpan pengaturan",
   "cafeSettings.noPermission": "Anda tidak memiliki izin untuk mengakses halaman ini. Hanya administrator yang dapat mengelola pengaturan kafe.",
-
   "settings.title": "Pengaturan Akun",
   "settings.profileInformation": "Informasi Profil",
   "settings.fullName": "Nama Lengkap",
@@ -535,7 +521,6 @@
   "settings.language": "Bahasa",
   "settings.selectLanguage": "Pilih bahasa yang Anda inginkan",
   "settings.languageChanged": "Bahasa diubah",
-
   "staffMgmt.title": "Manajemen Staf",
   "staffMgmt.addStaff": "Tambah Staf",
   "staffMgmt.accessDenied": "Akses ditolak. Hanya administrator yang dapat mengelola staf.",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "Tidak ada pesanan ditemukan",
   "staffMgmt.orderNumber": "Pesanan #",
   "staffMgmt.table": "Meja",
-
   "payment.processPaymentCash": "Proses Pembayaran (Tunai)",
   "payment.orderFullyPaid": "Pesanan ini sudah dibayar penuh!",
   "payment.noItemsToPay": "Pesanan ini tidak memiliki item untuk dibayar.",
@@ -590,7 +574,6 @@
   "payment.completing": "Menyelesaikan...",
   "payment.processing": "Memproses...",
   "payment.processPaymentBtn": "Proses Pembayaran",
-
   "tables.editTable": "Edit {{table}}",
   "tables.addNewTable": "Tambah Meja Baru",
   "tables.capacitySeats": "Kapasitas (kursi)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "Meja berhasil dibuat",
   "tables.failedSaveTable": "Gagal menyimpan meja",
   "tables.closed": "Ditutup",
-
   "tables.transferTable": "Pindahkan {{table}}",
   "tables.transferToTable": "Pindahkan ke Meja",
   "tables.selectTable": "Pilih meja",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "Pindahkan Meja",
   "tables.mainArea": "Area utama",
   "tables.reasonOptional": "Alasan (opsional)",
-
   "tables.createOrderFor": "Buat Pesanan untuk {{table}}",
   "tables.notesOptional": "Catatan (opsional)",
   "tables.specialRequests": "Permintaan khusus, alergi, dll.",
   "tables.createOrderHint": "Ini akan membuat pesanan makan di tempat untuk {{table}}. Anda dapat menambahkan item menu di layar berikutnya.",
-
   "delivery.createDeliveryOrder": "Buat Pesanan Pengiriman",
   "delivery.customerName": "Nama Pelanggan",
   "delivery.phoneNumber": "Nomor Telepon",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "Ini akan membuat pesanan pengiriman baru. Anda dapat menambahkan item di layar berikutnya.",
   "delivery.fullDeliveryAddress": "Alamat pengiriman lengkap",
   "delivery.ringDoorbell": "mis. Tekan bel, taruh di depan pintu...",
-
   "expenses.editExpense": "Edit Pengeluaran",
   "expenses.validAmount": "Silakan masukkan jumlah yang valid",
   "expenses.updatingExpense": "Memperbarui pengeluaran...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "Pengeluaran ini untuk apa?",
   "expenses.optionalNotes": "Catatan opsional",
   "expenses.updateExpense": "Perbarui Pengeluaran",
-
   "expenses.expenseCategories": "Kategori Pengeluaran",
   "expenses.nameRequired": "Nama wajib diisi",
   "expenses.categoryUpdated": "Kategori diperbarui!",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "Gagal menghapus kategori",
   "expenses.noCategories": "Belum ada kategori",
   "expenses.done": "Selesai",
-
   "stock.editStockItem": "Edit Item Stok",
   "stock.addStockItem": "Tambah Item Stok",
   "stock.updatingItem": "Memperbarui item...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "Nama Pemasok",
   "stock.updateItem": "Perbarui Item",
   "stock.createItem": "Buat Item",
-
   "stock.adjustStock": "Sesuaikan Stok: {{name}}",
   "stock.currentStock": "Stok Saat Ini",
   "stock.validQuantity": "Silakan masukkan jumlah yang valid",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "Jumlah Baru",
   "stock.newStockLevel": "Level Stok Baru",
   "stock.reasonPlaceholder": "Alasan penyesuaian opsional",
-
   "schedules.editSchedule": "Edit Jadwal",
   "schedules.selectStaff": "Pilih staf...",
   "schedules.scheduleUpdated": "Jadwal diperbarui",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "Mulai Rencana",
   "schedules.plannedEnd": "Selesai Rencana",
   "schedules.optionalNotes": "Catatan opsional...",
-
   "tasks.editTask": "Edit Tugas",
   "tasks.titleRequired": "Silakan masukkan judul tugas",
   "tasks.updatingTask": "Memperbarui tugas...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "Waktu Tenggat Default",
   "tasks.dueTime": "Waktu Tenggat",
   "tasks.update": "Perbarui",
-
   "waste.editWasteLog": "Edit Catatan Limbah",
   "waste.linkToStockItem": "Tautkan ke Item Stok",
   "waste.manualEntry": "Entri manual (tanpa item stok)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "Catatan limbah diperbarui!",
   "waste.wasteButNoStock": "Limbah dicatat tetapi gagal mengurangi dari stok",
   "waste.validQuantity": "Silakan masukkan jumlah yang valid",
-
   "staffMgmt.addNewStaff": "Tambah Anggota Staf Baru",
   "staffMgmt.unexpectedError": "Terjadi kesalahan yang tidak terduga",
   "staffMgmt.createAccount": "Buat Akun",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "Mereset...",
   "staffMgmt.setNewPasswordFor": "Atur kata sandi baru untuk",
   "staffMgmt.saving": "Menyimpan...",
-
   "menu.editMenuItem": "Edit Item Menu",
   "menu.noCategory": "Tanpa Kategori",
   "menu.itemNamePlaceholder": "Nama item (mis. Cappuccino, Caesar Salad)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "Kategori dengan nama ini sudah ada.",
   "menu.available": "Tersedia",
   "menu.dailySpecial": "Spesial Harian",
-
   "orders.createTakeoutOrder": "Buat Pesanan Bawa Pulang",
   "orders.forPhoneOrCounter": "Untuk pesanan telepon atau konter",
   "orders.customerInformation": "Informasi Pelanggan",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "Nama lengkap",
   "orders.enterNameAndPhone": "Silakan masukkan nama dan nomor telepon pelanggan",
   "orders.failedCreateTakeout": "Gagal membuat pesanan bawa pulang. Silakan coba lagi.",
-
   "stock.optionalDescription": "Deskripsi opsional",
   "stock.optionalNotes": "Catatan opsional",
   "stock.optionalSupplier": "Nama pemasok opsional",
   "stock.coffeeBeans": "mis. Biji Kopi",
   "stock.costPricePerUnit": "Harga Pokok per Unit",
-
   "notifications.soundOn": "Suara AKTIF",
   "notifications.soundOff": "Suara MATI",
   "notifications.notificationsOnTitle": "Notifikasi AKTIF (klik untuk membisukan)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "Pesanan Siap!",
   "notifications.orderReadyDescription": "Pesanan siap untuk disajikan",
   "notifications.newItemsAdded": "Item baru ditambahkan!",
-  "notifications.itemsAddedDescription": "Item ditambahkan ke pesanan"
+  "notifications.itemsAddedDescription": "Item ditambahkan ke pesanan",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

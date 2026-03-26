@@ -25,7 +25,6 @@
   "tables.tableDeleted": "silindi",
   "tables.failedDeleteTable": "Masanı silmək mümkün olmadı",
   "tables.tableNotFound": "Masa tapılmadı",
-
   "orders.title": "Sifariş İdarəetməsi",
   "orders.orderCreated": "Paket sifariş yaradıldı",
   "orders.searchOrders": "Sifarişlərdə axtar...",
@@ -118,7 +117,6 @@
   "orders.failedCancelItem": "Məhsulu ləğv etmək mümkün olmadı",
   "orders.keepItem": "Saxla",
   "orders.cancelQuantity": "Neçəsini ləğv edək?",
-
   "kitchen.title": "Mətbəx",
   "kitchen.noActiveOrders": "Aktiv Sifariş Yoxdur",
   "kitchen.waitingForOrders": "Yeni sifarişlər gözlənilir...",
@@ -137,7 +135,6 @@
   "kitchen.preparationTime": "Hazırlıq Müddəti",
   "kitchen.min": "dəq",
   "kitchen.elapsedTime": "Keçən Vaxt",
-
   "delivery.title": "Çatdırılma Sifarişləri",
   "delivery.newDeliveryOrder": "Yeni Çatdırılma Sifarişi",
   "delivery.searchDelivery": "Ad, telefon, ünvan ilə axtar...",
@@ -152,7 +149,6 @@
   "delivery.cancelDeliveryOrder": "Çatdırılma Sifarişini Ləğv Et",
   "delivery.failedUpdate": "Sifarişi yeniləmək mümkün olmadı",
   "delivery.activeCount": "aktiv",
-
   "menu.title": "Menyu İdarəetməsi",
   "menu.subtitle": "Menyu məhsulları və kateqoriyaları idarə edin",
   "menu.addCategory": "Kateqoriya Əlavə Et",
@@ -194,7 +190,6 @@
   "menu.failedSaveItem": "Menyu məhsulunu saxlamaq mümkün olmadı",
   "menu.failedSaveCategory": "Kateqoriyanı saxlamaq mümkün olmadı",
   "menu.image": "Şəkil",
-
   "reports.title": "Hesabatlar və Analitika",
   "reports.ownerAccessRequired": "Sahib girişi tələb olunur",
   "reports.salesReport": "Satış Hesabatı",
@@ -268,7 +263,6 @@
   "reports.today": "Bu gün",
   "reports.from": "ndən",
   "reports.orders": "sifariş",
-
   "expenses.title": "Xərclər",
   "expenses.subtitle": "Əməliyyat xərclərini izləyin və idarə edin",
   "expenses.categories": "Kateqoriyalar",
@@ -293,7 +287,6 @@
   "expenses.expenseCreated": "Xərc yaradıldı",
   "expenses.expenseUpdated": "Xərc yeniləndi",
   "expenses.failedSave": "Xərci saxlamaq mümkün olmadı",
-
   "stock.title": "Anbar İdarəetməsi",
   "stock.subtitle": "İnventar və anbar səviyyələrini izləyin",
   "stock.addItem": "Məhsul Əlavə Et",
@@ -328,7 +321,6 @@
   "stock.movementType": "Hərəkət Növü",
   "stock.movementNotes": "Qeydlər",
   "stock.movementRecorded": "Anbar hərəkəti qeyd edildi",
-
   "waste.title": "İtki İdarəetməsi",
   "waste.subtitle": "Qida itkillərini izləyin və azaldın",
   "waste.logWaste": "İtki Qeyd Et",
@@ -352,7 +344,6 @@
   "waste.costPerUnit": "Vahid Dəyəri",
   "waste.wasteLogged": "İtki qeyd edildi",
   "waste.failedLog": "İtkini qeyd etmək mümkün olmadı",
-
   "tasks.title": "Tapşırıqlar",
   "tasks.subtitle": "Gündəlik əməliyyatları və personal təyinatları idarə edin",
   "tasks.newTask": "Yeni Tapşırıq",
@@ -390,7 +381,6 @@
   "tasks.taskCreated": "Tapşırıq yaradıldı",
   "tasks.taskUpdated": "Tapşırıq yeniləndi",
   "tasks.failedSave": "Tapşırığı saxlamaq mümkün olmadı",
-
   "schedules.title": "Personal Növbələri",
   "schedules.monthly": "Aylıq",
   "schedules.weekly": "Həftəlik",
@@ -408,7 +398,6 @@
   "schedules.inProgress": "Davam Edir",
   "schedules.completed": "Tamamlandı",
   "schedules.missed": "Buraxılmış",
-
   "feedback.title": "Müştəri Fikirləri",
   "feedback.subtitle": "Müştərilərdən gələn şikayətləri, sualları və istəkləri idarə edin",
   "feedback.allTab": "Hamısı",
@@ -434,7 +423,6 @@
   "feedback.failedRespond": "Cavab göndərmək mümkün olmadı",
   "feedback.failedDismiss": "Fikri rədd etmək mümkün olmadı",
   "feedback.noResponse": "Hələ cavab yoxdur",
-
   "calls.title": "Ofisiant Çağrıları",
   "calls.call": "çağrı",
   "calls.callsPlural": "çağrı",
@@ -454,7 +442,6 @@
   "calls.respond": "Cavab Ver",
   "calls.respondedBy": "{{name}} tərəfindən cavab verildi:",
   "calls.noCalls": "Çağrı yoxdur",
-
   "cafeSettings.title": "Kafe Parametrləri",
   "cafeSettings.restaurantInformation": "Restoran Məlumatı",
   "cafeSettings.restaurantName": "Restoran Adı",
@@ -521,7 +508,6 @@
   "cafeSettings.settingsSaved": "Parametrlər uğurla saxlanıldı",
   "cafeSettings.failedSave": "Parametrləri saxlamaq mümkün olmadı",
   "cafeSettings.noPermission": "Bu səhifəyə giriş icazəniz yoxdur. Yalnız administratorlar kafe parametrlərini idarə edə bilər.",
-
   "settings.title": "Hesab Parametrləri",
   "settings.profileInformation": "Profil Məlumatı",
   "settings.fullName": "Tam Ad",
@@ -543,7 +529,6 @@
   "settings.language": "Dil",
   "settings.selectLanguage": "Tercih etdiyiniz dili seçin",
   "settings.languageChanged": "Dil dəyişdirildi",
-
   "staffMgmt.title": "Personal İdarəetməsi",
   "staffMgmt.addStaff": "Personal Əlavə Et",
   "staffMgmt.accessDenied": "Giriş qadağandır. Yalnız administratorlar personalı idarə edə bilər.",
@@ -576,7 +561,6 @@
   "staffMgmt.noOrders": "Sifariş tapılmadı",
   "staffMgmt.orderNumber": "Sifariş #",
   "staffMgmt.table": "Masa",
-
   "payment.processPaymentCash": "Ödənişi Emal Et (Nağd)",
   "payment.orderFullyPaid": "Bu sifariş tam ödənildi!",
   "payment.noItemsToPay": "Bu sifarişdə ödəniləcək məhsul yoxdur.",
@@ -601,7 +585,6 @@
   "payment.exceedsBalance": "Ödəniş məbləği {{amount}} qalıq balansdan {{balance}} artıqdır",
   "payment.paymentFailed": "Ödəniş uğursuz oldu",
   "payment.each": "ədədi",
-
   "tables.editTable": "{{table}} Redaktə Et",
   "tables.addNewTable": "Yeni Masa Əlavə Et",
   "tables.capacitySeats": "Tutum (oturacaq)",
@@ -611,7 +594,6 @@
   "tables.tableCreated": "Masa uğurla yaradıldı",
   "tables.failedSaveTable": "Masanı saxlamaq mümkün olmadı",
   "tables.closed": "Bağlı",
-
   "tables.transferTable": "{{table}} Köçür",
   "tables.transferToTable": "Masaya Köçür",
   "tables.selectTable": "Masa seçin",
@@ -628,12 +610,10 @@
   "tables.transferItemsBtn": "Məhsulları Köçür",
   "tables.itemsTransferred": "Məhsullar uğurla köçürüldü",
   "tables.transferReasonPlaceholder": "Məs., Müştəri başqa masaya keçdi...",
-
   "tables.createOrderFor": "{{table}} üçün Sifariş Yarat",
   "tables.notesOptional": "Qeydlər (istəyə bağlı)",
   "tables.specialRequests": "Xüsusi istəklər, allergiyalar və s.",
   "tables.createOrderHint": "Bu {{table}} üçün yeni yerində sifariş yaradacaq. Növbəti ekranda menyu məhsulları əlavə edə biləcəksiniz.",
-
   "delivery.createDeliveryOrder": "Çatdırılma Sifarişi Yarat",
   "delivery.customerName": "Müştəri Adı",
   "delivery.phoneNumber": "Telefon Nömrəsi",
@@ -643,7 +623,6 @@
   "delivery.fullDeliveryAddress": "Tam çatdırılma ünvanı",
   "delivery.ringDoorbell": "Məs., Zəngi basın, qapıda buraxın...",
   "delivery.openInMaps": "Google Maps-də aç",
-
   "expenses.editExpense": "Xərci Redaktə Et",
   "expenses.validAmount": "Düzgün məbləğ daxil edin",
   "expenses.updatingExpense": "Xərc yenilənir...",
@@ -652,7 +631,6 @@
   "expenses.whatExpenseFor": "Bu xərc nə üçün idi?",
   "expenses.optionalNotes": "İstəyə bağlı qeydlər",
   "expenses.updateExpense": "Xərci Yenilə",
-
   "expenses.expenseCategories": "Xərc Kateqoriyaları",
   "expenses.nameRequired": "Ad tələb olunur",
   "expenses.categoryUpdated": "Kateqoriya yeniləndi!",
@@ -662,7 +640,6 @@
   "expenses.failedDeleteCategory": "Kateqoriyanı silmək mümkün olmadı",
   "expenses.noCategories": "Hələ kateqoriya yoxdur",
   "expenses.done": "Hazır",
-
   "stock.editStockItem": "Anbar Məhsulunu Redaktə Et",
   "stock.addStockItem": "Anbar Məhsulu Əlavə Et",
   "stock.updatingItem": "Məhsul yenilənir...",
@@ -672,7 +649,6 @@
   "stock.supplierName": "Tədarükçü Adı",
   "stock.updateItem": "Məhsulu Yenilə",
   "stock.createItem": "Məhsul Yarat",
-
   "stock.adjustStock": "Anbarı Düzəldin: {{name}}",
   "stock.currentStock": "Cari Ehtiyat",
   "stock.validQuantity": "Düzgün miqdar daxil edin",
@@ -686,7 +662,6 @@
   "stock.newQuantity": "Yeni Miqdar",
   "stock.newStockLevel": "Yeni Anbar Səviyyəsi",
   "stock.reasonPlaceholder": "Düzəltmə səbəbi (istəyə bağlı)",
-
   "schedules.editSchedule": "Növbəni Redaktə Et",
   "schedules.selectStaff": "Personal seçin...",
   "schedules.scheduleUpdated": "Növbə yeniləndi",
@@ -704,7 +679,6 @@
   "schedules.plannedStart": "Planlanan Başlanğıc",
   "schedules.plannedEnd": "Planlanan Son",
   "schedules.optionalNotes": "İstəyə bağlı qeydlər...",
-
   "tasks.editTask": "Tapşırığı Redaktə Et",
   "tasks.titleRequired": "Tapşırıq başlığı daxil edin",
   "tasks.updatingTask": "Tapşırıq yenilənir...",
@@ -720,7 +694,6 @@
   "tasks.defaultDueTime": "Standart Son Vaxt",
   "tasks.dueTime": "Son Vaxt",
   "tasks.update": "Yenilə",
-
   "waste.editWasteLog": "İtki Qeydini Redaktə Et",
   "waste.linkToStockItem": "Anbar Məhsuluna Bağlayın",
   "waste.manualEntry": "Əllə daxiletmə (anbar məhsulu olmadan)",
@@ -734,7 +707,6 @@
   "waste.wasteLogUpdated": "İtki qeydi yeniləndi!",
   "waste.wasteButNoStock": "İtki qeyd edildi amma anbardan çıxarmaq mümkün olmadı",
   "waste.validQuantity": "Düzgün miqdar daxil edin",
-
   "staffMgmt.addNewStaff": "Yeni Personal Üzvü Əlavə Et",
   "staffMgmt.unexpectedError": "Gözlənilməz xəta baş verdi",
   "staffMgmt.createAccount": "Hesab Yarat",
@@ -751,7 +723,6 @@
   "staffMgmt.resetting": "Sıfırlanır...",
   "staffMgmt.setNewPasswordFor": "Yeni parol təyin edin:",
   "staffMgmt.saving": "Saxlanılır...",
-
   "menu.editMenuItem": "Menyu Məhsulunu Redaktə Et",
   "menu.noCategory": "Kateqoriya Yoxdur",
   "menu.itemNamePlaceholder": "Məhsul adı (məs., Kapuçino, Sezar Salatı)",
@@ -780,7 +751,6 @@
   "menu.duplicateCategory": "Bu adla kateqoriya artıq mövcuddur.",
   "menu.available": "Mövcuddur",
   "menu.dailySpecial": "Günün Xüsusisi",
-
   "orders.createTakeoutOrder": "Paket Sifariş Yarat",
   "orders.forPhoneOrCounter": "Telefon və ya kassa sifarişləri üçün",
   "orders.customerInformation": "Müştəri Məlumatı",
@@ -800,13 +770,11 @@
   "orders.fullNamePlaceholder": "Tam ad",
   "orders.enterNameAndPhone": "Müştəri adı və telefon nömrəsini daxil edin",
   "orders.failedCreateTakeout": "Paket sifariş yaratmaq mümkün olmadı. Yenidən cəhd edin.",
-
   "stock.optionalDescription": "İstəyə bağlı təsvir",
   "stock.optionalNotes": "İstəyə bağlı qeydlər",
   "stock.optionalSupplier": "İstəyə bağlı tədarükçü adı",
   "stock.coffeeBeans": "Məs., Qəhvə Dənləri",
   "stock.costPricePerUnit": "Vahid Dəyər Qiyməti",
-
   "notifications.soundOn": "Səs AÇIQ",
   "notifications.soundOff": "Səs BAĞLI",
   "notifications.notificationsOnTitle": "Bildirişlər AÇIQ (susdurma üçün basın)",
@@ -823,5 +791,10 @@
   "notifications.orderReady": "Sifariş Hazırdır!",
   "notifications.orderReadyDescription": "Sifariş servis edilməyə hazırdır",
   "notifications.newItemsAdded": "Yeni məhsullar əlavə edildi!",
-  "notifications.itemsAddedDescription": "Sifarişə məhsullar əlavə edildi"
+  "notifications.itemsAddedDescription": "Sifarişə məhsullar əlavə edildi",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

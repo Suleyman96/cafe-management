@@ -23,7 +23,6 @@
   "tables.tableDeleted": "삭제되었습니다",
   "tables.failedDeleteTable": "테이블 삭제에 실패했습니다",
   "tables.tableNotFound": "테이블을 찾을 수 없습니다",
-
   "orders.title": "주문 관리",
   "orders.orderCreated": "포장 주문이 생성되었습니다",
   "orders.searchOrders": "주문 검색...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "미배정",
   "orders.itemStatusUpdated": "항목 상태가 {{status}}(으)로 업데이트되었습니다",
   "orders.tax": "세금",
-
   "kitchen.title": "주방",
   "kitchen.noActiveOrders": "활성 주문 없음",
   "kitchen.waitingForOrders": "새 주문을 기다리는 중...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "조리 시간",
   "kitchen.min": "분",
   "kitchen.elapsedTime": "경과 시간",
-
   "delivery.title": "배달 주문",
   "delivery.newDeliveryOrder": "새 배달 주문",
   "delivery.searchDelivery": "이름, 전화번호, 주소로 검색...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "배달 주문 취소",
   "delivery.failedUpdate": "주문 업데이트에 실패했습니다",
   "delivery.activeCount": "활성",
-
   "menu.title": "메뉴 관리",
   "menu.subtitle": "메뉴 항목 및 카테고리 관리",
   "menu.addCategory": "카테고리 추가",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "메뉴 항목 저장에 실패했습니다",
   "menu.failedSaveCategory": "카테고리 저장에 실패했습니다",
   "menu.image": "이미지",
-
   "reports.title": "보고서 및 분석",
   "reports.ownerAccessRequired": "오너 권한이 필요합니다",
   "reports.salesReport": "매출 보고서",
@@ -260,7 +255,6 @@
   "reports.today": "오늘",
   "reports.from": "부터",
   "reports.orders": "주문",
-
   "expenses.title": "경비",
   "expenses.subtitle": "운영 비용 추적 및 관리",
   "expenses.categories": "카테고리",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "경비가 생성되었습니다",
   "expenses.expenseUpdated": "경비가 수정되었습니다",
   "expenses.failedSave": "경비 저장에 실패했습니다",
-
   "stock.title": "재고 관리",
   "stock.subtitle": "재고 및 재고 수준 추적",
   "stock.addItem": "항목 추가",
@@ -320,7 +313,6 @@
   "stock.movementType": "변동 유형",
   "stock.movementNotes": "메모",
   "stock.movementRecorded": "재고 변동이 기록되었습니다",
-
   "waste.title": "폐기 관리",
   "waste.subtitle": "음식 폐기 추적 및 절감",
   "waste.logWaste": "폐기 기록",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "단위당 비용",
   "waste.wasteLogged": "폐기가 기록되었습니다",
   "waste.failedLog": "폐기 기록에 실패했습니다",
-
   "tasks.title": "업무",
   "tasks.subtitle": "일일 운영 및 직원 배정 관리",
   "tasks.newTask": "새 업무",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "업무가 생성되었습니다",
   "tasks.taskUpdated": "업무가 수정되었습니다",
   "tasks.failedSave": "업무 저장에 실패했습니다",
-
   "schedules.title": "직원 스케줄",
   "schedules.monthly": "월간",
   "schedules.weekly": "주간",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "진행 중",
   "schedules.completed": "완료",
   "schedules.missed": "결근",
-
   "feedback.title": "고객 피드백",
   "feedback.subtitle": "고객의 불만, 질문 및 요청 관리",
   "feedback.allTab": "전체",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "응답 전송에 실패했습니다",
   "feedback.failedDismiss": "피드백 기각에 실패했습니다",
   "feedback.noResponse": "아직 응답이 없습니다",
-
   "calls.title": "직원 호출",
   "calls.call": "건",
   "calls.callsPlural": "건",
@@ -446,7 +434,6 @@
   "calls.respond": "응대",
   "calls.respondedBy": "{{name}} 응대:",
   "calls.noCalls": "호출 없음",
-
   "cafeSettings.title": "카페 설정",
   "cafeSettings.restaurantInformation": "레스토랑 정보",
   "cafeSettings.restaurantName": "레스토랑 이름",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "설정이 저장되었습니다",
   "cafeSettings.failedSave": "설정 저장에 실패했습니다",
   "cafeSettings.noPermission": "이 페이지에 접근할 권한이 없습니다. 관리자만 카페 설정을 관리할 수 있습니다.",
-
   "settings.title": "계정 설정",
   "settings.profileInformation": "프로필 정보",
   "settings.fullName": "이름",
@@ -535,7 +521,6 @@
   "settings.language": "언어",
   "settings.selectLanguage": "선호하는 언어를 선택하세요",
   "settings.languageChanged": "언어가 변경되었습니다",
-
   "staffMgmt.title": "직원 관리",
   "staffMgmt.addStaff": "직원 추가",
   "staffMgmt.accessDenied": "접근이 거부되었습니다. 관리자만 직원을 관리할 수 있습니다.",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "주문 내역이 없습니다",
   "staffMgmt.orderNumber": "주문 번호",
   "staffMgmt.table": "테이블",
-
   "payment.processPaymentCash": "결제 처리 (현금)",
   "payment.orderFullyPaid": "이 주문은 전액 결제되었습니다!",
   "payment.noItemsToPay": "이 주문에 결제할 항목이 없습니다.",
@@ -590,7 +574,6 @@
   "payment.completing": "완료 처리 중...",
   "payment.processing": "처리 중...",
   "payment.processPaymentBtn": "결제 처리",
-
   "tables.editTable": "{{table}} 수정",
   "tables.addNewTable": "새 테이블 추가",
   "tables.capacitySeats": "수용 인원 (석)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "테이블이 생성되었습니다",
   "tables.failedSaveTable": "테이블 저장에 실패했습니다",
   "tables.closed": "마감",
-
   "tables.transferTable": "{{table}} 이동",
   "tables.transferToTable": "이동할 테이블",
   "tables.selectTable": "테이블 선택",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "테이블 이동",
   "tables.mainArea": "메인 구역",
   "tables.reasonOptional": "사유 (선택사항)",
-
   "tables.createOrderFor": "{{table}} 주문 생성",
   "tables.notesOptional": "메모 (선택사항)",
   "tables.specialRequests": "특별 요청, 알레르기 등",
   "tables.createOrderHint": "{{table}}에 대한 새 매장 식사 주문을 생성합니다. 다음 화면에서 메뉴 항목을 추가할 수 있습니다.",
-
   "delivery.createDeliveryOrder": "배달 주문 생성",
   "delivery.customerName": "고객 이름",
   "delivery.phoneNumber": "전화번호",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "새 배달 주문을 생성합니다. 다음 화면에서 항목을 추가할 수 있습니다.",
   "delivery.fullDeliveryAddress": "전체 배달 주소",
   "delivery.ringDoorbell": "예: 초인종 누르기, 문 앞에 놓기...",
-
   "expenses.editExpense": "경비 수정",
   "expenses.validAmount": "유효한 금액을 입력해 주세요",
   "expenses.updatingExpense": "경비 수정 중...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "이 경비의 내용은?",
   "expenses.optionalNotes": "선택 메모",
   "expenses.updateExpense": "경비 수정",
-
   "expenses.expenseCategories": "경비 카테고리",
   "expenses.nameRequired": "이름은 필수입니다",
   "expenses.categoryUpdated": "카테고리가 업데이트되었습니다!",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "카테고리 삭제에 실패했습니다",
   "expenses.noCategories": "카테고리가 없습니다",
   "expenses.done": "완료",
-
   "stock.editStockItem": "재고 항목 수정",
   "stock.addStockItem": "재고 항목 추가",
   "stock.updatingItem": "항목 수정 중...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "공급업체 이름",
   "stock.updateItem": "항목 수정",
   "stock.createItem": "항목 생성",
-
   "stock.adjustStock": "재고 조정: {{name}}",
   "stock.currentStock": "현재 재고",
   "stock.validQuantity": "유효한 수량을 입력해 주세요",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "새 수량",
   "stock.newStockLevel": "새 재고 수준",
   "stock.reasonPlaceholder": "조정 사유 (선택사항)",
-
   "schedules.editSchedule": "스케줄 수정",
   "schedules.selectStaff": "직원 선택...",
   "schedules.scheduleUpdated": "스케줄이 업데이트되었습니다",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "계획 시작",
   "schedules.plannedEnd": "계획 종료",
   "schedules.optionalNotes": "선택 메모...",
-
   "tasks.editTask": "업무 수정",
   "tasks.titleRequired": "업무 제목을 입력해 주세요",
   "tasks.updatingTask": "업무 수정 중...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "기본 마감 시간",
   "tasks.dueTime": "마감 시간",
   "tasks.update": "수정",
-
   "waste.editWasteLog": "폐기 기록 수정",
   "waste.linkToStockItem": "재고 항목에 연결",
   "waste.manualEntry": "수동 입력 (재고 항목 없음)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "폐기 기록이 업데이트되었습니다!",
   "waste.wasteButNoStock": "폐기는 기록되었지만 재고에서 차감에 실패했습니다",
   "waste.validQuantity": "유효한 수량을 입력해 주세요",
-
   "staffMgmt.addNewStaff": "새 직원 추가",
   "staffMgmt.unexpectedError": "예기치 않은 오류가 발생했습니다",
   "staffMgmt.createAccount": "계정 생성",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "초기화 중...",
   "staffMgmt.setNewPasswordFor": "새 비밀번호 설정:",
   "staffMgmt.saving": "저장 중...",
-
   "menu.editMenuItem": "메뉴 항목 수정",
   "menu.noCategory": "카테고리 없음",
   "menu.itemNamePlaceholder": "항목 이름 (예: 카푸치노, 시저 샐러드)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "같은 이름의 카테고리가 이미 존재합니다.",
   "menu.available": "이용 가능",
   "menu.dailySpecial": "오늘의 특선",
-
   "orders.createTakeoutOrder": "포장 주문 생성",
   "orders.forPhoneOrCounter": "전화 또는 카운터 주문용",
   "orders.customerInformation": "고객 정보",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "성명",
   "orders.enterNameAndPhone": "고객 이름과 전화번호를 입력해 주세요",
   "orders.failedCreateTakeout": "포장 주문 생성에 실패했습니다. 다시 시도해 주세요.",
-
   "stock.optionalDescription": "선택 설명",
   "stock.optionalNotes": "선택 메모",
   "stock.optionalSupplier": "공급업체 이름 (선택사항)",
   "stock.coffeeBeans": "예: 원두",
   "stock.costPricePerUnit": "단위당 원가",
-
   "notifications.soundOn": "소리 켜짐",
   "notifications.soundOff": "소리 꺼짐",
   "notifications.notificationsOnTitle": "알림 켜짐 (클릭하여 음소거)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "주문 준비 완료!",
   "notifications.orderReadyDescription": "주문 서빙 준비가 완료되었습니다",
   "notifications.newItemsAdded": "새 항목이 추가되었습니다!",
-  "notifications.itemsAddedDescription": "주문에 항목이 추가되었습니다"
+  "notifications.itemsAddedDescription": "주문에 항목이 추가되었습니다",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }
