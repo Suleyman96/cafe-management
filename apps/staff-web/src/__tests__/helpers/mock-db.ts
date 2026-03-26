@@ -59,6 +59,7 @@ export function createMockDb() {
       'update',
       'delete',
       'getActiveWaiters',
+      'updateLastLogin',
     ),
     feedback: mockResource(
       'create',

@@ -16,7 +16,7 @@
     "clean": "turbo run clean -- && npx rimraf node_modules",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "test": "vitest run && vitest run --config apps/mobile/vitest.config.ts",
+    "test": "vitest run && vitest run --config apps/mobile/vitest.config.ts && vitest run --config apps/customer-web/vitest.config.ts && vitest run --config apps/staff-web/vitest.config.ts",
     "test:watch": "vitest",
     "test:mobile": "vitest run --config apps/mobile/vitest.config.ts",
     "test:coverage": "vitest run --coverage",

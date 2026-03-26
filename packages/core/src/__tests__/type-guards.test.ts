@@ -39,6 +39,18 @@ describe('isOrder', () => {
   it('returns false for non-object', () => {
     expect(isOrder('not an order')).toBe(false);
   });
+
+  it('returns false for empty object', () => {
+    expect(isOrder({})).toBe(false);
+  });
+
+  it('returns true even when id is null (checks key presence, not value)', () => {
+    expect(isOrder({ id: null, status: 'new', created_at: '2024-01-01' })).toBe(true);
+  });
+
+  it('returns false for undefined', () => {
+    expect(isOrder(undefined)).toBe(false);
+  });
 });
 
 describe('isTable', () => {
@@ -58,6 +70,14 @@ describe('isOccupiedTable', () => {
 
   it('returns false for free table', () => {
     expect(isOccupiedTable({ status: 'free' } as any)).toBe(false);
+  });
+
+  it('returns false for reserved table', () => {
+    expect(isOccupiedTable({ status: 'reserved' } as any)).toBe(false);
+  });
+
+  it('returns false for closed table', () => {
+    expect(isOccupiedTable({ status: 'closed' } as any)).toBe(false);
   });
 });
 
@@ -95,6 +115,10 @@ describe('isMenuItem', () => {
 
   it('returns false for missing price', () => {
     expect(isMenuItem({ id: '1', name: 'Pizza' })).toBe(false);
+  });
+
+  it('returns true for zero-price item (free item / add-on)', () => {
+    expect(isMenuItem({ id: '1', name: 'Water', price: 0 })).toBe(true);
   });
 });
 
@@ -210,6 +234,14 @@ describe('isOrderArray', () => {
   it('returns true for empty array', () => {
     expect(isOrderArray([])).toBe(true);
   });
+
+  it('returns false for non-array input', () => {
+    expect(isOrderArray('not-an-array' as any)).toBe(false);
+  });
+
+  it('returns false for null', () => {
+    expect(isOrderArray(null as any)).toBe(false);
+  });
 });
 
 describe('safeGet', () => {
@@ -223,6 +255,10 @@ describe('safeGet', () => {
 
   it('returns default for missing key', () => {
     expect(safeGet({} as any, 'missing' as any, 'default')).toBe('default');
+  });
+
+  it('returns null for undefined object', () => {
+    expect(safeGet(undefined as { name: string } | undefined, 'name')).toBeNull();
   });
 });
 

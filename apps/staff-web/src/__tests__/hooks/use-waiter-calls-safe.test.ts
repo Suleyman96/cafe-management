@@ -37,7 +37,7 @@ describe('useAcknowledgeWaiterCall', () => {
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WAITER_CALLS]);
-    expect(invalidatedKeys).toContainEqual(['waiter-calls-count']);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WAITER_CALLS_COUNT]);
   });
 });
 
@@ -50,7 +50,7 @@ describe('useResolveWaiterCall', () => {
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WAITER_CALLS]);
-    expect(invalidatedKeys).toContainEqual(['waiter-calls-count']);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WAITER_CALLS_COUNT]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
   });
 });

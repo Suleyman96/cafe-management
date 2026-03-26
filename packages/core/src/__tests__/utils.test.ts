@@ -23,6 +23,18 @@ describe('calculateTax', () => {
   it('returns 0 for zero subtotal', () => {
     expect(calculateTax(0)).toBe(0);
   });
+
+  it('handles zero tax rate', () => {
+    expect(calculateTax(100, 0)).toBe(0);
+  });
+
+  it('handles negative subtotal', () => {
+    expect(calculateTax(-50)).toBe(-9);
+  });
+
+  it('returns NaN for NaN subtotal', () => {
+    expect(calculateTax(NaN)).toBeNaN();
+  });
 });
 
 describe('calculateTotal', () => {
@@ -72,6 +84,24 @@ describe('formatPriceWithSettings', () => {
   it('rounds correctly', () => {
     expect(formatPriceWithSettings(10.999, defaultSettings)).toBe('11.00₼');
   });
+
+  it('formats negative amount (refunds)', () => {
+    expect(formatPriceWithSettings(-5.5, defaultSettings)).toBe('-5.50₼');
+  });
+
+  it('handles NaN amount', () => {
+    expect(formatPriceWithSettings(NaN, defaultSettings)).toBe('NaN₼');
+  });
+
+  it('handles empty currency symbol', () => {
+    const settings = { ...defaultSettings, currency_symbol: '' };
+    expect(formatPriceWithSettings(10, settings)).toBe('10.00');
+  });
+
+  it('handles 4 decimal places', () => {
+    const settings = { ...defaultSettings, currency_decimal_places: 4 };
+    expect(formatPriceWithSettings(10.12345, settings)).toBe('10.1235₼');
+  });
 });
 
 describe('calculateTaxWithSettings', () => {
@@ -86,13 +116,38 @@ describe('calculateTaxWithSettings', () => {
 
   it('extracts tax from subtotal when prices include tax', () => {
     const settings = { ...defaultSettings, prices_include_tax: true };
-    // 118 includes 18% tax → tax portion = 118 - 118/1.18 = 18
     const tax = calculateTaxWithSettings(118, settings);
     expect(tax).toBeCloseTo(18, 2);
   });
 
   it('returns 0 for zero subtotal', () => {
     expect(calculateTaxWithSettings(0, defaultSettings)).toBe(0);
+  });
+
+  it('handles 0% tax rate with tax enabled (exclusive)', () => {
+    const settings = { ...defaultSettings, tax_percentage: 0 };
+    expect(calculateTaxWithSettings(100, settings)).toBe(0);
+  });
+
+  it('handles 0% tax rate with prices_include_tax (no divide-by-zero)', () => {
+    const settings = { ...defaultSettings, tax_percentage: 0, prices_include_tax: true };
+    expect(calculateTaxWithSettings(100, settings)).toBe(0);
+  });
+
+  it('handles 100% tax rate (exclusive)', () => {
+    const settings = { ...defaultSettings, tax_percentage: 100 };
+    expect(calculateTaxWithSettings(100, settings)).toBe(100);
+  });
+
+  it('handles 100% tax rate (inclusive)', () => {
+    const settings = { ...defaultSettings, tax_percentage: 100, prices_include_tax: true };
+    expect(calculateTaxWithSettings(200, settings)).toBeCloseTo(100, 2);
+  });
+
+  it('handles negative subtotal with inclusive pricing', () => {
+    const settings = { ...defaultSettings, prices_include_tax: true };
+    const tax = calculateTaxWithSettings(-118, settings);
+    expect(tax).toBeCloseTo(-18, 2);
   });
 });
 
@@ -119,7 +174,16 @@ describe('getDisplaySubtotal', () => {
 
   it('removes tax from subtotal when prices include tax', () => {
     const settings = { ...defaultSettings, prices_include_tax: true };
-    // 118 includes 18% tax → display subtotal = 118/1.18 = 100
     expect(getDisplaySubtotal(118, settings)).toBeCloseTo(100, 2);
+  });
+
+  it('handles 0% tax with prices_include_tax (no divide-by-zero)', () => {
+    const settings = { ...defaultSettings, tax_percentage: 0, prices_include_tax: true };
+    expect(getDisplaySubtotal(100, settings)).toBe(100);
+  });
+
+  it('handles negative subtotal with inclusive pricing', () => {
+    const settings = { ...defaultSettings, prices_include_tax: true };
+    expect(getDisplaySubtotal(-118, settings)).toBeCloseTo(-100, 2);
   });
 });
