@@ -13,6 +13,8 @@ interface MenuItemModalProps {
   currencySymbol?: string;
 }
 
+const COMMON_ALLERGENS = ['Gluten', 'Dairy', 'Eggs', 'Nuts', 'Soy', 'Fish', 'Shellfish', 'Sesame'];
+
 export function MenuItemModal({
   visible,
   onDismiss,
@@ -28,6 +30,7 @@ export function MenuItemModal({
     price: '',
     category_id: '',
     preparation_time: '',
+    display_order: '0',
     is_available: true,
     is_popular: false,
     is_vegetarian: false,
@@ -35,6 +38,7 @@ export function MenuItemModal({
     is_gluten_free: false,
     is_spicy: false,
     is_daily_special: false,
+    allergens: [] as string[],
   });
 
   useEffect(() => {
@@ -45,6 +49,7 @@ export function MenuItemModal({
         price: String(initialData.price || ''),
         category_id: initialData.category_id || '',
         preparation_time: String(initialData.preparation_time || ''),
+        display_order: String(initialData.display_order ?? '0'),
         is_available: initialData.is_available ?? true,
         is_popular: initialData.is_popular ?? false,
         is_vegetarian: initialData.is_vegetarian ?? false,
@@ -52,6 +57,7 @@ export function MenuItemModal({
         is_gluten_free: initialData.is_gluten_free ?? false,
         is_spicy: initialData.is_spicy ?? false,
         is_daily_special: initialData.is_daily_special ?? false,
+        allergens: initialData.allergens || [],
       });
     } else {
       setForm({
@@ -60,6 +66,7 @@ export function MenuItemModal({
         price: '',
         category_id: '',
         preparation_time: '',
+        display_order: '0',
         is_available: true,
         is_popular: false,
         is_vegetarian: false,
@@ -67,15 +74,26 @@ export function MenuItemModal({
         is_gluten_free: false,
         is_spicy: false,
         is_daily_special: false,
+        allergens: [],
       });
     }
   }, [initialData]);
+
+  const toggleAllergen = (allergen: string) => {
+    setForm((prev) => ({
+      ...prev,
+      allergens: prev.allergens.includes(allergen)
+        ? prev.allergens.filter((a) => a !== allergen)
+        : [...prev.allergens, allergen],
+    }));
+  };
 
   const handleSubmit = () => {
     onSubmit({
       ...form,
       price: parseFloat(form.price) || 0,
       preparation_time: parseInt(form.preparation_time, 10) || null,
+      display_order: parseInt(form.display_order, 10) || 0,
       category_id: form.category_id || null,
     });
   };
@@ -89,7 +107,7 @@ export function MenuItemModal({
           </Text>
 
           <TextInput
-            label="Name"
+            label="Name *"
             value={form.name}
             onChangeText={(v: string) => setForm({ ...form, name: v })}
             mode="outlined"
@@ -106,7 +124,7 @@ export function MenuItemModal({
             style={styles.input}
           />
           <TextInput
-            label="Price"
+            label="Price *"
             value={form.price}
             onChangeText={(v: string) => setForm({ ...form, price: v })}
             mode="outlined"
@@ -115,15 +133,26 @@ export function MenuItemModal({
             dense
             style={styles.input}
           />
-          <TextInput
-            label="Prep Time (min)"
-            value={form.preparation_time}
-            onChangeText={(v: string) => setForm({ ...form, preparation_time: v })}
-            mode="outlined"
-            keyboardType="number-pad"
-            dense
-            style={styles.input}
-          />
+          <View style={styles.rowInputs}>
+            <TextInput
+              label="Prep Time (min)"
+              value={form.preparation_time}
+              onChangeText={(v: string) => setForm({ ...form, preparation_time: v })}
+              mode="outlined"
+              keyboardType="number-pad"
+              dense
+              style={[styles.input, styles.halfInput]}
+            />
+            <TextInput
+              label="Display Order"
+              value={form.display_order}
+              onChangeText={(v: string) => setForm({ ...form, display_order: v })}
+              mode="outlined"
+              keyboardType="number-pad"
+              dense
+              style={[styles.input, styles.halfInput]}
+            />
+          </View>
 
           {categories.length > 0 && (
             <>
@@ -131,6 +160,13 @@ export function MenuItemModal({
                 Category
               </Text>
               <View style={styles.chipRow}>
+                <Chip
+                  compact
+                  selected={!form.category_id}
+                  onPress={() => setForm({ ...form, category_id: '' })}
+                >
+                  None
+                </Chip>
                 {categories.map((c: any) => (
                   <Chip
                     key={c.id}
@@ -138,7 +174,7 @@ export function MenuItemModal({
                     selected={form.category_id === c.id}
                     onPress={() => setForm({ ...form, category_id: c.id })}
                   >
-                    {c.name || 'Unknown'}
+                    {c.icon || '📁'} {c.name || 'Unknown'}
                   </Chip>
                 ))}
               </View>
@@ -168,6 +204,29 @@ export function MenuItemModal({
             </View>
           ))}
 
+          {/* Allergens */}
+          <Text variant="bodySmall" style={styles.label}>
+            Allergens
+          </Text>
+          <View style={styles.chipRow}>
+            {COMMON_ALLERGENS.map((allergen) => (
+              <Chip
+                key={allergen}
+                compact
+                selected={form.allergens.includes(allergen)}
+                onPress={() => toggleAllergen(allergen)}
+                style={form.allergens.includes(allergen) ? styles.allergenSelected : undefined}
+                textStyle={
+                  form.allergens.includes(allergen)
+                    ? { color: '#fff', fontSize: 11 }
+                    : { fontSize: 11 }
+                }
+              >
+                {allergen}
+              </Chip>
+            ))}
+          </View>
+
           <View style={styles.actions}>
             <Button onPress={onDismiss}>Cancel</Button>
             <Button
@@ -189,6 +248,8 @@ const styles = StyleSheet.create({
   modal: { backgroundColor: '#fff', margin: 16, padding: 20, borderRadius: 12, maxHeight: '90%' },
   title: { fontWeight: '700', marginBottom: 12 },
   input: { marginBottom: 8 },
+  rowInputs: { flexDirection: 'row', gap: 8 },
+  halfInput: { flex: 1 },
   label: { color: '#6b7280', marginBottom: 4, marginTop: 4 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   switchRow: {
@@ -197,5 +258,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 4,
   },
+  allergenSelected: { backgroundColor: '#ef4444' },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 12 },
 });

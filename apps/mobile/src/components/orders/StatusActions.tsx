@@ -1,9 +1,10 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button } from 'react-native-paper';
+import { Button, Text } from 'react-native-paper';
 
 interface StatusActionsProps {
   status: string;
+  hasItems?: boolean;
   onUpdateStatus: (newStatus: string) => void;
   onNavigatePayment: () => void;
   onNavigateAddItems: () => void;
@@ -12,20 +13,28 @@ interface StatusActionsProps {
 
 export const StatusActions = React.memo(function StatusActions({
   status,
+  hasItems = true,
   onUpdateStatus,
   onNavigatePayment,
   onNavigateAddItems,
   isLoading = false,
 }: StatusActionsProps) {
+  const canAdvance = hasItems;
+
   return (
     <View style={styles.container}>
       {(status === 'new' || status === 'pending_approval') && (
         <>
+          {!canAdvance && (
+            <Text variant="bodySmall" style={styles.warning}>
+              Add items before advancing this order
+            </Text>
+          )}
           <Button
             mode="contained"
             onPress={() => onUpdateStatus('preparing')}
             loading={isLoading}
-            disabled={isLoading}
+            disabled={isLoading || !canAdvance}
             icon="chef-hat"
             style={styles.primaryButton}
           >
@@ -39,11 +48,16 @@ export const StatusActions = React.memo(function StatusActions({
 
       {status === 'preparing' && (
         <>
+          {!canAdvance && (
+            <Text variant="bodySmall" style={styles.warning}>
+              Add items before advancing this order
+            </Text>
+          )}
           <Button
             mode="contained"
             onPress={() => onUpdateStatus('ready')}
             loading={isLoading}
-            disabled={isLoading}
+            disabled={isLoading || !canAdvance}
             icon="check-circle"
             style={[styles.primaryButton, { backgroundColor: '#10b981' }]}
           >
@@ -60,7 +74,7 @@ export const StatusActions = React.memo(function StatusActions({
           mode="contained"
           onPress={() => onUpdateStatus('served')}
           loading={isLoading}
-          disabled={isLoading}
+          disabled={isLoading || !canAdvance}
           icon="silverware-fork-knife"
           style={[styles.primaryButton, { backgroundColor: '#06b6d4' }]}
         >
@@ -102,5 +116,13 @@ const styles = StyleSheet.create({
   primaryButton: {},
   cancelButton: {
     borderColor: '#fecaca',
+  },
+  warning: {
+    color: '#d97706',
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    textAlign: 'center',
   },
 });

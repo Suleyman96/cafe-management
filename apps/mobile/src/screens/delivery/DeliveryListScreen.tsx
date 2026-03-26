@@ -1,6 +1,8 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { Chip } from 'react-native-paper';
+import { Button, Chip, Dialog, FAB, Portal, Searchbar } from 'react-native-paper';
+import { CreateDeliveryModal } from '@/components/delivery/CreateDeliveryModal';
 import { DeliveryOrderCard } from '@/components/delivery/DeliveryOrderCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
@@ -12,6 +14,7 @@ import {
 } from '@/hooks';
 import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { Text, TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 
 const STATUS_FILTERS = [
@@ -22,12 +25,25 @@ const STATUS_FILTERS = [
   'ready',
   'out_for_delivery',
   'delivered',
+  'cancelled',
 ];
+
+const ACTIVE_STATUSES = ['pending_approval', 'new', 'preparing', 'ready', 'out_for_delivery'];
 
 export default function DeliveryListScreen() {
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
   const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Cancel dialog state
+  const [cancelTarget, setCancelTarget] = useState<{
+    id: string;
+    customer_name?: string | null;
+  } | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   const { data: orders, isLoading, error, refetch } = useDeliveryOrders();
   const { data: settings } = useCafeSettings();
@@ -38,11 +54,32 @@ export default function DeliveryListScreen() {
 
   const currencySymbol = settings?.currency_symbol || '$';
 
+  const activeCount = useMemo(() => {
+    if (!orders) return 0;
+    return orders.filter((o: { status: string }) => ACTIVE_STATUSES.includes(o.status)).length;
+  }, [orders]);
+
   const filtered = useMemo(() => {
     if (!orders) return [];
-    if (statusFilter === 'all') return orders;
-    return orders.filter((o: { status: string }) => o.status === statusFilter);
-  }, [orders, statusFilter]);
+    let result = orders;
+
+    if (statusFilter !== 'all') {
+      result = result.filter((o: { status: string }) => o.status === statusFilter);
+    }
+
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (o: any) =>
+          o.customer_name?.toLowerCase().includes(term) ||
+          o.delivery_address?.toLowerCase().includes(term) ||
+          o.customer_phone?.includes(term) ||
+          o.id.toLowerCase().includes(term),
+      );
+    }
+
+    return result;
+  }, [orders, statusFilter, searchTerm]);
 
   const handleApprove = async (orderId: string) => {
     try {
@@ -89,12 +126,25 @@ export default function DeliveryListScreen() {
     }
   };
 
-  const handleCancel = async (orderId: string) => {
+  const handleOpenCancel = (orderId: string) => {
+    const order = orders?.find((o: any) => o.id === orderId);
+    setCancelTarget({ id: orderId, customer_name: order?.customer_name });
+    setCancelReason('');
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelTarget || !cancelReason.trim()) return;
+
+    setCancelling(true);
     try {
-      await cancelOrder.mutateAsync({ orderId, reason: 'Cancelled from mobile app' });
+      await cancelOrder.mutateAsync({ orderId: cancelTarget.id, reason: cancelReason.trim() });
       showSuccess('Order cancelled');
+      setCancelTarget(null);
+      setCancelReason('');
     } catch (err: unknown) {
       showError(err instanceof Error ? err.message : 'Failed to cancel');
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -103,15 +153,29 @@ export default function DeliveryListScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Active count badge */}
+      {activeCount > 0 && (
+        <View style={styles.activeCountRow}>
+          <MaterialCommunityIcons name="truck-delivery" size={16} color="#7c3aed" />
+          <Text variant="bodySmall" style={styles.activeCountText}>
+            {activeCount} active
+          </Text>
+        </View>
+      )}
+
+      {/* Search bar */}
+      <Searchbar
+        placeholder="Search name, address, phone..."
+        value={searchTerm}
+        onChangeText={setSearchTerm}
+        style={styles.searchbar}
+        inputStyle={styles.searchInput}
+      />
+
+      {/* Status filter chips */}
       <View style={styles.filterRow}>
         {STATUS_FILTERS.map((s) => (
-          <Chip
-            key={s}
-            compact
-            selected={statusFilter === s}
-            onPress={() => setStatusFilter(s)}
-            style={styles.filterChip}
-          >
+          <Chip key={s} compact selected={statusFilter === s} onPress={() => setStatusFilter(s)}>
             {s === 'all' ? 'All' : s.replace(/_/g, ' ')}
           </Chip>
         ))}
@@ -130,24 +194,124 @@ export default function DeliveryListScreen() {
             onMarkReady={handleMarkReady}
             onSendOut={handleSendOut}
             onMarkDelivered={handleMarkDelivered}
-            onCancel={handleCancel}
+            onCancel={handleOpenCancel}
           />
         )}
         ListEmptyComponent={
           <EmptyState
             icon="moped"
             title="No delivery orders"
-            description="Delivery orders will appear here"
+            description={
+              statusFilter !== 'all'
+                ? 'No orders match the selected filter'
+                : 'Delivery orders will appear here'
+            }
           />
         }
         contentContainerStyle={styles.list}
       />
+
+      {/* FAB to create new delivery order */}
+      <FAB
+        icon="plus"
+        label="New Delivery"
+        onPress={() => setShowCreateModal(true)}
+        style={styles.fab}
+        color="#fff"
+      />
+
+      {/* Create Delivery Modal */}
+      <CreateDeliveryModal
+        visible={showCreateModal}
+        onDismiss={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          setShowCreateModal(false);
+          refetch();
+        }}
+      />
+
+      {/* Cancel Reason Dialog */}
+      <Portal>
+        <Dialog
+          visible={!!cancelTarget}
+          onDismiss={() => {
+            setCancelTarget(null);
+            setCancelReason('');
+          }}
+        >
+          <Dialog.Title style={styles.cancelTitle}>Cancel Delivery Order</Dialog.Title>
+          <Dialog.Content>
+            {cancelTarget?.customer_name && (
+              <View style={styles.cancelOrderInfo}>
+                <Text variant="bodyMedium" style={styles.cancelOrderName}>
+                  {cancelTarget.customer_name}
+                </Text>
+                <Text variant="bodySmall" style={styles.cancelOrderId}>
+                  #{cancelTarget.id.slice(0, 8)}
+                </Text>
+              </View>
+            )}
+            <Text variant="bodySmall" style={styles.cancelHint}>
+              Please provide a reason for cancellation:
+            </Text>
+            <TextInput
+              label="Cancellation Reason *"
+              value={cancelReason}
+              onChangeText={setCancelReason}
+              mode="outlined"
+              multiline
+              numberOfLines={3}
+              style={styles.cancelInput}
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button
+              onPress={() => {
+                setCancelTarget(null);
+                setCancelReason('');
+              }}
+              disabled={cancelling}
+            >
+              Keep Order
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleConfirmCancel}
+              disabled={cancelling || !cancelReason.trim()}
+              loading={cancelling}
+              textColor="#fff"
+              style={styles.cancelBtn}
+            >
+              Cancel Order
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
+  activeCountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  activeCountText: {
+    color: '#7c3aed',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  searchbar: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    elevation: 1,
+    borderRadius: 8,
+  },
+  searchInput: { fontSize: 14 },
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -155,6 +319,23 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 6,
   },
-  filterChip: {},
-  list: { paddingTop: 4, paddingBottom: 24 },
+  list: { paddingTop: 4, paddingBottom: 80 },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 24,
+    backgroundColor: '#7c3aed',
+  },
+  cancelTitle: { color: '#ef4444' },
+  cancelOrderInfo: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+  },
+  cancelOrderName: { fontWeight: '600' },
+  cancelOrderId: { color: '#9ca3af', marginTop: 2 },
+  cancelHint: { color: '#6b7280', marginBottom: 8 },
+  cancelInput: { marginTop: 4 },
+  cancelBtn: { backgroundColor: '#ef4444' },
 });

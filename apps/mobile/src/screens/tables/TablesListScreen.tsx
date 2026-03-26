@@ -1,11 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TableCard } from '@/components/tables/TableCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useOrders, useTables, useWaiterCalls } from '@/hooks';
+import { useCleanupEmptyOrders, useOrders, useTables, useWaiterCalls } from '@/hooks';
 import type { TablesStackParamList } from '@/types';
 
 type Nav = StackNavigationProp<TablesStackParamList, 'TablesList'>;
@@ -18,6 +18,16 @@ export default function TablesListScreen() {
   const { data: tables, isLoading, error, refetch } = useTables();
   const { data: orders } = useOrders();
   const { data: waiterCalls } = useWaiterCalls('pending');
+  const cleanupEmptyOrders = useCleanupEmptyOrders();
+
+  // Cleanup stale empty orders on screen load (run once)
+  const didCleanup = useRef(false);
+  useEffect(() => {
+    if (!didCleanup.current) {
+      didCleanup.current = true;
+      cleanupEmptyOrders.mutate();
+    }
+  }, [cleanupEmptyOrders]);
 
   const tableData = useMemo(() => {
     if (!tables) return [];

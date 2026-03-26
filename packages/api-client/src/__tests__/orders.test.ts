@@ -75,11 +75,36 @@ describe('OrdersWrapper', () => {
     const updateCtx = createMockContext({
       responses: {
         orders: { data: { ...validOrder, status: 'preparing' }, error: null },
+        order_items: { data: [{ id: 'item-1' }], error: null },
       },
     });
     const updateOrders = createOrdersWrapper(updateCtx);
     const result = await updateOrders.updateStatus(validOrder.id, 'preparing');
     expect(result.status).toBe('preparing');
+  });
+
+  it('updateStatus rejects advancing empty orders', async () => {
+    const emptyCtx = createMockContext({
+      responses: {
+        orders: { data: { ...validOrder, status: 'preparing' }, error: null },
+        order_items: { data: [], error: null },
+      },
+    });
+    const emptyOrders = createOrdersWrapper(emptyCtx);
+    await expect(emptyOrders.updateStatus(validOrder.id, 'preparing')).rejects.toThrow(
+      'Cannot advance order with no items',
+    );
+  });
+
+  it('updateStatus allows cancelling empty orders', async () => {
+    const cancelCtx = createMockContext({
+      responses: {
+        orders: { data: { ...validOrder, status: 'cancelled' }, error: null },
+      },
+    });
+    const cancelOrders = createOrdersWrapper(cancelCtx);
+    const result = await cancelOrders.updateStatus(validOrder.id, 'cancelled');
+    expect(result.status).toBe('cancelled');
   });
 
   it('findActiveByTable returns active order', async () => {

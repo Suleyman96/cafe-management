@@ -1,18 +1,23 @@
-import { useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, FAB, Modal, Portal, Text } from 'react-native-paper';
+import { useMemo, useState } from 'react';
+import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Button, Card, Chip, FAB, Text } from 'react-native-paper';
 import { ExpenseCard } from '@/components/expenses/ExpenseCard';
-import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
+import { ExpenseCategoryModal } from '@/components/expenses/ExpenseCategoryModal';
+import { ExpenseModal } from '@/components/expenses/ExpenseModal';
+import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
   useCafeSettings,
   useCreateExpense,
+  useCreateExpenseCategory,
   useDeleteExpense,
+  useDeleteExpenseCategory,
   useExpenseCategories,
   useExpenseMonthlySummary,
   useExpenses,
+  useUpdateExpense,
+  useUpdateExpenseCategory,
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
-import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 import type { Expense } from '@/types';
 
@@ -25,7 +30,13 @@ export default function ExpensesListScreen() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [methodFilter, setMethodFilter] = useState<string | undefined>();
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string | undefined>();
+
+  // Modal state
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [editExpense, setEditExpense] = useState<any>(null);
+  const [deleteExpenseId, setDeleteExpenseId] = useState<string | null>(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
   const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
@@ -35,51 +46,37 @@ export default function ExpensesListScreen() {
     isLoading,
     error,
     refetch,
-  } = useExpenses({ startDate, endDate, paymentMethod: methodFilter });
+  } = useExpenses({ startDate, endDate, paymentMethod: methodFilter, categoryId: categoryFilter });
   const { data: summary } = useExpenseMonthlySummary(year, month);
   const { data: categories } = useExpenseCategories();
   const { data: settings } = useCafeSettings();
+
+  // Mutations
   const createExpense = useCreateExpense();
-  const _deleteExpense = useDeleteExpense();
+  const updateExpense = useUpdateExpense();
+  const deleteExpenseMut = useDeleteExpense();
+  const createCategory = useCreateExpenseCategory();
+  const updateCategory = useUpdateExpenseCategory();
+  const deleteCategory = useDeleteExpenseCategory();
 
   const currencySymbol = settings?.currency_symbol || '$';
 
-  const [newExpense, setNewExpense] = useState<{
-    description: string;
-    amount: string;
-    payment_method: Expense['payment_method'];
-    category_id: string;
-  }>({
-    description: '',
-    amount: '',
-    payment_method: 'cash',
-    category_id: '',
-  });
+  // Top category from summary
+  const topCategory = useMemo(() => {
+    if (!summary?.byCategory?.length) return null;
+    return summary.byCategory.reduce((max, c) => (c.total > max.total ? c : max));
+  }, [summary]);
 
-  const handleCreate = async () => {
-    const amount = parseFloat(newExpense.amount);
-    if (Number.isNaN(amount) || amount <= 0) {
-      showError('Enter a valid amount');
-      return;
-    }
-    try {
-      await createExpense.mutateAsync({
-        description: newExpense.description,
-        amount,
-        payment_method: newExpense.payment_method,
-        category_id: newExpense.category_id || null,
-        created_by: staff?.id ?? null,
-        expense_date: new Date().toISOString().split('T')[0],
-        receipt_url: null,
-        notes: null,
-      });
-      showSuccess('Expense recorded');
-      setShowCreateModal(false);
-      setNewExpense({ description: '', amount: '', payment_method: 'cash', category_id: '' });
-    } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to create expense');
-    }
-  };
+  // Category breakdown with percentages
+  const categoryBreakdown = useMemo(() => {
+    if (!summary?.byCategory?.length || !summary.total) return [];
+    return summary.byCategory
+      .map((c) => ({
+        ...c,
+        percentage: Math.round((c.total / summary.total) * 100),
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [summary]);
 
   const handlePrevMonth = () => {
     if (month === 1) {
@@ -93,6 +90,76 @@ export default function ExpensesListScreen() {
       setMonth(1);
       setYear(year + 1);
     } else setMonth(month + 1);
+  };
+
+  const handleExpenseSubmit = async (data: any) => {
+    try {
+      if (editExpense) {
+        await updateExpense.mutateAsync({ id: editExpense.id, data });
+        showSuccess('Expense updated');
+      } else {
+        await createExpense.mutateAsync({
+          ...data,
+          created_by: staff?.id ?? null,
+          receipt_url: null,
+        });
+        showSuccess('Expense recorded');
+      }
+      setShowExpenseModal(false);
+      setEditExpense(null);
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to save expense');
+    }
+  };
+
+  const handleDeleteExpense = async () => {
+    if (!deleteExpenseId) return;
+    try {
+      await deleteExpenseMut.mutateAsync(deleteExpenseId);
+      showSuccess('Expense deleted');
+      setDeleteExpenseId(null);
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to delete');
+    }
+  };
+
+  const handleEditExpense = (id: string) => {
+    const expense = expenses?.find((e: { id: string }) => e.id === id);
+    if (expense) {
+      setEditExpense(expense);
+      setShowExpenseModal(true);
+    }
+  };
+
+  const handleCategoryCreate = async (data: { name: string; description?: string }) => {
+    try {
+      await createCategory.mutateAsync({ name: data.name, description: data.description });
+      showSuccess('Category created');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to create category');
+    }
+  };
+
+  const handleCategoryUpdate = async (id: string, data: { name: string; description?: string }) => {
+    try {
+      await updateCategory.mutateAsync({
+        id,
+        data: { name: data.name, description: data.description },
+      });
+      showSuccess('Category updated');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to update category');
+    }
+  };
+
+  const handleCategoryDelete = async (id: string) => {
+    try {
+      await deleteCategory.mutateAsync(id);
+      showSuccess('Category deleted');
+      if (categoryFilter === id) setCategoryFilter(undefined);
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to delete category');
+    }
   };
 
   if (isLoading) return <LoadingScreen message="Loading expenses..." />;
@@ -113,7 +180,7 @@ export default function ExpensesListScreen() {
         </Button>
       </View>
 
-      {/* Summary */}
+      {/* Summary Cards — 3 cards like staff-web */}
       {summary && (
         <View style={styles.summaryRow}>
           <Card style={styles.summaryCard}>
@@ -121,7 +188,7 @@ export default function ExpensesListScreen() {
               <Text variant="bodySmall" style={styles.muted}>
                 Total
               </Text>
-              <Text variant="titleMedium" style={{ fontWeight: '700', color: '#ef4444' }}>
+              <Text variant="titleMedium" style={styles.totalValue}>
                 {currencySymbol}
                 {(summary.total || 0).toFixed(2)}
               </Text>
@@ -132,36 +199,125 @@ export default function ExpensesListScreen() {
               <Text variant="bodySmall" style={styles.muted}>
                 Transactions
               </Text>
-              <Text variant="titleMedium" style={{ fontWeight: '700' }}>
+              <Text variant="titleMedium" style={styles.transValue}>
                 {summary.count || 0}
+              </Text>
+            </Card.Content>
+          </Card>
+          <Card style={styles.summaryCard}>
+            <Card.Content>
+              <Text variant="bodySmall" style={styles.muted}>
+                Top Category
+              </Text>
+              <Text variant="titleSmall" style={styles.topCatValue} numberOfLines={1}>
+                {topCategory?.name || '—'}
               </Text>
             </Card.Content>
           </Card>
         </View>
       )}
 
-      {/* Payment Method Filter */}
-      <View style={styles.filterRow}>
-        <Chip compact selected={!methodFilter} onPress={() => setMethodFilter(undefined)}>
-          All
-        </Chip>
-        {PAYMENT_METHODS.map((m) => (
-          <Chip
-            key={m}
+      {/* Category Breakdown */}
+      {categoryBreakdown.length > 0 && (
+        <Card style={styles.breakdownCard}>
+          <Card.Content>
+            <Text variant="bodySmall" style={[styles.muted, { marginBottom: 8 }]}>
+              Category Breakdown
+            </Text>
+            {categoryBreakdown.map((cat) => (
+              <View key={cat.name} style={styles.breakdownRow}>
+                <View style={styles.breakdownLabel}>
+                  <Text variant="bodySmall" style={styles.breakdownName} numberOfLines={1}>
+                    {cat.name}
+                  </Text>
+                  <Text variant="bodySmall" style={styles.muted}>
+                    {currencySymbol}
+                    {cat.total.toFixed(2)} ({cat.percentage}%)
+                  </Text>
+                </View>
+                <View style={styles.progressBarBg}>
+                  <View style={[styles.progressBarFill, { width: `${cat.percentage}%` }]} />
+                </View>
+              </View>
+            ))}
+          </Card.Content>
+        </Card>
+      )}
+
+      {/* Filters: Category + Payment Method */}
+      <View style={styles.filterSection}>
+        <View style={styles.filterHeader}>
+          <Text variant="bodySmall" style={styles.muted}>
+            Filters
+          </Text>
+          <Button
             compact
-            selected={methodFilter === m}
-            onPress={() => setMethodFilter(methodFilter === m ? undefined : m)}
+            mode="outlined"
+            icon="shape-plus"
+            onPress={() => setShowCategoryModal(true)}
+            labelStyle={styles.manageCatLabel}
+            style={styles.manageCatBtn}
           >
-            {m.replace(/_/g, ' ')}
+            Categories
+          </Button>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterChips}
+        >
+          <Chip compact selected={!categoryFilter} onPress={() => setCategoryFilter(undefined)}>
+            All Categories
           </Chip>
-        ))}
+          {(categories || []).map((c: { id: string; name: string }) => (
+            <Chip
+              key={c.id}
+              compact
+              selected={categoryFilter === c.id}
+              onPress={() => setCategoryFilter(categoryFilter === c.id ? undefined : c.id)}
+            >
+              {c.name}
+            </Chip>
+          ))}
+        </ScrollView>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterChips}
+        >
+          <Chip compact selected={!methodFilter} onPress={() => setMethodFilter(undefined)}>
+            All Methods
+          </Chip>
+          {PAYMENT_METHODS.map((m) => (
+            <Chip
+              key={m}
+              compact
+              selected={methodFilter === m}
+              onPress={() => setMethodFilter(methodFilter === m ? undefined : m)}
+            >
+              {m.replace(/_/g, ' ')}
+            </Chip>
+          ))}
+        </ScrollView>
       </View>
+
+      {/* Expense count */}
+      <Text variant="bodySmall" style={styles.countText}>
+        {(expenses || []).length} expenses
+      </Text>
 
       <FlatList
         data={expenses || []}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
-        renderItem={({ item }) => <ExpenseCard expense={item} currencySymbol={currencySymbol} />}
+        renderItem={({ item }) => (
+          <ExpenseCard
+            expense={item}
+            currencySymbol={currencySymbol}
+            onEdit={handleEditExpense}
+            onDelete={(id) => setDeleteExpenseId(id)}
+          />
+        )}
         ListEmptyComponent={
           <EmptyState
             icon="cash-off"
@@ -172,77 +328,47 @@ export default function ExpensesListScreen() {
         contentContainerStyle={styles.list}
       />
 
-      <FAB icon="plus" style={styles.fab} onPress={() => setShowCreateModal(true)} />
+      <FAB
+        icon="plus"
+        label="Add Expense"
+        style={styles.fab}
+        onPress={() => {
+          setEditExpense(null);
+          setShowExpenseModal(true);
+        }}
+      />
 
-      <Portal>
-        <Modal
-          visible={showCreateModal}
-          onDismiss={() => setShowCreateModal(false)}
-          contentContainerStyle={styles.modal}
-        >
-          <Text variant="titleMedium" style={{ fontWeight: '700', marginBottom: 12 }}>
-            New Expense
-          </Text>
-          <TextInput
-            label="Description"
-            value={newExpense.description}
-            onChangeText={(v: string) => setNewExpense({ ...newExpense, description: v })}
-            mode="outlined"
-            dense
-            style={styles.input}
-          />
-          <TextInput
-            label="Amount"
-            value={newExpense.amount}
-            onChangeText={(v: string) => setNewExpense({ ...newExpense, amount: v })}
-            mode="outlined"
-            keyboardType="decimal-pad"
-            left={<TextInput.Affix text={currencySymbol} />}
-            dense
-            style={styles.input}
-          />
-          <Text variant="bodySmall" style={[styles.muted, { marginBottom: 4 }]}>
-            Payment Method
-          </Text>
-          <View style={styles.chipRow}>
-            {PAYMENT_METHODS.map((m) => (
-              <Chip
-                key={m}
-                compact
-                selected={newExpense.payment_method === m}
-                onPress={() => setNewExpense({ ...newExpense, payment_method: m })}
-              >
-                {m.replace(/_/g, ' ')}
-              </Chip>
-            ))}
-          </View>
-          {categories && categories.length > 0 && (
-            <>
-              <Text variant="bodySmall" style={[styles.muted, { marginBottom: 4 }]}>
-                Category
-              </Text>
-              <View style={styles.chipRow}>
-                {categories.map((c: { id: string; name: string }) => (
-                  <Chip
-                    key={c.id}
-                    compact
-                    selected={newExpense.category_id === c.id}
-                    onPress={() => setNewExpense({ ...newExpense, category_id: c.id })}
-                  >
-                    {c.name}
-                  </Chip>
-                ))}
-              </View>
-            </>
-          )}
-          <View style={styles.modalActions}>
-            <Button onPress={() => setShowCreateModal(false)}>Cancel</Button>
-            <Button mode="contained" onPress={handleCreate} loading={createExpense.isPending}>
-              Create
-            </Button>
-          </View>
-        </Modal>
-      </Portal>
+      <ExpenseModal
+        visible={showExpenseModal}
+        onDismiss={() => {
+          setShowExpenseModal(false);
+          setEditExpense(null);
+        }}
+        onSubmit={handleExpenseSubmit}
+        loading={createExpense.isPending || updateExpense.isPending}
+        initialData={editExpense}
+        categories={categories || []}
+        currencySymbol={currencySymbol}
+      />
+
+      <ExpenseCategoryModal
+        visible={showCategoryModal}
+        onDismiss={() => setShowCategoryModal(false)}
+        categories={categories || []}
+        onCreate={handleCategoryCreate}
+        onUpdate={handleCategoryUpdate}
+        onDelete={handleCategoryDelete}
+        loading={createCategory.isPending || updateCategory.isPending}
+      />
+
+      <ConfirmDialog
+        visible={!!deleteExpenseId}
+        title="Delete Expense"
+        message="Are you sure you want to delete this expense?"
+        onConfirm={handleDeleteExpense}
+        onCancel={() => setDeleteExpenseId(null)}
+        destructive
+      />
     </View>
   );
 }
@@ -259,18 +385,41 @@ const styles = StyleSheet.create({
   monthLabel: { fontWeight: '600' },
   summaryRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
   summaryCard: { flex: 1 },
-  filterRow: {
+  totalValue: { fontWeight: '700', color: '#ef4444' },
+  transValue: { fontWeight: '700', color: '#3b82f6' },
+  topCatValue: { fontWeight: '700', color: '#8b5cf6' },
+  breakdownCard: { marginHorizontal: 16, marginBottom: 8 },
+  breakdownRow: { marginBottom: 8 },
+  breakdownLabel: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    gap: 6,
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
+  breakdownName: { fontWeight: '600', color: '#1e293b', flex: 1, marginRight: 8 },
+  progressBarBg: {
+    height: 6,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: 6,
+    backgroundColor: '#6366f1',
+    borderRadius: 3,
+  },
+  filterSection: { paddingHorizontal: 16, marginBottom: 8 },
+  filterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  manageCatBtn: { borderColor: '#d1d5db' },
+  manageCatLabel: { fontSize: 11 },
+  filterChips: { gap: 6, paddingBottom: 6 },
+  countText: { color: '#9ca3af', paddingHorizontal: 16, marginBottom: 4 },
   list: { paddingTop: 4, paddingBottom: 80 },
   fab: { position: 'absolute', right: 16, bottom: 16 },
-  modal: { backgroundColor: '#fff', margin: 20, padding: 20, borderRadius: 12 },
-  input: { marginBottom: 8 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
   muted: { color: '#6b7280' },
 });

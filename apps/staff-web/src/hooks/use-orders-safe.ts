@@ -167,5 +167,18 @@ export function useUpdateOrderNotes() {
   });
 }
 
+export function useCleanupEmptyOrders() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (olderThanMinutes?: number) => db.orders.cleanupEmptyOrders(olderThanMinutes),
+    onSuccess: (cancelledIds) => {
+      if (cancelledIds.length > 0) {
+        invalidateOrdersAndTables(queryClient);
+      }
+    },
+  });
+}
+
 // Note: Payment-related hooks are in use-payments-safe.ts
 // Note: Transfer-related hooks are in use-table-transfers-safe.ts

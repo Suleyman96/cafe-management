@@ -129,8 +129,16 @@ export default function TasksPage() {
         return todaysTasks;
       case 'all':
         return allTasks;
-      case 'my':
-        return myTasks;
+      case 'my': {
+        let filtered = myTasks;
+        if (statusFilter) {
+          filtered = filtered.filter((t: any) => t.status === statusFilter);
+        }
+        if (priorityFilter) {
+          filtered = filtered.filter((t: any) => t.priority === priorityFilter);
+        }
+        return filtered;
+      }
       case 'templates':
         return templates;
       default:

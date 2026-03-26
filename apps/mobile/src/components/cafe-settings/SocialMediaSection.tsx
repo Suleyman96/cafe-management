@@ -1,0 +1,54 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { StyleSheet, View } from 'react-native';
+import { Card, Text, TextInput } from 'react-native-paper';
+import type { SettingsSectionProps } from './ToggleRow';
+
+const SOCIAL_FIELDS = [
+  {
+    key: 'social_instagram',
+    label: 'Instagram',
+    placeholder: 'https://instagram.com/yourrestaurant',
+  },
+  { key: 'social_whatsapp', label: 'WhatsApp', placeholder: 'https://wa.me/994501234567' },
+  { key: 'social_tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@yourrestaurant' },
+  { key: 'social_telegram', label: 'Telegram', placeholder: 'https://t.me/yourrestaurant' },
+  { key: 'social_line', label: 'LINE', placeholder: 'https://line.me/R/ti/p/@yourrestaurant' },
+  {
+    key: 'location_maps_url',
+    label: 'Google Maps',
+    placeholder: 'https://g.page/yourrestaurant',
+  },
+];
+
+export function SocialMediaSection({ form, updateField }: SettingsSectionProps) {
+  return (
+    <Card>
+      <Card.Content>
+        <View style={styles.headerRow}>
+          <MaterialCommunityIcons name="earth" size={20} color="#4b5563" />
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Social Media
+          </Text>
+        </View>
+        {SOCIAL_FIELDS.map((field) => (
+          <TextInput
+            key={field.key}
+            label={field.label}
+            value={form[field.key] || ''}
+            onChangeText={(v) => updateField(field.key, v || null)}
+            mode="outlined"
+            dense
+            placeholder={field.placeholder}
+            style={styles.input}
+          />
+        ))}
+      </Card.Content>
+    </Card>
+  );
+}
+
+const styles = StyleSheet.create({
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  sectionTitle: { fontWeight: '700', color: '#1e293b' },
+  input: { marginBottom: 8 },
+});

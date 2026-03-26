@@ -116,6 +116,7 @@ export default function OrderDetailScreen() {
               <Card.Content>
                 <StatusActions
                   status={order.status}
+                  hasItems={items.filter((i) => i.status !== 'cancelled').length > 0}
                   onUpdateStatus={handleUpdateStatus}
                   onNavigatePayment={() => navigation.navigate('OrderPayment', { orderId })}
                   onNavigateAddItems={() => navigation.navigate('AddItems', { orderId })}

@@ -1,18 +1,30 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, Switch, Text } from 'react-native-paper';
+import { Button, SegmentedButtons } from 'react-native-paper';
+import {
+  BrandingSection,
+  ContactInfoSection,
+  CurrencySection,
+  DeliverySection,
+  OrderSettingsSection,
+  RestaurantInfoSection,
+  SocialMediaSection,
+  TaxSettingsSection,
+} from '@/components/cafe-settings';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useCafeSettings, useUpdateCafeSettings } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
-import { TextInput } from '@/lib/paper-compat';
+
+type TabView = 'general' | 'branding' | 'contact';
 
 export default function CafeSettingsScreen() {
   const { showSuccess, showError } = useSnackbar();
   const { data: settings, isLoading, error, refetch } = useCafeSettings();
   const updateSettings = useUpdateCafeSettings();
 
-  const [form, setForm] = useState<Record<string, unknown>>({});
+  const [form, setForm] = useState<Record<string, any>>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabView>('general');
 
   useEffect(() => {
     if (settings) {
@@ -21,7 +33,7 @@ export default function CafeSettingsScreen() {
     }
   }, [settings]);
 
-  const updateField = (key: string, value: unknown) => {
+  const updateField = (key: string, value: any) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setHasChanges(true);
   };
@@ -31,8 +43,8 @@ export default function CafeSettingsScreen() {
       await updateSettings.mutateAsync(form);
       showSuccess('Settings saved');
       setHasChanges(false);
-    } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to save settings');
+    } catch (err: any) {
+      showError(err?.message || 'Failed to save settings');
     }
   };
 
@@ -48,243 +60,39 @@ export default function CafeSettingsScreen() {
 
   return (
     <View style={styles.wrapper}>
+      <SegmentedButtons
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as TabView)}
+        buttons={[
+          { value: 'general', label: 'General' },
+          { value: 'branding', label: 'Branding' },
+          { value: 'contact', label: 'Contact' },
+        ]}
+        style={styles.tabs}
+        density="small"
+      />
+
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {/* General */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              General
-            </Text>
-            <TextInput
-              label="Restaurant Name"
-              value={(form.restaurant_name as string) || ''}
-              onChangeText={(v: string) => updateField('restaurant_name', v)}
-              mode="outlined"
-              dense
-              style={styles.input}
-            />
-            <TextInput
-              label="Address"
-              value={(form.address as string) || ''}
-              onChangeText={(v: string) => updateField('address', v)}
-              mode="outlined"
-              dense
-              multiline
-              style={styles.input}
-            />
-          </Card.Content>
-        </Card>
+        {activeTab === 'general' && (
+          <>
+            <RestaurantInfoSection form={form} updateField={updateField} />
+            <TaxSettingsSection form={form} updateField={updateField} />
+            <CurrencySection form={form} updateField={updateField} />
+            <OrderSettingsSection form={form} updateField={updateField} />
+            <DeliverySection form={form} updateField={updateField} />
+          </>
+        )}
 
-        {/* Tax Settings */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Tax
-            </Text>
-            <View style={styles.switchRow}>
-              <Text variant="bodyMedium">Enable Tax</Text>
-              <Switch
-                value={!!form.tax_enabled}
-                onValueChange={(v: boolean) => updateField('tax_enabled', v)}
-              />
-            </View>
-            {!!form.tax_enabled && (
-              <>
-                <TextInput
-                  label="Tax Percentage"
-                  value={String(form.tax_percentage || '')}
-                  onChangeText={(v: string) => updateField('tax_percentage', parseFloat(v) || 0)}
-                  mode="outlined"
-                  keyboardType="decimal-pad"
-                  dense
-                  style={styles.input}
-                />
-                <TextInput
-                  label="Tax Label"
-                  value={(form.tax_label as string) || ''}
-                  onChangeText={(v: string) => updateField('tax_label', v)}
-                  mode="outlined"
-                  dense
-                  style={styles.input}
-                />
-                <View style={styles.switchRow}>
-                  <Text variant="bodyMedium">Prices Include Tax</Text>
-                  <Switch
-                    value={!!form.prices_include_tax}
-                    onValueChange={(v: boolean) => updateField('prices_include_tax', v)}
-                  />
-                </View>
-              </>
-            )}
-          </Card.Content>
-        </Card>
+        {activeTab === 'branding' && <BrandingSection form={form} updateField={updateField} />}
 
-        {/* Currency */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Currency
-            </Text>
-            <TextInput
-              label="Currency Symbol"
-              value={(form.currency_symbol as string) || ''}
-              onChangeText={(v: string) => updateField('currency_symbol', v)}
-              mode="outlined"
-              dense
-              style={styles.input}
-            />
-            <TextInput
-              label="Currency Code"
-              value={(form.currency_code as string) || ''}
-              onChangeText={(v: string) => updateField('currency_code', v)}
-              mode="outlined"
-              dense
-              style={styles.input}
-            />
-            <TextInput
-              label="Decimal Places"
-              value={String(form.decimal_places ?? '')}
-              onChangeText={(v: string) => updateField('decimal_places', parseInt(v, 10) || 0)}
-              mode="outlined"
-              keyboardType="number-pad"
-              dense
-              style={styles.input}
-            />
-          </Card.Content>
-        </Card>
-
-        {/* Order Settings */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Orders
-            </Text>
-            <View style={styles.switchRow}>
-              <Text variant="bodyMedium">Allow Item Notes</Text>
-              <Switch
-                value={!!form.allow_item_notes}
-                onValueChange={(v: boolean) => updateField('allow_item_notes', v)}
-              />
-            </View>
-            <View style={styles.switchRow}>
-              <Text variant="bodyMedium">Allow Order Notes</Text>
-              <Switch
-                value={!!form.allow_order_notes}
-                onValueChange={(v: boolean) => updateField('allow_order_notes', v)}
-              />
-            </View>
-            <View style={styles.switchRow}>
-              <Text variant="bodyMedium">Tips Enabled</Text>
-              <Switch
-                value={!!form.tips_enabled}
-                onValueChange={(v: boolean) => updateField('tips_enabled', v)}
-              />
-            </View>
-            <View style={styles.switchRow}>
-              <Text variant="bodyMedium">Waste Tracking</Text>
-              <Switch
-                value={!!form.waste_tracking_enabled}
-                onValueChange={(v: boolean) => updateField('waste_tracking_enabled', v)}
-              />
-            </View>
-          </Card.Content>
-        </Card>
-
-        {/* Delivery */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Delivery
-            </Text>
-            <View style={styles.switchRow}>
-              <Text variant="bodyMedium">Enable Delivery</Text>
-              <Switch
-                value={!!form.delivery_enabled}
-                onValueChange={(v: boolean) => updateField('delivery_enabled', v)}
-              />
-            </View>
-            {!!form.delivery_enabled && (
-              <>
-                <TextInput
-                  label="Default Delivery Fee"
-                  value={String(form.default_delivery_fee || '')}
-                  onChangeText={(v: string) =>
-                    updateField('default_delivery_fee', parseFloat(v) || 0)
-                  }
-                  mode="outlined"
-                  keyboardType="decimal-pad"
-                  dense
-                  style={styles.input}
-                />
-                <TextInput
-                  label="Minimum Delivery Amount"
-                  value={String(form.minimum_delivery_amount || '')}
-                  onChangeText={(v: string) =>
-                    updateField('minimum_delivery_amount', parseFloat(v) || 0)
-                  }
-                  mode="outlined"
-                  keyboardType="decimal-pad"
-                  dense
-                  style={styles.input}
-                />
-              </>
-            )}
-          </Card.Content>
-        </Card>
-
-        {/* Contact */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Contact
-            </Text>
-            <TextInput
-              label="Phone"
-              value={(form.phone as string) || ''}
-              onChangeText={(v: string) => updateField('phone', v)}
-              mode="outlined"
-              keyboardType="phone-pad"
-              dense
-              style={styles.input}
-            />
-            <TextInput
-              label="Website"
-              value={(form.website as string) || ''}
-              onChangeText={(v: string) => updateField('website', v)}
-              mode="outlined"
-              keyboardType="url"
-              dense
-              style={styles.input}
-            />
-            <TextInput
-              label="Instagram"
-              value={(form.instagram_url as string) || ''}
-              onChangeText={(v: string) => updateField('instagram_url', v)}
-              mode="outlined"
-              dense
-              style={styles.input}
-            />
-            <TextInput
-              label="WhatsApp"
-              value={(form.whatsapp_number as string) || ''}
-              onChangeText={(v: string) => updateField('whatsapp_number', v)}
-              mode="outlined"
-              dense
-              style={styles.input}
-            />
-            <TextInput
-              label="Google Maps URL"
-              value={(form.google_maps_url as string) || ''}
-              onChangeText={(v: string) => updateField('google_maps_url', v)}
-              mode="outlined"
-              dense
-              style={styles.input}
-            />
-          </Card.Content>
-        </Card>
+        {activeTab === 'contact' && (
+          <>
+            <ContactInfoSection form={form} updateField={updateField} />
+            <SocialMediaSection form={form} updateField={updateField} />
+          </>
+        )}
       </ScrollView>
 
-      {/* Save/Reset Bar */}
       {hasChanges && (
         <View style={styles.saveBar}>
           <Button mode="outlined" onPress={handleReset}>
@@ -301,17 +109,9 @@ export default function CafeSettingsScreen() {
 
 const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: '#f8fafc' },
+  tabs: { marginHorizontal: 16, marginTop: 8, marginBottom: 8 },
   container: { flex: 1 },
   content: { padding: 16, gap: 12, paddingBottom: 80 },
-  card: {},
-  sectionTitle: { fontWeight: '700', color: '#1e293b', marginBottom: 12 },
-  input: { marginBottom: 8 },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
   saveBar: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

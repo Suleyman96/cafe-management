@@ -6,8 +6,9 @@ import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip } from 'react-native-paper';
 import { MenuItemCard } from '@/components/orders/MenuItemCard';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useAddOrderItems, useCategories, useMenuItems } from '@/hooks';
+import { useAddOrderItems, useCategories, useCreateOrder, useMenuItems } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { useAuthStore } from '@/store/auth-store';
 import type { OrdersStackParamList } from '@/types';
 
 type Route = RouteProp<OrdersStackParamList, 'AddItems'>;
@@ -23,7 +24,11 @@ interface CartItem {
 export default function AddItemsScreen() {
   const route = useRoute<Route>();
   const navigation = useNavigation<Nav>();
-  const { orderId } = route.params;
+  const params = route.params as { orderId?: string; tableId?: string };
+  const orderId = params.orderId;
+  const tableId = params.tableId;
+  const isNewOrder = !orderId && !!tableId;
+  const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
 
   const {
@@ -33,9 +38,11 @@ export default function AddItemsScreen() {
   } = useMenuItems({ isAvailable: true });
   const { data: categories } = useCategories();
   const addOrderItems = useAddOrderItems();
+  const createOrder = useCreateOrder();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [cart, setCart] = useState<Record<string, CartItem>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   const filteredItems = useMemo(() => {
     if (!menuItems) return [];
@@ -81,29 +88,71 @@ export default function AddItemsScreen() {
   };
 
   const handleSubmit = async () => {
-    const items = Object.values(cart).map((c) => ({
-      order_id: orderId,
-      menu_item_id: c.menuItemId,
-      quantity: c.quantity,
-      item_name: c.name,
-      item_price: c.price,
-      notes: null as string | null,
-      status: 'pending' as const,
-    }));
+    const cartItems = Object.values(cart);
+    if (cartItems.length === 0) return;
 
-    if (items.length === 0) return;
-
+    setSubmitting(true);
     try {
+      let targetOrderId = orderId;
+
+      if (isNewOrder && tableId) {
+        const newOrder = await createOrder.mutateAsync({
+          table_id: tableId,
+          order_type: 'dine_in',
+          status: 'new',
+          source: 'waiter',
+          assigned_waiter_id: staff?.id ?? null,
+          customer_name: null,
+          customer_phone: null,
+          subtotal: 0,
+          tax: 0,
+          total: 0,
+          customer_notes: null,
+          internal_notes: null,
+          payment_method: null,
+          preparing_at: null,
+          ready_at: null,
+          served_at: null,
+          closed_at: null,
+          paid_at: null,
+          delivery_address: null,
+          delivery_fee: 0,
+          delivery_notes: null,
+          estimated_delivery_time: null,
+          delivered_at: null,
+          delivery_person_id: null,
+        });
+        targetOrderId = newOrder.id;
+      }
+
+      const items = cartItems.map((c) => ({
+        order_id: targetOrderId!,
+        menu_item_id: c.menuItemId,
+        quantity: c.quantity,
+        item_name: c.name,
+        item_price: c.price,
+        notes: null as string | null,
+        status: 'pending' as const,
+      }));
+
       await addOrderItems.mutateAsync(items);
-      showSuccess(`Added ${cartSummary.count} items`);
+      showSuccess(
+        isNewOrder
+          ? `Order created with ${cartSummary.count} items`
+          : `Added ${cartSummary.count} items`,
+      );
       navigation.goBack();
     } catch (err: any) {
       showError(err?.message || 'Failed to add items');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   if (menuLoading) return <LoadingScreen message="Loading menu..." />;
   if (menuError) return <ErrorScreen error={menuError} />;
+
+  const isLoading = submitting || addOrderItems.isPending;
 
   return (
     <View style={styles.container}>
@@ -151,12 +200,12 @@ export default function AddItemsScreen() {
           <Button
             mode="contained"
             onPress={handleSubmit}
-            loading={addOrderItems.isPending}
-            disabled={addOrderItems.isPending}
+            loading={isLoading}
+            disabled={isLoading}
             contentStyle={styles.submitButtonContent}
           >
-            Add {cartSummary.count} item{cartSummary.count > 1 ? 's' : ''} — $
-            {cartSummary.total.toFixed(2)}
+            {isNewOrder ? 'Create Order' : 'Add'} — {cartSummary.count} item
+            {cartSummary.count > 1 ? 's' : ''} (${cartSummary.total.toFixed(2)})
           </Button>
         </View>
       )}

@@ -4,6 +4,7 @@ import type { ORDER_STATUS } from '@cafe-idare/core';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
 import {
+  AlertTriangle,
   CheckCircle,
   ChefHat,
   CreditCard,
@@ -21,6 +22,7 @@ interface OrderDetailActionsProps {
     table?: any;
   };
   isFullyPaid: boolean;
+  hasItems?: boolean;
   onStatusUpdate: (status: keyof typeof ORDER_STATUS) => void;
   onOpenPayment: () => void;
 }
@@ -28,13 +30,21 @@ interface OrderDetailActionsProps {
 export function OrderDetailActions({
   order,
   isFullyPaid,
+  hasItems = true,
   onStatusUpdate,
   onOpenPayment,
 }: OrderDetailActionsProps) {
   const { t } = useTranslation('staff');
+  const canAdvance = hasItems;
 
   return (
     <div className="flex flex-wrap gap-2 sm:gap-3">
+      {!canAdvance && ['pending_approval', 'new', 'preparing'].includes(order.status) && (
+        <span className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-3 py-1.5 rounded-md border border-amber-200 w-full">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          Add items before advancing this order
+        </span>
+      )}
       {/* Pending Approval: Show approve button */}
       {order.status === 'pending_approval' && (
         <>
@@ -58,6 +68,7 @@ export function OrderDetailActions({
         <Button
           size="sm"
           onClick={() => onStatusUpdate('PREPARING')}
+          disabled={!canAdvance}
           className="flex items-center gap-1 sm:gap-2"
         >
           <ChefHat className="h-4 w-4" />
@@ -68,6 +79,7 @@ export function OrderDetailActions({
         <Button
           size="sm"
           onClick={() => onStatusUpdate('READY')}
+          disabled={!canAdvance}
           className="flex items-center gap-1 sm:gap-2"
         >
           <CheckCircle className="h-4 w-4" />
@@ -78,6 +90,7 @@ export function OrderDetailActions({
         <Button
           size="sm"
           onClick={() => onStatusUpdate('SERVED')}
+          disabled={!canAdvance}
           className="flex items-center gap-1 sm:gap-2"
         >
           <CheckCircle className="h-4 w-4" />
@@ -89,6 +102,7 @@ export function OrderDetailActions({
         <Button
           size="sm"
           onClick={() => onStatusUpdate('OUT_FOR_DELIVERY')}
+          disabled={!canAdvance}
           className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-1 sm:gap-2"
         >
           <Truck className="h-4 w-4" />
@@ -100,6 +114,7 @@ export function OrderDetailActions({
         <Button
           size="sm"
           onClick={() => onStatusUpdate('DELIVERED')}
+          disabled={!canAdvance}
           className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-1 sm:gap-2"
         >
           <CheckCircle className="h-4 w-4" />
