@@ -1,4 +1,5 @@
 import { createStackNavigator } from '@react-navigation/stack';
+import { DrawerMenuButton } from '@/components/navigation/DrawerMenuButton';
 import ExpensesListScreen from '@/screens/expenses/ExpensesListScreen';
 import type { ExpensesStackParamList } from '@/types';
 
@@ -10,7 +11,7 @@ export function ExpensesStack() {
       <Stack.Screen
         name="ExpensesList"
         component={ExpensesListScreen}
-        options={{ title: 'Expenses' }}
+        options={{ title: 'Expenses', headerLeft: () => <DrawerMenuButton /> }}
       />
     </Stack.Navigator>
   );

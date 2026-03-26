@@ -1,5 +1,5 @@
 import { QUERY_KEYS } from '@cafe-idare/core';
-import type { TaskInsert } from '@cafe-idare/database';
+import type { TaskInsert, TaskUpdate } from '@cafe-idare/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase';
 import type { Task } from '@/types';
@@ -50,6 +50,21 @@ export function useCreateTask() {
     },
     onError: (error: Error) => {
       console.error('Failed to create task:', error.message);
+    },
+  });
+}
+
+export function useUpdateTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<TaskUpdate> }) =>
+      db.tasks.update(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
+    },
+    onError: (error: Error) => {
+      console.error('Failed to update task:', error.message);
     },
   });
 }

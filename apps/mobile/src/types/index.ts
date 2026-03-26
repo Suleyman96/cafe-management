@@ -49,7 +49,7 @@ export type TablesStackParamList = {
 export type OrdersStackParamList = {
   OrdersList: undefined;
   OrderDetail: { orderId: string };
-  AddItems: { orderId: string };
+  AddItems: { orderId: string } | { tableId: string };
   OrderPayment: { orderId: string };
 };
 

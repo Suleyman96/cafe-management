@@ -13,6 +13,7 @@ export function useCreateOrder() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDERS] });
     },
     onError: (error: Error) => {
       console.error('Failed to create order:', error.message);

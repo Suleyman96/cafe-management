@@ -615,6 +615,9 @@ export default function OrderDetailPage() {
       <OrderDetailActions
         order={order}
         isFullyPaid={isFullyPaid}
+        hasItems={
+          (order.order_items?.filter((i: OrderItem) => i.status !== 'cancelled').length ?? 0) > 0
+        }
         onStatusUpdate={handleStatusUpdate}
         onOpenPayment={() => setIsPaymentModalOpen(true)}
       />

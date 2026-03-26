@@ -119,3 +119,17 @@ export function useUpdateOrderItemStatus() {
     },
   });
 }
+
+export function useCleanupEmptyOrders() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (olderThanMinutes?: number) => db.orders.cleanupEmptyOrders(olderThanMinutes),
+    onSuccess: (cancelledIds) => {
+      if (cancelledIds.length > 0) {
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+      }
+    },
+  });
+}

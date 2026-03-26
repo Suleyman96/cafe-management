@@ -86,6 +86,29 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     },
 
     updateStatus: async (id: string, status: OrderRow['status']) => {
+      // Prevent advancing empty orders (no non-cancelled items)
+      const advanceStatuses: string[] = [
+        'preparing',
+        'ready',
+        'served',
+        'out_for_delivery',
+        'delivered',
+      ];
+      if (advanceStatuses.includes(status)) {
+        const { data: items } = await ctx.client
+          .from('order_items')
+          .select('id')
+          .eq('order_id', id)
+          .neq('status', 'cancelled')
+          .limit(1);
+
+        if (!items || items.length === 0) {
+          throw new Error(
+            'Cannot advance order with no items. Add items first or cancel the order.',
+          );
+        }
+      }
+
       const { data, error } = await ctx.anyClient
         .from('orders')
         .update({ status })
@@ -305,6 +328,58 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
       return data as OrderRow;
+    },
+
+    cleanupEmptyOrders: async (olderThanMinutes = 2) => {
+      const cutoff = new Date(Date.now() - olderThanMinutes * 60 * 1000).toISOString();
+
+      // Find active orders with 0 items that are older than the cutoff
+      const { data: emptyOrders, error: findError } = await ctx.client
+        .from('orders')
+        .select('id, table_id, order_items(id)')
+        .in('status', ['new', 'pending_approval'])
+        .lt('created_at', cutoff);
+
+      if (findError) throw handleSupabaseError(findError);
+
+      const ordersToCancel: { id: string; table_id: string | null }[] = (emptyOrders || []).filter(
+        (o: any) => !o.order_items || o.order_items.length === 0,
+      );
+
+      if (ordersToCancel.length === 0) return [];
+
+      // Cancel each empty order and free the table if needed
+      const cancelledIds: string[] = [];
+      for (const order of ordersToCancel) {
+        const { error: cancelError } = await ctx.anyClient
+          .from('orders')
+          .update({ status: 'cancelled', internal_notes: 'Auto-cancelled: empty order' })
+          .eq('id', order.id);
+
+        if (!cancelError) {
+          cancelledIds.push(order.id);
+
+          // Free the table if no other active orders
+          if (order.table_id) {
+            const { data: otherOrders } = await ctx.client
+              .from('orders')
+              .select('id')
+              .eq('table_id', order.table_id)
+              .in('status', ['pending_approval', 'new', 'preparing', 'ready', 'served'])
+              .neq('id', order.id)
+              .limit(1);
+
+            if (!otherOrders || otherOrders.length === 0) {
+              await ctx.anyClient
+                .from('tables')
+                .update({ status: 'free', occupied_at: null })
+                .eq('id', order.table_id);
+            }
+          }
+        }
+      }
+
+      return cancelledIds;
     },
   };
 }

@@ -1,4 +1,5 @@
 import { createStackNavigator } from '@react-navigation/stack';
+import { DrawerMenuButton } from '@/components/navigation/DrawerMenuButton';
 import CafeSettingsScreen from '@/screens/settings/CafeSettingsScreen';
 import type { CafeSettingsStackParamList } from '@/types';
 
@@ -10,7 +11,7 @@ export function CafeSettingsStack() {
       <Stack.Screen
         name="CafeSettings"
         component={CafeSettingsScreen}
-        options={{ title: 'Cafe Settings' }}
+        options={{ title: 'Cafe Settings', headerLeft: () => <DrawerMenuButton /> }}
       />
     </Stack.Navigator>
   );

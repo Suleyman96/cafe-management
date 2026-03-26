@@ -4,14 +4,21 @@ import type { OrdersInsert } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import { Package, Plus, RefreshCw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { CreateTakeoutModal } from '@/components/modals/create-takeout-modal';
 import { TableModal } from '@/components/modals/table-modal';
 import { TableTransferModal } from '@/components/modals/table-transfer-modal';
 import { TableCard } from '@/components/tables/table-card';
-import { useCreateOrder, useDeleteTable, useOrders, useTables, useWaiterCalls } from '@/hooks';
+import {
+  useCleanupEmptyOrders,
+  useCreateOrder,
+  useDeleteTable,
+  useOrders,
+  useTables,
+  useWaiterCalls,
+} from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { supabase } from '@/lib/supabase/client';
@@ -40,8 +47,18 @@ export default function TablesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const createOrder = useCreateOrder();
+  const cleanupEmptyOrders = useCleanupEmptyOrders();
   const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
   const formatPrice = useFormatPrice();
+
+  // Cleanup stale empty orders on page load (run once)
+  const didCleanup = useRef(false);
+  useEffect(() => {
+    if (!didCleanup.current) {
+      didCleanup.current = true;
+      cleanupEmptyOrders.mutate(undefined);
+    }
+  }, [cleanupEmptyOrders]);
 
   // Set up real-time subscriptions
   useEffect(() => {

@@ -12,7 +12,6 @@ import {
   TimeElapsed,
 } from '@/components/ui';
 import {
-  useCreateOrder,
   useOrders,
   useTable,
   useUpdateTableStatus,
@@ -47,7 +46,6 @@ export default function TableDetailScreen() {
   const { data: table, isLoading, error, refetch } = useTable(tableId);
   const { data: orders } = useOrders();
   const { data: waiterCalls } = useWaiterCalls('pending');
-  const createOrder = useCreateOrder();
   const updateTableStatus = useUpdateTableStatus();
   const updateWaiterCall = useUpdateWaiterCall();
 
@@ -66,41 +64,11 @@ export default function TableDetailScreen() {
     [waiterCalls, tableId],
   );
 
-  const handleCreateOrder = async () => {
-    try {
-      const order = await createOrder.mutateAsync({
-        table_id: tableId,
-        order_type: 'dine_in',
-        status: 'new',
-        source: 'waiter',
-        assigned_waiter_id: staff?.id ?? null,
-        customer_name: null,
-        customer_phone: null,
-        subtotal: 0,
-        tax: 0,
-        total: 0,
-        customer_notes: null,
-        internal_notes: null,
-        payment_method: null,
-        preparing_at: null,
-        ready_at: null,
-        served_at: null,
-        closed_at: null,
-        paid_at: null,
-        delivery_address: null,
-        delivery_fee: 0,
-        delivery_notes: null,
-        estimated_delivery_time: null,
-        delivered_at: null,
-        delivery_person_id: null,
-      });
-      navigation.getParent()?.navigate('OrdersTab', {
-        screen: 'AddItems',
-        params: { orderId: order.id },
-      });
-    } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to create order');
-    }
+  const handleCreateOrder = () => {
+    navigation.getParent()?.navigate('OrdersTab', {
+      screen: 'AddItems',
+      params: { tableId },
+    });
   };
 
   const handleStatusChange = async (newStatus: Table['status']) => {
@@ -248,13 +216,7 @@ export default function TableDetailScreen() {
         contentContainerStyle={styles.listContent}
       />
 
-      <FAB
-        icon="plus"
-        label="New Order"
-        onPress={handleCreateOrder}
-        loading={createOrder.isPending}
-        style={styles.fab}
-      />
+      <FAB icon="plus" label="New Order" onPress={handleCreateOrder} style={styles.fab} />
 
       <ConfirmDialog
         visible={!!statusConfirm}

@@ -8,10 +8,14 @@ export {
 } from './use-delivery';
 export {
   useCreateExpense,
+  useCreateExpenseCategory,
   useDeleteExpense,
+  useDeleteExpenseCategory,
   useExpenseCategories,
   useExpenseMonthlySummary,
   useExpenses,
+  useUpdateExpense,
+  useUpdateExpenseCategory,
 } from './use-expenses';
 export {
   useAcknowledgeFeedback,
@@ -30,7 +34,13 @@ export {
   useUpdateCategory,
   useUpdateMenuItem,
 } from './use-menu-management';
-export { useOrder, useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from './use-orders';
+export {
+  useCleanupEmptyOrders,
+  useOrder,
+  useOrders,
+  useUpdateOrderItemStatus,
+  useUpdateOrderStatus,
+} from './use-orders';
 export { useCreatePayment, useOrderPayments } from './use-payments';
 export { useSalesSummary } from './use-reports';
 export {
@@ -72,6 +82,7 @@ export {
   useRecurringTemplates,
   useTasks,
   useTodaysTasks,
+  useUpdateTask,
 } from './use-tasks';
 export { useUpdateWaiterCall, useWaiterCalls } from './use-waiter-calls';
 export {

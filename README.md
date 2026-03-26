@@ -7,22 +7,23 @@ A comprehensive restaurant management system built with modern web technologies,
 This is a Turborepo monorepo containing:
 
 ### Apps
-- **`staff-web`** - Staff management dashboard (Next.js 14)
-- **`customer-web`** - Customer ordering interface (QR code + delivery)
-- **`mobile`** - React Native mobile app (planned)
+- **`staff-web`** - Staff management dashboard (Next.js 14, port 3001)
+- **`customer-web`** - Customer ordering interface (Next.js 14, port 3000)
+- **`mobile`** - Staff mobile app (React Native / Expo 54)
 
 ### Packages
-- **`@cafe-idare/core`** - Shared business logic, utilities, and constants
-- **`@cafe-idare/database`** - Database types and schemas
+- **`@cafe-idare/core`** - Shared business logic, utilities, constants, and query keys
+- **`@cafe-idare/database`** - Database types (generated from Supabase), Zod schemas, enums
 - **`@cafe-idare/api-client`** - Type-safe Supabase API wrapper with runtime validation
-- **`@cafe-idare/ui`** - Shared React components
+- **`@cafe-idare/i18n`** - Internationalization (i18next) with shared locale bundles
+- **`@cafe-idare/ui`** - Shared React components (Button, LoadingSpinner)
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+
-- pnpm 8+
-- Supabase account
+- pnpm 9+
+- Supabase CLI (for local development)
 - Git
 
 ### Installation
@@ -107,41 +108,7 @@ This single file contains all tables, functions, triggers, views, and default da
 
 ### Option 3: Running Migrations Individually
 
-If you prefer to apply migrations one by one, run each file inside `supabase/migrations/` in alphabetical order via the SQL Editor:
-
-```
-supabase/migrations/
-├── 20250101000001_initial_schema.sql
-├── 20250101000002_functions_triggers.sql
-├── 20250101000003_rls_policies.sql
-├── 20250101000004_views.sql
-├── 20250101000005_fix_staff_rls_recursion.sql
-├── 20250101000006_allow_staff_menu_access.sql
-├── 20250101000007_fix_categories_rls.sql
-├── 20250101000008_disable_rls_for_dev.sql
-├── 20250101000009_disable_all_rls_for_dev.sql
-├── 20250102000001_add_new_features.sql
-├── 20250102000002_payment_functions.sql
-├── 20250102000003_rls_new_tables.sql
-├── 20250102000004_fix_order_number_length.sql
-├── 20250102000005_fix_order_number_function.sql
-├── 20250102000006_auto_close_on_payment.sql
-├── 20250103000001_add_notes_features.sql
-├── 20250117000001_disable_customer_feedback_rls.sql
-├── 20250120000001_add_cafe_settings.sql
-├── 20250121000001_add_cafe_branding.sql
-├── 20250131000001_add_order_source_and_approval.sql
-├── 20250131000002_fix_table_free_with_multiple_orders.sql
-├── 20250131000003_fix_tax_from_settings.sql
-├── 20250131000004_add_pending_approval_status.sql
-├── 20250131000005_add_tips.sql
-├── 20250207000001_enable_realtime.sql
-├── 20250222000001_stock_and_expenses.sql
-├── 20250222000002_fix_decimal_precision.sql
-├── 20250223000001_staff_schedules.sql
-├── 20250224000001_delivery_orders.sql
-└── 20250224000002_remove_staff_notes.sql
-```
+If you prefer to apply migrations one by one, run each file inside `supabase/migrations/` in alphabetical order via the SQL Editor. There are currently 51 migration files covering schema creation, RLS policies, functions, views, and incremental features.
 
 ### Creating an Admin User
 
@@ -199,20 +166,29 @@ pnpm check:fix
 # Run tests
 pnpm test
 pnpm test:watch
+pnpm test:mobile
+
+# E2E tests (requires running dev server)
+pnpm test:e2e
+
+# Open Supabase Studio
+pnpm db:studio
 ```
 
 ---
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), React 18, TypeScript
-- **Styling**: Tailwind CSS, shadcn/ui
+- **Frontend**: Next.js 14 (App Router), React 18, TypeScript 5
+- **Mobile**: React Native 0.81, Expo 54
+- **Styling**: Tailwind CSS 3.4, shadcn/ui patterns
 - **State Management**: Zustand, TanStack Query v5
-- **Backend**: Supabase (PostgreSQL, Realtime, Auth, Storage)
+- **Backend**: Supabase (PostgreSQL 15, Realtime, Auth, Storage, RLS)
 - **Build System**: Turborepo, tsup
-- **Package Manager**: pnpm
-- **Linting/Formatting**: Biome
-- **Testing**: Vitest
+- **Package Manager**: pnpm 9
+- **Linting/Formatting**: Biome 2.4
+- **Testing**: Vitest 4 (unit/integration), Playwright (E2E)
+- **Internationalization**: i18next (EN, AZ, RU, TR)
 
 ---
 
@@ -229,9 +205,11 @@ pnpm test:watch
 - **Feedback** - Customer complaint and feedback management
 - **Stock** - Inventory tracking with movement audit trail and low-stock alerts
 - **Expenses** - Expense tracking with categories and reporting
+- **Waste Tracking** - Waste logging with reason tracking and top-wasted-items analytics
+- **Tasks** - Staff task management with categories, priorities, and recurring tasks
 - **Schedules** - Staff work schedule management
 - **Cafe Settings** - Restaurant branding, tax/currency configuration, delivery settings
-- **Analytics** - Sales summary, order reports
+- **Analytics** - Sales summary, order reports, PDF export
 
 ### Customer Interface (`customer-web`)
 - **QR Code Ordering** - Scan QR code at table to browse menu and place orders
@@ -242,6 +220,14 @@ pnpm test:watch
 - **Multi-language** - English, Azerbaijani, Russian, Turkish
 - **Feedback** - Submit complaints, questions, and praise
 - **Call Waiter** - Request assistance from staff
+
+### Mobile App (`mobile`)
+- **Order Management** - View and manage orders on the go
+- **Table Overview** - Monitor table statuses
+- **Waiter Calls** - Receive real-time notifications
+- **Stock & Expenses** - Track inventory and expenses
+- **Task Management** - View and complete assigned tasks
+- **Push Notifications** - Expo push notifications for real-time alerts
 
 ### Order Types
 | Type | Source | Table Required | Customer Info |
@@ -265,7 +251,7 @@ Delivery order:  new -> preparing -> ready -> out_for_delivery -> delivered -> c
 
 | Table | Description |
 |-------|-------------|
-| `staff` | Staff members (admin, waiter, kitchen) linked to auth.users |
+| `staff` | Staff members (admin, waiter, kitchen, owner) linked to auth.users |
 | `tables` | Physical cafe tables with QR codes |
 | `categories` | Menu categories (multi-language) |
 | `menu_items` | Menu items with pricing, dietary info, images |
@@ -281,6 +267,9 @@ Delivery order:  new -> preparing -> ready -> out_for_delivery -> delivered -> c
 | `expense_categories` | Expense category definitions |
 | `expenses` | Expense records with payment method and receipts |
 | `staff_schedules` | Staff work schedule entries |
+| `waste_logs` | Waste tracking with item, quantity, reason, and cost |
+| `task_categories` | Task category definitions |
+| `tasks` | Staff tasks with priority, assignment, recurrence |
 
 ### Views
 
@@ -299,6 +288,16 @@ Delivery order:  new -> preparing -> ready -> out_for_delivery -> delivered -> c
 | `transfer_table()` | Transfer an order between tables with audit logging |
 | `get_order_remaining_balance()` | Calculate remaining balance after payments |
 | `set_table_context()` | Set session context for customer QR code access |
+
+### Enums
+
+```
+STAFF_ROLE:       waiter, admin, kitchen, owner
+ORDER_STATUS:     pending_approval, new, preparing, ready, out_for_delivery, delivered, served, closed, cancelled
+TABLE_STATUS:     free, occupied, reserved, closed
+PAYMENT_METHOD:   cash, card, digital
+LANGUAGES:        en, az, ru, tr
+```
 
 ---
 
@@ -321,6 +320,13 @@ supabase db push
 ```
 
 ### Deploy Apps (Vercel)
+
+The project includes GitHub Actions workflows for automated deployment:
+- **CI** (`ci.yml`) — Runs lint, test, type-check, and build on every PR to `main`
+- **Deploy Staff Web** (`deploy-staff-web.yml`) — Auto-deploys to Vercel after CI passes
+- **Deploy Customer Web** (`deploy-customer-web.yml`) — Auto-deploys to Vercel after CI passes
+
+Manual deployment:
 
 ```bash
 npm i -g vercel

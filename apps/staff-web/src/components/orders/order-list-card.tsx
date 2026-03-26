@@ -94,6 +94,7 @@ export function OrderListCard({
   const paid = calculatePaidAmount(order);
   const remaining = total - paid;
   const isFullyPaid = remaining === 0 && total > 0;
+  const hasItems = order.order_items?.some((item: any) => item.status !== 'cancelled') ?? false;
 
   const isTakeout =
     order.order_type === 'takeout' || (!order.table && order.order_type !== 'delivery');
@@ -220,20 +221,35 @@ export function OrderListCard({
           </>
         )}
         {order.status === 'new' && (
-          <Button size="sm" variant="outline" onClick={() => onStatusUpdate(order.id, 'preparing')}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!hasItems}
+            onClick={() => onStatusUpdate(order.id, 'preparing')}
+          >
             <ChefHat className="h-4 w-4 mr-1" />
             <span className="hidden xs:inline">{t('orders.startPreparing')}</span>
             <span className="xs:hidden">{t('orders.preparing')}</span>
           </Button>
         )}
         {order.status === 'preparing' && (
-          <Button size="sm" variant="outline" onClick={() => onStatusUpdate(order.id, 'ready')}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!hasItems}
+            onClick={() => onStatusUpdate(order.id, 'ready')}
+          >
             <CheckCircle className="h-4 w-4 mr-1" />
             {t('orders.ready')}
           </Button>
         )}
         {order.status === 'ready' && order.table && !isDelivery && (
-          <Button size="sm" variant="outline" onClick={() => onStatusUpdate(order.id, 'served')}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!hasItems}
+            onClick={() => onStatusUpdate(order.id, 'served')}
+          >
             <CheckCircle className="h-4 w-4 mr-1" />
             {t('orders.served')}
           </Button>
@@ -241,6 +257,7 @@ export function OrderListCard({
         {order.status === 'ready' && isDelivery && (
           <Button
             size="sm"
+            disabled={!hasItems}
             className="bg-purple-600 hover:bg-purple-700 text-white"
             onClick={() => onStatusUpdate(order.id, 'out_for_delivery')}
           >
@@ -251,6 +268,7 @@ export function OrderListCard({
         {order.status === 'out_for_delivery' && isDelivery && (
           <Button
             size="sm"
+            disabled={!hasItems}
             className="bg-green-600 hover:bg-green-700 text-white"
             onClick={() => onStatusUpdate(order.id, 'delivered')}
           >
