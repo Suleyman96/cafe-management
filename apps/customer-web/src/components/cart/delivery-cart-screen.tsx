@@ -164,10 +164,16 @@ export function DeliveryCartScreen() {
                 setEditingNotes(id);
                 setTempNotes({ ...tempNotes, [id]: notes });
               }}
-              onCancelEditNotes={() => setEditingNotes(null)}
+              onCancelEditNotes={(id) => {
+                setEditingNotes(null);
+                const { [id]: _, ...rest } = tempNotes;
+                setTempNotes(rest);
+              }}
               onSaveNotes={(id, notes) => {
                 updateNotes(id, notes);
                 setEditingNotes(null);
+                const { [id]: _, ...rest } = tempNotes;
+                setTempNotes(rest);
               }}
               onTempNotesChange={(id, value) => setTempNotes({ ...tempNotes, [id]: value })}
               onRemoveItem={removeItem}

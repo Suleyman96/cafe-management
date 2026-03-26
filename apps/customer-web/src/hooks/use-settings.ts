@@ -95,6 +95,7 @@ export function calculateTotal(subtotal: number, settings: CafeSettings): number
 }
 
 export function getDisplaySubtotal(subtotal: number, settings: CafeSettings): number {
+  if (!settings.tax_enabled) return subtotal;
   if (settings.prices_include_tax) {
     const rate = settings.tax_percentage / 100;
     return subtotal / (1 + rate);

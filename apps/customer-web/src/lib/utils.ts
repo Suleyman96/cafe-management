@@ -42,16 +42,27 @@ export function timeAgo(timestamp: string): string {
  */
 export function getStatusColor(status: string): string {
   switch (status) {
+    case 'pending':
+    case 'pending_approval':
+      return 'bg-gray-500 text-white';
     case 'new':
-      return 'status-new';
+      return 'bg-blue-500 text-white';
     case 'preparing':
-      return 'status-preparing';
+      return 'bg-yellow-500 text-white';
     case 'ready':
-      return 'status-ready';
+      return 'bg-green-500 text-white';
     case 'served':
-      return 'status-served';
+      return 'bg-purple-500 text-white';
+    case 'out_for_delivery':
+      return 'bg-indigo-500 text-white';
+    case 'delivered':
+      return 'bg-green-600 text-white';
+    case 'paid':
+      return 'bg-emerald-500 text-white';
+    case 'cancelled':
+      return 'bg-red-500 text-white';
     default:
-      return 'bg-gray-500';
+      return 'bg-gray-500 text-white';
   }
 }
 

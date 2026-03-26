@@ -199,6 +199,15 @@ describe('getDisplaySubtotal', () => {
     const settings = makeSettings({ prices_include_tax: true, tax_percentage: 100 });
     expect(getDisplaySubtotal(200, settings)).toBeCloseTo(100, 2);
   });
+
+  it('returns full subtotal when tax is disabled even if prices_include_tax is true', () => {
+    const settings = makeSettings({
+      tax_enabled: false,
+      prices_include_tax: true,
+      tax_percentage: 18,
+    });
+    expect(getDisplaySubtotal(118, settings)).toBe(118);
+  });
 });
 
 describe('formatPrice', () => {

@@ -165,6 +165,8 @@ export function CartScreen({ tableId }: CartScreenProps) {
               onSaveNotes={(id, notes) => {
                 updateNotes(id, notes);
                 setEditingNotes(null);
+                const { [id]: _, ...rest } = tempNotes;
+                setTempNotes(rest);
               }}
               onTempNotesChange={(id, value) => setTempNotes({ ...tempNotes, [id]: value })}
               onRemoveItem={removeItem}

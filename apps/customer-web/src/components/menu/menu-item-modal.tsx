@@ -37,7 +37,7 @@ export function MenuItemModal({ item, isOpen, onClose, accentColor }: MenuItemMo
 
   const handleAdd = () => {
     addItem(item, quantity, notes);
-    toast.success(`Added ${quantity}x ${name} to cart`);
+    toast.success(t('menu.addedToCart', { quantity, name }));
     onClose();
     setQuantity(1);
     setNotes('');

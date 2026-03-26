@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom';
 import { createMockDb } from './helpers/mock-db';
 
 // Mock Supabase module (prevents real client initialization)
@@ -31,6 +32,30 @@ vi.mock('sonner', () => ({
     error: vi.fn(),
     info: vi.fn(),
     warning: vi.fn(),
+  },
+}));
+
+// Mock i18n — returns translation keys as-is for test assertions
+vi.mock('@cafe-idare/i18n', () => ({
+  useTranslation: () => ({
+    t: (key: string, opts?: Record<string, any>) => {
+      if (opts) {
+        // Return key with interpolated values for assertions
+        return `${key}:${JSON.stringify(opts)}`;
+      }
+      return key;
+    },
+    i18n: { language: 'en', changeLanguage: vi.fn() },
+  }),
+  initI18n: vi.fn(),
+}));
+
+// Mock next/image — render as plain img
+vi.mock('next/image', () => ({
+  default: (props: any) => {
+    // eslint-disable-next-line @next/next/no-img-element
+    const { fill, priority, ...rest } = props;
+    return rest;
   },
 }));
 

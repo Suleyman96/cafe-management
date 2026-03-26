@@ -22,10 +22,11 @@ import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { PlatformFooter } from '@/components/ui/platform-footer';
 import { CallStaffModal } from '@/components/waiter/call-staff-modal';
+import { useFormatPrice } from '@/hooks/use-format-price';
 import { useCancelOrder, useCancelOrderItem, useOrder } from '@/hooks/use-order';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
-import { formatPrice, timeAgo } from '@/lib/utils';
+import { timeAgo } from '@/lib/utils';
 
 interface OrderStatusProps {
   tableId: string; // This is the table_number from URL (e.g., "T01")
@@ -41,6 +42,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
 
   const { data: order, isLoading: orderLoading } = useOrder(actualTableId);
   const { data: settings } = useCafeSettings();
+  const formatPrice = useFormatPrice();
 
   const cancelOrder = useCancelOrder();
   const cancelItem = useCancelOrderItem();
