@@ -342,7 +342,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
 
       if (findError) throw handleSupabaseError(findError);
 
-      const ordersToCancel = (emptyOrders || []).filter(
+      const ordersToCancel: { id: string; table_id: string | null }[] = (emptyOrders || []).filter(
         (o: any) => !o.order_items || o.order_items.length === 0,
       );
 
