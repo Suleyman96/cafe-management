@@ -1,3 +1,4 @@
+import { AuthenticationError, ConflictError, ValidationError } from '@cafe-idare/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createOrderItemsWrapper, createOrdersWrapper } from '../wrapper/orders';
 import { createMockContext } from './helpers/mock-supabase';
@@ -157,5 +158,90 @@ describe('OrderItemsWrapper', () => {
     const items = createOrderItemsWrapper(ctx);
     const result = await items.updateStatus(validOrderItem.id, 'ready');
     expect(result.status).toBe('ready');
+  });
+});
+
+describe('OrdersWrapper error type verification', () => {
+  it('throws ConflictError for duplicate key violation', async () => {
+    const ctx = createMockContext({
+      responses: { orders: { data: null, error: { code: '23505', message: 'duplicate' } } },
+    });
+    const wrapper = createOrdersWrapper(ctx);
+    await expect(wrapper.findAll()).rejects.toThrow(ConflictError);
+  });
+
+  it('throws AuthenticationError for PGRST301 code', async () => {
+    const ctx = createMockContext({
+      responses: { orders: { data: null, error: { code: 'PGRST301', message: 'JWT expired' } } },
+    });
+    const wrapper = createOrdersWrapper(ctx);
+    await expect(wrapper.findAll()).rejects.toThrow(AuthenticationError);
+  });
+
+  it('throws ValidationError for foreign key violation', async () => {
+    const ctx = createMockContext({
+      responses: {
+        orders: { data: null, error: { code: '23503', message: 'foreign key violation' } },
+      },
+    });
+    const wrapper = createOrdersWrapper(ctx);
+    await expect(wrapper.findAll()).rejects.toThrow(ValidationError);
+  });
+});
+
+describe('OrdersWrapper empty data handling', () => {
+  it('findAll returns empty array when no orders exist', async () => {
+    const ctx = createMockContext({ responses: { orders: { data: [], error: null } } });
+    const wrapper = createOrdersWrapper(ctx);
+    const result = await wrapper.findAll();
+    expect(result).toEqual([]);
+  });
+
+  it('findAll returns empty array when data is null', async () => {
+    const ctx = createMockContext({ responses: { orders: { data: null, error: null } } });
+    const wrapper = createOrdersWrapper(ctx);
+    const result = await wrapper.findAll();
+    expect(result).toEqual([]);
+  });
+});
+
+describe('OrderItemsWrapper error type verification', () => {
+  it('throws ConflictError for duplicate key violation', async () => {
+    const ctx = createMockContext({
+      responses: { order_items: { data: null, error: { code: '23505', message: 'duplicate' } } },
+    });
+    const items = createOrderItemsWrapper(ctx);
+    await expect(
+      items.create([
+        {
+          order_id: validOrder.id,
+          menu_item_id: validOrderItem.menu_item_id,
+          quantity: 1,
+          item_price: 10.0,
+        } as any,
+      ]),
+    ).rejects.toThrow(ConflictError);
+  });
+
+  it('throws AuthenticationError for PGRST301 code', async () => {
+    const ctx = createMockContext({
+      responses: {
+        order_items: { data: null, error: { code: 'PGRST301', message: 'JWT expired' } },
+      },
+    });
+    const items = createOrderItemsWrapper(ctx);
+    await expect(items.updateStatus(validOrderItem.id, 'ready')).rejects.toThrow(
+      AuthenticationError,
+    );
+  });
+
+  it('throws ValidationError for foreign key violation', async () => {
+    const ctx = createMockContext({
+      responses: {
+        order_items: { data: null, error: { code: '23503', message: 'foreign key violation' } },
+      },
+    });
+    const items = createOrderItemsWrapper(ctx);
+    await expect(items.updateStatus(validOrderItem.id, 'ready')).rejects.toThrow(ValidationError);
   });
 });

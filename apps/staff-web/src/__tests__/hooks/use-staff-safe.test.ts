@@ -6,11 +6,12 @@ import {
   useDeleteStaff,
   useStaff,
   useStaffByEmail,
+  useStaffByRole,
   useStaffMember,
   useUpdateStaff,
 } from '@/hooks/use-staff-safe';
 import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useStaff', () => {
   it('calls db.staff.findAll with no args when no role given', () => {
@@ -21,6 +22,13 @@ describe('useStaff', () => {
   it('passes role to findAll when given', () => {
     renderHookWithProviders(() => useStaff('ADMIN' as any));
     expect(db.staff.findAll).toHaveBeenCalled();
+  });
+
+  it('returns fetched staff data', async () => {
+    const mockStaff = [{ id: 's1', full_name: 'John', role: 'waiter', email: 'j@t.com' }];
+    (db.staff.findAll as any).mockResolvedValueOnce(mockStaff);
+    const { result } = renderHookWithProviders(() => useStaff());
+    await waitFor(() => expect(result.current.data).toEqual(mockStaff));
   });
 });
 
@@ -55,6 +63,23 @@ describe('useStaffByEmail', () => {
   });
 });
 
+describe('useStaffByRole', () => {
+  it('useStaffByRole groups staff by actual roles including owners and kitchen', async () => {
+    const mockStaff = [
+      { id: 's1', full_name: 'W', role: 'waiter', email: 'w@t.com' },
+      { id: 's2', full_name: 'A', role: 'admin', email: 'a@t.com' },
+      { id: 's3', full_name: 'K', role: 'kitchen', email: 'k@t.com' },
+      { id: 's4', full_name: 'O', role: 'owner', email: 'o@t.com' },
+    ];
+    (db.staff.findAll as any).mockResolvedValueOnce(mockStaff);
+    const { result } = renderHookWithProviders(() => useStaffByRole());
+    await waitFor(() => expect(result.current.data.waiters).toHaveLength(1));
+    expect(result.current.data.admins).toHaveLength(1);
+    expect(result.current.data.kitchen).toHaveLength(1);
+    expect(result.current.data.owners).toHaveLength(1);
+  });
+});
+
 describe('useCreateStaff', () => {
   it('invalidates STAFF on success', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useCreateStaff());
@@ -64,6 +89,13 @@ describe('useCreateStaff', () => {
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STAFF]);
+  });
+
+  it('calls db.staff.create with staff data', async () => {
+    const staffData = { full_name: 'New Staff', role: 'waiter', email: 'n@t.com' } as any;
+    const { result } = renderHookWithProviders(() => useCreateStaff());
+    await result.current.mutateAsync(staffData);
+    expect(db.staff.create).toHaveBeenCalledWith(staffData);
   });
 });
 
@@ -80,6 +112,12 @@ describe('useUpdateStaff', () => {
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STAFF]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STAFF, 's1']);
   });
+
+  it('calls db.staff.update with id and updates', async () => {
+    const { result } = renderHookWithProviders(() => useUpdateStaff());
+    await result.current.mutateAsync({ id: 's1', updates: { full_name: 'Updated' } as any });
+    expect(db.staff.update).toHaveBeenCalledWith('s1', { full_name: 'Updated' });
+  });
 });
 
 describe('useDeleteStaff', () => {
@@ -91,5 +129,11 @@ describe('useDeleteStaff', () => {
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STAFF]);
+  });
+
+  it('calls db.staff.delete with id', async () => {
+    const { result } = renderHookWithProviders(() => useDeleteStaff());
+    await result.current.mutateAsync('s1');
+    expect(db.staff.delete).toHaveBeenCalledWith('s1');
   });
 });

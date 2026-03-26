@@ -54,6 +54,7 @@ export function useUpdateWasteLog() {
       db.waste.update(id, updates),
     onSuccess: () => {
       invalidateWaste(queryClient);
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
     },
     onSettled: () => {
       refetchWaste(queryClient);
@@ -68,6 +69,7 @@ export function useDeleteWasteLog() {
     mutationFn: (id: string) => db.waste.delete(id),
     onSuccess: () => {
       invalidateWaste(queryClient);
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
     },
     onSettled: () => {
       refetchWaste(queryClient);

@@ -63,6 +63,7 @@ export function useCreateOrder() {
     mutationFn: (orderData: OrderInsert) => db.orders.create(orderData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
     },
   });

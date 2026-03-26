@@ -12,7 +12,9 @@
       "Bash(pnpm vitest run:*)",
       "Bash(biome check:*)",
       "Bash(npx biome:*)",
-      "Bash(pnpm --filter @cafe-idare/api-client test:*)"
+      "Bash(pnpm --filter @cafe-idare/api-client test:*)",
+      "Bash(npx vitest:*)",
+      "Bash(pnpm test:*)"
     ],
     "additionalDirectories": ["/Users/kamilhajilov/Documents/github/cafe-idare"]
   }

@@ -1,3 +1,4 @@
+import { ConflictError } from '@cafe-idare/core';
 import { describe, expect, it } from 'vitest';
 import { createSchedulesWrapper } from '../wrapper/schedules';
 import { createMockContext } from './helpers/mock-supabase';
@@ -179,6 +180,72 @@ describe('SchedulesWrapper', () => {
     });
     const schedules = createSchedulesWrapper(ctx);
     const result = await schedules.findByDate('2025-01-01');
+    expect(result).toEqual([]);
+  });
+
+  it('throws ConflictError for duplicate key violation (23505)', async () => {
+    const ctx = createMockContext({
+      responses: {
+        staff_schedules: { data: null, error: { code: '23505', message: 'duplicate key' } },
+      },
+    });
+    const schedules = createSchedulesWrapper(ctx);
+    await expect(
+      schedules.create({
+        staff_id: 'test',
+        date: '2025-02-23',
+        planned_start: '09:00',
+        planned_end: '17:00',
+        status: 'scheduled',
+      } as any),
+    ).rejects.toThrow(ConflictError);
+  });
+
+  it('markCompleted without actualEnd only sets status to completed', async () => {
+    const completed = { ...validSchedule, status: 'completed', actual_end: null };
+    const ctx = createMockContext({
+      responses: {
+        staff_schedules: { data: completed, error: null },
+      },
+    });
+    const schedules = createSchedulesWrapper(ctx);
+    const result = await schedules.markCompleted(validSchedule.id);
+    expect(result).toEqual(completed);
+    expect(result.status).toBe('completed');
+    expect(result.actual_end).toBeNull();
+    expect(ctx.getCalls()[0].method).toBe('update');
+  });
+
+  it('findByDateRange returns empty array when data is null', async () => {
+    const ctx = createMockContext({
+      responses: {
+        staff_schedules: { data: null, error: null },
+      },
+    });
+    const schedules = createSchedulesWrapper(ctx);
+    const result = await schedules.findByDateRange('2025-03-01', '2025-03-31');
+    expect(result).toEqual([]);
+  });
+
+  it('findByStaffRange returns empty array when data is null', async () => {
+    const ctx = createMockContext({
+      responses: {
+        staff_schedules: { data: null, error: null },
+      },
+    });
+    const schedules = createSchedulesWrapper(ctx);
+    const result = await schedules.findByStaffRange('staff-1', '2025-03-01', '2025-03-31');
+    expect(result).toEqual([]);
+  });
+
+  it('findByStaffAndDate returns empty array when data is null', async () => {
+    const ctx = createMockContext({
+      responses: {
+        staff_schedules: { data: null, error: null },
+      },
+    });
+    const schedules = createSchedulesWrapper(ctx);
+    const result = await schedules.findByStaffAndDate('staff-1', '2025-03-01');
     expect(result).toEqual([]);
   });
 });

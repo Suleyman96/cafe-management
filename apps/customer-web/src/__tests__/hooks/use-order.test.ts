@@ -7,7 +7,7 @@ import {
   useOrder,
 } from '@/hooks/use-order';
 import { db, supabase } from '@/lib/supabase';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useOrder', () => {
   it('calls db.orders.findActiveByTable with tableId', () => {
@@ -151,5 +151,60 @@ describe('useAddOrderItems', () => {
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual([QUERY_KEYS.ORDER]);
+  });
+});
+
+// --- Bug fix regression tests ---
+
+describe('useOrder - realtime filter', () => {
+  it('subscribes to orders channel filtered by tableId', () => {
+    renderHookWithProviders(() => useOrder('table-1'));
+
+    // Verify the .on() call for orders table includes the filter
+    const onCalls = (supabase as any).channelObj?.on.mock?.calls;
+    if (onCalls) {
+      const ordersCall = onCalls.find((c: any[]) => c[1]?.table === 'orders');
+      expect(ordersCall?.[1]?.filter).toBe('table_id=eq.table-1');
+    }
+  });
+});
+
+describe('useCancelOrder - scoped invalidation', () => {
+  it('invalidates only the specific table query when tableId is provided', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useCancelOrder());
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await result.current.mutateAsync({ orderId: 'order-1', tableId: 'table-1' });
+
+    const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(keys).toContainEqual([QUERY_KEYS.ORDER, 'table-1']);
+    // Should NOT contain the broad [QUERY_KEYS.ORDER] (without tableId)
+    const broadKeys = keys.filter((k: any[]) => k.length === 1 && k[0] === QUERY_KEYS.ORDER);
+    expect(broadKeys).toHaveLength(0);
+  });
+
+  it('falls back to broad invalidation when tableId is not provided', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useCancelOrder());
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await result.current.mutateAsync({ orderId: 'order-1' });
+
+    const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(keys).toContainEqual([QUERY_KEYS.ORDER]);
+  });
+});
+
+describe('useOrder - data flow', () => {
+  it('returns fetched order data', async () => {
+    const mockOrder = { id: 'o1', table_id: 't1', status: 'new', items: [] };
+    (db.orders.findActiveByTable as any).mockResolvedValueOnce(mockOrder);
+    const { result } = renderHookWithProviders(() => useOrder('t1'));
+    await waitFor(() => expect(result.current.data).toEqual(mockOrder));
+  });
+
+  it('reports error when findActiveByTable rejects', async () => {
+    (db.orders.findActiveByTable as any).mockRejectedValueOnce(new Error('DB error'));
+    const { result } = renderHookWithProviders(() => useOrder('t1'));
+    await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });

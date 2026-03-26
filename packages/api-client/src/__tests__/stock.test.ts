@@ -1,3 +1,4 @@
+import { ConflictError } from '@cafe-idare/core';
 import { describe, expect, it } from 'vitest';
 import { createStockItemsWrapper } from '../wrapper/stock';
 import { createMockContext } from './helpers/mock-supabase';
@@ -177,5 +178,76 @@ describe('StockItemsWrapper', () => {
     });
     const stock = createStockItemsWrapper(ctx);
     await expect(stock.findAll()).rejects.toThrow();
+  });
+
+  it('findById throws when type guard rejects data (missing name, quantity, unit)', async () => {
+    const ctx = createMockContext({
+      responses: {
+        stock_items: { data: { id: '1' }, error: null },
+      },
+    });
+    const stock = createStockItemsWrapper(ctx);
+    await expect(stock.findById('1')).rejects.toThrow('Invalid stock item data');
+  });
+
+  it('create throws when type guard rejects data', async () => {
+    const ctx = createMockContext({
+      responses: {
+        stock_items: { data: { id: '1' }, error: null },
+      },
+    });
+    const stock = createStockItemsWrapper(ctx);
+    await expect(
+      stock.create({
+        name: 'Test',
+        category: 'Test',
+        quantity: 1,
+        unit: 'kg',
+        cost_price: 1,
+        minimum_stock_level: 1,
+      } as any),
+    ).rejects.toThrow('Invalid stock item data');
+  });
+
+  it('update throws when type guard rejects data', async () => {
+    const ctx = createMockContext({
+      responses: {
+        stock_items: { data: { id: '1' }, error: null },
+      },
+    });
+    const stock = createStockItemsWrapper(ctx);
+    await expect(stock.update('1', { name: 'Updated' } as any)).rejects.toThrow(
+      'Invalid stock item data',
+    );
+  });
+
+  it('findAll returns empty array when data is null', async () => {
+    const ctx = createMockContext({
+      responses: {
+        stock_items: { data: null, error: null },
+      },
+    });
+    const stock = createStockItemsWrapper(ctx);
+    const result = await stock.findAll();
+    expect(result).toEqual([]);
+  });
+
+  it('throws ConflictError for duplicate key violation (23505)', async () => {
+    const ctx = createMockContext({
+      responses: {
+        stock_items: { data: null, error: { code: '23505', message: 'duplicate key' } },
+      },
+    });
+    const stock = createStockItemsWrapper(ctx);
+    await expect(
+      stock.create({
+        name: 'Duplicate',
+        category: 'Test',
+        quantity: 1,
+        unit: 'kg',
+        cost_price: 1,
+        minimum_stock_level: 1,
+      } as any),
+    ).rejects.toThrow(ConflictError);
   });
 });

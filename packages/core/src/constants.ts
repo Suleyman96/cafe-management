@@ -92,6 +92,7 @@ export const API_ENDPOINTS = {
 export const QUERY_KEYS = {
   TABLES: 'tables',
   TABLE: 'table',
+  TABLE_QR: 'table_qr',
   ORDERS: 'orders',
   ORDER: 'order',
   MENU_ITEMS: 'menu_items',

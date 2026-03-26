@@ -1,3 +1,4 @@
+import { ConflictError, NotFoundError, ValidationError } from '@cafe-idare/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createCategoriesWrapper, createMenuItemsWrapper } from '../wrapper/menu';
 import { createMockContext } from './helpers/mock-supabase';
@@ -123,6 +124,69 @@ describe('MenuItemsWrapper', () => {
     const items = createMenuItemsWrapper(errorCtx);
     await expect(items.findAll()).rejects.toThrow();
   });
+
+  it('findById throws when data fails isMenuItem guard', async () => {
+    const ctx = createMockContext({
+      responses: { menu_items: { data: { id: '1' }, error: null } },
+    });
+    const wrapper = createMenuItemsWrapper(ctx);
+    await expect(wrapper.findById('1')).rejects.toThrow('Invalid menu item data');
+  });
+
+  it('findAll returns empty array when data is null', async () => {
+    const ctx = createMockContext({
+      responses: { menu_items: { data: null, error: null } },
+    });
+    const wrapper = createMenuItemsWrapper(ctx);
+    const result = await wrapper.findAll();
+    expect(result).toEqual([]);
+  });
+
+  it('throws ConflictError for duplicate key on findAll', async () => {
+    const ctx = createMockContext({
+      responses: { menu_items: { data: null, error: { code: '23505', message: 'duplicate' } } },
+    });
+    const wrapper = createMenuItemsWrapper(ctx);
+    await expect(wrapper.findAll()).rejects.toThrow(ConflictError);
+  });
+
+  it('throws ValidationError for foreign key violation', async () => {
+    const ctx = createMockContext({
+      responses: {
+        menu_items: { data: null, error: { code: '23503', message: 'fk violation' } },
+      },
+    });
+    const wrapper = createMenuItemsWrapper(ctx);
+    await expect(wrapper.findAll()).rejects.toThrow(ValidationError);
+  });
+
+  it('throws ConflictError for duplicate key on create', async () => {
+    const ctx = createMockContext({
+      responses: { menu_items: { data: null, error: { code: '23505', message: 'duplicate' } } },
+    });
+    const wrapper = createMenuItemsWrapper(ctx);
+    await expect(
+      wrapper.create({ name: 'Pizza', price: 10, category_id: 'cat-1' } as any),
+    ).rejects.toThrow(ConflictError);
+  });
+
+  it('create throws when data fails isMenuItem guard', async () => {
+    const ctx = createMockContext({
+      responses: { menu_items: { data: { id: '1' }, error: null } },
+    });
+    const wrapper = createMenuItemsWrapper(ctx);
+    await expect(
+      wrapper.create({ name: 'Pizza', price: 10, category_id: 'cat-1' } as any),
+    ).rejects.toThrow('Invalid menu item data');
+  });
+
+  it('update throws when data fails isMenuItem guard', async () => {
+    const ctx = createMockContext({
+      responses: { menu_items: { data: { id: '1' }, error: null } },
+    });
+    const wrapper = createMenuItemsWrapper(ctx);
+    await expect(wrapper.update('1', { price: 20 })).rejects.toThrow('Invalid menu item data');
+  });
 });
 
 describe('CategoriesWrapper', () => {
@@ -191,5 +255,54 @@ describe('CategoriesWrapper', () => {
     });
     const cats = createCategoriesWrapper(errorCtx);
     await expect(cats.findAll()).rejects.toThrow();
+  });
+
+  it('findAll returns empty array when data is null', async () => {
+    const ctx = createMockContext({
+      responses: { categories: { data: null, error: null } },
+    });
+    const cats = createCategoriesWrapper(ctx);
+    const result = await cats.findAll();
+    expect(result).toEqual([]);
+  });
+
+  it('throws ConflictError for duplicate key on create', async () => {
+    const ctx = createMockContext({
+      responses: { categories: { data: null, error: { code: '23505', message: 'duplicate' } } },
+    });
+    const cats = createCategoriesWrapper(ctx);
+    await expect(cats.create({ name: 'Drinks' } as any)).rejects.toThrow(ConflictError);
+  });
+
+  it('throws NotFoundError for 404 status on findAll', async () => {
+    const ctx = createMockContext({
+      responses: { categories: { data: null, error: { status: 404, message: 'not found' } } },
+    });
+    const cats = createCategoriesWrapper(ctx);
+    await expect(cats.findAll()).rejects.toThrow(NotFoundError);
+  });
+
+  it('create throws when data fails isCategory guard', async () => {
+    const ctx = createMockContext({
+      responses: { categories: { data: { id: '1', no_name: true }, error: null } },
+    });
+    const cats = createCategoriesWrapper(ctx);
+    await expect(cats.create({ name: 'Drinks' } as any)).rejects.toThrow('Invalid category data');
+  });
+
+  it('update throws when data fails isCategory guard', async () => {
+    const ctx = createMockContext({
+      responses: { categories: { data: { no_id: true }, error: null } },
+    });
+    const cats = createCategoriesWrapper(ctx);
+    await expect(cats.update('1', { name: 'Appetizers' })).rejects.toThrow('Invalid category data');
+  });
+
+  it('findAll throws when data fails isCategoryArray guard', async () => {
+    const ctx = createMockContext({
+      responses: { categories: { data: [{ id: '1' }], error: null } },
+    });
+    const cats = createCategoriesWrapper(ctx);
+    await expect(cats.findAll()).rejects.toThrow('Invalid categories data');
   });
 });

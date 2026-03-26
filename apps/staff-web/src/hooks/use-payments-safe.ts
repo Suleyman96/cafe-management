@@ -13,7 +13,7 @@ type Payment = Database['public']['Tables']['order_payments']['Row'];
 
 export function usePaymentsByStaff(staffId: string, limit = 5) {
   return useQuery({
-    queryKey: ['staff_payments', staffId, limit],
+    queryKey: [QUERY_KEYS.PAYMENTS_BY_STAFF, staffId, limit],
     queryFn: async (): Promise<Payment[]> => db.payments.findByReceivedBy(staffId, limit),
     enabled: !!staffId,
   });
@@ -21,7 +21,7 @@ export function usePaymentsByStaff(staffId: string, limit = 5) {
 
 export function useOrderPayments(orderId: string) {
   return useQuery({
-    queryKey: ['order_payments', orderId],
+    queryKey: [QUERY_KEYS.PAYMENTS, orderId],
     queryFn: async (): Promise<Payment[]> => db.payments.findByOrderId(orderId),
     enabled: !!orderId,
   });
@@ -29,7 +29,7 @@ export function useOrderPayments(orderId: string) {
 
 export function useOrderRemainingBalance(orderId: string) {
   return useQuery({
-    queryKey: ['order_remaining_balance', orderId],
+    queryKey: [QUERY_KEYS.PAYMENTS, 'remaining_balance', orderId],
     queryFn: async (): Promise<number> => db.rpc.getRemainingBalance(orderId),
     enabled: !!orderId,
   });
@@ -43,9 +43,8 @@ export function useCreatePayment() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS, variables.order_id] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.order_id] });
-      queryClient.invalidateQueries({ queryKey: ['order_payments', variables.order_id] });
-      queryClient.invalidateQueries({ queryKey: ['order_payment_summary', variables.order_id] });
-      queryClient.invalidateQueries({ queryKey: ['order_remaining_balance', variables.order_id] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PAYMENTS, variables.order_id] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PAYMENTS_BY_STAFF] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
     },
   });
@@ -53,8 +52,11 @@ export function useCreatePayment() {
 
 // Payment summary helper
 export function usePaymentSummary(orderId: string) {
-  const { data: payments, ...rest } = useOrderPayments(orderId);
-  const { data: remainingBalance } = useOrderRemainingBalance(orderId);
+  const paymentsQuery = useOrderPayments(orderId);
+  const balanceQuery = useOrderRemainingBalance(orderId);
+
+  const payments = paymentsQuery.data;
+  const remainingBalance = balanceQuery.data;
 
   const summary = payments?.reduce(
     (acc: { total: number; count: number; byMethod: Record<string, number> }, payment: Payment) => {
@@ -74,11 +76,13 @@ export function usePaymentSummary(orderId: string) {
   );
 
   return {
-    ...rest,
+    isLoading: paymentsQuery.isLoading || balanceQuery.isLoading,
+    isError: paymentsQuery.isError || balanceQuery.isError,
+    error: paymentsQuery.error || balanceQuery.error,
     data: {
       payments: payments || [],
       summary: summary || { total: 0, count: 0, byMethod: {} },
-      remainingBalance: remainingBalance || 0,
+      remainingBalance: remainingBalance ?? 0,
     },
   };
 }

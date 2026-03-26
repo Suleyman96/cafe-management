@@ -11,7 +11,7 @@ import {
   useWasteMonthlySummary,
 } from '@/hooks/use-waste-safe';
 import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useWasteLogs', () => {
   it('calls db.waste.findAll', () => {
@@ -23,6 +23,13 @@ describe('useWasteLogs', () => {
     const opts = { startDate: '2026-01-01', reason: 'expired' };
     renderHookWithProviders(() => useWasteLogs(opts));
     expect(db.waste.findAll).toHaveBeenCalledWith(opts);
+  });
+
+  it('returns fetched waste logs', async () => {
+    const mockLogs = [{ id: 'w1', stock_item_id: 's1', quantity: 5 }];
+    (db.waste.findAll as any).mockResolvedValueOnce(mockLogs);
+    const { result } = renderHookWithProviders(() => useWasteLogs());
+    await waitFor(() => expect(result.current.data).toEqual(mockLogs));
   });
 });
 
@@ -81,6 +88,13 @@ describe('useCreateWasteLog', () => {
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WASTE_SUMMARY]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
   });
+
+  it('calls db.waste.create with data', async () => {
+    const wasteData = { stock_item_id: 's1', quantity: 5, reason: 'spoiled' } as any;
+    const { result } = renderHookWithProviders(() => useCreateWasteLog());
+    await result.current.mutateAsync(wasteData);
+    expect(db.waste.create).toHaveBeenCalledWith(wasteData);
+  });
 });
 
 describe('useUpdateWasteLog', () => {
@@ -94,6 +108,20 @@ describe('useUpdateWasteLog', () => {
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WASTE_LOGS]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WASTE_SUMMARY]);
   });
+
+  it('invalidates STOCK_ITEMS on success', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useUpdateWasteLog());
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    await result.current.mutateAsync({ id: 'w1', updates: { quantity: 10 } as any });
+    const keys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(keys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
+  });
+
+  it('calls db.waste.update with id and updates', async () => {
+    const { result } = renderHookWithProviders(() => useUpdateWasteLog());
+    await result.current.mutateAsync({ id: 'w1', updates: { quantity: 10 } as any });
+    expect(db.waste.update).toHaveBeenCalledWith('w1', { quantity: 10 });
+  });
 });
 
 describe('useDeleteWasteLog', () => {
@@ -106,5 +134,19 @@ describe('useDeleteWasteLog', () => {
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WASTE_LOGS]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WASTE_SUMMARY]);
+  });
+
+  it('invalidates STOCK_ITEMS on success', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useDeleteWasteLog());
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    await result.current.mutateAsync('w1');
+    const keys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(keys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
+  });
+
+  it('calls db.waste.delete with id', async () => {
+    const { result } = renderHookWithProviders(() => useDeleteWasteLog());
+    await result.current.mutateAsync('w1');
+    expect(db.waste.delete).toHaveBeenCalledWith('w1');
   });
 });

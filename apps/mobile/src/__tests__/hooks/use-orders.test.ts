@@ -1,3 +1,4 @@
+import { waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/notifications', () => ({
@@ -11,6 +12,7 @@ vi.mock('@/lib/sound', () => ({
   playWaiterCallSound: vi.fn(),
 }));
 
+import { QUERY_KEYS } from '@cafe-idare/core';
 import {
   useOrder,
   useOrders,
@@ -55,5 +57,54 @@ describe('useUpdateOrderItemStatus', () => {
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual(['orders']);
+  });
+});
+
+// --- New tests using QUERY_KEYS constants, data flow, argument verification, and error handling ---
+
+describe('useOrders - data flow', () => {
+  it('returns fetched orders data', async () => {
+    const mockOrders = [{ id: 'o1', status: 'new' }];
+    (db.orders.findAll as any).mockResolvedValueOnce(mockOrders);
+    const { result } = renderHookWithProviders(() => useOrders());
+    await waitFor(() => expect(result.current.data).toEqual(mockOrders));
+  });
+
+  it('reports error when findAll rejects', async () => {
+    (db.orders.findAll as any).mockRejectedValueOnce(new Error('DB error'));
+    const { result } = renderHookWithProviders(() => useOrders());
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe('useUpdateOrderStatus - argument verification', () => {
+  it('calls updateStatus with correct args', async () => {
+    const { result } = renderHookWithProviders(() => useUpdateOrderStatus());
+    await result.current.mutateAsync({ orderId: 'o1', status: 'preparing' });
+    expect(db.orders.updateStatus).toHaveBeenCalledWith('o1', 'preparing');
+  });
+});
+
+describe('useUpdateOrderStatus - QUERY_KEYS', () => {
+  it('invalidates using QUERY_KEYS.ORDERS constant', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useUpdateOrderStatus());
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await result.current.mutateAsync({ orderId: 'o1', status: 'preparing' });
+
+    const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
+  });
+});
+
+describe('useUpdateOrderItemStatus - QUERY_KEYS', () => {
+  it('invalidates using QUERY_KEYS.ORDERS constant', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useUpdateOrderItemStatus());
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await result.current.mutateAsync({ itemId: 'i1', status: 'preparing' });
+
+    const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
   });
 });
