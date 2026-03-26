@@ -56,7 +56,7 @@ export default function TablesPage() {
   useEffect(() => {
     if (!didCleanup.current) {
       didCleanup.current = true;
-      cleanupEmptyOrders.mutate();
+      cleanupEmptyOrders.mutate(undefined);
     }
   }, [cleanupEmptyOrders]);
 
