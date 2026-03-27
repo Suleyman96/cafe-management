@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
-import { Card, Chip, Text, TextInput } from 'react-native-paper';
+import { Card, Chip, Text } from 'react-native-paper';
+import { TextInput } from '@/lib/paper-compat';
 import type { SettingsSectionProps } from './ToggleRow';
 
 const POSITION_OPTIONS = [
@@ -22,7 +23,7 @@ export function CurrencySection({ form, updateField }: SettingsSectionProps) {
           <TextInput
             label="Currency Symbol"
             value={form.currency_symbol || ''}
-            onChangeText={(v) => updateField('currency_symbol', v)}
+            onChangeText={(v: string) => updateField('currency_symbol', v)}
             mode="outlined"
             dense
             style={[styles.input, styles.flex1]}
@@ -30,7 +31,7 @@ export function CurrencySection({ form, updateField }: SettingsSectionProps) {
           <TextInput
             label="Currency Code"
             value={form.currency_code || ''}
-            onChangeText={(v) => updateField('currency_code', v.toUpperCase())}
+            onChangeText={(v: string) => updateField('currency_code', v.toUpperCase())}
             mode="outlined"
             dense
             maxLength={3}

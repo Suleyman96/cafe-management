@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, FAB, Modal, Portal, Searchbar, Text } from 'react-native-paper';
+import { Button, Card, Chip, FAB, Modal, Portal, Searchbar } from 'react-native-paper';
 import { StockItemCard } from '@/components/stock/StockItemCard';
 import { StockItemModal } from '@/components/stock/StockItemModal';
 import { StockMovementModal } from '@/components/stock/StockMovementModal';
@@ -17,6 +17,7 @@ import {
   useUpdateStockItem,
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 
 export default function StockListScreen() {

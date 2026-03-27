@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
-import { Card, Text, TextInput } from 'react-native-paper';
+import { Card, Text } from 'react-native-paper';
+import { TextInput } from '@/lib/paper-compat';
 import type { SettingsSectionProps } from './ToggleRow';
 import { ToggleRow } from './ToggleRow';
 
@@ -17,7 +18,9 @@ export function OrderSettingsSection({ form, updateField }: SettingsSectionProps
         <TextInput
           label={`Minimum Order Amount (${form.currency_symbol || '₼'})`}
           value={String(form.minimum_order_amount ?? '')}
-          onChangeText={(v) => updateField('minimum_order_amount', Number.parseFloat(v) || 0)}
+          onChangeText={(v: string) =>
+            updateField('minimum_order_amount', Number.parseFloat(v) || 0)
+          }
           mode="outlined"
           keyboardType="decimal-pad"
           dense

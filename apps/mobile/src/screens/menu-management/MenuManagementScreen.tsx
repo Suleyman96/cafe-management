@@ -62,7 +62,8 @@ export default function MenuManagementScreen() {
 
   // Category item counts (from full list, not filtered)
   const getCategoryItemCount = (categoryId: string) =>
-    (items || []).filter((i: { category_id?: string }) => i.category_id === categoryId).length;
+    (items || []).filter((i: { category_id: string | null }) => i.category_id === categoryId)
+      .length;
 
   const handleToggle = async (id: string) => {
     try {

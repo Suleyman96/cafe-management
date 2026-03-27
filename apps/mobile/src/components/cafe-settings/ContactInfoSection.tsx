@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
-import { Card, Text, TextInput } from 'react-native-paper';
+import { Card, Text } from 'react-native-paper';
+import { TextInput } from '@/lib/paper-compat';
 import type { SettingsSectionProps } from './ToggleRow';
 
 export function ContactInfoSection({ form, updateField }: SettingsSectionProps) {
@@ -19,7 +20,7 @@ export function ContactInfoSection({ form, updateField }: SettingsSectionProps) 
         <TextInput
           label="Phone Number"
           value={form.contact_phone || ''}
-          onChangeText={(v) => updateField('contact_phone', v || null)}
+          onChangeText={(v: string) => updateField('contact_phone', v || null)}
           mode="outlined"
           keyboardType="phone-pad"
           dense
@@ -29,7 +30,7 @@ export function ContactInfoSection({ form, updateField }: SettingsSectionProps) 
         <TextInput
           label="Website"
           value={form.contact_website || ''}
-          onChangeText={(v) => updateField('contact_website', v || null)}
+          onChangeText={(v: string) => updateField('contact_website', v || null)}
           mode="outlined"
           keyboardType="url"
           dense

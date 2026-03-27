@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, FAB, Text } from 'react-native-paper';
+import { Button, Card, Chip, FAB } from 'react-native-paper';
 import { ExpenseCard } from '@/components/expenses/ExpenseCard';
 import { ExpenseCategoryModal } from '@/components/expenses/ExpenseCategoryModal';
 import { ExpenseModal } from '@/components/expenses/ExpenseModal';
@@ -18,6 +18,7 @@ import {
   useUpdateExpenseCategory,
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 import type { Expense } from '@/types';
 
@@ -133,7 +134,12 @@ export default function ExpensesListScreen() {
 
   const handleCategoryCreate = async (data: { name: string; description?: string }) => {
     try {
-      await createCategory.mutateAsync({ name: data.name, description: data.description });
+      await createCategory.mutateAsync({
+        name: data.name,
+        description: data.description ?? null,
+        icon: null,
+        is_active: true,
+      });
       showSuccess('Category created');
     } catch (err: unknown) {
       showError(err instanceof Error ? err.message : 'Failed to create category');

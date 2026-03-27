@@ -1,21 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm check:fix:*)",
-      "Bash(git stash:*)",
-      "Bash(git stash pop:*)",
+      "Bash(pnpm:*)",
+      "Bash(git:*)",
       "Bash(node:*)",
-      "Bash(for f in apps/mobile/src/hooks/use-create-order.ts apps/mobile/src/hooks/use-expenses.ts apps/mobile/src/hooks/use-menu-management.ts apps/mobile/src/hooks/use-payments.ts apps/mobile/src/hooks/use-schedules.ts apps/mobile/src/hooks/use-staff-management.ts apps/mobile/src/hooks/use-stock.ts apps/mobile/src/hooks/use-tasks.ts apps/mobile/src/hooks/use-waste.ts)",
-      "Bash(do sed -i '' \"s|from ''@cafe-idare/api-client'';|from ''@cafe-idare/database'';|\" \"$f\")",
-      "Bash(echo:*)",
-      "Bash(done)",
-      "Bash(pnpm vitest run:*)",
-      "Bash(biome check:*)",
-      "Bash(npx biome:*)",
-      "Bash(pnpm --filter @cafe-idare/api-client test:*)",
-      "Bash(npx vitest:*)",
-      "Bash(pnpm test:*)"
-    ],
-    "additionalDirectories": ["/Users/kamilhajilov/Documents/github/cafe-idare"]
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)"
+    ]
   }
 }

@@ -20,6 +20,7 @@ type NativeTextInputCompat = Pick<
   | 'secureTextEntry'
   | 'onSubmitEditing'
   | 'returnKeyType'
+  | 'maxLength'
 >;
 
 type NativeTextCompat = Pick<RNTextProps, 'numberOfLines' | 'ellipsizeMode'>;

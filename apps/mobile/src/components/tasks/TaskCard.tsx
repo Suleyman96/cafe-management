@@ -1,8 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Card, Chip, IconButton, Text } from 'react-native-paper';
+import { Card, Chip, IconButton } from 'react-native-paper';
 import { getLocalDateString } from '@/lib/date-utils';
+import { Text } from '@/lib/paper-compat';
 import type { Task } from '@/types';
 
 const PRIORITY_COLORS: Record<string, { bg: string; text: string }> = {

@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
-import { Card, Text, TextInput } from 'react-native-paper';
+import { Card, Text } from 'react-native-paper';
+import { TextInput } from '@/lib/paper-compat';
 import type { SettingsSectionProps } from './ToggleRow';
 
 const SOCIAL_FIELDS = [
@@ -35,7 +36,7 @@ export function SocialMediaSection({ form, updateField }: SettingsSectionProps) 
             key={field.key}
             label={field.label}
             value={form[field.key] || ''}
-            onChangeText={(v) => updateField(field.key, v || null)}
+            onChangeText={(v: string) => updateField(field.key, v || null)}
             mode="outlined"
             dense
             placeholder={field.placeholder}
