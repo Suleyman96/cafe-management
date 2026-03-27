@@ -1,3 +1,5 @@
+import { QUERY_KEYS } from '@cafe-idare/core';
+import { waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useAdjustStock,
@@ -100,5 +102,74 @@ describe('useDeleteStockItem', () => {
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual(['stock_items']);
+  });
+});
+
+// --- New tests using QUERY_KEYS constants, data flow, and error handling ---
+
+describe('useStockItems - data flow', () => {
+  it('returns fetched stock items', async () => {
+    const mockItems = [{ id: 'si1', name: 'Coffee', quantity: 50 }];
+    (db.stockItems.findAll as any).mockResolvedValueOnce(mockItems);
+    const { result } = renderHookWithProviders(() => useStockItems());
+    await waitFor(() => expect(result.current.data).toEqual(mockItems));
+  });
+
+  it('reports error when findAll rejects', async () => {
+    (db.stockItems.findAll as any).mockRejectedValueOnce(new Error('DB error'));
+    const { result } = renderHookWithProviders(() => useStockItems());
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe('useAdjustStock - QUERY_KEYS', () => {
+  it('invalidates using QUERY_KEYS.STOCK_ITEMS and QUERY_KEYS.STOCK_MOVEMENTS constants', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useAdjustStock());
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await result.current.mutateAsync({
+      id: 'item-1',
+      data: { type: 'in' as const, quantity: 10, reason: 'restock' },
+    });
+
+    const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(keys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
+    expect(keys).toContainEqual([QUERY_KEYS.STOCK_MOVEMENTS]);
+  });
+});
+
+describe('useCreateStockItem - QUERY_KEYS', () => {
+  it('invalidates using QUERY_KEYS.STOCK_ITEMS constant', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useCreateStockItem());
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await result.current.mutateAsync({ name: 'Coffee beans' });
+
+    const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(keys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
+  });
+});
+
+describe('useUpdateStockItem - QUERY_KEYS', () => {
+  it('invalidates using QUERY_KEYS.STOCK_ITEMS constant', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useUpdateStockItem());
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await result.current.mutateAsync({ id: 'item-1', data: { name: 'Updated' } });
+
+    const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(keys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
+  });
+});
+
+describe('useDeleteStockItem - QUERY_KEYS', () => {
+  it('invalidates using QUERY_KEYS.STOCK_ITEMS constant', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useDeleteStockItem());
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await result.current.mutateAsync('item-1');
+
+    const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(keys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
   });
 });

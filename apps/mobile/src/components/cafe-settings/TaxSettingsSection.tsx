@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
-import { Card, Text, TextInput } from 'react-native-paper';
+import { Card, Text } from 'react-native-paper';
+import { TextInput } from '@/lib/paper-compat';
 import type { SettingsSectionProps } from './ToggleRow';
 import { ToggleRow } from './ToggleRow';
 
@@ -25,7 +26,7 @@ export function TaxSettingsSection({ form, updateField }: SettingsSectionProps) 
             <TextInput
               label="Tax Percentage (%)"
               value={String(form.tax_percentage ?? '')}
-              onChangeText={(v) => updateField('tax_percentage', Number.parseFloat(v) || 0)}
+              onChangeText={(v: string) => updateField('tax_percentage', Number.parseFloat(v) || 0)}
               mode="outlined"
               keyboardType="decimal-pad"
               dense
@@ -34,7 +35,7 @@ export function TaxSettingsSection({ form, updateField }: SettingsSectionProps) 
             <TextInput
               label="Tax Label"
               value={form.tax_label || ''}
-              onChangeText={(v) => updateField('tax_label', v)}
+              onChangeText={(v: string) => updateField('tax_label', v)}
               mode="outlined"
               dense
               style={styles.input}

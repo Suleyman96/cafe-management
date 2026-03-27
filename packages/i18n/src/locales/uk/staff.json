@@ -23,7 +23,6 @@
   "tables.tableDeleted": "видалено",
   "tables.failedDeleteTable": "Не вдалося видалити стіл",
   "tables.tableNotFound": "Стіл не знайдено",
-
   "orders.title": "Управління замовленнями",
   "orders.orderCreated": "Замовлення на винос створено",
   "orders.searchOrders": "Пошук замовлень...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "Не призначено",
   "orders.itemStatusUpdated": "Статус позиції оновлено на {{status}}",
   "orders.tax": "Податок",
-
   "kitchen.title": "Кухня",
   "kitchen.noActiveOrders": "Немає активних замовлень",
   "kitchen.waitingForOrders": "Очікування нових замовлень...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "Час приготування",
   "kitchen.min": "хв",
   "kitchen.elapsedTime": "Минуло часу",
-
   "delivery.title": "Замовлення на доставку",
   "delivery.newDeliveryOrder": "Нове замовлення на доставку",
   "delivery.searchDelivery": "Пошук за ім'ям, телефоном, адресою...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "Скасувати замовлення на доставку",
   "delivery.failedUpdate": "Не вдалося оновити замовлення",
   "delivery.activeCount": "активних",
-
   "menu.title": "Управління меню",
   "menu.subtitle": "Керуйте позиціями меню та категоріями",
   "menu.addCategory": "Додати категорію",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "Не вдалося зберегти позицію меню",
   "menu.failedSaveCategory": "Не вдалося зберегти категорію",
   "menu.image": "Зображення",
-
   "reports.title": "Звіти та аналітика",
   "reports.ownerAccessRequired": "Потрібен доступ власника",
   "reports.salesReport": "Звіт про продажі",
@@ -260,7 +255,6 @@
   "reports.today": "Сьогодні",
   "reports.from": "від",
   "reports.orders": "замовлень",
-
   "expenses.title": "Витрати",
   "expenses.subtitle": "Відстежуйте та керуйте операційними витратами",
   "expenses.categories": "Категорії",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "Витрату створено",
   "expenses.expenseUpdated": "Витрату оновлено",
   "expenses.failedSave": "Не вдалося зберегти витрату",
-
   "stock.title": "Управління складом",
   "stock.subtitle": "Відстежуйте складські запаси та залишки",
   "stock.addItem": "Додати позицію",
@@ -320,7 +313,6 @@
   "stock.movementType": "Тип руху",
   "stock.movementNotes": "Нотатки",
   "stock.movementRecorded": "Рух по складу зафіксовано",
-
   "waste.title": "Управління списаннями",
   "waste.subtitle": "Відстежуйте та скорочуйте харчові відходи",
   "waste.logWaste": "Записати списання",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "Вартість за одиницю",
   "waste.wasteLogged": "Списання зафіксовано",
   "waste.failedLog": "Не вдалося зафіксувати списання",
-
   "tasks.title": "Завдання",
   "tasks.subtitle": "Керуйте щоденними операціями та завданнями персоналу",
   "tasks.newTask": "Нове завдання",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "Завдання створено",
   "tasks.taskUpdated": "Завдання оновлено",
   "tasks.failedSave": "Не вдалося зберегти завдання",
-
   "schedules.title": "Розклад персоналу",
   "schedules.monthly": "По місяцях",
   "schedules.weekly": "По тижнях",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "В роботі",
   "schedules.completed": "Завершено",
   "schedules.missed": "Пропущено",
-
   "feedback.title": "Відгуки клієнтів",
   "feedback.subtitle": "Керуйте скаргами, питаннями та запитами клієнтів",
   "feedback.allTab": "Усі",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "Не вдалося надіслати відповідь",
   "feedback.failedDismiss": "Не вдалося відхилити відгук",
   "feedback.noResponse": "Поки немає відповіді",
-
   "calls.title": "Виклики офіціанта",
   "calls.call": "виклик",
   "calls.callsPlural": "викликів",
@@ -446,7 +434,6 @@
   "calls.respond": "Відповісти",
   "calls.respondedBy": "Відповів {{name}} о",
   "calls.noCalls": "Немає викликів",
-
   "cafeSettings.title": "Налаштування кафе",
   "cafeSettings.restaurantInformation": "Інформація про ресторан",
   "cafeSettings.restaurantName": "Назва ресторану",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "Налаштування успішно збережено",
   "cafeSettings.failedSave": "Не вдалося зберегти налаштування",
   "cafeSettings.noPermission": "У вас немає доступу до цієї сторінки. Тільки адміністратори можуть керувати налаштуваннями кафе.",
-
   "settings.title": "Налаштування акаунту",
   "settings.profileInformation": "Інформація профілю",
   "settings.fullName": "Повне ім'я",
@@ -535,7 +521,6 @@
   "settings.language": "Мова",
   "settings.selectLanguage": "Оберіть бажану мову",
   "settings.languageChanged": "Мову змінено",
-
   "staffMgmt.title": "Управління персоналом",
   "staffMgmt.addStaff": "Додати працівника",
   "staffMgmt.accessDenied": "Доступ заборонено. Тільки адміністратори можуть керувати персоналом.",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "Замовлень не знайдено",
   "staffMgmt.orderNumber": "Замовлення №",
   "staffMgmt.table": "Стіл",
-
   "payment.processPaymentCash": "Провести оплату (Готівка)",
   "payment.orderFullyPaid": "Це замовлення повністю оплачено!",
   "payment.noItemsToPay": "У цьому замовленні немає позицій для оплати.",
@@ -590,7 +574,6 @@
   "payment.completing": "Завершення...",
   "payment.processing": "Обробка...",
   "payment.processPaymentBtn": "Провести оплату",
-
   "tables.editTable": "Редагувати {{table}}",
   "tables.addNewTable": "Додати новий стіл",
   "tables.capacitySeats": "Місткість (місць)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "Стіл успішно створено",
   "tables.failedSaveTable": "Не вдалося зберегти стіл",
   "tables.closed": "Закрито",
-
   "tables.transferTable": "Перенести {{table}}",
   "tables.transferToTable": "Перенести на стіл",
   "tables.selectTable": "Оберіть стіл",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "Перенести стіл",
   "tables.mainArea": "Основний зал",
   "tables.reasonOptional": "Причина (необов'язково)",
-
   "tables.createOrderFor": "Створити замовлення для {{table}}",
   "tables.notesOptional": "Нотатки (необов'язково)",
   "tables.specialRequests": "Особливі побажання, алергії тощо.",
   "tables.createOrderHint": "Буде створено нове замовлення для {{table}}. Ви зможете додати позиції меню на наступному екрані.",
-
   "delivery.createDeliveryOrder": "Створити замовлення на доставку",
   "delivery.customerName": "Ім'я клієнта",
   "delivery.phoneNumber": "Номер телефону",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "Буде створено нове замовлення на доставку. Ви зможете додати позиції на наступному екрані.",
   "delivery.fullDeliveryAddress": "Повна адреса доставки",
   "delivery.ringDoorbell": "Напр., Подзвонити в домофон, залишити біля дверей...",
-
   "expenses.editExpense": "Редагувати витрату",
   "expenses.validAmount": "Введіть коректну суму",
   "expenses.updatingExpense": "Оновлення витрати...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "На що була витрата?",
   "expenses.optionalNotes": "Нотатки (необов'язково)",
   "expenses.updateExpense": "Оновити витрату",
-
   "expenses.expenseCategories": "Категорії витрат",
   "expenses.nameRequired": "Назва обов'язкова",
   "expenses.categoryUpdated": "Категорію оновлено!",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "Не вдалося видалити категорію",
   "expenses.noCategories": "Поки немає категорій",
   "expenses.done": "Готово",
-
   "stock.editStockItem": "Редагувати складську позицію",
   "stock.addStockItem": "Додати складську позицію",
   "stock.updatingItem": "Оновлення позиції...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "Назва постачальника",
   "stock.updateItem": "Оновити позицію",
   "stock.createItem": "Створити позицію",
-
   "stock.adjustStock": "Коригування: {{name}}",
   "stock.currentStock": "Поточний залишок",
   "stock.validQuantity": "Введіть коректну кількість",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "Нова кількість",
   "stock.newStockLevel": "Новий залишок",
   "stock.reasonPlaceholder": "Причина коригування (необов'язково)",
-
   "schedules.editSchedule": "Редагувати зміну",
   "schedules.selectStaff": "Оберіть працівника...",
   "schedules.scheduleUpdated": "Зміну оновлено",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "Запланований початок",
   "schedules.plannedEnd": "Заплановане завершення",
   "schedules.optionalNotes": "Нотатки (необов'язково)...",
-
   "tasks.editTask": "Редагувати завдання",
   "tasks.titleRequired": "Введіть назву завдання",
   "tasks.updatingTask": "Оновлення завдання...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "Час за замовчуванням",
   "tasks.dueTime": "Термін",
   "tasks.update": "Оновити",
-
   "waste.editWasteLog": "Редагувати запис списання",
   "waste.linkToStockItem": "Прив'язати до складської позиції",
   "waste.manualEntry": "Ручне введення (без складської позиції)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "Запис списання оновлено!",
   "waste.wasteButNoStock": "Списання зафіксовано, але не вдалося списати зі складу",
   "waste.validQuantity": "Введіть коректну кількість",
-
   "staffMgmt.addNewStaff": "Додати нового працівника",
   "staffMgmt.unexpectedError": "Сталася неочікувана помилка",
   "staffMgmt.createAccount": "Створити акаунт",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "Скидання...",
   "staffMgmt.setNewPasswordFor": "Встановіть новий пароль для",
   "staffMgmt.saving": "Збереження...",
-
   "menu.editMenuItem": "Редагувати позицію меню",
   "menu.noCategory": "Без категорії",
   "menu.itemNamePlaceholder": "Назва (напр., Капучино, Салат Цезар)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "Категорія з такою назвою вже існує.",
   "menu.available": "Доступно",
   "menu.dailySpecial": "Страва дня",
-
   "orders.createTakeoutOrder": "Створити замовлення на винос",
   "orders.forPhoneOrCounter": "Для телефонних або касових замовлень",
   "orders.customerInformation": "Інформація про клієнта",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "Повне ім'я",
   "orders.enterNameAndPhone": "Введіть ім'я та номер телефону клієнта",
   "orders.failedCreateTakeout": "Не вдалося створити замовлення на винос. Спробуйте ще раз.",
-
   "stock.optionalDescription": "Опис (необов'язково)",
   "stock.optionalNotes": "Нотатки (необов'язково)",
   "stock.optionalSupplier": "Постачальник (необов'язково)",
   "stock.coffeeBeans": "Напр., Кавові зерна",
   "stock.costPricePerUnit": "Собівартість за одиницю",
-
   "notifications.soundOn": "Звук УВІМК",
   "notifications.soundOff": "Звук ВИМК",
   "notifications.notificationsOnTitle": "Сповіщення УВІМК (натисніть, щоб вимкнути звук)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "Замовлення готове!",
   "notifications.orderReadyDescription": "Замовлення готове до подачі",
   "notifications.newItemsAdded": "Додано нові позиції!",
-  "notifications.itemsAddedDescription": "До замовлення додано позиції"
+  "notifications.itemsAddedDescription": "До замовлення додано позиції",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

@@ -23,7 +23,6 @@
   "tables.tableDeleted": "წაშლილია",
   "tables.failedDeleteTable": "მაგიდის წაშლა ვერ მოხერხდა",
   "tables.tableNotFound": "მაგიდა ვერ მოიძებნა",
-
   "orders.title": "შეკვეთების მართვა",
   "orders.orderCreated": "გასატანი შეკვეთა შექმნილია",
   "orders.searchOrders": "შეკვეთების ძიება...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "არ არის დანიშნული",
   "orders.itemStatusUpdated": "ერთეულის სტატუსი განახლდა: {{status}}",
   "orders.tax": "გადასახადი",
-
   "kitchen.title": "სამზარეულო",
   "kitchen.noActiveOrders": "აქტიური შეკვეთა არ არის",
   "kitchen.waitingForOrders": "ახალი შეკვეთების მოლოდინში...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "მომზადების დრო",
   "kitchen.min": "წთ",
   "kitchen.elapsedTime": "გასული დრო",
-
   "delivery.title": "მიტანის შეკვეთები",
   "delivery.newDeliveryOrder": "ახალი მიტანის შეკვეთა",
   "delivery.searchDelivery": "ძიება სახელით, ტელეფონით, მისამართით...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "მიტანის შეკვეთის გაუქმება",
   "delivery.failedUpdate": "შეკვეთის განახლება ვერ მოხერხდა",
   "delivery.activeCount": "აქტიური",
-
   "menu.title": "მენიუს მართვა",
   "menu.subtitle": "მართეთ მენიუს ერთეულები და კატეგორიები",
   "menu.addCategory": "კატეგორიის დამატება",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "მენიუს ერთეულის შენახვა ვერ მოხერხდა",
   "menu.failedSaveCategory": "კატეგორიის შენახვა ვერ მოხერხდა",
   "menu.image": "სურათი",
-
   "reports.title": "ანგარიშები და ანალიტიკა",
   "reports.ownerAccessRequired": "საჭიროა მფლობელის წვდომა",
   "reports.salesReport": "გაყიდვების ანგარიში",
@@ -260,7 +255,6 @@
   "reports.today": "დღეს",
   "reports.from": "-დან",
   "reports.orders": "შეკვეთა",
-
   "expenses.title": "ხარჯები",
   "expenses.subtitle": "თვალყური ადევნეთ და მართეთ საოპერაციო ხარჯები",
   "expenses.categories": "კატეგორიები",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "ხარჯი შექმნილია",
   "expenses.expenseUpdated": "ხარჯი განახლებულია",
   "expenses.failedSave": "ხარჯის შენახვა ვერ მოხერხდა",
-
   "stock.title": "საწყობის მართვა",
   "stock.subtitle": "თვალყური ადევნეთ მარაგს და საწყობის დონეებს",
   "stock.addItem": "ერთეულის დამატება",
@@ -320,7 +313,6 @@
   "stock.movementType": "მოძრაობის ტიპი",
   "stock.movementNotes": "შენიშვნები",
   "stock.movementRecorded": "საწყობის მოძრაობა დაფიქსირებულია",
-
   "waste.title": "ნარჩენების მართვა",
   "waste.subtitle": "თვალყური ადევნეთ და შეამცირეთ საკვების ნარჩენები",
   "waste.logWaste": "ნარჩენის ჩაწერა",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "ღირებულება ერთეულზე",
   "waste.wasteLogged": "ნარჩენი დაფიქსირებულია",
   "waste.failedLog": "ნარჩენის დაფიქსირება ვერ მოხერხდა",
-
   "tasks.title": "დავალებები",
   "tasks.subtitle": "მართეთ ყოველდღიური ოპერაციები და პერსონალის დავალებები",
   "tasks.newTask": "ახალი დავალება",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "დავალება შექმნილია",
   "tasks.taskUpdated": "დავალება განახლებულია",
   "tasks.failedSave": "დავალების შენახვა ვერ მოხერხდა",
-
   "schedules.title": "პერსონალის განრიგი",
   "schedules.monthly": "თვეების მიხედვით",
   "schedules.weekly": "კვირეების მიხედვით",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "მიმდინარე",
   "schedules.completed": "დასრულებული",
   "schedules.missed": "გამოტოვებული",
-
   "feedback.title": "კლიენტის უკუკავშირი",
   "feedback.subtitle": "მართეთ კლიენტების საჩივრები, შეკითხვები და მოთხოვნები",
   "feedback.allTab": "ყველა",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "პასუხის გაგზავნა ვერ მოხერხდა",
   "feedback.failedDismiss": "უკუკავშირის უარყოფა ვერ მოხერხდა",
   "feedback.noResponse": "ჯერ პასუხი არ არის",
-
   "calls.title": "მიმტანის გამოძახება",
   "calls.call": "გამოძახება",
   "calls.callsPlural": "გამოძახება",
@@ -446,7 +434,6 @@
   "calls.respond": "პასუხის გაცემა",
   "calls.respondedBy": "უპასუხა {{name}}-მ:",
   "calls.noCalls": "გამოძახებები არ არის",
-
   "cafeSettings.title": "კაფეს პარამეტრები",
   "cafeSettings.restaurantInformation": "რესტორნის ინფორმაცია",
   "cafeSettings.restaurantName": "რესტორნის სახელი",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "პარამეტრები წარმატებით შენახულია",
   "cafeSettings.failedSave": "პარამეტრების შენახვა ვერ მოხერხდა",
   "cafeSettings.noPermission": "თქვენ არ გაქვთ ამ გვერდზე წვდომის უფლება. მხოლოდ ადმინისტრატორებს შეუძლიათ კაფეს პარამეტრების მართვა.",
-
   "settings.title": "ანგარიშის პარამეტრები",
   "settings.profileInformation": "პროფილის ინფორმაცია",
   "settings.fullName": "სრული სახელი",
@@ -535,7 +521,6 @@
   "settings.language": "ენა",
   "settings.selectLanguage": "აირჩიეთ სასურველი ენა",
   "settings.languageChanged": "ენა შეიცვალა",
-
   "staffMgmt.title": "პერსონალის მართვა",
   "staffMgmt.addStaff": "თანამშრომლის დამატება",
   "staffMgmt.accessDenied": "წვდომა აკრძალულია. მხოლოდ ადმინისტრატორებს შეუძლიათ პერსონალის მართვა.",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "შეკვეთები ვერ მოიძებნა",
   "staffMgmt.orderNumber": "შეკვეთა #",
   "staffMgmt.table": "მაგიდა",
-
   "payment.processPaymentCash": "გადახდის განხორციელება (ნაღდი)",
   "payment.orderFullyPaid": "ეს შეკვეთა სრულად გადახდილია!",
   "payment.noItemsToPay": "ამ შეკვეთაში გადასახდელი ერთეულები არ არის.",
@@ -590,7 +574,6 @@
   "payment.completing": "სრულდება...",
   "payment.processing": "მუშავდება...",
   "payment.processPaymentBtn": "გადახდის განხორციელება",
-
   "tables.editTable": "{{table}}-ის რედაქტირება",
   "tables.addNewTable": "ახალი მაგიდის დამატება",
   "tables.capacitySeats": "ტევადობა (ადგილი)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "მაგიდა წარმატებით შეიქმნა",
   "tables.failedSaveTable": "მაგიდის შენახვა ვერ მოხერხდა",
   "tables.closed": "დახურული",
-
   "tables.transferTable": "{{table}}-ის გადატანა",
   "tables.transferToTable": "მაგიდაზე გადატანა",
   "tables.selectTable": "აირჩიეთ მაგიდა",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "მაგიდის გადატანა",
   "tables.mainArea": "ძირითადი დარბაზი",
   "tables.reasonOptional": "მიზეზი (არასავალდებულო)",
-
   "tables.createOrderFor": "შეკვეთის შექმნა {{table}}-ისთვის",
   "tables.notesOptional": "შენიშვნები (არასავალდებულო)",
   "tables.specialRequests": "სპეციალური მოთხოვნები, ალერგიები და სხვ.",
   "tables.createOrderHint": "{{table}}-ისთვის ახალი ადგილზე შეკვეთა შეიქმნება. შემდეგ ეკრანზე შეძლებთ მენიუს ერთეულების დამატებას.",
-
   "delivery.createDeliveryOrder": "მიტანის შეკვეთის შექმნა",
   "delivery.customerName": "კლიენტის სახელი",
   "delivery.phoneNumber": "ტელეფონის ნომერი",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "ახალი მიტანის შეკვეთა შეიქმნება. შემდეგ ეკრანზე შეძლებთ ერთეულების დამატებას.",
   "delivery.fullDeliveryAddress": "სრული მიტანის მისამართი",
   "delivery.ringDoorbell": "მაგ., დარეკეთ ზარს, კართან დატოვეთ...",
-
   "expenses.editExpense": "ხარჯის რედაქტირება",
   "expenses.validAmount": "შეიყვანეთ კორექტული თანხა",
   "expenses.updatingExpense": "ხარჯი ახლდება...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "რისთვის იყო ეს ხარჯი?",
   "expenses.optionalNotes": "შენიშვნები (არასავალდებულო)",
   "expenses.updateExpense": "ხარჯის განახლება",
-
   "expenses.expenseCategories": "ხარჯების კატეგორიები",
   "expenses.nameRequired": "სახელი სავალდებულოა",
   "expenses.categoryUpdated": "კატეგორია განახლდა!",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "კატეგორიის წაშლა ვერ მოხერხდა",
   "expenses.noCategories": "ჯერ კატეგორიები არ არის",
   "expenses.done": "მზადაა",
-
   "stock.editStockItem": "საწყობის ერთეულის რედაქტირება",
   "stock.addStockItem": "საწყობის ერთეულის დამატება",
   "stock.updatingItem": "ერთეული ახლდება...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "მომწოდებლის სახელი",
   "stock.updateItem": "ერთეულის განახლება",
   "stock.createItem": "ერთეულის შექმნა",
-
   "stock.adjustStock": "მარაგის კორექტირება: {{name}}",
   "stock.currentStock": "მიმდინარე მარაგი",
   "stock.validQuantity": "შეიყვანეთ კორექტული რაოდენობა",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "ახალი რაოდენობა",
   "stock.newStockLevel": "ახალი მარაგის დონე",
   "stock.reasonPlaceholder": "კორექტირების მიზეზი (არასავალდებულო)",
-
   "schedules.editSchedule": "ცვლის რედაქტირება",
   "schedules.selectStaff": "აირჩიეთ თანამშრომელი...",
   "schedules.scheduleUpdated": "ცვლა განახლებულია",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "დაგეგმილი დასაწყისი",
   "schedules.plannedEnd": "დაგეგმილი დასასრული",
   "schedules.optionalNotes": "შენიშვნები (არასავალდებულო)...",
-
   "tasks.editTask": "დავალების რედაქტირება",
   "tasks.titleRequired": "შეიყვანეთ დავალების სათაური",
   "tasks.updatingTask": "დავალება ახლდება...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "ნაგულისხმევი ვადის დრო",
   "tasks.dueTime": "ვადა",
   "tasks.update": "განახლება",
-
   "waste.editWasteLog": "ნარჩენის ჩანაწერის რედაქტირება",
   "waste.linkToStockItem": "საწყობის ერთეულთან მიბმა",
   "waste.manualEntry": "ხელით შეყვანა (საწყობის ერთეულის გარეშე)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "ნარჩენის ჩანაწერი განახლდა!",
   "waste.wasteButNoStock": "ნარჩენი დაფიქსირდა, მაგრამ საწყობიდან ჩამოწერა ვერ მოხერხდა",
   "waste.validQuantity": "შეიყვანეთ კორექტული რაოდენობა",
-
   "staffMgmt.addNewStaff": "ახალი თანამშრომლის დამატება",
   "staffMgmt.unexpectedError": "მოულოდნელი შეცდომა მოხდა",
   "staffMgmt.createAccount": "ანგარიშის შექმნა",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "გადატვირთვა...",
   "staffMgmt.setNewPasswordFor": "დააყენეთ ახალი პაროლი:",
   "staffMgmt.saving": "ინახება...",
-
   "menu.editMenuItem": "მენიუს ერთეულის რედაქტირება",
   "menu.noCategory": "კატეგორია არ არის",
   "menu.itemNamePlaceholder": "სახელი (მაგ., კაპუჩინო, ცეზარის სალათა)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "ამ სახელით კატეგორია უკვე არსებობს.",
   "menu.available": "ხელმისაწვდომი",
   "menu.dailySpecial": "დღის სპეციალური",
-
   "orders.createTakeoutOrder": "გასატანი შეკვეთის შექმნა",
   "orders.forPhoneOrCounter": "სატელეფონო ან სალაროს შეკვეთებისთვის",
   "orders.customerInformation": "კლიენტის ინფორმაცია",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "სრული სახელი",
   "orders.enterNameAndPhone": "შეიყვანეთ კლიენტის სახელი და ტელეფონის ნომერი",
   "orders.failedCreateTakeout": "გასატანი შეკვეთის შექმნა ვერ მოხერხდა. სცადეთ თავიდან.",
-
   "stock.optionalDescription": "აღწერა (არასავალდებულო)",
   "stock.optionalNotes": "შენიშვნები (არასავალდებულო)",
   "stock.optionalSupplier": "მომწოდებელი (არასავალდებულო)",
   "stock.coffeeBeans": "მაგ., ყავის მარცვლები",
   "stock.costPricePerUnit": "თვითღირებულება ერთეულზე",
-
   "notifications.soundOn": "ხმა ჩართული",
   "notifications.soundOff": "ხმა გამორთული",
   "notifications.notificationsOnTitle": "შეტყობინებები ჩართული (გამორთვისთვის დააჭირეთ)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "შეკვეთა მზადაა!",
   "notifications.orderReadyDescription": "შეკვეთა მირთმევისთვის მზადაა",
   "notifications.newItemsAdded": "ახალი ერთეულები დაემატა!",
-  "notifications.itemsAddedDescription": "შეკვეთას ერთეულები დაემატა"
+  "notifications.itemsAddedDescription": "შეკვეთას ერთეულები დაემატა",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

@@ -1,3 +1,4 @@
+import { AuthenticationError, ConflictError } from '@cafe-idare/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createStaffWrapper } from '../wrapper/staff';
 import { createMockContext } from './helpers/mock-supabase';
@@ -122,5 +123,85 @@ describe('StaffWrapper', () => {
     });
     const errorStaff = createStaffWrapper(errorCtx);
     await expect(errorStaff.findAll()).rejects.toThrow();
+  });
+
+  it('findById throws when data fails isStaff guard', async () => {
+    const ctx = createMockContext({
+      responses: { staff: { data: { id: '1' }, error: null } },
+    });
+    const wrapper = createStaffWrapper(ctx);
+    await expect(wrapper.findById('1')).rejects.toThrow('Invalid staff data');
+  });
+
+  it('findAll returns empty array when data is null', async () => {
+    const ctx = createMockContext({
+      responses: { staff: { data: null, error: null } },
+    });
+    const wrapper = createStaffWrapper(ctx);
+    const result = await wrapper.findAll();
+    expect(result).toEqual([]);
+  });
+
+  it('throws ConflictError for duplicate key', async () => {
+    const ctx = createMockContext({
+      responses: { staff: { data: null, error: { code: '23505', message: 'duplicate' } } },
+    });
+    const wrapper = createStaffWrapper(ctx);
+    await expect(wrapper.findAll()).rejects.toThrow(ConflictError);
+  });
+
+  it('throws AuthenticationError for PGRST301 code', async () => {
+    const ctx = createMockContext({
+      responses: { staff: { data: null, error: { code: 'PGRST301', message: 'JWT expired' } } },
+    });
+    const wrapper = createStaffWrapper(ctx);
+    await expect(wrapper.findAll()).rejects.toThrow(AuthenticationError);
+  });
+
+  it('findByAuthId queries with auth_user_id and is_active filter', async () => {
+    const inactiveStaff = { ...validStaff, is_active: false };
+    const ctx = createMockContext({
+      responses: { staff: { data: inactiveStaff, error: null } },
+    });
+    const wrapper = createStaffWrapper(ctx);
+    const result = await wrapper.findByAuthId('auth-123');
+    expect(result).toEqual(inactiveStaff);
+    const calls = ctx.getCalls();
+    expect(calls[0].table).toBe('staff');
+    expect(calls[0].method).toBe('select');
+  });
+
+  it('findByEmail throws when data fails isStaff guard', async () => {
+    const ctx = createMockContext({
+      responses: { staff: { data: { id: '1' }, error: null } },
+    });
+    const wrapper = createStaffWrapper(ctx);
+    await expect(wrapper.findByEmail('test@cafe.com')).rejects.toThrow('Invalid staff data');
+  });
+
+  it('findByAuthId throws when data fails isStaff guard', async () => {
+    const ctx = createMockContext({
+      responses: { staff: { data: { id: '1' }, error: null } },
+    });
+    const wrapper = createStaffWrapper(ctx);
+    await expect(wrapper.findByAuthId('auth-999')).rejects.toThrow('Invalid staff data');
+  });
+
+  it('create throws ConflictError for duplicate key', async () => {
+    const ctx = createMockContext({
+      responses: { staff: { data: null, error: { code: '23505', message: 'duplicate email' } } },
+    });
+    const wrapper = createStaffWrapper(ctx);
+    await expect(
+      wrapper.create({ email: 'john@cafe.com', role: 'waiter', full_name: 'John' } as any),
+    ).rejects.toThrow(ConflictError);
+  });
+
+  it('findAll throws when data fails isStaffArray guard', async () => {
+    const ctx = createMockContext({
+      responses: { staff: { data: [{ id: '1' }], error: null } },
+    });
+    const wrapper = createStaffWrapper(ctx);
+    await expect(wrapper.findAll()).rejects.toThrow('Invalid staff data');
   });
 });

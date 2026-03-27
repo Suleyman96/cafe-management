@@ -1,3 +1,4 @@
+import { QUERY_KEYS } from '@cafe-idare/core';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useAcknowledgeFeedback,
@@ -36,8 +37,8 @@ describe('useAcknowledgeFeedback', () => {
     await result.current.mutateAsync({ feedbackId: 'f1', staffId: 's1' });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual(['feedback']);
-    expect(invalidatedKeys).toContainEqual(['feedback-count']);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.FEEDBACK]);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.FEEDBACK, 'count']);
   });
 });
 
@@ -54,8 +55,8 @@ describe('useRespondToFeedback', () => {
     });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual(['feedback']);
-    expect(invalidatedKeys).toContainEqual(['feedback-count']);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.FEEDBACK]);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.FEEDBACK, 'count']);
   });
 });
 
@@ -67,7 +68,7 @@ describe('useDismissFeedback', () => {
     await result.current.mutateAsync('f1');
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual(['feedback']);
-    expect(invalidatedKeys).toContainEqual(['feedback-count']);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.FEEDBACK]);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.FEEDBACK, 'count']);
   });
 });

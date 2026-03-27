@@ -99,8 +99,9 @@ export function useStaffByRole() {
       all: staff || [],
       byRole: staffByRole || {},
       waiters: staffByRole?.waiter || [],
-      managers: staffByRole?.manager || [],
       admins: staffByRole?.admin || [],
+      kitchen: staffByRole?.kitchen || [],
+      owners: staffByRole?.owner || [],
     },
   };
 }

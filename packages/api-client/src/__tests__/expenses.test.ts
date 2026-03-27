@@ -1,3 +1,4 @@
+import { ConflictError } from '@cafe-idare/core';
 import { describe, expect, it } from 'vitest';
 import { createExpenseCategoriesWrapper, createExpensesWrapper } from '../wrapper/expenses';
 import { createMockContext } from './helpers/mock-supabase';
@@ -85,6 +86,53 @@ describe('ExpenseCategoriesWrapper', () => {
     });
     const categories = createExpenseCategoriesWrapper(ctx);
     await expect(categories.findAll()).rejects.toThrow();
+  });
+
+  it('create throws when type guard rejects data (missing is_active)', async () => {
+    const ctx = createMockContext({
+      responses: {
+        expense_categories: { data: { id: '1' }, error: null },
+      },
+    });
+    const categories = createExpenseCategoriesWrapper(ctx);
+    await expect(
+      categories.create({ name: 'Test', description: 'Test', icon: 'Box', is_active: true }),
+    ).rejects.toThrow('Invalid expense category data');
+  });
+
+  it('update throws when type guard rejects data (missing name, is_active)', async () => {
+    const ctx = createMockContext({
+      responses: {
+        expense_categories: { data: { id: '1' }, error: null },
+      },
+    });
+    const categories = createExpenseCategoriesWrapper(ctx);
+    await expect(categories.update('1', { name: 'Updated' })).rejects.toThrow(
+      'Invalid expense category data',
+    );
+  });
+
+  it('findAll returns empty array when data is null', async () => {
+    const ctx = createMockContext({
+      responses: {
+        expense_categories: { data: null, error: null },
+      },
+    });
+    const categories = createExpenseCategoriesWrapper(ctx);
+    const result = await categories.findAll();
+    expect(result).toEqual([]);
+  });
+
+  it('throws ConflictError for duplicate key violation (23505)', async () => {
+    const ctx = createMockContext({
+      responses: {
+        expense_categories: { data: null, error: { code: '23505', message: 'duplicate key' } },
+      },
+    });
+    const categories = createExpenseCategoriesWrapper(ctx);
+    await expect(
+      categories.create({ name: 'Duplicate', description: 'Test', icon: 'Box', is_active: true }),
+    ).rejects.toThrow(ConflictError);
   });
 });
 
@@ -199,5 +247,91 @@ describe('ExpensesWrapper', () => {
     });
     const expenses = createExpensesWrapper(ctx);
     await expect(expenses.findAll()).rejects.toThrow();
+  });
+
+  it('findById throws when type guard rejects data (missing amount, description, payment_method)', async () => {
+    const ctx = createMockContext({
+      responses: {
+        expenses: { data: { id: '1' }, error: null },
+      },
+    });
+    const expenses = createExpensesWrapper(ctx);
+    await expect(expenses.findById('1')).rejects.toThrow('Invalid expense data');
+  });
+
+  it('create throws when type guard rejects data', async () => {
+    const ctx = createMockContext({
+      responses: {
+        expenses: { data: { id: '1' }, error: null },
+      },
+    });
+    const expenses = createExpensesWrapper(ctx);
+    await expect(
+      expenses.create({
+        amount: 100,
+        description: 'Test',
+        payment_method: 'cash',
+        expense_date: '2025-02-20',
+        category_id: 'cat1',
+        created_by: 'staff1',
+        receipt_url: null,
+        notes: null,
+      }),
+    ).rejects.toThrow('Invalid expense data');
+  });
+
+  it('update throws when type guard rejects data', async () => {
+    const ctx = createMockContext({
+      responses: {
+        expenses: { data: { id: '1' }, error: null },
+      },
+    });
+    const expenses = createExpensesWrapper(ctx);
+    await expect(expenses.update('1', { amount: 200 } as any)).rejects.toThrow(
+      'Invalid expense data',
+    );
+  });
+
+  it('findAll returns empty array when data is null', async () => {
+    const ctx = createMockContext({
+      responses: {
+        expenses: { data: null, error: null },
+      },
+    });
+    const expenses = createExpensesWrapper(ctx);
+    const result = await expenses.findAll();
+    expect(result).toEqual([]);
+  });
+
+  it('throws ConflictError for duplicate key violation (23505)', async () => {
+    const ctx = createMockContext({
+      responses: {
+        expenses: { data: null, error: { code: '23505', message: 'duplicate key' } },
+      },
+    });
+    const expenses = createExpensesWrapper(ctx);
+    await expect(
+      expenses.create({
+        amount: 100,
+        description: 'Test',
+        payment_method: 'cash',
+        expense_date: '2025-02-20',
+        category_id: 'cat1',
+        created_by: 'staff1',
+        receipt_url: null,
+        notes: null,
+      }),
+    ).rejects.toThrow(ConflictError);
+  });
+
+  it('getMonthlySummary with empty data returns zero totals', async () => {
+    const ctx = createMockContext({
+      responses: {
+        expenses: { data: [], error: null },
+      },
+    });
+    const expenses = createExpensesWrapper(ctx);
+    const result = await expenses.getMonthlySummary(2025, 6);
+    expect(result).toEqual({ total: 0, count: 0, byCategory: [] });
   });
 });

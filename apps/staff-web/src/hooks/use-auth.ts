@@ -14,7 +14,7 @@ type StaffSchedule = Database['public']['Tables']['staff_schedules']['Row'];
 export async function postLoginSideEffects(staffId: string) {
   db.staff.updateLastLogin(staffId).catch(console.warn);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('en-CA');
   (db.schedules.findByStaffAndDate(staffId, today) as Promise<StaffSchedule[]>)
     .then((schedules) => {
       for (const schedule of schedules) {

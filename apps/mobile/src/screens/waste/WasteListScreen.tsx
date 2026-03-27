@@ -11,6 +11,7 @@ import {
   useWasteMonthlySummary,
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { getLocalDateString } from '@/lib/date-utils';
 import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 import type { WasteLog } from '@/types';
@@ -81,7 +82,7 @@ export default function WasteListScreen() {
         reason: newItem.reason,
         notes: newItem.notes || null,
         logged_by: staff?.id ?? null,
-        waste_date: new Date().toISOString().split('T')[0],
+        waste_date: getLocalDateString(),
         stock_item_id: null,
       });
       showSuccess('Waste log created');

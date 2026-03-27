@@ -68,7 +68,6 @@ export default function KitchenDisplayPage() {
 
   // Set up real-time subscription
   useEffect(() => {
-    console.log('Setting up kitchen realtime subscription');
     const channel = supabase
       .channel('kitchen-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
@@ -77,9 +76,7 @@ export default function KitchenDisplayPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
         refetch();
       })
-      .subscribe((status) => {
-        console.log('Kitchen subscription status:', status);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);

@@ -28,7 +28,7 @@ export function useTable(id: string) {
 
 export function useTableByQrCode(qrCode: string) {
   return useQuery({
-    queryKey: ['table-qr', qrCode],
+    queryKey: [QUERY_KEYS.TABLE_QR, qrCode],
     queryFn: async (): Promise<TableRow> => db.tables.findByQrCode(qrCode),
     enabled: !!qrCode,
   });
@@ -73,6 +73,7 @@ export function useUpdateTable() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLE, data.id] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLE_QR] });
     },
   });
 }
@@ -84,6 +85,7 @@ export function useDeleteTable() {
     mutationFn: (id: string) => db.tables.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLE_QR] });
     },
   });
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@cafe-idare/i18n';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { db } from '@/lib/supabase';
@@ -29,6 +29,15 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
   const [showSuccess, setShowSuccess] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const FEEDBACK_TYPES: Array<{ value: FeedbackType; label: string; icon: string }> = [
     { value: 'complaint_food', label: t('feedback.type.foodQuality'), icon: '🍽️' },
@@ -60,7 +69,7 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
       });
 
       setShowSuccess(true);
-      setTimeout(() => {
+      successTimeoutRef.current = setTimeout(() => {
         onSuccess?.();
       }, 2000);
     } catch (error) {

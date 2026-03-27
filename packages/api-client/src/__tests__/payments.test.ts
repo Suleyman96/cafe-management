@@ -1,3 +1,4 @@
+import { AuthenticationError, ConflictError, ValidationError } from '@cafe-idare/core';
 import { describe, expect, it } from 'vitest';
 import { createPaymentsWrapper } from '../wrapper/payments';
 import { createMockContext } from './helpers/mock-supabase';
@@ -92,5 +93,70 @@ describe('PaymentsWrapper', () => {
     });
     const payments = createPaymentsWrapper(ctx);
     await expect(payments.findByOrderId('any')).rejects.toThrow();
+  });
+
+  it('create throws when type guard rejects data (missing order_id, amount, payment_method)', async () => {
+    const ctx = createMockContext({
+      responses: {
+        order_payments: { data: { id: '1' }, error: null },
+      },
+    });
+    const payments = createPaymentsWrapper(ctx);
+    await expect(
+      payments.create({ order_id: 'ord-1', amount: 50, payment_method: 'cash' } as any),
+    ).rejects.toThrow('Invalid payment data');
+  });
+
+  it('throws ConflictError for duplicate key violation (23505)', async () => {
+    const ctx = createMockContext({
+      responses: {
+        order_payments: { data: null, error: { code: '23505', message: 'duplicate key' } },
+      },
+    });
+    const payments = createPaymentsWrapper(ctx);
+    await expect(
+      payments.create({ order_id: 'ord-1', amount: 50, payment_method: 'cash' } as any),
+    ).rejects.toThrow(ConflictError);
+  });
+
+  it('throws ValidationError for foreign key violation (23503)', async () => {
+    const ctx = createMockContext({
+      responses: {
+        order_payments: { data: null, error: { code: '23503', message: 'fk violation' } },
+      },
+    });
+    const payments = createPaymentsWrapper(ctx);
+    await expect(
+      payments.create({ order_id: 'bad-id', amount: 50, payment_method: 'cash' } as any),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it('throws AuthenticationError for 401 status', async () => {
+    const ctx = createMockContext({
+      responses: {
+        order_payments: { data: null, error: { status: 401 } },
+      },
+    });
+    const payments = createPaymentsWrapper(ctx);
+    await expect(
+      payments.create({ order_id: 'ord-1', amount: 50, payment_method: 'cash' } as any),
+    ).rejects.toThrow(AuthenticationError);
+  });
+
+  it('create calls insert method (not select)', async () => {
+    const ctx = createMockContext({
+      responses: {
+        order_payments: { data: validPayment, error: null },
+      },
+    });
+    const payments = createPaymentsWrapper(ctx);
+    await payments.create({
+      order_id: validPayment.order_id,
+      amount: 50.0,
+      payment_method: 'cash',
+    } as any);
+    const calls = ctx.getCalls();
+    expect(calls[0].method).toBe('insert');
+    expect(calls[0].table).toBe('order_payments');
   });
 });

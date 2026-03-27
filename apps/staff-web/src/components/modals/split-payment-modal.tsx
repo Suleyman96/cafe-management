@@ -54,6 +54,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
     new Map(),
   );
   const [tipAmount, setTipAmount] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'digital'>('cash');
   const [loading, setLoading] = useState(false);
 
   // Reset selection state when modal opens to clear stale data from previous sessions
@@ -63,6 +64,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
       setPartialAmount('');
       setSelectedItemQuantities(new Map());
       setTipAmount('');
+      setPaymentMethod('cash');
     }
   }, [isOpen]);
 
@@ -200,7 +202,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
         payment_type: paymentType,
         amount,
         tip_amount: parseFloat(tipAmount) || 0,
-        payment_method: 'cash',
+        payment_method: paymentMethod,
         order_item_ids: orderItemIds,
         notes: null,
       });
@@ -348,6 +350,31 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
               formatPrice={formatPrice}
               t={t}
             />
+          )}
+
+          {/* Payment Method */}
+          {!isFullyPaid && !isZeroTotal && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('payment.paymentMethod')}
+              </label>
+              <div className="flex gap-2">
+                {(['cash', 'card', 'digital'] as const).map((method) => (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => setPaymentMethod(method)}
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                      paymentMethod === method
+                        ? 'bg-blue-100 border-blue-500 text-blue-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {t(method, { ns: 'common' })}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* Tip Input - only shown when tips are enabled */}

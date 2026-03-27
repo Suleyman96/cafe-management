@@ -32,15 +32,12 @@ export default function WaiterCallsPage() {
 
   // Set up real-time subscription
   useEffect(() => {
-    console.log('Setting up waiter-calls realtime subscription');
     const channel = supabase
       .channel('waiter-calls-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'waiter_calls' }, () => {
         refetch();
       })
-      .subscribe((status) => {
-        console.log('Waiter calls subscription status:', status);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, Modal, Portal, Text } from 'react-native-paper';
+import { getLocalDateString } from '@/lib/date-utils';
 import { TextInput } from '@/lib/paper-compat';
 import type { Expense } from '@/types';
 
@@ -37,7 +38,7 @@ export function ExpenseModal({
     amount: '',
     payment_method: 'cash' as string,
     category_id: '',
-    expense_date: new Date().toISOString().split('T')[0],
+    expense_date: getLocalDateString(),
     notes: '',
   });
 
@@ -48,7 +49,7 @@ export function ExpenseModal({
         amount: String(initialData.amount || ''),
         payment_method: initialData.payment_method || 'cash',
         category_id: initialData.category_id || '',
-        expense_date: initialData.expense_date || new Date().toISOString().split('T')[0],
+        expense_date: initialData.expense_date || getLocalDateString(),
         notes: initialData.notes || '',
       });
     } else {
@@ -57,7 +58,7 @@ export function ExpenseModal({
         amount: '',
         payment_method: 'cash',
         category_id: '',
-        expense_date: new Date().toISOString().split('T')[0],
+        expense_date: getLocalDateString(),
         notes: '',
       });
     }
@@ -157,7 +158,6 @@ export function ExpenseModal({
             dense
             placeholder="YYYY-MM-DD"
             style={styles.input}
-            keyboardType={Platform.OS === 'ios' ? 'default' : 'default'}
           />
 
           <TextInput

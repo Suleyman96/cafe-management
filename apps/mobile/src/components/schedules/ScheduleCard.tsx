@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, IconButton, Text } from 'react-native-paper';
+import { Button, Card, Chip, IconButton } from 'react-native-paper';
+import { Text } from '@/lib/paper-compat';
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: '#6b7280',

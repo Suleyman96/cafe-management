@@ -434,6 +434,11 @@
   "feedback.failedRespond": "Failed to send response",
   "feedback.failedDismiss": "Failed to dismiss feedback",
   "feedback.noResponse": "No response yet",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed",
 
   "calls.title": "Waiter Calls",
   "calls.call": "call",

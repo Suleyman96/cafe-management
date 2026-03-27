@@ -18,7 +18,7 @@ type FeedbackStatus = 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
 type CustomerFeedbackWithTable = any;
 
 export default function FeedbackPage() {
-  const { t } = useTranslation('staff');
+  const { t, i18n } = useTranslation('staff');
   const [selectedStatus, setSelectedStatus] = useState<FeedbackStatus | 'all'>('pending');
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [responseText, setResponseText] = useState('');
@@ -71,7 +71,7 @@ export default function FeedbackPage() {
   };
 
   const handleDismiss = async (feedbackId: string) => {
-    if (!confirm('Are you sure you want to dismiss this feedback?')) return;
+    if (!confirm(t('feedback.dismissConfirm'))) return;
     try {
       await dismissFeedback.mutateAsync(feedbackId);
       toast.success(t('feedback.feedbackDismissed'));
@@ -83,7 +83,8 @@ export default function FeedbackPage() {
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
+    const locale = i18n.language || 'en';
+    return new Intl.DateTimeFormat(locale, {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -176,7 +177,7 @@ export default function FeedbackPage() {
                           <span
                             className={`px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-medium rounded-full capitalize ${getStatusColor(item.status)}`}
                           >
-                            {item.status}
+                            {t(`feedback.status.${item.status}`)}
                           </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">

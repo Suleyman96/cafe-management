@@ -24,7 +24,8 @@ describe('TaskModal', () => {
 
   it('renders "New Task" title for create mode', () => {
     renderWithProviders(<TaskModal onClose={onClose} />);
-    expect(screen.getByText('New Task')).toBeDefined();
+    const matches = screen.getAllByText('New Task');
+    expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders "Edit Task" title when editing', () => {

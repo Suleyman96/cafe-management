@@ -14,7 +14,7 @@ import {
   useUpdateOrderStatus,
 } from '@/hooks/use-orders-safe';
 import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useOrders', () => {
   it('uses ORDERS query key', () => {
@@ -27,6 +27,19 @@ describe('useOrders', () => {
     const filters = { status: 'new' as const, table_id: 't1' };
     renderHookWithProviders(() => useOrders(filters));
     expect(db.orders.findAll).toHaveBeenCalledWith(filters);
+  });
+
+  it('returns fetched orders data', async () => {
+    const mockOrders = [{ id: 'o1', status: 'new', table_id: 't1' }];
+    (db.orders.findAll as any).mockResolvedValueOnce(mockOrders);
+    const { result } = renderHookWithProviders(() => useOrders());
+    await waitFor(() => expect(result.current.data).toEqual(mockOrders));
+  });
+
+  it('reports error when findAll rejects', async () => {
+    (db.orders.findAll as any).mockRejectedValueOnce(new Error('DB error'));
+    const { result } = renderHookWithProviders(() => useOrders());
+    await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });
 
@@ -61,6 +74,12 @@ describe('useUpdateOrderStatus', () => {
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
   });
+
+  it('calls updateStatus with correct status value', async () => {
+    const { result } = renderHookWithProviders(() => useUpdateOrderStatus());
+    await result.current.mutateAsync({ orderId: 'o1', status: 'PREPARING' });
+    expect(db.orders.updateStatus).toHaveBeenCalledWith('o1', 'preparing');
+  });
 });
 
 describe('useCreateOrder', () => {
@@ -73,6 +92,21 @@ describe('useCreateOrder', () => {
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
+  });
+
+  it('calls db.orders.create with order data', async () => {
+    const orderData = { table_id: 't1', status: 'new' } as any;
+    const { result } = renderHookWithProviders(() => useCreateOrder());
+    await result.current.mutateAsync(orderData);
+    expect(db.orders.create).toHaveBeenCalledWith(orderData);
+  });
+
+  it('invalidates ACTIVE_ORDERS on success', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useCreateOrder());
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    await result.current.mutateAsync({} as any);
+    const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
   });
 });
 
@@ -115,6 +149,12 @@ describe('useCancelOrder', () => {
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDER]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
+  });
+
+  it('calls cancelOrder with correct args', async () => {
+    const { result } = renderHookWithProviders(() => useCancelOrder());
+    await result.current.mutateAsync({ orderId: 'o1', reason: 'test reason', tableId: 't1' });
+    expect(db.orders.cancelOrder).toHaveBeenCalledWith('o1', 'test reason', 't1');
   });
 });
 

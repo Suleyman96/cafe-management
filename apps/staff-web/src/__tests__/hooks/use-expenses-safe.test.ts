@@ -13,7 +13,7 @@ import {
   useUpdateExpenseCategory,
 } from '@/hooks/use-expenses-safe';
 import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useExpenses', () => {
   it('calls db.expenses.findAll', () => {
@@ -25,6 +25,19 @@ describe('useExpenses', () => {
     const opts = { categoryId: 'c1', startDate: '2026-01-01' };
     renderHookWithProviders(() => useExpenses(opts));
     expect(db.expenses.findAll).toHaveBeenCalledWith(opts);
+  });
+
+  it('returns fetched expenses', async () => {
+    const mockExpenses = [{ id: 'e1', amount: 100, description: 'Supplies' }];
+    (db.expenses.findAll as any).mockResolvedValueOnce(mockExpenses);
+    const { result } = renderHookWithProviders(() => useExpenses());
+    await waitFor(() => expect(result.current.data).toEqual(mockExpenses));
+  });
+
+  it('reports error when findAll rejects', async () => {
+    (db.expenses.findAll as any).mockRejectedValueOnce(new Error('DB error'));
+    const { result } = renderHookWithProviders(() => useExpenses());
+    await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });
 
@@ -64,6 +77,13 @@ describe('useCreateExpense', () => {
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.EXPENSES]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY]);
+  });
+
+  it('calls db.expenses.create with data', async () => {
+    const expenseData = { amount: 100, description: 'Supplies', payment_method: 'cash' } as any;
+    const { result } = renderHookWithProviders(() => useCreateExpense());
+    await result.current.mutateAsync(expenseData);
+    expect(db.expenses.create).toHaveBeenCalledWith(expenseData);
   });
 });
 

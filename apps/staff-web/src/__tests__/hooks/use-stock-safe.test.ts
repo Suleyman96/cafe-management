@@ -11,7 +11,7 @@ import {
   useUpdateStockItem,
 } from '@/hooks/use-stock-safe';
 import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useStockItems', () => {
   it('calls db.stockItems.findAll', () => {
@@ -23,6 +23,19 @@ describe('useStockItems', () => {
     const opts = { category: 'food', lowStockOnly: true };
     renderHookWithProviders(() => useStockItems(opts));
     expect(db.stockItems.findAll).toHaveBeenCalledWith(opts);
+  });
+
+  it('returns fetched stock items', async () => {
+    const mockItems = [{ id: 'si1', name: 'Coffee', quantity: 50 }];
+    (db.stockItems.findAll as any).mockResolvedValueOnce(mockItems);
+    const { result } = renderHookWithProviders(() => useStockItems());
+    await waitFor(() => expect(result.current.data).toEqual(mockItems));
+  });
+
+  it('reports error when findAll rejects', async () => {
+    (db.stockItems.findAll as any).mockRejectedValueOnce(new Error('DB error'));
+    const { result } = renderHookWithProviders(() => useStockItems());
+    await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });
 
@@ -110,5 +123,12 @@ describe('useAdjustStock', () => {
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STOCK_MOVEMENTS]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.LOW_STOCK_COUNT]);
+  });
+
+  it('calls adjustStock with correct args', async () => {
+    const { result } = renderHookWithProviders(() => useAdjustStock());
+    const data = { id: 'si1', data: { type: 'in' as const, quantity: 10, reason: 'restock' } };
+    await result.current.mutateAsync(data);
+    expect(db.stockItems.adjustStock).toHaveBeenCalledWith('si1', data.data);
   });
 });

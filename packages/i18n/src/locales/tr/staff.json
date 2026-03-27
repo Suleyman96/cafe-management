@@ -23,7 +23,6 @@
   "tables.tableDeleted": "silindi",
   "tables.failedDeleteTable": "Masa silinemedi",
   "tables.tableNotFound": "Masa bulunamadı",
-
   "orders.title": "Sipariş Yönetimi",
   "orders.orderCreated": "Paket sipariş oluşturuldu",
   "orders.searchOrders": "Siparişlerde ara...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "Atanmamış",
   "orders.itemStatusUpdated": "Ürün durumu {{status}} olarak güncellendi",
   "orders.tax": "Vergi",
-
   "kitchen.title": "Mutfak",
   "kitchen.noActiveOrders": "Aktif Sipariş Yok",
   "kitchen.waitingForOrders": "Yeni siparişler bekleniyor...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "Hazırlama Süresi",
   "kitchen.min": "dk",
   "kitchen.elapsedTime": "Geçen Süre",
-
   "delivery.title": "Teslimat Siparişleri",
   "delivery.newDeliveryOrder": "Yeni Teslimat Siparişi",
   "delivery.searchDelivery": "Ad, telefon, adres ile ara...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "Teslimat Siparişini İptal Et",
   "delivery.failedUpdate": "Sipariş güncellenemedi",
   "delivery.activeCount": "aktif",
-
   "menu.title": "Menü Yönetimi",
   "menu.subtitle": "Menü ürünlerini ve kategorileri yönetin",
   "menu.addCategory": "Kategori Ekle",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "Menü ürünü kaydedilemedi",
   "menu.failedSaveCategory": "Kategori kaydedilemedi",
   "menu.image": "Görsel",
-
   "reports.title": "Raporlar ve Analitik",
   "reports.ownerAccessRequired": "Sahip erişimi gerekli",
   "reports.salesReport": "Satış Raporu",
@@ -260,7 +255,6 @@
   "reports.today": "Bugün",
   "reports.from": "dan",
   "reports.orders": "sipariş",
-
   "expenses.title": "Giderler",
   "expenses.subtitle": "İşletme giderlerini takip edin ve yönetin",
   "expenses.categories": "Kategoriler",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "Gider oluşturuldu",
   "expenses.expenseUpdated": "Gider güncellendi",
   "expenses.failedSave": "Gider kaydedilemedi",
-
   "stock.title": "Stok Yönetimi",
   "stock.subtitle": "Envanter ve stok seviyelerini takip edin",
   "stock.addItem": "Ürün Ekle",
@@ -320,7 +313,6 @@
   "stock.movementType": "Hareket Türü",
   "stock.movementNotes": "Notlar",
   "stock.movementRecorded": "Stok hareketi kaydedildi",
-
   "waste.title": "Fire Yönetimi",
   "waste.subtitle": "Gıda firesini takip edin ve azaltın",
   "waste.logWaste": "Fire Kaydet",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "Birim Maliyeti",
   "waste.wasteLogged": "Fire kaydedildi",
   "waste.failedLog": "Fire kaydedilemedi",
-
   "tasks.title": "Görevler",
   "tasks.subtitle": "Günlük operasyonları ve personel görevlendirmelerini yönetin",
   "tasks.newTask": "Yeni Görev",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "Görev oluşturuldu",
   "tasks.taskUpdated": "Görev güncellendi",
   "tasks.failedSave": "Görev kaydedilemedi",
-
   "schedules.title": "Personel Vardiyaları",
   "schedules.monthly": "Aylık",
   "schedules.weekly": "Haftalık",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "Devam Ediyor",
   "schedules.completed": "Tamamlandı",
   "schedules.missed": "Kaçırılmış",
-
   "feedback.title": "Müşteri Geri Bildirimleri",
   "feedback.subtitle": "Müşterilerden gelen şikayetleri, soruları ve istekleri yönetin",
   "feedback.allTab": "Tümü",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "Yanıt gönderilemedi",
   "feedback.failedDismiss": "Geri bildirim reddedilemedi",
   "feedback.noResponse": "Henüz yanıt yok",
-
   "calls.title": "Garson Çağrıları",
   "calls.call": "çağrı",
   "calls.callsPlural": "çağrı",
@@ -446,7 +434,6 @@
   "calls.respond": "Yanıtla",
   "calls.respondedBy": "{{name}} tarafından yanıtlandı:",
   "calls.noCalls": "Çağrı yok",
-
   "cafeSettings.title": "Kafe Ayarları",
   "cafeSettings.restaurantInformation": "Restoran Bilgisi",
   "cafeSettings.restaurantName": "Restoran Adı",
@@ -464,7 +451,7 @@
   "cafeSettings.currencyCode": "Para Birimi Kodu",
   "cafeSettings.symbolPosition": "Simge Konumu",
   "cafeSettings.before": "Öncesinde ($10)",
-  "cafeSettings.after": "Sonrasında (10\u20bc)",
+  "cafeSettings.after": "Sonrasında (10₼)",
   "cafeSettings.decimalPlaces": "Ondalık Basamak",
   "cafeSettings.orderSettings": "Sipariş Ayarları",
   "cafeSettings.minimumOrderAmount": "Minimum Sipariş Tutarı",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "Ayarlar başarıyla kaydedildi",
   "cafeSettings.failedSave": "Ayarlar kaydedilemedi",
   "cafeSettings.noPermission": "Bu sayfaya erişim izniniz yok. Yalnızca yöneticiler kafe ayarlarını yönetebilir.",
-
   "settings.title": "Hesap Ayarları",
   "settings.profileInformation": "Profil Bilgisi",
   "settings.fullName": "Tam Ad",
@@ -535,7 +521,6 @@
   "settings.language": "Dil",
   "settings.selectLanguage": "Tercih ettiğiniz dili seçin",
   "settings.languageChanged": "Dil değiştirildi",
-
   "staffMgmt.title": "Personel Yönetimi",
   "staffMgmt.addStaff": "Personel Ekle",
   "staffMgmt.accessDenied": "Erişim engellendi. Yalnızca yöneticiler personeli yönetebilir.",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "Sipariş bulunamadı",
   "staffMgmt.orderNumber": "Sipariş #",
   "staffMgmt.table": "Masa",
-
   "payment.processPaymentCash": "Ödemeyi İşleyin (Nakit)",
   "payment.orderFullyPaid": "Bu sipariş tamamen ödendi!",
   "payment.noItemsToPay": "Bu siparişte ödenecek ürün yok.",
@@ -590,7 +574,6 @@
   "payment.completing": "Tamamlanıyor...",
   "payment.processing": "İşleniyor...",
   "payment.processPaymentBtn": "Ödemeyi İşle",
-
   "tables.editTable": "{{table}} Düzenle",
   "tables.addNewTable": "Yeni Masa Ekle",
   "tables.capacitySeats": "Kapasite (kişi)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "Masa başarıyla oluşturuldu",
   "tables.failedSaveTable": "Masa kaydedilemedi",
   "tables.closed": "Kapalı",
-
   "tables.transferTable": "{{table}} Aktar",
   "tables.transferToTable": "Masaya Aktar",
   "tables.selectTable": "Masa seçin",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "Masayı Aktar",
   "tables.mainArea": "Ana alan",
   "tables.reasonOptional": "Neden (isteğe bağlı)",
-
   "tables.createOrderFor": "{{table}} için Sipariş Oluştur",
   "tables.notesOptional": "Notlar (isteğe bağlı)",
   "tables.specialRequests": "Özel istekler, alerjiler vb.",
   "tables.createOrderHint": "Bu {{table}} için yeni bir yerinde sipariş oluşturacak. Sonraki ekranda menü ürünlerini ekleyebilirsiniz.",
-
   "delivery.createDeliveryOrder": "Teslimat Siparişi Oluştur",
   "delivery.customerName": "Müşteri Adı",
   "delivery.phoneNumber": "Telefon Numarası",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "Bu yeni bir teslimat siparişi oluşturacak. Sonraki ekranda siparişe ürünler ekleyebilirsiniz.",
   "delivery.fullDeliveryAddress": "Tam teslimat adresi",
   "delivery.ringDoorbell": "Örn., Zili çalın, kapıda bırakın...",
-
   "expenses.editExpense": "Gideri Düzenle",
   "expenses.validAmount": "Geçerli bir tutar girin",
   "expenses.updatingExpense": "Gider güncelleniyor...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "Bu gider ne içindi?",
   "expenses.optionalNotes": "İsteğe bağlı notlar",
   "expenses.updateExpense": "Gideri Güncelle",
-
   "expenses.expenseCategories": "Gider Kategorileri",
   "expenses.nameRequired": "Ad gerekli",
   "expenses.categoryUpdated": "Kategori güncellendi!",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "Kategori silinemedi",
   "expenses.noCategories": "Henüz kategori yok",
   "expenses.done": "Tamam",
-
   "stock.editStockItem": "Stok Ürünü Düzenle",
   "stock.addStockItem": "Stok Ürünü Ekle",
   "stock.updatingItem": "Ürün güncelleniyor...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "Tedarikçi Adı",
   "stock.updateItem": "Ürünü Güncelle",
   "stock.createItem": "Ürün Oluştur",
-
   "stock.adjustStock": "Stok Ayarla: {{name}}",
   "stock.currentStock": "Mevcut Stok",
   "stock.validQuantity": "Geçerli bir miktar girin",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "Yeni Miktar",
   "stock.newStockLevel": "Yeni Stok Seviyesi",
   "stock.reasonPlaceholder": "Düzeltme nedeni (isteğe bağlı)",
-
   "schedules.editSchedule": "Vardiyayı Düzenle",
   "schedules.selectStaff": "Personel seçin...",
   "schedules.scheduleUpdated": "Vardiya güncellendi",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "Planlanan Başlangıç",
   "schedules.plannedEnd": "Planlanan Bitiş",
   "schedules.optionalNotes": "İsteğe bağlı notlar...",
-
   "tasks.editTask": "Görevi Düzenle",
   "tasks.titleRequired": "Görev başlığı girin",
   "tasks.updatingTask": "Görev güncelleniyor...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "Varsayılan Son Saat",
   "tasks.dueTime": "Son Saat",
   "tasks.update": "Güncelle",
-
   "waste.editWasteLog": "Fire Kaydını Düzenle",
   "waste.linkToStockItem": "Stok Ürününe Bağla",
   "waste.manualEntry": "Manuel giriş (stok ürünü olmadan)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "Fire kaydı güncellendi!",
   "waste.wasteButNoStock": "Fire kaydedildi ancak stoktan düşülemedi",
   "waste.validQuantity": "Geçerli bir miktar girin",
-
   "staffMgmt.addNewStaff": "Yeni Personel Üyesi Ekle",
   "staffMgmt.unexpectedError": "Beklenmeyen bir hata oluştu",
   "staffMgmt.createAccount": "Hesap Oluştur",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "Sıfırlanıyor...",
   "staffMgmt.setNewPasswordFor": "Yeni bir parola belirleyin:",
   "staffMgmt.saving": "Kaydediliyor...",
-
   "menu.editMenuItem": "Menü Ürünü Düzenle",
   "menu.noCategory": "Kategori Yok",
   "menu.itemNamePlaceholder": "Ürün adı (örn., Cappuccino, Sezar Salata)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "Bu adda bir kategori zaten mevcut.",
   "menu.available": "Mevcut",
   "menu.dailySpecial": "Günün Özeli",
-
   "orders.createTakeoutOrder": "Paket Sipariş Oluştur",
   "orders.forPhoneOrCounter": "Telefon veya tezgâh siparişleri için",
   "orders.customerInformation": "Müşteri Bilgisi",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "Tam ad",
   "orders.enterNameAndPhone": "Müşteri adı ve telefon numarasını girin",
   "orders.failedCreateTakeout": "Paket sipariş oluşturulamadı. Lütfen tekrar deneyin.",
-
   "stock.optionalDescription": "İsteğe bağlı açıklama",
   "stock.optionalNotes": "İsteğe bağlı notlar",
   "stock.optionalSupplier": "İsteğe bağlı tedarikçi adı",
   "stock.coffeeBeans": "Örn., Kahve Çekirdeği",
   "stock.costPricePerUnit": "Birim Maliyet Fiyatı",
-
   "notifications.soundOn": "Ses AÇIK",
   "notifications.soundOff": "Ses KAPALI",
   "notifications.notificationsOnTitle": "Bildirimler AÇIK (sessize almak için tıklayın)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "Sipariş Hazır!",
   "notifications.orderReadyDescription": "Bir sipariş servis edilmeye hazır",
   "notifications.newItemsAdded": "Yeni ürünler eklendi!",
-  "notifications.itemsAddedDescription": "Siparişe ürünler eklendi"
+  "notifications.itemsAddedDescription": "Siparişe ürünler eklendi",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

@@ -37,6 +37,7 @@ export default function ProfileScreen() {
       clearAuth();
     } catch (err: any) {
       showError(err?.message || 'Failed to sign out');
+    } finally {
       setLoggingOut(false);
     }
   };

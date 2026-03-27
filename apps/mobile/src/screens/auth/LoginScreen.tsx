@@ -4,6 +4,7 @@ import { Button } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { login } from '@/lib/auth';
+import { getLocalDateString } from '@/lib/date-utils';
 import { Text, TextInput } from '@/lib/paper-compat';
 import { db } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth-store';
@@ -31,7 +32,7 @@ export default function LoginScreen() {
       setStaff(staff);
 
       // Fire-and-forget: fill actual_start for today's schedule
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       db.schedules
         .findByStaffAndDate(staff.id, today)
         .then((schedules) => {

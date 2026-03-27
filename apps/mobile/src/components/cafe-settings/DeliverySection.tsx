@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
-import { Card, Text, TextInput } from 'react-native-paper';
+import { Card, Text } from 'react-native-paper';
+import { TextInput } from '@/lib/paper-compat';
 import type { SettingsSectionProps } from './ToggleRow';
 import { ToggleRow } from './ToggleRow';
 
@@ -25,7 +26,9 @@ export function DeliverySection({ form, updateField }: SettingsSectionProps) {
             <TextInput
               label={`Default Delivery Fee (${form.currency_symbol || '₼'})`}
               value={String(form.delivery_fee_default ?? '')}
-              onChangeText={(v) => updateField('delivery_fee_default', Number.parseFloat(v) || 0)}
+              onChangeText={(v: string) =>
+                updateField('delivery_fee_default', Number.parseFloat(v) || 0)
+              }
               mode="outlined"
               keyboardType="decimal-pad"
               dense
@@ -34,7 +37,7 @@ export function DeliverySection({ form, updateField }: SettingsSectionProps) {
             <TextInput
               label={`Minimum Delivery Amount (${form.currency_symbol || '₼'})`}
               value={String(form.minimum_delivery_amount ?? '')}
-              onChangeText={(v) =>
+              onChangeText={(v: string) =>
                 updateField('minimum_delivery_amount', Number.parseFloat(v) || 0)
               }
               mode="outlined"
@@ -45,7 +48,7 @@ export function DeliverySection({ form, updateField }: SettingsSectionProps) {
             <TextInput
               label="Delivery Zone Info"
               value={form.delivery_zone_info || ''}
-              onChangeText={(v) => updateField('delivery_zone_info', v || null)}
+              onChangeText={(v: string) => updateField('delivery_zone_info', v || null)}
               mode="outlined"
               dense
               multiline

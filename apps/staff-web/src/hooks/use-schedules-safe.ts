@@ -39,7 +39,7 @@ export function useMySchedule(staffId: string, startDate: string, endDate: strin
 }
 
 export function useMyScheduleToday(staffId: string) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('en-CA');
   return useQuery({
     queryKey: [QUERY_KEYS.MY_SCHEDULE, staffId, today],
     queryFn: async (): Promise<StaffSchedule[]> => db.schedules.findByStaffAndDate(staffId, today),

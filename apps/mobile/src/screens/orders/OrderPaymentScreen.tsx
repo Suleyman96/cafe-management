@@ -4,7 +4,13 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Divider, RadioButton, Text } from 'react-native-paper';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useCreatePayment, useOrder, useOrderPayments, useUpdateOrderStatus } from '@/hooks';
+import {
+  useCafeSettings,
+  useCreatePayment,
+  useOrder,
+  useOrderPayments,
+  useUpdateOrderStatus,
+} from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
@@ -29,7 +35,9 @@ export default function OrderPaymentScreen() {
   const { data: payments } = useOrderPayments(orderId);
   const createPayment = useCreatePayment();
   const updateOrderStatus = useUpdateOrderStatus();
+  const { data: settings } = useCafeSettings();
 
+  const currencySymbol = settings?.currency_symbol || '$';
   const [method, setMethod] = useState<string>('cash');
   const [amount, setAmount] = useState('');
 
@@ -64,7 +72,7 @@ export default function OrderPaymentScreen() {
         await updateOrderStatus.mutateAsync({ orderId, status: 'closed' });
         showSuccess('Payment complete — order paid');
       } else {
-        showSuccess(`Payment of $${paymentAmount.toFixed(2)} recorded`);
+        showSuccess(`Payment of ${currencySymbol}${paymentAmount.toFixed(2)} recorded`);
       }
 
       navigation.goBack();
@@ -88,13 +96,15 @@ export default function OrderPaymentScreen() {
           <View style={styles.summaryRow}>
             <Text variant="bodyMedium">Total</Text>
             <Text variant="titleMedium" style={styles.bold}>
-              ${(order.total || 0).toFixed(2)}
+              {currencySymbol}
+              {(order.total || 0).toFixed(2)}
             </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text variant="bodyMedium">Already Paid</Text>
             <Text variant="bodyMedium" style={{ color: '#10b981', fontWeight: '600' }}>
-              ${totalPaid.toFixed(2)}
+              {currencySymbol}
+              {totalPaid.toFixed(2)}
             </Text>
           </View>
           <Divider style={styles.divider} />
@@ -106,7 +116,8 @@ export default function OrderPaymentScreen() {
               variant="titleLarge"
               style={{ color: remaining > 0 ? '#ef4444' : '#10b981', fontWeight: '700' }}
             >
-              ${remaining.toFixed(2)}
+              {currencySymbol}
+              {remaining.toFixed(2)}
             </Text>
           </View>
         </Card.Content>
@@ -137,10 +148,11 @@ export default function OrderPaymentScreen() {
                 onChangeText={setAmount}
                 mode="outlined"
                 keyboardType="decimal-pad"
-                left={<TextInput.Affix text="$" />}
+                left={<TextInput.Affix text={currencySymbol} />}
               />
               <Button mode="outlined" onPress={handlePayFull} compact>
-                Pay Full (${remaining.toFixed(2)})
+                Pay Full ({currencySymbol}
+                {remaining.toFixed(2)})
               </Button>
             </Card.Content>
           </Card>
@@ -176,7 +188,8 @@ export default function OrderPaymentScreen() {
                   </Text>
                 </View>
                 <Text variant="titleSmall" style={{ color: '#10b981', fontWeight: '600' }}>
-                  ${p.amount.toFixed(2)}
+                  {currencySymbol}
+                  {p.amount.toFixed(2)}
                 </Text>
               </View>
             ))}

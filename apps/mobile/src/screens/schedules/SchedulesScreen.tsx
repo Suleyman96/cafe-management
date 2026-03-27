@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Button, Card, Chip, FAB, SegmentedButtons, Text } from 'react-native-paper';
+import { Button, Card, Chip, FAB, SegmentedButtons } from 'react-native-paper';
 import { ScheduleCard } from '@/components/schedules/ScheduleCard';
 import { ScheduleModal } from '@/components/schedules/ScheduleModal';
 import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
@@ -21,6 +21,7 @@ import {
   useUpdateSchedule,
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { Text } from '@/lib/paper-compat';
 
 function getWeekDates(referenceDate: Date) {
   const d = new Date(referenceDate);
@@ -38,7 +39,7 @@ function getWeekDates(referenceDate: Date) {
 }
 
 function formatDate(d: Date) {
-  return d.toISOString().split('T')[0];
+  return d.toLocaleDateString('en-CA');
 }
 
 function formatTime(time: string) {

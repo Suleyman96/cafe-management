@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
-import { Card, Chip, Text, TextInput } from 'react-native-paper';
+import { Card, Chip, Text } from 'react-native-paper';
+import { TextInput } from '@/lib/paper-compat';
 import type { SettingsSectionProps } from './ToggleRow';
 
 const LANGUAGE_OPTIONS = [
@@ -23,7 +24,7 @@ export function RestaurantInfoSection({ form, updateField }: SettingsSectionProp
         <TextInput
           label="Restaurant Name"
           value={form.restaurant_name || ''}
-          onChangeText={(v) => updateField('restaurant_name', v)}
+          onChangeText={(v: string) => updateField('restaurant_name', v)}
           mode="outlined"
           dense
           style={styles.input}
@@ -31,7 +32,7 @@ export function RestaurantInfoSection({ form, updateField }: SettingsSectionProp
         <TextInput
           label="Restaurant Address"
           value={form.restaurant_address || ''}
-          onChangeText={(v) => updateField('restaurant_address', v || null)}
+          onChangeText={(v: string) => updateField('restaurant_address', v || null)}
           mode="outlined"
           dense
           placeholder="123 Main Street, City, Country"

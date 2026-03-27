@@ -16,37 +16,43 @@ export function useOrder(tableId: string) {
     staleTime: 0,
   });
 
+  const orderId = query.data?.id;
+
   // Real-time subscription (needs raw supabase client for channel API)
   useEffect(() => {
     let channel: RealtimeChannel;
 
     const setupSubscription = async () => {
-      channel = supabase
-        .channel(`orders:table_${tableId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'orders',
-            filter: `table_id=eq.${tableId}`,
-          },
-          () => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, tableId] });
-          },
-        )
-        .on(
+      const builder = supabase.channel(`orders:table_${tableId}`).on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `table_id=eq.${tableId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, tableId] });
+        },
+      );
+
+      // Only subscribe to order_items when we have an active order to filter on
+      if (orderId) {
+        builder.on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'order_items',
+            filter: `order_id=eq.${orderId}`,
           },
           () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, tableId] });
           },
-        )
-        .subscribe();
+        );
+      }
+
+      channel = builder.subscribe();
     };
 
     setupSubscription();
@@ -56,7 +62,7 @@ export function useOrder(tableId: string) {
         supabase.removeChannel(channel);
       }
     };
-  }, [tableId, queryClient]);
+  }, [tableId, orderId, queryClient]);
 
   return query;
 }
@@ -88,8 +94,12 @@ export function useCancelOrder() {
     mutationFn: async ({ orderId, tableId }: { orderId: string; tableId?: string | null }) => {
       return db.orders.cancelOrder(orderId, 'Cancelled by customer', tableId);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
+    onSuccess: (_, variables) => {
+      if (variables.tableId) {
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.tableId] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
+      }
     },
   });
 }

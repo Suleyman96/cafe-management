@@ -23,7 +23,6 @@
   "tables.tableDeleted": "gelöscht",
   "tables.failedDeleteTable": "Tisch konnte nicht gelöscht werden",
   "tables.tableNotFound": "Tisch nicht gefunden",
-
   "orders.title": "Bestellverwaltung",
   "orders.orderCreated": "Bestellung zum Mitnehmen erstellt",
   "orders.searchOrders": "Bestellungen suchen...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "Nicht zugewiesen",
   "orders.itemStatusUpdated": "Artikelstatus aktualisiert auf {{status}}",
   "orders.tax": "Steuer",
-
   "kitchen.title": "Küche",
   "kitchen.noActiveOrders": "Keine aktiven Bestellungen",
   "kitchen.waitingForOrders": "Warten auf neue Bestellungen...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "Zubereitungszeit",
   "kitchen.min": "Min.",
   "kitchen.elapsedTime": "Verstrichene Zeit",
-
   "delivery.title": "Lieferbestellungen",
   "delivery.newDeliveryOrder": "Neue Lieferbestellung",
   "delivery.searchDelivery": "Nach Name, Telefon, Adresse suchen...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "Lieferbestellung stornieren",
   "delivery.failedUpdate": "Bestellung konnte nicht aktualisiert werden",
   "delivery.activeCount": "aktiv",
-
   "menu.title": "Speisekartenverwaltung",
   "menu.subtitle": "Speisen und Kategorien verwalten",
   "menu.addCategory": "Kategorie hinzufügen",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "Speise konnte nicht gespeichert werden",
   "menu.failedSaveCategory": "Kategorie konnte nicht gespeichert werden",
   "menu.image": "Bild",
-
   "reports.title": "Berichte & Analysen",
   "reports.ownerAccessRequired": "Inhaberzugang erforderlich",
   "reports.salesReport": "Umsatzbericht",
@@ -260,7 +255,6 @@
   "reports.today": "Heute",
   "reports.from": "von",
   "reports.orders": "Bestellungen",
-
   "expenses.title": "Ausgaben",
   "expenses.subtitle": "Betriebskosten erfassen und verwalten",
   "expenses.categories": "Kategorien",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "Ausgabe erstellt",
   "expenses.expenseUpdated": "Ausgabe aktualisiert",
   "expenses.failedSave": "Ausgabe konnte nicht gespeichert werden",
-
   "stock.title": "Lagerverwaltung",
   "stock.subtitle": "Bestand und Lagerbestände verfolgen",
   "stock.addItem": "Artikel hinzufügen",
@@ -320,7 +313,6 @@
   "stock.movementType": "Bewegungsart",
   "stock.movementNotes": "Notizen",
   "stock.movementRecorded": "Bestandsbewegung erfasst",
-
   "waste.title": "Abfallverwaltung",
   "waste.subtitle": "Lebensmittelverschwendung erfassen und reduzieren",
   "waste.logWaste": "Abfall erfassen",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "Kosten pro Einheit",
   "waste.wasteLogged": "Abfall erfasst",
   "waste.failedLog": "Abfall konnte nicht erfasst werden",
-
   "tasks.title": "Aufgaben",
   "tasks.subtitle": "Tägliche Abläufe und Mitarbeiterzuweisungen verwalten",
   "tasks.newTask": "Neue Aufgabe",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "Aufgabe erstellt",
   "tasks.taskUpdated": "Aufgabe aktualisiert",
   "tasks.failedSave": "Aufgabe konnte nicht gespeichert werden",
-
   "schedules.title": "Dienstpläne",
   "schedules.monthly": "Monatlich",
   "schedules.weekly": "Wöchentlich",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "Im Dienst",
   "schedules.completed": "Abgeschlossen",
   "schedules.missed": "Verpasst",
-
   "feedback.title": "Kundenfeedback",
   "feedback.subtitle": "Beschwerden, Fragen und Anfragen von Kunden verwalten",
   "feedback.allTab": "Alle",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "Antwort konnte nicht gesendet werden",
   "feedback.failedDismiss": "Feedback konnte nicht abgelehnt werden",
   "feedback.noResponse": "Noch keine Antwort",
-
   "calls.title": "Kellnerrufe",
   "calls.call": "Ruf",
   "calls.callsPlural": "Rufe",
@@ -446,7 +434,6 @@
   "calls.respond": "Antworten",
   "calls.respondedBy": "Beantwortet von {{name}} um",
   "calls.noCalls": "Keine Rufe",
-
   "cafeSettings.title": "Café-Einstellungen",
   "cafeSettings.restaurantInformation": "Restaurantinformationen",
   "cafeSettings.restaurantName": "Restaurantname",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "Einstellungen erfolgreich gespeichert",
   "cafeSettings.failedSave": "Einstellungen konnten nicht gespeichert werden",
   "cafeSettings.noPermission": "Sie haben keine Berechtigung, auf diese Seite zuzugreifen. Nur Administratoren können Café-Einstellungen verwalten.",
-
   "settings.title": "Kontoeinstellungen",
   "settings.profileInformation": "Profilinformationen",
   "settings.fullName": "Vollständiger Name",
@@ -535,7 +521,6 @@
   "settings.language": "Sprache",
   "settings.selectLanguage": "Wählen Sie Ihre bevorzugte Sprache",
   "settings.languageChanged": "Sprache geändert",
-
   "staffMgmt.title": "Personalverwaltung",
   "staffMgmt.addStaff": "Personal hinzufügen",
   "staffMgmt.accessDenied": "Zugriff verweigert. Nur Administratoren können Personal verwalten.",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "Keine Bestellungen gefunden",
   "staffMgmt.orderNumber": "Bestellung #",
   "staffMgmt.table": "Tisch",
-
   "payment.processPaymentCash": "Zahlung verarbeiten (Bar)",
   "payment.orderFullyPaid": "Diese Bestellung ist vollständig bezahlt!",
   "payment.noItemsToPay": "Diese Bestellung hat keine zu bezahlenden Artikel.",
@@ -590,7 +574,6 @@
   "payment.completing": "Abschließen...",
   "payment.processing": "Verarbeiten...",
   "payment.processPaymentBtn": "Zahlung verarbeiten",
-
   "tables.editTable": "{{table}} bearbeiten",
   "tables.addNewTable": "Neuen Tisch hinzufügen",
   "tables.capacitySeats": "Kapazität (Plätze)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "Tisch erfolgreich erstellt",
   "tables.failedSaveTable": "Tisch konnte nicht gespeichert werden",
   "tables.closed": "Geschlossen",
-
   "tables.transferTable": "{{table}} übertragen",
   "tables.transferToTable": "An Tisch übertragen",
   "tables.selectTable": "Tisch auswählen",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "Tisch übertragen",
   "tables.mainArea": "Hauptbereich",
   "tables.reasonOptional": "Grund (optional)",
-
   "tables.createOrderFor": "Bestellung erstellen für {{table}}",
   "tables.notesOptional": "Notizen (optional)",
   "tables.specialRequests": "Sonderwünsche, Allergien, etc.",
   "tables.createOrderHint": "Dies erstellt eine neue Vor-Ort-Bestellung für {{table}}. Sie können im nächsten Schritt Speisen hinzufügen.",
-
   "delivery.createDeliveryOrder": "Lieferbestellung erstellen",
   "delivery.customerName": "Kundenname",
   "delivery.phoneNumber": "Telefonnummer",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "Dies erstellt eine neue Lieferbestellung. Sie können im nächsten Schritt Artikel hinzufügen.",
   "delivery.fullDeliveryAddress": "Vollständige Lieferadresse",
   "delivery.ringDoorbell": "z.B. Klingeln, vor der Tür abstellen...",
-
   "expenses.editExpense": "Ausgabe bearbeiten",
   "expenses.validAmount": "Bitte geben Sie einen gültigen Betrag ein",
   "expenses.updatingExpense": "Ausgabe wird aktualisiert...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "Wofür war diese Ausgabe?",
   "expenses.optionalNotes": "Optionale Notizen",
   "expenses.updateExpense": "Ausgabe aktualisieren",
-
   "expenses.expenseCategories": "Ausgabenkategorien",
   "expenses.nameRequired": "Name ist erforderlich",
   "expenses.categoryUpdated": "Kategorie aktualisiert!",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "Kategorie konnte nicht gelöscht werden",
   "expenses.noCategories": "Noch keine Kategorien",
   "expenses.done": "Fertig",
-
   "stock.editStockItem": "Lagerartikel bearbeiten",
   "stock.addStockItem": "Lagerartikel hinzufügen",
   "stock.updatingItem": "Artikel wird aktualisiert...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "Lieferantenname",
   "stock.updateItem": "Artikel aktualisieren",
   "stock.createItem": "Artikel erstellen",
-
   "stock.adjustStock": "Bestand anpassen: {{name}}",
   "stock.currentStock": "Aktueller Bestand",
   "stock.validQuantity": "Bitte geben Sie eine gültige Menge ein",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "Neue Menge",
   "stock.newStockLevel": "Neuer Bestand",
   "stock.reasonPlaceholder": "Optionaler Grund für die Anpassung",
-
   "schedules.editSchedule": "Dienstplan bearbeiten",
   "schedules.selectStaff": "Personal auswählen...",
   "schedules.scheduleUpdated": "Dienstplan aktualisiert",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "Geplanter Beginn",
   "schedules.plannedEnd": "Geplantes Ende",
   "schedules.optionalNotes": "Optionale Notizen...",
-
   "tasks.editTask": "Aufgabe bearbeiten",
   "tasks.titleRequired": "Bitte geben Sie einen Aufgabentitel ein",
   "tasks.updatingTask": "Aufgabe wird aktualisiert...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "Standard-Fälligkeitszeit",
   "tasks.dueTime": "Fälligkeitszeit",
   "tasks.update": "Aktualisieren",
-
   "waste.editWasteLog": "Abfalleintrag bearbeiten",
   "waste.linkToStockItem": "Mit Lagerartikel verknüpfen",
   "waste.manualEntry": "Manuelle Eingabe (kein Lagerartikel)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "Abfalleintrag aktualisiert!",
   "waste.wasteButNoStock": "Abfall erfasst, aber Lagerbestand konnte nicht aktualisiert werden",
   "waste.validQuantity": "Bitte geben Sie eine gültige Menge ein",
-
   "staffMgmt.addNewStaff": "Neuen Mitarbeiter hinzufügen",
   "staffMgmt.unexpectedError": "Ein unerwarteter Fehler ist aufgetreten",
   "staffMgmt.createAccount": "Konto erstellen",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "Zurücksetzen...",
   "staffMgmt.setNewPasswordFor": "Neues Passwort festlegen für",
   "staffMgmt.saving": "Speichern...",
-
   "menu.editMenuItem": "Speise bearbeiten",
   "menu.noCategory": "Keine Kategorie",
   "menu.itemNamePlaceholder": "Artikelname (z.B. Cappuccino, Caesar Salat)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "Eine Kategorie mit diesem Namen existiert bereits.",
   "menu.available": "Verfügbar",
   "menu.dailySpecial": "Tagesangebot",
-
   "orders.createTakeoutOrder": "Bestellung zum Mitnehmen erstellen",
   "orders.forPhoneOrCounter": "Für Telefon- oder Thekenbestellungen",
   "orders.customerInformation": "Kundeninformation",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "Vollständiger Name",
   "orders.enterNameAndPhone": "Bitte geben Sie den Kundennamen und die Telefonnummer ein",
   "orders.failedCreateTakeout": "Bestellung zum Mitnehmen konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
-
   "stock.optionalDescription": "Optionale Beschreibung",
   "stock.optionalNotes": "Optionale Notizen",
   "stock.optionalSupplier": "Optionaler Lieferantenname",
   "stock.coffeeBeans": "z.B. Kaffeebohnen",
   "stock.costPricePerUnit": "Einkaufspreis pro Einheit",
-
   "notifications.soundOn": "Ton EIN",
   "notifications.soundOff": "Ton AUS",
   "notifications.notificationsOnTitle": "Benachrichtigungen EIN (klicken zum Stummschalten)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "Bestellung bereit!",
   "notifications.orderReadyDescription": "Eine Bestellung ist bereit zum Servieren",
   "notifications.newItemsAdded": "Neue Artikel hinzugefügt!",
-  "notifications.itemsAddedDescription": "Artikel wurden einer Bestellung hinzugefügt"
+  "notifications.itemsAddedDescription": "Artikel wurden einer Bestellung hinzugefügt",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

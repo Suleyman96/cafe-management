@@ -23,7 +23,6 @@
   "tables.tableDeleted": "حذف شد",
   "tables.failedDeleteTable": "حذف میز ناموفق بود",
   "tables.tableNotFound": "میز یافت نشد",
-
   "orders.title": "مدیریت سفارش‌ها",
   "orders.orderCreated": "سفارش بیرون‌بر ایجاد شد",
   "orders.searchOrders": "جستجوی سفارش‌ها...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "تعیین نشده",
   "orders.itemStatusUpdated": "وضعیت آیتم به {{status}} به‌روزرسانی شد",
   "orders.tax": "مالیات",
-
   "kitchen.title": "آشپزخانه",
   "kitchen.noActiveOrders": "سفارش فعالی نیست",
   "kitchen.waitingForOrders": "در انتظار سفارش‌های جدید...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "زمان آماده‌سازی",
   "kitchen.min": "دقیقه",
   "kitchen.elapsedTime": "زمان سپری شده",
-
   "delivery.title": "سفارش‌های ارسال",
   "delivery.newDeliveryOrder": "سفارش ارسال جدید",
   "delivery.searchDelivery": "جستجو بر اساس نام، تلفن، آدرس...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "لغو سفارش ارسال",
   "delivery.failedUpdate": "به‌روزرسانی سفارش ناموفق بود",
   "delivery.activeCount": "فعال",
-
   "menu.title": "مدیریت منو",
   "menu.subtitle": "مدیریت آیتم‌ها و دسته‌بندی‌های منو",
   "menu.addCategory": "افزودن دسته‌بندی",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "ذخیره آیتم منو ناموفق بود",
   "menu.failedSaveCategory": "ذخیره دسته‌بندی ناموفق بود",
   "menu.image": "تصویر",
-
   "reports.title": "گزارش‌ها و تحلیل‌ها",
   "reports.ownerAccessRequired": "دسترسی مالک لازم است",
   "reports.salesReport": "گزارش فروش",
@@ -260,7 +255,6 @@
   "reports.today": "امروز",
   "reports.from": "از",
   "reports.orders": "سفارش‌ها",
-
   "expenses.title": "هزینه‌ها",
   "expenses.subtitle": "ردیابی و مدیریت هزینه‌های عملیاتی",
   "expenses.categories": "دسته‌بندی‌ها",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "هزینه ایجاد شد",
   "expenses.expenseUpdated": "هزینه به‌روزرسانی شد",
   "expenses.failedSave": "ذخیره هزینه ناموفق بود",
-
   "stock.title": "مدیریت موجودی",
   "stock.subtitle": "ردیابی موجودی و سطوح انبار",
   "stock.addItem": "افزودن آیتم",
@@ -320,7 +313,6 @@
   "stock.movementType": "نوع حرکت",
   "stock.movementNotes": "یادداشت‌ها",
   "stock.movementRecorded": "حرکت موجودی ثبت شد",
-
   "waste.title": "مدیریت ضایعات",
   "waste.subtitle": "ردیابی و کاهش ضایعات غذایی",
   "waste.logWaste": "ثبت ضایعات",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "هزینه هر واحد",
   "waste.wasteLogged": "ضایعات ثبت شد",
   "waste.failedLog": "ثبت ضایعات ناموفق بود",
-
   "tasks.title": "وظایف",
   "tasks.subtitle": "مدیریت عملیات روزانه و تخصیص کارکنان",
   "tasks.newTask": "وظیفه جدید",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "وظیفه ایجاد شد",
   "tasks.taskUpdated": "وظیفه به‌روزرسانی شد",
   "tasks.failedSave": "ذخیره وظیفه ناموفق بود",
-
   "schedules.title": "برنامه کارکنان",
   "schedules.monthly": "ماهانه",
   "schedules.weekly": "هفتگی",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "در حال انجام",
   "schedules.completed": "تکمیل شده",
   "schedules.missed": "از دست رفته",
-
   "feedback.title": "بازخورد مشتریان",
   "feedback.subtitle": "مدیریت شکایات، سوالات و درخواست‌های مشتریان",
   "feedback.allTab": "همه",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "ارسال پاسخ ناموفق بود",
   "feedback.failedDismiss": "رد بازخورد ناموفق بود",
   "feedback.noResponse": "هنوز پاسخی نیست",
-
   "calls.title": "درخواست‌های پیشخدمت",
   "calls.call": "درخواست",
   "calls.callsPlural": "درخواست‌ها",
@@ -446,7 +434,6 @@
   "calls.respond": "پاسخ",
   "calls.respondedBy": "{{name}} پاسخ داد در",
   "calls.noCalls": "درخواستی نیست",
-
   "cafeSettings.title": "تنظیمات کافه",
   "cafeSettings.restaurantInformation": "اطلاعات رستوران",
   "cafeSettings.restaurantName": "نام رستوران",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "تنظیمات با موفقیت ذخیره شد",
   "cafeSettings.failedSave": "ذخیره تنظیمات ناموفق بود",
   "cafeSettings.noPermission": "شما اجازه دسترسی به این صفحه را ندارید. فقط مدیران می‌توانند تنظیمات کافه را مدیریت کنند.",
-
   "settings.title": "تنظیمات حساب",
   "settings.profileInformation": "اطلاعات پروفایل",
   "settings.fullName": "نام کامل",
@@ -535,7 +521,6 @@
   "settings.language": "زبان",
   "settings.selectLanguage": "زبان مورد نظر خود را انتخاب کنید",
   "settings.languageChanged": "زبان تغییر کرد",
-
   "staffMgmt.title": "مدیریت کارکنان",
   "staffMgmt.addStaff": "افزودن کارمند",
   "staffMgmt.accessDenied": "دسترسی رد شد. فقط مدیران می‌توانند کارکنان را مدیریت کنند.",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "سفارشی یافت نشد",
   "staffMgmt.orderNumber": "سفارش شماره",
   "staffMgmt.table": "میز",
-
   "payment.processPaymentCash": "پردازش پرداخت (نقدی)",
   "payment.orderFullyPaid": "این سفارش به طور کامل پرداخت شده است!",
   "payment.noItemsToPay": "این سفارش آیتمی برای پرداخت ندارد.",
@@ -590,7 +574,6 @@
   "payment.completing": "در حال تکمیل...",
   "payment.processing": "در حال پردازش...",
   "payment.processPaymentBtn": "پردازش پرداخت",
-
   "tables.editTable": "ویرایش {{table}}",
   "tables.addNewTable": "افزودن میز جدید",
   "tables.capacitySeats": "ظرفیت (صندلی)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "میز با موفقیت ایجاد شد",
   "tables.failedSaveTable": "ذخیره میز ناموفق بود",
   "tables.closed": "بسته",
-
   "tables.transferTable": "انتقال {{table}}",
   "tables.transferToTable": "انتقال به میز",
   "tables.selectTable": "انتخاب میز",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "انتقال میز",
   "tables.mainArea": "منطقه اصلی",
   "tables.reasonOptional": "دلیل (اختیاری)",
-
   "tables.createOrderFor": "ایجاد سفارش برای {{table}}",
   "tables.notesOptional": "یادداشت‌ها (اختیاری)",
   "tables.specialRequests": "درخواست‌های ویژه، حساسیت‌ها و غیره",
   "tables.createOrderHint": "این یک سفارش حضوری جدید برای {{table}} ایجاد خواهد کرد. در صفحه بعد می‌توانید آیتم‌های منو را اضافه کنید.",
-
   "delivery.createDeliveryOrder": "ایجاد سفارش ارسال",
   "delivery.customerName": "نام مشتری",
   "delivery.phoneNumber": "شماره تلفن",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "این یک سفارش ارسال جدید ایجاد خواهد کرد. در صفحه بعد می‌توانید آیتم‌ها را اضافه کنید.",
   "delivery.fullDeliveryAddress": "آدرس کامل ارسال",
   "delivery.ringDoorbell": "مثلاً زنگ بزنید، جلوی درب بگذارید...",
-
   "expenses.editExpense": "ویرایش هزینه",
   "expenses.validAmount": "لطفاً مبلغ معتبر وارد کنید",
   "expenses.updatingExpense": "در حال به‌روزرسانی هزینه...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "این هزینه برای چه بود؟",
   "expenses.optionalNotes": "یادداشت‌های اختیاری",
   "expenses.updateExpense": "به‌روزرسانی هزینه",
-
   "expenses.expenseCategories": "دسته‌بندی هزینه‌ها",
   "expenses.nameRequired": "نام الزامی است",
   "expenses.categoryUpdated": "دسته‌بندی به‌روزرسانی شد!",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "حذف دسته‌بندی ناموفق بود",
   "expenses.noCategories": "هنوز دسته‌بندی‌ای نیست",
   "expenses.done": "انجام شد",
-
   "stock.editStockItem": "ویرایش آیتم موجودی",
   "stock.addStockItem": "افزودن آیتم موجودی",
   "stock.updatingItem": "در حال به‌روزرسانی آیتم...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "نام تامین‌کننده",
   "stock.updateItem": "به‌روزرسانی آیتم",
   "stock.createItem": "ایجاد آیتم",
-
   "stock.adjustStock": "تعدیل موجودی: {{name}}",
   "stock.currentStock": "موجودی فعلی",
   "stock.validQuantity": "لطفاً مقدار معتبر وارد کنید",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "مقدار جدید",
   "stock.newStockLevel": "سطح موجودی جدید",
   "stock.reasonPlaceholder": "دلیل تعدیل (اختیاری)",
-
   "schedules.editSchedule": "ویرایش برنامه",
   "schedules.selectStaff": "انتخاب کارمند...",
   "schedules.scheduleUpdated": "برنامه به‌روزرسانی شد",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "شروع برنامه‌ریزی شده",
   "schedules.plannedEnd": "پایان برنامه‌ریزی شده",
   "schedules.optionalNotes": "یادداشت‌های اختیاری...",
-
   "tasks.editTask": "ویرایش وظیفه",
   "tasks.titleRequired": "لطفاً عنوان وظیفه را وارد کنید",
   "tasks.updatingTask": "در حال به‌روزرسانی وظیفه...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "زمان سررسید پیش‌فرض",
   "tasks.dueTime": "زمان سررسید",
   "tasks.update": "به‌روزرسانی",
-
   "waste.editWasteLog": "ویرایش ثبت ضایعات",
   "waste.linkToStockItem": "اتصال به آیتم موجودی",
   "waste.manualEntry": "ورود دستی (بدون آیتم موجودی)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "ثبت ضایعات به‌روزرسانی شد!",
   "waste.wasteButNoStock": "ضایعات ثبت شد اما کسر از موجودی ناموفق بود",
   "waste.validQuantity": "لطفاً مقدار معتبر وارد کنید",
-
   "staffMgmt.addNewStaff": "افزودن کارمند جدید",
   "staffMgmt.unexpectedError": "خطای غیرمنتظره‌ای رخ داد",
   "staffMgmt.createAccount": "ایجاد حساب",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "در حال بازنشانی...",
   "staffMgmt.setNewPasswordFor": "تنظیم رمز عبور جدید برای",
   "staffMgmt.saving": "در حال ذخیره...",
-
   "menu.editMenuItem": "ویرایش آیتم منو",
   "menu.noCategory": "بدون دسته‌بندی",
   "menu.itemNamePlaceholder": "نام آیتم (مثلاً کاپوچینو، سالاد سزار)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "دسته‌بندی با این نام از قبل موجود است.",
   "menu.available": "موجود",
   "menu.dailySpecial": "ویژه روزانه",
-
   "orders.createTakeoutOrder": "ایجاد سفارش بیرون‌بر",
   "orders.forPhoneOrCounter": "برای سفارش‌های تلفنی یا پیشخوان",
   "orders.customerInformation": "اطلاعات مشتری",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "نام کامل",
   "orders.enterNameAndPhone": "لطفاً نام و شماره تلفن مشتری را وارد کنید",
   "orders.failedCreateTakeout": "ایجاد سفارش بیرون‌بر ناموفق بود. لطفاً دوباره تلاش کنید.",
-
   "stock.optionalDescription": "توضیحات اختیاری",
   "stock.optionalNotes": "یادداشت‌های اختیاری",
   "stock.optionalSupplier": "نام تامین‌کننده (اختیاری)",
   "stock.coffeeBeans": "مثلاً دانه‌های قهوه",
   "stock.costPricePerUnit": "قیمت تمام‌شده هر واحد",
-
   "notifications.soundOn": "صدا روشن",
   "notifications.soundOff": "صدا خاموش",
   "notifications.notificationsOnTitle": "اعلان‌ها روشن (برای بی‌صدا کردن کلیک کنید)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "سفارش آماده است!",
   "notifications.orderReadyDescription": "یک سفارش آماده سرو است",
   "notifications.newItemsAdded": "آیتم‌های جدید اضافه شدند!",
-  "notifications.itemsAddedDescription": "آیتم‌هایی به سفارش اضافه شدند"
+  "notifications.itemsAddedDescription": "آیتم‌هایی به سفارش اضافه شدند",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

@@ -5,6 +5,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [react()],
   test: {
+    root: resolve(__dirname),
     globals: true,
     environment: 'jsdom',
     setupFiles: [resolve(__dirname, './src/__tests__/setup.ts')],
@@ -20,10 +21,19 @@ export default defineConfig({
         lines: 60,
       },
     },
+    server: {
+      deps: {
+        inline: ['@testing-library/react'],
+      },
+    },
   },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
+      react: resolve(__dirname, './node_modules/react'),
+      'react-dom': resolve(__dirname, './node_modules/react-dom'),
+      'react/jsx-runtime': resolve(__dirname, './node_modules/react/jsx-runtime'),
+      'react/jsx-dev-runtime': resolve(__dirname, './node_modules/react/jsx-dev-runtime'),
     },
   },
 });

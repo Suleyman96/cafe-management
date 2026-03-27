@@ -23,7 +23,6 @@
   "tables.tableDeleted": "o'chirildi",
   "tables.failedDeleteTable": "Stolni o'chirish muvaffaqiyatsiz",
   "tables.tableNotFound": "Stol topilmadi",
-
   "orders.title": "Buyurtmalarni boshqarish",
   "orders.orderCreated": "Olib ketish buyurtmasi yaratildi",
   "orders.searchOrders": "Buyurtmalarni qidirish...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "Tayinlanmagan",
   "orders.itemStatusUpdated": "Mahsulot holati {{status}} ga yangilandi",
   "orders.tax": "Soliq",
-
   "kitchen.title": "Oshxona",
   "kitchen.noActiveOrders": "Faol buyurtmalar yo'q",
   "kitchen.waitingForOrders": "Yangi buyurtmalar kutilmoqda...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "Tayyorlash vaqti",
   "kitchen.min": "daq",
   "kitchen.elapsedTime": "O'tgan vaqt",
-
   "delivery.title": "Yetkazib berish buyurtmalari",
   "delivery.newDeliveryOrder": "Yangi yetkazib berish buyurtmasi",
   "delivery.searchDelivery": "Ism, telefon, manzil bo'yicha qidirish...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "Yetkazib berish buyurtmasini bekor qilish",
   "delivery.failedUpdate": "Buyurtmani yangilash muvaffaqiyatsiz",
   "delivery.activeCount": "faol",
-
   "menu.title": "Menyuni boshqarish",
   "menu.subtitle": "Menyu mahsulotlari va turkumlarini boshqarish",
   "menu.addCategory": "Turkum qo'shish",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "Menyu mahsulotini saqlash muvaffaqiyatsiz",
   "menu.failedSaveCategory": "Turkumni saqlash muvaffaqiyatsiz",
   "menu.image": "Rasm",
-
   "reports.title": "Hisobotlar va tahlil",
   "reports.ownerAccessRequired": "Egasi ruxsati talab qilinadi",
   "reports.salesReport": "Sotuv hisoboti",
@@ -260,7 +255,6 @@
   "reports.today": "Bugun",
   "reports.from": "dan",
   "reports.orders": "buyurtmalar",
-
   "expenses.title": "Xarajatlar",
   "expenses.subtitle": "Operatsion xarajatlarni kuzatish va boshqarish",
   "expenses.categories": "Turkumlar",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "Xarajat yaratildi",
   "expenses.expenseUpdated": "Xarajat yangilandi",
   "expenses.failedSave": "Xarajatni saqlash muvaffaqiyatsiz",
-
   "stock.title": "Omborni boshqarish",
   "stock.subtitle": "Inventar va ombor darajasini kuzatish",
   "stock.addItem": "Mahsulot qo'shish",
@@ -320,7 +313,6 @@
   "stock.movementType": "Harakat turi",
   "stock.movementNotes": "Izohlar",
   "stock.movementRecorded": "Ombor harakati qayd etildi",
-
   "waste.title": "Isrofgarchilikni boshqarish",
   "waste.subtitle": "Oziq-ovqat isrofgarchiligini kuzatish va kamaytirish",
   "waste.logWaste": "Isrofgarchilik qayd etish",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "Birlik narxi",
   "waste.wasteLogged": "Isrofgarchilik qayd etildi",
   "waste.failedLog": "Isrofgarchilikni qayd etish muvaffaqiyatsiz",
-
   "tasks.title": "Vazifalar",
   "tasks.subtitle": "Kundalik operatsiyalar va xodim tayinlashlarini boshqarish",
   "tasks.newTask": "Yangi vazifa",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "Vazifa yaratildi",
   "tasks.taskUpdated": "Vazifa yangilandi",
   "tasks.failedSave": "Vazifani saqlash muvaffaqiyatsiz",
-
   "schedules.title": "Xodimlar jadvali",
   "schedules.monthly": "Oylik",
   "schedules.weekly": "Haftalik",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "Bajarilmoqda",
   "schedules.completed": "Bajarildi",
   "schedules.missed": "O'tkazib yuborildi",
-
   "feedback.title": "Mijoz fikr-mulohazalari",
   "feedback.subtitle": "Mijozlardan kelgan shikoyatlar, savollar va so'rovlarni boshqarish",
   "feedback.allTab": "Barchasi",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "Javob yuborish muvaffaqiyatsiz",
   "feedback.failedDismiss": "Fikrni rad etish muvaffaqiyatsiz",
   "feedback.noResponse": "Javob hali yo'q",
-
   "calls.title": "Ofitsiant chaqiruvlari",
   "calls.call": "chaqiruv",
   "calls.callsPlural": "chaqiruvlar",
@@ -446,7 +434,6 @@
   "calls.respond": "Javob berish",
   "calls.respondedBy": "{{name}} javob berdi, vaqti:",
   "calls.noCalls": "Chaqiruvlar yo'q",
-
   "cafeSettings.title": "Kafe sozlamalari",
   "cafeSettings.restaurantInformation": "Restoran ma'lumotlari",
   "cafeSettings.restaurantName": "Restoran nomi",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "Sozlamalar muvaffaqiyatli saqlandi",
   "cafeSettings.failedSave": "Sozlamalarni saqlash muvaffaqiyatsiz",
   "cafeSettings.noPermission": "Bu sahifaga kirish huquqingiz yo'q. Faqat administratorlar kafe sozlamalarini boshqarishi mumkin.",
-
   "settings.title": "Hisob sozlamalari",
   "settings.profileInformation": "Profil ma'lumotlari",
   "settings.fullName": "To'liq ism",
@@ -535,7 +521,6 @@
   "settings.language": "Til",
   "settings.selectLanguage": "O'zingiz yoqtirgan tilni tanlang",
   "settings.languageChanged": "Til o'zgartirildi",
-
   "staffMgmt.title": "Xodimlarni boshqarish",
   "staffMgmt.addStaff": "Xodim qo'shish",
   "staffMgmt.accessDenied": "Kirish taqiqlangan. Faqat administratorlar xodimlarni boshqarishi mumkin.",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "Buyurtmalar topilmadi",
   "staffMgmt.orderNumber": "Buyurtma №",
   "staffMgmt.table": "Stol",
-
   "payment.processPaymentCash": "To'lovni amalga oshirish (naqd)",
   "payment.orderFullyPaid": "Bu buyurtma to'liq to'langan!",
   "payment.noItemsToPay": "Bu buyurtmada to'lanadigan mahsulotlar yo'q.",
@@ -590,7 +574,6 @@
   "payment.completing": "Yakunlanmoqda...",
   "payment.processing": "Amalga oshirilmoqda...",
   "payment.processPaymentBtn": "To'lovni amalga oshirish",
-
   "tables.editTable": "{{table}} tahrirlash",
   "tables.addNewTable": "Yangi stol qo'shish",
   "tables.capacitySeats": "Sig'imi (o'rindiq)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "Stol muvaffaqiyatli yaratildi",
   "tables.failedSaveTable": "Stolni saqlash muvaffaqiyatsiz",
   "tables.closed": "Yopiq",
-
   "tables.transferTable": "{{table}} ko'chirish",
   "tables.transferToTable": "Stolga ko'chirish",
   "tables.selectTable": "Stol tanlash",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "Stolni ko'chirish",
   "tables.mainArea": "Asosiy hudud",
   "tables.reasonOptional": "Sabab (ixtiyoriy)",
-
   "tables.createOrderFor": "{{table}} uchun buyurtma yaratish",
   "tables.notesOptional": "Izohlar (ixtiyoriy)",
   "tables.specialRequests": "Maxsus so'rovlar, allergiyalar va h.k.",
   "tables.createOrderHint": "Bu {{table}} uchun yangi restoran buyurtmasini yaratadi. Keyingi ekranda menyu mahsulotlarini qo'shishingiz mumkin.",
-
   "delivery.createDeliveryOrder": "Yetkazib berish buyurtmasini yaratish",
   "delivery.customerName": "Mijoz ismi",
   "delivery.phoneNumber": "Telefon raqami",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "Bu yangi yetkazib berish buyurtmasini yaratadi. Keyingi ekranda mahsulotlarni qo'shishingiz mumkin.",
   "delivery.fullDeliveryAddress": "To'liq yetkazib berish manzili",
   "delivery.ringDoorbell": "masalan, Qo'ng'iroq bosing, eshik oldiga qoldiring...",
-
   "expenses.editExpense": "Xarajatni tahrirlash",
   "expenses.validAmount": "Yaroqli summa kiriting",
   "expenses.updatingExpense": "Xarajat yangilanmoqda...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "Bu xarajat nima uchun edi?",
   "expenses.optionalNotes": "Ixtiyoriy izohlar",
   "expenses.updateExpense": "Xarajatni yangilash",
-
   "expenses.expenseCategories": "Xarajat turkumlari",
   "expenses.nameRequired": "Nom majburiy",
   "expenses.categoryUpdated": "Turkum yangilandi!",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "Turkumni o'chirish muvaffaqiyatsiz",
   "expenses.noCategories": "Turkumlar hali yo'q",
   "expenses.done": "Tayyor",
-
   "stock.editStockItem": "Ombor mahsulotini tahrirlash",
   "stock.addStockItem": "Ombor mahsuloti qo'shish",
   "stock.updatingItem": "Mahsulot yangilanmoqda...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "Yetkazib beruvchi nomi",
   "stock.updateItem": "Mahsulotni yangilash",
   "stock.createItem": "Mahsulot yaratish",
-
   "stock.adjustStock": "Omborni tuzatish: {{name}}",
   "stock.currentStock": "Joriy ombor",
   "stock.validQuantity": "Yaroqli miqdor kiriting",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "Yangi miqdor",
   "stock.newStockLevel": "Yangi ombor darajasi",
   "stock.reasonPlaceholder": "Tuzatish sababi (ixtiyoriy)",
-
   "schedules.editSchedule": "Jadvalni tahrirlash",
   "schedules.selectStaff": "Xodim tanlash...",
   "schedules.scheduleUpdated": "Jadval yangilandi",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "Rejalashtirilgan boshlanishi",
   "schedules.plannedEnd": "Rejalashtirilgan tugashi",
   "schedules.optionalNotes": "Ixtiyoriy izohlar...",
-
   "tasks.editTask": "Vazifani tahrirlash",
   "tasks.titleRequired": "Vazifa sarlavhasini kiriting",
   "tasks.updatingTask": "Vazifa yangilanmoqda...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "Standart muddat vaqti",
   "tasks.dueTime": "Muddat vaqti",
   "tasks.update": "Yangilash",
-
   "waste.editWasteLog": "Isrofgarchilik yozuvini tahrirlash",
   "waste.linkToStockItem": "Ombor mahsulotiga bog'lash",
   "waste.manualEntry": "Qo'lda kiritish (ombor mahsulotisiz)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "Isrofgarchilik yozuvi yangilandi!",
   "waste.wasteButNoStock": "Isrofgarchilik qayd etildi, lekin ombordan ayirish muvaffaqiyatsiz",
   "waste.validQuantity": "Yaroqli miqdor kiriting",
-
   "staffMgmt.addNewStaff": "Yangi xodim qo'shish",
   "staffMgmt.unexpectedError": "Kutilmagan xato yuz berdi",
   "staffMgmt.createAccount": "Hisob yaratish",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "Qayta tiklanmoqda...",
   "staffMgmt.setNewPasswordFor": "Yangi parol o'rnatish:",
   "staffMgmt.saving": "Saqlanmoqda...",
-
   "menu.editMenuItem": "Menyu mahsulotini tahrirlash",
   "menu.noCategory": "Turkum yo'q",
   "menu.itemNamePlaceholder": "Mahsulot nomi (masalan, Kapuchino, Sezar salati)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "Bu nomli turkum allaqachon mavjud.",
   "menu.available": "Mavjud",
   "menu.dailySpecial": "Kunlik maxsus",
-
   "orders.createTakeoutOrder": "Olib ketish buyurtmasini yaratish",
   "orders.forPhoneOrCounter": "Telefon yoki peshtaxta buyurtmalari uchun",
   "orders.customerInformation": "Mijoz ma'lumotlari",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "To'liq ism",
   "orders.enterNameAndPhone": "Mijoz ismi va telefon raqamini kiriting",
   "orders.failedCreateTakeout": "Olib ketish buyurtmasini yaratish muvaffaqiyatsiz. Qayta urinib ko'ring.",
-
   "stock.optionalDescription": "Ixtiyoriy tavsif",
   "stock.optionalNotes": "Ixtiyoriy izohlar",
   "stock.optionalSupplier": "Yetkazib beruvchi nomi (ixtiyoriy)",
   "stock.coffeeBeans": "masalan, Kofe donalari",
   "stock.costPricePerUnit": "Birlik narxi",
-
   "notifications.soundOn": "Ovoz YOQILDI",
   "notifications.soundOff": "Ovoz O'CHIRILDI",
   "notifications.notificationsOnTitle": "Bildirishnomalar YOQILGAN (o'chirish uchun bosing)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "Buyurtma tayyor!",
   "notifications.orderReadyDescription": "Buyurtma berishga tayyor",
   "notifications.newItemsAdded": "Yangi mahsulotlar qo'shildi!",
-  "notifications.itemsAddedDescription": "Buyurtmaga mahsulotlar qo'shildi"
+  "notifications.itemsAddedDescription": "Buyurtmaga mahsulotlar qo'shildi",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

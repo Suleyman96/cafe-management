@@ -7,6 +7,7 @@ import {
   getErrorMessage,
   handleSupabaseError,
   isAppError,
+  NetworkError,
   NotFoundError,
   ValidationError,
 } from '../errors';
@@ -90,6 +91,37 @@ describe('getErrorMessage', () => {
   it('returns default for unknown', () => {
     expect(getErrorMessage(42)).toBe('An unexpected error occurred');
   });
+
+  it('returns default for null', () => {
+    expect(getErrorMessage(null)).toBe('An unexpected error occurred');
+  });
+
+  it('returns default for undefined', () => {
+    expect(getErrorMessage(undefined)).toBe('An unexpected error occurred');
+  });
+
+  it('returns empty string from Error with empty message', () => {
+    expect(getErrorMessage(new Error(''))).toBe('');
+  });
+});
+
+describe('NetworkError', () => {
+  it('has statusCode 0', () => {
+    const error = new NetworkError();
+    expect(error.statusCode).toBe(0);
+    expect(error.code).toBe('NETWORK_ERROR');
+    expect(error.message).toBe('Network error');
+  });
+});
+
+describe('Error inheritance', () => {
+  it('ValidationError instanceof AppError', () => {
+    expect(new ValidationError('x') instanceof AppError).toBe(true);
+  });
+
+  it('ValidationError instanceof ValidationError', () => {
+    expect(new ValidationError('x') instanceof ValidationError).toBe(true);
+  });
 });
 
 describe('handleSupabaseError', () => {
@@ -121,5 +153,32 @@ describe('handleSupabaseError', () => {
   it('maps status 403 to AuthorizationError', () => {
     const error = handleSupabaseError({ status: 403 });
     expect(error).toBeInstanceOf(AuthorizationError);
+  });
+
+  it('code takes priority over status when both are present', () => {
+    const error = handleSupabaseError({ code: '23505', status: 404 });
+    expect(error).toBeInstanceOf(ConflictError);
+  });
+
+  it('maps NETWORK_ERROR code to NetworkError', () => {
+    const error = handleSupabaseError({ code: 'NETWORK_ERROR' });
+    expect(error).toBeInstanceOf(NetworkError);
+  });
+
+  it('returns default AppError for null', () => {
+    const error = handleSupabaseError(null);
+    expect(error).toBeInstanceOf(AppError);
+    expect(error.code).toBe('UNKNOWN_ERROR');
+  });
+
+  it('returns default AppError for undefined', () => {
+    const error = handleSupabaseError(undefined);
+    expect(error).toBeInstanceOf(AppError);
+  });
+
+  it('returns default AppError for unknown error shape', () => {
+    const error = handleSupabaseError({ something: 'unknown' });
+    expect(error).toBeInstanceOf(AppError);
+    expect(error.statusCode).toBe(500);
   });
 });

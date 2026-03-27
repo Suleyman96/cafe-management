@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
-import { Card, Text, TextInput } from 'react-native-paper';
+import { Card, Text } from 'react-native-paper';
+import { TextInput } from '@/lib/paper-compat';
 import type { SettingsSectionProps } from './ToggleRow';
 import { ToggleRow } from './ToggleRow';
 
@@ -22,7 +23,7 @@ export function BrandingSection({ form, updateField }: SettingsSectionProps) {
           <TextInput
             label="Welcome Heading"
             value={form.welcome_heading || ''}
-            onChangeText={(v) => updateField('welcome_heading', v || null)}
+            onChangeText={(v: string) => updateField('welcome_heading', v || null)}
             mode="outlined"
             dense
             placeholder="Welcome to our restaurant!"
@@ -31,7 +32,7 @@ export function BrandingSection({ form, updateField }: SettingsSectionProps) {
           <TextInput
             label="Welcome Message"
             value={form.welcome_message || ''}
-            onChangeText={(v) => updateField('welcome_message', v || null)}
+            onChangeText={(v: string) => updateField('welcome_message', v || null)}
             mode="outlined"
             dense
             multiline

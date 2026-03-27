@@ -23,7 +23,6 @@
   "tables.tableDeleted": "удалён",
   "tables.failedDeleteTable": "Не удалось удалить стол",
   "tables.tableNotFound": "Стол не найден",
-
   "orders.title": "Управление заказами",
   "orders.orderCreated": "Заказ на вынос создан",
   "orders.searchOrders": "Поиск заказов...",
@@ -110,7 +109,6 @@
   "orders.notAssigned": "Не назначен",
   "orders.itemStatusUpdated": "Статус позиции обновлён на {{status}}",
   "orders.tax": "Налог",
-
   "kitchen.title": "Кухня",
   "kitchen.noActiveOrders": "Нет активных заказов",
   "kitchen.waitingForOrders": "Ожидание новых заказов...",
@@ -129,7 +127,6 @@
   "kitchen.preparationTime": "Время приготовления",
   "kitchen.min": "мин",
   "kitchen.elapsedTime": "Прошло времени",
-
   "delivery.title": "Заказы на доставку",
   "delivery.newDeliveryOrder": "Новый заказ на доставку",
   "delivery.searchDelivery": "Поиск по имени, телефону, адресу...",
@@ -144,7 +141,6 @@
   "delivery.cancelDeliveryOrder": "Отменить заказ на доставку",
   "delivery.failedUpdate": "Не удалось обновить заказ",
   "delivery.activeCount": "активных",
-
   "menu.title": "Управление меню",
   "menu.subtitle": "Управляйте позициями меню и категориями",
   "menu.addCategory": "Добавить категорию",
@@ -186,7 +182,6 @@
   "menu.failedSaveItem": "Не удалось сохранить позицию меню",
   "menu.failedSaveCategory": "Не удалось сохранить категорию",
   "menu.image": "Изображение",
-
   "reports.title": "Отчёты и аналитика",
   "reports.ownerAccessRequired": "Требуется доступ владельца",
   "reports.salesReport": "Отчёт о продажах",
@@ -260,7 +255,6 @@
   "reports.today": "Сегодня",
   "reports.from": "от",
   "reports.orders": "заказов",
-
   "expenses.title": "Расходы",
   "expenses.subtitle": "Отслеживайте и управляйте операционными расходами",
   "expenses.categories": "Категории",
@@ -285,7 +279,6 @@
   "expenses.expenseCreated": "Расход создан",
   "expenses.expenseUpdated": "Расход обновлён",
   "expenses.failedSave": "Не удалось сохранить расход",
-
   "stock.title": "Управление складом",
   "stock.subtitle": "Отслеживайте складские запасы и остатки",
   "stock.addItem": "Добавить позицию",
@@ -320,7 +313,6 @@
   "stock.movementType": "Тип движения",
   "stock.movementNotes": "Заметки",
   "stock.movementRecorded": "Складское движение зафиксировано",
-
   "waste.title": "Управление списаниями",
   "waste.subtitle": "Отслеживайте и сокращайте пищевые отходы",
   "waste.logWaste": "Записать списание",
@@ -344,7 +336,6 @@
   "waste.costPerUnit": "Стоимость за единицу",
   "waste.wasteLogged": "Списание зафиксировано",
   "waste.failedLog": "Не удалось зафиксировать списание",
-
   "tasks.title": "Задачи",
   "tasks.subtitle": "Управляйте ежедневными операциями и заданиями персонала",
   "tasks.newTask": "Новая задача",
@@ -382,7 +373,6 @@
   "tasks.taskCreated": "Задача создана",
   "tasks.taskUpdated": "Задача обновлена",
   "tasks.failedSave": "Не удалось сохранить задачу",
-
   "schedules.title": "Расписание персонала",
   "schedules.monthly": "По месяцам",
   "schedules.weekly": "По неделям",
@@ -400,7 +390,6 @@
   "schedules.inProgress": "В работе",
   "schedules.completed": "Завершено",
   "schedules.missed": "Пропущено",
-
   "feedback.title": "Отзывы клиентов",
   "feedback.subtitle": "Управляйте жалобами, вопросами и запросами клиентов",
   "feedback.allTab": "Все",
@@ -426,7 +415,6 @@
   "feedback.failedRespond": "Не удалось отправить ответ",
   "feedback.failedDismiss": "Не удалось отклонить отзыв",
   "feedback.noResponse": "Пока нет ответа",
-
   "calls.title": "Вызовы официанта",
   "calls.call": "вызов",
   "calls.callsPlural": "вызовов",
@@ -446,7 +434,6 @@
   "calls.respond": "Ответить",
   "calls.respondedBy": "Ответил {{name}} в",
   "calls.noCalls": "Нет вызовов",
-
   "cafeSettings.title": "Настройки кафе",
   "cafeSettings.restaurantInformation": "Информация о ресторане",
   "cafeSettings.restaurantName": "Название ресторана",
@@ -513,7 +500,6 @@
   "cafeSettings.settingsSaved": "Настройки успешно сохранены",
   "cafeSettings.failedSave": "Не удалось сохранить настройки",
   "cafeSettings.noPermission": "У вас нет доступа к этой странице. Только администраторы могут управлять настройками кафе.",
-
   "settings.title": "Настройки аккаунта",
   "settings.profileInformation": "Информация профиля",
   "settings.fullName": "Полное имя",
@@ -535,7 +521,6 @@
   "settings.language": "Язык",
   "settings.selectLanguage": "Выберите предпочтительный язык",
   "settings.languageChanged": "Язык изменён",
-
   "staffMgmt.title": "Управление персоналом",
   "staffMgmt.addStaff": "Добавить сотрудника",
   "staffMgmt.accessDenied": "Доступ запрещён. Только администраторы могут управлять персоналом.",
@@ -568,7 +553,6 @@
   "staffMgmt.noOrders": "Заказов не найдено",
   "staffMgmt.orderNumber": "Заказ №",
   "staffMgmt.table": "Стол",
-
   "payment.processPaymentCash": "Провести оплату (Наличные)",
   "payment.orderFullyPaid": "Этот заказ полностью оплачен!",
   "payment.noItemsToPay": "В этом заказе нет позиций для оплаты.",
@@ -590,7 +574,6 @@
   "payment.completing": "Завершение...",
   "payment.processing": "Обработка...",
   "payment.processPaymentBtn": "Провести оплату",
-
   "tables.editTable": "Редактировать {{table}}",
   "tables.addNewTable": "Добавить новый стол",
   "tables.capacitySeats": "Вместимость (мест)",
@@ -600,7 +583,6 @@
   "tables.tableCreated": "Стол успешно создан",
   "tables.failedSaveTable": "Не удалось сохранить стол",
   "tables.closed": "Закрыт",
-
   "tables.transferTable": "Перенести {{table}}",
   "tables.transferToTable": "Перенести на стол",
   "tables.selectTable": "Выберите стол",
@@ -611,12 +593,10 @@
   "tables.transferTableBtn": "Перенести стол",
   "tables.mainArea": "Основной зал",
   "tables.reasonOptional": "Причина (необязательно)",
-
   "tables.createOrderFor": "Создать заказ для {{table}}",
   "tables.notesOptional": "Заметки (необязательно)",
   "tables.specialRequests": "Особые пожелания, аллергии и т.д.",
   "tables.createOrderHint": "Будет создан новый заказ для {{table}}. Вы сможете добавить позиции меню на следующем экране.",
-
   "delivery.createDeliveryOrder": "Создать заказ на доставку",
   "delivery.customerName": "Имя клиента",
   "delivery.phoneNumber": "Номер телефона",
@@ -625,7 +605,6 @@
   "delivery.deliveryHint": "Будет создан новый заказ на доставку. Вы сможете добавить позиции на следующем экране.",
   "delivery.fullDeliveryAddress": "Полный адрес доставки",
   "delivery.ringDoorbell": "Напр., Позвонить в домофон, оставить у двери...",
-
   "expenses.editExpense": "Редактировать расход",
   "expenses.validAmount": "Введите корректную сумму",
   "expenses.updatingExpense": "Обновление расхода...",
@@ -634,7 +613,6 @@
   "expenses.whatExpenseFor": "На что был расход?",
   "expenses.optionalNotes": "Заметки (необязательно)",
   "expenses.updateExpense": "Обновить расход",
-
   "expenses.expenseCategories": "Категории расходов",
   "expenses.nameRequired": "Название обязательно",
   "expenses.categoryUpdated": "Категория обновлена!",
@@ -644,7 +622,6 @@
   "expenses.failedDeleteCategory": "Не удалось удалить категорию",
   "expenses.noCategories": "Пока нет категорий",
   "expenses.done": "Готово",
-
   "stock.editStockItem": "Редактировать складскую позицию",
   "stock.addStockItem": "Добавить складскую позицию",
   "stock.updatingItem": "Обновление позиции...",
@@ -654,7 +631,6 @@
   "stock.supplierName": "Название поставщика",
   "stock.updateItem": "Обновить позицию",
   "stock.createItem": "Создать позицию",
-
   "stock.adjustStock": "Корректировка: {{name}}",
   "stock.currentStock": "Текущий остаток",
   "stock.validQuantity": "Введите корректное количество",
@@ -668,7 +644,6 @@
   "stock.newQuantity": "Новое количество",
   "stock.newStockLevel": "Новый остаток",
   "stock.reasonPlaceholder": "Причина корректировки (необязательно)",
-
   "schedules.editSchedule": "Редактировать смену",
   "schedules.selectStaff": "Выберите сотрудника...",
   "schedules.scheduleUpdated": "Смена обновлена",
@@ -686,7 +661,6 @@
   "schedules.plannedStart": "Планируемое начало",
   "schedules.plannedEnd": "Планируемое окончание",
   "schedules.optionalNotes": "Заметки (необязательно)...",
-
   "tasks.editTask": "Редактировать задачу",
   "tasks.titleRequired": "Введите название задачи",
   "tasks.updatingTask": "Обновление задачи...",
@@ -702,7 +676,6 @@
   "tasks.defaultDueTime": "Время по умолчанию",
   "tasks.dueTime": "Срок",
   "tasks.update": "Обновить",
-
   "waste.editWasteLog": "Редактировать запись списания",
   "waste.linkToStockItem": "Привязать к складской позиции",
   "waste.manualEntry": "Ручной ввод (без складской позиции)",
@@ -716,7 +689,6 @@
   "waste.wasteLogUpdated": "Запись списания обновлена!",
   "waste.wasteButNoStock": "Списание зафиксировано, но не удалось списать со склада",
   "waste.validQuantity": "Введите корректное количество",
-
   "staffMgmt.addNewStaff": "Добавить нового сотрудника",
   "staffMgmt.unexpectedError": "Произошла непредвиденная ошибка",
   "staffMgmt.createAccount": "Создать аккаунт",
@@ -733,7 +705,6 @@
   "staffMgmt.resetting": "Сброс...",
   "staffMgmt.setNewPasswordFor": "Установите новый пароль для",
   "staffMgmt.saving": "Сохранение...",
-
   "menu.editMenuItem": "Редактировать позицию меню",
   "menu.noCategory": "Без категории",
   "menu.itemNamePlaceholder": "Название (напр., Капучино, Салат Цезарь)",
@@ -762,7 +733,6 @@
   "menu.duplicateCategory": "Категория с таким названием уже существует.",
   "menu.available": "Доступно",
   "menu.dailySpecial": "Блюдо дня",
-
   "orders.createTakeoutOrder": "Создать заказ на вынос",
   "orders.forPhoneOrCounter": "Для телефонных или кассовых заказов",
   "orders.customerInformation": "Информация о клиенте",
@@ -782,13 +752,11 @@
   "orders.fullNamePlaceholder": "Полное имя",
   "orders.enterNameAndPhone": "Введите имя и номер телефона клиента",
   "orders.failedCreateTakeout": "Не удалось создать заказ на вынос. Попробуйте снова.",
-
   "stock.optionalDescription": "Описание (необязательно)",
   "stock.optionalNotes": "Заметки (необязательно)",
   "stock.optionalSupplier": "Поставщик (необязательно)",
   "stock.coffeeBeans": "Напр., Кофейные зёрна",
   "stock.costPricePerUnit": "Себестоимость за единицу",
-
   "notifications.soundOn": "Звук ВКЛ",
   "notifications.soundOff": "Звук ВЫКЛ",
   "notifications.notificationsOnTitle": "Уведомления ВКЛ (нажмите, чтобы отключить звук)",
@@ -805,5 +773,10 @@
   "notifications.orderReady": "Заказ готов!",
   "notifications.orderReadyDescription": "Заказ готов к подаче",
   "notifications.newItemsAdded": "Добавлены новые позиции!",
-  "notifications.itemsAddedDescription": "В заказ добавлены позиции"
+  "notifications.itemsAddedDescription": "В заказ добавлены позиции",
+  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
+  "feedback.status.pending": "Pending",
+  "feedback.status.acknowledged": "Acknowledged",
+  "feedback.status.resolved": "Resolved",
+  "feedback.status.dismissed": "Dismissed"
 }

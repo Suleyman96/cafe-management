@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { PlatformFooter } from '@/components/ui/platform-footer';
 import { useDeliveryOrder } from '@/hooks/use-delivery';
+import { useFormatPrice } from '@/hooks/use-format-price';
 import { useCafeSettings } from '@/hooks/use-settings';
-import { formatPrice, getStatusColor, timeAgo } from '@/lib/utils';
+import { getStatusColor, timeAgo } from '@/lib/utils';
 
 interface DeliveryOrderStatusProps {
   orderId: string;
@@ -17,6 +18,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
   const { t } = useTranslation('customer');
   const { data: order, isLoading } = useDeliveryOrder(orderId);
   const { data: settings } = useCafeSettings();
+  const formatPrice = useFormatPrice();
 
   if (isLoading) {
     return <LoadingSpinner fullScreen />;
@@ -183,7 +185,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
                     variant="outline"
                     className={`mt-2 text-xs ${getStatusColor(item.status)}`}
                   >
-                    {item.status}
+                    {t(`orderStatus.itemStatus.${item.status}`, { defaultValue: item.status })}
                   </Badge>
                 </div>
                 <span className="font-medium">{formatPrice(item.item_price * item.quantity)}</span>
@@ -214,9 +216,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
             )}
             <div className="flex justify-between text-lg font-bold">
               <span>{t('total', { ns: 'common' })}</span>
-              <span className="text-primary">
-                {formatPrice(order.total + (order.delivery_fee || 0))}
-              </span>
+              <span className="text-primary">{formatPrice(order.total)}</span>
             </div>
           </div>
         </div>

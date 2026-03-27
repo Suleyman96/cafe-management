@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Card, Chip, IconButton, Text } from 'react-native-paper';
+import { Card, Chip, IconButton } from 'react-native-paper';
+import { Text } from '@/lib/paper-compat';
 
 const METHOD_COLORS: Record<string, string> = {
   cash: '#10b981',
