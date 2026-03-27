@@ -792,9 +792,9 @@
   "notifications.orderReadyDescription": "Sifariş servis edilməyə hazırdır",
   "notifications.newItemsAdded": "Yeni məhsullar əlavə edildi!",
   "notifications.itemsAddedDescription": "Sifarişə məhsullar əlavə edildi",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "Bu rəyi rədd etmək istədiyinizə əminsiniz?",
+  "feedback.status.pending": "Gözləmədə",
+  "feedback.status.acknowledged": "Qəbul edildi",
+  "feedback.status.resolved": "Həll edildi",
+  "feedback.status.dismissed": "Rədd edildi"
 }

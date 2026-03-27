@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "Buyurtma berishga tayyor",
   "notifications.newItemsAdded": "Yangi mahsulotlar qo'shildi!",
   "notifications.itemsAddedDescription": "Buyurtmaga mahsulotlar qo'shildi",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "Ushbu fikr-mulohazani rad etishga ishonchingiz komilmi?",
+  "feedback.status.pending": "Kutilmoqda",
+  "feedback.status.acknowledged": "Qabul qilindi",
+  "feedback.status.resolved": "Hal qilindi",
+  "feedback.status.dismissed": "Rad etildi"
 }

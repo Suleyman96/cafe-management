@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "შეკვეთა მირთმევისთვის მზადაა",
   "notifications.newItemsAdded": "ახალი ერთეულები დაემატა!",
   "notifications.itemsAddedDescription": "შეკვეთას ერთეულები დაემატა",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "დარწმუნებული ხართ, რომ გსურთ ამ გამოხმაურების უარყოფა?",
+  "feedback.status.pending": "მოლოდინში",
+  "feedback.status.acknowledged": "მიღებულია",
+  "feedback.status.resolved": "მოგვარებულია",
+  "feedback.status.dismissed": "უარყოფილია"
 }

@@ -1,5 +1,5 @@
 import { differenceInMinutes, differenceInSeconds } from 'date-fns';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Text } from 'react-native-paper';
 
 interface TimeElapsedProps {
@@ -32,12 +32,29 @@ export const TimeElapsed = React.memo(function TimeElapsed({
   showColor = true,
 }: TimeElapsedProps) {
   const [elapsed, setElapsed] = useState(() => formatElapsed(createdAt));
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setElapsed(formatElapsed(createdAt));
-    }, 1000);
-    return () => clearInterval(interval);
+    const tick = () => {
+      const result = formatElapsed(createdAt);
+      setElapsed(result);
+
+      // Switch to 60s interval once past the first minute
+      if (result.minutes >= 1 && intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = setInterval(() => {
+          setElapsed(formatElapsed(createdAt));
+        }, 60000);
+      }
+    };
+
+    const initial = formatElapsed(createdAt);
+    const initialInterval = initial.minutes >= 1 ? 60000 : 1000;
+    intervalRef.current = setInterval(tick, initialInterval);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [createdAt]);
 
   const color = showColor ? getTimeColor(elapsed.minutes) : '#6b7280';

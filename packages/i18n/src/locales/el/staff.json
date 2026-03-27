@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "Μια παραγγελία είναι έτοιμη για σερβίρισμα",
   "notifications.newItemsAdded": "Προστέθηκαν νέα είδη!",
   "notifications.itemsAddedDescription": "Προστέθηκαν είδη σε μια παραγγελία",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "Είστε σίγουροι ότι θέλετε να απορρίψετε αυτό το σχόλιο;",
+  "feedback.status.pending": "Εκκρεμεί",
+  "feedback.status.acknowledged": "Αναγνωρίστηκε",
+  "feedback.status.resolved": "Επιλύθηκε",
+  "feedback.status.dismissed": "Απορρίφθηκε"
 }

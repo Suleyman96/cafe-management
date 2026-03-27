@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "Заказ готов к подаче",
   "notifications.newItemsAdded": "Добавлены новые позиции!",
   "notifications.itemsAddedDescription": "В заказ добавлены позиции",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "Вы уверены, что хотите отклонить этот отзыв?",
+  "feedback.status.pending": "Ожидает",
+  "feedback.status.acknowledged": "Принято",
+  "feedback.status.resolved": "Решено",
+  "feedback.status.dismissed": "Отклонено"
 }

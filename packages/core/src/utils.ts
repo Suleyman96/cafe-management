@@ -65,9 +65,21 @@ export function calculateTotalWithSettings(subtotal: number, settings: PricingSe
  * Get display subtotal (without tax) when prices include tax
  */
 export function getDisplaySubtotal(subtotal: number, settings: PricingSettings): number {
+  if (!settings.tax_enabled) return subtotal;
   if (settings.prices_include_tax) {
     const rate = settings.tax_percentage / 100;
     return subtotal / (1 + rate);
   }
   return subtotal;
+}
+
+// ─── Date Utilities ──────────────────────────────────────────────
+
+/**
+ * Returns YYYY-MM-DD string in the device's local timezone.
+ * Replaces `new Date().toISOString().split('T')[0]` which returns UTC date
+ * and produces wrong results near midnight in non-UTC timezones.
+ */
+export function getLocalDateString(date: Date = new Date()): string {
+  return date.toLocaleDateString('en-CA');
 }

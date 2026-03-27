@@ -1,4 +1,10 @@
-import { QUERY_KEYS } from '@cafe-idare/core';
+import {
+  calculateTaxWithSettings,
+  calculateTotalWithSettings,
+  formatPriceWithSettings,
+  getDisplaySubtotal,
+  QUERY_KEYS,
+} from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useQuery } from '@tanstack/react-query';
 import { STALE_TIMES } from '@/lib/query-keys';
@@ -72,42 +78,8 @@ export function useCafeSettings() {
   });
 }
 
-// Helper functions that work with settings
-export function calculateTax(subtotal: number, settings: CafeSettings): number {
-  if (!settings.tax_enabled) return 0;
-
-  if (settings.prices_include_tax) {
-    // If prices include tax, extract tax from subtotal
-    const rate = settings.tax_percentage / 100;
-    const priceWithoutTax = subtotal / (1 + rate);
-    return subtotal - priceWithoutTax;
-  } else {
-    // If prices don't include tax, calculate tax on subtotal
-    return subtotal * (settings.tax_percentage / 100);
-  }
-}
-
-export function calculateTotal(subtotal: number, settings: CafeSettings): number {
-  if (!settings.tax_enabled || settings.prices_include_tax) {
-    return subtotal;
-  }
-  return subtotal + calculateTax(subtotal, settings);
-}
-
-export function getDisplaySubtotal(subtotal: number, settings: CafeSettings): number {
-  if (!settings.tax_enabled) return subtotal;
-  if (settings.prices_include_tax) {
-    const rate = settings.tax_percentage / 100;
-    return subtotal / (1 + rate);
-  }
-  return subtotal;
-}
-
-export function formatPrice(amount: number, settings: CafeSettings): string {
-  const formattedAmount = amount.toFixed(settings.currency_decimal_places);
-
-  if (settings.currency_position === 'before') {
-    return `${settings.currency_symbol}${formattedAmount}`;
-  }
-  return `${formattedAmount}${settings.currency_symbol}`;
-}
+// Re-export pricing utilities from core (aliased to match existing consumer imports)
+export const calculateTax = calculateTaxWithSettings;
+export const calculateTotal = calculateTotalWithSettings;
+export const formatPrice = formatPriceWithSettings;
+export { getDisplaySubtotal };

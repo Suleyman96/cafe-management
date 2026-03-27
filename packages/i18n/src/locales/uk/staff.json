@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "Замовлення готове до подачі",
   "notifications.newItemsAdded": "Додано нові позиції!",
   "notifications.itemsAddedDescription": "До замовлення додано позиції",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "Ви впевнені, що хочете відхилити цей відгук?",
+  "feedback.status.pending": "Очікує",
+  "feedback.status.acknowledged": "Прийнято",
+  "feedback.status.resolved": "Вирішено",
+  "feedback.status.dismissed": "Відхилено"
 }

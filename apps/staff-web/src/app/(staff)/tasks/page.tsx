@@ -1,5 +1,6 @@
 'use client';
 
+import { getLocalDateString } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { LoadingSpinner } from '@cafe-idare/ui';
@@ -85,7 +86,7 @@ export default function TasksPage() {
   useEffect(() => {
     if (hasGenerated.current) return;
     hasGenerated.current = true;
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     generateRecurring.mutate(today);
   }, [generateRecurring]);
 
@@ -152,7 +153,7 @@ export default function TasksPage() {
   const isOverdue = (task: any) => {
     if (!task.due_date) return false;
     if (task.status === 'completed' || task.status === 'cancelled') return false;
-    return task.due_date < new Date().toISOString().split('T')[0];
+    return task.due_date < getLocalDateString();
   };
 
   const RECURRENCE_LABELS: Record<string, string> = {

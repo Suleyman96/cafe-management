@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "Тапсырыс беруге дайын",
   "notifications.newItemsAdded": "Жаңа тауарлар қосылды!",
   "notifications.itemsAddedDescription": "Тапсырысқа тауарлар қосылды",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "Бұл пікірді қабылдамауға сенімдісіз бе?",
+  "feedback.status.pending": "Күтуде",
+  "feedback.status.acknowledged": "Қабылданды",
+  "feedback.status.resolved": "Шешілді",
+  "feedback.status.dismissed": "Қабылданбады"
 }

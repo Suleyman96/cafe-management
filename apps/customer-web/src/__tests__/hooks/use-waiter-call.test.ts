@@ -1,12 +1,32 @@
 import { QUERY_KEYS } from '@cafe-idare/core';
 import { useCallWaiter, useCreateWaiterCall, useWaiterCalls } from '@/hooks/use-waiter-call';
 import { db } from '@/lib/supabase';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useWaiterCalls', () => {
   it('calls db.waiterCalls.findByTable with tableId and pending status', () => {
     renderHookWithProviders(() => useWaiterCalls('table-1'));
     expect(db.waiterCalls.findByTable).toHaveBeenCalledWith('table-1', 'pending');
+  });
+
+  it('returns fetched waiter calls', async () => {
+    const mockCalls = [
+      { id: 'wc1', table_id: 'table-1', call_type: 'assistance', status: 'pending' },
+    ];
+    (db.waiterCalls.findByTable as any).mockResolvedValueOnce(mockCalls);
+
+    const { result } = renderHookWithProviders(() => useWaiterCalls('table-1'));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual(mockCalls);
+  });
+
+  it('reports error when fetch fails', async () => {
+    (db.waiterCalls.findByTable as any).mockRejectedValueOnce(new Error('DB error'));
+
+    const { result } = renderHookWithProviders(() => useWaiterCalls('table-1'));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });
 
@@ -78,6 +98,23 @@ describe('useCreateWaiterCall', () => {
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual([QUERY_KEYS.WAITER_CALLS, 'table-1']);
+  });
+});
+
+describe('useCreateWaiterCall - error handling', () => {
+  it('rejects when db.waiterCalls.create fails', async () => {
+    (db.waiterCalls.create as any).mockRejectedValueOnce(new Error('Create failed'));
+
+    const { result } = renderHookWithProviders(() => useCreateWaiterCall());
+
+    await expect(
+      result.current.mutateAsync({
+        tableId: 'table-1',
+        callType: 'assistance',
+        reason: 'Help',
+        priority: 'normal',
+      }),
+    ).rejects.toThrow('Create failed');
   });
 });
 
