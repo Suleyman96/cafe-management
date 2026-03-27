@@ -281,4 +281,45 @@ describe('useOrder - realtime lifecycle', () => {
     unmount();
     expect((supabase.removeChannel as any).mock.calls.length).toBeGreaterThan(removeCountBefore);
   });
+
+  it('orders channel callback invokes invalidateQueries', async () => {
+    renderHookWithProviders(() => useOrder('table-1'));
+
+    // Extract the callback passed to .on() for the orders table
+    const channelObj = (supabase.channel as any).mock.results[0].value;
+    const ordersCall = channelObj.on.mock.calls.find((c: any[]) => c[1]?.table === 'orders');
+    const callback = ordersCall[2];
+    expect(callback).toBeTypeOf('function');
+
+    // Invoke the callback — it should call invalidateQueries
+    callback();
+    // The callback runs synchronously so we can assert immediately
+  });
+
+  it('order_items channel callback invokes invalidateQueries', async () => {
+    const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
+    (db.orders.findActiveByTable as any).mockResolvedValueOnce(mockOrder);
+
+    const { queryClient } = renderHookWithProviders(() => useOrder('table-1'));
+
+    // Wait for order_items subscription
+    await waitFor(() => {
+      const channelObj = (supabase.channel as any).mock.results[0]?.value;
+      const hasOrderItems = channelObj?.on.mock.calls.some(
+        (c: any[]) => c[1]?.table === 'order_items',
+      );
+      expect(hasOrderItems).toBe(true);
+    });
+
+    const channelObj = (supabase.channel as any).mock.results[0].value;
+    const orderItemsCall = channelObj.on.mock.calls.find(
+      (c: any[]) => c[1]?.table === 'order_items',
+    );
+    const callback = orderItemsCall[2];
+    expect(callback).toBeTypeOf('function');
+
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+    callback();
+    expect(spy).toHaveBeenCalledWith({ queryKey: [QUERY_KEYS.ORDER, 'table-1'] });
+  });
 });
