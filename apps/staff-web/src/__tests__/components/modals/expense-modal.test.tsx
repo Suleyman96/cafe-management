@@ -1,4 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react';
+import { toast } from 'sonner';
 import { describe, expect, it, vi } from 'vitest';
 import { mockAdminStaff } from '../../helpers/mock-auth';
 import { renderWithProviders } from '../../helpers/test-utils';
@@ -70,5 +71,17 @@ describe('ExpenseModal', () => {
     renderWithProviders(<ExpenseModal onClose={onClose} />);
     fireEvent.click(screen.getByText('Cancel'));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('shows error toast when amount is invalid on submit', () => {
+    renderWithProviders(<ExpenseModal onClose={onClose} />);
+
+    // Amount defaults to empty string → parseFloat('') = NaN → validation fails
+    // Submit the form directly (bypasses HTML5 constraint validation)
+    const amountInput = screen.getByPlaceholderText('0.00');
+    const form = amountInput.closest('form')!;
+    fireEvent.submit(form);
+
+    expect(toast.error).toHaveBeenCalledWith('expenses.validAmount');
   });
 });
