@@ -5,6 +5,7 @@ import { MetricCard } from '@/components/reports/MetricCard';
 import { LoadingScreen } from '@/components/ui';
 import { useExpenses, useOrders, useStaff, useWasteLogs } from '@/hooks';
 import { useCafeSettings } from '@/hooks/use-cafe-settings';
+import { getLocalDateString } from '@/lib/date-utils';
 import type { Order, OrderItemWithMenuItem } from '@/types';
 
 // The wrapper's findAll returns joined data beyond the base Order type
@@ -23,12 +24,12 @@ const PRESETS = [
 
 function getDateRange(preset: number): { startDate: string; endDate: string } {
   const now = new Date();
-  const endDate = now.toISOString().split('T')[0];
+  const endDate = getLocalDateString(now);
 
   if (preset === -1) {
     // This month
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    return { startDate: start.toISOString().split('T')[0], endDate };
+    return { startDate: getLocalDateString(start), endDate };
   }
 
   if (preset === 0) {
@@ -37,7 +38,7 @@ function getDateRange(preset: number): { startDate: string; endDate: string } {
 
   const start = new Date(now);
   start.setDate(start.getDate() - preset);
-  return { startDate: start.toISOString().split('T')[0], endDate };
+  return { startDate: getLocalDateString(start), endDate };
 }
 
 export default function ReportsScreen() {

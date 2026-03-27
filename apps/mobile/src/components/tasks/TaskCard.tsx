@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, IconButton, Text } from 'react-native-paper';
+import { getLocalDateString } from '@/lib/date-utils';
 import type { Task } from '@/types';
 
 const PRIORITY_COLORS: Record<string, { bg: string; text: string }> = {
@@ -58,7 +59,7 @@ export const TaskCard = React.memo(function TaskCard({
 
   const isOverdue =
     !!task.due_date &&
-    task.due_date < new Date().toISOString().split('T')[0] &&
+    task.due_date < getLocalDateString() &&
     task.status !== 'completed' &&
     task.status !== 'cancelled';
 

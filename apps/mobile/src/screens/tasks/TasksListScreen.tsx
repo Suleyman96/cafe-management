@@ -18,6 +18,7 @@ import {
   useUpdateTask,
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { getLocalDateString } from '@/lib/date-utils';
 import { useAuthStore } from '@/store/auth-store';
 import type { Task } from '@/types';
 
@@ -78,7 +79,7 @@ export default function TasksListScreen() {
   useEffect(() => {
     if (hasGenerated.current) return;
     hasGenerated.current = true;
-    generateRecurring.mutate(new Date().toISOString().split('T')[0]);
+    generateRecurring.mutate(getLocalDateString());
   }, [generateRecurring.mutate]);
 
   const currentData = useMemo(() => {

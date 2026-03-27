@@ -36,7 +36,7 @@ export const TimeElapsed = React.memo(function TimeElapsed({
   useEffect(() => {
     const interval = setInterval(() => {
       setElapsed(formatElapsed(createdAt));
-    }, 60000);
+    }, 1000);
     return () => clearInterval(interval);
   }, [createdAt]);
 

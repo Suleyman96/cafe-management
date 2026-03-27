@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, Modal, Portal, Switch, Text, TextInput } from 'react-native-paper';
 import { useStaff } from '@/hooks';
+import { getLocalDateString } from '@/lib/date-utils';
 import type { Task } from '@/types';
 
 const PRIORITIES = [
@@ -39,7 +40,7 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
   const [priority, setPriority] = useState(task?.priority || 'normal');
   const [assignedTo, setAssignedTo] = useState(task?.assigned_to || staffId || '');
   const [dueDate, setDueDate] = useState(
-    task?.due_date || (task?.is_recurring ? '' : new Date().toISOString().split('T')[0]),
+    task?.due_date || (task?.is_recurring ? '' : getLocalDateString()),
   );
   const [dueTime, setDueTime] = useState(task?.due_time || '');
   const [isRecurring, setIsRecurring] = useState(task?.is_recurring || false);
@@ -242,7 +243,7 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
                 onValueChange={(v) => {
                   setIsRecurring(v);
                   if (v) setDueDate('');
-                  else setDueDate(new Date().toISOString().split('T')[0]);
+                  else setDueDate(getLocalDateString());
                 }}
               />
             </View>

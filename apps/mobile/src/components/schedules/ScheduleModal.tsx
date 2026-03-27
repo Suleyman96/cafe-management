@@ -2,6 +2,7 @@ import { DAYS_OF_WEEK, TIME_OPTIONS } from '@cafe-idare/core';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, Modal, Portal, Switch, Text } from 'react-native-paper';
+import { getLocalDateString } from '@/lib/date-utils';
 import { TextInput } from '@/lib/paper-compat';
 
 const STATUSES = ['scheduled', 'in_progress', 'completed', 'missed'] as const;
@@ -80,7 +81,7 @@ export function ScheduleModal({
       setRepeatWeeks(1);
     } else {
       setStaffId('');
-      setDate(defaultDate || new Date().toISOString().split('T')[0]);
+      setDate(defaultDate || getLocalDateString());
       setPlannedStart('09:00');
       setPlannedEnd('17:00');
       setActualStart('');
@@ -127,7 +128,7 @@ export function ScheduleModal({
           let daysUntil = dayOfWeek - currentDay;
           if (daysUntil < 0) daysUntil += 7;
           targetDate.setDate(baseDate.getDate() + daysUntil + week * 7);
-          const dateStr = targetDate.toISOString().split('T')[0];
+          const dateStr = getLocalDateString(targetDate);
           entries.push({
             staff_id: staffId,
             date: dateStr,

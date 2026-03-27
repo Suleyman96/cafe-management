@@ -15,7 +15,6 @@ Notifications.setNotificationHandler({
 
 export async function registerForPushNotifications() {
   if (!Device.isDevice) {
-    console.log('Must use physical device for Push Notifications');
     return null;
   }
 
@@ -28,7 +27,6 @@ export async function registerForPushNotifications() {
   }
 
   if (finalStatus !== 'granted') {
-    console.log('Failed to get push token for push notification!');
     return null;
   }
 

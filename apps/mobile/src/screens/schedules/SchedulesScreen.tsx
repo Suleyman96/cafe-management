@@ -38,7 +38,7 @@ function getWeekDates(referenceDate: Date) {
 }
 
 function formatDate(d: Date) {
-  return d.toISOString().split('T')[0];
+  return d.toLocaleDateString('en-CA');
 }
 
 function formatTime(time: string) {
