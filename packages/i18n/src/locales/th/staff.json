@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "คำสั่งซื้อพร้อมเสิร์ฟแล้ว",
   "notifications.newItemsAdded": "เพิ่มรายการใหม่แล้ว!",
   "notifications.itemsAddedDescription": "มีการเพิ่มรายการในคำสั่งซื้อ",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "คุณแน่ใจหรือไม่ว่าต้องการปิดข้อเสนอแนะนี้?",
+  "feedback.status.pending": "รอดำเนินการ",
+  "feedback.status.acknowledged": "รับทราบแล้ว",
+  "feedback.status.resolved": "แก้ไขแล้ว",
+  "feedback.status.dismissed": "ปิดแล้ว"
 }

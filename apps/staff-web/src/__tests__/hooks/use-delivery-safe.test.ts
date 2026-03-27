@@ -7,12 +7,30 @@ import {
   useUpdateDeliveryFee,
 } from '@/hooks/use-delivery-safe';
 import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useDeliveryOrders', () => {
   it('calls db.orders.findDeliveryOrders', () => {
     renderHookWithProviders(() => useDeliveryOrders());
     expect(db.orders.findDeliveryOrders).toHaveBeenCalled();
+  });
+
+  it('returns fetched delivery orders', async () => {
+    const mockOrders = [{ id: 'o1', source: 'delivery', status: 'new' }];
+    (db.orders.findDeliveryOrders as any).mockResolvedValueOnce(mockOrders);
+
+    const { result } = renderHookWithProviders(() => useDeliveryOrders());
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual(mockOrders);
+  });
+
+  it('reports error when fetch fails', async () => {
+    (db.orders.findDeliveryOrders as any).mockRejectedValueOnce(new Error('DB error'));
+
+    const { result } = renderHookWithProviders(() => useDeliveryOrders());
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });
 

@@ -5,7 +5,7 @@ import {
   useDeliveryOrder,
 } from '@/hooks/use-delivery';
 import { db, supabase } from '@/lib/supabase';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useDeliveryOrder', () => {
   it('calls db.orders.findDeliveryById with orderId', () => {
@@ -100,6 +100,31 @@ describe('useCreateDeliveryOrder', () => {
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual([QUERY_KEYS.DELIVERY_ORDER]);
+  });
+});
+
+// ─── Realtime Callback Invocation ───────────────────────────────────────────
+
+describe('useDeliveryOrder - realtime callback', () => {
+  it('orders channel callback invalidates DELIVERY_ORDER query', async () => {
+    const mockOrder = { id: 'order-1', status: 'new', items: [] };
+    (db.orders.findDeliveryById as any).mockResolvedValueOnce(mockOrder);
+
+    const { queryClient } = renderHookWithProviders(() => useDeliveryOrder('order-1'));
+
+    // Wait for channel to be set up
+    await waitFor(() => {
+      expect(supabase.channel).toHaveBeenCalledWith('delivery_order:order-1');
+    });
+
+    const channelObj = (supabase.channel as any).mock.results[0].value;
+    const ordersCall = channelObj.on.mock.calls.find((c: any[]) => c[1]?.table === 'orders');
+    const callback = ordersCall[2];
+    expect(callback).toBeTypeOf('function');
+
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+    callback();
+    expect(spy).toHaveBeenCalledWith({ queryKey: [QUERY_KEYS.DELIVERY_ORDER, 'order-1'] });
   });
 });
 

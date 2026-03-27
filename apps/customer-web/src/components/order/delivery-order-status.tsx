@@ -216,7 +216,9 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
             )}
             <div className="flex justify-between text-lg font-bold">
               <span>{t('total', { ns: 'common' })}</span>
-              <span className="text-primary">{formatPrice(order.total)}</span>
+              <span className="text-primary">
+                {formatPrice(order.total + (order.delivery_fee || 0))}
+              </span>
             </div>
           </div>
         </div>

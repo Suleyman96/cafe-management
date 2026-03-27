@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "Un pedido está listo para servir",
   "notifications.newItemsAdded": "¡Nuevos artículos añadidos!",
   "notifications.itemsAddedDescription": "Se han añadido artículos a un pedido",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "¿Está seguro de que desea descartar este comentario?",
+  "feedback.status.pending": "Pendiente",
+  "feedback.status.acknowledged": "Reconocido",
+  "feedback.status.resolved": "Resuelto",
+  "feedback.status.dismissed": "Descartado"
 }

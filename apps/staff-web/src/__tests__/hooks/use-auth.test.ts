@@ -250,4 +250,89 @@ describe('useAuth', () => {
       expect(unsubscribe).toHaveBeenCalled();
     });
   });
+
+  describe('sessionCheckInProgress deduplication', () => {
+    it('does not run concurrent session checks from two hook instances', async () => {
+      // Make getSession hang so the flag stays true while second hook renders
+      let resolveSession: (value: any) => void;
+      (supabase.auth.getSession as any).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveSession = resolve;
+        }),
+      );
+
+      renderHook(() => useAuth());
+      renderHook(() => useAuth());
+
+      // Only one getSession call because the flag blocks the second instance
+      expect(supabase.auth.getSession).toHaveBeenCalledTimes(1);
+
+      // Clean up: resolve the pending promise so the flag resets in finally
+      resolveSession!({ data: { session: null }, error: null });
+      await waitFor(() => {
+        expect(useAuthStore.getState().isLoading).toBe(false);
+      });
+    });
+
+    it('resets flag after error so subsequent mount can check', async () => {
+      // First mount: getSession rejects
+      (supabase.auth.getSession as any).mockRejectedValueOnce(new Error('Network error'));
+
+      const { unmount } = renderHook(() => useAuth());
+
+      // Wait for check to complete (finally block resets flag)
+      await waitFor(() => {
+        expect(useAuthStore.getState().isLoading).toBe(false);
+      });
+
+      unmount();
+
+      // Reset store for second mount
+      useAuthStore.setState({ staff: null, user: null, isLoading: true });
+
+      // Second mount should be able to run session check
+      (supabase.auth.getSession as any).mockResolvedValueOnce({
+        data: { session: null },
+        error: null,
+      });
+
+      renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(supabase.auth.getSession).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    it('SIGNED_IN event triggers staff fetch via onAuthStateChange', async () => {
+      let authCallback: (event: string, session: any) => Promise<void>;
+      (supabase.auth.getSession as any).mockResolvedValueOnce({
+        data: { session: null },
+        error: null,
+      });
+      (supabase.auth.onAuthStateChange as any).mockImplementationOnce(
+        (cb: (event: string, session: any) => Promise<void>) => {
+          authCallback = cb;
+          return { data: { subscription: { unsubscribe: vi.fn() } } };
+        },
+      );
+
+      renderHook(() => useAuth());
+
+      // Wait for initial session check to complete
+      await waitFor(() => {
+        expect(useAuthStore.getState().isLoading).toBe(false);
+      });
+
+      // Simulate SIGNED_IN event
+      const mockStaff = { id: 'staff-1', full_name: 'Test User', role: 'waiter' };
+      (db.staff.findByAuthId as any).mockResolvedValueOnce(mockStaff);
+
+      await act(async () => {
+        await authCallback!('SIGNED_IN', { user: { id: 'auth-user-1' } });
+      });
+
+      expect(db.staff.findByAuthId).toHaveBeenCalledWith('auth-user-1');
+      expect(useAuthStore.getState().staff).toEqual(mockStaff);
+    });
+  });
 });

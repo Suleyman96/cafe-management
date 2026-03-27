@@ -1,6 +1,6 @@
 'use client';
 
-import { DAYS_OF_WEEK, TIME_OPTIONS } from '@cafe-idare/core';
+import { DAYS_OF_WEEK, getLocalDateString, TIME_OPTIONS } from '@cafe-idare/core';
 import type { StaffScheduleInsert } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
@@ -110,7 +110,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
             if (daysUntil < 0) daysUntil += 7;
             targetDate.setDate(baseDate.getDate() + daysUntil + week * 7);
 
-            const dateStr = targetDate.toISOString().split('T')[0];
+            const dateStr = getLocalDateString(targetDate);
             promises.push(
               createSchedule.mutateAsync({
                 staff_id: staffId,

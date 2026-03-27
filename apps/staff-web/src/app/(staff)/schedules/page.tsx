@@ -1,5 +1,6 @@
 'use client';
 
+import { getLocalDateString } from '@cafe-idare/core';
 import type { StaffSchedule } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button } from '@cafe-idare/ui';
@@ -32,7 +33,7 @@ function getMonthDates(year: number, month: number) {
 }
 
 function formatDate(d: Date) {
-  return d.toISOString().split('T')[0];
+  return getLocalDateString(d);
 }
 
 function formatShortDate(d: Date) {

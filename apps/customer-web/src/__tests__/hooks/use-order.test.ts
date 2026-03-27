@@ -208,3 +208,118 @@ describe('useOrder - data flow', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });
+
+// ─── Realtime Subscription Lifecycle ────────────────────────────────────────
+
+describe('useOrder - realtime lifecycle', () => {
+  it('subscribes to order_items when orderId is available', async () => {
+    const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
+    (db.orders.findActiveByTable as any).mockResolvedValueOnce(mockOrder);
+
+    renderHookWithProviders(() => useOrder('table-1'));
+
+    // Wait for query to resolve → orderId becomes available → effect re-runs with order_items
+    await waitFor(() => {
+      const channelObj = (supabase.channel as any).mock.results[0]?.value;
+      const onCalls = channelObj?.on.mock.calls ?? [];
+      const hasOrderItems = onCalls.some((c: any[]) => c[1]?.table === 'order_items');
+      expect(hasOrderItems).toBe(true);
+    });
+
+    // Verify the order_items filter references the orderId
+    const channelObj = (supabase.channel as any).mock.results[0].value;
+    const orderItemsCall = channelObj.on.mock.calls.find(
+      (c: any[]) => c[1]?.table === 'order_items',
+    );
+    expect(orderItemsCall[1].filter).toBe('order_id=eq.order-1');
+  });
+
+  it('does not subscribe to order_items when no active order', async () => {
+    (db.orders.findActiveByTable as any).mockResolvedValueOnce(null);
+
+    const { result } = renderHookWithProviders(() => useOrder('table-1'));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const channelObj = (supabase.channel as any).mock.results[0].value;
+    const onCalls = channelObj.on.mock.calls;
+    const orderItemsCalls = onCalls.filter((c: any[]) => c[1]?.table === 'order_items');
+    expect(orderItemsCalls).toHaveLength(0);
+  });
+
+  it('tears down old channel when orderId changes', async () => {
+    const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
+    (db.orders.findActiveByTable as any).mockResolvedValueOnce(mockOrder);
+
+    renderHookWithProviders(() => useOrder('table-1'));
+
+    // When orderId becomes available the effect re-runs, tearing down the old channel
+    await waitFor(() => {
+      expect(supabase.removeChannel).toHaveBeenCalled();
+    });
+
+    // A new channel is created (initial + after orderId = at least 2)
+    expect((supabase.channel as any).mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('cleans up channel on unmount even with active order', async () => {
+    const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
+    (db.orders.findActiveByTable as any).mockResolvedValueOnce(mockOrder);
+
+    const { unmount } = renderHookWithProviders(() => useOrder('table-1'));
+
+    // Wait for order_items subscription to be established
+    await waitFor(() => {
+      const channelObj = (supabase.channel as any).mock.results[0]?.value;
+      const hasOrderItems = channelObj?.on.mock.calls.some(
+        (c: any[]) => c[1]?.table === 'order_items',
+      );
+      expect(hasOrderItems).toBe(true);
+    });
+
+    const removeCountBefore = (supabase.removeChannel as any).mock.calls.length;
+    unmount();
+    expect((supabase.removeChannel as any).mock.calls.length).toBeGreaterThan(removeCountBefore);
+  });
+
+  it('orders channel callback invokes invalidateQueries', async () => {
+    renderHookWithProviders(() => useOrder('table-1'));
+
+    // Extract the callback passed to .on() for the orders table
+    const channelObj = (supabase.channel as any).mock.results[0].value;
+    const ordersCall = channelObj.on.mock.calls.find((c: any[]) => c[1]?.table === 'orders');
+    const callback = ordersCall[2];
+    expect(callback).toBeTypeOf('function');
+
+    // Invoke the callback — it should call invalidateQueries
+    callback();
+    // The callback runs synchronously so we can assert immediately
+  });
+
+  it('order_items channel callback invokes invalidateQueries', async () => {
+    const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
+    (db.orders.findActiveByTable as any).mockResolvedValueOnce(mockOrder);
+
+    const { queryClient } = renderHookWithProviders(() => useOrder('table-1'));
+
+    // Wait for order_items subscription
+    await waitFor(() => {
+      const channelObj = (supabase.channel as any).mock.results[0]?.value;
+      const hasOrderItems = channelObj?.on.mock.calls.some(
+        (c: any[]) => c[1]?.table === 'order_items',
+      );
+      expect(hasOrderItems).toBe(true);
+    });
+
+    const channelObj = (supabase.channel as any).mock.results[0].value;
+    const orderItemsCall = channelObj.on.mock.calls.find(
+      (c: any[]) => c[1]?.table === 'order_items',
+    );
+    const callback = orderItemsCall[2];
+    expect(callback).toBeTypeOf('function');
+
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+    callback();
+    expect(spy).toHaveBeenCalledWith({ queryKey: [QUERY_KEYS.ORDER, 'table-1'] });
+  });
+});

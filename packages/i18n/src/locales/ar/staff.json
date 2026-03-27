@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "هناك طلب جاهز للتقديم",
   "notifications.newItemsAdded": "تمت إضافة أصناف جديدة!",
   "notifications.itemsAddedDescription": "تمت إضافة أصناف إلى طلب",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "هل أنت متأكد أنك تريد رفض هذه الملاحظة؟",
+  "feedback.status.pending": "قيد الانتظار",
+  "feedback.status.acknowledged": "تم الاستلام",
+  "feedback.status.resolved": "تم الحل",
+  "feedback.status.dismissed": "مرفوض"
 }

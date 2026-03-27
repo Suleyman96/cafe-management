@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "یک سفارش آماده سرو است",
   "notifications.newItemsAdded": "آیتم‌های جدید اضافه شدند!",
   "notifications.itemsAddedDescription": "آیتم‌هایی به سفارش اضافه شدند",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "آیا مطمئن هستید که می‌خواهید این بازخورد را رد کنید؟",
+  "feedback.status.pending": "در انتظار",
+  "feedback.status.acknowledged": "تأیید شده",
+  "feedback.status.resolved": "حل شده",
+  "feedback.status.dismissed": "رد شده"
 }

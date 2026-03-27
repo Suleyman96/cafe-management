@@ -1,4 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react';
+import { toast } from 'sonner';
 import { describe, expect, it, vi } from 'vitest';
 import { mockAdminStaff } from '../../helpers/mock-auth';
 import { renderWithProviders } from '../../helpers/test-utils';
@@ -68,5 +69,19 @@ describe('TaskModal', () => {
     renderWithProviders(<TaskModal onClose={onClose} />);
     fireEvent.click(screen.getByText('Cancel'));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('shows error toast when title is whitespace on submit', () => {
+    renderWithProviders(<TaskModal onClose={onClose} />);
+
+    // Set title to whitespace (passes HTML5 required, fails trim() check)
+    const titleInput = screen.getByPlaceholderText('What needs to be done?');
+    fireEvent.change(titleInput, { target: { value: '   ' } });
+
+    // Submit the form directly (bypasses HTML5 constraint validation)
+    const form = titleInput.closest('form')!;
+    fireEvent.submit(form);
+
+    expect(toast.error).toHaveBeenCalledWith('tasks.titleRequired');
   });
 });

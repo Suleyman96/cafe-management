@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "주문 서빙 준비가 완료되었습니다",
   "notifications.newItemsAdded": "새 항목이 추가되었습니다!",
   "notifications.itemsAddedDescription": "주문에 항목이 추가되었습니다",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "이 피드백을 무시하시겠습니까?",
+  "feedback.status.pending": "대기 중",
+  "feedback.status.acknowledged": "확인됨",
+  "feedback.status.resolved": "해결됨",
+  "feedback.status.dismissed": "무시됨"
 }

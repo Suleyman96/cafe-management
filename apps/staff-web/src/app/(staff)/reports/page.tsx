@@ -1,6 +1,6 @@
 'use client';
 
-import { calculateProfitMetrics, type ExpenseEntry } from '@cafe-idare/core';
+import { calculateProfitMetrics, type ExpenseEntry, getLocalDateString } from '@cafe-idare/core';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
@@ -149,7 +149,7 @@ export default function ReportsPage() {
   };
 
   // Get today's date string for max attribute
-  const todayString = new Date().toISOString().split('T')[0];
+  const todayString = getLocalDateString();
   const currentMonthString = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
 
   // Format display for custom selection
@@ -527,7 +527,7 @@ export default function ReportsPage() {
                 {customMode === 'day' && (
                   <input
                     type="date"
-                    value={selectedDate.toISOString().split('T')[0]}
+                    value={getLocalDateString(selectedDate)}
                     max={todayString}
                     onChange={(e) => setSelectedDate(new Date(`${e.target.value}T00:00:00`))}
                     className="w-full sm:w-auto px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"

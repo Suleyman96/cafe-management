@@ -1,5 +1,6 @@
 'use client';
 
+import { getLocalDateString } from '@cafe-idare/core';
 import { useTranslation } from '@cafe-idare/i18n';
 import { Button, LoadingSpinner } from '@cafe-idare/ui';
 import {
@@ -64,20 +65,20 @@ export default function StaffDetailPage() {
   const formatPrice = useFormatPrice();
 
   // Schedule date ranges (computed once on mount)
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayStr = useMemo(() => getLocalDateString(), []);
   const startOfWeek = useMemo(() => {
     const d = new Date();
     const day = d.getDay();
     const diff = day === 0 ? -6 : 1 - day;
     d.setDate(d.getDate() + diff);
-    return d.toISOString().split('T')[0];
+    return getLocalDateString(d);
   }, []);
   const endOfWeek = useMemo(() => {
     const d = new Date();
     const day = d.getDay();
     const diff = day === 0 ? 0 : 7 - day;
     d.setDate(d.getDate() + diff);
-    return d.toISOString().split('T')[0];
+    return getLocalDateString(d);
   }, []);
   const startOfMonth = useMemo(() => {
     const d = new Date();
@@ -85,12 +86,12 @@ export default function StaffDetailPage() {
   }, []);
   const endOfMonth = useMemo(() => {
     const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0];
+    return getLocalDateString(new Date(d.getFullYear(), d.getMonth() + 1, 0));
   }, []);
   const nextWeekDate = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + 7);
-    return d.toISOString().split('T')[0];
+    return getLocalDateString(d);
   }, []);
 
   const { data: weekSchedules } = useMySchedule(staffId, startOfWeek, endOfWeek);

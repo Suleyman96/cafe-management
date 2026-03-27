@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "Pesanan siap untuk disajikan",
   "notifications.newItemsAdded": "Item baru ditambahkan!",
   "notifications.itemsAddedDescription": "Item ditambahkan ke pesanan",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "Apakah Anda yakin ingin mengabaikan umpan balik ini?",
+  "feedback.status.pending": "Menunggu",
+  "feedback.status.acknowledged": "Diakui",
+  "feedback.status.resolved": "Diselesaikan",
+  "feedback.status.dismissed": "Diabaikan"
 }

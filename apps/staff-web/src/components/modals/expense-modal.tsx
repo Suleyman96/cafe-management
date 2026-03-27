@@ -1,5 +1,6 @@
 'use client';
 
+import { getLocalDateString } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { useState } from 'react';
@@ -34,7 +35,7 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
     description: expense?.description || '',
     category_id: expense?.category_id || '',
     payment_method: expense?.payment_method || 'cash',
-    expense_date: expense?.expense_date || new Date().toISOString().split('T')[0],
+    expense_date: expense?.expense_date || getLocalDateString(),
     notes: expense?.notes || '',
   });
 

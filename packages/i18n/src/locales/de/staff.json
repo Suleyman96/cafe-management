@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "Eine Bestellung ist bereit zum Servieren",
   "notifications.newItemsAdded": "Neue Artikel hinzugefügt!",
   "notifications.itemsAddedDescription": "Artikel wurden einer Bestellung hinzugefügt",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "Sind Sie sicher, dass Sie dieses Feedback verwerfen möchten?",
+  "feedback.status.pending": "Ausstehend",
+  "feedback.status.acknowledged": "Bestätigt",
+  "feedback.status.resolved": "Gelöst",
+  "feedback.status.dismissed": "Verworfen"
 }

@@ -13,7 +13,7 @@ import {
   useUpdateMenuItem,
 } from '@/hooks/use-menu-safe';
 import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
@@ -28,6 +28,24 @@ describe('useMenuItems', () => {
     renderHookWithProviders(() => useMenuItems(options));
     expect(db.menuItems.findAll).toHaveBeenCalledWith(options);
   });
+
+  it('returns fetched menu items', async () => {
+    const mockItems = [{ id: 'm1', name_en: 'Pizza', price: 10 }];
+    (db.menuItems.findAll as any).mockResolvedValueOnce(mockItems);
+
+    const { result } = renderHookWithProviders(() => useMenuItems());
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual(mockItems);
+  });
+
+  it('reports error when fetch fails', async () => {
+    (db.menuItems.findAll as any).mockRejectedValueOnce(new Error('DB error'));
+
+    const { result } = renderHookWithProviders(() => useMenuItems());
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
 });
 
 describe('useMenuItem', () => {
@@ -40,12 +58,51 @@ describe('useMenuItem', () => {
     renderHookWithProviders(() => useMenuItem(''));
     expect(db.menuItems.findById).not.toHaveBeenCalled();
   });
+
+  it('returns data on success', async () => {
+    const mockItem = { id: 'm1', name_en: 'Pizza', price: 10 };
+    (db.menuItems.findById as any).mockResolvedValueOnce(mockItem);
+
+    const { result } = renderHookWithProviders(() => useMenuItem('m1'));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual(mockItem);
+  });
+
+  it('reports error when findById rejects', async () => {
+    (db.menuItems.findById as any).mockRejectedValueOnce(new Error('Not found'));
+
+    const { result } = renderHookWithProviders(() => useMenuItem('m1'));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
 });
 
 describe('useCategories', () => {
   it('calls db.categories.findAll', () => {
     renderHookWithProviders(() => useCategories());
     expect(db.categories.findAll).toHaveBeenCalled();
+  });
+
+  it('returns fetched categories', async () => {
+    const mockCategories = [
+      { id: 'c1', name_en: 'Food' },
+      { id: 'c2', name_en: 'Drinks' },
+    ];
+    (db.categories.findAll as any).mockResolvedValueOnce(mockCategories);
+
+    const { result } = renderHookWithProviders(() => useCategories());
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual(mockCategories);
+  });
+
+  it('reports error when fetch fails', async () => {
+    (db.categories.findAll as any).mockRejectedValueOnce(new Error('DB error'));
+
+    const { result } = renderHookWithProviders(() => useCategories());
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });
 
@@ -180,6 +237,24 @@ describe('useDeleteCategory', () => {
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.CATEGORIES]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.MENU_ITEMS]);
+  });
+});
+
+// ─── Mutation Error Handling ─────────────────────────────────────────────────
+
+describe('mutation error handling', () => {
+  it('useCreateMenuItem rejects when db call fails', async () => {
+    (db.menuItems.create as any).mockRejectedValueOnce(new Error('Create failed'));
+    const { result } = renderHookWithProviders(() => useCreateMenuItem());
+    await expect(result.current.mutateAsync({ name_en: 'Burger' } as any)).rejects.toThrow(
+      'Create failed',
+    );
+  });
+
+  it('useDeleteCategory rejects when db call fails', async () => {
+    (db.categories.delete as any).mockRejectedValueOnce(new Error('Delete failed'));
+    const { result } = renderHookWithProviders(() => useDeleteCategory());
+    await expect(result.current.mutateAsync('c1')).rejects.toThrow('Delete failed');
   });
 });
 

@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "注文の提供準備が整いました",
   "notifications.newItemsAdded": "新しい品目が追加されました！",
   "notifications.itemsAddedDescription": "注文に品目が追加されました",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "このフィードバックを却下してもよろしいですか？",
+  "feedback.status.pending": "保留中",
+  "feedback.status.acknowledged": "確認済み",
+  "feedback.status.resolved": "解決済み",
+  "feedback.status.dismissed": "却下済み"
 }

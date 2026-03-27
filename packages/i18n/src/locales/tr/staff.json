@@ -774,9 +774,9 @@
   "notifications.orderReadyDescription": "Bir sipariş servis edilmeye hazır",
   "notifications.newItemsAdded": "Yeni ürünler eklendi!",
   "notifications.itemsAddedDescription": "Siparişe ürünler eklendi",
-  "feedback.dismissConfirm": "Are you sure you want to dismiss this feedback?",
-  "feedback.status.pending": "Pending",
-  "feedback.status.acknowledged": "Acknowledged",
-  "feedback.status.resolved": "Resolved",
-  "feedback.status.dismissed": "Dismissed"
+  "feedback.dismissConfirm": "Bu geri bildirimi reddetmek istediğinizden emin misiniz?",
+  "feedback.status.pending": "Beklemede",
+  "feedback.status.acknowledged": "Onaylandı",
+  "feedback.status.resolved": "Çözüldü",
+  "feedback.status.dismissed": "Reddedildi"
 }

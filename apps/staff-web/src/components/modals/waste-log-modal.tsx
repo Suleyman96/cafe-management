@@ -1,5 +1,6 @@
 'use client';
 
+import { getLocalDateString } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { useState } from 'react';
@@ -48,7 +49,7 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
     total_cost: wasteLog?.total_cost?.toString() || '0',
     reason: wasteLog?.reason || 'expired',
     stock_item_id: wasteLog?.stock_item_id || '',
-    waste_date: wasteLog?.waste_date || new Date().toISOString().split('T')[0],
+    waste_date: wasteLog?.waste_date || getLocalDateString(),
     notes: wasteLog?.notes || '',
     deduct_from_stock: true,
   });

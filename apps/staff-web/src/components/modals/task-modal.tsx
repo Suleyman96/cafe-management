@@ -1,6 +1,6 @@
 'use client';
 
-import { TIME_OPTIONS, WEEKDAYS } from '@cafe-idare/core';
+import { getLocalDateString, TIME_OPTIONS, WEEKDAYS } from '@cafe-idare/core';
 import type { Database } from '@cafe-idare/database';
 import { useTranslation } from '@cafe-idare/i18n';
 import { useState } from 'react';
@@ -36,7 +36,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
     description: task?.description || '',
     priority: task?.priority || 'normal',
     assigned_to: task?.assigned_to || staff?.id || '',
-    due_date: task?.due_date || (task?.is_recurring ? '' : new Date().toISOString().split('T')[0]),
+    due_date: task?.due_date || (task?.is_recurring ? '' : getLocalDateString()),
     due_time: task?.due_time || '',
     is_recurring: task?.is_recurring || false,
     recurrence_pattern: task?.recurrence_pattern || 'daily',
@@ -232,9 +232,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
                   setFormData({
                     ...formData,
                     is_recurring: e.target.checked,
-                    due_date: e.target.checked
-                      ? ''
-                      : formData.due_date || new Date().toISOString().split('T')[0],
+                    due_date: e.target.checked ? '' : formData.due_date || getLocalDateString(),
                   })
                 }
                 className="h-4 w-4 text-blue-600 border-gray-300 rounded"

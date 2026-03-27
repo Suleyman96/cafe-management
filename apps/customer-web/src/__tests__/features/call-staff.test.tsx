@@ -1,4 +1,5 @@
 import userEvent from '@testing-library/user-event';
+import { toast } from 'sonner';
 import { CallStaffModal } from '@/components/waiter/call-staff-modal';
 import { db } from '@/lib/supabase';
 import { renderWithProviders, screen, waitFor } from '../helpers/test-utils';
@@ -76,5 +77,42 @@ describe('CallStaffModal', () => {
 
     const submitButton = screen.getByText('callStaff.callButton');
     expect(submitButton).toBeDisabled();
+  });
+
+  it('shows success toast after successful waiter call', async () => {
+    const user = userEvent.setup();
+
+    (db.waiterCalls.create as any).mockResolvedValueOnce({
+      id: 'call-1',
+      table_id: 'uuid-123',
+      call_type: 'assistance',
+      reason: 'callStaff.reason.assistance',
+      priority: 'normal',
+      status: 'pending',
+    });
+
+    renderWithProviders(<CallStaffModal {...defaultProps} />);
+
+    await user.click(screen.getByText('callStaff.reason.assistance'));
+    await user.click(screen.getByText('callStaff.callButton'));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('callStaff.toastSuccess');
+    });
+  });
+
+  it('shows error toast when waiter call fails', async () => {
+    const user = userEvent.setup();
+
+    (db.waiterCalls.create as any).mockRejectedValueOnce(new Error('Network error'));
+
+    renderWithProviders(<CallStaffModal {...defaultProps} />);
+
+    await user.click(screen.getByText('callStaff.reason.assistance'));
+    await user.click(screen.getByText('callStaff.callButton'));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('callStaff.toastError');
+    });
   });
 });
