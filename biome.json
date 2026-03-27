@@ -13,6 +13,9 @@
       }
     }
   },
+  "files": {
+    "includes": ["**", "!.claude/"]
+  },
   "formatter": {
     "indentStyle": "space",
     "indentWidth": 2,

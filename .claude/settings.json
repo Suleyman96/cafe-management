@@ -6,7 +6,8 @@
       "Bash(node:*)",
       "Read(*)",
       "Write(*)",
-      "Edit(*)"
+      "Edit(*)",
+      "Bash(npx biome check:*)"
     ]
   }
 }
