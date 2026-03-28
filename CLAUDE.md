@@ -114,20 +114,26 @@ pnpm db:studio        # Open Supabase Studio (port 54323)
 - Migrations in `supabase/migrations/` (sequential numbering)
 - RLS policies enabled on all tables
 - Default admin: `admin@test.com` / `test1234`
-- Key tables: orders, tables, menu_items, categories, staff, waiter_calls, customer_feedback, order_payments, staff_notes, cafe_settings
+- Key tables: orders, tables, menu_items, categories, staff, waiter_calls, customer_feedback, order_payments, table_transfers, staff_schedules, cafe_settings, stock_items, stock_movements, expense_categories, expenses, waste_logs, tasks, task_categories
 
 ### Enums
 ```
-ORDER_STATUS: new, preparing, ready, served, paid, cancelled
+ORDER_STATUS: pending_approval, new, preparing, ready, served, out_for_delivery, delivered, closed, cancelled
+ORDER_ITEM_STATUS: pending, preparing, ready, served, cancelled
 TABLE_STATUS: free, occupied, reserved, closed
-USER_ROLE: waiter, admin, kitchen
+USER_ROLE: waiter, admin, kitchen, owner
+ORDER_TYPE: dine_in, takeout, delivery
+ORDER_SOURCE: customer, waiter, phone
 PAYMENT_METHOD: cash, card, digital
-LANGUAGES: en, az, ru, tr
+PAYMENT_TYPE: full, partial_amount, specific_items
+FEEDBACK_TYPE: complaint_food, complaint_service, complaint_staff, question_menu, request_general, praise
+CALL_TYPE: assistance, bill, complaint, question, emergency
+PRIORITY: low, normal, high, urgent
+SCHEDULE_STATUS: scheduled, in_progress, completed, missed
+TASK_STATUS: pending, in_progress, completed, cancelled
+WASTE_REASON: expired, spoiled, overcooked, dropped, returned_by_customer, preparation_waste, other
+STOCK_MOVEMENT: in, out, adjustment
 ```
-
-## Multi-language
-
-Menu items and categories have multilingual columns: `name_en`, `name_az`, `name_ru`, `name_tr` (and descriptions).
 
 ## Real-time
 

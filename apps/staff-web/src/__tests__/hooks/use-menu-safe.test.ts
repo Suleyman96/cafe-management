@@ -111,8 +111,8 @@ describe('useCategories', () => {
 describe('useUpdateMenuItem', () => {
   it('calls db.menuItems.update with id and updates', async () => {
     const { result } = renderHookWithProviders(() => useUpdateMenuItem());
-    await result.current.mutateAsync({ id: 'm1', updates: { name_en: 'Pizza' } });
-    expect(db.menuItems.update).toHaveBeenCalledWith('m1', { name_en: 'Pizza' });
+    await result.current.mutateAsync({ id: 'm1', updates: { name: 'Pizza' } });
+    expect(db.menuItems.update).toHaveBeenCalledWith('m1', { name: 'Pizza' });
   });
 
   it('invalidates MENU_ITEMS on success', async () => {
@@ -205,8 +205,8 @@ describe('useCreateCategory', () => {
 describe('useUpdateCategory', () => {
   it('calls db.categories.update with id and updates', async () => {
     const { result } = renderHookWithProviders(() => useUpdateCategory());
-    await result.current.mutateAsync({ id: 'c1', updates: { name_en: 'Beverages' } });
-    expect(db.categories.update).toHaveBeenCalledWith('c1', { name_en: 'Beverages' });
+    await result.current.mutateAsync({ id: 'c1', updates: { name: 'Beverages' } });
+    expect(db.categories.update).toHaveBeenCalledWith('c1', { name: 'Beverages' });
   });
 
   it('invalidates CATEGORIES and MENU_ITEMS on success', async () => {

@@ -53,7 +53,7 @@ describe('useCartStore', () => {
 
     it('adds different items separately', () => {
       useCartStore.getState().addItem(mockMenuItem({ id: 'm1' }), 1);
-      useCartStore.getState().addItem(mockMenuItem({ id: 'm2', name_en: 'Tea', price: 3 }), 2);
+      useCartStore.getState().addItem(mockMenuItem({ id: 'm2', name: 'Tea', price: 3 }), 2);
 
       const { items } = useCartStore.getState();
       expect(items).toHaveLength(2);
