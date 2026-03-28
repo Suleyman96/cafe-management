@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
+import { useTranslation } from '@gustri/i18n';
 import {
   BarChart3,
   Bell,
@@ -28,7 +28,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { CafeManIcon, CafeManLogo } from '@/components/ui/cafe-man-logo';
+import { GustriIcon, GustriLogo } from '@/components/ui/gustri-logo';
 import { useAuth } from '@/hooks/use-auth';
 import { useMyScheduleToday } from '@/hooks/use-schedules-safe';
 import { useCafeSettings } from '@/hooks/use-settings-safe';
@@ -205,9 +205,9 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
       <div className="p-4 border-b border-gray-200 flex items-center justify-between relative">
         <Link href="/" onClick={handleNavClick} className="hover:opacity-80 transition-opacity">
           {!isCollapsed || isMobile ? (
-            <CafeManLogo size={36} showText={true} />
+            <GustriLogo size={36} showText={true} />
           ) : (
-            <CafeManIcon size={32} />
+            <GustriIcon size={32} />
           )}
         </Link>
         {!isMobile && !isCollapsed && (

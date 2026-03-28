@@ -1,6 +1,6 @@
 {
-  "name": "Cafe-Man Staff Portal",
-  "short_name": "Cafe-Man",
+  "name": "Gustri Staff Portal",
+  "short_name": "Gustri",
   "description": "Restaurant management system for staff",
   "start_url": "/",
   "display": "standalone",

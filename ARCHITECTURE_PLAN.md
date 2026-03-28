@@ -1,8 +1,8 @@
-# Café İdarə Architecture & Configuration Plan
+# Gustri Architecture & Configuration Plan
 
 ## 🎯 Overview
 
-This document outlines the recommended architecture and configuration for the Café İdarə project to prevent compile/type errors and ensure smooth development.
+This document outlines the recommended architecture and configuration for the Gustri project to prevent compile/type errors and ensure smooth development.
 
 ## 🏗️ Recommended Architecture: Turborepo Monorepo
 
@@ -16,7 +16,7 @@ This document outlines the recommended architecture and configuration for the Ca
 ### Project Structure
 
 ```
-cafe-idare/
+gustri/
 ├── apps/
 │   ├── customer-web/
 │   ├── staff-web/
@@ -35,7 +35,7 @@ cafe-idare/
 
 ## 📦 Package Breakdown
 
-### 1. `@cafe-idare/database`
+### 1. `@gustri/database`
 **Purpose**: Single source of truth for database types and schema
 
 ```typescript
@@ -51,7 +51,7 @@ export * from './enums';
 - Database constants
 ```
 
-### 2. `@cafe-idare/core`
+### 2. `@gustri/core`
 **Purpose**: Business logic, utilities, and constants
 
 ```typescript
@@ -65,7 +65,7 @@ export * from './formatters';
 // Pure TypeScript functions
 ```
 
-### 3. `@cafe-idare/ui`
+### 3. `@gustri/ui`
 **Purpose**: Shared UI components (optional, only if sharing between web apps)
 
 ```typescript
@@ -77,13 +77,13 @@ export * from './hooks'; // UI-only hooks like useDebounce
 // Shared between customer-web and staff-web
 ```
 
-### 4. `@cafe-idare/api-client`
+### 4. `@gustri/api-client`
 **Purpose**: Typed API client wrapper
 
 ```typescript
 // packages/api-client/src/index.ts
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@cafe-idare/database';
+import type { Database } from '@gustri/database';
 
 export function createApiClient(url: string, key: string) {
   return createClient<Database>(url, key);
@@ -130,7 +130,7 @@ packages:
 **Root `package.json`**:
 ```json
 {
-  "name": "cafe-idare",
+  "name": "gustri",
   "private": true,
   "scripts": {
     "build": "turbo run build",
@@ -207,10 +207,10 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   transpilePackages: [
-    "@cafe-idare/database",
-    "@cafe-idare/core",
-    "@cafe-idare/ui",
-    "@cafe-idare/api-client"
+    "@gustri/database",
+    "@gustri/core",
+    "@gustri/ui",
+    "@gustri/api-client"
   ],
   experimental: {
     outputFileTracingRoot: path.join(__dirname, "../../"),
@@ -251,15 +251,15 @@ module.exports = {
 4. Configure build pipeline
 
 ### Phase 2: Extract Packages (Day 2-3)
-1. Create `@cafe-idare/database` package
+1. Create `@gustri/database` package
    - Move all type definitions
    - Set up type generation pipeline
    
-2. Create `@cafe-idare/core` package
+2. Create `@gustri/core` package
    - Move utilities and constants
    - No React dependencies
 
-3. Create `@cafe-idare/api-client` package
+3. Create `@gustri/api-client` package
    - Supabase client wrapper
    - Typed query/mutation functions
 
@@ -297,7 +297,7 @@ export async function fetchOrders(client: SupabaseClient) {
 }
 
 // ✅ Good: In app
-import { fetchOrders } from '@cafe-idare/api-client';
+import { fetchOrders } from '@gustri/api-client';
 
 export function useOrders() {
   const client = useSupabaseClient();
@@ -351,7 +351,7 @@ export function isAppError(error: unknown): error is AppError {
 - Keep `node_modules` hoisting consistent with pnpm
 
 ### 2. Type Safety
-- Single source of truth for types in `@cafe-idare/database`
+- Single source of truth for types in `@gustri/database`
 - Use Zod for runtime validation
 - Generate types from database schema
 

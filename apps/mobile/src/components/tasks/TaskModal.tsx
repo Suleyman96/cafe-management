@@ -1,4 +1,4 @@
-import { TIME_OPTIONS, WEEKDAYS } from '@cafe-idare/core';
+import { TIME_OPTIONS, WEEKDAYS } from '@gustri/core';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, Modal, Portal, Switch } from 'react-native-paper';

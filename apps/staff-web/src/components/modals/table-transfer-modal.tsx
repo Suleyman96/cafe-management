@@ -1,7 +1,7 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button } from '@cafe-idare/ui';
+import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
 import { AlertTriangle, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuth, useOrders, useTables, useTransferTable } from '@/hooks';

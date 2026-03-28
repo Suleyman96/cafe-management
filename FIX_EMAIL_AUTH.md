@@ -16,7 +16,7 @@ Since the UI button doesn't work, try this:
 
 2. **Access GoTrue container:**
    ```bash
-   docker exec -it supabase_auth_cafe-idare sh
+   docker exec -it supabase_auth_gustri sh
    ```
 
 3. **Check environment variables:**

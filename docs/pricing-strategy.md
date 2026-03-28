@@ -1,4 +1,4 @@
-# Cafe Idare - Pricing Strategy
+# Gustri - Pricing Strategy
 
 ## Target Market
 
@@ -102,7 +102,7 @@ No competitor in Azerbaijan/CIS offers a generous free tier. Including QR orderi
 Standard plan at $19-29/mo is cheaper than Clopos ($59), Poster ($26), and iiko ($49) while offering more built-in features.
 
 ### 3. Built-in Features vs Add-ons
-Competitors charge extra for delivery, scheduling, expenses. Cafe Idare includes these across all plans, making total cost of ownership lower.
+Competitors charge extra for delivery, scheduling, expenses. Gustri includes these across all plans, making total cost of ownership lower.
 
 ### 4. Regional Price Sensitivity
 CIS/Turkey cafes budget $30-100/month for POS. Our pricing fits comfortably within this range while offering room for upsell.
@@ -121,9 +121,9 @@ CIS/Turkey cafes budget $30-100/month for POS. Our pricing fits comfortably with
 
 ---
 
-## Competitive Advantages of Cafe Idare
+## Competitive Advantages of Gustri
 
-| Feature | Cafe Idare | Others |
+| Feature | Gustri | Others |
 |---------|-----------|--------|
 | Built-in delivery with driver assignment | Yes | Via 3rd party (iiko, Clopos) |
 | Waiter call system | Yes | Not common |
@@ -166,9 +166,9 @@ Before launching in Azerbaijan, **E-Kassa** (electronic cash register) integrati
 
 ## Pricing Comparison Summary
 
-At each price point, Cafe Idare offers more value than competitors:
+At each price point, Gustri offers more value than competitors:
 
-| Price Range | Cafe Idare | Competitor |
+| Price Range | Gustri | Competitor |
 |-------------|-----------|------------|
 | $0/mo | Free (5 tables, QR, mobile kitchen display) | Loyverse Free (no restaurant focus) |
 | $19-29/mo | Standard (delivery, payments, 200 items) | Poster Mini $26 (100 items, no delivery) |

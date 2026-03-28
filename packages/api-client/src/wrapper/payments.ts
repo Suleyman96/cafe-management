@@ -2,7 +2,7 @@
  * Payments wrapper module
  */
 
-import { handleSupabaseError, isOrderPayment } from '@cafe-idare/core';
+import { handleSupabaseError, isOrderPayment } from '@gustri/core';
 import type { OrderPaymentInsert, WrapperContext } from './types';
 
 export function createPaymentsWrapper(ctx: WrapperContext) {

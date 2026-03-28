@@ -1,6 +1,6 @@
 import 'react-native-url-polyfill/auto';
-import { createSupabaseWrapper } from '@cafe-idare/api-client';
-import type { Database } from '@cafe-idare/database';
+import { createSupabaseWrapper } from '@gustri/api-client';
+import type { Database } from '@gustri/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';

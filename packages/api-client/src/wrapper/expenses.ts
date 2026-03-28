@@ -2,7 +2,7 @@
  * Expenses wrapper module
  */
 
-import { handleSupabaseError, isExpense, isExpenseCategory } from '@cafe-idare/core';
+import { handleSupabaseError, isExpense, isExpenseCategory } from '@gustri/core';
 import type {
   ExpenseCategoryInsert,
   ExpenseCategoryRow,

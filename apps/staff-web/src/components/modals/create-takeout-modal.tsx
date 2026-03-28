@@ -1,6 +1,6 @@
 'use client';
 
-import type { OrdersInsert } from '@cafe-idare/database';
+import type { OrdersInsert } from '@gustri/database';
 import { Phone, User, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';

@@ -1,4 +1,4 @@
-import { AuthenticationError, ConflictError } from '@cafe-idare/core';
+import { AuthenticationError, ConflictError } from '@gustri/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createStaffWrapper } from '../wrapper/staff';
 import { createMockContext } from './helpers/mock-supabase';

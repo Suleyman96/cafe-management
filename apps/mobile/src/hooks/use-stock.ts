@@ -1,5 +1,5 @@
-import { QUERY_KEYS } from '@cafe-idare/core';
-import type { StockItemInsert, StockItemUpdate } from '@cafe-idare/database';
+import { QUERY_KEYS } from '@gustri/core';
+import type { StockItemInsert, StockItemUpdate } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase';
 import type { StockItem, StockMovement } from '@/types';

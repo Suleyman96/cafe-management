@@ -1,8 +1,8 @@
 'use client';
 
-import type { Database } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button } from '@cafe-idare/ui';
+import type { Database } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
 import { ArrowRight, Loader2, Minus, Plus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTables, useTransferOrderItems } from '@/hooks';

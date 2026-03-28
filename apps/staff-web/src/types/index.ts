@@ -3,7 +3,7 @@
  * Re-export from shared types for convenience
  */
 
-import type * as DB from '@cafe-idare/database';
+import type * as DB from '@gustri/database';
 
 // Re-export constants from core
 export {
@@ -17,9 +17,9 @@ export {
   TAX_RATE,
   USER_ROLE,
   WAITER_CALL_STATUS,
-} from '@cafe-idare/core';
+} from '@gustri/core';
 // Re-export all database types
-export * from '@cafe-idare/database';
+export * from '@gustri/database';
 
 // Local extended types specific to staff-web
 export interface OrderWithDetails extends DB.Order {

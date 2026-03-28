@@ -1,4 +1,4 @@
-# Quick Start Guide - Café İdarə
+# Quick Start Guide - Gustri
 
 Get your café system running in **under 30 minutes**!
 
@@ -31,7 +31,7 @@ Get your café system running in **under 30 minutes**!
 1. Go to [supabase.com](https://supabase.com)
 2. Click "New Project"
 3. Fill in:
-   - **Name**: `cafe-idare`
+   - **Name**: `gustri`
    - **Database Password**: (save this!)
    - **Region**: Closest to you
 4. Click "Create project" (takes 2 minutes)
@@ -43,7 +43,7 @@ Get your café system running in **under 30 minutes**!
 npm install -g supabase
 
 # Navigate to project
-cd /Users/kamilhajilov/Documents/cafe-idare
+cd /Users/kamilhajilov/Documents/gustri
 
 # Link to your project
 supabase link --project-ref YOUR_PROJECT_REF
@@ -77,7 +77,7 @@ npm install
 cat > .env.local << EOF
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-NEXT_PUBLIC_APP_NAME="Café İdarə"
+NEXT_PUBLIC_APP_NAME="Gustri"
 EOF
 
 # Run locally
@@ -102,7 +102,7 @@ npm install
 cat > .env.local << EOF
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-NEXT_PUBLIC_APP_NAME="Café İdarə - Staff"
+NEXT_PUBLIC_APP_NAME="Gustri - Staff"
 EOF
 
 # Run locally

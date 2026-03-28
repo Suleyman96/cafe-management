@@ -1,6 +1,6 @@
 'use client';
 
-import type { Database } from '@cafe-idare/database';
+import type { Database } from '@gustri/database';
 import { Clock, Pencil, Trash2 } from 'lucide-react';
 import type { CafeSettings } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';

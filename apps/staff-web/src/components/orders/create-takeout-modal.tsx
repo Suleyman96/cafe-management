@@ -1,8 +1,8 @@
 'use client';
 
-import type { MenuItem, OrdersInsert } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button } from '@cafe-idare/ui';
+import type { MenuItem, OrdersInsert } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
 import { useState } from 'react';
 import { useAddOrderItems, useCafeSettings, useCreateOrder } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';

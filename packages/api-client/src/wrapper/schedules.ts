@@ -2,7 +2,7 @@
  * Staff schedules wrapper module
  */
 
-import { handleSupabaseError } from '@cafe-idare/core';
+import { handleSupabaseError } from '@gustri/core';
 import type { StaffScheduleInsert, StaffScheduleUpdate, WrapperContext } from './types';
 
 const STAFF_JOIN = `

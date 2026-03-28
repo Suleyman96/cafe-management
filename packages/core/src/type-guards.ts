@@ -21,7 +21,7 @@ import type {
   Task,
   WaiterCall,
   WasteLog,
-} from '@cafe-idare/database';
+} from '@gustri/database';
 
 // Order type guards
 export function isOrder(value: unknown): value is Order {

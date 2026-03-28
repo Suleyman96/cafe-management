@@ -1,5 +1,5 @@
-import { QUERY_KEYS } from '@cafe-idare/core';
-import type { StaffScheduleInsert, StaffScheduleUpdate } from '@cafe-idare/database';
+import { QUERY_KEYS } from '@gustri/core';
+import type { StaffScheduleInsert, StaffScheduleUpdate } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase';
 import type { StaffSchedule } from '@/types';

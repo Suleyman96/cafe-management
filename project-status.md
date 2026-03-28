@@ -1,11 +1,11 @@
-# Project Status - Café İdarə
+# Project Status - Gustri
 
 ## 🚀 Current State (as of January 11, 2024)
 
 ### ✅ Completed Tasks
 
 1. **Turborepo Migration** - Successfully migrated to Turborepo monorepo structure
-   - Created shared packages: `@cafe-idare/core`, `@cafe-idare/database`, `@cafe-idare/api-client`, `@cafe-idare/ui`
+   - Created shared packages: `@gustri/core`, `@gustri/database`, `@gustri/api-client`, `@gustri/ui`
    - Apps organized: `staff-web`, `customer-web`, `mobile`
 
 2. **TypeScript Strict Mode** - Fully implemented in `staff-web`
@@ -36,31 +36,31 @@
 
 ### 📁 Project Structure
 ```
-cafe-idare/
+gustri/
 ├── apps/
 │   ├── staff-web/        ✅ Fully refactored
 │   ├── customer-web/     ⚠️  Needs work
 │   └── mobile/           ⚠️  Not migrated
 ├── packages/
-│   ├── @cafe-idare/core       ✅ Shared utilities
-│   ├── @cafe-idare/database   ✅ Types & schemas
-│   ├── @cafe-idare/api-client ✅ Type-safe wrapper
-│   └── @cafe-idare/ui         ✅ Shared components
+│   ├── @gustri/core       ✅ Shared utilities
+│   ├── @gustri/database   ✅ Types & schemas
+│   ├── @gustri/api-client ✅ Type-safe wrapper
+│   └── @gustri/ui         ✅ Shared components
 └── supabase/             ✅ Database config
 ```
 
 ### 🛠️ Key Improvements Made
 
 1. **Type Safety**
-   - Created `SupabaseWrapper` class in `@cafe-idare/api-client`
+   - Created `SupabaseWrapper` class in `@gustri/api-client`
    - Eliminates all `as any` casts
    - Runtime validation with type guards
    - Comprehensive error handling
 
 2. **Code Organization**
    - Clear separation of concerns
-   - Shared business logic in `@cafe-idare/core`
-   - Reusable UI components in `@cafe-idare/ui`
+   - Shared business logic in `@gustri/core`
+   - Reusable UI components in `@gustri/ui`
    - Database types centralized
 
 3. **Developer Experience**
@@ -76,7 +76,7 @@ cafe-idare/
 pnpm install
 
 # Run staff-web only
-pnpm dev --filter=@cafe-idare/staff-web
+pnpm dev --filter=@gustri/staff-web
 
 # Or navigate to app and run
 cd apps/staff-web
@@ -102,7 +102,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 
 ### 💡 Important Notes
 
-- The project was moved from `/Users/kamilhajilov/Documents/cafe-idare` to `/Users/kamilhajilov/Documents/github/cafe-idare`
+- The project was moved from `/Users/kamilhajilov/Documents/gustri` to `/Users/kamilhajilov/Documents/github/gustri`
 - All sensitive files (.env) are properly gitignored
 - Build artifacts are cleaned, run `pnpm build` to regenerate
 

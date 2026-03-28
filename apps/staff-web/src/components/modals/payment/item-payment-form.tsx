@@ -1,6 +1,6 @@
 'use client';
 
-import type { Database } from '@cafe-idare/database';
+import type { Database } from '@gustri/database';
 import { Minus, Plus } from 'lucide-react';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {

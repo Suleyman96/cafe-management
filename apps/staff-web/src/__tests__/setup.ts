@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import { createMockDb } from './helpers/mock-db';
 
 // Mock i18n with English translations for component tests
-vi.mock('@cafe-idare/i18n', () => {
+vi.mock('@gustri/i18n', () => {
   const en: Record<string, string> = {
     cancel: 'Cancel',
     save: 'Save',

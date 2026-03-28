@@ -1,5 +1,5 @@
-import { QUERY_KEYS } from '@cafe-idare/core';
-import type { OrderItemsInsert, OrdersInsert } from '@cafe-idare/database';
+import { QUERY_KEYS } from '@gustri/core';
+import type { OrderItemsInsert, OrdersInsert } from '@gustri/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase';
 

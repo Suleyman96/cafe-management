@@ -2,7 +2,7 @@
  * Waiter calls wrapper module
  */
 
-import { handleSupabaseError, isWaiterCall } from '@cafe-idare/core';
+import { handleSupabaseError, isWaiterCall } from '@gustri/core';
 import type { WaiterCallRow, WrapperContext } from './types';
 
 export function createWaiterCallsWrapper(ctx: WrapperContext) {

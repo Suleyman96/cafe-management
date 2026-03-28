@@ -1,9 +1,9 @@
 'use client';
 
-import { DAYS_OF_WEEK, getLocalDateString, TIME_OPTIONS } from '@cafe-idare/core';
-import type { StaffScheduleInsert } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button } from '@cafe-idare/ui';
+import { DAYS_OF_WEEK, getLocalDateString, TIME_OPTIONS } from '@gustri/core';
+import type { StaffScheduleInsert } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';

@@ -1,6 +1,6 @@
 # Shared Package
 
-This package contains shared code used across all Café İdarə applications:
+This package contains shared code used across all Gustri applications:
 - `customer-web` (Next.js)
 - `staff-web` (Next.js)
 - `mobile-app` (React Native) - for future use

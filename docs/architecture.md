@@ -2,7 +2,7 @@
 
 ## Overview
 
-Cafe Idare is a restaurant management system built as a Turborepo monorepo with 3 client applications and 5 shared packages, powered by Supabase (PostgreSQL + Auth + Realtime).
+Gustri is a restaurant management system built as a Turborepo monorepo with 3 client applications and 5 shared packages, powered by Supabase (PostgreSQL + Auth + Realtime).
 
 ### Monorepo Structure
 
@@ -192,20 +192,20 @@ WASTE_REASON:     expired, spoiled, overcooked, dropped,
 
 ## Shared Packages
 
-### @cafe-idare/database
+### @gustri/database
 - Zod schemas for all database tables (runtime validation)
 - TypeScript types inferred from schemas
 - Enum constants matching PostgreSQL CHECK constraints
 - Supabase generated types
 
-### @cafe-idare/core
+### @gustri/core
 - Error classes: `AppError`, `ValidationError`, `AuthenticationError`, `AuthorizationError`, `NotFoundError`, `ConflictError`, `NetworkError`
 - `handleSupabaseError()` — maps Supabase error codes to typed errors
 - Type guards: `isOrder()`, `isTable()`, `isStaff()`, etc.
 - Shared constants: status colors, query keys, refresh intervals, storage keys
 - Utility functions
 
-### @cafe-idare/api-client
+### @gustri/api-client
 - `SupabaseWrapper` class with domain-specific sub-wrappers:
   - `tables`, `orders`, `orderItems`, `menuItems`, `categories`, `staff`
   - `feedback`, `payments`, `waiterCalls`, `settings`
@@ -215,12 +215,12 @@ WASTE_REASON:     expired, spoiled, overcooked, dropped,
 - Usage: `db.orders.findAll()`, `db.tables.findById(id)`, `db.rpc.transferTable({...})`
 - Re-exports all database types
 
-### @cafe-idare/i18n
+### @gustri/i18n
 - i18next-based internationalization
 - 20 supported languages: en, az, ru, tr, ja, ka, kk, uz, de, fr, es, pt, th, id, uk, ar, ko, it, fa, el
 - Shared across mobile and web apps
 
-### @cafe-idare/ui
+### @gustri/ui
 - Reusable React components: `Button`, `LoadingSpinner`
 - `cn()` utility for conditional Tailwind classes
 
@@ -471,7 +471,7 @@ supabase.channel(`order-${orderId}`)          // single order detail
 - **Menu management** — items and categories with multilingual support, dietary flags, allergens
 - **Reports** — revenue, sales, and operational reporting (owner role)
 - **Cafe settings** — tax configuration, currency, branding, delivery settings, social links
-- **Multi-language** — 20 languages via `@cafe-idare/i18n`; menu items have multilingual name/description columns
+- **Multi-language** — 20 languages via `@gustri/i18n`; menu items have multilingual name/description columns
 - **Sound notifications** — audio alerts for new orders, waiter calls, and ready orders
 - **Real-time updates** — Supabase Realtime across all three apps
 

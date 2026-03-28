@@ -1,5 +1,5 @@
-import { createSupabaseWrapper } from '@cafe-idare/api-client';
-import type { Database } from '@cafe-idare/database';
+import { createSupabaseWrapper } from '@gustri/api-client';
+import type { Database } from '@gustri/database';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

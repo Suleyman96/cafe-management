@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@cafe-idare/ui';
+import { Button } from '@gustri/ui';
 import { AlertTriangle, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 

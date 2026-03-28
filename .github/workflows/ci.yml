@@ -59,7 +59,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build packages
-        run: pnpm build --filter=@cafe-idare/database --filter=@cafe-idare/core --filter=@cafe-idare/api-client --filter=@cafe-idare/i18n --filter=@cafe-idare/ui
+        run: pnpm build --filter=@gustri/database --filter=@gustri/core --filter=@gustri/api-client --filter=@gustri/i18n --filter=@gustri/ui
 
       - name: Run tests
         run: pnpm test
@@ -88,13 +88,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build packages
-        run: pnpm build --filter=@cafe-idare/database --filter=@cafe-idare/core --filter=@cafe-idare/api-client --filter=@cafe-idare/i18n --filter=@cafe-idare/ui
+        run: pnpm build --filter=@gustri/database --filter=@gustri/core --filter=@gustri/api-client --filter=@gustri/i18n --filter=@gustri/ui
 
       - name: Type check
-        run: pnpm type-check --filter=@cafe-idare/staff-web --filter=@cafe-idare/customer-web
+        run: pnpm type-check --filter=@gustri/staff-web --filter=@gustri/customer-web
 
       - name: Build apps
-        run: pnpm build --filter=@cafe-idare/staff-web --filter=@cafe-idare/customer-web
+        run: pnpm build --filter=@gustri/staff-web --filter=@gustri/customer-web
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}

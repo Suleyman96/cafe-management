@@ -36,7 +36,7 @@ vi.mock('sonner', () => ({
 }));
 
 // Mock i18n — returns translation keys as-is for test assertions
-vi.mock('@cafe-idare/i18n', () => ({
+vi.mock('@gustri/i18n', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, any>) => {
       if (opts) {

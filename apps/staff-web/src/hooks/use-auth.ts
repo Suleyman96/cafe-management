@@ -1,6 +1,6 @@
 'use client';
 
-import type { Database } from '@cafe-idare/database';
+import type { Database } from '@gustri/database';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';

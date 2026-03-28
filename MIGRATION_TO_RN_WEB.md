@@ -5,7 +5,7 @@ This guide explains how to convert from separate web apps to a unified React Nat
 ## 📊 Current Architecture (Phase 1 - Web Only)
 
 ```
-cafe-idare/
+gustri/
 ├── customer-web/        # Next.js for customers
 ├── staff-web/          # Next.js for staff/kitchen
 ├── shared/             # ✅ Shared types & utilities
@@ -19,7 +19,7 @@ Deployment: 2 web apps
 ## 🎯 Target Architecture (Phase 2 - Universal)
 
 ```
-cafe-idare/
+gustri/
 ├── app/                # ✅ Single React Native app
 │   ├── (customer)/    # Customer routes
 │   ├── (staff)/       # Staff routes
@@ -43,7 +43,7 @@ The migration is straightforward because I structured the web apps with RN Web i
 ###Step 1: Create React Native Web Project (Day 1)
 
 ```bash
-cd cafe-idare
+cd gustri
 
 # Create new app
 npx create-expo-app app --template expo-template-blank-typescript

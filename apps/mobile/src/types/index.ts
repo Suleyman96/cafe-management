@@ -20,9 +20,9 @@ export type {
   WaiterCall,
   WaiterCallWithTable,
   WasteLog,
-} from '@cafe-idare/database';
+} from '@gustri/database';
 
-import type { Staff } from '@cafe-idare/database';
+import type { Staff } from '@gustri/database';
 
 // User role type
 export type UserRole = Staff['role'];

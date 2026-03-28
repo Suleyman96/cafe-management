@@ -1,9 +1,9 @@
-import { initI18n } from '@cafe-idare/i18n';
-import authEn from '@cafe-idare/i18n/locales/en/auth.json';
-import commonEn from '@cafe-idare/i18n/locales/en/common.json';
-import navEn from '@cafe-idare/i18n/locales/en/nav.json';
-import rolesEn from '@cafe-idare/i18n/locales/en/roles.json';
-import staffEn from '@cafe-idare/i18n/locales/en/staff.json';
+import { initI18n } from '@gustri/i18n';
+import authEn from '@gustri/i18n/locales/en/auth.json';
+import commonEn from '@gustri/i18n/locales/en/common.json';
+import navEn from '@gustri/i18n/locales/en/nav.json';
+import rolesEn from '@gustri/i18n/locales/en/roles.json';
+import staffEn from '@gustri/i18n/locales/en/staff.json';
 
 // Detect device language (can be enhanced with expo-localization later)
 const getDeviceLanguage = (): string => {

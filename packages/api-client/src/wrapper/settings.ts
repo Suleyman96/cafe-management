@@ -2,8 +2,8 @@
  * Cafe settings wrapper module
  */
 
-import { handleSupabaseError } from '@cafe-idare/core';
-import type { Database } from '@cafe-idare/database';
+import { handleSupabaseError } from '@gustri/core';
+import type { Database } from '@gustri/database';
 import type { WrapperContext } from './types';
 
 type CafeSettingsRow = Database['public']['Tables']['cafe_settings']['Row'];

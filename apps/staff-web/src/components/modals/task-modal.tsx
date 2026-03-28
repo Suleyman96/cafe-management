@@ -1,8 +1,8 @@
 'use client';
 
-import { getLocalDateString, TIME_OPTIONS, WEEKDAYS } from '@cafe-idare/core';
-import type { Database } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
+import { getLocalDateString, TIME_OPTIONS, WEEKDAYS } from '@gustri/core';
+import type { Database } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';

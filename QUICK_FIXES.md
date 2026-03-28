@@ -38,7 +38,7 @@ Create a base `tsconfig.json` in the root:
 ```json
 {
   "dependencies": {
-    "@cafe-idare/shared": "file:../shared",
+    "@gustri/shared": "file:../shared",
     // ... other deps
   }
 }
@@ -70,7 +70,7 @@ export const env = requiredEnvVars;
 Create `staff-web/src/lib/supabase/singleton.ts`:
 ```typescript
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@cafe-idare/shared';
+import type { Database } from '@gustri/shared';
 import { env } from '../env';
 
 // Create singleton instance
@@ -147,7 +147,7 @@ Create `.vscode/settings.json`:
 
 ## 🛠️ Common Error Fixes
 
-### Error: "Module not found: Can't resolve '@cafe-idare/shared'"
+### Error: "Module not found: Can't resolve '@gustri/shared'"
 ```bash
 cd staff-web
 npm install ../shared

@@ -2,7 +2,7 @@
  * RPC functions wrapper module
  */
 
-import { handleSupabaseError } from '@cafe-idare/core';
+import { handleSupabaseError } from '@gustri/core';
 import type { WrapperContext } from './types';
 
 export function createRpcWrapper(ctx: WrapperContext) {

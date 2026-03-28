@@ -2,7 +2,7 @@
  * Customer feedback wrapper module
  */
 
-import { handleSupabaseError, isCustomerFeedback } from '@cafe-idare/core';
+import { handleSupabaseError, isCustomerFeedback } from '@gustri/core';
 import type { CustomerFeedbackRow, WrapperContext } from './types';
 
 export function createFeedbackWrapper(ctx: WrapperContext) {

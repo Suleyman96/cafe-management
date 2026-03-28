@@ -1,7 +1,7 @@
 {
-  "name": "@cafe-idare/database",
+  "name": "@gustri/database",
   "version": "1.0.0",
-  "description": "Database types and schemas for Café İdarə",
+  "description": "Database types and schemas for Gustri",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -34,7 +34,7 @@
     "types",
     "utilities"
   ],
-  "author": "Café İdarə",
+  "author": "Gustri",
   "license": "UNLICENSED",
   "private": true
 }

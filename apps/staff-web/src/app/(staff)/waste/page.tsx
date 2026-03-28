@@ -1,8 +1,8 @@
 'use client';
 
-import type { Database } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
-import { LoadingSpinner } from '@cafe-idare/ui';
+import type { Database } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
+import { LoadingSpinner } from '@gustri/ui';
 import { DollarSign, Pencil, Plus, Trash2, TrendingDown } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

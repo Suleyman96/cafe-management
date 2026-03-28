@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
+import { useTranslation } from '@gustri/i18n';
 import { Trash2 } from 'lucide-react';
 import type { WasteMetrics } from '@/lib/report-pdf-export';
 

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Cafe Idare — a restaurant management system built as a Turborepo monorepo with 3 client apps and 4 shared packages, powered by Supabase (PostgreSQL + Auth + Realtime).
+Gustri — a restaurant management system built as a Turborepo monorepo with 3 client apps and 4 shared packages, powered by Supabase (PostgreSQL + Auth + Realtime).
 
 ## Monorepo Structure
 
@@ -54,16 +54,16 @@ pnpm db:studio        # Open Supabase Studio (port 54323)
 
 ### Imports
 - All apps use `@/*` path alias mapping to `./src/*`
-- Cross-package imports use workspace names: `@cafe-idare/core`, `@cafe-idare/database`, `@cafe-idare/api-client`
+- Cross-package imports use workspace names: `@gustri/core`, `@gustri/database`, `@gustri/api-client`
 
 ### Data Access
-- All database operations go through `@cafe-idare/api-client` wrapper (never raw supabase queries in app code)
+- All database operations go through `@gustri/api-client` wrapper (never raw supabase queries in app code)
 - Create wrapper: `const db = createSupabaseWrapper(supabaseClient)`
 - Usage: `db.orders.findAll()`, `db.tables.findById(id)`, `db.waiterCalls.create({...})`
 - Exception: Supabase Realtime channels use the raw `supabase` client directly (not wrappable)
 
 ### Types
-- All database types are defined in `@cafe-idare/database` and re-exported from `@cafe-idare/api-client`
+- All database types are defined in `@gustri/database` and re-exported from `@gustri/api-client`
 - Never create local `database.ts` type files in apps — import from the package
 - Zod schemas for runtime validation live in `packages/database/src/schemas/`
 
@@ -77,9 +77,9 @@ pnpm db:studio        # Open Supabase Studio (port 54323)
 - Styling: Tailwind CSS classes, `cn()` utility for conditional classes
 
 ### Error Handling
-- Use error classes from `@cafe-idare/core`: `AppError`, `ValidationError`, `NotFoundError`, etc.
+- Use error classes from `@gustri/core`: `AppError`, `ValidationError`, `NotFoundError`, etc.
 - `handleSupabaseError()` maps Supabase error codes to typed errors
-- Type guards from `@cafe-idare/core`: `isOrder()`, `isTable()`, `isStaff()`, etc.
+- Type guards from `@gustri/core`: `isOrder()`, `isTable()`, `isStaff()`, etc.
 
 ## Biome Rules
 

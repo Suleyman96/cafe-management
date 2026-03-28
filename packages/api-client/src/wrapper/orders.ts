@@ -2,7 +2,7 @@
  * Orders wrapper module
  */
 
-import { handleSupabaseError, isOrder, isOrderItem, isOrderItemArray } from '@cafe-idare/core';
+import { handleSupabaseError, isOrder, isOrderItem, isOrderItemArray } from '@gustri/core';
 import type { OrderInsert, OrderItemInsert, OrderItemRow, OrderRow, WrapperContext } from './types';
 
 export function createOrdersWrapper(ctx: WrapperContext) {

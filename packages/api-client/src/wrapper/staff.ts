@@ -2,7 +2,7 @@
  * Staff wrapper module
  */
 
-import { handleSupabaseError, isStaff, isStaffArray } from '@cafe-idare/core';
+import { handleSupabaseError, isStaff, isStaffArray } from '@gustri/core';
 import type { StaffInsert, StaffUpdate, WrapperContext } from './types';
 
 export function createStaffWrapper(ctx: WrapperContext) {
