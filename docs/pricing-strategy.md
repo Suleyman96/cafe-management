@@ -59,22 +59,25 @@ Small to medium cafes and restaurants in Azerbaijan and CIS region.
 | Menu management | 50 items | 200 items | Unlimited | Unlimited |
 | Table management | 5 tables | 15 tables | Unlimited | Unlimited |
 | QR ordering | Yes | Yes | Yes | Yes |
-| Kitchen display | Yes | Yes | Yes | Yes |
+| Kitchen display (mobile) | Yes | Yes | Yes | Yes |
 | Takeout orders | Yes | Yes | Yes | Yes |
-| Delivery orders | No | Yes | Yes | Yes |
-| Split payments | No | Yes | Yes | Yes |
+| Delivery orders (with driver assignment) | Yes | Yes | Yes | Yes |
+| Split payments | Yes | Yes | Yes | Yes |
 | Waiter calls | Yes | Yes | Yes | Yes |
-| Stock/Inventory | No | Basic | Advanced | Advanced |
-| Expense tracking | No | No | Yes | Yes |
-| Staff scheduling | No | No | Yes | Yes |
+| Stock/Inventory | Yes | Yes | Yes | Yes |
+| Expense tracking | Yes | Yes | Yes | Yes |
+| Staff scheduling | Yes | Yes | Yes | Yes |
+| Task management | Yes | Yes | Yes | Yes |
 | Analytics/Reports | Basic (today only) | 30-day history | Full history | Full + export |
 | Customer feedback | Yes | Yes | Yes | Yes |
 | Branding/White-label | No | Yes | Yes | Yes |
-| Multi-language menu | Yes | Yes | Yes | Yes |
+| Multi-language menu | Planned | Planned | Planned | Planned |
 | Loyalty/Points | No | No | Yes | Yes |
 | Multi-location | No | No | No | Yes |
 | API access | No | No | No | Yes |
 | Support | Community | Email | Priority email | Phone + email |
+
+> **Note:** Multi-language menu is not yet implemented. The database currently uses single `name` and `description` columns for menu items and categories. Multilingual support (az, ru, tr, en) is planned for a future release.
 
 ---
 
@@ -93,13 +96,13 @@ Small to medium cafes and restaurants in Azerbaijan and CIS region.
 ## Why This Strategy Works
 
 ### 1. Free Tier Advantage
-No competitor in Azerbaijan/CIS offers a generous free tier. Including QR ordering, kitchen display, and table management (up to 5 tables) for free will drive adoption and word-of-mouth.
+No competitor in Azerbaijan/CIS offers a generous free tier. Including QR ordering, table management (up to 5 tables), and mobile kitchen display for free will drive adoption and word-of-mouth.
 
 ### 2. Undercuts Competition
 Standard plan at $19-29/mo is cheaper than Clopos ($59), Poster ($26), and iiko ($49) while offering more built-in features.
 
 ### 3. Built-in Features vs Add-ons
-Competitors charge extra for delivery, scheduling, expenses. Cafe Idare includes these in the Pro tier, making total cost of ownership lower.
+Competitors charge extra for delivery, scheduling, expenses. Cafe Idare includes these across all plans, making total cost of ownership lower.
 
 ### 4. Regional Price Sensitivity
 CIS/Turkey cafes budget $30-100/month for POS. Our pricing fits comfortably within this range while offering room for upsell.
@@ -110,7 +113,7 @@ CIS/Turkey cafes budget $30-100/month for POS. Our pricing fits comfortably with
 
 1. **Online ordering & delivery integration** (Wolt, Glovo)
 2. **Table management + QR ordering**
-3. **Kitchen display**
+3. **Kitchen display** (mobile app)
 4. **Inventory tracking** (reducing waste = direct cost savings)
 5. **Employee scheduling**
 6. **Loyalty/CRM** (repeat visits)
@@ -124,8 +127,9 @@ CIS/Turkey cafes budget $30-100/month for POS. Our pricing fits comfortably with
 |---------|-----------|--------|
 | Built-in delivery with driver assignment | Yes | Via 3rd party (iiko, Clopos) |
 | Waiter call system | Yes | Not common |
-| Multi-language menu (4 languages) | Yes | Rare |
 | Customer feedback system | Yes | Not built-in |
+| Inventory + waste tracking | Yes | Usually add-on |
+| Task management for staff | Yes | Not common |
 | White-label branding | Yes (Standard+) | Premium only |
 | Free/self-hosted option | Yes | No (all competitors charge) |
 
@@ -140,16 +144,17 @@ CIS/Turkey cafes budget $30-100/month for POS. Our pricing fits comfortably with
 4. **E-Kassa integration** — legal requirement in Azerbaijan
 
 ### Medium Priority
-5. **Receipt/thermal printer integration**
-6. **Advanced analytics** — trends, comparisons, charts
-7. **3rd party delivery integration** (Wolt, Glovo)
-8. **Training mode** — staff onboarding
+5. **Multi-language menu** — multilingual name/description fields for menu items and categories (az, ru, tr, en)
+6. **Receipt/thermal printer integration**
+7. **Advanced analytics** — trends, comparisons, charts
+8. **3rd party delivery integration** (Wolt, Glovo)
+9. **Training mode** — staff onboarding
 
 ### Lower Priority
-9. **Self-checkout/kiosk mode**
-10. **Multi-store management dashboard**
-11. **Purchase order management** (supplier ordering)
-12. **E-commerce module**
+10. **Self-checkout/kiosk mode**
+11. **Multi-store management dashboard**
+12. **Purchase order management** (supplier ordering)
+13. **E-commerce module**
 
 ---
 
@@ -165,7 +170,7 @@ At each price point, Cafe Idare offers more value than competitors:
 
 | Price Range | Cafe Idare | Competitor |
 |-------------|-----------|------------|
-| $0/mo | Free (5 tables, QR, kitchen display) | Loyverse Free (no restaurant focus) |
+| $0/mo | Free (5 tables, QR, mobile kitchen display) | Loyverse Free (no restaurant focus) |
 | $19-29/mo | Standard (delivery, payments, 200 items) | Poster Mini $26 (100 items, no delivery) |
-| $49-69/mo | Pro (stock, expenses, schedules, loyalty) | iiko Pro $86 (similar but more expensive) |
+| $49-69/mo | Pro (full history, loyalty, unlimited items) | iiko Pro $86 (similar but more expensive) |
 | $99-129/mo | Business (multi-location, API, unlimited) | Clopos Pro $149, R-Keeper $168+ |

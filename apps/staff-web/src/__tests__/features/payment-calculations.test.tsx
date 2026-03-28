@@ -164,7 +164,7 @@ describe('Payment processing correctness', () => {
     const processBtn = buttons.find(
       (b) => b.textContent === 'Process Payment' && !b.className.includes('text-gray'),
     );
-    expect(processBtn?.disabled).toBe(true);
+    expect((processBtn as HTMLButtonElement)?.disabled).toBe(true);
   });
 
   it('payment method resets when modal reopens', () => {

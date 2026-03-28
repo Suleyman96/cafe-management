@@ -1,12 +1,13 @@
 export const mockAdminStaff = {
   id: 'staff-admin-1',
   full_name: 'Test Admin',
-  role: 'admin',
+  role: 'admin' as const,
   email: 'admin@test.com',
   is_active: true,
   auth_user_id: 'auth-user-1',
   phone: null,
   last_login_at: null,
+  preferred_language: 'en',
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
@@ -15,7 +16,7 @@ export const mockWaiterStaff = {
   ...mockAdminStaff,
   id: 'staff-waiter-1',
   full_name: 'Test Waiter',
-  role: 'waiter',
+  role: 'waiter' as const,
   email: 'waiter@test.com',
   auth_user_id: 'auth-user-2',
 };

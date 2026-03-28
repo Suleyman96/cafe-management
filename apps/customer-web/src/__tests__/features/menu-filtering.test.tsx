@@ -24,7 +24,7 @@ const mockItemBase = {
   is_gluten_free: false,
   allergens: [],
   image_url: null,
-  description: null,
+  description: null as string | null,
   description_en: null,
   description_az: null,
   description_ru: null,
