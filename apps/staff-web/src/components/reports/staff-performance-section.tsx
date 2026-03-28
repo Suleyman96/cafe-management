@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
+import { useTranslation } from '@gustri/i18n';
 import { Award, BarChart3, UserCheck } from 'lucide-react';
 import type { StaffMember } from '@/lib/report-pdf-export';
 

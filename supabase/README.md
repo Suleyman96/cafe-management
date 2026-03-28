@@ -1,6 +1,6 @@
 # Supabase Backend Configuration
 
-This directory contains all backend configuration for the Café İdarə system.
+This directory contains all backend configuration for the Gustri system.
 
 ## Structure
 

@@ -1,4 +1,4 @@
-# Cafe Idare - Restaurant Management System
+# Gustri - Restaurant Management System
 
 A comprehensive restaurant management system built with modern web technologies, featuring real-time order management, table tracking, delivery ordering, inventory management, and multi-platform support.
 
@@ -12,11 +12,11 @@ This is a Turborepo monorepo containing:
 - **`mobile`** - Staff mobile app (React Native / Expo 54)
 
 ### Packages
-- **`@cafe-idare/core`** - Shared business logic, utilities, constants, and query keys
-- **`@cafe-idare/database`** - Database types (generated from Supabase), Zod schemas, enums
-- **`@cafe-idare/api-client`** - Type-safe Supabase API wrapper with runtime validation
-- **`@cafe-idare/i18n`** - Internationalization (i18next) with shared locale bundles
-- **`@cafe-idare/ui`** - Shared React components (Button, LoadingSpinner)
+- **`@gustri/core`** - Shared business logic, utilities, constants, and query keys
+- **`@gustri/database`** - Database types (generated from Supabase), Zod schemas, enums
+- **`@gustri/api-client`** - Type-safe Supabase API wrapper with runtime validation
+- **`@gustri/i18n`** - Internationalization (i18next) with shared locale bundles
+- **`@gustri/ui`** - Shared React components (Button, LoadingSpinner)
 
 ## Getting Started
 
@@ -150,8 +150,8 @@ pnpm db:seed-user
 pnpm dev
 
 # Run specific app
-pnpm dev --filter=@cafe-idare/staff-web
-pnpm dev --filter=@cafe-idare/customer-web
+pnpm dev --filter=@gustri/staff-web
+pnpm dev --filter=@gustri/customer-web
 
 # Build all packages
 pnpm build

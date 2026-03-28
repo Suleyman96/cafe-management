@@ -1,5 +1,5 @@
-import { QUERY_KEYS } from '@cafe-idare/core';
-import type { OrdersInsert } from '@cafe-idare/database';
+import { QUERY_KEYS } from '@gustri/core';
+import type { OrdersInsert } from '@gustri/database';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';

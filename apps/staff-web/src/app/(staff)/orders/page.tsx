@@ -1,8 +1,8 @@
 'use client';
 
-import { ORDER_STATUS } from '@cafe-idare/core';
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button, LoadingSpinner } from '@cafe-idare/ui';
+import { ORDER_STATUS } from '@gustri/core';
+import { useTranslation } from '@gustri/i18n';
+import { Button, LoadingSpinner } from '@gustri/ui';
 import { Loader2, Search, X, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';

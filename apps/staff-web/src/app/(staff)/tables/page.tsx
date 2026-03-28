@@ -1,8 +1,8 @@
 'use client';
 
-import type { OrdersInsert } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button, LoadingSpinner } from '@cafe-idare/ui';
+import type { OrdersInsert } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
+import { Button, LoadingSpinner } from '@gustri/ui';
 import { Package, Plus, RefreshCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';

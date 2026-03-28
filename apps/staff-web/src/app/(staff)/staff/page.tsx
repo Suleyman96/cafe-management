@@ -1,7 +1,7 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button, LoadingSpinner } from '@cafe-idare/ui';
+import { useTranslation } from '@gustri/i18n';
+import { Button, LoadingSpinner } from '@gustri/ui';
 import { ChefHat, Edit2, Plus, Search, Shield, User, UserCheck, UserX } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';

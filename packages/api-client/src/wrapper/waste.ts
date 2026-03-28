@@ -2,7 +2,7 @@
  * Waste logs wrapper module
  */
 
-import { handleSupabaseError, isWasteLog } from '@cafe-idare/core';
+import { handleSupabaseError, isWasteLog } from '@gustri/core';
 import type { WasteLogInsert, WasteLogRow, WasteLogUpdate, WrapperContext } from './types';
 
 export function createWasteWrapper(ctx: WrapperContext) {

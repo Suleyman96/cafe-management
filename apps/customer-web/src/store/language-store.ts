@@ -1,4 +1,4 @@
-import type { Language } from '@cafe-idare/i18n';
+import type { Language } from '@gustri/i18n';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 

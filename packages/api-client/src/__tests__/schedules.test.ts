@@ -1,4 +1,4 @@
-import { ConflictError } from '@cafe-idare/core';
+import { ConflictError } from '@gustri/core';
 import { describe, expect, it } from 'vitest';
 import { createSchedulesWrapper } from '../wrapper/schedules';
 import { createMockContext } from './helpers/mock-supabase';

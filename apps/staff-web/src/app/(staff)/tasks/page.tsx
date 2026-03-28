@@ -1,9 +1,9 @@
 'use client';
 
-import { getLocalDateString } from '@cafe-idare/core';
-import type { Database } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
-import { LoadingSpinner } from '@cafe-idare/ui';
+import { getLocalDateString } from '@gustri/core';
+import type { Database } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
+import { LoadingSpinner } from '@gustri/ui';
 import {
   AlertTriangle,
   CheckCircle2,

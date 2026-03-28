@@ -12,7 +12,7 @@ Before starting, ensure you have:
 ### Step 1: Initialize Turborepo
 
 ```bash
-# From the root cafe-idare directory
+# From the root gustri directory
 npx create-turbo@latest --use-pnpm --no-install
 # Choose "existing monorepo" when prompted
 ```
@@ -37,7 +37,7 @@ mv shared packages/database
 Create root `package.json`:
 ```json
 {
-  "name": "cafe-idare",
+  "name": "gustri",
   "version": "0.0.0",
   "private": true,
   "workspaces": [
@@ -115,7 +115,7 @@ Create `turbo.json`:
 #### apps/customer-web/package.json
 ```json
 {
-  "name": "@cafe-idare/customer-web",
+  "name": "@gustri/customer-web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -127,9 +127,9 @@ Create `turbo.json`:
     "clean": "rm -rf .next .turbo node_modules"
   },
   "dependencies": {
-    "@cafe-idare/database": "workspace:*",
-    "@cafe-idare/core": "workspace:*",
-    "@cafe-idare/api-client": "workspace:*",
+    "@gustri/database": "workspace:*",
+    "@gustri/core": "workspace:*",
+    "@gustri/api-client": "workspace:*",
     // ... other deps
   }
 }
@@ -138,7 +138,7 @@ Create `turbo.json`:
 #### apps/staff-web/package.json
 ```json
 {
-  "name": "@cafe-idare/staff-web",
+  "name": "@gustri/staff-web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -150,9 +150,9 @@ Create `turbo.json`:
     "clean": "rm -rf .next .turbo node_modules"
   },
   "dependencies": {
-    "@cafe-idare/database": "workspace:*",
-    "@cafe-idare/core": "workspace:*",
-    "@cafe-idare/api-client": "workspace:*",
+    "@gustri/database": "workspace:*",
+    "@gustri/core": "workspace:*",
+    "@gustri/api-client": "workspace:*",
     // ... other deps
   }
 }
@@ -163,7 +163,7 @@ Create `turbo.json`:
 #### packages/database/package.json
 ```json
 {
-  "name": "@cafe-idare/database",
+  "name": "@gustri/database",
   "version": "0.0.0",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -188,7 +188,7 @@ Create `turbo.json`:
 #### packages/core/package.json
 ```json
 {
-  "name": "@cafe-idare/core",
+  "name": "@gustri/core",
   "version": "0.0.0",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs", 
@@ -200,7 +200,7 @@ Create `turbo.json`:
     "clean": "rm -rf dist node_modules .turbo"
   },
   "dependencies": {
-    "@cafe-idare/database": "workspace:*"
+    "@gustri/database": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -213,7 +213,7 @@ Create `turbo.json`:
 #### packages/api-client/package.json
 ```json
 {
-  "name": "@cafe-idare/api-client",
+  "name": "@gustri/api-client",
   "version": "0.0.0",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -225,7 +225,7 @@ Create `turbo.json`:
     "clean": "rm -rf dist node_modules .turbo"
   },
   "dependencies": {
-    "@cafe-idare/database": "workspace:*",
+    "@gustri/database": "workspace:*",
     "@supabase/supabase-js": "^2.45.0"
   },
   "devDependencies": {
@@ -262,13 +262,13 @@ pnpm install
 ### Step 10: Update Import Paths
 
 Update all imports to use the new package names:
-- `@shared/*` → `@cafe-idare/database`
+- `@shared/*` → `@gustri/database`
 - Local hooks → Keep in apps
-- Utilities → `@cafe-idare/core`
+- Utilities → `@gustri/core`
 
 ## 🔧 Common Issues & Solutions
 
-### Issue: "Cannot find module '@cafe-idare/database'"
+### Issue: "Cannot find module '@gustri/database'"
 Solution: Run `pnpm build` from root to build all packages
 
 ### Issue: "Type errors after migration"

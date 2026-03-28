@@ -1,4 +1,4 @@
-# Deployment Guide - Café İdarə
+# Deployment Guide - Gustri
 
 Complete deployment guide for production environment.
 
@@ -18,7 +18,7 @@ Complete deployment guide for production environment.
 2. Click "New Project"
 3. Choose your organization
 4. Set project details:
-   - Name: `cafe-idare`
+   - Name: `gustri`
    - Database Password: (strong password)
    - Region: (closest to your location)
 
@@ -29,7 +29,7 @@ Complete deployment guide for production environment.
 npm install -g supabase
 
 # Navigate to project directory
-cd /path/to/cafe-idare
+cd /path/to/gustri
 
 # Link to your project
 supabase link --project-ref your-project-ref
@@ -128,7 +128,7 @@ npm install
 cat > .env.production << EOF
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-NEXT_PUBLIC_APP_NAME="Café İdarə"
+NEXT_PUBLIC_APP_NAME="Gustri"
 NEXT_PUBLIC_DEFAULT_LANGUAGE=en
 EOF
 ```
@@ -188,7 +188,7 @@ eas build:configure
 cat > .env << EOF
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-EXPO_PUBLIC_APP_NAME="Café İdarə"
+EXPO_PUBLIC_APP_NAME="Gustri"
 EOF
 ```
 
@@ -439,7 +439,7 @@ supabase storage download menu-images --destination ./backups/images/
 
 ## Conclusion
 
-Your Café İdarə system is now live! 🎉
+Your Gustri system is now live! 🎉
 
 For ongoing maintenance:
 1. Monitor usage and performance

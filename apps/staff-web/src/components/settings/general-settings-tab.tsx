@@ -1,6 +1,6 @@
 'use client';
 
-import { LANGUAGES, useTranslation } from '@cafe-idare/i18n';
+import { LANGUAGES, useTranslation } from '@gustri/i18n';
 import { ClipboardList, DollarSign, Receipt, Store, Truck } from 'lucide-react';
 import type { SettingsTabProps } from './settings-types';
 

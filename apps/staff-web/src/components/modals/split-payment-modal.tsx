@@ -1,9 +1,9 @@
 'use client';
 
-import type { ORDER_STATUS } from '@cafe-idare/core';
-import type { Database } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button } from '@cafe-idare/ui';
+import type { ORDER_STATUS } from '@gustri/core';
+import type { Database } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
 import { Check, CheckCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';

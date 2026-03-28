@@ -1,7 +1,7 @@
 'use client';
 
-import type { OrdersInsert } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
+import type { OrdersInsert } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
 import { UtensilsCrossed, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

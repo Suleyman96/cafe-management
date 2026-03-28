@@ -1,4 +1,4 @@
-# Café İdarə - Mobile App
+# Gustri - Mobile App
 
 React Native mobile application for staff management (Waiter, Admin, Kitchen).
 
@@ -60,7 +60,7 @@ cp .env.example .env
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-EXPO_PUBLIC_APP_NAME="Café İdarə"
+EXPO_PUBLIC_APP_NAME="Gustri"
 ```
 
 ### Development

@@ -1,7 +1,7 @@
 'use client';
 
-import type { Language } from '@cafe-idare/i18n';
-import { LANGUAGES, useTranslation } from '@cafe-idare/i18n';
+import type { Language } from '@gustri/i18n';
+import { LANGUAGES, useTranslation } from '@gustri/i18n';
 import {
   ArrowRight,
   CheckCircle,
@@ -483,7 +483,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             <p className="text-xs text-white/20 font-light">
               Powered by{' '}
               <span className="font-medium" style={{ color: `${accentColor}80` }}>
-                Cafe-Man
+                Gustri
               </span>
             </p>
           </div>

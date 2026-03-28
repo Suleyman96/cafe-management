@@ -1,9 +1,9 @@
 'use client';
 
-import type { ORDER_STATUS } from '@cafe-idare/core';
-import type { Database, OrdersInsert } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button, LoadingSpinner } from '@cafe-idare/ui';
+import type { ORDER_STATUS } from '@gustri/core';
+import type { Database, OrdersInsert } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
+import { Button, LoadingSpinner } from '@gustri/ui';
 import {
   ArrowLeft,
   ArrowRightLeft,

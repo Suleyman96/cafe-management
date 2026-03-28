@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@cafe-idare/core';
+import { QUERY_KEYS } from '@gustri/core';
 import { useQuery } from '@tanstack/react-query';
 import { STALE_TIMES } from '@/lib/query-keys';
 import { db } from '@/lib/supabase';

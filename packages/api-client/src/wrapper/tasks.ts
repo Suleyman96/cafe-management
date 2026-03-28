@@ -2,7 +2,7 @@
  * Tasks wrapper module
  */
 
-import { handleSupabaseError, isTask } from '@cafe-idare/core';
+import { handleSupabaseError, isTask } from '@gustri/core';
 import type { TaskInsert, TaskRow, TaskUpdate, WrapperContext } from './types';
 
 export function createTasksWrapper(ctx: WrapperContext) {

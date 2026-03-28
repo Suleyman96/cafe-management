@@ -1,8 +1,8 @@
 'use client';
 
-import type { Database } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button } from '@cafe-idare/ui';
+import type { Database } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
 import { Pencil, Search, Trash2, UtensilsCrossed } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';

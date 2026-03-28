@@ -1,5 +1,5 @@
-import type { OrdersInsert } from '@cafe-idare/database';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import type { OrdersInsert } from '@gustri/database';
 import React, { useState } from 'react';
 import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Dialog, Portal } from 'react-native-paper';

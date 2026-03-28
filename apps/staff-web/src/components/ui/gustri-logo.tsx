@@ -1,10 +1,10 @@
-interface CafeManLogoProps {
+interface GustriLogoProps {
   size?: number;
   className?: string;
   showText?: boolean;
 }
 
-export function CafeManLogo({ size = 40, className = '', showText = true }: CafeManLogoProps) {
+export function GustriLogo({ size = 40, className = '', showText = true }: GustriLogoProps) {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {/* Icon - Coffee cup with dashboard grid */}
@@ -42,13 +42,13 @@ export function CafeManLogo({ size = 40, className = '', showText = true }: Cafe
       </svg>
 
       {/* Text */}
-      {showText && <span className="text-xl font-bold text-blue-600">Cafe-Man</span>}
+      {showText && <span className="text-xl font-bold text-blue-600">Gustri</span>}
     </div>
   );
 }
 
 // Icon-only version for favicons
-export function CafeManIcon({ size = 32, className = '' }: { size?: number; className?: string }) {
+export function GustriIcon({ size = 32, className = '' }: { size?: number; className?: string }) {
   return (
     <svg
       width={size}

@@ -300,7 +300,7 @@ export function exportReportToPDF({
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.text(
-      `Cafe Idare - Sales Report | Page ${i} of ${pageCount}`,
+      `Gustri - Sales Report | Page ${i} of ${pageCount}`,
       pageWidth / 2,
       doc.internal.pageSize.getHeight() - 10,
       { align: 'center' },
@@ -312,4 +312,4 @@ export function exportReportToPDF({
   doc.save(`Sales_Report_${dateStr}.pdf`);
 }
 
-export type { SalesMetrics, ProfitMetrics, WasteMetrics, StaffMember };
+export type { ProfitMetrics, SalesMetrics, StaffMember, WasteMetrics };

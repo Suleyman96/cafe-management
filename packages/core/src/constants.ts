@@ -27,7 +27,7 @@ export {
   WAITER_CALL_REASON,
   WAITER_CALL_STATUS,
   WASTE_REASON,
-} from '@cafe-idare/database';
+} from '@gustri/database';
 
 // Waiter call reasons (UI-specific with labels and emojis)
 export const WAITER_CALL_REASONS = [

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
+import { useTranslation } from '@gustri/i18n';
 import { MessageSquare, Palette, QrCode } from 'lucide-react';
 import { ColorPicker } from './color-picker';
 import { ImageUpload } from './image-upload';

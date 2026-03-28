@@ -2,7 +2,7 @@
  * Menu items and categories wrapper module
  */
 
-import { handleSupabaseError, isCategory, isCategoryArray, isMenuItem } from '@cafe-idare/core';
+import { handleSupabaseError, isCategory, isCategoryArray, isMenuItem } from '@gustri/core';
 import type {
   CategoryInsert,
   CategoryUpdate,

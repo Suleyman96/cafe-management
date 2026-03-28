@@ -15,7 +15,7 @@
 - Installed dependencies in shared package
 
 ### 4. ✅ Import Path Fixes
-- Updated all imports from `@cafe-idare/shared` to `@shared`
+- Updated all imports from `@gustri/shared` to `@shared`
 - Updated tsconfig.json to support `@shared/*` paths
 - Fixed type exports in `src/types/index.ts`
 

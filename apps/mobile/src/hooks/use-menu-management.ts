@@ -1,10 +1,10 @@
-import { QUERY_KEYS } from '@cafe-idare/core';
+import { QUERY_KEYS } from '@gustri/core';
 import type {
   CategoriesInsert,
   CategoriesUpdate,
   MenuItemsInsert,
   MenuItemsUpdate,
-} from '@cafe-idare/database';
+} from '@gustri/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase';
 

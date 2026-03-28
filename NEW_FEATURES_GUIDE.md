@@ -1,6 +1,6 @@
 # New Features Implementation Guide
 
-This document explains the new features added to the Café İdarə system and how to integrate them.
+This document explains the new features added to the Gustri system and how to integrate them.
 
 ## 🎯 Overview
 
@@ -241,7 +241,7 @@ import { SplitPaymentModal } from '@/components/orders/split-payment-modal';
 
 **Hooks:**
 ```tsx
-import { useOrderPayments, useCreatePayment } from '@cafe-idare/shared/lib/hooks/use-payments';
+import { useOrderPayments, useCreatePayment } from '@gustri/shared/lib/hooks/use-payments';
 
 const { data: payments } = useOrderPayments(orderId);
 const createPayment = useCreatePayment();
@@ -284,7 +284,7 @@ import { TableTransferModal } from '@/components/tables/table-transfer-modal';
 
 **Hooks:**
 ```tsx
-import { useTransferTable } from '@cafe-idare/shared/lib/hooks/use-table-transfer';
+import { useTransferTable } from '@gustri/shared/lib/hooks/use-table-transfer';
 
 const transferTable = useTransferTable();
 ```

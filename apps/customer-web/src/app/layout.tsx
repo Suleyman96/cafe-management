@@ -7,7 +7,7 @@ import { Providers } from '@/components/providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Café İdarə - Order',
+  title: 'Gustri - Order',
   description: 'In-store ordering system',
   manifest: '/manifest.json',
   icons: { icon: '/favicon.ico' },
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Café İdarə',
+    title: 'Gustri',
   },
 };
 

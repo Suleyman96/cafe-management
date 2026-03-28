@@ -1,4 +1,4 @@
-import { ConflictError, NotFoundError, ValidationError } from '@cafe-idare/core';
+import { ConflictError, NotFoundError, ValidationError } from '@gustri/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createCategoriesWrapper, createMenuItemsWrapper } from '../wrapper/menu';
 import { createMockContext } from './helpers/mock-supabase';

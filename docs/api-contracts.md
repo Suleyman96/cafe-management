@@ -2,10 +2,10 @@
 
 ## Overview
 
-All database operations in Cafe Idare go through the `@cafe-idare/api-client` package, which exposes a `SupabaseWrapper` class. Application code never makes raw Supabase queries -- it uses the wrapper exclusively.
+All database operations in Gustri go through the `@gustri/api-client` package, which exposes a `SupabaseWrapper` class. Application code never makes raw Supabase queries -- it uses the wrapper exclusively.
 
 ```ts
-import { createSupabaseWrapper } from '@cafe-idare/api-client';
+import { createSupabaseWrapper } from '@gustri/api-client';
 
 const db = createSupabaseWrapper(supabaseClient);
 // db.orders.findAll(), db.tables.findById(id), etc.
@@ -1269,7 +1269,7 @@ db.realtime.unsubscribe(channel);
 
 ## Error Handling
 
-All wrapper methods throw typed errors from `@cafe-idare/core` via `handleSupabaseError()`:
+All wrapper methods throw typed errors from `@gustri/core` via `handleSupabaseError()`:
 
 - `AppError` -- base error class
 - `ValidationError` -- invalid input
@@ -1278,7 +1278,7 @@ All wrapper methods throw typed errors from `@cafe-idare/core` via `handleSupaba
 - `AuthorizationError` -- RLS policy violation
 
 ```ts
-import { NotFoundError } from '@cafe-idare/core';
+import { NotFoundError } from '@gustri/core';
 
 try {
   const order = await db.orders.findById('nonexistent');

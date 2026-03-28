@@ -3,7 +3,7 @@
  * Uses the wrapped client for type safety
  */
 
-import { QUERY_KEYS } from '@cafe-idare/core';
+import { QUERY_KEYS } from '@gustri/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateDeliveryOrders } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';

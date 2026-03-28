@@ -4,8 +4,8 @@ import {
   formatPriceWithSettings,
   getDisplaySubtotal,
   QUERY_KEYS,
-} from '@cafe-idare/core';
-import type { Database } from '@cafe-idare/database';
+} from '@gustri/core';
+import type { Database } from '@gustri/database';
 import { useQuery } from '@tanstack/react-query';
 import { STALE_TIMES } from '@/lib/query-keys';
 import { db } from '@/lib/supabase';

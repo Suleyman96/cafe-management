@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
+import { useTranslation } from '@gustri/i18n';
 import { Clock, Flame, Leaf, Plus, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';

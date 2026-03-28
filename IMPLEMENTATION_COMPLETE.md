@@ -150,7 +150,7 @@ Created 3 new hook files in `shared/lib/hooks/`:
 ## 📂 File Structure
 
 ```
-cafe-idare/
+gustri/
 ├── supabase/
 │   └── migrations/
 │       ├── 20250102000001_add_new_features.sql ✅ NEW
@@ -233,7 +233,7 @@ To fully integrate these features, you need to:
 ```tsx
 import { SplitPaymentModal } from '@/components/orders/split-payment-modal';
 import { TableTransferModal } from '@/components/tables/table-transfer-modal';
-import { useOrderPayments } from '@cafe-idare/shared/lib/hooks/use-payments';
+import { useOrderPayments } from '@gustri/shared/lib/hooks/use-payments';
 
 // Add buttons:
 <Button onClick={() => setShowPaymentModal(true)}>
@@ -249,7 +249,7 @@ const { data: payments } = useOrderPayments(orderId);
 
 **In Dashboard** (`staff-web/src/app/(staff)/dashboard/page.tsx`):
 ```tsx
-import { usePendingFeedbackCount } from '@cafe-idare/shared/lib/hooks/use-feedback';
+import { usePendingFeedbackCount } from '@gustri/shared/lib/hooks/use-feedback';
 
 const { data: pendingCount } = usePendingFeedbackCount();
 

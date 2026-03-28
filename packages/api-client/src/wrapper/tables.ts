@@ -2,7 +2,7 @@
  * Tables wrapper module
  */
 
-import { handleSupabaseError, isTable, isTableArray } from '@cafe-idare/core';
+import { handleSupabaseError, isTable, isTableArray } from '@gustri/core';
 import type { TableInsert, TableRow, TableUpdate, WrapperContext } from './types';
 
 export function createTablesWrapper(ctx: WrapperContext) {

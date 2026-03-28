@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
+import { useTranslation } from '@gustri/i18n';
 import { Check, Loader2, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

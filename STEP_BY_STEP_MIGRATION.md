@@ -41,7 +41,7 @@ chmod +x setup-turborepo.sh
 #### Update `apps/customer-web/package.json`:
 ```json
 {
-  "name": "@cafe-idare/customer-web",
+  "name": "@gustri/customer-web",
   "version": "0.1.0",
   "private": true
 }
@@ -50,7 +50,7 @@ chmod +x setup-turborepo.sh
 #### Update `apps/staff-web/package.json`:
 ```json
 {
-  "name": "@cafe-idare/staff-web",
+  "name": "@gustri/staff-web",
   "version": "0.1.0",
   "private": true
 }
@@ -95,7 +95,7 @@ cp shared/lib/utils.ts packages/core/src/utils/
 Create `packages/api-client/src/client/supabase.ts`:
 ```typescript
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@cafe-idare/database';
+import type { Database } from '@gustri/database';
 
 export function createSupabaseClient(url: string, key: string) {
   return createClient<Database>(url, key, {
@@ -112,7 +112,7 @@ export function createSupabaseClient(url: string, key: string) {
 Create `packages/api-client/src/queries/orders.ts`:
 ```typescript
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Order, OrderWithItems } from '@cafe-idare/database';
+import type { Database, Order, OrderWithItems } from '@gustri/database';
 
 export async function fetchOrders(client: SupabaseClient<Database>) {
   const { data, error } = await client
@@ -162,8 +162,8 @@ export async function fetchOrder(client: SupabaseClient<Database>, orderId: stri
 In `apps/staff-web/src/hooks/use-orders.ts`:
 ```typescript
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { fetchOrders, updateOrderStatus } from '@cafe-idare/api-client';
-import type { Order, OrderStatus } from '@cafe-idare/database';
+import { fetchOrders, updateOrderStatus } from '@gustri/api-client';
+import type { Order, OrderStatus } from '@gustri/database';
 import { supabase } from '@/lib/supabase/client';
 
 export function useOrders() {
@@ -177,9 +177,9 @@ export function useOrders() {
 ### 2. Update Component Imports
 
 Replace all:
-- `@shared/types` → `@cafe-idare/database`
-- `@shared/utils` → `@cafe-idare/core`
-- Direct supabase calls → `@cafe-idare/api-client`
+- `@shared/types` → `@gustri/database`
+- `@shared/utils` → `@gustri/core`
+- Direct supabase calls → `@gustri/api-client`
 
 ## 📦 Phase 5: Install & Build (30 minutes)
 
@@ -211,8 +211,8 @@ pnpm dev
 ### 1. Test Each App
 ```bash
 # In separate terminals
-pnpm dev --filter @cafe-idare/customer-web
-pnpm dev --filter @cafe-idare/staff-web
+pnpm dev --filter @gustri/customer-web
+pnpm dev --filter @gustri/staff-web
 ```
 
 ### 2. Run Type Checks

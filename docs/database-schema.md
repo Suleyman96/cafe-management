@@ -2,7 +2,7 @@
 
 ## Overview
 
-PostgreSQL database schema for Cafe Idare system with row-level security (RLS) enabled on all tables. Powered by Supabase (PostgreSQL 15).
+PostgreSQL database schema for Gustri system with row-level security (RLS) enabled on all tables. Powered by Supabase (PostgreSQL 15).
 
 ## Entity Relationship Diagram
 

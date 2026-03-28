@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
+import { useTranslation } from '@gustri/i18n';
 import { CreditCard, FileText, Map as MapIcon, MapPin, Phone, Truck, User } from 'lucide-react';
 import { toast } from 'sonner';
 

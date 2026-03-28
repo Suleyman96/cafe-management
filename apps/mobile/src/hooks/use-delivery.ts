@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@cafe-idare/core';
+import { QUERY_KEYS } from '@gustri/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase';
 import type { Order } from '@/types';

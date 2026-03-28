@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Café İdarə",
-    "slug": "cafe-idare",
+    "name": "Gustri",
+    "slug": "gustri",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,14 +14,14 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cafeidare.staff"
+      "bundleIdentifier": "com.gustri.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.cafeidare.staff",
+      "package": "com.gustri.app",
       "permissions": ["NOTIFICATIONS", "VIBRATE"]
     },
     "web": {
@@ -40,7 +40,7 @@
       "expo-localization",
       "expo-secure-store"
     ],
-    "scheme": "cafe-idare",
+    "scheme": "gustri",
     "extra": {
       "EXPO_PUBLIC_SUPABASE_URL": "http://192.168.40.106:54321",
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0",

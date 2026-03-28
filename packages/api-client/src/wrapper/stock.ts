@@ -2,7 +2,7 @@
  * Stock items wrapper module
  */
 
-import { handleSupabaseError, isStockItem } from '@cafe-idare/core';
+import { handleSupabaseError, isStockItem } from '@gustri/core';
 import type { StockItemInsert, StockItemRow, StockItemUpdate, WrapperContext } from './types';
 
 export function createStockItemsWrapper(ctx: WrapperContext) {

@@ -1,7 +1,7 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
-import { LoadingSpinner } from '@cafe-idare/ui';
+import { useTranslation } from '@gustri/i18n';
+import { LoadingSpinner } from '@gustri/ui';
 import {
   AlertCircle,
   CheckCircle,

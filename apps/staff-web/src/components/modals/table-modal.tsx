@@ -1,7 +1,7 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button } from '@cafe-idare/ui';
+import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';

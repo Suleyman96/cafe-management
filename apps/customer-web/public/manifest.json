@@ -1,6 +1,6 @@
 {
-  "name": "Cafe-Man Menu",
-  "short_name": "Menu",
+  "name": "Gustri Menu",
+  "short_name": "Gustri",
   "description": "Digital menu and ordering for customers",
   "start_url": "/",
   "display": "standalone",

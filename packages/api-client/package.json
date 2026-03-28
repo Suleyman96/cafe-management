@@ -1,5 +1,5 @@
 {
-  "name": "@cafe-idare/api-client",
+  "name": "@gustri/api-client",
   "version": "0.1.0",
   "private": true,
   "main": "./dist/index.js",
@@ -21,8 +21,8 @@
     "lint": "biome check ./src"
   },
   "dependencies": {
-    "@cafe-idare/core": "workspace:*",
-    "@cafe-idare/database": "workspace:*",
+    "@gustri/core": "workspace:*",
+    "@gustri/database": "workspace:*",
     "@supabase/supabase-js": "^2.45.0"
   },
   "devDependencies": {}

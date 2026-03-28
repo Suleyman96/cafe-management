@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cafe-man-v2';
+const CACHE_NAME = 'gustri-v2';
 const STATIC_ASSETS = ['/manifest.json'];
 
 // Install event - cache only truly static assets
@@ -78,7 +78,7 @@ self.addEventListener('push', (event) => {
     },
   };
 
-  event.waitUntil(self.registration.showNotification(data.title || 'Cafe-Man', options));
+  event.waitUntil(self.registration.showNotification(data.title || 'Gustri', options));
 });
 
 // Handle notification clicks

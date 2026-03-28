@@ -1,6 +1,6 @@
 'use client';
 
-import { LoadingSpinner } from '@cafe-idare/ui';
+import { LoadingSpinner } from '@gustri/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 

@@ -1,7 +1,7 @@
 'use client';
 
-import type { Database } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
+import type { Database } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
 import { Bell, BellOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';

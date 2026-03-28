@@ -1,4 +1,4 @@
-# Architecture Overview - Café İdarə
+# Architecture Overview - Gustri
 
 ## 🏗️ Current Architecture (Web-First, Mobile-Ready)
 

@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@cafe-idare/core';
+import { QUERY_KEYS } from '@gustri/core';
 import { useCallWaiter, useCreateWaiterCall, useWaiterCalls } from '@/hooks/use-waiter-call';
 import { db } from '@/lib/supabase';
 import { renderHookWithProviders, waitFor } from '../helpers/test-utils';

@@ -3,8 +3,8 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
-import { QUERY_KEYS, USER_ROLE } from '@cafe-idare/core';
-import type { Database } from '@cafe-idare/database';
+import { QUERY_KEYS, USER_ROLE } from '@gustri/core';
+import type { Database } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
 

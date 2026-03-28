@@ -1,8 +1,8 @@
 'use client';
 
-import { calculateProfitMetrics, type ExpenseEntry, getLocalDateString } from '@cafe-idare/core';
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button, LoadingSpinner } from '@cafe-idare/ui';
+import { calculateProfitMetrics, type ExpenseEntry, getLocalDateString } from '@gustri/core';
+import { useTranslation } from '@gustri/i18n';
+import { Button, LoadingSpinner } from '@gustri/ui';
 import {
   Calendar,
   ChefHat,

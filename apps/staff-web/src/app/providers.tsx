@@ -1,6 +1,6 @@
 'use client';
 
-import { I18nextProvider, i18n } from '@cafe-idare/i18n';
+import { I18nextProvider, i18n } from '@gustri/i18n';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useState } from 'react';

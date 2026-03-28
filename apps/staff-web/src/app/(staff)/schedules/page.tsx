@@ -1,9 +1,9 @@
 'use client';
 
-import { getLocalDateString } from '@cafe-idare/core';
-import type { StaffSchedule } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button } from '@cafe-idare/ui';
+import { getLocalDateString } from '@gustri/core';
+import type { StaffSchedule } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, User } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { ScheduleModal } from '@/components/modals/schedule-modal';

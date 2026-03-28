@@ -1,8 +1,8 @@
-# Café İdarə - Project Summary
+# Gustri - Project Summary
 
 ## 🎯 Project Overview
 
-**Café İdarə** is a comprehensive in-store ordering and management system designed for modern cafés. It provides a seamless experience for customers, staff, and kitchen operations with real-time synchronization across all platforms.
+**Gustri** is a comprehensive in-store ordering and management system designed for modern cafés. It provides a seamless experience for customers, staff, and kitchen operations with real-time synchronization across all platforms.
 
 ## ✨ Key Features
 
@@ -79,7 +79,7 @@ Mobile App (React Native) → Waiter | Admin | Kitchen
 ## 📁 Project Structure
 
 ```
-cafe-idare/
+gustri/
 ├── docs/                      # Documentation
 │   ├── architecture.md        # System architecture
 │   ├── database-schema.md     # Database design
@@ -124,7 +124,7 @@ cafe-idare/
 ```bash
 # 1. Clone repository
 git clone <repository-url>
-cd cafe-idare
+cd gustri
 
 # 2. Setup Supabase
 cd supabase
@@ -316,6 +316,6 @@ Built with modern technologies:
 **Last Updated**: December 15, 2025  
 **Status**: Production Ready ✅
 
-Enjoy your Café İdarə system! ☕️
+Enjoy your Gustri system! ☕️
 
 

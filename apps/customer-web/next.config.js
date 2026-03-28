@@ -16,11 +16,11 @@ const nextConfig = {
   reactStrictMode: true,
   // Important: transpile workspace packages
   transpilePackages: [
-    '@cafe-idare/api-client',
-    '@cafe-idare/core',
-    '@cafe-idare/database',
-    '@cafe-idare/i18n',
-    '@cafe-idare/ui',
+    '@gustri/api-client',
+    '@gustri/core',
+    '@gustri/database',
+    '@gustri/i18n',
+    '@gustri/ui',
   ],
   async headers() {
     return [

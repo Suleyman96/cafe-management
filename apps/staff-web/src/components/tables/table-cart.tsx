@@ -1,8 +1,8 @@
 'use client';
 
-import type { Database } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button } from '@cafe-idare/ui';
+import type { Database } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
 import { Check, Loader2, Minus, Plus, ShoppingCart } from 'lucide-react';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];

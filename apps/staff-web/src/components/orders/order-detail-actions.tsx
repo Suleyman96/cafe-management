@@ -1,8 +1,8 @@
 'use client';
 
-import type { ORDER_STATUS } from '@cafe-idare/core';
-import { useTranslation } from '@cafe-idare/i18n';
-import { Button } from '@cafe-idare/ui';
+import type { ORDER_STATUS } from '@gustri/core';
+import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
 import {
   AlertTriangle,
   CheckCircle,

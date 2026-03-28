@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
+import { useTranslation } from '@gustri/i18n';
 import { Globe, Phone } from 'lucide-react';
 import type { SettingsTabProps } from './settings-types';
 

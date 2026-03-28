@@ -1,10 +1,10 @@
 'use client';
 
-import type { Database } from '@cafe-idare/database';
-import { useTranslation } from '@cafe-idare/i18n';
+import type { Database } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { CafeManLogo } from '@/components/ui/cafe-man-logo';
+import { GustriLogo } from '@/components/ui/gustri-logo';
 import { postLoginSideEffects } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/wrapped-client';
@@ -82,9 +82,9 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <CafeManLogo size={56} showText={false} />
+          <GustriLogo size={56} showText={false} />
         </div>
-        <h1 className="mt-4 text-center text-3xl font-bold text-gray-900">{t('cafeManTitle')}</h1>
+        <h1 className="mt-4 text-center text-3xl font-bold text-gray-900">{t('appTitle')}</h1>
         <p className="mt-1 text-center text-sm text-gray-500">{t('staffPortal')}</p>
       </div>
 

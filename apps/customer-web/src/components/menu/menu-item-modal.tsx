@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@cafe-idare/i18n';
+import { useTranslation } from '@gustri/i18n';
 import { AlertCircle, Flame, Leaf, Minus, Plus, Star, X } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';

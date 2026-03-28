@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@cafe-idare/core';
+import { QUERY_KEYS } from '@gustri/core';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useCreateExpense,

@@ -1,6 +1,6 @@
 /**
  * Query configuration for customer-web.
- * QUERY_KEYS are imported from @cafe-idare/core.
+ * QUERY_KEYS are imported from @gustri/core.
  */
 
 /** Stale time presets (ms) */

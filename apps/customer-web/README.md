@@ -1,4 +1,4 @@
-# Café İdarə - Customer Web App
+# Gustri - Customer Web App
 
 Mobile-first web application for in-store ordering via QR codes.
 
@@ -46,7 +46,7 @@ cp .env.example .env.local
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-NEXT_PUBLIC_APP_NAME="Café İdarə"
+NEXT_PUBLIC_APP_NAME="Gustri"
 NEXT_PUBLIC_DEFAULT_LANGUAGE=en
 ```
 

@@ -5,7 +5,7 @@
  * order_payment_summary) are not represented in the generated Database type.
  */
 
-import { handleSupabaseError } from '@cafe-idare/core';
+import { handleSupabaseError } from '@gustri/core';
 import type { WrapperContext } from './types';
 
 export function createViewsWrapper(ctx: WrapperContext) {

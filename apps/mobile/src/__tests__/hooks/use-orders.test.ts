@@ -12,7 +12,7 @@ vi.mock('@/lib/sound', () => ({
   playWaiterCallSound: vi.fn(),
 }));
 
-import { QUERY_KEYS } from '@cafe-idare/core';
+import { QUERY_KEYS } from '@gustri/core';
 import {
   useOrder,
   useOrders,

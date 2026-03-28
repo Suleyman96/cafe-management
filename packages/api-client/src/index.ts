@@ -73,7 +73,7 @@ export type {
   WasteLogInsert,
   WasteLogUpdate,
   WasteLogWithDetails,
-} from '@cafe-idare/database';
+} from '@gustri/database';
 
 // Export Supabase wrapper (the primary API)
 export * from './wrapper';
