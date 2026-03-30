@@ -148,10 +148,16 @@ export default function SchedulesScreen() {
         await updateSchedule.mutateAsync({ id: payload.id, data: payload.data });
         showSuccess('Schedule updated');
       } else if (payload.mode === 'bulk') {
-        await Promise.allSettled(
+        const results = await Promise.allSettled(
           payload.entries.map((entry: any) => createSchedule.mutateAsync(entry)),
         );
-        showSuccess(`Created ${payload.entries.length} schedules`);
+        const successCount = results.filter((r) => r.status === 'fulfilled').length;
+        const failCount = results.length - successCount;
+        if (failCount > 0) {
+          showError(`Created ${successCount} schedules, ${failCount} failed`);
+        } else {
+          showSuccess(`Created ${successCount} schedules`);
+        }
       } else {
         await createSchedule.mutateAsync(payload.data);
         showSuccess('Schedule created');
@@ -203,8 +209,8 @@ export default function SchedulesScreen() {
         </Button>
         <View style={styles.weekCenter}>
           <Text variant="titleSmall" style={styles.weekLabel}>
-            {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} –{' '}
-            {weekDates[6].toLocaleDateString('en-US', {
+            {weekDates[0].toLocaleDateString('default', { month: 'short', day: 'numeric' })} –{' '}
+            {weekDates[6].toLocaleDateString('default', {
               month: 'short',
               day: 'numeric',
               year: 'numeric',
@@ -279,7 +285,7 @@ export default function SchedulesScreen() {
                   ]}
                 >
                   <Text style={[styles.dayWeekday, isSelected && styles.dayTextSelected]}>
-                    {d.toLocaleDateString('en-US', { weekday: 'short' })}
+                    {d.toLocaleDateString('default', { weekday: 'short' })}
                   </Text>
                   <Text
                     variant="titleSmall"
@@ -298,7 +304,7 @@ export default function SchedulesScreen() {
           {/* Daily count */}
           <Text variant="bodySmall" style={styles.countText}>
             {dailySchedules.length} schedule{dailySchedules.length !== 1 ? 's' : ''} ·{' '}
-            {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-US', {
+            {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('default', {
               weekday: 'long',
               month: 'long',
               day: 'numeric',
@@ -346,7 +352,7 @@ export default function SchedulesScreen() {
                     variant="titleSmall"
                     style={[styles.weeklyDayLabel, isTodayDay && styles.weeklyDayLabelToday]}
                   >
-                    {d.toLocaleDateString('en-US', {
+                    {d.toLocaleDateString('default', {
                       weekday: 'short',
                       month: 'short',
                       day: 'numeric',

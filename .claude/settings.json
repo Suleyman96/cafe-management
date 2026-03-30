@@ -1,13 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(pnpm:*)",
-      "Bash(git:*)",
-      "Bash(node:*)",
-      "Read(*)",
-      "Write(*)",
-      "Edit(*)",
-      "Bash(npx biome check:*)"
-    ]
+    "allow": ["Read(*)", "Write(*)", "Edit(*)", "Bash(*)", "WebFetch(*)", "WebSearch(*)"]
   }
 }

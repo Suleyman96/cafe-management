@@ -6,9 +6,7 @@ export function useTaxMultiplier() {
 
   return useMemo(
     () =>
-      settings?.tax_enabled && settings.tax_percentage > 0 && !settings.prices_include_tax
-        ? 1 + settings.tax_percentage / 100
-        : 1,
-    [settings?.tax_enabled, settings?.tax_percentage, settings?.prices_include_tax],
+      settings?.tax_enabled && settings.tax_percentage > 0 ? 1 + settings.tax_percentage / 100 : 1,
+    [settings?.tax_enabled, settings?.tax_percentage],
   );
 }

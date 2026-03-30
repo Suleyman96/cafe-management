@@ -102,10 +102,12 @@ export function StaffEditModal({
               onChange={(e) => setRole(e.target.value as StaffRole)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="waiter">Waiter</option>
+              <option value="waiter">{t('waiter', { ns: 'roles' })}</option>
               <option value="kitchen">{t('staffMgmt.kitchenStaff')}</option>
-              <option value="admin">Admin</option>
-              {currentUserRole === 'owner' && <option value="owner">Owner</option>}
+              <option value="admin">{t('admin', { ns: 'roles' })}</option>
+              {currentUserRole === 'owner' && (
+                <option value="owner">{t('owner', { ns: 'roles' })}</option>
+              )}
             </select>
           </div>
 

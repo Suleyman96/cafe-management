@@ -5,13 +5,9 @@ import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface CartPriceSummaryProps {
-  displaySubtotal: number;
-  tax: number;
   total: number;
-  deliveryFee?: number;
-  showTaxSeparately: boolean;
-  taxLabel?: string;
   taxPercentage?: number;
+  deliveryFee?: number;
   minimumAmount?: number;
   minimumMet: boolean;
   minimumWarning?: string;
@@ -22,13 +18,9 @@ interface CartPriceSummaryProps {
 }
 
 export function CartPriceSummary({
-  displaySubtotal,
-  tax,
   total,
-  deliveryFee,
-  showTaxSeparately,
-  taxLabel,
   taxPercentage,
+  deliveryFee,
   minimumAmount,
   minimumMet,
   minimumWarning,
@@ -42,20 +34,6 @@ export function CartPriceSummary({
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4">
       <div className="space-y-2 mb-4">
-        {showTaxSeparately ? (
-          <>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t('subtotal', { ns: 'common' })}</span>
-              <span>{formatPrice(displaySubtotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">
-                {taxLabel} ({taxPercentage}%)
-              </span>
-              <span>{formatPrice(tax)}</span>
-            </div>
-          </>
-        ) : null}
         {deliveryFee != null && deliveryFee > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">{t('deliveryFee', { ns: 'common' })}</span>
@@ -63,11 +41,16 @@ export function CartPriceSummary({
           </div>
         )}
         <div
-          className={`flex justify-between text-lg font-bold ${showTaxSeparately || (deliveryFee != null && deliveryFee > 0) ? 'pt-2 border-t' : ''}`}
+          className={`flex justify-between text-lg font-bold ${deliveryFee != null && deliveryFee > 0 ? 'pt-2 border-t' : ''}`}
         >
           <span>{t('total', { ns: 'common' })}</span>
           <span className="text-primary">{formatPrice(total)}</span>
         </div>
+        {taxPercentage != null && taxPercentage > 0 && (
+          <p className="text-[10px] text-muted-foreground/60 text-right">
+            {t('menu.inclTax', { percent: String(taxPercentage) })}
+          </p>
+        )}
       </div>
 
       {/* Minimum Order Warning */}

@@ -32,18 +32,18 @@ export default function KitchenDisplayPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Check if all items in an order are served
+  // Check if all non-cancelled items in an order are served
   const allItemsServed = (order: any) => {
-    if (!order.order_items || order.order_items.length === 0) return false;
-    return order.order_items.every((item: any) => item.status === 'served');
+    const items = order.order_items?.filter((item: any) => item.status !== 'cancelled') || [];
+    if (items.length === 0) return false;
+    return items.every((item: any) => item.status === 'served');
   };
 
-  // Check if all items in an order are ready (or served)
+  // Check if all non-cancelled items in an order are ready (or served)
   const allItemsReady = (order: any) => {
-    if (!order.order_items || order.order_items.length === 0) return false;
-    return order.order_items.every(
-      (item: any) => item.status === 'ready' || item.status === 'served',
-    );
+    const items = order.order_items?.filter((item: any) => item.status !== 'cancelled') || [];
+    if (items.length === 0) return false;
+    return items.every((item: any) => item.status === 'ready' || item.status === 'served');
   };
 
   // Filter orders for kitchen display (new, preparing, ready) - exclude orders where all items are served
@@ -183,7 +183,7 @@ export default function KitchenDisplayPage() {
       });
       // Don't show toast in kitchen view to avoid distractions
     } catch (_error) {
-      toast.error(t('delivery.failedUpdate'));
+      toast.error(t('orders.failedUpdateStatus'));
     }
   };
 
@@ -251,7 +251,10 @@ export default function KitchenDisplayPage() {
 
       // Check if all items will be ready after this update
       if (newStatus === 'ready' && order.status === 'preparing') {
-        const otherItems = order.order_items?.filter((item: any) => item.id !== itemId) || [];
+        const otherItems =
+          order.order_items?.filter(
+            (item: any) => item.id !== itemId && item.status !== 'cancelled',
+          ) || [];
         const allOthersReady = otherItems.every(
           (item: any) => item.status === 'ready' || item.status === 'served',
         );
@@ -267,7 +270,10 @@ export default function KitchenDisplayPage() {
 
       // Check if all items will be served after this update
       if (newStatus === 'served' && order.status === 'ready') {
-        const otherItems = order.order_items?.filter((item: any) => item.id !== itemId) || [];
+        const otherItems =
+          order.order_items?.filter(
+            (item: any) => item.id !== itemId && item.status !== 'cancelled',
+          ) || [];
         const allOthersServed = otherItems.every((item: any) => item.status === 'served');
 
         // If all other items are served, update order status to served
@@ -281,7 +287,7 @@ export default function KitchenDisplayPage() {
 
       // No toast for kitchen - faster feedback via visual change
     } catch (_error) {
-      toast.error(t('delivery.failedUpdate'));
+      toast.error(t('orders.failedUpdateStatus'));
     }
   };
 
@@ -425,49 +431,51 @@ export default function KitchenDisplayPage() {
 
               {/* Order Items - Background color indicates status */}
               <div className="space-y-1.5 mb-3 max-h-48 overflow-y-auto">
-                {order.order_items?.map((item: any) => {
-                  const itemStyle = getItemStatusStyle(item.status);
+                {order.order_items
+                  ?.filter((item: any) => item.status !== 'cancelled')
+                  .map((item: any) => {
+                    const itemStyle = getItemStatusStyle(item.status);
 
-                  return (
-                    <div
-                      key={item.id}
-                      className={`rounded p-1.5 border ${itemStyle.bg} ${itemStyle.border} transition-all`}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-bold text-gray-800 bg-white/80 px-1.5 py-0.5 rounded flex-shrink-0">
-                          {item.quantity}x
-                        </span>
-                        <span className="flex-1 text-sm font-semibold text-gray-800 min-w-0">
-                          {item.menu_item?.name}
-                        </span>
-                        {/* Action Buttons for Item */}
-                        <div className="flex-shrink-0">
-                          {(item.status === 'pending' || item.status === 'preparing') && (
-                            <button
-                              onClick={() => handleItemStatusUpdate(item.id, 'ready', order)}
-                              className="px-1.5 py-0.5 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-xs font-bold rounded transition-colors shadow flex items-center gap-0.5"
-                            >
-                              <CheckCircle className="h-3 w-3" />
-                              {t('orders.ready')}
-                            </button>
-                          )}
-                          {item.status === 'ready' && (
-                            <button
-                              onClick={() => handleItemStatusUpdate(item.id, 'served', order)}
-                              className="px-1.5 py-0.5 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-xs font-bold rounded transition-colors shadow flex items-center gap-0.5"
-                            >
-                              <UtensilsCrossed className="h-3 w-3" />
-                              {t('orders.served')}
-                            </button>
-                          )}
-                          {item.status === 'served' && (
-                            <CheckCircle className="h-4 w-4 text-purple-600" />
-                          )}
+                    return (
+                      <div
+                        key={item.id}
+                        className={`rounded p-1.5 border ${itemStyle.bg} ${itemStyle.border} transition-all`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-bold text-gray-800 bg-white/80 px-1.5 py-0.5 rounded flex-shrink-0">
+                            {item.quantity}x
+                          </span>
+                          <span className="flex-1 text-sm font-semibold text-gray-800 min-w-0">
+                            {item.menu_item?.name}
+                          </span>
+                          {/* Action Buttons for Item */}
+                          <div className="flex-shrink-0">
+                            {(item.status === 'pending' || item.status === 'preparing') && (
+                              <button
+                                onClick={() => handleItemStatusUpdate(item.id, 'ready', order)}
+                                className="px-1.5 py-0.5 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-xs font-bold rounded transition-colors shadow flex items-center gap-0.5"
+                              >
+                                <CheckCircle className="h-3 w-3" />
+                                {t('orders.ready')}
+                              </button>
+                            )}
+                            {item.status === 'ready' && (
+                              <button
+                                onClick={() => handleItemStatusUpdate(item.id, 'served', order)}
+                                className="px-1.5 py-0.5 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-xs font-bold rounded transition-colors shadow flex items-center gap-0.5"
+                              >
+                                <UtensilsCrossed className="h-3 w-3" />
+                                {t('orders.served')}
+                              </button>
+                            )}
+                            {item.status === 'served' && (
+                              <CheckCircle className="h-4 w-4 text-purple-600" />
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
 
               {/* Action Button - Compact touch target */}

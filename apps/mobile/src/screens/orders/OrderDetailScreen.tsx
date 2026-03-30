@@ -13,6 +13,7 @@ import {
   useUpdateOrderItemStatus,
   useUpdateOrderStatus,
 } from '@/hooks';
+import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
 import type { Order, OrderItemWithMenuItem, OrderPayment, OrdersStackParamList } from '@/types';
@@ -36,8 +37,11 @@ export default function OrderDetailScreen() {
 
   const { data: order, isLoading, error, refetch } = useOrder(orderId);
   const { data: payments } = useOrderPayments(orderId);
+  const { data: settings } = useCafeSettings();
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
+
+  const currencySymbol = settings?.currency_symbol || '$';
 
   // Cast order to include join fields (wrapper's select includes table, order_items, assigned_waiter)
   const details = order as OrderWithJoins | undefined;
@@ -47,7 +51,7 @@ export default function OrderDetailScreen() {
     [payments],
   );
 
-  const remaining = (order?.total || 0) - totalPaid;
+  const remaining = (order?.total ?? 0) - totalPaid;
   const items = details?.order_items || [];
 
   const handleUpdateStatus = async (newStatus: string) => {
@@ -137,7 +141,8 @@ export default function OrderDetailScreen() {
                       Total
                     </Text>
                     <Text variant="bodyMedium" style={styles.bold}>
-                      ${(order.total || 0).toFixed(2)}
+                      {currencySymbol}
+                      {(order.total ?? 0).toFixed(2)}
                     </Text>
                   </View>
                   <View style={styles.paymentRow}>
@@ -145,7 +150,8 @@ export default function OrderDetailScreen() {
                       Paid
                     </Text>
                     <Text variant="bodyMedium" style={{ color: '#10b981', fontWeight: '600' }}>
-                      ${totalPaid.toFixed(2)}
+                      {currencySymbol}
+                      {totalPaid.toFixed(2)}
                     </Text>
                   </View>
                   {remaining > 0 && (
@@ -154,10 +160,37 @@ export default function OrderDetailScreen() {
                         Remaining
                       </Text>
                       <Text variant="bodyMedium" style={{ color: '#ef4444', fontWeight: '600' }}>
-                        ${remaining.toFixed(2)}
+                        {currencySymbol}
+                        {remaining.toFixed(2)}
                       </Text>
                     </View>
                   )}
+                </Card.Content>
+              </Card>
+            )}
+
+            {/* Discount Info */}
+            {(order.discount_amount ?? 0) > 0 && (
+              <Card style={styles.card}>
+                <Card.Content>
+                  <View style={styles.paymentRow}>
+                    <Text variant="bodyMedium" style={styles.muted}>
+                      Discount (
+                      {order.discount_type === 'percentage'
+                        ? `${order.discount_value}%`
+                        : `${currencySymbol}${(order.discount_value ?? 0).toFixed(2)}`}
+                      )
+                    </Text>
+                    <Text variant="bodyMedium" style={{ color: '#ef4444', fontWeight: '600' }}>
+                      -{currencySymbol}
+                      {(order.discount_amount ?? 0).toFixed(2)}
+                    </Text>
+                  </View>
+                  {order.discount_reason ? (
+                    <Text variant="bodySmall" style={styles.muted}>
+                      {order.discount_reason}
+                    </Text>
+                  ) : null}
                 </Card.Content>
               </Card>
             )}
@@ -172,6 +205,7 @@ export default function OrderDetailScreen() {
           <View style={styles.itemWrapper}>
             <OrderItemRow
               item={item}
+              currencySymbol={currencySymbol}
               showActions={
                 staff?.role === 'kitchen' || staff?.role === 'admin' || staff?.role === 'owner'
               }
@@ -187,7 +221,8 @@ export default function OrderDetailScreen() {
                 Total
               </Text>
               <Text variant="titleLarge" style={styles.bold}>
-                ${(order.total || 0).toFixed(2)}
+                {currencySymbol}
+                {(order.total ?? 0).toFixed(2)}
               </Text>
             </View>
           </View>

@@ -6,6 +6,7 @@ import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { NumberInput } from '@/components/ui/number-input';
 import { useAuth, useCreateExpense, useExpenseCategories, useUpdateExpense } from '@/hooks';
 
 type Expense = Database['public']['Tables']['expenses']['Row'];
@@ -15,12 +16,7 @@ interface ExpenseModalProps {
   onClose: () => void;
 }
 
-const PAYMENT_METHODS = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'card', label: 'Card' },
-  { value: 'digital', label: 'Digital' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
-];
+const PAYMENT_METHODS = ['cash', 'card', 'digital', 'bank_transfer'] as const;
 
 export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
   const { t } = useTranslation('staff');
@@ -97,14 +93,12 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('expenses.expenseAmount')} *
             </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
+            <NumberInput
               value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              onChange={(v) => setFormData({ ...formData, amount: v })}
+              min={0.01}
+              step={0.01}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               placeholder="0.00"
             />
           </div>
@@ -158,10 +152,10 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 {PAYMENT_METHODS.map((pm) => (
-                  <option key={pm.value} value={pm.value}>
-                    {pm.value === 'bank_transfer'
+                  <option key={pm} value={pm}>
+                    {pm === 'bank_transfer'
                       ? t('bankTransfer', { ns: 'common' })
-                      : t(pm.value, { ns: 'common' })}
+                      : t(pm, { ns: 'common' })}
                   </option>
                 ))}
               </select>
@@ -198,10 +192,20 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+              disabled={createExpense.isPending || updateExpense.isPending}
+            >
               {t('cancel', { ns: 'common' })}
             </Button>
-            <Button type="submit" className="flex-1">
+            <Button
+              type="submit"
+              className="flex-1"
+              disabled={createExpense.isPending || updateExpense.isPending}
+            >
               {isEditing ? t('expenses.updateExpense') : t('expenses.addExpense')}
             </Button>
           </div>

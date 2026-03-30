@@ -21,7 +21,7 @@ interface MenuItemManageCardProps {
     category?: { name?: string | null; icon?: string | null } | null;
   };
   currencySymbol?: string;
-  onToggleAvailability: (id: string) => void;
+  onToggleAvailability: (id: string, currentAvailable: boolean) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }
@@ -124,7 +124,7 @@ export const MenuItemManageCard = React.memo(function MenuItemManageCard({
           <View style={styles.toggleRow}>
             <Switch
               value={!!item.is_available}
-              onValueChange={() => onToggleAvailability(item.id)}
+              onValueChange={() => onToggleAvailability(item.id, !!item.is_available)}
             />
             <Text
               variant="bodySmall"

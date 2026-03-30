@@ -23,14 +23,14 @@ export const kitchenDarkTheme = {
 };
 
 export const ORDER_STATUS_COLORS: Record<string, string> = {
-  pending_approval: '#8b5cf6',
+  pending_approval: '#f97316',
   new: '#3b82f6',
   preparing: '#f59e0b',
   ready: '#10b981',
   served: '#06b6d4',
-  paid: '#6b7280',
+  closed: '#6b7280',
   cancelled: '#ef4444',
-  out_for_delivery: '#8b5cf6',
+  out_for_delivery: '#7c3aed',
   delivered: '#10b981',
 };
 

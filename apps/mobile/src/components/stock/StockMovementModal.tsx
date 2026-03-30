@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Modal, Portal, Text } from 'react-native-paper';
 import { TextInput } from '@/lib/paper-compat';
@@ -18,6 +18,7 @@ interface StockMovementModalProps {
     reason?: string;
   }) => void;
   loading?: boolean;
+  initialType?: 'in' | 'out' | 'adjustment';
   item?: {
     name: string;
     quantity: number;
@@ -30,11 +31,20 @@ export function StockMovementModal({
   onDismiss,
   onSubmit,
   loading,
+  initialType = 'in',
   item,
 }: StockMovementModalProps) {
-  const [type, setType] = useState<'in' | 'out' | 'adjustment'>('in');
+  const [type, setType] = useState<'in' | 'out' | 'adjustment'>(initialType);
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState('');
+
+  useEffect(() => {
+    if (visible) {
+      setType(initialType);
+      setQuantity('');
+      setReason('');
+    }
+  }, [visible, initialType]);
 
   const qty = Number.parseFloat(quantity) || 0;
   const currentQty = item?.quantity ?? 0;
@@ -52,15 +62,9 @@ export function StockMovementModal({
   const handleSubmit = () => {
     if (qty <= 0 || isInvalid) return;
     onSubmit({ type, quantity: qty, reason: reason || undefined });
-    setQuantity('');
-    setReason('');
-    setType('in');
   };
 
   const handleDismiss = () => {
-    setQuantity('');
-    setReason('');
-    setType('in');
     onDismiss();
   };
 

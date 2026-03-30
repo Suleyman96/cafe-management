@@ -27,11 +27,10 @@ export default function CafeSettingsScreen() {
   const [activeTab, setActiveTab] = useState<TabView>('general');
 
   useEffect(() => {
-    if (settings) {
+    if (settings && !hasChanges) {
       setForm(settings);
-      setHasChanges(false);
     }
-  }, [settings]);
+  }, [settings, hasChanges]);
 
   const updateField = (key: string, value: any) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -43,8 +42,8 @@ export default function CafeSettingsScreen() {
       await updateSettings.mutateAsync(form);
       showSuccess('Settings saved');
       setHasChanges(false);
-    } catch (err: any) {
-      showError(err?.message || 'Failed to save settings');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to save settings');
     }
   };
 

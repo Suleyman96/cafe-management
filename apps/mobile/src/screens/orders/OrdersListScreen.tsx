@@ -6,6 +6,7 @@ import { Chip, Searchbar } from 'react-native-paper';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useOrders } from '@/hooks';
+import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { ORDER_STATUS_COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, OrdersStackParamList } from '@/types';
 
@@ -18,11 +19,21 @@ type OrderWithJoins = Order & {
   assigned_waiter?: { full_name: string } | null;
 };
 
-const STATUS_FILTERS = ['all', 'new', 'preparing', 'ready', 'served', 'paid', 'cancelled'] as const;
+const STATUS_FILTERS = [
+  'all',
+  'new',
+  'preparing',
+  'ready',
+  'served',
+  'closed',
+  'cancelled',
+] as const;
 
 export default function OrdersListScreen() {
   const navigation = useNavigation<Nav>();
   const { data: orders, isLoading, error, refetch } = useOrders();
+  const { data: settings } = useCafeSettings();
+  const currencySymbol = settings?.currency_symbol || '$';
 
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -86,6 +97,7 @@ export default function OrdersListScreen() {
         renderItem={({ item }) => (
           <OrderCard
             order={item}
+            currencySymbol={currencySymbol}
             onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}
           />
         )}

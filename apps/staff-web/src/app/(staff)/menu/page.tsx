@@ -11,7 +11,6 @@ import { CategoryModal } from '@/components/menu/category-modal';
 import { MenuItemCard, MenuItemSkeletonCard } from '@/components/menu/menu-item-card';
 import { MenuItemModal } from '@/components/menu/menu-item-modal';
 import {
-  useCafeSettings,
   useCategories,
   useDeleteCategory,
   useDeleteMenuItem,
@@ -36,7 +35,6 @@ export default function MenuPage() {
   const { data: menuItems = [], isLoading: itemsLoading } = useMenuItems(
     selectedCategory ? { categoryId: selectedCategory } : undefined,
   );
-  const { data: settings } = useCafeSettings();
   const deleteMenuItem = useDeleteMenuItem();
   const deleteCategory = useDeleteCategory();
   const toggleAvailability = useToggleMenuItemAvailability();
@@ -100,9 +98,9 @@ export default function MenuPage() {
     }
   };
 
-  const handleToggleAvailability = async (id: string) => {
+  const handleToggleAvailability = async (id: string, currentAvailable: boolean) => {
     try {
-      await toggleAvailability.mutateAsync(id);
+      await toggleAvailability.mutateAsync({ id, currentAvailable });
     } catch (error) {
       console.error('Failed to toggle availability:', error);
       toast.error(t('menu.failedToggleAvailability'));
@@ -144,8 +142,8 @@ export default function MenuPage() {
                 size="sm"
                 className="text-xs sm:text-sm"
               >
-                <span className="hidden sm:inline">+ Add Category</span>
-                <span className="sm:hidden">+ Category</span>
+                <span className="hidden sm:inline">+ {t('menu.addCategory')}</span>
+                <span className="sm:hidden">+ {t('menu.categoryShort')}</span>
               </Button>
               <Button
                 onClick={() => {
@@ -155,8 +153,8 @@ export default function MenuPage() {
                 size="sm"
                 className="text-xs sm:text-sm"
               >
-                <span className="hidden sm:inline">+ Add Menu Item</span>
-                <span className="sm:hidden">+ Item</span>
+                <span className="hidden sm:inline">+ {t('menu.addMenuItem')}</span>
+                <span className="sm:hidden">+ {t('menu.itemShort')}</span>
               </Button>
             </div>
           </div>
@@ -191,7 +189,7 @@ export default function MenuPage() {
                   : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
               }`}
             >
-              All ({menuItems.length})
+              {t('menu.allItems')} ({menuItems.length})
             </button>
             {categories.map((category: Category) => (
               <button
@@ -236,13 +234,14 @@ export default function MenuPage() {
                         categoryIcon={
                           item.category_id ? categoryMap.get(item.category_id) : undefined
                         }
-                        settings={settings}
                         onEdit={() => {
                           setEditingItem(item);
                           setShowItemModal(true);
                         }}
                         onDelete={() => handleDeleteItem(item.id)}
-                        onToggleAvailability={() => handleToggleAvailability(item.id)}
+                        onToggleAvailability={() =>
+                          handleToggleAvailability(item.id, item.is_available)
+                        }
                         t={t}
                       />
                     ))}
@@ -314,13 +313,14 @@ export default function MenuPage() {
                               key={item.id}
                               item={item}
                               categoryIcon={category.icon || undefined}
-                              settings={settings}
                               onEdit={() => {
                                 setEditingItem(item);
                                 setShowItemModal(true);
                               }}
                               onDelete={() => handleDeleteItem(item.id)}
-                              onToggleAvailability={() => handleToggleAvailability(item.id)}
+                              onToggleAvailability={() =>
+                                handleToggleAvailability(item.id, item.is_available)
+                              }
                               t={t}
                             />
                           ))}
@@ -347,13 +347,14 @@ export default function MenuPage() {
                         <MenuItemCard
                           key={item.id}
                           item={item}
-                          settings={settings}
                           onEdit={() => {
                             setEditingItem(item);
                             setShowItemModal(true);
                           }}
                           onDelete={() => handleDeleteItem(item.id)}
-                          onToggleAvailability={() => handleToggleAvailability(item.id)}
+                          onToggleAvailability={() =>
+                            handleToggleAvailability(item.id, item.is_available)
+                          }
                           t={t}
                         />
                       ))}

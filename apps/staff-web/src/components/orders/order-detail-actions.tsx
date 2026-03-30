@@ -8,6 +8,8 @@ import {
   CheckCircle,
   ChefHat,
   CreditCard,
+  Percent,
+  RotateCcw,
   Smartphone,
   ThumbsUp,
   Truck,
@@ -25,6 +27,10 @@ interface OrderDetailActionsProps {
   hasItems?: boolean;
   onStatusUpdate: (status: keyof typeof ORDER_STATUS) => void;
   onOpenPayment: () => void;
+  onOpenDiscount?: () => void;
+  canDiscount?: boolean;
+  onOpenRefund?: () => void;
+  canRefund?: boolean;
 }
 
 export function OrderDetailActions({
@@ -33,6 +39,10 @@ export function OrderDetailActions({
   hasItems = true,
   onStatusUpdate,
   onOpenPayment,
+  onOpenDiscount,
+  canDiscount = false,
+  onOpenRefund,
+  canRefund = false,
 }: OrderDetailActionsProps) {
   const { t } = useTranslation('staff');
   const canAdvance = hasItems;
@@ -42,7 +52,7 @@ export function OrderDetailActions({
       {!canAdvance && ['pending_approval', 'new', 'preparing'].includes(order.status) && (
         <span className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-3 py-1.5 rounded-md border border-amber-200 w-full">
           <AlertTriangle className="h-3.5 w-3.5" />
-          Add items before advancing this order
+          {t('orders.addItemsBeforeAdvancing')}
         </span>
       )}
       {/* Pending Approval: Show approve button */}
@@ -121,9 +131,8 @@ export function OrderDetailActions({
           {t('orders.markDelivered')}
         </Button>
       )}
-      {(order.status === 'served' || order.status === 'ready') &&
-        !isFullyPaid &&
-        order.order_type !== 'delivery' && (
+      {['served', 'ready', 'out_for_delivery', 'delivered'].includes(order.status) &&
+        !isFullyPaid && (
           <Button size="sm" onClick={onOpenPayment} className="flex items-center gap-1 sm:gap-2">
             <CreditCard className="h-4 w-4" />
             {t('orders.payment')}
@@ -137,6 +146,31 @@ export function OrderDetailActions({
         >
           <CheckCircle className="h-4 w-4" />
           {t('close', { ns: 'common' })}
+        </Button>
+      )}
+      {canDiscount &&
+        onOpenDiscount &&
+        !isFullyPaid &&
+        !['closed', 'cancelled'].includes(order.status) && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onOpenDiscount}
+            className="flex items-center gap-1 sm:gap-2"
+          >
+            <Percent className="h-4 w-4" />
+            {t('orders.addDiscount')}
+          </Button>
+        )}
+      {canRefund && onOpenRefund && !['cancelled'].includes(order.status) && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onOpenRefund}
+          className="flex items-center gap-1 sm:gap-2 text-red-600 border-red-200 hover:bg-red-50"
+        >
+          <RotateCcw className="h-4 w-4" />
+          {t('orders.refund')}
         </Button>
       )}
       {['pending_approval', 'new', 'preparing', 'ready', 'served', 'out_for_delivery'].includes(

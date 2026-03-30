@@ -6,6 +6,7 @@ import {
   AlertCircle,
   Bell,
   CheckCircle,
+  Clock,
   DollarSign,
   HelpCircle,
   MessageSquare,
@@ -14,20 +15,23 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useResolveWaiterCall, useWaiterCalls } from '@/hooks';
+import { useAcknowledgeWaiterCall, useAuth, useResolveWaiterCall, useWaiterCalls } from '@/hooks';
 import { supabase } from '@/lib/supabase/client';
+
+type FilterStatus = 'all' | 'pending' | 'acknowledged' | 'resolved';
 
 export default function WaiterCallsPage() {
   const { t } = useTranslation('staff');
+  const { staff } = useAuth();
   const { data: waiterCalls, isLoading: loading, error, refetch } = useWaiterCalls();
-  const respondToCall = useResolveWaiterCall();
-  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending');
+  const acknowledgeCall = useAcknowledgeWaiterCall();
+  const resolveCall = useResolveWaiterCall();
+  const [filter, setFilter] = useState<FilterStatus>('pending');
 
   // Filter calls based on status
   const filteredCalls = waiterCalls?.filter((call: any) => {
     if (filter === 'all') return true;
-    if (filter === 'pending') return call.status === 'pending';
-    return call.status === 'completed';
+    return call.status === filter;
   });
 
   // Set up real-time subscription
@@ -44,9 +48,9 @@ export default function WaiterCallsPage() {
     };
   }, [refetch]);
 
-  // Get icon for reason
-  const getReasonIcon = (reason: string) => {
-    switch (reason) {
+  // Get icon for call type
+  const getCallTypeIcon = (type: string) => {
+    switch (type) {
       case 'assistance':
         return <HelpCircle className="h-5 w-5" />;
       case 'bill':
@@ -62,9 +66,9 @@ export default function WaiterCallsPage() {
     }
   };
 
-  // Get reason color
-  const getReasonColor = (reason: string) => {
-    switch (reason) {
+  // Get call type color
+  const getCallTypeColor = (type: string) => {
+    switch (type) {
       case 'emergency':
         return 'bg-red-100 text-red-800 border-red-300';
       case 'complaint':
@@ -111,10 +115,21 @@ export default function WaiterCallsPage() {
     }
   };
 
-  // Handle respond to call
-  const handleRespond = async (callId: string) => {
+  // Handle acknowledge call
+  const handleAcknowledge = async (callId: string) => {
+    if (!staff?.id) return;
     try {
-      await respondToCall.mutateAsync({ callId, notes: undefined });
+      await acknowledgeCall.mutateAsync({ callId, staffId: staff.id });
+      toast.success(t('calls.callAcknowledged'));
+    } catch (_error) {
+      toast.error(t('calls.failedRespond'));
+    }
+  };
+
+  // Handle resolve call
+  const handleResolve = async (callId: string) => {
+    try {
+      await resolveCall.mutateAsync({ callId });
       toast.success(t('calls.callCompleted'));
     } catch (_error) {
       toast.error(t('calls.failedRespond'));
@@ -173,20 +188,30 @@ export default function WaiterCallsPage() {
           {t('pending', { ns: 'common' })}
         </button>
         <button
-          onClick={() => setFilter('completed')}
+          onClick={() => setFilter('acknowledged')}
           className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
-            filter === 'completed'
+            filter === 'acknowledged'
+              ? 'bg-blue-100 text-blue-800'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          {t('calls.acknowledged')}
+        </button>
+        <button
+          onClick={() => setFilter('resolved')}
+          className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
+            filter === 'resolved'
               ? 'bg-green-100 text-green-800'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          {t('completed', { ns: 'common' })}
+          {t('calls.resolved')}
         </button>
         <button
           onClick={() => setFilter('all')}
           className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
             filter === 'all'
-              ? 'bg-blue-100 text-blue-800'
+              ? 'bg-purple-100 text-purple-800'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
@@ -197,9 +222,11 @@ export default function WaiterCallsPage() {
       {/* Calls List */}
       <div className="space-y-3 sm:space-y-4">
         {filteredCalls?.map((call: any) => {
-          const callType = call.call_type || call.reason || 'assistance';
+          const callType = call.call_type || 'assistance';
           const isEmergency = callType === 'emergency';
           const isPending = call.status === 'pending';
+          const isAcknowledged = call.status === 'acknowledged';
+          const isActive = isPending || isAcknowledged;
 
           return (
             <div
@@ -207,55 +234,71 @@ export default function WaiterCallsPage() {
               className={`
                 border rounded-lg p-3 sm:p-4 transition-all bg-white
                 ${isPending && isEmergency ? 'ring-2 ring-red-500 animate-pulse' : ''}
-                ${!isPending ? 'opacity-60' : ''}
+                ${!isActive ? 'opacity-60' : ''}
               `}
             >
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                     <span
-                      className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getReasonColor(callType)}`}
+                      className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getCallTypeColor(callType)}`}
                     >
-                      {getReasonIcon(callType)}
+                      {getCallTypeIcon(callType)}
                       <span>{getCallTypeLabel(callType)}</span>
                     </span>
                     <span className="text-base sm:text-lg font-semibold">
-                      {call.table?.table_number}
+                      {call.table?.table_number ? `#${call.table.table_number}` : '—'}
                     </span>
                     <span className="text-xs sm:text-sm text-gray-500">
                       {formatTimeAgo(call.created_at)}
                     </span>
+                    {isAcknowledged && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                        <Clock className="h-3 w-3" />
+                        {t('calls.acknowledged')}
+                      </span>
+                    )}
                   </div>
 
-                  {(call.reason || call.message) && (
+                  {call.notes && (
                     <div className="mb-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs sm:text-sm text-gray-700">
-                        {call.reason || call.message}
-                      </p>
+                      <p className="text-xs sm:text-sm text-gray-700">{call.notes}</p>
                     </div>
                   )}
 
-                  {call.responded_at && call.staff && (
+                  {call.resolved_at && (
                     <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
                       <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
                       <span>
-                        {t('calls.respondedBy', { name: call.staff.name })}{' '}
-                        {formatTimeAgo(call.responded_at)}
+                        {t('calls.resolved')} {formatTimeAgo(call.resolved_at)}
                       </span>
                     </div>
                   )}
                 </div>
 
-                {isPending && (
-                  <Button
-                    onClick={() => handleRespond(call.id)}
-                    size="sm"
-                    className="w-full sm:w-auto sm:ml-4"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    {t('calls.respond')}
-                  </Button>
-                )}
+                <div className="flex gap-2 w-full sm:w-auto">
+                  {isPending && (
+                    <Button
+                      onClick={() => handleAcknowledge(call.id)}
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 sm:flex-none"
+                    >
+                      <Bell className="h-4 w-4 mr-1" />
+                      {t('calls.acknowledge')}
+                    </Button>
+                  )}
+                  {isActive && (
+                    <Button
+                      onClick={() => handleResolve(call.id)}
+                      size="sm"
+                      className="flex-1 sm:flex-none"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      {t('calls.resolve')}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           );

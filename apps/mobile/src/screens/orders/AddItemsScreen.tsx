@@ -7,6 +7,7 @@ import { Button, Chip } from 'react-native-paper';
 import { MenuItemCard } from '@/components/orders/MenuItemCard';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useAddOrderItems, useCategories, useCreateOrder, useMenuItems } from '@/hooks';
+import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
 import type { OrdersStackParamList } from '@/types';
@@ -30,6 +31,8 @@ export default function AddItemsScreen() {
   const isNewOrder = !orderId && !!tableId;
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
+  const { data: settings } = useCafeSettings();
+  const currencySymbol = settings?.currency_symbol || '$';
 
   const {
     data: menuItems,
@@ -142,8 +145,8 @@ export default function AddItemsScreen() {
           : `Added ${cartSummary.count} items`,
       );
       navigation.goBack();
-    } catch (err: any) {
-      showError(err?.message || 'Failed to add items');
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : 'Failed to add items');
     } finally {
       setSubmitting(false);
     }
@@ -205,7 +208,8 @@ export default function AddItemsScreen() {
             contentStyle={styles.submitButtonContent}
           >
             {isNewOrder ? 'Create Order' : 'Add'} — {cartSummary.count} item
-            {cartSummary.count > 1 ? 's' : ''} (${cartSummary.total.toFixed(2)})
+            {cartSummary.count > 1 ? 's' : ''} ({currencySymbol}
+            {cartSummary.total.toFixed(2)})
           </Button>
         </View>
       )}

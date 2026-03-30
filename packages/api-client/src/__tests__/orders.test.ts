@@ -189,6 +189,95 @@ describe('OrdersWrapper error type verification', () => {
   });
 });
 
+describe('OrdersWrapper applyDiscount', () => {
+  it('applies percentage discount', async () => {
+    const discountedOrder = {
+      ...validOrder,
+      discount_type: 'percentage',
+      discount_value: 10,
+      discount_amount: 5.0,
+      discount_reason: 'loyalty',
+      discount_applied_by: 'staff-1',
+    };
+    const ctx = createMockContext({
+      responses: {
+        orders: { data: discountedOrder, error: null },
+      },
+    });
+    const orders = createOrdersWrapper(ctx);
+    await orders.applyDiscount(validOrder.id, {
+      discount_type: 'percentage',
+      discount_value: 10,
+      discount_reason: 'loyalty',
+      discount_applied_by: 'staff-1',
+    });
+    // applyDiscount no longer returns data (avoids PostgREST trigger conflict)
+  });
+
+  it('applies fixed discount', async () => {
+    const ctx = createMockContext({
+      responses: {
+        orders: { data: null, error: null },
+      },
+    });
+    const orders = createOrdersWrapper(ctx);
+    await orders.applyDiscount(validOrder.id, {
+      discount_type: 'fixed',
+      discount_value: 5,
+      discount_applied_by: 'staff-1',
+    });
+  });
+
+  it('removes discount by setting type to none', async () => {
+    const ctx = createMockContext({
+      responses: {
+        orders: { data: null, error: null },
+      },
+    });
+    const orders = createOrdersWrapper(ctx);
+    await orders.applyDiscount(validOrder.id, {
+      discount_type: 'none',
+      discount_value: 0,
+      discount_applied_by: 'staff-1',
+    });
+  });
+
+  it('returns void instead of order data (avoids PostgREST trigger conflict)', async () => {
+    const ctx = createMockContext({
+      responses: {
+        orders: { data: null, error: null },
+      },
+    });
+    const orders = createOrdersWrapper(ctx);
+    const result = await orders.applyDiscount(validOrder.id, {
+      discount_type: 'fixed',
+      discount_value: 10,
+      discount_applied_by: 'staff-1',
+    });
+
+    // applyDiscount must return void (not order data) to avoid
+    // "Cannot coerce to single JSON object" errors from PostgREST
+    // when the AFTER trigger recalculates order totals
+    expect(result).toBeUndefined();
+  });
+
+  it('throws on supabase error', async () => {
+    const ctx = createMockContext({
+      responses: {
+        orders: { data: null, error: { code: '23503', message: 'foreign key violation' } },
+      },
+    });
+    const orders = createOrdersWrapper(ctx);
+    await expect(
+      orders.applyDiscount(validOrder.id, {
+        discount_type: 'percentage',
+        discount_value: 10,
+        discount_applied_by: 'staff-1',
+      }),
+    ).rejects.toThrow();
+  });
+});
+
 describe('OrdersWrapper empty data handling', () => {
   it('findAll returns empty array when no orders exist', async () => {
     const ctx = createMockContext({ responses: { orders: { data: [], error: null } } });

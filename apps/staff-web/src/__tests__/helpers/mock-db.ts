@@ -33,6 +33,7 @@ export function createMockDb() {
       'assignWaiter',
       'cancelOrder',
       'updateNotes',
+      'applyDiscount',
       'findDeliveryOrders',
       'findDeliveryById',
       'assignDeliveryPerson',

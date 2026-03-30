@@ -13,7 +13,7 @@ export function createRpcWrapper(ctx: WrapperContext) {
       });
 
       if (error) throw handleSupabaseError(error);
-      return (data as number) || 0;
+      return (data as number) ?? 0;
     },
 
     transferTable: async (params: {

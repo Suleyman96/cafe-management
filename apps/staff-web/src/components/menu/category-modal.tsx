@@ -5,6 +5,7 @@ import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { NumberInput } from '@/components/ui/number-input';
 import { useCreateCategory, useUpdateCategory } from '@/hooks';
 
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -75,7 +76,7 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
       console.error('Error saving category:', error);
 
       // Show user-friendly error message
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save category';
+      const errorMessage = error instanceof Error ? error.message : t('menu.failedSaveCategory');
 
       if (errorMessage.includes('infinite recursion') || errorMessage.includes('policy')) {
         toast.error(t('menu.dbPermissionError'), { id: toastId });
@@ -163,11 +164,12 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('menu.displayOrder')}
               </label>
-              <input
-                type="number"
+              <NumberInput
                 value={formData.display_order}
-                onChange={(e) => setFormData({ ...formData, display_order: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={(v) => setFormData({ ...formData, display_order: v })}
+                min={0}
+                integer
+                placeholder="0"
               />
             </div>
             <div className="flex items-center gap-2 pt-6">

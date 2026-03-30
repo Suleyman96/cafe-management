@@ -10,6 +10,7 @@ import { db } from '@/lib/supabase/wrapped-client';
 
 type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
 type Task = Database['public']['Tables']['tasks']['Row'];
+type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
 
 export function useTasks(options?: {
   status?: string;
@@ -79,7 +80,7 @@ export function useUpdateTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Task> }) =>
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<TaskUpdate> }) =>
       db.tasks.update(id, updates),
     onSuccess: () => {
       invalidateTasks(queryClient);

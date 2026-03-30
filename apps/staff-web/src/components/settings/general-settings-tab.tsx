@@ -2,6 +2,7 @@
 
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
 import { ClipboardList, DollarSign, Receipt, Store, Truck } from 'lucide-react';
+import { NumberInput } from '@/components/ui/number-input';
 import type { SettingsTabProps } from './settings-types';
 
 export function GeneralSettingsTab({ formData, onChange }: SettingsTabProps) {
@@ -87,72 +88,32 @@ export function GeneralSettingsTab({ formData, onChange }: SettingsTabProps) {
           </div>
 
           {formData.tax_enabled && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('cafeSettings.taxPercentage')}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      value={formData.tax_percentage}
-                      onChange={(e) => onChange('tax_percentage', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="absolute right-3 top-2 text-gray-500">%</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('cafeSettings.taxLabel')}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.tax_label}
-                    onChange={(e) => onChange('tax_label', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    {t('cafeSettings.pricesIncludeTax')}
-                  </label>
-                  <p className="text-xs text-gray-500">{t('cafeSettings.menuPricesTaxIncluded')}</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.prices_include_tax}
-                    onChange={(e) => onChange('prices_include_tax', e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('cafeSettings.taxPercentage')}
                 </label>
+                <NumberInput
+                  value={formData.tax_percentage}
+                  onChange={(v) => onChange('tax_percentage', parseFloat(v) || 0)}
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  suffix="%"
+                />
               </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    {t('cafeSettings.showTaxSeparately')}
-                  </label>
-                  <p className="text-xs text-gray-500">{t('cafeSettings.displayTaxLine')}</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.show_tax_separately}
-                    onChange={(e) => onChange('show_tax_separately', e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('cafeSettings.taxLabel')}
                 </label>
+                <input
+                  type="text"
+                  value={formData.tax_label}
+                  onChange={(e) => onChange('tax_label', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -232,19 +193,14 @@ export function GeneralSettingsTab({ formData, onChange }: SettingsTabProps) {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t('cafeSettings.minimumOrderAmount')}
             </label>
-            <div className="relative w-48">
-              <span className="absolute left-3 top-2 text-gray-500">
-                {formData.currency_symbol}
-              </span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.minimum_order_amount}
-                onChange={(e) => onChange('minimum_order_amount', parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            <NumberInput
+              value={formData.minimum_order_amount}
+              onChange={(v) => onChange('minimum_order_amount', parseFloat(v) || 0)}
+              min={0}
+              step={0.01}
+              prefix={formData.currency_symbol}
+              className="w-48"
+            />
           </div>
           <ToggleSetting
             label={t('cafeSettings.allowItemNotes')}
@@ -294,41 +250,25 @@ export function GeneralSettingsTab({ formData, onChange }: SettingsTabProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {t('cafeSettings.defaultDeliveryFee')}
                   </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-gray-500">
-                      {formData.currency_symbol}
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.delivery_fee_default}
-                      onChange={(e) =>
-                        onChange('delivery_fee_default', parseFloat(e.target.value) || 0)
-                      }
-                      className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+                  <NumberInput
+                    value={formData.delivery_fee_default}
+                    onChange={(v) => onChange('delivery_fee_default', parseFloat(v) || 0)}
+                    min={0}
+                    step={0.01}
+                    prefix={formData.currency_symbol}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {t('cafeSettings.minimumDeliveryAmount')}
                   </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-gray-500">
-                      {formData.currency_symbol}
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.minimum_delivery_amount}
-                      onChange={(e) =>
-                        onChange('minimum_delivery_amount', parseFloat(e.target.value) || 0)
-                      }
-                      className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+                  <NumberInput
+                    value={formData.minimum_delivery_amount}
+                    onChange={(v) => onChange('minimum_delivery_amount', parseFloat(v) || 0)}
+                    min={0}
+                    step={0.01}
+                    prefix={formData.currency_symbol}
+                  />
                 </div>
               </div>
               <div>

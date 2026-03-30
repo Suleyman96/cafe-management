@@ -65,9 +65,9 @@ export default function MenuManagementScreen() {
     (items || []).filter((i: { category_id: string | null }) => i.category_id === categoryId)
       .length;
 
-  const handleToggle = async (id: string) => {
+  const handleToggle = async (id: string, currentAvailable: boolean) => {
     try {
-      await toggleAvailability.mutateAsync(id);
+      await toggleAvailability.mutateAsync({ id, currentAvailable });
     } catch (err: unknown) {
       showError(err instanceof Error ? err.message : 'Failed to toggle');
     }

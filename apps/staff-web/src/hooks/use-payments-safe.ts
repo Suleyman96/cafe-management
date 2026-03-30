@@ -44,6 +44,9 @@ export function useCreatePayment() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS, variables.order_id] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.order_id] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PAYMENTS, variables.order_id] });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.PAYMENTS, 'remaining_balance', variables.order_id],
+      });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PAYMENTS_BY_STAFF] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
     },

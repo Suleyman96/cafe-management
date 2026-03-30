@@ -4,6 +4,7 @@ import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import { AlertTriangle, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth, useOrders, useTables, useTransferTable } from '@/hooks';
 
 interface TableTransferModalProps {
@@ -30,12 +31,16 @@ export function TableTransferModal({
   const [loading, setLoading] = useState(false);
   const [showOccupiedWarning, setShowOccupiedWarning] = useState(false);
 
-  // Get the active order for this table
-  const activeOrder = orders?.find(
-    (order: any) =>
-      order.table_id === sourceTable?.id &&
-      ['new', 'preparing', 'ready', 'served'].includes(order.status),
-  );
+  // Get ALL active orders for this table
+  const activeOrders = useMemo(() => {
+    return (
+      orders?.filter(
+        (order: any) =>
+          order.table_id === sourceTable?.id &&
+          ['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status),
+      ) || []
+    );
+  }, [orders, sourceTable?.id]);
 
   // Get available tables (all tables except source, sorted by status)
   const availableTables = useMemo(() => {
@@ -67,20 +72,35 @@ export function TableTransferModal({
   };
 
   const handleTransfer = async () => {
-    if (!selectedTableId || !activeOrder) return;
+    if (!selectedTableId || activeOrders.length === 0) return;
 
     setLoading(true);
+    let succeeded = 0;
     try {
-      await transferTable.mutateAsync({
-        orderId: activeOrder.id,
-        fromTableId: sourceTable.id,
-        toTableId: selectedTableId,
-        staffId: staff?.id || '',
-        reason: reason.trim() || undefined,
-      });
+      for (const order of activeOrders) {
+        await transferTable.mutateAsync({
+          orderId: order.id,
+          fromTableId: sourceTable.id,
+          toTableId: selectedTableId,
+          staffId: staff?.id || '',
+          reason: reason.trim() || undefined,
+        });
+        succeeded++;
+      }
       onSuccess();
     } catch (error) {
       console.error('Failed to transfer table:', error);
+      if (succeeded > 0) {
+        toast.error(
+          t('tables.partialTransferError', {
+            succeeded,
+            total: activeOrders.length,
+          }),
+        );
+      } else {
+        const message = error instanceof Error ? error.message : t('tables.failedTransfer');
+        toast.error(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -176,7 +196,7 @@ export function TableTransferModal({
             <input
               type="text"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., Customer requested, Table maintenance"
+              placeholder={t('tables.transferReasonExamples')}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
             />
@@ -189,7 +209,7 @@ export function TableTransferModal({
           </Button>
           <Button
             onClick={handleTransfer}
-            disabled={!selectedTableId || loading}
+            disabled={!selectedTableId || activeOrders.length === 0 || loading}
             className={`flex-1 ${isSelectedTableOccupied ? 'bg-amber-500 hover:bg-amber-600' : ''}`}
           >
             {loading

@@ -8,12 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useAddOrderItems, useCreateOrder, useOrder } from '@/hooks/use-order';
-import {
-  calculateTax,
-  calculateTotal,
-  getDisplaySubtotal,
-  useCafeSettings,
-} from '@/hooks/use-settings';
+import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
 import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
 import { useCartStore } from '@/store/cart-store';
@@ -43,9 +38,7 @@ export function CartScreen({ tableId }: CartScreenProps) {
   const taxMultiplier = useTaxMultiplier();
 
   const cartSubtotal = getTotal();
-  const displaySubtotal = settings ? getDisplaySubtotal(cartSubtotal, settings) : cartSubtotal;
-  const tax = settings ? calculateTax(cartSubtotal, settings) : 0;
-  const total = settings ? calculateTotal(cartSubtotal, settings) : cartSubtotal;
+  const total = cartSubtotal * taxMultiplier;
 
   const minimumOrderMet = !settings?.minimum_order_amount || total >= settings.minimum_order_amount;
 
@@ -194,12 +187,8 @@ export function CartScreen({ tableId }: CartScreenProps) {
       </div>
 
       <CartPriceSummary
-        displaySubtotal={displaySubtotal}
-        tax={tax}
         total={total}
-        showTaxSeparately={!!(settings?.tax_enabled && settings?.show_tax_separately)}
-        taxLabel={settings?.tax_label}
-        taxPercentage={settings?.tax_percentage}
+        taxPercentage={settings?.tax_enabled ? settings.tax_percentage : undefined}
         minimumAmount={settings?.minimum_order_amount}
         minimumMet={minimumOrderMet}
         minimumWarning={

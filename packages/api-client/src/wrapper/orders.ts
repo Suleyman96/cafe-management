@@ -9,8 +9,11 @@ export function createOrdersWrapper(ctx: WrapperContext) {
   return {
     findAll: async (filters?: {
       status?: OrderRow['status'];
+      statuses?: OrderRow['status'][];
       table_id?: string;
       order_type?: OrderRow['order_type'];
+      assigned_waiter_id?: string;
+      limit?: number;
     }) => {
       let query = ctx.client
         .from('orders')
@@ -26,7 +29,9 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         `)
         .order('created_at', { ascending: false });
 
-      if (filters?.status) {
+      if (filters?.statuses && filters.statuses.length > 0) {
+        query = query.in('status', filters.statuses);
+      } else if (filters?.status) {
         query = query.eq('status', filters.status);
       }
       if (filters?.table_id) {
@@ -34,6 +39,12 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       }
       if (filters?.order_type) {
         query = query.eq('order_type', filters.order_type);
+      }
+      if (filters?.assigned_waiter_id) {
+        query = query.eq('assigned_waiter_id', filters.assigned_waiter_id);
+      }
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
       }
 
       const { data, error } = await query;
@@ -226,6 +237,31 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
       return data as OrderRow;
+    },
+
+    applyDiscount: async (
+      orderId: string,
+      discount: {
+        discount_type: 'none' | 'percentage' | 'fixed';
+        discount_value: number;
+        discount_reason?: string | null;
+        discount_applied_by: string;
+      },
+    ) => {
+      // Don't use .select().single() here — the AFTER trigger recalculate_on_discount_change
+      // updates the same row, which can cause PostgREST "Cannot coerce" errors.
+      // The caller invalidates queries on success to get fresh data.
+      const { error } = await ctx.anyClient
+        .from('orders')
+        .update({
+          discount_type: discount.discount_type,
+          discount_value: discount.discount_value,
+          discount_reason: discount.discount_reason || null,
+          discount_applied_by: discount.discount_applied_by,
+        })
+        .eq('id', orderId);
+
+      if (error) throw handleSupabaseError(error);
     },
 
     // Delivery-specific methods

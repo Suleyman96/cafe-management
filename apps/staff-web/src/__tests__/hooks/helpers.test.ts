@@ -3,7 +3,7 @@ import { getFeedbackTypeInfo } from '@/hooks/use-feedback-safe';
 import { formatPaymentMethod } from '@/hooks/use-payments-safe';
 import { calculateTax, calculateTotal, formatPriceWithSettings } from '@/hooks/use-settings-safe';
 import { formatStaffInfo } from '@/hooks/use-staff-safe';
-import { formatTransferReason } from '@/hooks/use-table-transfers-safe';
+import { getTransferReasonKey } from '@/hooks/use-table-transfers-safe';
 import { getCallTypeInfo, getPriorityInfo } from '@/hooks/use-waiter-calls-safe';
 
 // --- Settings helpers ---
@@ -234,36 +234,36 @@ describe('getFeedbackTypeInfo', () => {
 
 // --- Transfer helpers ---
 
-describe('formatTransferReason', () => {
-  it('formats customer_request', () => {
-    expect(formatTransferReason('customer_request')).toBe('Customer requested move');
+describe('getTransferReasonKey', () => {
+  it('returns i18n key for customer_request', () => {
+    expect(getTransferReasonKey('customer_request')).toBe('tables.transferReasonCustomerRequest');
   });
 
-  it('formats table_combine', () => {
-    expect(formatTransferReason('table_combine')).toBe('Tables combined');
+  it('returns i18n key for table_combine', () => {
+    expect(getTransferReasonKey('table_combine')).toBe('tables.transferReasonTableCombine');
   });
 
-  it('formats table_split', () => {
-    expect(formatTransferReason('table_split')).toBe('Tables split');
+  it('returns i18n key for table_split', () => {
+    expect(getTransferReasonKey('table_split')).toBe('tables.transferReasonTableSplit');
   });
 
-  it('formats operational', () => {
-    expect(formatTransferReason('operational')).toBe('Operational reasons');
+  it('returns i18n key for operational', () => {
+    expect(getTransferReasonKey('operational')).toBe('tables.transferReasonOperational');
   });
 
-  it('formats maintenance', () => {
-    expect(formatTransferReason('maintenance')).toBe('Table maintenance');
+  it('returns i18n key for maintenance', () => {
+    expect(getTransferReasonKey('maintenance')).toBe('tables.transferReasonMaintenance');
   });
 
-  it('returns default for null', () => {
-    expect(formatTransferReason(null)).toBe('No reason provided');
+  it('returns default key for null', () => {
+    expect(getTransferReasonKey(null)).toBe('tables.transferReasonNoReason');
   });
 
-  it('returns default for undefined', () => {
-    expect(formatTransferReason(undefined)).toBe('No reason provided');
+  it('returns default key for undefined', () => {
+    expect(getTransferReasonKey(undefined)).toBe('tables.transferReasonNoReason');
   });
 
   it('passes through custom reason string', () => {
-    expect(formatTransferReason('VIP guest moved')).toBe('VIP guest moved');
+    expect(getTransferReasonKey('VIP guest moved')).toBe('VIP guest moved');
   });
 });

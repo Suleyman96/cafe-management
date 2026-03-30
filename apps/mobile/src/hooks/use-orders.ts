@@ -5,18 +5,19 @@ import { useEffect } from 'react';
 import { notifyNewOrder } from '@/lib/notifications';
 import { playNewOrderSound } from '@/lib/sound';
 import { db, supabase } from '@/lib/supabase';
-import type { Order, OrderItem } from '@/types';
+import type { Order, OrderItem, OrderWithDetails } from '@/types';
 
-export function useOrders(status?: Order['status'][]) {
+export function useOrders(filters?: {
+  status?: Order['status'];
+  statuses?: Order['status'][];
+  assigned_waiter_id?: string;
+  limit?: number;
+}) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: [QUERY_KEYS.ORDERS, status],
-    queryFn: async (): Promise<Order[]> => {
-      return await db.orders.findAll(
-        status && status.length > 0 ? { status: status[0] } : undefined,
-      );
-    },
+    queryKey: [QUERY_KEYS.ORDERS, filters],
+    queryFn: async (): Promise<OrderWithDetails[]> => db.orders.findAll(filters || undefined),
     staleTime: 0,
   });
 
@@ -38,16 +39,19 @@ export function useOrders(status?: Order['status'][]) {
             await playNewOrderSound();
 
             const newRecord = payload.new as Record<string, unknown>;
-            const { data } = await supabase
-              .from('tables')
-              .select('table_number')
-              .eq('id', newRecord.table_id as string)
-              .single();
 
-            const tableData = data as { table_number: string } | null;
+            if (newRecord.table_id) {
+              const { data } = await supabase
+                .from('tables')
+                .select('table_number')
+                .eq('id', newRecord.table_id as string)
+                .single();
 
-            if (tableData) {
-              await notifyNewOrder(newRecord.order_number as string, tableData.table_number);
+              const tableData = data as { table_number: string } | null;
+
+              if (tableData) {
+                await notifyNewOrder(newRecord.order_number as string, tableData.table_number);
+              }
             }
 
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
@@ -59,6 +63,17 @@ export function useOrders(status?: Order['status'][]) {
             event: 'UPDATE',
             schema: 'public',
             table: 'orders',
+          },
+          () => {
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+          },
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'order_items',
           },
           () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });

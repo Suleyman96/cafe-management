@@ -7,10 +7,12 @@ import { WAITER_CALL_REASON_COLORS } from '@/theme';
 interface WaiterCallCardProps {
   call: {
     id: string;
-    reason?: string | null;
+    call_type: string;
+    reason: string;
     status: string;
     created_at: string;
-    responded_at?: string | null;
+    acknowledged_at?: string | null;
+    resolved_at?: string | null;
     table_id: string;
     table?: { table_number: string; location?: string | null } | null;
   };
@@ -23,8 +25,8 @@ export const WaiterCallCard = React.memo(function WaiterCallCard({
   onAcknowledge,
   onResolve,
 }: WaiterCallCardProps) {
-  const reason = call.reason || 'assistance';
-  const reasonColor = WAITER_CALL_REASON_COLORS[reason] || '#6b7280';
+  const callType = call.call_type || 'assistance';
+  const reasonColor = WAITER_CALL_REASON_COLORS[callType] || '#6b7280';
 
   return (
     <Card style={[styles.card, { borderLeftColor: reasonColor }]}>
@@ -48,8 +50,14 @@ export const WaiterCallCard = React.memo(function WaiterCallCard({
           style={[styles.reasonChip, { backgroundColor: reasonColor }]}
           textStyle={{ color: '#fff', fontSize: 11, fontWeight: '600' }}
         >
-          {reason.charAt(0).toUpperCase() + reason.slice(1)}
+          {callType.charAt(0).toUpperCase() + callType.slice(1)}
         </Chip>
+
+        {call.reason ? (
+          <Text variant="bodySmall" style={styles.reasonText}>
+            {call.reason}
+          </Text>
+        ) : null}
 
         {call.status === 'pending' && (
           <Button
@@ -71,9 +79,9 @@ export const WaiterCallCard = React.memo(function WaiterCallCard({
           </Button>
         )}
 
-        {call.status === 'resolved' && call.responded_at && (
+        {call.status === 'resolved' && call.resolved_at && (
           <Text variant="bodySmall" style={styles.muted}>
-            Resolved at {new Date(call.responded_at).toLocaleTimeString()}
+            Resolved at {new Date(call.resolved_at).toLocaleTimeString()}
           </Text>
         )}
       </Card.Content>
@@ -104,6 +112,10 @@ const styles = StyleSheet.create({
   },
   muted: {
     color: '#6b7280',
+  },
+  reasonText: {
+    color: '#374151',
+    fontStyle: 'italic',
   },
   reasonChip: {
     alignSelf: 'flex-start',

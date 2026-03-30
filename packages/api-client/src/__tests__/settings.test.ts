@@ -5,10 +5,11 @@ import { createMockContext } from './helpers/mock-supabase';
 const validSettings = {
   id: '00000000-0000-0000-0000-000000000001',
   restaurant_name: 'Test Cafe',
-  currency: 'AZN',
-  tax_rate: 0.18,
-  language: 'az',
-  timezone: 'Asia/Baku',
+  currency_symbol: '₼',
+  currency_code: 'AZN',
+  tax_enabled: true,
+  tax_percentage: 18,
+  default_language: 'az',
 };
 
 describe('SettingsWrapper', () => {

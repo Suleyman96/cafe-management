@@ -31,17 +31,14 @@ export function CreateTableOrderModal({
   const [loading, setLoading] = useState(false);
 
   const handleCreate = async () => {
-    console.log('Creating order for table:', table.id);
     setLoading(true);
     try {
-      // TODO: type properly - DB defaults handle missing required fields (subtotal, tax, total, etc.)
       const result = await createOrder.mutateAsync({
         table_id: table.id,
         order_type: 'dine_in',
         status: 'new',
         internal_notes: notes.trim() || null,
-      } as Partial<OrdersInsert> as OrdersInsert);
-      console.log('Order created:', result);
+      } as OrdersInsert);
       onSuccess(result.id);
 
       // Reset form

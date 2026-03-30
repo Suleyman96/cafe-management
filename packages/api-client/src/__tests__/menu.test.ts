@@ -100,7 +100,7 @@ describe('MenuItemsWrapper', () => {
       },
     });
     const items = createMenuItemsWrapper(toggleCtx);
-    const result = await items.toggleAvailability(validMenuItem.id);
+    const result = await items.toggleAvailability(validMenuItem.id, true);
     expect(result.is_available).toBe(false);
   });
 

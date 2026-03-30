@@ -51,6 +51,7 @@ export function ScheduleModal({
   const [repeatWeeks, setRepeatWeeks] = useState(1);
 
   useEffect(() => {
+    if (!visible) return;
     if (initialData) {
       setStaffId(initialData.staff_id || '');
       setDate(initialData.date || '');
@@ -92,7 +93,7 @@ export function ScheduleModal({
       setRepeatDays([]);
       setRepeatWeeks(1);
     }
-  }, [initialData, defaultDate]);
+  }, [visible, initialData, defaultDate]);
 
   const toggleRepeatDay = (day: number) => {
     setRepeatDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
@@ -147,8 +148,8 @@ export function ScheduleModal({
         data: {
           staff_id: staffId,
           date,
-          planned_start: `${date}T${plannedStart}:00`,
-          planned_end: `${date}T${plannedEnd}:00`,
+          planned_start: plannedStart,
+          planned_end: plannedEnd,
           actual_start: null,
           actual_end: null,
           status: 'scheduled',

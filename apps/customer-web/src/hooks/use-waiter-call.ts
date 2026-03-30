@@ -35,8 +35,9 @@ export function useCreateWaiterCall() {
       db.waiterCalls.create({
         table_id: tableId,
         call_type: callType,
-        reason: notes || reason,
+        reason: reason,
         priority: priority,
+        ...(notes ? { notes } : {}),
       }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({

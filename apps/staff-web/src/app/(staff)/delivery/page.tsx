@@ -19,6 +19,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateDeliveryModal } from '@/components/modals/create-delivery-modal';
@@ -43,6 +44,7 @@ type DeliveryStatus =
 
 export default function DeliveryPage() {
   const { t } = useTranslation('staff');
+  const router = useRouter();
   const { data: orders, isLoading: loading, error, refetch } = useDeliveryOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const markOutForDelivery = useMarkOutForDelivery();
@@ -76,12 +78,11 @@ export default function DeliveryPage() {
   }, [refetch]);
 
   const calculateOrderTotal = (order: any) => {
-    if (order?.total) return order.total;
+    if (order?.total != null) return order.total;
     if (!order?.order_items) return 0;
-    return order.order_items.reduce(
-      (sum: number, item: any) => sum + item.quantity * item.item_price,
-      0,
-    );
+    return order.order_items
+      .filter((item: any) => item.status !== 'cancelled')
+      .reduce((sum: number, item: any) => sum + item.quantity * item.item_price, 0);
   };
 
   const formatTime = (timestamp: string) => {
@@ -279,14 +280,14 @@ export default function DeliveryPage() {
       <div className="space-y-3 sm:space-y-4">
         {filteredOrders?.map((order: any) => {
           const total = calculateOrderTotal(order);
-          const deliveryFee = order.delivery_fee || 0;
+          const deliveryFee = order.delivery_fee ?? 0;
           const grandTotal = total + deliveryFee;
 
           return (
             <div
               key={order.id}
               className="border border-purple-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow cursor-pointer bg-white"
-              onClick={() => (window.location.href = `/orders/${order.id}`)}
+              onClick={() => router.push(`/orders/${order.id}`)}
             >
               {/* Header */}
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0 mb-3">
@@ -372,7 +373,9 @@ export default function DeliveryPage() {
                   </div>
                 ))}
                 {order.order_items?.length > 3 && (
-                  <div className="text-gray-400">+{order.order_items.length - 3} more items</div>
+                  <div className="text-gray-400">
+                    {t('orders.moreItems', { count: order.order_items.length - 3 })}
+                  </div>
                 )}
               </div>
 
@@ -537,7 +540,7 @@ export default function DeliveryPage() {
         onSuccess={(orderId) => {
           setIsCreateModalOpen(false);
           toast.success(t('orders.orderCreated'));
-          window.location.href = `/orders/${orderId}/add-items`;
+          router.push(`/orders/${orderId}/add-items`);
         }}
       />
     </div>

@@ -7,6 +7,7 @@ import { Button } from '@gustri/ui';
 import { Check, CheckCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { NumberInput } from '@/components/ui/number-input';
 import {
   useCafeSettings,
   useCreatePayment,
@@ -16,6 +17,7 @@ import {
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { CashChangeCalculator } from './payment/cash-change-calculator';
 import { ItemPaymentForm } from './payment/item-payment-form';
 import { PartialPaymentForm } from './payment/partial-payment-form';
 import { PaymentModeSelector } from './payment/payment-mode-selector';
@@ -93,9 +95,9 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
     (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
     0,
   );
-  const orderSubtotal = order?.subtotal || itemsSubtotalCalc;
-  const orderTax = order?.tax || 0;
-  const orderTotal = order?.total || orderSubtotal + orderTax;
+  const orderSubtotal = order?.subtotal ?? itemsSubtotalCalc;
+  const orderTax = order?.tax ?? 0;
+  const orderTotal = order?.total ?? orderSubtotal + orderTax;
 
   // Calculate subtotal of selected items (before tax)
   const calculateSelectedItemsSubtotal = () => {
@@ -146,7 +148,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
 
   const handlePayment = async () => {
     let amount = getPaymentAmount();
-    if (amount <= 0 || !staff?.id) return;
+    if (amount <= 0 || !staff?.id || !order?.id) return;
 
     const balance = remainingBalance ?? orderTotal;
 
@@ -286,6 +288,18 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
                   <span>{t('subtotal', { ns: 'common' })}</span>
                   <span>{formatPrice(orderSubtotal)}</span>
                 </div>
+                {(order?.discount_amount ?? 0) > 0 && (
+                  <div className="flex justify-between items-center text-sm text-red-600 mb-1">
+                    <span>
+                      {t('orders.discount')} (
+                      {order?.discount_type === 'percentage'
+                        ? `${order?.discount_value}%`
+                        : formatPrice(order?.discount_value ?? 0)}
+                      )
+                    </span>
+                    <span>-{formatPrice(order?.discount_amount ?? 0)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
                   <span>{t('orders.tax')}</span>
                   <span>{formatPrice(orderTax)}</span>
@@ -377,26 +391,31 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
             </div>
           )}
 
+          {/* Cash Change Calculator */}
+          {paymentMethod === 'cash' && !isFullyPaid && !isZeroTotal && (
+            <CashChangeCalculator
+              paymentAmount={getPaymentAmount() + (parseFloat(tipAmount) || 0)}
+              currencySymbol={cafeSettings?.currency_symbol || '$'}
+              currencyCode={cafeSettings?.currency_code || 'USD'}
+              formatPrice={formatPrice}
+              t={t}
+            />
+          )}
+
           {/* Tip Input - only shown when tips are enabled */}
           {cafeSettings?.tips_enabled && !isFullyPaid && !isZeroTotal && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('payment.addTip')}
               </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                  {cafeSettings.currency_symbol}
-                </span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="0.00"
-                  value={tipAmount}
-                  onChange={(e) => setTipAmount(e.target.value)}
-                />
-              </div>
+              <NumberInput
+                value={tipAmount}
+                onChange={setTipAmount}
+                min={0}
+                step={0.01}
+                placeholder="0.00"
+                prefix={cafeSettings.currency_symbol}
+              />
               {parseFloat(tipAmount) > 0 && (
                 <div className="mt-2 text-sm text-green-600">
                   {t('orders.tip')}: {formatPrice(parseFloat(tipAmount))}

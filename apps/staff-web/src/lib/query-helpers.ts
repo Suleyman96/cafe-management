@@ -31,6 +31,7 @@ export function invalidateDeliveryOrders(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDERS] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
+  qc.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
 }
 
 // ─── Stock ──────────────────────────────────────────────────────────────────

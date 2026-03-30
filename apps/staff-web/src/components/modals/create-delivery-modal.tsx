@@ -3,8 +3,9 @@
 import type { OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Map as MapIcon, MapPin, Phone, StickyNote, Truck, User, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { NumberInput } from '@/components/ui/number-input';
 import { useCafeSettings, useCreateOrder } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
 
@@ -26,6 +27,13 @@ export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDelive
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [deliveryFee, setDeliveryFee] = useState('0');
   const [loading, setLoading] = useState(false);
+
+  // Initialize delivery fee from cafe settings default
+  useEffect(() => {
+    if (settings?.delivery_fee_default != null) {
+      setDeliveryFee(settings.delivery_fee_default.toString());
+    }
+  }, [settings?.delivery_fee_default]);
 
   const handleCreate = async () => {
     if (!customerName.trim() || !customerPhone.trim() || !deliveryAddress.trim()) return;
@@ -149,15 +157,14 @@ export function CreateDeliveryModal({ isOpen, onClose, onSuccess }: CreateDelive
               <Truck className="inline h-4 w-4 mr-1" />
               {t('delivery.deliveryFee')}
             </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            <NumberInput
               value={deliveryFee}
-              onChange={(e) => setDeliveryFee(e.target.value)}
+              onChange={setDeliveryFee}
+              min={0}
+              step={0.01}
+              placeholder="0.00"
             />
-            {settings?.delivery_fee_default ? (
+            {settings?.delivery_fee_default != null ? (
               <p className="text-xs text-gray-500 mt-1">
                 Default: {formatPrice(settings.delivery_fee_default)}
               </p>

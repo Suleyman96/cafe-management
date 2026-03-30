@@ -4,6 +4,7 @@ import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import { Check, Loader2, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { useCafeSettings, useTaxMultiplier } from '@/hooks';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 
@@ -19,7 +20,6 @@ interface TableCartProps {
   submitting: boolean;
   orderNotes: string;
   cartTotal: number;
-  taxMultiplier: number;
   formatPrice: (amount: number) => string;
   onAddToCart: (menuItem: MenuItem) => void;
   onRemoveFromCart: (menuItemId: string) => void;
@@ -34,7 +34,6 @@ export function TableCart({
   submitting,
   orderNotes,
   cartTotal,
-  taxMultiplier,
   formatPrice,
   onAddToCart,
   onRemoveFromCart,
@@ -42,6 +41,8 @@ export function TableCart({
   onSubmit,
 }: TableCartProps) {
   const { t } = useTranslation('staff');
+  const taxMultiplier = useTaxMultiplier();
+  const { data: cafeSettings } = useCafeSettings();
 
   return (
     <div className="lg:col-span-1 order-1 lg:order-2">
@@ -109,9 +110,20 @@ export function TableCart({
             </div>
 
             <div className="border-t pt-4">
-              <div className="flex justify-between items-center mb-4">
-                <span className="font-semibold">{t('total', { ns: 'common' })}</span>
-                <span className="font-semibold text-lg">{formatPrice(cartTotal)}</span>
+              <div className="mb-4">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">{t('total', { ns: 'common' })}</span>
+                  <span className="font-semibold text-lg">
+                    {formatPrice(cartTotal * taxMultiplier)}
+                  </span>
+                </div>
+                {taxMultiplier !== 1 && (
+                  <p className="text-xs text-gray-400 text-right">
+                    {t('orders.inclTax', {
+                      percent: String(cafeSettings?.tax_percentage ?? 18),
+                    })}
+                  </p>
+                )}
               </div>
               <Button
                 className="w-full"

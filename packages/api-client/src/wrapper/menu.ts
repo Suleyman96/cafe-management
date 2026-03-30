@@ -82,21 +82,10 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
       return data;
     },
 
-    toggleAvailability: async (id: string) => {
-      // First get current state
-      const { data: current, error: fetchError } = await ctx.anyClient
-        .from('menu_items')
-        .select('is_available')
-        .eq('id', id)
-        .single();
-
-      if (fetchError) throw handleSupabaseError(fetchError);
-      if (!current) throw new Error('Menu item not found');
-
-      // Toggle the state
+    toggleAvailability: async (id: string, currentAvailable: boolean) => {
       const { data, error } = await ctx.anyClient
         .from('menu_items')
-        .update({ is_available: !(current as { is_available: boolean }).is_available })
+        .update({ is_available: !currentAvailable })
         .eq('id', id)
         .select()
         .single();

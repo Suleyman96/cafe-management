@@ -5,7 +5,7 @@
 import { QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { invalidateExpenses, refetchExpenses } from '@/lib/query-helpers';
+import { invalidateExpenses } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type Expense = Database['public']['Tables']['expenses']['Row'];
@@ -40,9 +40,6 @@ export function useCreateExpense() {
     onSuccess: () => {
       invalidateExpenses(queryClient);
     },
-    onSettled: () => {
-      refetchExpenses(queryClient);
-    },
   });
 }
 
@@ -55,9 +52,6 @@ export function useUpdateExpense() {
     onSuccess: () => {
       invalidateExpenses(queryClient);
     },
-    onSettled: () => {
-      refetchExpenses(queryClient);
-    },
   });
 }
 
@@ -68,9 +62,6 @@ export function useDeleteExpense() {
     mutationFn: (id: string) => db.expenses.delete(id),
     onSuccess: () => {
       invalidateExpenses(queryClient);
-    },
-    onSettled: () => {
-      refetchExpenses(queryClient);
     },
   });
 }

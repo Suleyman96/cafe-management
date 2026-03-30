@@ -65,6 +65,8 @@ describe('useCreatePayment', () => {
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.PAYMENTS, 'o1']);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.PAYMENTS_BY_STAFF]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
+    // CRITICAL: Must invalidate remaining balance so payment modal shows updated amount
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.PAYMENTS, 'remaining_balance', 'o1']);
   });
 
   it('calls db.payments.create with payment data', async () => {

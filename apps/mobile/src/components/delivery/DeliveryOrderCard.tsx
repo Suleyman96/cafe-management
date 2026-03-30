@@ -37,8 +37,8 @@ interface DeliveryOrderCardProps {
 }
 
 const calculateOrderTotal = (order: DeliveryOrderCardProps['order']) => {
-  if (order?.total) return order.total;
-  if (order?.total_amount) return order.total_amount;
+  if (order?.total != null) return order.total;
+  if (order?.total_amount != null) return order.total_amount;
   if (!order?.order_items) return 0;
   return order.order_items.reduce(
     (sum, item) => sum + (item.quantity || 0) * (item.item_price || 0),
@@ -62,7 +62,7 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
   onCancel,
 }: DeliveryOrderCardProps) {
   const itemsTotal = calculateOrderTotal(order);
-  const deliveryFee = order.delivery_fee || 0;
+  const deliveryFee = order.delivery_fee ?? 0;
   const grandTotal = itemsTotal + deliveryFee;
   const hasItems = order.order_items?.some((i) => i.status !== 'cancelled') ?? false;
 
@@ -226,7 +226,7 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
               Delivered
             </Button>
           )}
-          {!['delivered', 'cancelled', 'paid'].includes(order.status) && onCancel && (
+          {!['delivered', 'cancelled', 'closed'].includes(order.status) && onCancel && (
             <Button compact onPress={() => onCancel(order.id)} textColor="#ef4444">
               {order.status === 'pending_approval' ? 'Reject' : 'Cancel'}
             </Button>

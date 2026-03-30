@@ -1,33 +1,37 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Modal, Portal, Text } from 'react-native-paper';
+import { ROLE_COLORS } from '@/components/staff-management/StaffCard';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useOrders, usePaymentsByStaff, useStaffMember, useUpdateStaff } from '@/hooks';
 import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { TextInput } from '@/lib/paper-compat';
+import { useAuthStore } from '@/store/auth-store';
 import type { Staff, StaffManagementStackParamList } from '@/types';
 
 type Route = RouteProp<StaffManagementStackParamList, 'StaffDetail'>;
 
-const ROLE_COLORS: Record<string, string> = {
-  owner: '#8b5cf6',
-  admin: '#3b82f6',
-  waiter: '#10b981',
-  kitchen: '#f59e0b',
-};
+const ROLES_ALL: Staff['role'][] = ['waiter', 'kitchen', 'admin', 'owner'];
+const ROLES_NO_OWNER: Staff['role'][] = ['waiter', 'kitchen', 'admin'];
 
 export default function StaffDetailScreen() {
+  const { t } = useTranslation('staff');
   const route = useRoute<Route>();
   const { staffId } = route.params;
+  const currentUser = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
 
   const { data: member, isLoading, error, refetch } = useStaffMember(staffId);
   const { data: payments } = usePaymentsByStaff(staffId, 10);
-  const { data: orders } = useOrders();
+  const { data: staffOrders } = useOrders({
+    assigned_waiter_id: staffId,
+    limit: 10,
+  });
   const { data: settings } = useCafeSettings();
   const updateStaff = useUpdateStaff();
 
@@ -40,13 +44,6 @@ export default function StaffDetailScreen() {
     role: Staff['role'];
   }>({ full_name: '', phone: '', role: 'waiter' });
 
-  const staffOrders = useMemo(() => {
-    if (!orders || !staffId) return [];
-    return orders
-      .filter((o: { assigned_waiter_id: string | null }) => o.assigned_waiter_id === staffId)
-      .slice(0, 10);
-  }, [orders, staffId]);
-
   const totalRevenue = useMemo(() => {
     return payments?.reduce((sum: number, p: { amount: number }) => sum + (p.amount || 0), 0) || 0;
   }, [payments]);
@@ -56,7 +53,7 @@ export default function StaffDetailScreen() {
       setEditForm({
         full_name: member.full_name || '',
         phone: member.phone || '',
-        role: member.role || '',
+        role: member.role,
       });
       setShowEditModal(true);
     }
@@ -65,17 +62,20 @@ export default function StaffDetailScreen() {
   const handleSave = async () => {
     try {
       await updateStaff.mutateAsync({ id: staffId, data: editForm });
-      showSuccess('Staff updated');
+      showSuccess(t('staffMgmt.staffUpdated'));
       setShowEditModal(false);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to update');
+      const message = err instanceof Error ? err.message : t('staffMgmt.failedUpdate');
+      showError(message);
     }
   };
 
   if (isLoading) return <LoadingScreen />;
-  if (error || !member) return <ErrorScreen error={error || 'Staff not found'} onRetry={refetch} />;
+  if (error || !member)
+    return <ErrorScreen error={error || t('staffMgmt.staffNotFound')} onRetry={refetch} />;
 
   const roleColor = ROLE_COLORS[member.role] || '#6b7280';
+  const editableRoles = currentUser?.role === 'owner' ? ROLES_ALL : ROLES_NO_OWNER;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -91,7 +91,7 @@ export default function StaffDetailScreen() {
             style={[styles.roleChip, { backgroundColor: roleColor }]}
             textStyle={{ color: '#fff', fontWeight: '600' }}
           >
-            {member.role}
+            {t(`staffMgmt.role.${member.role}`)}
           </Chip>
           <Text variant="bodyMedium" style={styles.muted}>
             {member.email}
@@ -102,10 +102,10 @@ export default function StaffDetailScreen() {
             </Text>
           )}
           <Text variant="bodySmall" style={styles.muted}>
-            Member since {new Date(member.created_at).toLocaleDateString()}
+            {t('staffMgmt.memberSince')} {new Date(member.created_at).toLocaleDateString()}
           </Text>
           <Button mode="outlined" onPress={openEdit} style={styles.editBtn}>
-            Edit Profile
+            {t('staffMgmt.editProfile')}
           </Button>
         </Card.Content>
       </Card>
@@ -114,15 +114,15 @@ export default function StaffDetailScreen() {
       <Card style={styles.card}>
         <Card.Content>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            Performance
+            {t('staffMgmt.performance')}
           </Text>
           <View style={styles.statsRow}>
             <View style={styles.stat}>
               <Text variant="titleLarge" style={styles.statValue}>
-                {staffOrders.length}
+                {staffOrders?.length || 0}
               </Text>
               <Text variant="bodySmall" style={styles.muted}>
-                Orders
+                {t('staffMgmt.orders')}
               </Text>
             </View>
             <View style={styles.stat}>
@@ -131,7 +131,7 @@ export default function StaffDetailScreen() {
                 {totalRevenue.toFixed(0)}
               </Text>
               <Text variant="bodySmall" style={styles.muted}>
-                Revenue
+                {t('staffMgmt.revenue')}
               </Text>
             </View>
             <View style={styles.stat}>
@@ -139,7 +139,7 @@ export default function StaffDetailScreen() {
                 {payments?.length || 0}
               </Text>
               <Text variant="bodySmall" style={styles.muted}>
-                Payments
+                {t('staffMgmt.payments')}
               </Text>
             </View>
           </View>
@@ -147,13 +147,13 @@ export default function StaffDetailScreen() {
       </Card>
 
       {/* Recent Orders */}
-      {staffOrders.length > 0 && (
+      {(staffOrders?.length ?? 0) > 0 && (
         <Card style={styles.card}>
           <Card.Content>
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              Recent Orders
+              {t('staffMgmt.recentOrders')}
             </Text>
-            {staffOrders.map((o: { id: string; order_number: string | null; status: string }) => (
+            {staffOrders?.map((o: { id: string; order_number: string | null; status: string }) => (
               <View key={o.id} style={styles.listItem}>
                 <Text variant="bodyMedium">#{o.order_number || '--'}</Text>
                 <Text variant="bodySmall" style={styles.muted}>
@@ -170,7 +170,7 @@ export default function StaffDetailScreen() {
         <Card style={styles.card}>
           <Card.Content>
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              Recent Payments
+              {t('staffMgmt.recentPayments')}
             </Text>
             {payments?.map(
               (p: { id: string; payment_method: string; amount: number; created_at: string }) => (
@@ -197,10 +197,10 @@ export default function StaffDetailScreen() {
           contentContainerStyle={styles.modal}
         >
           <Text variant="titleMedium" style={{ fontWeight: '700', marginBottom: 12 }}>
-            Edit Staff
+            {t('staffMgmt.editStaff')}
           </Text>
           <TextInput
-            label="Full Name"
+            label={t('staffMgmt.fullName')}
             value={editForm.full_name}
             onChangeText={(v: string) => setEditForm({ ...editForm, full_name: v })}
             mode="outlined"
@@ -208,7 +208,7 @@ export default function StaffDetailScreen() {
             style={styles.input}
           />
           <TextInput
-            label="Phone"
+            label={t('staffMgmt.phone')}
             value={editForm.phone}
             onChangeText={(v: string) => setEditForm({ ...editForm, phone: v })}
             mode="outlined"
@@ -217,24 +217,29 @@ export default function StaffDetailScreen() {
             style={styles.input}
           />
           <Text variant="bodySmall" style={[styles.muted, { marginBottom: 4 }]}>
-            Role
+            {t('staffMgmt.role')}
           </Text>
           <View style={styles.chipRow}>
-            {(['waiter', 'kitchen', 'admin'] as Staff['role'][]).map((r) => (
+            {editableRoles.map((r) => (
               <Chip
                 key={r}
                 selected={editForm.role === r}
                 onPress={() => setEditForm({ ...editForm, role: r })}
                 compact
               >
-                {r.charAt(0).toUpperCase() + r.slice(1)}
+                {t(`staffMgmt.role.${r}`)}
               </Chip>
             ))}
           </View>
           <View style={styles.modalActions}>
-            <Button onPress={() => setShowEditModal(false)}>Cancel</Button>
-            <Button mode="contained" onPress={handleSave} loading={updateStaff.isPending}>
-              Save
+            <Button onPress={() => setShowEditModal(false)}>{t('staffMgmt.cancel')}</Button>
+            <Button
+              mode="contained"
+              onPress={handleSave}
+              loading={updateStaff.isPending}
+              disabled={updateStaff.isPending}
+            >
+              {t('staffMgmt.save')}
             </Button>
           </View>
         </Modal>

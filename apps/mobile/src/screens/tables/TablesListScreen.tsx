@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TableCard } from '@/components/tables/TableCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useCleanupEmptyOrders, useOrders, useTables, useWaiterCalls } from '@/hooks';
+import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import type { TablesStackParamList } from '@/types';
 
 type Nav = StackNavigationProp<TablesStackParamList, 'TablesList'>;
@@ -18,7 +19,10 @@ export default function TablesListScreen() {
   const { data: tables, isLoading, error, refetch } = useTables();
   const { data: orders } = useOrders();
   const { data: waiterCalls } = useWaiterCalls('pending');
+  const { data: settings } = useCafeSettings();
   const cleanupEmptyOrders = useCleanupEmptyOrders();
+
+  const currencySymbol = settings?.currency_symbol || '$';
 
   // Cleanup stale empty orders on screen load (run once)
   const didCleanup = useRef(false);
@@ -27,7 +31,7 @@ export default function TablesListScreen() {
       didCleanup.current = true;
       cleanupEmptyOrders.mutate(undefined);
     }
-  }, [cleanupEmptyOrders]);
+  }, []); // eslint-disable-line -- fire-and-forget, guarded by ref
 
   const tableData = useMemo(() => {
     if (!tables) return [];
@@ -66,6 +70,7 @@ export default function TablesListScreen() {
             activeOrderCount={item.activeOrderCount}
             orderTotal={item.orderTotal}
             hasWaiterCall={item.hasWaiterCall}
+            currencySymbol={currencySymbol}
             onPress={() => navigation.navigate('TableDetail', { tableId: item.table.id })}
           />
         )}

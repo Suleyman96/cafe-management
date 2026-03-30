@@ -18,9 +18,10 @@ import {
   useUpdateWaiterCall,
   useWaiterCalls,
 } from '@/hooks';
+import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
-import { TABLE_STATUS_COLORS } from '@/theme';
+import { TABLE_STATUS_COLORS, WAITER_CALL_REASON_COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, Table, TablesStackParamList } from '@/types';
 
 type Route = RouteProp<TablesStackParamList, 'TableDetail'>;
@@ -46,8 +47,11 @@ export default function TableDetailScreen() {
   const { data: table, isLoading, error, refetch } = useTable(tableId);
   const { data: orders } = useOrders();
   const { data: waiterCalls } = useWaiterCalls('pending');
+  const { data: settings } = useCafeSettings();
   const updateTableStatus = useUpdateTableStatus();
   const updateWaiterCall = useUpdateWaiterCall();
+
+  const currencySymbol = settings?.currency_symbol || '$';
 
   const [statusConfirm, setStatusConfirm] = useState<Table['status'] | null>(null);
 
@@ -82,11 +86,15 @@ export default function TableDetailScreen() {
   };
 
   const handleRespondCall = async (callId: string) => {
+    if (!staff?.id) {
+      showError('Not authenticated');
+      return;
+    }
     try {
       await updateWaiterCall.mutateAsync({
         callId,
         status: 'acknowledged',
-        staffId: staff?.id,
+        staffId: staff.id,
       });
       showSuccess('Call acknowledged');
     } catch (err: unknown) {
@@ -152,19 +160,36 @@ export default function TableDetailScreen() {
                     Waiter Calls
                   </Text>
                   {pendingCalls.map(
-                    (call: { id: string; reason: string | null; created_at: string }) => (
-                      <View key={call.id} style={styles.callItem}>
-                        <View style={styles.callInfo}>
-                          <Chip compact style={styles.reasonChip}>
-                            {call.reason || 'Assistance'}
-                          </Chip>
-                          <TimeElapsed createdAt={call.created_at} />
+                    (call: {
+                      id: string;
+                      call_type: string;
+                      reason: string;
+                      created_at: string;
+                    }) => {
+                      const callType = call.call_type ?? 'assistance';
+                      const chipColor = WAITER_CALL_REASON_COLORS[callType] || '#6b7280';
+                      return (
+                        <View key={call.id} style={styles.callItem}>
+                          <View style={styles.callInfo}>
+                            <Chip
+                              compact
+                              style={[styles.reasonChip, { backgroundColor: `${chipColor}20` }]}
+                              textStyle={{ color: chipColor, fontWeight: '600' }}
+                            >
+                              {callType.replace(/_/g, ' ')}
+                            </Chip>
+                            <TimeElapsed createdAt={call.created_at} />
+                          </View>
+                          <Button
+                            compact
+                            mode="contained"
+                            onPress={() => handleRespondCall(call.id)}
+                          >
+                            Respond
+                          </Button>
                         </View>
-                        <Button compact mode="contained" onPress={() => handleRespondCall(call.id)}>
-                          Respond
-                        </Button>
-                      </View>
-                    ),
+                      );
+                    },
                   )}
                 </Card.Content>
               </Card>
@@ -199,7 +224,8 @@ export default function TableDetailScreen() {
                   {order.order_items?.length || 0} items
                 </Text>
                 <Text variant="bodyMedium" style={styles.bold}>
-                  ${(order.total || 0).toFixed(2)}
+                  {currencySymbol}
+                  {(order.total ?? 0).toFixed(2)}
                 </Text>
               </View>
               <TimeElapsed createdAt={order.created_at} />
@@ -246,7 +272,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   callInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  reasonChip: { backgroundColor: '#fee2e2' },
+  reasonChip: {},
   sectionTitle: { fontWeight: '600', color: '#1e293b', marginHorizontal: 16, marginTop: 16 },
   orderCard: { marginHorizontal: 16, marginTop: 8 },
   emptyOrders: { alignItems: 'center', paddingVertical: 32 },

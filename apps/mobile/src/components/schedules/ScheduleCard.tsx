@@ -47,8 +47,8 @@ export const ScheduleCard = React.memo(function ScheduleCard({
 }: ScheduleCardProps) {
   const statusColor = STATUS_COLORS[schedule.status] || '#6b7280';
   const statusBg = STATUS_BG[schedule.status] || '#f3f4f6';
-  const formatTime = (dateStr: string) =>
-    new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // planned_start/planned_end are stored as HH:MM strings, not ISO datetimes
+  const formatTime = (timeStr: string) => timeStr?.slice(0, 5) || '';
 
   const duration = getDurationHours(schedule.actual_start, schedule.actual_end);
 

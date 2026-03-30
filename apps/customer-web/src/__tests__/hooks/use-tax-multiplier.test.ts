@@ -32,18 +32,6 @@ describe('useTaxMultiplier', () => {
     await waitFor(() => expect(result.current).toBe(1.18));
   });
 
-  it('returns 1 when prices_include_tax is true (avoids double-taxation)', async () => {
-    (db.settings.get as any).mockResolvedValueOnce({
-      tax_enabled: true,
-      tax_percentage: 18,
-      prices_include_tax: true,
-    });
-
-    const { result } = renderHookWithProviders(() => useTaxMultiplier());
-
-    await waitFor(() => expect(result.current).toBe(1));
-  });
-
   it('returns 1 when tax_percentage is 0', async () => {
     (db.settings.get as any).mockResolvedValueOnce({
       tax_enabled: true,

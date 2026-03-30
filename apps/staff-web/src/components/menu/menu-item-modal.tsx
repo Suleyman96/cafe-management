@@ -5,6 +5,7 @@ import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { NumberInput } from '@/components/ui/number-input';
 import { useCreateMenuItem, useUpdateMenuItem } from '@/hooks';
 import { supabase } from '@/lib/supabase/client';
 
@@ -17,7 +18,16 @@ interface MenuItemModalProps {
   onClose: () => void;
 }
 
-const COMMON_ALLERGENS = ['Gluten', 'Dairy', 'Eggs', 'Nuts', 'Soy', 'Fish', 'Shellfish', 'Sesame'];
+const COMMON_ALLERGENS = [
+  { value: 'Gluten', labelKey: 'menu.allergenGluten' },
+  { value: 'Dairy', labelKey: 'menu.allergenDairy' },
+  { value: 'Eggs', labelKey: 'menu.allergenEggs' },
+  { value: 'Nuts', labelKey: 'menu.allergenNuts' },
+  { value: 'Soy', labelKey: 'menu.allergenSoy' },
+  { value: 'Fish', labelKey: 'menu.allergenFish' },
+  { value: 'Shellfish', labelKey: 'menu.allergenShellfish' },
+  { value: 'Sesame', labelKey: 'menu.allergenSesame' },
+];
 
 export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps) {
   const { t } = useTranslation('staff');
@@ -67,7 +77,7 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
       // Upload image if selected
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
         const filePath = `menu-items/${fileName}`;
 
         toast.loading(t('menu.uploadingImage'), { id: toastId });
@@ -113,7 +123,7 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
     } catch (error: unknown) {
       console.error('Error saving menu item:', error);
 
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save menu item';
+      const errorMessage = error instanceof Error ? error.message : t('menu.failedSaveItem');
 
       if (errorMessage.includes('infinite recursion') || errorMessage.includes('policy')) {
         toast.error(t('menu.dbPermissionError'), { id: toastId });
@@ -214,26 +224,25 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('menu.priceLabel')} *
               </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
+              <NumberInput
                 value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                onChange={(v) => setFormData({ ...formData, price: v })}
+                min={0}
+                step={0.01}
+                placeholder="0.00"
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('menu.preparationTimeMinutes')}
               </label>
-              <input
-                type="number"
-                min="0"
+              <NumberInput
                 value={formData.preparation_time}
-                onChange={(e) => setFormData({ ...formData, preparation_time: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={(v) => setFormData({ ...formData, preparation_time: v })}
+                min={0}
+                integer
+                placeholder="0"
               />
             </div>
           </div>
@@ -295,16 +304,16 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
             <div className="flex flex-wrap gap-2">
               {COMMON_ALLERGENS.map((allergen) => (
                 <button
-                  key={allergen}
+                  key={allergen.value}
                   type="button"
-                  onClick={() => toggleAllergen(allergen)}
+                  onClick={() => toggleAllergen(allergen.value)}
                   className={`px-3 py-1 rounded-full text-sm ${
-                    selectedAllergens.includes(allergen)
+                    selectedAllergens.includes(allergen.value)
                       ? 'bg-red-100 text-red-800 border border-red-300'
                       : 'bg-gray-100 text-gray-700 border border-gray-300'
                   }`}
                 >
-                  {allergen}
+                  {t(allergen.labelKey)}
                 </button>
               ))}
             </div>
@@ -316,11 +325,12 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('menu.displayOrder')}
               </label>
-              <input
-                type="number"
+              <NumberInput
                 value={formData.display_order}
-                onChange={(e) => setFormData({ ...formData, display_order: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={(v) => setFormData({ ...formData, display_order: v })}
+                min={0}
+                integer
+                placeholder="0"
               />
             </div>
             <div className="flex items-center gap-2 pt-6">

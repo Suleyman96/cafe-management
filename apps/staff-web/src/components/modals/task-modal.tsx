@@ -6,6 +6,7 @@ import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { NumberInput } from '@/components/ui/number-input';
 import { useAuth, useCreateTask, useStaff, useUpdateTask } from '@/hooks';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
@@ -297,19 +298,19 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
                   <label className="block text-sm text-blue-700 mb-2">
                     {t('tasks.dayOfMonth')}
                   </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="31"
+                  <NumberInput
                     value={formData.recurrence_days[0] || ''}
-                    onChange={(e) =>
+                    onChange={(v) =>
                       setFormData({
                         ...formData,
-                        recurrence_days: [Number.parseInt(e.target.value, 10)],
+                        recurrence_days: [Number.parseInt(v, 10)],
                       })
                     }
-                    className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    min={1}
+                    max={31}
+                    integer
                     placeholder="1"
+                    className="w-20"
                   />
                 </div>
               )}

@@ -75,21 +75,10 @@ export default function ExpensesPage() {
     }
   };
 
-  // Month selector options
-  const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
+  // Month selector options — use locale-aware month names
+  const months = Array.from({ length: 12 }, (_, i) =>
+    new Date(2024, i).toLocaleString('default', { month: 'long' }),
+  );
 
   if (isLoading) {
     return (

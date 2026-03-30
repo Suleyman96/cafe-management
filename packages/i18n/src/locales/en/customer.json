@@ -32,6 +32,7 @@
   "menu.noItemsFiltered": "No items match your filters",
   "menu.noItemsAvailable": "No menu items available",
   "menu.viewCart": "View Cart ({{count}} items)",
+  "menu.inclTax": "incl. {{percent}}% tax",
 
   "menuItem.badgePopular": "Popular",
   "menuItem.badgeTodaySpecial": "Today's Special",

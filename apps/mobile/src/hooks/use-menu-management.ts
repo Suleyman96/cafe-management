@@ -55,7 +55,8 @@ export function useToggleMenuItemAvailability() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => db.menuItems.toggleAvailability(id),
+    mutationFn: ({ id, currentAvailable }: { id: string; currentAvailable: boolean }) =>
+      db.menuItems.toggleAvailability(id, currentAvailable),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
     },

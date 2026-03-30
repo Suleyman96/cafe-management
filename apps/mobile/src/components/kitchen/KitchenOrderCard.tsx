@@ -1,3 +1,5 @@
+import { ORDER_STATUS } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Text } from 'react-native-paper';
@@ -22,6 +24,8 @@ interface KitchenOrderCardProps {
   onStartPreparing: (orderId: string) => void;
   onMarkItemReady: (itemId: string) => void;
   onMarkAllReady: (orderId: string) => void;
+  onMarkAllServed: (orderId: string) => void;
+  isProcessing?: boolean;
 }
 
 export const KitchenOrderCard = React.memo(function KitchenOrderCard({
@@ -29,18 +33,22 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
   onStartPreparing,
   onMarkItemReady,
   onMarkAllReady,
+  onMarkAllServed,
+  isProcessing = false,
 }: KitchenOrderCardProps) {
+  const { t } = useTranslation('staff');
+
   const activeItems =
     order.order_items?.filter((i) => i.status !== 'served' && i.status !== 'cancelled') || [];
 
   const allItemsReady = activeItems.length > 0 && activeItems.every((i) => i.status === 'ready');
 
   const tableLabel = order.table
-    ? `Table #${order.table.table_number}`
+    ? t('kitchen.tableNumber', { number: order.table.table_number })
     : order.order_type === 'takeout'
-      ? 'Takeout'
+      ? t('kitchen.takeout')
       : order.order_type === 'delivery'
-        ? 'Delivery'
+        ? t('kitchen.delivery')
         : '—';
 
   return (
@@ -68,7 +76,7 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
             <View key={item.id} style={styles.itemRow}>
               <View style={styles.itemInfo}>
                 <Text variant="bodyMedium" style={styles.itemName}>
-                  {item.quantity}x {item.menu_item?.name || 'Unknown'}
+                  {item.quantity}x {item.menu_item?.name || t('kitchen.unknownItem')}
                 </Text>
                 {item.notes && (
                   <Text variant="bodySmall" style={styles.itemNotes}>
@@ -76,19 +84,20 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
                   </Text>
                 )}
               </View>
-              {(item.status === 'new' || item.status === 'preparing') && (
+              {(item.status === 'pending' || item.status === 'preparing') && (
                 <Button
                   compact
                   mode="contained-tonal"
                   onPress={() => onMarkItemReady(item.id)}
                   labelStyle={styles.itemActionLabel}
+                  disabled={isProcessing}
                 >
-                  Ready
+                  {t('kitchen.ready')}
                 </Button>
               )}
               {item.status === 'ready' && (
                 <Chip compact style={styles.readyChip} textStyle={{ color: '#fff', fontSize: 11 }}>
-                  Ready
+                  {t('kitchen.ready')}
                 </Chip>
               )}
             </View>
@@ -97,22 +106,37 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
 
         {/* Actions */}
         <View style={styles.actions}>
-          {order.status === 'new' && (
+          {order.status === ORDER_STATUS.NEW && (
             <Button
               mode="contained"
               onPress={() => onStartPreparing(order.id)}
               style={{ backgroundColor: '#f59e0b' }}
+              disabled={isProcessing}
+              loading={isProcessing}
             >
-              Start Preparing
+              {t('kitchen.startPreparing')}
             </Button>
           )}
-          {order.status === 'preparing' && allItemsReady && (
+          {order.status === ORDER_STATUS.PREPARING && allItemsReady && (
             <Button
               mode="contained"
               onPress={() => onMarkAllReady(order.id)}
               style={{ backgroundColor: '#10b981' }}
+              disabled={isProcessing}
+              loading={isProcessing}
             >
-              All Ready
+              {t('kitchen.allReady')}
+            </Button>
+          )}
+          {order.status === ORDER_STATUS.READY && (
+            <Button
+              mode="contained"
+              onPress={() => onMarkAllServed(order.id)}
+              style={{ backgroundColor: '#8b5cf6' }}
+              disabled={isProcessing}
+              loading={isProcessing}
+            >
+              {t('kitchen.allServed')}
             </Button>
           )}
         </View>

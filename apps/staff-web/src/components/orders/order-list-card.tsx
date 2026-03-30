@@ -15,6 +15,7 @@ import {
   UserCheck,
   XCircle,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 type OrderStatus =
   | 'pending_approval'
@@ -36,12 +37,11 @@ interface OrderListCardProps {
 }
 
 const calculateOrderTotal = (order: any) => {
-  if (order?.total) return order.total;
+  if (order?.total != null) return order.total;
   if (!order?.order_items) return 0;
-  return order.order_items.reduce(
-    (sum: number, item: any) => sum + item.quantity * item.item_price,
-    0,
-  );
+  return order.order_items
+    .filter((item: any) => item.status !== 'cancelled')
+    .reduce((sum: number, item: any) => sum + item.quantity * item.item_price, 0);
 };
 
 const calculatePaidAmount = (order: any) => {
@@ -89,6 +89,7 @@ export function OrderListCard({
   onOpenCancel,
 }: OrderListCardProps) {
   const { t } = useTranslation('staff');
+  const router = useRouter();
 
   const total = calculateOrderTotal(order);
   const paid = calculatePaidAmount(order);
@@ -109,7 +110,7 @@ export function OrderListCard({
             ? 'border-orange-300 bg-orange-50'
             : 'border-gray-200 bg-white'
       }`}
-      onClick={() => (window.location.href = `/orders/${order.id}`)}
+      onClick={() => router.push(`/orders/${order.id}`)}
     >
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0 mb-3">
         <div>
@@ -118,7 +119,7 @@ export function OrderListCard({
               <div className="flex items-center gap-2">
                 <Truck className="h-4 sm:h-5 w-4 sm:w-5 text-purple-600" />
                 <h3 className="font-semibold text-base sm:text-lg text-purple-800">
-                  {t('orders.delivered').replace(/d$/, 'y')}
+                  {t('orders.delivery')}
                 </h3>
               </div>
             ) : isTakeout ? (
@@ -183,7 +184,9 @@ export function OrderListCard({
           </div>
         ))}
         {order.order_items?.length > 3 && (
-          <div className="text-gray-400">+{order.order_items.length - 3} more items</div>
+          <div className="text-gray-400">
+            {t('orders.moreItems', { count: order.order_items.length - 3 })}
+          </div>
         )}
       </div>
 

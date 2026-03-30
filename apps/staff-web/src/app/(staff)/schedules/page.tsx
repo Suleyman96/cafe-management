@@ -37,7 +37,7 @@ function formatDate(d: Date) {
 }
 
 function formatShortDate(d: Date) {
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 function formatTime(time: string) {
@@ -225,15 +225,15 @@ export default function SchedulesPage() {
         <div className="flex items-center gap-3">
           {viewMode === 'monthly' ? (
             <span className="text-sm font-medium text-gray-900">
-              {monthInfo.firstDay.toLocaleDateString('en-US', {
+              {monthInfo.firstDay.toLocaleDateString('default', {
                 month: 'long',
                 year: 'numeric',
               })}
             </span>
           ) : (
             <span className="text-sm font-medium text-gray-900">
-              {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} -{' '}
-              {weekDates[6].toLocaleDateString('en-US', {
+              {weekDates[0].toLocaleDateString('default', { month: 'short', day: 'numeric' })} -{' '}
+              {weekDates[6].toLocaleDateString('default', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
@@ -287,9 +287,9 @@ export default function SchedulesPage() {
                       isToday(d) ? 'text-blue-600 bg-blue-50/50' : 'text-gray-500'
                     }`}
                   >
-                    <div>{d.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                    <div>{d.toLocaleDateString('default', { weekday: 'short' })}</div>
                     <div className="text-sm font-bold">
-                      {d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                      {d.toLocaleDateString('default', { day: 'numeric', month: 'short' })}
                     </div>
                   </th>
                 ))}
@@ -391,7 +391,7 @@ export default function SchedulesPage() {
           <div className="bg-white rounded-lg shadow">
             <div className="px-4 sm:px-6 py-3 border-b">
               <h2 className="text-lg font-semibold">
-                {new Date(selectedDate).toLocaleDateString('en-US', {
+                {new Date(selectedDate).toLocaleDateString('default', {
                   weekday: 'long',
                   month: 'long',
                   day: 'numeric',
@@ -460,7 +460,7 @@ export default function SchedulesPage() {
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600">
                             {sched.actual_start
-                              ? new Date(sched.actual_start).toLocaleTimeString('en-US', {
+                              ? new Date(sched.actual_start).toLocaleTimeString('default', {
                                   hour: '2-digit',
                                   minute: '2-digit',
                                 })
@@ -468,7 +468,7 @@ export default function SchedulesPage() {
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600">
                             {sched.actual_end
-                              ? new Date(sched.actual_end).toLocaleTimeString('en-US', {
+                              ? new Date(sched.actual_end).toLocaleTimeString('default', {
                                   hour: '2-digit',
                                   minute: '2-digit',
                                 })
@@ -508,7 +508,11 @@ export default function SchedulesPage() {
         <div className="bg-white rounded-lg shadow">
           {/* Calendar header */}
           <div className="grid grid-cols-7 border-b">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+            {Array.from({ length: 7 }, (_, i) => {
+              // Jan 1, 2024 is a Monday — generate locale-aware day names
+              const d = new Date(2024, 0, 1 + i);
+              return d.toLocaleDateString('default', { weekday: 'short' });
+            }).map((day) => (
               <div
                 key={day}
                 className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase"

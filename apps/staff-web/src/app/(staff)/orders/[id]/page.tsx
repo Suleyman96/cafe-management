@@ -18,10 +18,13 @@ import {
   Truck,
   User,
   UtensilsCrossed,
+  XCircle,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { DiscountModal } from '@/components/modals/discount-modal';
+import { RefundModal } from '@/components/modals/refund-modal';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import { OrderDetailActions } from '@/components/orders/order-detail-actions';
 import { OrderDetailDelivery } from '@/components/orders/order-detail-delivery';
@@ -29,13 +32,17 @@ import {
   calculateTax as calculateTaxFromSettings,
   useAssignDeliveryPerson,
   useCafeSettings,
+  useMarkDelivered,
+  useMarkOutForDelivery,
   useOrder,
   useOrderPayments,
+  useOrderRefunds,
   useOrderTransferHistory,
   useStaff,
   useUpdateOrderItemStatus,
   useUpdateOrderStatus,
 } from '@/hooks';
+import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { supabase } from '@/lib/supabase/client';
 
@@ -83,9 +90,17 @@ export default function OrderDetailPage() {
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const assignDeliveryPerson = useAssignDeliveryPerson();
+  const markOutForDelivery = useMarkOutForDelivery();
+  const markDelivered = useMarkDelivered();
   const { data: staffList } = useStaff();
+  const { data: refundsData } = useOrderRefunds(orderId);
+  const { staff: currentStaff } = useAuth();
+  const canDiscount = currentStaff?.role === 'admin' || currentStaff?.role === 'owner';
+  const canRefund = currentStaff?.role === 'admin' || currentStaff?.role === 'owner';
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+  const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
   const [openItemMenu, setOpenItemMenu] = useState<string | null>(null);
 
   // Set up real-time subscription
@@ -135,19 +150,18 @@ export default function OrderDetailPage() {
     };
   }, [orderId, refetch]);
 
-  // Calculate subtotal from items (before tax)
+  // Calculate subtotal from non-cancelled items (before tax)
   const calculateSubtotal = () => {
     if (!order?.order_items) return 0;
-    return order.order_items.reduce(
-      (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
-      0,
-    );
+    return order.order_items
+      .filter((item: OrderItem) => item.status !== 'cancelled')
+      .reduce((sum: number, item: OrderItem) => sum + item.quantity * item.item_price, 0);
   };
 
   // Get order total from the database (includes tax) for consistency
   // Fall back to calculating from items if total is not set
   const calculateOrderTotal = () => {
-    if (order?.total) return order.total;
+    if (order?.total != null) return order.total;
     const subtotal = calculateSubtotal();
     // Use cafe settings for tax calculation
     if (cafeSettings?.tax_enabled) {
@@ -235,6 +249,13 @@ export default function OrderDetailPage() {
           icon: <UtensilsCrossed className="h-3 w-3" />,
           label: t('orders.served'),
         };
+      case 'cancelled':
+        return {
+          bg: 'bg-red-100',
+          text: 'text-red-700',
+          icon: <XCircle className="h-3 w-3" />,
+          label: t('orders.cancelled'),
+        };
       default:
         return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, label: status };
     }
@@ -299,13 +320,26 @@ export default function OrderDetailPage() {
     }
   };
 
-  // Handle status update
+  // Handle status update — uses delivery-specific hooks for delivery orders
   const handleStatusUpdate = async (newStatus: keyof typeof ORDER_STATUS) => {
     try {
-      await updateOrderStatus.mutateAsync({
-        orderId,
-        status: newStatus,
-      });
+      if (order?.order_type === 'delivery' && newStatus === 'OUT_FOR_DELIVERY') {
+        if (!order.delivery_person_id) {
+          toast.error(t('delivery.assignDriverFirst'));
+          return;
+        }
+        await markOutForDelivery.mutateAsync({
+          orderId,
+          deliveryPersonId: order.delivery_person_id,
+        });
+      } else if (order?.order_type === 'delivery' && newStatus === 'DELIVERED') {
+        await markDelivered.mutateAsync(orderId);
+      } else {
+        await updateOrderStatus.mutateAsync({
+          orderId,
+          status: newStatus,
+        });
+      }
       toast.success(`${t('orders.statusUpdated')} ${String(newStatus).toLowerCase()}`);
     } catch (_error) {
       toast.error(t('orders.failedUpdateStatus'));
@@ -463,14 +497,26 @@ export default function OrderDetailPage() {
           {order.order_items?.map((item: OrderItem) => {
             const statusBadge = getItemStatusBadge(item.status);
             const isMenuOpen = openItemMenu === item.id;
+            const isCancelled = item.status === 'cancelled';
 
             return (
-              <div key={item.id} className="px-3 sm:px-4 py-2 sm:py-3">
+              <div
+                key={item.id}
+                className={`px-3 sm:px-4 py-2 sm:py-3 ${isCancelled ? 'opacity-50' : ''}`}
+              >
                 <div className="flex justify-between items-start gap-2 sm:gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm sm:text-base">{item.quantity}x</span>
-                      <span className="text-sm sm:text-base truncate">{item.menu_item?.name}</span>
+                      <span
+                        className={`font-medium text-sm sm:text-base ${isCancelled ? 'line-through text-gray-400' : ''}`}
+                      >
+                        {item.quantity}x
+                      </span>
+                      <span
+                        className={`text-sm sm:text-base truncate ${isCancelled ? 'line-through text-gray-400' : ''}`}
+                      >
+                        {item.menu_item?.name}
+                      </span>
                     </div>
                     {item.notes && (
                       <p className="text-xs sm:text-sm text-gray-600 mt-1 flex items-start gap-1">
@@ -480,46 +526,59 @@ export default function OrderDetailPage() {
                     )}
                   </div>
 
-                  {/* Item Status Dropdown */}
-                  <div className="relative flex-shrink-0">
-                    <button
-                      onClick={() => setOpenItemMenu(isMenuOpen ? null : item.id)}
-                      className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${statusBadge.bg} ${statusBadge.text} hover:opacity-80`}
+                  {/* Item Status Badge (no dropdown for cancelled items) */}
+                  {isCancelled ? (
+                    <span
+                      className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}
                     >
                       {statusBadge.icon}
                       <span className="hidden xs:inline">{statusBadge.label}</span>
-                      <ChevronDown
-                        className={`h-3 w-3 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
-                      />
-                    </button>
+                    </span>
+                  ) : (
+                    <div className="relative flex-shrink-0">
+                      <button
+                        onClick={() => setOpenItemMenu(isMenuOpen ? null : item.id)}
+                        className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${statusBadge.bg} ${statusBadge.text} hover:opacity-80`}
+                      >
+                        {statusBadge.icon}
+                        <span className="hidden xs:inline">{statusBadge.label}</span>
+                        <ChevronDown
+                          className={`h-3 w-3 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
+                        />
+                      </button>
 
-                    {isMenuOpen && (
-                      <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 min-w-[140px]">
-                        {itemStatusOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => handleItemStatusUpdate(item.id, option.value)}
-                            disabled={item.status === option.value}
-                            className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
-                              item.status === option.value
-                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                : 'hover:bg-gray-50 text-gray-700'
-                            }`}
-                          >
-                            {option.icon}
-                            {option.label}
-                            {item.status === option.value && (
-                              <CheckCircle className="h-3 w-3 ml-auto text-green-500" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                      {isMenuOpen && (
+                        <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 min-w-[140px]">
+                          {itemStatusOptions.map((option) => (
+                            <button
+                              key={option.value}
+                              onClick={() => handleItemStatusUpdate(item.id, option.value)}
+                              disabled={item.status === option.value}
+                              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
+                                item.status === option.value
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : 'hover:bg-gray-50 text-gray-700'
+                              }`}
+                            >
+                              {option.icon}
+                              {option.label}
+                              {item.status === option.value && (
+                                <CheckCircle className="h-3 w-3 ml-auto text-green-500" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="text-right flex-shrink-0">
-                    <p className="font-medium">{formatPrice(item.quantity * item.item_price)}</p>
-                    <p className="text-sm text-gray-600">
+                    <p className={`font-medium ${isCancelled ? 'line-through text-gray-400' : ''}`}>
+                      {formatPrice(item.quantity * item.item_price)}
+                    </p>
+                    <p
+                      className={`text-sm ${isCancelled ? 'line-through text-gray-400' : 'text-gray-600'}`}
+                    >
                       {formatPrice(item.item_price)} {t('each', { ns: 'common' })}
                     </p>
                   </div>
@@ -529,16 +588,30 @@ export default function OrderDetailPage() {
           })}
         </div>
         <div className="border-t px-4 py-3 space-y-2">
-          {order && order.tax > 0 && (
+          {order && (order.tax > 0 || (order.discount_amount ?? 0) > 0) && (
             <>
               <div className="flex justify-between items-center text-sm text-gray-600">
                 <span>{t('subtotal', { ns: 'common' })}</span>
                 <span>{formatPrice(order.subtotal)}</span>
               </div>
-              <div className="flex justify-between items-center text-sm text-gray-600">
-                <span>{t('orders.tax')}</span>
-                <span>{formatPrice(order.tax)}</span>
-              </div>
+              {(order.discount_amount ?? 0) > 0 && (
+                <div className="flex justify-between items-center text-sm text-red-600">
+                  <span>
+                    {t('orders.discount')} (
+                    {order.discount_type === 'percentage'
+                      ? `${order.discount_value}%`
+                      : formatPrice(order.discount_value ?? 0)}
+                    )
+                  </span>
+                  <span>-{formatPrice(order.discount_amount ?? 0)}</span>
+                </div>
+              )}
+              {order.tax > 0 && (
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <span>{t('orders.tax')}</span>
+                  <span>{formatPrice(order.tax)}</span>
+                </div>
+              )}
             </>
           )}
           <div
@@ -620,6 +693,10 @@ export default function OrderDetailPage() {
         }
         onStatusUpdate={handleStatusUpdate}
         onOpenPayment={() => setIsPaymentModalOpen(true)}
+        onOpenDiscount={() => setIsDiscountModalOpen(true)}
+        canDiscount={canDiscount}
+        onOpenRefund={() => setIsRefundModalOpen(true)}
+        canRefund={canRefund && (payments?.length ?? 0) > 0}
       />
 
       <SplitPaymentModal
@@ -631,6 +708,27 @@ export default function OrderDetailPage() {
           toast.success(t('orders.paymentProcessed'));
           refetch();
         }}
+      />
+
+      <DiscountModal
+        isOpen={isDiscountModalOpen}
+        onClose={() => setIsDiscountModalOpen(false)}
+        orderId={order.id}
+        orderSubtotal={calculateSubtotal()}
+        currentDiscountType={order.discount_type || 'none'}
+        currentDiscountValue={order.discount_value ?? 0}
+        onSuccess={() => refetch()}
+      />
+
+      <RefundModal
+        isOpen={isRefundModalOpen}
+        onClose={() => setIsRefundModalOpen(false)}
+        orderId={order.id}
+        totalPaid={paid}
+        totalRefunded={
+          (refundsData as any[])?.reduce((sum: number, r: any) => sum + r.amount, 0) || 0
+        }
+        onSuccess={() => refetch()}
       />
     </div>
   );
