@@ -44,7 +44,10 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
             const tableData = data as { table_number: string } | null;
 
             if (tableData) {
-              await notifyWaiterCall(tableData.table_number, newRecord.reason as string);
+              await notifyWaiterCall(
+                tableData.table_number,
+                (newRecord.call_type as string) ?? 'assistance',
+              );
             }
 
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
@@ -95,8 +98,7 @@ export function useUpdateWaiterCall() {
       if (status === 'resolved') {
         return await db.waiterCalls.resolve(callId);
       }
-      // Fallback for other statuses
-      return await db.waiterCalls.acknowledge(callId, staffId || '');
+      throw new Error(`Unsupported waiter call status: ${status}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });

@@ -15,6 +15,7 @@ interface TableCardProps {
   activeOrderCount: number;
   orderTotal: number;
   hasWaiterCall: boolean;
+  currencySymbol: string;
   onPress: () => void;
 }
 
@@ -23,6 +24,7 @@ export const TableCard = React.memo(function TableCard({
   activeOrderCount,
   orderTotal,
   hasWaiterCall,
+  currencySymbol,
   onPress,
 }: TableCardProps) {
   const borderColor = TABLE_STATUS_COLORS[table.status] || '#6b7280';
@@ -51,7 +53,8 @@ export const TableCard = React.memo(function TableCard({
               {activeOrderCount} order{activeOrderCount > 1 ? 's' : ''}
             </Text>
             <Text variant="bodySmall" style={styles.orderTotal}>
-              ${orderTotal.toFixed(2)}
+              {currencySymbol}
+              {orderTotal.toFixed(2)}
             </Text>
           </View>
         )}

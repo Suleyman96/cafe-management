@@ -105,7 +105,7 @@ export function createWaiterCallsWrapper(ctx: WrapperContext) {
         .eq('status', 'pending');
 
       if (error) throw handleSupabaseError(error);
-      return count || 0;
+      return count ?? 0;
     },
   };
 }

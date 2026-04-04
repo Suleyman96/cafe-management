@@ -20,7 +20,8 @@ import {
 import { useMemo, useState } from 'react';
 import { StaffPerformanceSection } from '@/components/reports/staff-performance-section';
 import { WasteSection } from '@/components/reports/waste-section';
-import { useAuth, useExpenses, useOrders, useStaff, useWasteLogs } from '@/hooks';
+import { ZReportSection } from '@/components/reports/z-report-section';
+import { useAuth, useExpenses, useOrders, useStaff, useWasteLogs, useZReport } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { exportReportToPDF } from '@/lib/report-pdf-export';
 
@@ -110,6 +111,10 @@ export default function ReportsPage() {
     startDate: expenseDateRange.startDate,
     endDate: expenseDateRange.endDate,
   });
+  const { data: zReportPayments = [] } = useZReport(
+    `${expenseDateRange.startDate}T00:00:00`,
+    `${expenseDateRange.endDate}T00:00:00`,
+  );
 
   // Check if we can navigate to next (prevent future dates)
   const canNavigateNext = useMemo(() => {
@@ -302,6 +307,33 @@ export default function ReportsPage() {
       return Array.from(itemCounts.values()).sort((a, b) => b.count - a.count);
     })(),
   };
+
+  // Calculate discount metrics
+  const totalDiscounts = filteredOrders.reduce(
+    (sum: number, order: any) => sum + (order.discount_amount ?? 0),
+    0,
+  );
+
+  // Calculate Z-Report metrics from payments
+  const zReportData = useMemo(() => {
+    const data = {
+      cashTotal: 0,
+      cardTotal: 0,
+      digitalTotal: 0,
+      tipsCollected: 0,
+      paymentCount: zReportPayments.length,
+      totalDiscounts,
+    };
+    for (const p of zReportPayments as any[]) {
+      const amount = p.amount || 0;
+      const tip = p.tip_amount || 0;
+      if (p.payment_method === 'cash') data.cashTotal += amount;
+      else if (p.payment_method === 'card') data.cardTotal += amount;
+      else if (p.payment_method === 'digital') data.digitalTotal += amount;
+      data.tipsCollected += tip;
+    }
+    return data;
+  }, [zReportPayments, totalDiscounts]);
 
   // Calculate profit/loss metrics
   const profitMetrics = useMemo(
@@ -635,7 +667,7 @@ export default function ReportsPage() {
           <h2 className="text-base sm:text-lg font-semibold">{t('reports.profitLoss')}</h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
           <div className="bg-green-50 rounded-lg p-3 sm:p-4">
             <div className="flex items-center justify-between mb-1">
               <p className="text-xs sm:text-sm text-green-700">{t('reports.revenue')}</p>
@@ -643,6 +675,16 @@ export default function ReportsPage() {
             </div>
             <p className="text-lg sm:text-2xl font-bold text-green-700">
               {formatPrice(metrics.totalRevenue)}
+            </p>
+          </div>
+
+          <div className="bg-orange-50 rounded-lg p-3 sm:p-4">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs sm:text-sm text-orange-700">{t('reports.totalDiscounts')}</p>
+              <Receipt className="h-4 w-4 text-orange-600" />
+            </div>
+            <p className="text-lg sm:text-2xl font-bold text-orange-700">
+              {formatPrice(totalDiscounts)}
             </p>
           </div>
 
@@ -724,6 +766,9 @@ export default function ReportsPage() {
           <p className="text-gray-500 text-center py-4 text-sm">{t('reports.noExpenses')}</p>
         )}
       </div>
+
+      {/* Z-Report */}
+      <ZReportSection data={zReportData} formatPrice={formatPrice} />
 
       {/* Waste Summary */}
       <WasteSection wasteMetrics={wasteMetrics} formatPrice={formatPrice} />

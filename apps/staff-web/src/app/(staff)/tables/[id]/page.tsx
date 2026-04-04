@@ -30,7 +30,6 @@ import { OrderItemsList } from '@/components/tables/order-items-list';
 import { TableCart } from '@/components/tables/table-cart';
 import {
   useAddOrderItems,
-  useCafeSettings,
   useCancelOrder,
   useCancelOrderItem,
   useCategories,
@@ -38,6 +37,7 @@ import {
   useMenuItems,
   useOrders,
   useTable,
+  useTaxMultiplier,
   useUpdateOrderItemStatus,
   useUpdateOrderStatus,
 } from '@/hooks';
@@ -73,8 +73,8 @@ export default function TableDetailPage() {
   const updateItemStatus = useUpdateOrderItemStatus();
   const cancelOrder = useCancelOrder();
   const cancelOrderItem = useCancelOrderItem();
-  const { data: cafeSettings } = useCafeSettings();
   const formatPrice = useFormatPrice();
+  const taxMultiplier = useTaxMultiplier();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -113,7 +113,7 @@ export default function TableDetailPage() {
   // Reset selected order when tableId changes (navigating to a different table)
   useEffect(() => {
     setSelectedOrderIndex(0);
-  }, []);
+  }, [tableId]);
 
   // Create order with items (for new orders on free tables)
   const handleCreateOrderWithItems = async () => {
@@ -216,34 +216,25 @@ export default function TableDetailPage() {
     return cart.find((item) => item.menuItem.id === menuItemId)?.quantity || 0;
   };
 
-  // Tax multiplier for displaying tax-inclusive prices
-  const taxMultiplier =
-    cafeSettings?.tax_enabled && cafeSettings.tax_percentage > 0
-      ? 1 + cafeSettings.tax_percentage / 100
-      : 1;
-
-  // Calculate cart total (tax-inclusive)
-  const cartTotal =
-    cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0) * taxMultiplier;
+  // Calculate cart subtotal (tax is added at order level by DB trigger)
+  const cartTotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
 
   // Get order total from database (includes tax) for consistency
-  // Fall back to calculating from items if total is not set
+  // Fall back to calculating from non-cancelled items if total is not set
   const orderTotal =
-    activeOrder?.total ||
-    activeOrder?.order_items?.reduce(
-      (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
-      0,
-    ) ||
+    activeOrder?.total ??
+    activeOrder?.order_items
+      ?.filter((item: OrderItem) => item.status !== 'cancelled')
+      .reduce((sum: number, item: OrderItem) => sum + item.quantity * item.item_price, 0) ??
     0;
 
   // Calculate combined total for all orders on this table
   const combinedTotal = activeOrders.reduce((total: number, order) => {
     const orderSum =
-      order.total ||
-      order.order_items?.reduce(
-        (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
-        0,
-      ) ||
+      order.total ??
+      order.order_items
+        ?.filter((item: OrderItem) => item.status !== 'cancelled')
+        .reduce((sum: number, item: OrderItem) => sum + item.quantity * item.item_price, 0) ??
       0;
     return total + orderSum;
   }, 0);
@@ -482,10 +473,12 @@ export default function TableDetailPage() {
           <div className="flex gap-2 flex-wrap">
             {activeOrders.map((order, index) => {
               const orderItemsTotal =
-                order.order_items?.reduce(
-                  (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
-                  0,
-                ) || 0;
+                order.order_items
+                  ?.filter((item: OrderItem) => item.status !== 'cancelled')
+                  .reduce(
+                    (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
+                    0,
+                  ) ?? 0;
               return (
                 <button
                   key={order.id}
@@ -687,7 +680,6 @@ export default function TableDetailPage() {
           submitting={submitting}
           orderNotes={orderNotes}
           cartTotal={cartTotal}
-          taxMultiplier={taxMultiplier}
           formatPrice={formatPrice}
           onAddToCart={addToCart}
           onRemoveFromCart={removeFromCart}

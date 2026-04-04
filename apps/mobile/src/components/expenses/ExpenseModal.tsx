@@ -43,6 +43,7 @@ export function ExpenseModal({
   });
 
   useEffect(() => {
+    if (!visible) return;
     if (initialData) {
       setForm({
         description: initialData.description || '',
@@ -62,7 +63,7 @@ export function ExpenseModal({
         notes: '',
       });
     }
-  }, [initialData]);
+  }, [visible, initialData]);
 
   const handleSubmit = () => {
     const amount = Number.parseFloat(form.amount);

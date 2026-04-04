@@ -7,13 +7,9 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useAddOrderItems, useCreateOrder, useOrder } from '@/hooks/use-order';
-import {
-  calculateTax,
-  calculateTotal,
-  getDisplaySubtotal,
-  useCafeSettings,
-} from '@/hooks/use-settings';
+import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
+import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
 import {
   accentButtonStyle,
   glassBorderStyle,
@@ -40,11 +36,10 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
   const createOrder = useCreateOrder();
   const addOrderItems = useAddOrderItems();
   const { data: settings } = useCafeSettings();
+  const taxMultiplier = useTaxMultiplier();
 
   const cartSubtotal = getTotal();
-  const displaySubtotal = settings ? getDisplaySubtotal(cartSubtotal, settings) : cartSubtotal;
-  const tax = settings ? calculateTax(cartSubtotal, settings) : 0;
-  const total = settings ? calculateTotal(cartSubtotal, settings) : cartSubtotal;
+  const total = cartSubtotal * taxMultiplier;
   const minimumOrderMet = !settings?.minimum_order_amount || total >= settings.minimum_order_amount;
 
   const priceDisplay = useFormatPrice();
@@ -126,7 +121,9 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xs font-semibold text-white truncate">{name}</h4>
-                  <p className="text-[11px] text-white/30">{priceDisplay(item.menuItem.price)}</p>
+                  <p className="text-[11px] text-white/30">
+                    {priceDisplay(item.menuItem.price * taxMultiplier)}
+                  </p>
                 </div>
                 <button
                   onClick={() => removeItem(item.menuItem.id)}
@@ -161,7 +158,7 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
                   </button>
                 </div>
                 <span className="text-xs font-bold" style={{ color: accentColor }}>
-                  {priceDisplay(item.menuItem.price * item.quantity)}
+                  {priceDisplay(item.menuItem.price * item.quantity * taxMultiplier)}
                 </span>
               </div>
             </div>
@@ -185,28 +182,14 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
       {/* Price Summary + Place Order */}
       <div className="px-4 pt-3 pb-4" style={glassBorderStyle}>
         <div className="space-y-1.5 mb-3">
-          {settings?.tax_enabled && settings?.show_tax_separately ? (
-            <>
-              <div className="flex justify-between text-[11px]">
-                <span className="text-white/40">{t('subtotal', { ns: 'common' })}</span>
-                <span className="text-white/60">{priceDisplay(displaySubtotal)}</span>
-              </div>
-              <div className="flex justify-between text-[11px]">
-                <span className="text-white/40">
-                  {settings.tax_label} ({settings.tax_percentage}%)
-                </span>
-                <span className="text-white/60">{priceDisplay(tax)}</span>
-              </div>
-              <div className="flex justify-between text-sm font-bold pt-2" style={glassBorderStyle}>
-                <span className="text-white">{t('total', { ns: 'common' })}</span>
-                <span style={{ color: accentColor }}>{priceDisplay(total)}</span>
-              </div>
-            </>
-          ) : (
-            <div className="flex justify-between text-sm font-bold">
-              <span className="text-white">{t('total', { ns: 'common' })}</span>
-              <span style={{ color: accentColor }}>{priceDisplay(total)}</span>
-            </div>
+          <div className="flex justify-between text-sm font-bold">
+            <span className="text-white">{t('total', { ns: 'common' })}</span>
+            <span style={{ color: accentColor }}>{priceDisplay(total)}</span>
+          </div>
+          {taxMultiplier !== 1 && (
+            <p className="text-[10px] text-white/20 text-right">
+              {t('menu.inclTax', { percent: String(settings?.tax_percentage ?? 18) })}
+            </p>
           )}
         </div>
 

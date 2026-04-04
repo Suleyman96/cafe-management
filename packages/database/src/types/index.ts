@@ -76,6 +76,10 @@ export type Task = Database['public']['Tables']['tasks']['Row'];
 export type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
 export type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
 
+export type Refund = Database['public']['Tables']['refunds']['Row'];
+export type RefundInsert = Database['public']['Tables']['refunds']['Insert'];
+export type RefundUpdate = Database['public']['Tables']['refunds']['Update'];
+
 // Extended types with relations
 export interface OrderWithDetails extends Order {
   table: Pick<Table, 'table_number' | 'location'>;
@@ -127,6 +131,11 @@ export interface WasteLogWithDetails extends WasteLog {
 export interface TaskWithDetails extends Task {
   assigned_to_staff: Pick<Staff, 'full_name'> | null;
   created_by_staff: Pick<Staff, 'full_name'> | null;
+}
+
+// Refund with staff info
+export interface RefundWithStaff extends Refund {
+  processed_by_staff: Pick<Staff, 'full_name' | 'role'>;
 }
 
 // Stock movement with staff info

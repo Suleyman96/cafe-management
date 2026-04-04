@@ -141,7 +141,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
                 keyboardType="numeric"
                 left={<TextInput.Icon icon="truck-delivery" />}
               />
-              {settings?.delivery_fee_default ? (
+              {settings?.delivery_fee_default != null ? (
                 <Text variant="bodySmall" style={styles.defaultFee}>
                   Default: {settings.currency_symbol || '$'}
                   {settings.delivery_fee_default.toFixed(2)}

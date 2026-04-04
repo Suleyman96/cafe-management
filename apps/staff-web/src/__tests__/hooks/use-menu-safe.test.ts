@@ -7,7 +7,6 @@ import {
   useDeleteMenuItem,
   useMenuItem,
   useMenuItems,
-  useMenuItemsByCategory,
   useToggleMenuItemAvailability,
   useUpdateCategory,
   useUpdateMenuItem,
@@ -30,7 +29,7 @@ describe('useMenuItems', () => {
   });
 
   it('returns fetched menu items', async () => {
-    const mockItems = [{ id: 'm1', name_en: 'Pizza', price: 10 }];
+    const mockItems = [{ id: 'm1', name: 'Pizza', price: 10 }];
     (db.menuItems.findAll as any).mockResolvedValueOnce(mockItems);
 
     const { result } = renderHookWithProviders(() => useMenuItems());
@@ -60,7 +59,7 @@ describe('useMenuItem', () => {
   });
 
   it('returns data on success', async () => {
-    const mockItem = { id: 'm1', name_en: 'Pizza', price: 10 };
+    const mockItem = { id: 'm1', name: 'Pizza', price: 10 };
     (db.menuItems.findById as any).mockResolvedValueOnce(mockItem);
 
     const { result } = renderHookWithProviders(() => useMenuItem('m1'));
@@ -86,8 +85,8 @@ describe('useCategories', () => {
 
   it('returns fetched categories', async () => {
     const mockCategories = [
-      { id: 'c1', name_en: 'Food' },
-      { id: 'c2', name_en: 'Drinks' },
+      { id: 'c1', name: 'Food' },
+      { id: 'c2', name: 'Drinks' },
     ];
     (db.categories.findAll as any).mockResolvedValueOnce(mockCategories);
 
@@ -128,7 +127,7 @@ describe('useUpdateMenuItem', () => {
 
 describe('useCreateMenuItem', () => {
   it('calls db.menuItems.create with data', async () => {
-    const data = { name_en: 'Burger', price: 10, category_id: 'c1' };
+    const data = { name: 'Burger', price: 10, category_id: 'c1' };
     const { result } = renderHookWithProviders(() => useCreateMenuItem());
     await result.current.mutateAsync(data as any);
     expect(db.menuItems.create).toHaveBeenCalledWith(data);
@@ -138,7 +137,7 @@ describe('useCreateMenuItem', () => {
     const { result, queryClient } = renderHookWithProviders(() => useCreateMenuItem());
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    await result.current.mutateAsync({ name_en: 'Burger' } as any);
+    await result.current.mutateAsync({ name: 'Burger' } as any);
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.MENU_ITEMS]);
@@ -146,17 +145,17 @@ describe('useCreateMenuItem', () => {
 });
 
 describe('useToggleMenuItemAvailability', () => {
-  it('calls db.menuItems.toggleAvailability with id', async () => {
+  it('calls db.menuItems.toggleAvailability with id and currentAvailable', async () => {
     const { result } = renderHookWithProviders(() => useToggleMenuItemAvailability());
-    await result.current.mutateAsync('m1');
-    expect(db.menuItems.toggleAvailability).toHaveBeenCalledWith('m1');
+    await result.current.mutateAsync({ id: 'm1', currentAvailable: true });
+    expect(db.menuItems.toggleAvailability).toHaveBeenCalledWith('m1', true);
   });
 
   it('invalidates MENU_ITEMS on success', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useToggleMenuItemAvailability());
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    await result.current.mutateAsync('m1');
+    await result.current.mutateAsync({ id: 'm1', currentAvailable: true });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.MENU_ITEMS]);
@@ -185,7 +184,7 @@ describe('useDeleteMenuItem', () => {
 
 describe('useCreateCategory', () => {
   it('calls db.categories.create with data', async () => {
-    const data = { name_en: 'Drinks' };
+    const data = { name: 'Drinks' };
     const { result } = renderHookWithProviders(() => useCreateCategory());
     await result.current.mutateAsync(data as any);
     expect(db.categories.create).toHaveBeenCalledWith(data);
@@ -195,7 +194,7 @@ describe('useCreateCategory', () => {
     const { result, queryClient } = renderHookWithProviders(() => useCreateCategory());
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    await result.current.mutateAsync({ name_en: 'Drinks' } as any);
+    await result.current.mutateAsync({ name: 'Drinks' } as any);
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.CATEGORIES]);
@@ -246,7 +245,7 @@ describe('mutation error handling', () => {
   it('useCreateMenuItem rejects when db call fails', async () => {
     (db.menuItems.create as any).mockRejectedValueOnce(new Error('Create failed'));
     const { result } = renderHookWithProviders(() => useCreateMenuItem());
-    await expect(result.current.mutateAsync({ name_en: 'Burger' } as any)).rejects.toThrow(
+    await expect(result.current.mutateAsync({ name: 'Burger' } as any)).rejects.toThrow(
       'Create failed',
     );
   });
@@ -255,33 +254,5 @@ describe('mutation error handling', () => {
     (db.categories.delete as any).mockRejectedValueOnce(new Error('Delete failed'));
     const { result } = renderHookWithProviders(() => useDeleteCategory());
     await expect(result.current.mutateAsync('c1')).rejects.toThrow('Delete failed');
-  });
-});
-
-// ─── Composite Hook ─────────────────────────────────────────────────────────
-
-describe('useMenuItemsByCategory', () => {
-  it('groups menu items by category_id', async () => {
-    const items = [
-      { id: 'm1', category_id: 'c1', name_en: 'Pizza' },
-      { id: 'm2', category_id: 'c1', name_en: 'Pasta' },
-      { id: 'm3', category_id: 'c2', name_en: 'Coke' },
-      { id: 'm4', category_id: null, name_en: 'Special' },
-    ];
-    (db.menuItems.findAll as any).mockResolvedValueOnce(items);
-    (db.categories.findAll as any).mockResolvedValueOnce([
-      { id: 'c1', name_en: 'Food' },
-      { id: 'c2', name_en: 'Drinks' },
-    ]);
-
-    const { result } = renderHookWithProviders(() => useMenuItemsByCategory());
-
-    await vi.waitFor(() => {
-      expect(result.current.data.groupedItems.c1).toHaveLength(2);
-    });
-
-    expect(result.current.data.groupedItems.c2).toHaveLength(1);
-    expect(result.current.data.groupedItems.uncategorized).toHaveLength(1);
-    expect(result.current.data.categories).toHaveLength(2);
   });
 });

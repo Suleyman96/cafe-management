@@ -63,14 +63,18 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
   const handleSubmit = () => {
     if (!title.trim()) return;
 
-    const data: any = {
+    const data: Record<string, unknown> = {
       title: title.trim(),
       description: description.trim() || null,
       priority,
       assigned_to: assignedTo || null,
-      created_by: staffId || null,
-      status: 'pending',
     };
+
+    // Only set created_by and status when creating a new task
+    if (!isEditing) {
+      data.created_by = staffId || null;
+      data.status = 'pending';
+    }
 
     if (isRecurring) {
       data.is_recurring = true;

@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useMemo, useState } from 'react';
@@ -13,6 +14,7 @@ type NavProp = StackNavigationProp<StaffManagementStackParamList, 'StaffList'>;
 const ROLES: Staff['role'][] = ['waiter', 'kitchen', 'admin', 'owner'];
 
 export default function StaffListScreen() {
+  const { t } = useTranslation('staff');
   const navigation = useNavigation<NavProp>();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<Staff['role'] | undefined>();
@@ -29,13 +31,13 @@ export default function StaffListScreen() {
     );
   }, [staffList, search]);
 
-  if (isLoading) return <LoadingScreen message="Loading staff..." />;
+  if (isLoading) return <LoadingScreen message={t('staffMgmt.loadingStaff')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
   return (
     <View style={styles.container}>
       <Searchbar
-        placeholder="Search staff..."
+        placeholder={t('staffMgmt.searchPlaceholder')}
         value={search}
         onChangeText={setSearch}
         style={styles.search}
@@ -43,7 +45,7 @@ export default function StaffListScreen() {
 
       <View style={styles.filterRow}>
         <Chip compact selected={!roleFilter} onPress={() => setRoleFilter(undefined)}>
-          All
+          {t('staffMgmt.allRoles')}
         </Chip>
         {ROLES.map((r) => (
           <Chip
@@ -52,7 +54,7 @@ export default function StaffListScreen() {
             selected={roleFilter === r}
             onPress={() => setRoleFilter(roleFilter === r ? undefined : r)}
           >
-            {r.charAt(0).toUpperCase() + r.slice(1)}
+            {t(`staffMgmt.role.${r}`)}
           </Chip>
         ))}
       </View>
@@ -67,7 +69,7 @@ export default function StaffListScreen() {
             onPress={(id) => navigation.navigate('StaffDetail', { staffId: id })}
           />
         )}
-        ListEmptyComponent={<EmptyState icon="account-off" title="No staff found" />}
+        ListEmptyComponent={<EmptyState icon="account-off" title={t('staffMgmt.noStaff')} />}
         contentContainerStyle={styles.list}
       />
     </View>

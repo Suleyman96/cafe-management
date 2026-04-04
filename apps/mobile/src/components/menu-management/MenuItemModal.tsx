@@ -46,9 +46,9 @@ export function MenuItemModal({
       setForm({
         name: initialData.name || '',
         description: initialData.description || '',
-        price: String(initialData.price || ''),
+        price: String(initialData.price ?? ''),
         category_id: initialData.category_id || '',
-        preparation_time: String(initialData.preparation_time || ''),
+        preparation_time: String(initialData.preparation_time ?? ''),
         display_order: String(initialData.display_order ?? '0'),
         is_available: initialData.is_available ?? true,
         is_popular: initialData.is_popular ?? false,
@@ -92,7 +92,7 @@ export function MenuItemModal({
     onSubmit({
       ...form,
       price: parseFloat(form.price) || 0,
-      preparation_time: parseInt(form.preparation_time, 10) || null,
+      preparation_time: form.preparation_time ? parseInt(form.preparation_time, 10) : null,
       display_order: parseInt(form.display_order, 10) || 0,
       category_id: form.category_id || null,
     });

@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { PricingSettings } from '../utils';
 import {
+  calculateChange,
   calculateTax,
   calculateTaxWithSettings,
   calculateTotal,
   calculateTotalWithSettings,
   formatPriceWithSettings,
+  getDenominations,
   getDisplaySubtotal,
 } from '../utils';
 
@@ -185,5 +187,42 @@ describe('getDisplaySubtotal', () => {
   it('handles negative subtotal with inclusive pricing', () => {
     const settings = { ...defaultSettings, prices_include_tax: true };
     expect(getDisplaySubtotal(-118, settings)).toBeCloseTo(-100, 2);
+  });
+});
+
+// ─── Cash Change Utilities ───────────────────────────────────────
+
+describe('calculateChange', () => {
+  it('returns correct change when tendered > amount', () => {
+    expect(calculateChange(50, 43.5)).toBeCloseTo(6.5, 2);
+  });
+
+  it('returns 0 when tendered equals amount', () => {
+    expect(calculateChange(20, 20)).toBe(0);
+  });
+
+  it('returns 0 when tendered < amount (never negative)', () => {
+    expect(calculateChange(10, 20)).toBe(0);
+  });
+
+  it('handles zero tendered', () => {
+    expect(calculateChange(0, 15)).toBe(0);
+  });
+
+  it('handles zero amount', () => {
+    expect(calculateChange(50, 0)).toBe(50);
+  });
+});
+
+describe('getDenominations', () => {
+  it('returns denominations for known currencies', () => {
+    expect(getDenominations('USD')).toEqual([5, 10, 20, 50, 100]);
+    expect(getDenominations('AZN')).toEqual([5, 10, 20, 50, 100]);
+    expect(getDenominations('TRY')).toEqual([10, 20, 50, 100, 200]);
+    expect(getDenominations('JPY')).toEqual([1000, 2000, 5000, 10000]);
+  });
+
+  it('returns default denominations for unknown currencies', () => {
+    expect(getDenominations('XYZ')).toEqual([5, 10, 20, 50, 100]);
   });
 });

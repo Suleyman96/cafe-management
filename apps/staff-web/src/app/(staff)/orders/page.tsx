@@ -8,7 +8,13 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import { OrderListCard } from '@/components/orders/order-list-card';
-import { useCancelOrder, useOrders, useUpdateOrderStatus } from '@/hooks';
+import {
+  useCancelOrder,
+  useMarkDelivered,
+  useMarkOutForDelivery,
+  useOrders,
+  useUpdateOrderStatus,
+} from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { supabase } from '@/lib/supabase/client';
 
@@ -28,6 +34,8 @@ export default function OrdersPage() {
   const { t } = useTranslation('staff');
   const { data: orders, isLoading: loading, error, refetch } = useOrders();
   const updateOrderStatus = useUpdateOrderStatus();
+  const markOutForDelivery = useMarkOutForDelivery();
+  const markDelivered = useMarkDelivered();
   const cancelOrderMutation = useCancelOrder();
   const formatPrice = useFormatPrice();
 
@@ -74,16 +82,34 @@ export default function OrdersPage() {
     };
   }, [refetch]);
 
-  // Handle status update
+  // Handle status update — uses delivery-specific hooks for delivery orders
   const handleStatusUpdate = async (orderId: string, newStatus: OrderStatus) => {
     try {
-      const statusKey = Object.entries(ORDER_STATUS).find(([_, value]) => value === newStatus)?.[0];
-      if (!statusKey) throw new Error('Invalid status');
+      const order = orders?.find((o: any) => o.id === orderId);
+      const isDelivery = order?.order_type === 'delivery';
 
-      await updateOrderStatus.mutateAsync({
-        orderId,
-        status: statusKey as keyof typeof ORDER_STATUS,
-      });
+      if (isDelivery && newStatus === 'out_for_delivery') {
+        if (!order.delivery_person_id) {
+          toast.error(t('delivery.assignDriverFirst'));
+          return;
+        }
+        await markOutForDelivery.mutateAsync({
+          orderId,
+          deliveryPersonId: order.delivery_person_id,
+        });
+      } else if (isDelivery && newStatus === 'delivered') {
+        await markDelivered.mutateAsync(orderId);
+      } else {
+        const statusKey = Object.entries(ORDER_STATUS).find(
+          ([_, value]) => value === newStatus,
+        )?.[0];
+        if (!statusKey) throw new Error('Invalid status');
+
+        await updateOrderStatus.mutateAsync({
+          orderId,
+          status: statusKey as keyof typeof ORDER_STATUS,
+        });
+      }
       toast.success(`${t('orders.statusUpdated')} ${newStatus}`);
     } catch (_error) {
       toast.error(t('delivery.failedUpdate'));

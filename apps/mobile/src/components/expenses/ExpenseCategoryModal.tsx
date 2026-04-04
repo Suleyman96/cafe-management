@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Divider, IconButton, Modal, Portal, Text } from 'react-native-paper';
 import { ConfirmDialog } from '@/components/ui';
@@ -28,6 +28,15 @@ export function ExpenseCategoryModal({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      setShowForm(false);
+      setEditId(null);
+      setName('');
+      setDescription('');
+    }
+  }, [visible]);
 
   const resetForm = () => {
     setShowForm(false);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CURRENCY_POSITION,
+  DISCOUNT_TYPE,
   EXPENSE_PAYMENT_METHOD,
   FEEDBACK_STATUS,
   FEEDBACK_TYPE,
@@ -10,6 +11,7 @@ import {
   ORDER_TYPE,
   PAYMENT_METHOD,
   PAYMENT_TYPE,
+  REFUND_METHOD,
   SCHEDULE_STATUS,
   STOCK_MOVEMENT_TYPE,
   TABLE_STATUS,
@@ -26,6 +28,7 @@ import {
   CafeSettingsSchema,
   CurrencyPositionSchema,
   CustomerFeedbackSchema,
+  DiscountTypeSchema,
   ExpensePaymentMethodSchema,
   ExpenseSchema,
   FeedbackStatusSchema,
@@ -40,6 +43,8 @@ import {
   OrderTypeSchema,
   PaymentMethodSchema,
   PaymentTypeSchema,
+  RefundMethodSchema,
+  RefundSchema,
   ScheduleStatusSchema,
   StaffScheduleSchema,
   StaffSchema,
@@ -279,6 +284,34 @@ describe('Enum Schemas', () => {
       for (const status of Object.values(SCHEDULE_STATUS)) {
         expect(ScheduleStatusSchema.safeParse(status).success).toBe(true);
       }
+    });
+  });
+
+  describe('DiscountTypeSchema', () => {
+    it('should accept all DISCOUNT_TYPE values', () => {
+      for (const type of Object.values(DISCOUNT_TYPE)) {
+        expect(DiscountTypeSchema.safeParse(type).success).toBe(true);
+      }
+    });
+
+    it('should have 3 types: none, percentage, fixed', () => {
+      expect(Object.values(DISCOUNT_TYPE)).toHaveLength(3);
+    });
+
+    it('should reject invalid type', () => {
+      expect(DiscountTypeSchema.safeParse('coupon').success).toBe(false);
+    });
+  });
+
+  describe('RefundMethodSchema', () => {
+    it('should accept all REFUND_METHOD values', () => {
+      for (const method of Object.values(REFUND_METHOD)) {
+        expect(RefundMethodSchema.safeParse(method).success).toBe(true);
+      }
+    });
+
+    it('should reject invalid method', () => {
+      expect(RefundMethodSchema.safeParse('bitcoin').success).toBe(false);
     });
   });
 
@@ -833,6 +866,50 @@ describe('Table Schemas', () => {
 
     it('should reject invalid currency position', () => {
       expect(CurrencyPositionSchema.safeParse('left').success).toBe(false);
+    });
+  });
+
+  describe('RefundSchema', () => {
+    const validRefund = {
+      id: uuid1,
+      order_id: uuid2,
+      processed_by: uuid1,
+      amount: 25.0,
+      reason: 'Customer complaint',
+      refund_method: 'cash',
+      order_item_ids: null,
+      notes: null,
+      created_at: now,
+    };
+
+    it('should validate valid refund', () => {
+      expect(RefundSchema.safeParse(validRefund).success).toBe(true);
+    });
+
+    it('should reject zero amount', () => {
+      expect(RefundSchema.safeParse({ ...validRefund, amount: 0 }).success).toBe(false);
+    });
+
+    it('should reject negative amount', () => {
+      expect(RefundSchema.safeParse({ ...validRefund, amount: -10 }).success).toBe(false);
+    });
+
+    it('should reject empty reason', () => {
+      expect(RefundSchema.safeParse({ ...validRefund, reason: '' }).success).toBe(false);
+    });
+
+    it('should accept all refund methods', () => {
+      for (const method of ['cash', 'card', 'digital']) {
+        expect(RefundSchema.safeParse({ ...validRefund, refund_method: method }).success).toBe(
+          true,
+        );
+      }
+    });
+
+    it('should reject invalid refund method', () => {
+      expect(RefundSchema.safeParse({ ...validRefund, refund_method: 'bitcoin' }).success).toBe(
+        false,
+      );
     });
   });
 });

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate role
-    if (!['waiter', 'admin', 'kitchen'].includes(role)) {
+    if (!['waiter', 'admin', 'kitchen', 'owner'].includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 

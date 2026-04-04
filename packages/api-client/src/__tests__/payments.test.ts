@@ -143,6 +143,28 @@ describe('PaymentsWrapper', () => {
     ).rejects.toThrow(AuthenticationError);
   });
 
+  it('findByDateRange returns payments for a date range', async () => {
+    const ctx = createMockContext({
+      responses: {
+        order_payments: { data: [validPayment], error: null },
+      },
+    });
+    const payments = createPaymentsWrapper(ctx);
+    const result = await payments.findByDateRange('2026-03-28T00:00:00', '2026-03-29T00:00:00');
+    expect(result).toEqual([validPayment]);
+  });
+
+  it('findByDateRange returns empty array when no payments', async () => {
+    const ctx = createMockContext({
+      responses: {
+        order_payments: { data: [], error: null },
+      },
+    });
+    const payments = createPaymentsWrapper(ctx);
+    const result = await payments.findByDateRange('2026-03-28T00:00:00', '2026-03-29T00:00:00');
+    expect(result).toEqual([]);
+  });
+
   it('create calls insert method (not select)', async () => {
     const ctx = createMockContext({
       responses: {

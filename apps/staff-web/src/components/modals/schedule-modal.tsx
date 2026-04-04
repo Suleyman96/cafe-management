@@ -32,8 +32,8 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
   const [actualEnd, setActualEnd] = useState('');
   const [status, setStatus] = useState(schedule?.status || 'scheduled');
   const [notes, setNotes] = useState(schedule?.notes || '');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const isBusy = createSchedule.isPending || updateSchedule.isPending || deleteSchedule.isPending;
 
   // Bulk create state
   const [repeatEnabled, setRepeatEnabled] = useState(false);
@@ -68,12 +68,10 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
     try {
       if (!staffId) {
         setError(t('schedules.selectStaffMember'));
-        setLoading(false);
         return;
       }
 
@@ -104,7 +102,6 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
         for (let week = 0; week < repeatWeeks; week++) {
           for (const dayOfWeek of repeatDays) {
             const targetDate = new Date(baseDate);
-            // Find the next occurrence of this day of week from baseDate + week offset
             const currentDay = baseDate.getDay();
             let daysUntil = dayOfWeek - currentDay;
             if (daysUntil < 0) daysUntil += 7;
@@ -126,8 +123,16 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
           }
         }
 
-        await Promise.allSettled(promises);
-        toast.success(t('schedules.createdEntries', { count: promises.length }));
+        const results = await Promise.allSettled(promises);
+        const successCount = results.filter((r) => r.status === 'fulfilled').length;
+        const failCount = results.length - successCount;
+        if (failCount > 0) {
+          toast.warning(
+            t('schedules.createdEntriesPartial', { success: successCount, failed: failCount }),
+          );
+        } else {
+          toast.success(t('schedules.createdEntries', { count: successCount }));
+        }
       } else {
         await createSchedule.mutateAsync({
           staff_id: staffId,
@@ -146,8 +151,6 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('schedules.failedSave');
       setError(message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -155,7 +158,6 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
     if (!schedule?.id) return;
     if (!confirm(t('schedules.deleteConfirm'))) return;
 
-    setLoading(true);
     try {
       await deleteSchedule.mutateAsync(schedule.id);
       toast.success(t('schedules.scheduleDeleted'));
@@ -163,8 +165,6 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('schedules.failedDelete');
       setError(message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -374,7 +374,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
                     >
                       {[1, 2, 3, 4].map((n) => (
                         <option key={n} value={n}>
-                          {n} week{n > 1 ? 's' : ''}
+                          {n} {n > 1 ? t('schedules.weeks') : t('schedules.week')}
                         </option>
                       ))}
                     </select>
@@ -391,18 +391,18 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
                 type="button"
                 variant="destructive"
                 onClick={handleDelete}
-                disabled={loading}
+                disabled={isBusy}
                 size="sm"
               >
                 {t('delete', { ns: 'common' })}
               </Button>
             )}
             <div className="flex-1" />
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>
               {t('cancel', { ns: 'common' })}
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? t('saving', { ns: 'common' }) : t('save', { ns: 'common' })}
+            <Button type="submit" disabled={isBusy}>
+              {isBusy ? t('saving', { ns: 'common' }) : t('save', { ns: 'common' })}
             </Button>
           </div>
         </form>

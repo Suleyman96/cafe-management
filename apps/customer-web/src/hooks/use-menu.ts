@@ -29,6 +29,7 @@ export function useMenuItem(itemId: string) {
     queryKey: [QUERY_KEYS.MENU_ITEM, itemId],
     queryFn: async (): Promise<MenuItemWithCategory> =>
       db.menuItems.findById(itemId) as Promise<MenuItemWithCategory>,
+    enabled: !!itemId,
     staleTime: STALE_TIMES.MEDIUM,
   });
 }

@@ -108,6 +108,12 @@ export interface Database {
           closed_at: string | null;
           payment_method: string | null;
           paid_at: string | null;
+          // Discount fields
+          discount_type: 'none' | 'percentage' | 'fixed';
+          discount_value: number;
+          discount_amount: number;
+          discount_reason: string | null;
+          discount_applied_by: string | null;
           // Delivery fields
           delivery_address: string | null;
           delivery_fee: number;
@@ -118,7 +124,15 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['orders']['Row'],
-          'id' | 'order_number' | 'created_at' | 'updated_at'
+          | 'id'
+          | 'order_number'
+          | 'created_at'
+          | 'updated_at'
+          | 'discount_type'
+          | 'discount_value'
+          | 'discount_amount'
+          | 'discount_reason'
+          | 'discount_applied_by'
         >;
         Update: Partial<Database['public']['Tables']['orders']['Insert']>;
       };
@@ -451,6 +465,21 @@ export interface Database {
           'id' | 'created_at' | 'updated_at'
         >;
         Update: Partial<Database['public']['Tables']['tasks']['Insert']>;
+      };
+      refunds: {
+        Row: {
+          id: string;
+          order_id: string;
+          processed_by: string;
+          amount: number;
+          reason: string;
+          refund_method: 'cash' | 'card' | 'digital';
+          order_item_ids: string[] | null;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['refunds']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['refunds']['Insert']>;
       };
     };
     Views: {

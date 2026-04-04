@@ -15,10 +15,15 @@ interface OrderCardProps {
     order_items?: any[];
     table?: { table_number: string; location?: string | null } | null;
   };
+  currencySymbol: string;
   onPress: () => void;
 }
 
-export const OrderCard = React.memo(function OrderCard({ order, onPress }: OrderCardProps) {
+export const OrderCard = React.memo(function OrderCard({
+  order,
+  currencySymbol,
+  onPress,
+}: OrderCardProps) {
   const tableLabel = order.table
     ? `Table #${order.table.table_number}`
     : order.order_type === 'takeout'
@@ -50,7 +55,8 @@ export const OrderCard = React.memo(function OrderCard({ order, onPress }: Order
             <TimeElapsed createdAt={order.created_at} showColor={false} />
           </View>
           <Text variant="titleSmall" style={styles.total}>
-            ${(order.total || 0).toFixed(2)}
+            {currencySymbol}
+            {(order.total ?? 0).toFixed(2)}
           </Text>
         </View>
       </Card.Content>

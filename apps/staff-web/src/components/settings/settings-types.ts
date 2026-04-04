@@ -4,8 +4,6 @@ export interface CafeSettingsFormData {
   tax_enabled: boolean;
   tax_percentage: number;
   tax_label: string;
-  prices_include_tax: boolean;
-  show_tax_separately: boolean;
   currency_symbol: string;
   currency_code: string;
   currency_position: 'before' | 'after';

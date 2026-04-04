@@ -15,6 +15,7 @@ export {
   ORDER_TYPE,
   PAYMENT_METHOD,
   PAYMENT_TYPE,
+  REFUND_METHOD,
   SCHEDULE_STATUS,
   STOCK_MOVEMENT_TYPE,
   STOCK_UNIT,
@@ -33,8 +34,9 @@ export {
 export const WAITER_CALL_REASONS = [
   { value: 'assistance', label: 'General Help', emoji: '💬' },
   { value: 'bill', label: 'Request Bill', emoji: '🧾' },
-  { value: 'cutlery', label: 'Bring Cutlery', emoji: '🍽️' },
+  { value: 'question', label: 'Question', emoji: '❓' },
   { value: 'complaint', label: 'Complaint', emoji: '⚠️' },
+  { value: 'emergency', label: 'Emergency', emoji: '🚨' },
 ] as const;
 
 // Tax rate
@@ -126,6 +128,7 @@ export const QUERY_KEYS = {
   STAFF_MEMBER: 'staff_member',
   PAYMENTS_BY_STAFF: 'payments_by_staff',
   WAITER_CALLS_COUNT: 'waiter_calls_count',
+  Z_REPORT: 'z_report',
 } as const;
 
 // 30-minute interval time slots (00:00 to 23:30)

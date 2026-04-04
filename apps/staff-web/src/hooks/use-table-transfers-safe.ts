@@ -66,48 +66,17 @@ export function useTransferOrderItems() {
   });
 }
 
-// Helper to format transfer reason
-export function formatTransferReason(reason?: string | null): string {
-  if (!reason) return 'No reason provided';
+// Maps transfer reason codes to i18n keys
+const TRANSFER_REASON_KEYS: Record<string, string> = {
+  customer_request: 'tables.transferReasonCustomerRequest',
+  table_combine: 'tables.transferReasonTableCombine',
+  table_split: 'tables.transferReasonTableSplit',
+  operational: 'tables.transferReasonOperational',
+  maintenance: 'tables.transferReasonMaintenance',
+};
 
-  const reasons: Record<string, string> = {
-    customer_request: 'Customer requested move',
-    table_combine: 'Tables combined',
-    table_split: 'Tables split',
-    operational: 'Operational reasons',
-    maintenance: 'Table maintenance',
-  };
-
-  return reasons[reason] || reason;
-}
-
-// Helper to get transfer summary for a table
-export function useTableTransferStats(tableId: string) {
-  return useQuery({
-    queryKey: ['table_transfer_stats', tableId],
-    queryFn: async () => {
-      // This would ideally be an RPC function on Supabase
-      // For now, we'll fetch orders and analyze transfers
-      const orders = await db.orders.findAll({ table_id: tableId });
-
-      let transfersIn = 0;
-      let transfersOut = 0;
-
-      orders.forEach((order: any) => {
-        if (order.table_transfers) {
-          order.table_transfers.forEach((transfer: any) => {
-            if (transfer.to_table_id === tableId) transfersIn++;
-            if (transfer.from_table_id === tableId) transfersOut++;
-          });
-        }
-      });
-
-      return {
-        transfersIn,
-        transfersOut,
-        totalTransfers: transfersIn + transfersOut,
-      };
-    },
-    enabled: !!tableId,
-  });
+// Returns i18n key for known reasons, or the raw string for custom reasons
+export function getTransferReasonKey(reason?: string | null): string {
+  if (!reason) return 'tables.transferReasonNoReason';
+  return TRANSFER_REASON_KEYS[reason] || reason;
 }

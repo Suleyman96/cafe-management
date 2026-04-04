@@ -17,6 +17,7 @@ import {
   Users,
   UtensilsCrossed,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import type { OrderWithDetails } from '@/types';
 
 interface TableCardProps {
@@ -35,12 +36,11 @@ interface TableCardProps {
 
 // Get order total from database (includes tax) for consistency
 const calculateOrderTotal = (order: any) => {
-  if (order?.total) return order.total;
+  if (order?.total != null) return order.total;
   if (!order?.order_items) return 0;
-  return order.order_items.reduce(
-    (sum: number, item: any) => sum + item.quantity * item.item_price,
-    0,
-  );
+  return order.order_items
+    .filter((item: any) => item.status !== 'cancelled')
+    .reduce((sum: number, item: any) => sum + item.quantity * item.item_price, 0);
 };
 
 // Format duration
@@ -63,7 +63,9 @@ const getEffectiveOrderStatus = (order: any) => {
     return order.status;
   }
 
-  const items = order.order_items;
+  const items = order.order_items.filter((item: any) => item.status !== 'cancelled');
+  if (items.length === 0) return order.status;
+
   const allServed = items.every((item: any) => item.status === 'served');
   const allReady = items.every((item: any) => item.status === 'ready' || item.status === 'served');
   const anyReady = items.some((item: any) => item.status === 'ready');
@@ -116,6 +118,7 @@ export function TableCard({
   formatPrice,
 }: TableCardProps) {
   const { t } = useTranslation('staff');
+  const router = useRouter();
 
   const hasMultipleOrders = activeOrders.length > 1;
   const activeOrder: OrderWithDetails | undefined = activeOrders[0];
@@ -126,7 +129,9 @@ export function TableCard({
   }, 0);
 
   const combinedItemsCount = activeOrders.reduce((count: number, order: any) => {
-    return count + (order.order_items?.length || 0);
+    return (
+      count + (order.order_items?.filter((item: any) => item.status !== 'cancelled').length || 0)
+    );
   }, 0);
 
   // Get order status badge styling
@@ -200,7 +205,7 @@ export function TableCard({
       `}
       onClick={() => {
         if (creatingOrderForTable) return;
-        window.location.href = `/tables/${table.id}`;
+        router.push(`/tables/${table.id}`);
       }}
     >
       {/* Admin actions menu */}
@@ -230,7 +235,7 @@ export function TableCard({
                 className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
               >
                 <Edit2 className="h-4 w-4" />
-                Edit
+                {t('tables.edit')}
               </button>
               <button
                 onClick={(e) => {
@@ -240,7 +245,7 @@ export function TableCard({
                 className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 text-red-600 flex items-center gap-2"
               >
                 <Trash2 className="h-4 w-4" />
-                Delete
+                {t('tables.delete')}
               </button>
             </div>
           )}
@@ -263,7 +268,7 @@ export function TableCard({
                       : 'bg-gray-200 text-gray-600'
               }`}
             >
-              {table.status.charAt(0).toUpperCase() + table.status.slice(1)}
+              {t(`tables.${table.status}`)}
             </span>
             {table.location && <span className="text-xs text-gray-500">{table.location}</span>}
           </div>
@@ -335,7 +340,7 @@ export function TableCard({
             <div className="text-xs text-gray-500 space-y-0.5">
               {activeOrders.map((order: any, index: number) => (
                 <div key={order.id} className="flex justify-between">
-                  <span>Order #{index + 1}</span>
+                  <span>{t('tables.orderNumber', { number: index + 1 })}</span>
                   <span>{formatPrice(calculateOrderTotal(order))}</span>
                 </div>
               ))}
@@ -346,7 +351,9 @@ export function TableCard({
           {activeOrder?.assigned_waiter && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <UserCheck className="h-4 w-4 text-green-500" />
-              <span>Taken by: {activeOrder.assigned_waiter.full_name}</span>
+              <span>
+                {t('tables.takenBy')} {activeOrder.assigned_waiter.full_name}
+              </span>
             </div>
           )}
         </div>
@@ -367,7 +374,7 @@ export function TableCard({
       {creatingOrderForTable === table.id ? (
         <div className="flex items-center justify-center gap-2 mt-4 text-blue-600">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-sm">Creating order...</span>
+          <span className="text-sm">{t('tables.creatingOrder')}</span>
         </div>
       ) : table.status === 'occupied' ? (
         <div className="flex gap-2 mt-4">

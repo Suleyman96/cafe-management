@@ -8,12 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useAddDeliveryOrderItems, useCreateDeliveryOrder } from '@/hooks/use-delivery';
 import { useFormatPrice } from '@/hooks/use-format-price';
-import {
-  calculateTax,
-  calculateTotal,
-  getDisplaySubtotal,
-  useCafeSettings,
-} from '@/hooks/use-settings';
+import { useCafeSettings } from '@/hooks/use-settings';
 import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
 import { useCartStore } from '@/store/cart-store';
 import { useDeliveryStore } from '@/store/delivery-store';
@@ -37,10 +32,8 @@ export function DeliveryCartScreen() {
   const taxMultiplier = useTaxMultiplier();
 
   const cartSubtotal = getTotal();
-  const deliveryFee = settings?.delivery_fee_default || 0;
-  const displaySubtotal = settings ? getDisplaySubtotal(cartSubtotal, settings) : cartSubtotal;
-  const tax = settings ? calculateTax(cartSubtotal, settings) : 0;
-  const foodTotal = settings ? calculateTotal(cartSubtotal, settings) : cartSubtotal;
+  const deliveryFee = settings?.delivery_fee_default ?? 0;
+  const foodTotal = cartSubtotal * taxMultiplier;
   const grandTotal = foodTotal + deliveryFee;
 
   const minimumMet =
@@ -199,13 +192,9 @@ export function DeliveryCartScreen() {
       </div>
 
       <CartPriceSummary
-        displaySubtotal={displaySubtotal}
-        tax={tax}
         total={grandTotal}
+        taxPercentage={settings?.tax_enabled ? settings.tax_percentage : undefined}
         deliveryFee={deliveryFee}
-        showTaxSeparately={!!(settings?.tax_enabled && settings?.show_tax_separately)}
-        taxLabel={settings?.tax_label}
-        taxPercentage={settings?.tax_percentage}
         minimumAmount={settings?.minimum_delivery_amount}
         minimumMet={minimumMet}
         minimumWarning={

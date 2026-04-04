@@ -26,6 +26,22 @@ describe('RpcWrapper', () => {
       expect(result).toBe(0);
     });
 
+    it('returns exactly 0 when balance is zero (not falsy fallback)', async () => {
+      // This test catches the || vs ?? bug: (0 as number) || 0 = 0 (ok),
+      // but more importantly ensures 0 is returned as-is without being
+      // coerced or swallowed by falsy checks.
+      const ctx = createMockContext({
+        rpcResponses: {
+          get_order_remaining_balance: { data: 0, error: null },
+        },
+      });
+      const rpc = createRpcWrapper(ctx);
+      const result = await rpc.getRemainingBalance('order-123');
+      expect(result).toBe(0);
+      expect(result).not.toBeNull();
+      expect(result).not.toBeUndefined();
+    });
+
     it('throws on error', async () => {
       const ctx = createMockContext({
         rpcResponses: {

@@ -8,7 +8,7 @@ CREATE TABLE cafe_settings (
   restaurant_name VARCHAR(255) NOT NULL DEFAULT 'Café İdarə',
 
   -- Tax settings
-  tax_enabled BOOLEAN NOT NULL DEFAULT true,
+  tax_enabled BOOLEAN NOT NULL DEFAULT false,
   tax_percentage DECIMAL(5, 2) NOT NULL DEFAULT 18.00,
   tax_label VARCHAR(50) NOT NULL DEFAULT 'Tax',
   prices_include_tax BOOLEAN NOT NULL DEFAULT false,

@@ -5,6 +5,7 @@ import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import { ArrowRight, Loader2, Minus, Plus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { useTables, useTransferOrderItems } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
@@ -115,6 +116,8 @@ export function ItemTransferModal({
       onSuccess();
     } catch (error: unknown) {
       console.error('Failed to transfer items:', error);
+      const message = error instanceof Error ? error.message : t('tables.failedTransfer');
+      toast.error(message);
     } finally {
       setLoading(false);
     }

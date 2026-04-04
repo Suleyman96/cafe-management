@@ -86,7 +86,7 @@ export default function StockPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this stock item?')) return;
+    if (!confirm(t('stock.confirmDelete'))) return;
     try {
       await deleteStockItem.mutateAsync(id);
       toast.success(t('stock.stockItemDeleted'));
@@ -338,7 +338,7 @@ function StockHistoryModal({ item, onClose }: { item: StockItem; onClose: () => 
               <LoadingSpinner />
             </div>
           ) : movements.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">{t('stock.stockMovements')}</p>
+            <p className="text-gray-500 text-center py-8">{t('stock.noMovements')}</p>
           ) : (
             <div className="space-y-3">
               {movements.map((m: any) => (
@@ -367,7 +367,7 @@ function StockHistoryModal({ item, onClose }: { item: StockItem; onClose: () => 
                           ? `+${m.quantity_change}`
                           : m.movement_type === 'out'
                             ? m.quantity_change
-                            : `Set to ${m.quantity_after}`}
+                            : t('stock.setToValue', { value: m.quantity_after })}
                       </span>
                       <span className="text-xs text-gray-400">
                         &rarr; {m.quantity_after} {item.unit}
@@ -376,7 +376,8 @@ function StockHistoryModal({ item, onClose }: { item: StockItem; onClose: () => 
                     {m.reason && <p className="text-sm text-gray-600 mt-0.5">{m.reason}</p>}
                     <p className="text-xs text-gray-400 mt-1">
                       {new Date(m.created_at).toLocaleString()}
-                      {m.performed_by_staff && ` by ${m.performed_by_staff.full_name}`}
+                      {m.performed_by_staff &&
+                        ` ${t('stock.performedBy', { name: m.performed_by_staff.full_name })}`}
                     </p>
                   </div>
                 </div>

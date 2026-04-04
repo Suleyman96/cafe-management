@@ -9,13 +9,13 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
   useAddOrderItems,
-  useCafeSettings,
   useCategories,
   useMenuItems,
   useOrder,
+  useTaxMultiplier,
   useUpdateOrderNotes,
 } from '@/hooks';
-import { useFormatPrice } from '@/hooks/use-format-price';
+import { useFormatPriceWithSettings } from '@/hooks/use-format-price';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -36,8 +36,8 @@ export default function AddItemsPage() {
   const { data: categories } = useCategories();
   const addOrderItems = useAddOrderItems();
   const updateOrderNotes = useUpdateOrderNotes();
-  const { data: cafeSettings } = useCafeSettings();
-  const formatPrice = useFormatPrice();
+  const { formatPrice, cafeSettings } = useFormatPriceWithSettings();
+  const taxMultiplier = useTaxMultiplier();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -87,15 +87,8 @@ export default function AddItemsPage() {
     return cart.find((item) => item.menuItem.id === menuItemId)?.quantity || 0;
   };
 
-  // Tax multiplier for displaying tax-inclusive prices
-  const taxMultiplier =
-    cafeSettings?.tax_enabled && cafeSettings.tax_percentage > 0
-      ? 1 + cafeSettings.tax_percentage / 100
-      : 1;
-
-  // Calculate cart total (tax-inclusive)
-  const cartTotal =
-    cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0) * taxMultiplier;
+  const cartSubtotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
+  const cartTotal = cartSubtotal * taxMultiplier;
 
   // Submit order items
   const handleSubmit = async () => {
@@ -298,13 +291,22 @@ export default function AddItemsPage() {
                 </div>
 
                 <div className="border-t pt-3 sm:pt-4">
-                  <div className="flex justify-between items-center mb-3 sm:mb-4">
-                    <span className="font-semibold text-sm sm:text-base">
-                      {t('total', { ns: 'common' })}
-                    </span>
-                    <span className="font-semibold text-base sm:text-lg">
-                      {formatPrice(cartTotal)}
-                    </span>
+                  <div className="mb-3 sm:mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-sm sm:text-base">
+                        {t('total', { ns: 'common' })}
+                      </span>
+                      <span className="font-semibold text-base sm:text-lg">
+                        {formatPrice(cartTotal)}
+                      </span>
+                    </div>
+                    {taxMultiplier !== 1 && (
+                      <p className="text-[10px] sm:text-xs text-gray-400 text-right">
+                        {t('orders.inclTax', {
+                          percent: String(cafeSettings?.tax_percentage ?? 18),
+                        })}
+                      </p>
+                    )}
                   </div>
                   <Button
                     className="w-full text-sm sm:text-base"

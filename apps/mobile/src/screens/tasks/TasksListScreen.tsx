@@ -230,7 +230,7 @@ export default function TasksListScreen() {
               Overdue
             </Text>
             <Text variant="titleLarge" style={[styles.boldText, { color: '#ef4444' }]}>
-              {overdueCount || 0}
+              {overdueCount ?? 0}
             </Text>
           </Card.Content>
         </Card>

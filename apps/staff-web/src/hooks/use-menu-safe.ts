@@ -10,14 +10,11 @@ import { invalidateMenuAndCategories } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
-type Category = Database['public']['Tables']['categories']['Row'];
 type MenuItemInsert = Database['public']['Tables']['menu_items']['Insert'];
+type MenuItemUpdate = Database['public']['Tables']['menu_items']['Update'];
+type Category = Database['public']['Tables']['categories']['Row'];
 type CategoryInsert = Database['public']['Tables']['categories']['Insert'];
-
-// Menu items with category relation
-type MenuItemWithCategory = MenuItem & {
-  category?: Category;
-};
+type CategoryUpdate = Database['public']['Tables']['categories']['Update'];
 
 // Menu items hooks
 export function useMenuItems(options?: {
@@ -43,7 +40,7 @@ export function useUpdateMenuItem() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<MenuItem> }) =>
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<MenuItemUpdate> }) =>
       db.menuItems.update(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
@@ -66,7 +63,8 @@ export function useToggleMenuItemAvailability() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => db.menuItems.toggleAvailability(id),
+    mutationFn: ({ id, currentAvailable }: { id: string; currentAvailable: boolean }) =>
+      db.menuItems.toggleAvailability(id, currentAvailable),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
     },
@@ -98,7 +96,7 @@ export function useCreateCategory() {
   return useMutation({
     mutationFn: (data: CategoryInsert) => db.categories.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+      invalidateMenuAndCategories(queryClient);
     },
   });
 }
@@ -107,7 +105,7 @@ export function useUpdateCategory() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Category> }) =>
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<CategoryUpdate> }) =>
       db.categories.update(id, updates),
     onSuccess: () => {
       invalidateMenuAndCategories(queryClient);
@@ -124,31 +122,4 @@ export function useDeleteCategory() {
       invalidateMenuAndCategories(queryClient);
     },
   });
-}
-
-// Helper function to group menu items by category
-export function useMenuItemsByCategory() {
-  const { data: menuItems, ...rest } = useMenuItems();
-  const { data: categories } = useCategories();
-
-  const groupedItems = menuItems?.reduce(
-    (acc: Record<string, MenuItemWithCategory[]>, item: MenuItemWithCategory) => {
-      const categoryId = item.category_id || 'uncategorized';
-      if (!acc[categoryId]) {
-        acc[categoryId] = [];
-      }
-      acc[categoryId].push(item);
-      return acc;
-    },
-    {} as Record<string, MenuItemWithCategory[]>,
-  );
-
-  return {
-    ...rest,
-    data: {
-      categories: categories || [],
-      groupedItems: groupedItems || {},
-      uncategorizedItems: groupedItems?.uncategorized || [],
-    },
-  };
 }

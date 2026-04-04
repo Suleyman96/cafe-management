@@ -17,12 +17,14 @@ interface OrderItemRowProps {
       name_en?: string | null;
     } | null;
   };
+  currencySymbol: string;
   showActions?: boolean;
   onMarkReady?: (itemId: string) => void;
 }
 
 export const OrderItemRow = React.memo(function OrderItemRow({
   item,
+  currencySymbol,
   showActions = false,
   onMarkReady,
 }: OrderItemRowProps) {
@@ -43,16 +45,16 @@ export const OrderItemRow = React.memo(function OrderItemRow({
         </View>
         <View style={styles.right}>
           <Text variant="bodyMedium" style={styles.price}>
-            $
+            {currencySymbol}
             {(
-              item.total_price || (item.item_price || item.unit_price || 0) * item.quantity
+              item.total_price ?? (item.item_price ?? item.unit_price ?? 0) * item.quantity
             ).toFixed(2)}
           </Text>
           <StatusBadge status={item.status} type="orderItem" />
         </View>
       </View>
 
-      {showActions && onMarkReady && (item.status === 'new' || item.status === 'preparing') && (
+      {showActions && onMarkReady && (item.status === 'pending' || item.status === 'preparing') && (
         <Button
           compact
           mode="contained-tonal"

@@ -5,6 +5,7 @@ import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { NumberInput } from '@/components/ui/number-input';
 import { useAdjustStock, useAuth } from '@/hooks';
 
 type StockItem = Database['public']['Tables']['stock_items']['Row'];
@@ -126,27 +127,48 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
                 ? t('stock.newQuantity')
                 : t('stock.movementQuantity')}
             </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
+            <NumberInput
               value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+              onChange={(v) => setFormData({ ...formData, quantity: v })}
+              min={0}
+              step={0.01}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder={`${formData.type === 'adjustment' ? t('stock.newQuantity').toLowerCase() : t('stock.movementQuantity').toLowerCase()}`}
+              placeholder={
+                formData.type === 'adjustment'
+                  ? t('stock.newQuantity').toLowerCase()
+                  : t('stock.movementQuantity').toLowerCase()
+              }
             />
           </div>
 
           {/* New Stock Preview */}
-          {formData.quantity && (
-            <div className="bg-blue-50 rounded-lg p-3 text-center">
-              <p className="text-sm text-blue-600">{t('stock.newStockLevel')}</p>
-              <p className="text-xl font-bold text-blue-900">
-                {getNewQuantity().toFixed(2)} {item.unit}
-              </p>
-            </div>
-          )}
+          {formData.quantity &&
+            (() => {
+              const newQty = getNewQuantity();
+              const isLow = newQty <= item.minimum_stock_level;
+              const isWarning = !isLow && newQty <= item.minimum_stock_level * 1.2;
+              const bgColor = isLow ? 'bg-red-50' : isWarning ? 'bg-yellow-50' : 'bg-blue-50';
+              const textColor = isLow
+                ? 'text-red-600'
+                : isWarning
+                  ? 'text-yellow-600'
+                  : 'text-blue-600';
+              const boldColor = isLow
+                ? 'text-red-900'
+                : isWarning
+                  ? 'text-yellow-900'
+                  : 'text-blue-900';
+
+              return (
+                <div className={`${bgColor} rounded-lg p-3 text-center`}>
+                  <p className={`text-sm ${textColor}`}>{t('stock.newStockLevel')}</p>
+                  <p className={`text-xl font-bold ${boldColor}`}>
+                    {newQty.toFixed(2)} {item.unit}
+                  </p>
+                  {isLow && <p className="text-xs text-red-500 mt-1">{t('stock.belowMinimum')}</p>}
+                </div>
+              );
+            })()}
 
           {/* Reason */}
           <div>

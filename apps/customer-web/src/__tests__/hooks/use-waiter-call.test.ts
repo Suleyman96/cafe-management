@@ -49,7 +49,7 @@ describe('useCreateWaiterCall', () => {
     });
   });
 
-  it('uses notes as reason when notes is provided', async () => {
+  it('passes notes separately when provided', async () => {
     const { result } = renderHookWithProviders(() => useCreateWaiterCall());
 
     await result.current.mutateAsync({
@@ -60,14 +60,16 @@ describe('useCreateWaiterCall', () => {
       notes: 'Custom note',
     });
 
-    expect(db.waiterCalls.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        reason: 'Custom note',
-      }),
-    );
+    expect(db.waiterCalls.create).toHaveBeenCalledWith({
+      table_id: 'table-1',
+      call_type: 'bill',
+      reason: 'Default reason',
+      priority: 'high',
+      notes: 'Custom note',
+    });
   });
 
-  it('uses reason when notes is empty string', async () => {
+  it('does not include notes when empty string', async () => {
     const { result } = renderHookWithProviders(() => useCreateWaiterCall());
 
     await result.current.mutateAsync({
@@ -78,11 +80,12 @@ describe('useCreateWaiterCall', () => {
       notes: '',
     });
 
-    expect(db.waiterCalls.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        reason: 'Original reason',
-      }),
-    );
+    expect(db.waiterCalls.create).toHaveBeenCalledWith({
+      table_id: 'table-1',
+      call_type: 'question',
+      reason: 'Original reason',
+      priority: 'low',
+    });
   });
 
   it('invalidates WAITER_CALLS scoped to tableId', async () => {

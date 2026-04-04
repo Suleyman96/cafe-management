@@ -31,6 +31,7 @@ export default function StockListScreen() {
   const [editItem, setEditItem] = useState<any>(null);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
   const [movementItem, setMovementItem] = useState<any>(null);
+  const [movementType, setMovementType] = useState<'in' | 'out'>('in');
   const [historyItemId, setHistoryItemId] = useState<string | undefined>();
 
   const { data: items, isLoading, error, refetch } = useStockItems();
@@ -107,9 +108,10 @@ export default function StockListScreen() {
     }
   };
 
-  const handleOpenMovement = (id: string, _type: 'in' | 'out') => {
+  const handleOpenMovement = (id: string, type: 'in' | 'out') => {
     const item = items?.find((i: any) => i.id === id);
     if (item) {
+      setMovementType(type);
       setMovementItem(item);
     }
   };
@@ -120,10 +122,14 @@ export default function StockListScreen() {
     reason?: string;
   }) => {
     if (!movementItem) return;
+    if (!staff?.id) {
+      showError('Not authenticated');
+      return;
+    }
     try {
       await adjustStock.mutateAsync({
         id: movementItem.id,
-        data: { ...data, performedBy: staff?.id },
+        data: { ...data, performedBy: staff.id },
       });
       showSuccess('Stock adjusted');
       setMovementItem(null);
@@ -260,6 +266,7 @@ export default function StockListScreen() {
         onDismiss={() => setMovementItem(null)}
         onSubmit={handleMovementSubmit}
         loading={adjustStock.isPending}
+        initialType={movementType}
         item={movementItem}
       />
 
@@ -292,11 +299,16 @@ export default function StockListScreen() {
                       <Text
                         variant="bodyMedium"
                         style={{
-                          color: m.movement_type === 'in' ? '#10b981' : '#ef4444',
+                          color:
+                            m.movement_type === 'adjustment'
+                              ? '#3b82f6'
+                              : m.quantity_change >= 0
+                                ? '#10b981'
+                                : '#ef4444',
                           fontWeight: '600',
                         }}
                       >
-                        {m.movement_type === 'in' ? '+' : '-'}
+                        {m.quantity_change >= 0 ? '+' : ''}
                         {m.quantity_change}
                       </Text>
                       <Text variant="bodySmall" style={styles.historyType}>

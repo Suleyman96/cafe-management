@@ -1,9 +1,9 @@
 'use client';
 
-import type { OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import { Package, Plus, RefreshCw } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/modals/confirm-dialog';
@@ -13,7 +13,6 @@ import { TableTransferModal } from '@/components/modals/table-transfer-modal';
 import { TableCard } from '@/components/tables/table-card';
 import {
   useCleanupEmptyOrders,
-  useCreateOrder,
   useDeleteTable,
   useOrders,
   useTables,
@@ -25,6 +24,7 @@ import { supabase } from '@/lib/supabase/client';
 
 export default function TablesPage() {
   const { t } = useTranslation('staff');
+  const router = useRouter();
   const { staff } = useAuth();
   const {
     data: tables,
@@ -41,12 +41,10 @@ export default function TablesPage() {
   const [isTakeoutModalOpen, setIsTakeoutModalOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<any>(null);
-  const [creatingOrderForTable, setCreatingOrderForTable] = useState<string | null>(null);
   const [tableMenuOpen, setTableMenuOpen] = useState<string | null>(null);
   const [deleteConfirmTable, setDeleteConfirmTable] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const createOrder = useCreateOrder();
   const cleanupEmptyOrders = useCleanupEmptyOrders();
   const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
   const formatPrice = useFormatPrice();
@@ -112,26 +110,6 @@ export default function TablesPage() {
       waiterCalls?.filter((call: any) => call.table_id === tableId && call.status === 'pending') ||
       []
     );
-  };
-
-  // Handle creating order for a free table
-  const _handleCreateOrderForTable = async (table: any) => {
-    setCreatingOrderForTable(table.id);
-    try {
-      // TODO: type properly - DB defaults handle missing required fields (subtotal, tax, total, etc.)
-      const result = await createOrder.mutateAsync({
-        table_id: table.id,
-        order_type: 'dine_in',
-        status: 'new',
-      } as Partial<OrdersInsert> as OrdersInsert);
-      toast.success(`${t('tables.createdOrder')} ${table.table_number}`);
-      window.location.href = `/orders/${result.id}/add-items`;
-    } catch (error) {
-      console.error('Failed to create order:', error);
-      toast.error(t('tables.failedCreateOrder'));
-    } finally {
-      setCreatingOrderForTable(null);
-    }
   };
 
   // Handle delete table — open confirmation modal
@@ -230,7 +208,7 @@ export default function TablesPage() {
               activeOrders={activeOrders}
               activeCalls={activeCalls}
               isAdmin={isAdmin}
-              creatingOrderForTable={creatingOrderForTable}
+              creatingOrderForTable={null}
               tableMenuOpen={tableMenuOpen}
               onTableMenuToggle={setTableMenuOpen}
               onEditTable={(t) => {
@@ -290,7 +268,7 @@ export default function TablesPage() {
         onSuccess={(orderId) => {
           setIsTakeoutModalOpen(false);
           toast.success(t('orders.orderCreated'));
-          window.location.href = `/orders/${orderId}/add-items`;
+          router.push(`/orders/${orderId}/add-items`);
         }}
       />
 

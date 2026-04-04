@@ -1,9 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, Text } from 'react-native-paper';
 
-const ROLE_COLORS: Record<string, string> = {
+export const ROLE_COLORS: Record<string, string> = {
   owner: '#8b5cf6',
   admin: '#3b82f6',
   waiter: '#10b981',
@@ -23,6 +24,7 @@ interface StaffCardProps {
 }
 
 export const StaffCard = React.memo(function StaffCard({ staff, onPress }: StaffCardProps) {
+  const { t } = useTranslation('staff');
   const roleColor = ROLE_COLORS[staff.role] || '#6b7280';
 
   return (
@@ -46,11 +48,11 @@ export const StaffCard = React.memo(function StaffCard({ staff, onPress }: Staff
               style={[styles.roleChip, { backgroundColor: roleColor }]}
               textStyle={{ color: '#fff', fontSize: 10, fontWeight: '600' }}
             >
-              {staff.role}
+              {t(`staffMgmt.role.${staff.role}`, { defaultValue: staff.role })}
             </Chip>
             {staff.is_active === false && (
               <Chip compact textStyle={{ fontSize: 10, color: '#ef4444' }}>
-                Inactive
+                {t('staffMgmt.inactive')}
               </Chip>
             )}
           </View>

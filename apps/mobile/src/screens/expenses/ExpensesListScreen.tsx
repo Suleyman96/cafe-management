@@ -40,7 +40,9 @@ export default function ExpensesListScreen() {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-  const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+  const endMonth = month === 12 ? 1 : month + 1;
+  const endYear = month === 12 ? year + 1 : year;
+  const endDate = `${endYear}-${String(endMonth).padStart(2, '0')}-01`;
 
   const {
     data: expenses,
@@ -99,9 +101,13 @@ export default function ExpensesListScreen() {
         await updateExpense.mutateAsync({ id: editExpense.id, data });
         showSuccess('Expense updated');
       } else {
+        if (!staff?.id) {
+          showError('Not authenticated');
+          return;
+        }
         await createExpense.mutateAsync({
           ...data,
-          created_by: staff?.id ?? null,
+          created_by: staff.id,
           receipt_url: null,
         });
         showSuccess('Expense recorded');

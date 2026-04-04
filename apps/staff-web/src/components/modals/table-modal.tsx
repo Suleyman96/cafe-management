@@ -5,6 +5,7 @@ import { Button } from '@gustri/ui';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { NumberInput } from '@/components/ui/number-input';
 import { useCreateTable, useUpdateTable } from '@/hooks';
 
 interface TableModalProps {
@@ -64,8 +65,7 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
         });
         toast.success(t('tables.tableUpdated'));
       } else {
-        // Generate a simple QR code value (in production, use proper QR generation)
-        const qrCode = `table-${tableNumber}-${Date.now()}`;
+        const qrCode = crypto.randomUUID();
 
         await createTable.mutateAsync({
           table_number: tableNumber,
@@ -115,7 +115,7 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
               value={tableNumber}
               onChange={(e) => setTableNumber(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., T01, A1, Patio-1"
+              placeholder={t('tables.tableNumberPlaceholder')}
               required
             />
           </div>
@@ -124,13 +124,12 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t('tables.capacitySeats')} *
             </label>
-            <input
-              type="number"
-              min="1"
-              max="20"
+            <NumberInput
               value={capacity}
-              onChange={(e) => setCapacity(parseInt(e.target.value, 10) || 1)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(v) => setCapacity(parseInt(v, 10) || 1)}
+              min={1}
+              max={20}
+              integer
               required
             />
           </div>
@@ -144,7 +143,7 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., Main Hall, Patio, VIP Section"
+              placeholder={t('tables.locationPlaceholder')}
             />
           </div>
 

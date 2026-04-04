@@ -2,7 +2,7 @@
 
 import type { Database } from '@gustri/database';
 import { Clock, Pencil, Trash2 } from 'lucide-react';
-import type { CafeSettings } from '@/hooks';
+import { useTaxMultiplier } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
@@ -10,7 +10,6 @@ type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 interface MenuItemCardProps {
   item: MenuItem;
   categoryIcon?: string;
-  settings: CafeSettings | undefined;
   onEdit: () => void;
   onDelete: () => void;
   onToggleAvailability: () => void;
@@ -20,16 +19,13 @@ interface MenuItemCardProps {
 export function MenuItemCard({
   item,
   categoryIcon,
-  settings,
   onEdit,
   onDelete,
   onToggleAvailability,
   t,
 }: MenuItemCardProps) {
   const formatPrice = useFormatPrice();
-
-  const taxMultiplier =
-    settings?.tax_enabled && settings.tax_percentage > 0 ? 1 + settings.tax_percentage / 100 : 1;
+  const taxMultiplier = useTaxMultiplier();
 
   return (
     <div
@@ -81,9 +77,16 @@ export function MenuItemCard({
 
         {/* Price + prep time */}
         <div className="flex items-center gap-2 mt-2">
-          <span className="text-base font-bold text-blue-600">
-            {formatPrice(parseFloat(item.price.toString()) * taxMultiplier)}
-          </span>
+          <div>
+            <span className="text-base font-bold text-blue-600">
+              {formatPrice(parseFloat(item.price.toString()) * taxMultiplier)}
+            </span>
+            {taxMultiplier !== 1 && (
+              <div className="text-[10px] text-gray-400">
+                {formatPrice(item.price)} {t('orders.netPrice')}
+              </div>
+            )}
+          </div>
           {item.preparation_time && (
             <span className="flex items-center gap-0.5 text-xs text-gray-400">
               <Clock className="h-3 w-3" />

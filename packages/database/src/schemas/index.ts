@@ -39,6 +39,10 @@ export const PaymentMethodSchema = z.enum(['cash', 'card', 'digital']);
 
 export const PaymentTypeSchema = z.enum(['full', 'partial_amount', 'specific_items']);
 
+export const DiscountTypeSchema = z.enum(['none', 'percentage', 'fixed']);
+
+export const RefundMethodSchema = z.enum(['cash', 'card', 'digital']);
+
 export const WaiterCallStatusSchema = z.enum(['pending', 'acknowledged', 'resolved']);
 
 export const WaiterCallTypeSchema = z.enum([
@@ -388,6 +392,18 @@ export const CafeSettingsSchema = z.object({
   updated_at: z.string(),
 });
 
+export const RefundSchema = z.object({
+  id: z.string().uuid(),
+  order_id: z.string().uuid(),
+  processed_by: z.string().uuid(),
+  amount: z.number().positive(),
+  reason: z.string().min(1),
+  refund_method: RefundMethodSchema,
+  order_item_ids: z.array(z.string().uuid()).nullable(),
+  notes: z.string().nullable(),
+  created_at: z.string(),
+});
+
 // ─── Inferred Types ──────────────────────────────────────────────
 
 export type OrderStatus = z.infer<typeof OrderStatusSchema>;
@@ -411,3 +427,4 @@ export type TaskPriority = z.infer<typeof TaskPrioritySchema>;
 export type TaskRecurrence = z.infer<typeof TaskRecurrenceSchema>;
 export type ScheduleStatus = z.infer<typeof ScheduleStatusSchema>;
 export type CurrencyPosition = z.infer<typeof CurrencyPositionSchema>;
+export type RefundMethod = z.infer<typeof RefundMethodSchema>;

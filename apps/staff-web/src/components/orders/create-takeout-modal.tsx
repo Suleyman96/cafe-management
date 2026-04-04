@@ -4,7 +4,7 @@ import type { MenuItem, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import { useState } from 'react';
-import { useAddOrderItems, useCafeSettings, useCreateOrder } from '@/hooks';
+import { useAddOrderItems, useCafeSettings, useCreateOrder, useTaxMultiplier } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
 
 interface CreateTakeoutModalProps {
@@ -37,6 +37,7 @@ export function CreateTakeoutModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: cafeSettings } = useCafeSettings();
   const formatPrice = useFormatPrice();
+  const taxMultiplier = useTaxMultiplier();
   const createOrder = useCreateOrder();
   const addOrderItems = useAddOrderItems();
 
@@ -74,11 +75,6 @@ export function CreateTakeoutModal({
       prev.map((item) => (item.menuItem.id === menuItemId ? { ...item, notes } : item)),
     );
   };
-
-  const taxMultiplier =
-    cafeSettings?.tax_enabled && cafeSettings.tax_percentage > 0
-      ? 1 + cafeSettings.tax_percentage / 100
-      : 1;
 
   const calculateTotal = () => {
     const subtotal = selectedItems.reduce(

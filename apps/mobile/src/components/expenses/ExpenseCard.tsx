@@ -19,7 +19,7 @@ interface ExpenseCardProps {
     expense_date?: string | null;
     created_at: string;
     notes?: string | null;
-    expense_category?: { name: string } | null;
+    category?: { name: string } | null;
     created_by_staff?: { full_name: string } | null;
   };
   currencySymbol?: string;
@@ -46,7 +46,7 @@ export const ExpenseCard = React.memo(function ExpenseCard({
               {expense.description || 'No description'}
             </Text>
             <Text variant="bodySmall" style={styles.muted}>
-              {expense.expense_category?.name || 'Uncategorized'} ·{' '}
+              {expense.category?.name || 'Uncategorized'} ·{' '}
               {expense.created_by_staff?.full_name || '—'}
             </Text>
             {expense.notes && (

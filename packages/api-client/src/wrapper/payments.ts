@@ -36,6 +36,21 @@ export function createPaymentsWrapper(ctx: WrapperContext) {
       return data || [];
     },
 
+    findByDateRange: async (startDate: string, endDate: string) => {
+      const { data, error } = await ctx.client
+        .from('order_payments')
+        .select(`
+          *,
+          received_by_staff:staff!order_payments_received_by_fkey(full_name, role)
+        `)
+        .gte('created_at', startDate)
+        .lt('created_at', endDate)
+        .order('created_at', { ascending: false });
+
+      if (error) throw handleSupabaseError(error);
+      return data || [];
+    },
+
     findByReceivedBy: async (staffId: string, limit = 10) => {
       const { data, error } = await ctx.client
         .from('order_payments')

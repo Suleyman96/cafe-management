@@ -5,6 +5,7 @@ import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { NumberInput } from '@/components/ui/number-input';
 import { useCreateStockItem, useUpdateStockItem } from '@/hooks';
 
 type StockItem = Database['public']['Tables']['stock_items']['Row'];
@@ -37,7 +38,7 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
   const [formData, setFormData] = useState({
     name: item?.name || '',
     description: item?.description || '',
-    category: item?.category || 'General',
+    category: item?.category || 'Other',
     quantity: item?.quantity?.toString() || '0',
     unit: item?.unit || 'pieces',
     cost_price: item?.cost_price?.toString() || '0',
@@ -52,11 +53,10 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
     const toastId = toast.loading(isEditing ? t('stock.updatingItem') : t('stock.creatingItem'));
 
     try {
-      const data = {
+      const baseData = {
         name: formData.name,
         description: formData.description || null,
         category: formData.category,
-        quantity: Number.parseFloat(formData.quantity),
         unit: formData.unit,
         cost_price: Number.parseFloat(formData.cost_price),
         minimum_stock_level: Number.parseFloat(formData.minimum_stock_level),
@@ -66,10 +66,14 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
       };
 
       if (isEditing) {
-        await updateStockItem.mutateAsync({ id: item.id, updates: data });
+        // Never overwrite quantity on edit — use stock movements instead
+        await updateStockItem.mutateAsync({ id: item.id, updates: baseData });
         toast.success(t('stock.itemUpdated'), { id: toastId });
       } else {
-        await createStockItem.mutateAsync(data);
+        await createStockItem.mutateAsync({
+          ...baseData,
+          quantity: Number.parseFloat(formData.quantity),
+        });
         toast.success(t('stock.itemCreated'), { id: toastId });
       }
 
@@ -165,12 +169,12 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t('stock.initialQuantity')}
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
+                <NumberInput
                   value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  onChange={(v) => setFormData({ ...formData, quantity: v })}
+                  min={0}
+                  step={0.01}
+                  placeholder="0"
                 />
               </div>
             )}
@@ -178,12 +182,12 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('stock.costPerUnit')}
               </label>
-              <input
-                type="number"
-                step="0.01"
+              <NumberInput
                 value={formData.cost_price}
-                onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={(v) => setFormData({ ...formData, cost_price: v })}
+                min={0}
+                step={0.01}
+                placeholder="0"
               />
             </div>
           </div>
@@ -193,12 +197,12 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('stock.minStockLevel')}
             </label>
-            <input
-              type="number"
-              step="0.01"
+            <NumberInput
               value={formData.minimum_stock_level}
-              onChange={(e) => setFormData({ ...formData, minimum_stock_level: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              onChange={(v) => setFormData({ ...formData, minimum_stock_level: v })}
+              min={0}
+              step={0.01}
+              placeholder="0"
             />
           </div>
 

@@ -5,10 +5,9 @@ import { createMockContext } from './helpers/mock-supabase';
 const validFeedback = {
   id: '123e4567-e89b-12d3-a456-426614174000',
   table_id: '123e4567-e89b-12d3-a456-426614174001',
-  feedback_type: 'suggestion',
+  feedback_type: 'praise',
   message: 'Great service!',
   status: 'pending',
-  rating: 5,
   created_at: new Date().toISOString(),
 };
 
@@ -22,9 +21,8 @@ describe('FeedbackWrapper', () => {
     const feedback = createFeedbackWrapper(ctx);
     const result = await feedback.create({
       table_id: validFeedback.table_id,
-      feedback_type: 'suggestion',
+      feedback_type: 'praise',
       message: 'Great service!',
-      rating: 5,
     });
     expect(result).toEqual(validFeedback);
     expect(ctx.getCalls()[0].method).toBe('insert');
@@ -39,7 +37,7 @@ describe('FeedbackWrapper', () => {
     const feedback = createFeedbackWrapper(ctx);
     await feedback.create({
       table_id: validFeedback.table_id,
-      feedback_type: 'complaint',
+      feedback_type: 'complaint_food',
       message: 'Cold food',
       subject: 'Food quality',
       order_id: 'order-123',

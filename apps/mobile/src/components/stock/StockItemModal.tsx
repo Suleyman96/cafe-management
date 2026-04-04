@@ -49,6 +49,7 @@ export function StockItemModal({
   });
 
   useEffect(() => {
+    if (!visible) return;
     if (initialData) {
       setForm({
         name: initialData.name || '',
@@ -74,7 +75,7 @@ export function StockItemModal({
         notes: '',
       });
     }
-  }, [initialData]);
+  }, [visible, initialData]);
 
   const handleSubmit = () => {
     onSubmit({

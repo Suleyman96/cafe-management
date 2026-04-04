@@ -40,18 +40,6 @@ export function TaxSettingsSection({ form, updateField }: SettingsSectionProps) 
               dense
               style={styles.input}
             />
-            <ToggleRow
-              label="Prices Include Tax"
-              description="Menu prices already include tax"
-              value={!!form.prices_include_tax}
-              onChange={(v) => updateField('prices_include_tax', v)}
-            />
-            <ToggleRow
-              label="Show Tax Separately"
-              description="Display tax as a separate line"
-              value={!!form.show_tax_separately}
-              onChange={(v) => updateField('show_tax_separately', v)}
-            />
           </>
         )}
       </Card.Content>

@@ -63,6 +63,20 @@ export const PAYMENT_TYPE = {
   SPECIFIC_ITEMS: 'specific_items',
 } as const;
 
+// Discount type — matches orders_discount_type_check constraint
+export const DISCOUNT_TYPE = {
+  NONE: 'none',
+  PERCENTAGE: 'percentage',
+  FIXED: 'fixed',
+} as const;
+
+// Refund method — matches refunds_refund_method_check constraint
+export const REFUND_METHOD = {
+  CASH: 'cash',
+  CARD: 'card',
+  DIGITAL: 'digital',
+} as const;
+
 // Waiter call statuses — matches waiter_calls_status_check constraint
 export const WAITER_CALL_STATUS = {
   PENDING: 'pending',
