@@ -58,6 +58,10 @@ supabase/.temp/
 # Vercel
 .vercel/
 
+# Python
+__pycache__/
+*.pyc
+
 # Misc
 .cache/
 *.pem
