@@ -190,6 +190,12 @@
   "kitchen.delivery": "Delivery",
   "kitchen.pickedUp": "PICKED UP",
   "kitchen.partialItemError": "{{succeeded}} of {{total}} items updated. Some failed.",
+  "kitchen.pendingQrOrders": "QR Orders Awaiting Approval",
+  "kitchen.itemCount": "{{count}} items",
+  "kitchen.orderApproved": "Order approved",
+  "kitchen.orderRejected": "Order rejected",
+  "kitchen.rejectReason": "Reason for rejection",
+  "kitchen.rejectReasonPlaceholder": "e.g. Out of stock, kitchen closed...",
 
   "delivery.title": "Delivery Orders",
   "delivery.newDeliveryOrder": "New Delivery Order",
