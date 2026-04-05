@@ -17,7 +17,6 @@ import {
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
-import { CashChangeCalculator } from './payment/cash-change-calculator';
 import { ItemPaymentForm } from './payment/item-payment-form';
 import { PartialPaymentForm } from './payment/partial-payment-form';
 import { PaymentModeSelector } from './payment/payment-mode-selector';
@@ -389,17 +388,6 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
                 ))}
               </div>
             </div>
-          )}
-
-          {/* Cash Change Calculator */}
-          {paymentMethod === 'cash' && !isFullyPaid && !isZeroTotal && (
-            <CashChangeCalculator
-              paymentAmount={getPaymentAmount() + (parseFloat(tipAmount) || 0)}
-              currencySymbol={cafeSettings?.currency_symbol || '$'}
-              currencyCode={cafeSettings?.currency_code || 'USD'}
-              formatPrice={formatPrice}
-              t={t}
-            />
           )}
 
           {/* Tip Input - only shown when tips are enabled */}

@@ -103,11 +103,7 @@ export const WAITER_CALL_PRIORITY = {
 
 // Feedback type — matches customer_feedback_feedback_type_check constraint
 export const FEEDBACK_TYPE = {
-  COMPLAINT_FOOD: 'complaint_food',
-  COMPLAINT_SERVICE: 'complaint_service',
-  COMPLAINT_STAFF: 'complaint_staff',
-  QUESTION_MENU: 'question_menu',
-  REQUEST_GENERAL: 'request_general',
+  COMPLAINT: 'complaint',
   PRAISE: 'praise',
 } as const;
 

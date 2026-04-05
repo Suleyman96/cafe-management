@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { OrdersInsert } from '@gustri/database';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Dialog, Portal } from 'react-native-paper';
 import { useCreateOrder } from '@/hooks';
@@ -29,6 +29,10 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [deliveryFee, setDeliveryFee] = useState(settings?.delivery_fee_default?.toString() || '0');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setDeliveryFee(settings?.delivery_fee_default?.toString() || '0');
+  }, [settings?.delivery_fee_default]);
 
   const isValid = customerName.trim() && customerPhone.trim() && deliveryAddress.trim();
 

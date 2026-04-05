@@ -91,7 +91,7 @@ vi.mock('@/hooks/use-delivery', () => ({
       delivery_fee: 3,
       subtotal: 40,
       tax: 7.2,
-      total: 47.2,
+      total: 50.2, // DB trigger: subtotal(40) + tax(7.2) + delivery_fee(3) = 50.2
       order_items: [
         {
           id: 'd1',
@@ -150,8 +150,8 @@ describe('Price display uses correct currency across all pages', () => {
   it('delivery-order-status adds delivery fee to total for display', () => {
     renderWithProviders(<DeliveryOrderStatus orderId="del-1" />);
 
-    // DB total (47.20) = subtotal + tax, delivery_fee (3.00) added at display time
-    // Grand total shown to customer: 47.20 + 3.00 = 50.20
+    // DB total (50.20) already includes delivery_fee via calculate_order_total trigger
+    // subtotal(40) + tax(7.2) + delivery_fee(3) = 50.20
     expect(screen.getByText('50.20₼')).toBeInTheDocument();
   });
 });

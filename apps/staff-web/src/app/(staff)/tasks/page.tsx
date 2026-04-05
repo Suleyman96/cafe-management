@@ -18,8 +18,8 @@ import {
   X,
 } from 'lucide-react';
 
-import { useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { TaskModal } from '@/components/modals/task-modal';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ import {
   useMarkTaskCompleted,
   useMarkTaskInProgress,
   useMyTasks,
+  useOpenTasksCount,
   useOverdueTasksCount,
   useRecurringTemplates,
   useTasks,
@@ -59,9 +60,13 @@ export default function TasksPage() {
   const { t } = useTranslation('staff');
   const { staff } = useAuth();
   const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = (searchParams.get('tab') as TabView) || 'today';
-  const [activeTab, setActiveTab] = useState<TabView>(initialTab);
+  const activeTab = (searchParams.get('tab') as TabView) || 'today';
+
+  const setActiveTab = (tab: TabView) => {
+    router.replace(`/tasks${tab === 'today' ? '' : `?tab=${tab}`}`);
+  };
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -74,9 +79,10 @@ export default function TasksPage() {
     priority: priorityFilter || undefined,
     isTemplate: false,
   });
-  const { data: myTasks = [] } = useMyTasks(staff?.id || '');
-  const { data: templates = [] } = useRecurringTemplates();
+  const { data: myTasks = [], isLoading: myLoading } = useMyTasks(staff?.id || '');
+  const { data: templates = [], isLoading: templatesLoading } = useRecurringTemplates();
   const { data: overdueCount = 0 } = useOverdueTasksCount();
+  const { data: openTasksCount = 0 } = useOpenTasksCount();
   const markInProgress = useMarkTaskInProgress();
   const markCompleted = useMarkTaskCompleted();
   const markCancelled = useMarkTaskCancelled();
@@ -91,9 +97,6 @@ export default function TasksPage() {
   }, [generateRecurring]);
 
   const completedToday = todaysTasks.filter((t: any) => t.status === 'completed').length;
-  const openTasks = allTasks.filter(
-    (t: any) => t.status === 'pending' || t.status === 'in_progress',
-  ).length;
 
   const handleQuickAction = async (taskId: string, action: 'start' | 'complete' | 'cancel') => {
     try {
@@ -124,7 +127,16 @@ export default function TasksPage() {
     }
   };
 
-  const getDisplayTasks = (): any[] => {
+  const isLoading =
+    activeTab === 'today'
+      ? todayLoading
+      : activeTab === 'all'
+        ? allLoading
+        : activeTab === 'my'
+          ? myLoading
+          : templatesLoading;
+
+  const displayTasks = useMemo(() => {
     switch (activeTab) {
       case 'today':
         return todaysTasks;
@@ -145,10 +157,7 @@ export default function TasksPage() {
       default:
         return [];
     }
-  };
-
-  const isLoading = activeTab === 'today' ? todayLoading : allLoading;
-  const displayTasks = getDisplayTasks();
+  }, [activeTab, todaysTasks, allTasks, myTasks, templates, statusFilter, priorityFilter]);
 
   const isOverdue = (task: any) => {
     if (!task.due_date) return false;
@@ -196,7 +205,7 @@ export default function TasksPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">{t('tasks.openTasks')}</p>
-              <p className="text-2xl font-bold text-gray-900">{openTasks}</p>
+              <p className="text-2xl font-bold text-gray-900">{openTasksCount}</p>
             </div>
           </div>
         </div>

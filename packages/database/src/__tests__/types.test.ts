@@ -192,14 +192,14 @@ describe('Enum Schemas', () => {
       }
     });
 
-    it('should reject old generic values', () => {
-      expect(FeedbackTypeSchema.safeParse('complaint').success).toBe(false);
+    it('should reject invalid values', () => {
+      expect(FeedbackTypeSchema.safeParse('complaint_food').success).toBe(false);
       expect(FeedbackTypeSchema.safeParse('question').success).toBe(false);
       expect(FeedbackTypeSchema.safeParse('request').success).toBe(false);
     });
 
-    it('should have 6 specific feedback types', () => {
-      expect(Object.values(FEEDBACK_TYPE)).toHaveLength(6);
+    it('should have 2 feedback types', () => {
+      expect(Object.values(FEEDBACK_TYPE)).toHaveLength(2);
     });
   });
 
@@ -565,8 +565,7 @@ describe('Table Schemas', () => {
       id: uuid1,
       table_id: uuid2,
       order_id: null,
-      feedback_type: 'complaint_food',
-      subject: null,
+      feedback_type: 'complaint',
       message: 'The food was cold',
       status: 'pending',
       responded_by: null,
@@ -588,9 +587,10 @@ describe('Table Schemas', () => {
       }
     });
 
-    it('should reject old generic feedback type', () => {
+    it('should reject old granular feedback types', () => {
       expect(
-        CustomerFeedbackSchema.safeParse({ ...validFeedback, feedback_type: 'complaint' }).success,
+        CustomerFeedbackSchema.safeParse({ ...validFeedback, feedback_type: 'complaint_food' })
+          .success,
       ).toBe(false);
     });
   });

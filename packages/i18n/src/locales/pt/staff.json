@@ -36,6 +36,7 @@
   "orders.delivered": "Entregue",
   "orders.paid": "Pago",
   "orders.cancelled": "Cancelado",
+  "orders.closed": "Fechado",
   "orders.allSources": "Todas as origens",
   "orders.customer": "Cliente",
   "orders.waiter": "Empregado",
@@ -433,6 +434,11 @@
   "calls.errorLoading": "Erro ao carregar chamadas ao empregado",
   "calls.respond": "Responder",
   "calls.respondedBy": "Respondido por {{name}} às",
+  "calls.acknowledge": "Confirmar",
+  "calls.acknowledged": "Confirmado",
+  "calls.callAcknowledged": "Chamada confirmada",
+  "calls.resolve": "Resolver",
+  "calls.resolved": "Resolvido",
   "calls.noCalls": "Sem chamadas",
   "cafeSettings.title": "Definições do Café",
   "cafeSettings.restaurantInformation": "Informações do restaurante",
@@ -605,6 +611,13 @@
   "delivery.deliveryHint": "Isto irá criar um novo pedido de entrega. Pode adicionar artigos ao pedido no ecrã seguinte.",
   "delivery.fullDeliveryAddress": "Morada de entrega completa",
   "delivery.ringDoorbell": "ex.: Tocar campainha, deixar à porta...",
+  "delivery.openInMaps": "Open in Google Maps",
+  "delivery.searchSavedCustomers": "Search saved customers...",
+  "delivery.savedCustomer": "Saved customer",
+  "delivery.newCustomer": "New customer",
+  "delivery.saveCustomer": "Save customer for future orders",
+  "delivery.customerOrders": "{{count}} orders",
+  "delivery.noSavedCustomers": "No saved customers found",
   "expenses.editExpense": "Editar despesa",
   "expenses.validAmount": "Por favor, introduza um montante válido",
   "expenses.updatingExpense": "A atualizar despesa...",
@@ -778,5 +791,8 @@
   "feedback.status.pending": "Pendente",
   "feedback.status.acknowledged": "Reconhecido",
   "feedback.status.resolved": "Resolvido",
-  "feedback.status.dismissed": "Dispensado"
+  "feedback.status.dismissed": "Dispensado",
+
+  "menu.items": "{{count}} artigos",
+  "menu.categories": "{{count}} categorias"
 }

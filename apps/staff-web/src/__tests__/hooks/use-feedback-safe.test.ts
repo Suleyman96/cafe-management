@@ -1,11 +1,9 @@
 import { QUERY_KEYS } from '@gustri/core';
 import { describe, expect, it, vi } from 'vitest';
 import {
-  useAcknowledgeFeedback,
-  useDismissFeedback,
   useFeedback,
+  useMarkFeedbackRead,
   usePendingFeedbackCount,
-  useRespondToFeedback,
 } from '@/hooks/use-feedback-safe';
 import { db } from '@/lib/supabase/wrapped-client';
 import { renderHookWithProviders } from '../helpers/test-utils';
@@ -29,46 +27,14 @@ describe('usePendingFeedbackCount', () => {
   });
 });
 
-describe('useAcknowledgeFeedback', () => {
-  it('invalidates feedback and feedback-count on success', async () => {
-    const { result, queryClient } = renderHookWithProviders(() => useAcknowledgeFeedback());
+describe('useMarkFeedbackRead', () => {
+  it('invalidates feedback on success', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useMarkFeedbackRead());
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
     await result.current.mutateAsync({ feedbackId: 'f1', staffId: 's1' });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.FEEDBACK]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.FEEDBACK, 'count']);
-  });
-});
-
-describe('useRespondToFeedback', () => {
-  it('invalidates feedback and feedback-count on success', async () => {
-    const { result, queryClient } = renderHookWithProviders(() => useRespondToFeedback());
-    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    await result.current.mutateAsync({
-      feedbackId: 'f1',
-      staffId: 's1',
-      response: 'Thanks',
-      status: 'resolved',
-    });
-
-    const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.FEEDBACK]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.FEEDBACK, 'count']);
-  });
-});
-
-describe('useDismissFeedback', () => {
-  it('invalidates feedback and feedback-count on success', async () => {
-    const { result, queryClient } = renderHookWithProviders(() => useDismissFeedback());
-    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    await result.current.mutateAsync('f1');
-
-    const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.FEEDBACK]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.FEEDBACK, 'count']);
   });
 });

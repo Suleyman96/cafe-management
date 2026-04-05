@@ -8,6 +8,7 @@ import {
   ChefHat,
   Package,
   Timer,
+  Truck,
   User,
   Utensils,
   UtensilsCrossed,
@@ -177,10 +178,18 @@ export default function KitchenDisplayPage() {
         }
       }
 
-      await updateOrderStatus.mutateAsync({
-        orderId,
-        status: newStatus,
-      });
+      // Don't set delivery/takeout orders to "served" — they follow a different flow
+      if (
+        !(
+          newStatus === 'SERVED' &&
+          ((order as any)?.order_type === 'delivery' || (order as any)?.order_type === 'takeout')
+        )
+      ) {
+        await updateOrderStatus.mutateAsync({
+          orderId,
+          status: newStatus,
+        });
+      }
       // Don't show toast in kitchen view to avoid distractions
     } catch (_error) {
       toast.error(t('orders.failedUpdateStatus'));
@@ -277,7 +286,8 @@ export default function KitchenDisplayPage() {
         const allOthersServed = otherItems.every((item: any) => item.status === 'served');
 
         // If all other items are served, update order status to served
-        if (allOthersServed) {
+        // Skip for delivery/takeout orders — they follow different flows
+        if (allOthersServed && (order as any).order_type === 'dine_in') {
           await updateOrderStatus.mutateAsync({
             orderId: order.id,
             status: 'SERVED',
@@ -367,6 +377,11 @@ export default function KitchenDisplayPage() {
                   <h3 className="text-base sm:text-xl font-bold text-gray-700">
                     {order.table ? (
                       order.table.table_number
+                    ) : order.order_type === 'delivery' ? (
+                      <span className="flex items-center gap-1 sm:gap-2 text-purple-700">
+                        <Truck className="h-4 sm:h-5 w-4 sm:w-5" />
+                        {t('orders.delivery').toUpperCase()}
+                      </span>
                     ) : (
                       <span className="flex items-center gap-1 sm:gap-2 text-orange-700">
                         <Package className="h-4 sm:h-5 w-4 sm:w-5" />
@@ -498,7 +513,7 @@ export default function KitchenDisplayPage() {
                     {t('kitchen.allItemsReady')}
                   </button>
                 )}
-                {order.status === 'ready' && (
+                {order.status === 'ready' && (order as any).order_type === 'dine_in' && (
                   <button
                     onClick={() => handleStatusUpdate(order.id, 'SERVED')}
                     className="w-full py-2.5 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
@@ -506,6 +521,30 @@ export default function KitchenDisplayPage() {
                     <UtensilsCrossed className="h-5 w-5" />
                     {t('kitchen.allServed')}
                   </button>
+                )}
+                {order.status === 'ready' && (order as any).order_type === 'delivery' && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await updateOrderStatus.mutateAsync({
+                          orderId: order.id,
+                          status: 'OUT_FOR_DELIVERY',
+                        });
+                      } catch (_error) {
+                        toast.error(t('orders.failedUpdateStatus'));
+                      }
+                    }}
+                    className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
+                  >
+                    <Truck className="h-5 w-5" />
+                    {t('orders.outForDelivery')}
+                  </button>
+                )}
+                {order.status === 'ready' && (order as any).order_type === 'takeout' && (
+                  <div className="w-full py-2.5 bg-orange-100 border-2 border-orange-400 text-orange-700 text-base font-bold rounded-lg flex items-center justify-center gap-2">
+                    <Package className="h-5 w-5" />
+                    {t('takeout.readyForPickup')}
+                  </div>
                 )}
               </div>
             </div>

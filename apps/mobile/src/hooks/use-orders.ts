@@ -11,6 +11,8 @@ export function useOrders(filters?: {
   status?: Order['status'];
   statuses?: Order['status'][];
   assigned_waiter_id?: string;
+  created_after?: string;
+  created_before?: string;
   limit?: number;
 }) {
   const queryClient = useQueryClient();

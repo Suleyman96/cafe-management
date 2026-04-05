@@ -36,6 +36,7 @@
   "orders.delivered": "Zugestellt",
   "orders.paid": "Bezahlt",
   "orders.cancelled": "Storniert",
+  "orders.closed": "Geschlossen",
   "orders.allSources": "Alle Quellen",
   "orders.customer": "Kunde",
   "orders.waiter": "Kellner",
@@ -433,6 +434,11 @@
   "calls.errorLoading": "Fehler beim Laden der Kellnerrufe",
   "calls.respond": "Antworten",
   "calls.respondedBy": "Beantwortet von {{name}} um",
+  "calls.acknowledge": "Bestätigen",
+  "calls.acknowledged": "Bestätigt",
+  "calls.callAcknowledged": "Ruf bestätigt",
+  "calls.resolve": "Erledigen",
+  "calls.resolved": "Erledigt",
   "calls.noCalls": "Keine Rufe",
   "cafeSettings.title": "Café-Einstellungen",
   "cafeSettings.restaurantInformation": "Restaurantinformationen",
@@ -605,6 +611,13 @@
   "delivery.deliveryHint": "Dies erstellt eine neue Lieferbestellung. Sie können im nächsten Schritt Artikel hinzufügen.",
   "delivery.fullDeliveryAddress": "Vollständige Lieferadresse",
   "delivery.ringDoorbell": "z.B. Klingeln, vor der Tür abstellen...",
+  "delivery.openInMaps": "Open in Google Maps",
+  "delivery.searchSavedCustomers": "Search saved customers...",
+  "delivery.savedCustomer": "Saved customer",
+  "delivery.newCustomer": "New customer",
+  "delivery.saveCustomer": "Save customer for future orders",
+  "delivery.customerOrders": "{{count}} orders",
+  "delivery.noSavedCustomers": "No saved customers found",
   "expenses.editExpense": "Ausgabe bearbeiten",
   "expenses.validAmount": "Bitte geben Sie einen gültigen Betrag ein",
   "expenses.updatingExpense": "Ausgabe wird aktualisiert...",
@@ -778,5 +791,8 @@
   "feedback.status.pending": "Ausstehend",
   "feedback.status.acknowledged": "Bestätigt",
   "feedback.status.resolved": "Gelöst",
-  "feedback.status.dismissed": "Verworfen"
+  "feedback.status.dismissed": "Verworfen",
+
+  "menu.items": "{{count}} Artikel",
+  "menu.categories": "{{count}} Kategorien"
 }

@@ -8,9 +8,11 @@ import {
   useCreateTask,
   useDeleteTask,
   useGenerateRecurringTasks,
+  useMarkTaskCancelled,
   useMarkTaskCompleted,
   useMarkTaskInProgress,
   useMyTasks,
+  useOpenTasksCount,
   useOverdueTasksCount,
   useRecurringTemplates,
   useTasks,
@@ -67,10 +69,12 @@ export default function TasksListScreen() {
     refetch: refetchTemplates,
   } = useRecurringTemplates();
   const { data: overdueCount } = useOverdueTasksCount();
+  const { data: openTasksCount = 0 } = useOpenTasksCount();
 
   const generateRecurring = useGenerateRecurringTasks();
   const markInProgress = useMarkTaskInProgress();
   const markCompleted = useMarkTaskCompleted();
+  const markCancelled = useMarkTaskCancelled();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
@@ -127,12 +131,6 @@ export default function TasksListScreen() {
     () => (todayTasks || []).filter((t: any) => t.status === 'completed').length,
     [todayTasks],
   );
-  const openTasks = useMemo(
-    () =>
-      (allTasks || []).filter((t: any) => t.status === 'pending' || t.status === 'in_progress')
-        .length,
-    [allTasks],
-  );
 
   const tabOptions = useMemo(() => {
     const base = [
@@ -159,6 +157,15 @@ export default function TasksListScreen() {
       showSuccess('Task completed');
     } catch (err: any) {
       showError(err?.message || 'Failed to complete task');
+    }
+  };
+
+  const handleMarkCancelled = async (id: string) => {
+    try {
+      await markCancelled.mutateAsync(id);
+      showSuccess('Task cancelled');
+    } catch (err: any) {
+      showError(err?.message || 'Failed to cancel task');
     }
   };
 
@@ -220,7 +227,7 @@ export default function TasksListScreen() {
               Open
             </Text>
             <Text variant="titleLarge" style={styles.boldText}>
-              {openTasks}
+              {openTasksCount}
             </Text>
           </Card.Content>
         </Card>
@@ -294,6 +301,7 @@ export default function TasksListScreen() {
             isTemplate={tab === 'templates'}
             onMarkInProgress={handleMarkInProgress}
             onMarkCompleted={handleMarkCompleted}
+            onMarkCancelled={handleMarkCancelled}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />

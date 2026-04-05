@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Card, Chip, Text } from 'react-native-paper';
@@ -6,28 +7,13 @@ import { LoadingScreen } from '@/components/ui';
 import { useExpenses, useOrders, useStaff, useWasteLogs } from '@/hooks';
 import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { getLocalDateString } from '@/lib/date-utils';
-import type { Order, OrderItemWithMenuItem } from '@/types';
-
-// The wrapper's findAll returns joined data beyond the base Order type
-type OrderWithJoins = Order & {
-  table?: { table_number: string; location: string | null };
-  order_items?: OrderItemWithMenuItem[];
-  assigned_waiter?: { full_name: string } | null;
-};
-
-const PRESETS = [
-  { label: 'Today', days: 0 },
-  { label: '7 Days', days: 7 },
-  { label: '30 Days', days: 30 },
-  { label: 'This Month', days: -1 },
-];
+import type { OrderItemWithMenuItem, OrderWithDetails } from '@/types';
 
 function getDateRange(preset: number): { startDate: string; endDate: string } {
   const now = new Date();
   const endDate = getLocalDateString(now);
 
   if (preset === -1) {
-    // This month
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     return { startDate: getLocalDateString(start), endDate };
   }
@@ -42,10 +28,22 @@ function getDateRange(preset: number): { startDate: string; endDate: string } {
 }
 
 export default function ReportsScreen() {
+  const { t } = useTranslation('staff');
   const [presetIdx, setPresetIdx] = useState(2); // 30 Days
+
+  const PRESETS = [
+    { label: t('reports.today'), days: 0 },
+    { label: t('reports.7days'), days: 7 },
+    { label: t('reports.30days'), days: 30 },
+    { label: t('reports.thisMonth'), days: -1 },
+  ];
+
   const range = getDateRange(PRESETS[presetIdx].days);
 
-  const { data: orders, isLoading: loadingOrders } = useOrders();
+  const { data: orders, isLoading: loadingOrders } = useOrders({
+    created_after: `${range.startDate}T00:00:00`,
+    created_before: `${range.endDate}T23:59:59`,
+  });
   const { data: staffList } = useStaff();
   const { data: expenses } = useExpenses({ startDate: range.startDate, endDate: range.endDate });
   const { data: wasteLogs } = useWasteLogs({ startDate: range.startDate, endDate: range.endDate });
@@ -53,33 +51,25 @@ export default function ReportsScreen() {
 
   const currencySymbol = settings?.currency_symbol || '$';
 
-  // Filter orders by date range
-  const filteredOrders = useMemo(() => {
-    if (!orders) return [] as OrderWithJoins[];
-    return (orders as OrderWithJoins[]).filter((o) => {
-      const created = o.created_at?.split('T')[0];
-      return created >= range.startDate && created <= range.endDate;
-    });
-  }, [orders, range.startDate, range.endDate]);
+  const filteredOrders = (orders || []) as OrderWithDetails[];
 
   // Key metrics
   const metrics = useMemo(() => {
     const paidOrders = filteredOrders.filter((o) => o.status === 'closed' || o.status === 'served');
     const revenue = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
     const orderCount = filteredOrders.length;
-    const avgOrderValue = orderCount > 0 ? revenue / paidOrders.length : 0;
-    const completedCount = paidOrders.length;
-    const completionRate = orderCount > 0 ? (completedCount / orderCount) * 100 : 0;
+    const avgOrderValue = paidOrders.length > 0 ? revenue / paidOrders.length : 0;
+    const completionRate = orderCount > 0 ? (paidOrders.length / orderCount) * 100 : 0;
 
     return { revenue, orderCount, avgOrderValue, completionRate };
   }, [filteredOrders]);
 
   // Order types
   const orderTypes = useMemo(() => {
-    const types = { dine_in: 0, takeaway: 0, delivery: 0 };
+    const types = { dine_in: 0, takeout: 0, delivery: 0 };
     filteredOrders.forEach((o) => {
-      const t = o.order_type || 'dine_in';
-      if (t in types) types[t as keyof typeof types]++;
+      const ot = o.order_type || 'dine_in';
+      if (ot in types) types[ot as keyof typeof types]++;
     });
     return types;
   }, [filteredOrders]);
@@ -89,7 +79,7 @@ export default function ReportsScreen() {
     const itemMap: Record<string, { name: string; qty: number; revenue: number }> = {};
     filteredOrders.forEach((o) => {
       (o.order_items || []).forEach((item: OrderItemWithMenuItem) => {
-        const name = item.menu_item?.name || 'Unknown';
+        const name = item.menu_item?.name || t('kitchen.unknownItem');
         if (!itemMap[name]) itemMap[name] = { name, qty: 0, revenue: 0 };
         itemMap[name].qty += item.quantity || 0;
         itemMap[name].revenue += (item.item_price || 0) * (item.quantity || 0);
@@ -98,7 +88,7 @@ export default function ReportsScreen() {
     return Object.values(itemMap)
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 10);
-  }, [filteredOrders]);
+  }, [filteredOrders, t]);
 
   // Staff performance
   const staffPerformance = useMemo(() => {
@@ -108,14 +98,15 @@ export default function ReportsScreen() {
       const wId = o.assigned_waiter_id;
       if (!wId) return;
       const s = staffList.find((st) => st.id === wId);
-      if (!perf[wId]) perf[wId] = { name: s?.full_name || 'Unknown', orders: 0, revenue: 0 };
+      if (!perf[wId])
+        perf[wId] = { name: s?.full_name || t('kitchen.unknownItem'), orders: 0, revenue: 0 };
       perf[wId].orders++;
       perf[wId].revenue += o.total || 0;
     });
     return Object.values(perf)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10);
-  }, [filteredOrders, staffList]);
+  }, [filteredOrders, staffList, t]);
 
   // Expense total
   const expenseTotal = useMemo(() => {
@@ -130,7 +121,7 @@ export default function ReportsScreen() {
     );
   }, [wasteLogs]);
 
-  if (loadingOrders) return <LoadingScreen message="Loading reports..." />;
+  if (loadingOrders) return <LoadingScreen message={t('reports.loadingReports')} />;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -145,21 +136,21 @@ export default function ReportsScreen() {
 
       {/* Key Metrics */}
       <Text variant="titleMedium" style={styles.sectionTitle}>
-        Key Metrics
+        {t('reports.keyMetrics')}
       </Text>
       <View style={styles.metricsGrid}>
         <MetricCard
-          label="Revenue"
+          label={t('reports.revenue')}
           value={`${currencySymbol}${metrics.revenue.toFixed(0)}`}
           color="#10b981"
         />
-        <MetricCard label="Orders" value={metrics.orderCount} />
+        <MetricCard label={t('reports.ordersHandled')} value={metrics.orderCount} />
         <MetricCard
-          label="Avg Order"
+          label={t('reports.avgOrderShort')}
           value={`${currencySymbol}${metrics.avgOrderValue.toFixed(2)}`}
         />
         <MetricCard
-          label="Completion"
+          label={t('reports.completion')}
           value={`${metrics.completionRate.toFixed(0)}%`}
           color={metrics.completionRate > 80 ? '#10b981' : '#f59e0b'}
         />
@@ -167,24 +158,24 @@ export default function ReportsScreen() {
 
       {/* Order Types */}
       <Text variant="titleMedium" style={styles.sectionTitle}>
-        Order Types
+        {t('reports.orderTypes')}
       </Text>
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.typeRow}>
-            <Text variant="bodyMedium">Dine-in</Text>
+            <Text variant="bodyMedium">{t('reports.dineIn')}</Text>
             <Text variant="titleSmall" style={{ fontWeight: '700' }}>
               {orderTypes.dine_in}
             </Text>
           </View>
           <View style={styles.typeRow}>
-            <Text variant="bodyMedium">Takeout</Text>
+            <Text variant="bodyMedium">{t('reports.takeout')}</Text>
             <Text variant="titleSmall" style={{ fontWeight: '700' }}>
-              {orderTypes.takeaway}
+              {orderTypes.takeout}
             </Text>
           </View>
           <View style={styles.typeRow}>
-            <Text variant="bodyMedium">Delivery</Text>
+            <Text variant="bodyMedium">{t('reports.delivery')}</Text>
             <Text variant="titleSmall" style={{ fontWeight: '700' }}>
               {orderTypes.delivery}
             </Text>
@@ -196,7 +187,7 @@ export default function ReportsScreen() {
       {topItems.length > 0 && (
         <>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            Top Sold Items
+            {t('reports.soldItems')}
           </Text>
           <Card style={styles.card}>
             <Card.Content>
@@ -206,7 +197,7 @@ export default function ReportsScreen() {
                     {i + 1}. {item.name}
                   </Text>
                   <Text variant="bodySmall" style={styles.muted}>
-                    {item.qty} sold
+                    {item.qty} {t('reports.sold')}
                   </Text>
                   <Text variant="bodySmall" style={{ fontWeight: '600', marginLeft: 8 }}>
                     {currencySymbol}
@@ -223,7 +214,7 @@ export default function ReportsScreen() {
       {staffPerformance.length > 0 && (
         <>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            Staff Performance
+            {t('reports.staffPerformance')}
           </Text>
           <Card style={styles.card}>
             <Card.Content>
@@ -233,7 +224,7 @@ export default function ReportsScreen() {
                     {i + 1}. {s.name}
                   </Text>
                   <Text variant="bodySmall" style={styles.muted}>
-                    {s.orders} orders
+                    {s.orders} {t('reports.orders')}
                   </Text>
                   <Text variant="bodySmall" style={{ fontWeight: '600', marginLeft: 8 }}>
                     {currencySymbol}
@@ -248,20 +239,20 @@ export default function ReportsScreen() {
 
       {/* Expense & Waste Summary */}
       <Text variant="titleMedium" style={styles.sectionTitle}>
-        Expenses & Waste
+        {t('reports.expensesAndWaste')}
       </Text>
       <View style={styles.metricsGrid}>
         <MetricCard
-          label="Expenses"
+          label={t('reports.expenses')}
           value={`${currencySymbol}${expenseTotal.toFixed(0)}`}
           color="#ef4444"
-          subtitle={`${expenses?.length || 0} transactions`}
+          subtitle={`${expenses?.length || 0} ${t('reports.transactions')}`}
         />
         <MetricCard
-          label="Waste"
+          label={t('reports.wasteSummary')}
           value={`${currencySymbol}${wasteTotal.toFixed(0)}`}
           color="#f59e0b"
-          subtitle={`${wasteLogs?.length || 0} entries`}
+          subtitle={`${wasteLogs?.length || 0} ${t('reports.entries')}`}
         />
       </View>
 
@@ -270,7 +261,7 @@ export default function ReportsScreen() {
         <Card.Content>
           <View style={styles.typeRow}>
             <Text variant="titleMedium" style={{ fontWeight: '700' }}>
-              Net Profit
+              {t('reports.netProfit')}
             </Text>
             <Text
               variant="titleLarge"

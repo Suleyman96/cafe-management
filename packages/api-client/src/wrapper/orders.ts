@@ -13,6 +13,8 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       table_id?: string;
       order_type?: OrderRow['order_type'];
       assigned_waiter_id?: string;
+      created_after?: string;
+      created_before?: string;
       limit?: number;
     }) => {
       let query = ctx.client
@@ -42,6 +44,12 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       }
       if (filters?.assigned_waiter_id) {
         query = query.eq('assigned_waiter_id', filters.assigned_waiter_id);
+      }
+      if (filters?.created_after) {
+        query = query.gte('created_at', filters.created_after);
+      }
+      if (filters?.created_before) {
+        query = query.lt('created_at', filters.created_before);
       }
       if (filters?.limit) {
         query = query.limit(filters.limit);
@@ -97,6 +105,25 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     },
 
     updateStatus: async (id: string, status: OrderRow['status']) => {
+      // Prevent "served" status on delivery and takeout orders
+      if (status === 'served') {
+        const { data: order } = (await ctx.client
+          .from('orders')
+          .select('*')
+          .eq('id', id)
+          .single()) as { data: any; error: any };
+        if (order?.order_type === 'delivery') {
+          throw new Error(
+            'Delivery orders cannot be set to "served". Use "out_for_delivery" instead.',
+          );
+        }
+        if (order?.order_type === 'takeout') {
+          throw new Error(
+            'Takeout orders cannot be set to "served". Use "ready" and then close after payment.',
+          );
+        }
+      }
+
       // Prevent advancing empty orders (no non-cancelled items)
       const advanceStatuses: string[] = [
         'preparing',
@@ -262,6 +289,29 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         .eq('id', orderId);
 
       if (error) throw handleSupabaseError(error);
+    },
+
+    // Takeout-specific methods
+    findTakeoutOrders: async () => {
+      const { data, error } = await ctx.client
+        .from('orders')
+        .select(`
+          *,
+          order_items(
+            *,
+            menu_item:menu_items(*)
+          ),
+          assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name),
+          order_payments(
+            *,
+            received_by_staff:staff!order_payments_received_by_fkey(full_name)
+          )
+        `)
+        .eq('order_type', 'takeout')
+        .order('created_at', { ascending: false });
+
+      if (error) throw handleSupabaseError(error);
+      return data || [];
     },
 
     // Delivery-specific methods

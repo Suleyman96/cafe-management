@@ -203,14 +203,7 @@ export interface Database {
           id: string;
           table_id: string | null;
           order_id: string | null;
-          feedback_type:
-            | 'complaint_food'
-            | 'complaint_service'
-            | 'complaint_staff'
-            | 'question_menu'
-            | 'request_general'
-            | 'praise';
-          subject: string | null;
+          feedback_type: 'complaint' | 'praise';
           message: string;
           status: 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
           responded_by: string | null;
@@ -480,6 +473,24 @@ export interface Database {
         };
         Insert: Omit<Database['public']['Tables']['refunds']['Row'], 'id' | 'created_at'>;
         Update: Partial<Database['public']['Tables']['refunds']['Insert']>;
+      };
+      delivery_customers: {
+        Row: {
+          id: string;
+          name: string;
+          phone: string;
+          address: string;
+          notes: string | null;
+          order_count: number;
+          last_order_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<
+          Database['public']['Tables']['delivery_customers']['Row'],
+          'id' | 'order_count' | 'last_order_at' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['delivery_customers']['Insert']>;
       };
     };
     Views: {

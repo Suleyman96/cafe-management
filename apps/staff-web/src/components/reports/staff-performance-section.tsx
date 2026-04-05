@@ -6,6 +6,7 @@ import type { StaffMember } from '@/lib/report-pdf-export';
 
 interface StaffPerformanceSectionProps {
   staffPerformance: StaffMember[];
+  formatPrice: (amount: number) => string;
 }
 
 function RankBadge({ index }: { index: number }) {
@@ -27,7 +28,7 @@ function RankBadge({ index }: { index: number }) {
   );
 }
 
-function RoleBadge({ role }: { role: string }) {
+function RoleBadge({ role, t }: { role: string; t: (key: string) => string }) {
   const colors =
     role === 'owner'
       ? 'bg-emerald-100 text-emerald-800'
@@ -41,12 +42,15 @@ function RoleBadge({ role }: { role: string }) {
 
   return (
     <span className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${colors}`}>
-      {role.charAt(0).toUpperCase() + role.slice(1)}
+      {t(`staffMgmt.role.${role}`)}
     </span>
   );
 }
 
-export function StaffPerformanceSection({ staffPerformance }: StaffPerformanceSectionProps) {
+export function StaffPerformanceSection({
+  staffPerformance,
+  formatPrice,
+}: StaffPerformanceSectionProps) {
   const { t } = useTranslation('staff');
 
   return (
@@ -70,7 +74,7 @@ export function StaffPerformanceSection({ staffPerformance }: StaffPerformanceSe
                   {staffPerformance[0].name}
                 </p>
                 <p className="text-xs sm:text-sm text-yellow-700">
-                  ${staffPerformance[0].revenue.toFixed(2)} {t('reports.from')}{' '}
+                  {formatPrice(staffPerformance[0].revenue)} {t('reports.from')}{' '}
                   {staffPerformance[0].ordersHandled} {t('reports.orders')}
                 </p>
               </div>
@@ -110,18 +114,17 @@ export function StaffPerformanceSection({ staffPerformance }: StaffPerformanceSe
                         </div>
                       </td>
                       <td className="py-3">
-                        <RoleBadge role={member.role} />
+                        <RoleBadge role={member.role} t={t} />
                       </td>
                       <td className="py-3 text-right text-xs sm:text-sm">{member.ordersHandled}</td>
                       <td className="py-3 text-right text-xs sm:text-sm">{member.itemsSold}</td>
                       <td className="py-3 text-right font-medium text-green-600 text-xs sm:text-sm">
-                        ${member.revenue.toFixed(2)}
+                        {formatPrice(member.revenue)}
                       </td>
                       <td className="py-3 text-right text-xs sm:text-sm">
-                        $
-                        {member.ordersHandled > 0
-                          ? (member.revenue / member.ordersHandled).toFixed(2)
-                          : '0.00'}
+                        {formatPrice(
+                          member.ordersHandled > 0 ? member.revenue / member.ordersHandled : 0,
+                        )}
                       </td>
                       <td className="py-3 text-right text-xs sm:text-sm">
                         <span
@@ -151,7 +154,7 @@ export function StaffPerformanceSection({ staffPerformance }: StaffPerformanceSe
                       <RankBadge index={index} />
                       <span className="font-medium text-sm truncate">{member.name}</span>
                     </div>
-                    <RoleBadge role={member.role} />
+                    <RoleBadge role={member.role} t={t} />
                   </div>
                   <div className="grid grid-cols-4 gap-2 text-center text-xs">
                     <div>
@@ -163,7 +166,7 @@ export function StaffPerformanceSection({ staffPerformance }: StaffPerformanceSe
                       <p className="text-gray-500">{t('reports.itemsSoldCol')}</p>
                     </div>
                     <div>
-                      <p className="font-bold text-green-600">${member.revenue.toFixed(0)}</p>
+                      <p className="font-bold text-green-600">{formatPrice(member.revenue)}</p>
                       <p className="text-gray-500">{t('reports.revenue')}</p>
                     </div>
                     <div>
@@ -190,13 +193,12 @@ export function StaffPerformanceSection({ staffPerformance }: StaffPerformanceSe
             </div>
             <div className="text-center">
               <p className="text-lg sm:text-2xl font-bold text-green-600">
-                $
-                {staffPerformance.length > 0
-                  ? (
-                      staffPerformance.reduce((sum, s) => sum + s.revenue, 0) /
-                      staffPerformance.length
-                    ).toFixed(0)
-                  : '0'}
+                {formatPrice(
+                  staffPerformance.length > 0
+                    ? staffPerformance.reduce((sum, s) => sum + s.revenue, 0) /
+                        staffPerformance.length
+                    : 0,
+                )}
               </p>
               <p className="text-xs text-gray-600">{t('reports.avgRevenue')}</p>
             </div>

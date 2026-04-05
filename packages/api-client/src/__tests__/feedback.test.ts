@@ -28,7 +28,7 @@ describe('FeedbackWrapper', () => {
     expect(ctx.getCalls()[0].method).toBe('insert');
   });
 
-  it('create supports subject and order_id', async () => {
+  it('create supports order_id', async () => {
     const ctx = createMockContext({
       responses: {
         customer_feedback: { data: validFeedback, error: null },
@@ -37,9 +37,8 @@ describe('FeedbackWrapper', () => {
     const feedback = createFeedbackWrapper(ctx);
     await feedback.create({
       table_id: validFeedback.table_id,
-      feedback_type: 'complaint_food',
+      feedback_type: 'complaint',
       message: 'Cold food',
-      subject: 'Food quality',
       order_id: 'order-123',
     });
     const calls = ctx.getCalls();
@@ -69,54 +68,21 @@ describe('FeedbackWrapper', () => {
     expect(calls[0].table).toBe('customer_feedback');
   });
 
-  it('acknowledge sets acknowledged_at and staff', async () => {
-    const acknowledgedFeedback = {
+  it('markRead sets acknowledged_at and staff', async () => {
+    const readFeedback = {
       ...validFeedback,
       status: 'acknowledged',
       responded_by: 'staff-123',
     };
     const ctx = createMockContext({
       responses: {
-        customer_feedback: { data: acknowledgedFeedback, error: null },
+        customer_feedback: { data: readFeedback, error: null },
       },
     });
     const feedback = createFeedbackWrapper(ctx);
-    const result = await feedback.acknowledge(validFeedback.id, 'staff-123');
+    const result = await feedback.markRead(validFeedback.id, 'staff-123');
     expect(result.status).toBe('acknowledged');
     expect(ctx.getCalls()[0].method).toBe('update');
-  });
-
-  it('respond sets response text and status', async () => {
-    const respondedFeedback = {
-      ...validFeedback,
-      status: 'resolved',
-      response: 'Thank you for your feedback!',
-    };
-    const ctx = createMockContext({
-      responses: {
-        customer_feedback: { data: respondedFeedback, error: null },
-      },
-    });
-    const feedback = createFeedbackWrapper(ctx);
-    const result = await feedback.respond(
-      validFeedback.id,
-      'staff-123',
-      'Thank you for your feedback!',
-      'resolved' as any,
-    );
-    expect(result.status).toBe('resolved');
-  });
-
-  it('dismiss sets status to dismissed', async () => {
-    const dismissedFeedback = { ...validFeedback, status: 'dismissed' };
-    const ctx = createMockContext({
-      responses: {
-        customer_feedback: { data: dismissedFeedback, error: null },
-      },
-    });
-    const feedback = createFeedbackWrapper(ctx);
-    const result = await feedback.dismiss(validFeedback.id);
-    expect(result.status).toBe('dismissed');
   });
 
   it('getPendingCount returns count', async () => {

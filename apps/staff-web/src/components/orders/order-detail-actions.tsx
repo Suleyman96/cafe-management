@@ -96,7 +96,7 @@ export function OrderDetailActions({
           {t('orders.ready')}
         </Button>
       )}
-      {order.status === 'ready' && order.table && order.order_type !== 'delivery' && (
+      {order.status === 'ready' && order.order_type === 'dine_in' && (
         <Button
           size="sm"
           onClick={() => onStatusUpdate('SERVED')}

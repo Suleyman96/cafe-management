@@ -195,28 +195,10 @@ describe('getPriorityInfo', () => {
 // --- Feedback helpers ---
 
 describe('getFeedbackTypeInfo', () => {
-  it('returns food complaint info', () => {
-    const info = getFeedbackTypeInfo('complaint_food');
-    expect(info.label).toBe('Food Complaint');
+  it('returns complaint info', () => {
+    const info = getFeedbackTypeInfo('complaint');
+    expect(info.label).toBe('Complaint');
     expect(info.color).toBe('red');
-  });
-
-  it('returns service complaint info', () => {
-    const info = getFeedbackTypeInfo('complaint_service');
-    expect(info.label).toBe('Service Complaint');
-    expect(info.color).toBe('orange');
-  });
-
-  it('returns staff complaint info', () => {
-    expect(getFeedbackTypeInfo('complaint_staff').label).toBe('Staff Complaint');
-  });
-
-  it('returns menu question info', () => {
-    expect(getFeedbackTypeInfo('question_menu').label).toBe('Menu Question');
-  });
-
-  it('returns general request info', () => {
-    expect(getFeedbackTypeInfo('request_general').label).toBe('General Request');
   });
 
   it('returns praise info', () => {

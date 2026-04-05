@@ -11,7 +11,6 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
       table_id: string;
       feedback_type: string;
       message?: string;
-      subject?: string | null;
       order_id?: string | null;
       status?: string;
     }) => {
@@ -34,8 +33,7 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
         .from('customer_feedback')
         .select(`
           *,
-          table:tables!customer_feedback_table_id_fkey(table_number),
-          responded_by_staff:staff!customer_feedback_responded_by_fkey(full_name)
+          table:tables!customer_feedback_table_id_fkey(table_number)
         `)
         .order('created_at', { ascending: false });
 
@@ -49,7 +47,7 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
       return data || [];
     },
 
-    acknowledge: async (id: string, staffId: string) => {
+    markRead: async (id: string, staffId: string) => {
       const { data, error } = await ctx.anyClient
         .from('customer_feedback')
         .update({
@@ -57,42 +55,6 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
           responded_by: staffId,
           acknowledged_at: new Date().toISOString(),
         })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw handleSupabaseError(error);
-      if (!isCustomerFeedback(data)) throw new Error('Invalid feedback data');
-      return data as CustomerFeedbackRow;
-    },
-
-    respond: async (
-      id: string,
-      staffId: string,
-      response: string,
-      status: CustomerFeedbackRow['status'],
-    ) => {
-      const { data, error } = await ctx.anyClient
-        .from('customer_feedback')
-        .update({
-          status,
-          responded_by: staffId,
-          response,
-          resolved_at: status === 'resolved' ? new Date().toISOString() : null,
-        })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw handleSupabaseError(error);
-      if (!isCustomerFeedback(data)) throw new Error('Invalid feedback data');
-      return data as CustomerFeedbackRow;
-    },
-
-    dismiss: async (id: string) => {
-      const { data, error } = await ctx.anyClient
-        .from('customer_feedback')
-        .update({ status: 'dismissed' })
         .eq('id', id)
         .select()
         .single();

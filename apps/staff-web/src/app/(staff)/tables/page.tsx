@@ -2,12 +2,10 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
-import { Package, Plus, RefreshCw } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Plus, RefreshCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/modals/confirm-dialog';
-import { CreateTakeoutModal } from '@/components/modals/create-takeout-modal';
 import { TableModal } from '@/components/modals/table-modal';
 import { TableTransferModal } from '@/components/modals/table-transfer-modal';
 import { TableCard } from '@/components/tables/table-card';
@@ -24,7 +22,6 @@ import { supabase } from '@/lib/supabase/client';
 
 export default function TablesPage() {
   const { t } = useTranslation('staff');
-  const router = useRouter();
   const { staff } = useAuth();
   const {
     data: tables,
@@ -38,7 +35,6 @@ export default function TablesPage() {
 
   const [selectedTable, setSelectedTable] = useState<any>(null);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
-  const [isTakeoutModalOpen, setIsTakeoutModalOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<any>(null);
   const [tableMenuOpen, setTableMenuOpen] = useState<string | null>(null);
@@ -177,16 +173,6 @@ export default function TablesPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setIsTakeoutModalOpen(true)}
-            className="flex items-center gap-2 border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:border-orange-500"
-          >
-            <Package className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('tables.takeoutOrder')}</span>
-            <span className="sm:hidden">{t('tables.takeout')}</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
             onClick={() => refetchTables()}
             className="flex items-center gap-2"
           >
@@ -261,16 +247,6 @@ export default function TablesPage() {
           }}
         />
       )}
-
-      <CreateTakeoutModal
-        isOpen={isTakeoutModalOpen}
-        onClose={() => setIsTakeoutModalOpen(false)}
-        onSuccess={(orderId) => {
-          setIsTakeoutModalOpen(false);
-          toast.success(t('orders.orderCreated'));
-          router.push(`/orders/${orderId}/add-items`);
-        }}
-      />
 
       <ConfirmDialog
         isOpen={!!deleteConfirmTable}

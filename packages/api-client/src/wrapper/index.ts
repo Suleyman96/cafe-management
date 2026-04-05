@@ -7,6 +7,7 @@
 
 import type { Database } from '@gustri/database';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { createDeliveryCustomersWrapper } from './delivery-customers';
 import { createExpenseCategoriesWrapper, createExpensesWrapper } from './expenses';
 import { createFeedbackWrapper } from './feedback';
 import { createCategoriesWrapper, createMenuItemsWrapper } from './menu';
@@ -47,6 +48,7 @@ export class SupabaseWrapper {
   waste;
   tasks;
   refunds;
+  deliveryCustomers;
   rpc;
   views;
   realtime;
@@ -76,6 +78,7 @@ export class SupabaseWrapper {
     this.waste = createWasteWrapper(this.ctx);
     this.tasks = createTasksWrapper(this.ctx);
     this.refunds = createRefundsWrapper(this.ctx);
+    this.deliveryCustomers = createDeliveryCustomersWrapper(this.ctx);
     this.rpc = createRpcWrapper(this.ctx);
     this.views = createViewsWrapper(this.ctx);
     this.realtime = createRealtimeWrapper(this.ctx);
@@ -87,6 +90,7 @@ export function createSupabaseWrapper(client: SupabaseClient<Database>) {
   return new SupabaseWrapper(client);
 }
 
+export type { DeliveryCustomersWrapper } from './delivery-customers';
 export type { ExpenseCategoriesWrapper, ExpensesWrapper } from './expenses';
 export type { FeedbackWrapper } from './feedback';
 export type { CategoriesWrapper, MenuItemsWrapper } from './menu';

@@ -1,5 +1,6 @@
 'use client';
 
+import { getLocalDateString } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import {
   BarChart3,
@@ -32,7 +33,7 @@ import { GustriIcon, GustriLogo } from '@/components/ui/gustri-logo';
 import { useAuth } from '@/hooks/use-auth';
 import { useMyScheduleToday } from '@/hooks/use-schedules-safe';
 import { useCafeSettings } from '@/hooks/use-settings-safe';
-import { useMyTasks, useOverdueTasksCount } from '@/hooks/use-tasks-safe';
+import { useMyTasks } from '@/hooks/use-tasks-safe';
 
 type NavItem = {
   href: string;
@@ -59,6 +60,7 @@ const navGroups: NavGroup[] = [
       { href: '/tables', labelKey: 'tables', icon: <UtensilsCrossed className="h-5 w-5" /> },
       { href: '/orders', labelKey: 'orders', icon: <ClipboardList className="h-5 w-5" /> },
       { href: '/delivery', labelKey: 'delivery', icon: <Truck className="h-5 w-5" /> },
+      { href: '/takeout', labelKey: 'takeout', icon: <Package className="h-5 w-5" /> },
       { href: '/kitchen', labelKey: 'kitchen', icon: <ChefHat className="h-5 w-5" /> },
       { href: '/calls', labelKey: 'waiterCalls', icon: <Bell className="h-5 w-5" /> },
       { href: '/tasks', labelKey: 'tasks', icon: <ListTodo className="h-5 w-5" /> },
@@ -123,7 +125,6 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const { data: overdueCount = 0 } = useOverdueTasksCount();
   const { data: cafeSettings } = useCafeSettings();
 
   const isOwner = staff?.role === 'owner';
@@ -276,16 +277,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
                           <span className={isActive ? 'text-blue-600' : 'text-gray-500'}>
                             {item.icon}
                           </span>
-                          {(!isCollapsed || isMobile) && (
-                            <>
-                              {label}
-                              {item.href === '/tasks' && overdueCount > 0 && (
-                                <span className="ml-auto text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
-                                  {overdueCount}
-                                </span>
-                              )}
-                            </>
-                          )}
+                          {(!isCollapsed || isMobile) && label}
                         </Link>
                       </li>
                     );
@@ -380,11 +372,12 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
 }
 
 function MyTasksIndicator({ staffId }: { staffId: string }) {
-  const { data: tasks } = useMyTasks(staffId);
+  const { data: myTasks } = useMyTasks(staffId);
   const { t } = useTranslation('nav');
 
+  const today = getLocalDateString();
   const activeTasks =
-    tasks?.filter((t: any) => t.status === 'pending' || t.status === 'in_progress') || [];
+    myTasks?.filter((t: any) => t.status === 'pending' || t.status === 'in_progress') || [];
 
   if (activeTasks.length === 0) return null;
 
@@ -392,6 +385,8 @@ function MyTasksIndicator({ staffId }: { staffId: string }) {
   const displayTasks = [...activeTasks]
     .sort((a: any, b: any) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3))
     .slice(0, 3);
+
+  const isOverdue = (task: any) => task.due_date && task.due_date < today;
 
   const priorityDot: Record<string, string> = {
     urgent: 'bg-red-500',
@@ -414,9 +409,11 @@ function MyTasksIndicator({ staffId }: { staffId: string }) {
           {displayTasks.map((task: any) => (
             <div key={task.id} className="flex items-center gap-1.5 text-gray-700">
               <span
-                className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${priorityDot[task.priority] || priorityDot.normal}`}
+                className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isOverdue(task) ? 'bg-red-500' : priorityDot[task.priority] || priorityDot.normal}`}
               />
-              <span className="truncate">{task.title}</span>
+              <span className={`truncate ${isOverdue(task) ? 'text-red-600' : ''}`}>
+                {task.title}
+              </span>
             </div>
           ))}
           {activeTasks.length > 3 && (

@@ -2,7 +2,7 @@
  * Tasks wrapper module
  */
 
-import { handleSupabaseError, isTask } from '@gustri/core';
+import { getLocalDateString, handleSupabaseError, isTask } from '@gustri/core';
 import type { TaskInsert, TaskRow, TaskUpdate, WrapperContext } from './types';
 
 export function createTasksWrapper(ctx: WrapperContext) {
@@ -75,7 +75,6 @@ export function createTasksWrapper(ctx: WrapperContext) {
         `)
         .eq('assigned_to', staffId)
         .eq('is_recurring', false)
-        .in('status', ['pending', 'in_progress'])
         .order('due_date', { ascending: true });
 
       if (error) throw handleSupabaseError(error);
@@ -83,7 +82,7 @@ export function createTasksWrapper(ctx: WrapperContext) {
     },
 
     getTodaysTasks: async () => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const { data, error } = await ctx.client
         .from('tasks')
         .select(`
@@ -100,11 +99,22 @@ export function createTasksWrapper(ctx: WrapperContext) {
     },
 
     getOverdueCount: async () => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const { data, error } = await ctx.client
         .from('tasks')
         .select('id')
         .lt('due_date', today)
+        .in('status', ['pending', 'in_progress'])
+        .eq('is_recurring', false);
+
+      if (error) throw handleSupabaseError(error);
+      return (data || []).length;
+    },
+
+    getOpenTasksCount: async () => {
+      const { data, error } = await ctx.client
+        .from('tasks')
+        .select('id')
         .in('status', ['pending', 'in_progress'])
         .eq('is_recurring', false);
 
@@ -229,9 +239,13 @@ export function createTasksWrapper(ctx: WrapperContext) {
 
       const existingParentIds = new Set((existing || []).map((e: any) => e.parent_task_id));
 
-      const dateObj = new Date(date);
+      // Parse date string directly to avoid UTC vs local timezone issues.
+      // new Date("YYYY-MM-DD") parses as UTC midnight, then getDate()/getDay()
+      // use local timezone which can return the wrong day in negative UTC offsets.
+      const [year, month, day] = date.split('-').map(Number);
+      const dateObj = new Date(year, month - 1, day); // local midnight
       const dayOfWeek = dateObj.getDay() === 0 ? 7 : dateObj.getDay(); // 1=Mon, 7=Sun
-      const dayOfMonth = dateObj.getDate();
+      const dayOfMonth = day;
 
       const created: TaskRow[] = [];
 
@@ -247,7 +261,7 @@ export function createTasksWrapper(ctx: WrapperContext) {
         } else if (template.recurrence_pattern === 'weekly') {
           shouldGenerate = (template.recurrence_days || []).includes(dayOfWeek);
         } else if (template.recurrence_pattern === 'monthly') {
-          shouldGenerate = (template.recurrence_days || [])[0] === dayOfMonth;
+          shouldGenerate = (template.recurrence_days || []).includes(dayOfMonth);
         }
 
         if (!shouldGenerate) continue;

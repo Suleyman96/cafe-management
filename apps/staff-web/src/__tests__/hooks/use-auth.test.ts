@@ -109,10 +109,11 @@ describe('useAuth', () => {
     });
 
     it('sets staff when session and staff record exist', async () => {
-      (supabase.auth.getSession as any).mockResolvedValueOnce({
-        data: { session: { user: { id: 'auth-user-1' } } },
-        error: null,
-      });
+      // Mock twice: once for initial check, once for re-render when staff is set
+      const validSession = { data: { session: { user: { id: 'auth-user-1' } } }, error: null };
+      (supabase.auth.getSession as any)
+        .mockResolvedValueOnce(validSession)
+        .mockResolvedValueOnce(validSession);
       (db.staff.findByAuthId as any).mockResolvedValueOnce(mockAdminStaff);
 
       renderHook(() => useAuth());
@@ -156,18 +157,33 @@ describe('useAuth', () => {
       expect(useAuthStore.getState().staff).toBeNull();
     });
 
-    it('skips session check when staff is already set', () => {
+    it('verifies session when staff is already set', async () => {
       useAuthStore.setState({ staff: mockAdminStaff, user: mockAdminStaff, isLoading: false });
+
+      (supabase.auth.getSession as any).mockResolvedValueOnce({
+        data: { session: { user: { id: 'auth-user-1' } } },
+        error: null,
+      });
 
       renderHook(() => useAuth());
 
-      expect(supabase.auth.getSession).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(supabase.auth.getSession).toHaveBeenCalled();
+      });
+
+      // Staff should remain set since session is valid
+      expect(useAuthStore.getState().staff).toEqual(mockAdminStaff);
     });
   });
 
   describe('return values', () => {
     it('returns isAuthenticated true when staff is set', () => {
       useAuthStore.setState({ staff: mockAdminStaff, user: mockAdminStaff, isLoading: false });
+      // Mock valid session so re-render doesn't clear auth
+      (supabase.auth.getSession as any).mockResolvedValueOnce({
+        data: { session: { user: { id: 'auth-user-1' } } },
+        error: null,
+      });
 
       const { result } = renderHook(() => useAuth());
 
@@ -188,6 +204,11 @@ describe('useAuth', () => {
   describe('logout', () => {
     it('signs out, clears auth, and navigates to /login', async () => {
       useAuthStore.setState({ staff: mockAdminStaff, user: mockAdminStaff, isLoading: false });
+      // Only mock once — after logout clears staff, re-render should see no session
+      (supabase.auth.getSession as any).mockResolvedValueOnce({
+        data: { session: { user: { id: 'auth-user-1' } } },
+        error: null,
+      });
 
       const { result } = renderHook(() => useAuth());
 
@@ -323,9 +344,13 @@ describe('useAuth', () => {
         expect(useAuthStore.getState().isLoading).toBe(false);
       });
 
-      // Simulate SIGNED_IN event
+      // Simulate SIGNED_IN event — mock getSession for re-render when staff is set
       const mockStaff = { id: 'staff-1', full_name: 'Test User', role: 'waiter' };
       (db.staff.findByAuthId as any).mockResolvedValueOnce(mockStaff);
+      (supabase.auth.getSession as any).mockResolvedValueOnce({
+        data: { session: { user: { id: 'auth-user-1' } } },
+        error: null,
+      });
 
       await act(async () => {
         await authCallback!('SIGNED_IN', { user: { id: 'auth-user-1' } });

@@ -28,8 +28,10 @@ import {
   useDeliveryOrders,
   useMarkDelivered,
   useMarkOutForDelivery,
+  useMenuItems,
   useUpdateOrderStatus,
 } from '@/hooks';
+import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { supabase } from '@/lib/supabase/client';
 
@@ -45,7 +47,9 @@ type DeliveryStatus =
 export default function DeliveryPage() {
   const { t } = useTranslation('staff');
   const router = useRouter();
+  const { staff } = useAuth();
   const { data: orders, isLoading: loading, error, refetch } = useDeliveryOrders();
+  const { data: menuItems } = useMenuItems();
   const updateOrderStatus = useUpdateOrderStatus();
   const markOutForDelivery = useMarkOutForDelivery();
   const markDelivered = useMarkDelivered();
@@ -279,9 +283,8 @@ export default function DeliveryPage() {
       {/* Orders List */}
       <div className="space-y-3 sm:space-y-4">
         {filteredOrders?.map((order: any) => {
-          const total = calculateOrderTotal(order);
+          const grandTotal = calculateOrderTotal(order); // already includes delivery_fee from DB
           const deliveryFee = order.delivery_fee ?? 0;
-          const grandTotal = total + deliveryFee;
 
           return (
             <div
@@ -535,12 +538,14 @@ export default function DeliveryPage() {
       )}
 
       <CreateDeliveryModal
+        staffId={staff?.id || ''}
+        menuItems={menuItems || []}
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={(orderId) => {
           setIsCreateModalOpen(false);
           toast.success(t('orders.orderCreated'));
-          router.push(`/orders/${orderId}/add-items`);
+          router.push(`/orders/${orderId}`);
         }}
       />
     </div>

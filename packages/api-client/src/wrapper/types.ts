@@ -45,6 +45,9 @@ export type WasteLogUpdate = Tables['waste_logs']['Update'];
 export type TaskRow = Tables['tasks']['Row'];
 export type TaskInsert = Tables['tasks']['Insert'];
 export type TaskUpdate = Tables['tasks']['Update'];
+export type DeliveryCustomerRow = Tables['delivery_customers']['Row'];
+export type DeliveryCustomerInsert = Tables['delivery_customers']['Insert'];
+export type DeliveryCustomerUpdate = Tables['delivery_customers']['Update'];
 
 /**
  * Supabase client that bypasses strict typing.

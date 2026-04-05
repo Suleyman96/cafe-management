@@ -1,4 +1,3 @@
-import { calculateChange, getDenominations } from '@gustri/core';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
@@ -41,7 +40,6 @@ export default function OrderPaymentScreen() {
   const currencySymbol = settings?.currency_symbol || '$';
   const [method, setMethod] = useState<string>('cash');
   const [amount, setAmount] = useState('');
-  const [amountTendered, setAmountTendered] = useState('');
 
   const totalPaid = useMemo(
     () => payments?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || 0,
@@ -164,54 +162,6 @@ export default function OrderPaymentScreen() {
             </Card.Content>
           </Card>
 
-          {/* Cash Change Calculator */}
-          {method === 'cash' && (
-            <Card style={styles.card}>
-              <Card.Content style={styles.amountSection}>
-                <Text variant="titleMedium" style={styles.bold}>
-                  Change Calculator
-                </Text>
-                <TextInput
-                  label="Amount Tendered"
-                  value={amountTendered}
-                  onChangeText={setAmountTendered}
-                  mode="outlined"
-                  keyboardType="decimal-pad"
-                  left={<TextInput.Affix text={currencySymbol} />}
-                />
-                <View style={styles.denominationRow}>
-                  {getDenominations(settings?.currency_code || 'USD').map((d) => (
-                    <Button
-                      key={d}
-                      mode="outlined"
-                      compact
-                      onPress={() => setAmountTendered(d.toString())}
-                      style={styles.denomButton}
-                      labelStyle={styles.denomLabel}
-                    >
-                      {currencySymbol}
-                      {d}
-                    </Button>
-                  ))}
-                </View>
-                {parseFloat(amountTendered) > 0 && (
-                  <View style={styles.changeDisplay}>
-                    <Text variant="bodyMedium" style={{ color: '#15803d', fontWeight: '600' }}>
-                      Change Due
-                    </Text>
-                    <Text variant="titleLarge" style={{ color: '#15803d', fontWeight: '700' }}>
-                      {currencySymbol}
-                      {calculateChange(
-                        parseFloat(amountTendered) || 0,
-                        parseFloat(amount) || 0,
-                      ).toFixed(2)}
-                    </Text>
-                  </View>
-                )}
-              </Card.Content>
-            </Card>
-          )}
-
           <Button
             mode="contained"
             onPress={handleSubmit}
@@ -269,19 +219,6 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   amountSection: { gap: 12 },
-  denominationRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  denomButton: { minWidth: 60 },
-  denomLabel: { fontSize: 12 },
-  changeDisplay: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#f0fdf4',
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-  },
   submitButton: { marginTop: 4 },
   submitButtonContent: { paddingVertical: 6 },
   paymentItem: {

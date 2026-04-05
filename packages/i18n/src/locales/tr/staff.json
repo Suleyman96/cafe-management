@@ -36,6 +36,7 @@
   "orders.delivered": "Teslim Edildi",
   "orders.paid": "Ödendi",
   "orders.cancelled": "İptal Edildi",
+  "orders.closed": "Kapatıldı",
   "orders.allSources": "Tüm Kaynaklar",
   "orders.customer": "Müşteri",
   "orders.waiter": "Garson",
@@ -433,6 +434,11 @@
   "calls.errorLoading": "Garson çağrılarını yüklerken hata",
   "calls.respond": "Yanıtla",
   "calls.respondedBy": "{{name}} tarafından yanıtlandı:",
+  "calls.acknowledge": "Onayla",
+  "calls.acknowledged": "Onaylandı",
+  "calls.callAcknowledged": "Çağrı onaylandı",
+  "calls.resolve": "Çöz",
+  "calls.resolved": "Çözüldü",
   "calls.noCalls": "Çağrı yok",
   "cafeSettings.title": "Kafe Ayarları",
   "cafeSettings.restaurantInformation": "Restoran Bilgisi",
@@ -605,6 +611,13 @@
   "delivery.deliveryHint": "Bu yeni bir teslimat siparişi oluşturacak. Sonraki ekranda siparişe ürünler ekleyebilirsiniz.",
   "delivery.fullDeliveryAddress": "Tam teslimat adresi",
   "delivery.ringDoorbell": "Örn., Zili çalın, kapıda bırakın...",
+  "delivery.openInMaps": "Google Haritalar'da aç",
+  "delivery.searchSavedCustomers": "Kayıtlı müşterileri ara...",
+  "delivery.savedCustomer": "Kayıtlı müşteri",
+  "delivery.newCustomer": "Yeni müşteri",
+  "delivery.saveCustomer": "Müşteriyi gelecek siparişler için kaydet",
+  "delivery.customerOrders": "{{count}} sipariş",
+  "delivery.noSavedCustomers": "Kayıtlı müşteri bulunamadı",
   "expenses.editExpense": "Gideri Düzenle",
   "expenses.validAmount": "Geçerli bir tutar girin",
   "expenses.updatingExpense": "Gider güncelleniyor...",
@@ -778,5 +791,8 @@
   "feedback.status.pending": "Beklemede",
   "feedback.status.acknowledged": "Onaylandı",
   "feedback.status.resolved": "Çözüldü",
-  "feedback.status.dismissed": "Reddedildi"
+  "feedback.status.dismissed": "Reddedildi",
+
+  "menu.items": "{{count}} ürün",
+  "menu.categories": "{{count}} kategori"
 }

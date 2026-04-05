@@ -24,6 +24,7 @@ import { ZReportSection } from '@/components/reports/z-report-section';
 import { useAuth, useExpenses, useOrders, useStaff, useWasteLogs, useZReport } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { exportReportToPDF } from '@/lib/report-pdf-export';
+import type { OrderWithDetails } from '@/types';
 
 type DateRangeType = 'today' | 'week' | 'month' | 'year' | 'custom';
 type CustomMode = 'day' | 'month' | 'year';
@@ -111,10 +112,15 @@ export default function ReportsPage() {
     startDate: expenseDateRange.startDate,
     endDate: expenseDateRange.endDate,
   });
-  const { data: zReportPayments = [] } = useZReport(
+  const { data: zReportPaymentsRaw } = useZReport(
     `${expenseDateRange.startDate}T00:00:00`,
     `${expenseDateRange.endDate}T00:00:00`,
   );
+  const zReportPayments = (zReportPaymentsRaw || []) as Array<{
+    amount: number;
+    tip_amount: number;
+    payment_method: string;
+  }>;
 
   // Check if we can navigate to next (prevent future dates)
   const canNavigateNext = useMemo(() => {
@@ -235,83 +241,72 @@ export default function ReportsPage() {
   };
 
   // Filter orders by date
-  const filteredOrders =
-    orders?.filter((order: any) => {
-      const orderDate = new Date(order.created_at);
-      return orderDate >= getDateRange.start && orderDate < getDateRange.end;
-    }) || [];
+  const filteredOrders = useMemo(
+    () =>
+      (orders || []).filter((order: OrderWithDetails) => {
+        const orderDate = new Date(order.created_at);
+        return orderDate >= getDateRange.start && orderDate < getDateRange.end;
+      }),
+    [orders, getDateRange],
+  );
 
-  // Calculate metrics
-  const metrics = {
-    totalRevenue: filteredOrders.reduce((sum: number, order: any) => {
+  // Calculate metrics (revenue computed once, averageOrderValue derived)
+  const metrics = useMemo(() => {
+    const totalRevenue = filteredOrders.reduce((sum, order) => {
       const orderTotal =
         order.order_items?.reduce(
-          (itemSum: number, item: any) => itemSum + item.quantity * item.item_price,
+          (itemSum, item) => itemSum + item.quantity * item.item_price,
           0,
         ) || 0;
       return sum + orderTotal;
-    }, 0),
+    }, 0);
 
-    totalOrders: filteredOrders.length,
+    const totalOrders = filteredOrders.length;
+    const completedOrders = filteredOrders.filter((order) => order.status === 'closed').length;
+    const cancelledOrders = filteredOrders.filter((order) => order.status === 'cancelled').length;
 
-    // Use 'closed' status for completed orders (matches ORDER_STATUS.CLOSED)
-    completedOrders: filteredOrders.filter((order: any) => order.status === 'closed').length,
-
-    cancelledOrders: filteredOrders.filter((order: any) => order.status === 'cancelled').length,
-
-    averageOrderValue:
-      filteredOrders.length > 0
-        ? filteredOrders.reduce((sum: number, order: any) => {
-            const orderTotal =
-              order.order_items?.reduce(
-                (itemSum: number, item: any) => itemSum + item.quantity * item.item_price,
-                0,
-              ) || 0;
-            return sum + orderTotal;
-          }, 0) / filteredOrders.length
-        : 0,
-
-    dineInOrders: filteredOrders.filter((order: any) => order.order_type === 'dine_in').length,
-    takeoutOrders: filteredOrders.filter((order: any) => order.order_type === 'takeout').length,
-    deliveryOrders: filteredOrders.filter((order: any) => order.order_type === 'delivery').length,
-
-    // Calculate total quantity of items sold (not just line items count)
-    totalItems: filteredOrders.reduce(
-      (sum: number, order: any) =>
-        sum +
-        (order.order_items?.reduce((itemSum: number, item: any) => itemSum + item.quantity, 0) ||
-          0),
+    const totalItems = filteredOrders.reduce(
+      (sum, order) =>
+        sum + (order.order_items?.reduce((itemSum, item) => itemSum + item.quantity, 0) || 0),
       0,
-    ),
+    );
 
-    // All sold items (sorted by quantity sold)
-    soldItems: (() => {
-      const itemCounts = new Map<string, { name: string; count: number; revenue: number }>();
-
-      filteredOrders.forEach((order: any) => {
-        order.order_items?.forEach((item: any) => {
-          const key = item.menu_item_id;
-          const current = itemCounts.get(key) || {
-            name: item.menu_item?.name || 'Unknown',
-            count: 0,
-            revenue: 0,
-          };
-          itemCounts.set(key, {
-            name: current.name,
-            count: current.count + item.quantity,
-            revenue: current.revenue + item.quantity * item.item_price,
-          });
+    const itemCounts = new Map<string, { name: string; count: number; revenue: number }>();
+    filteredOrders.forEach((order) => {
+      order.order_items?.forEach((item) => {
+        const key = item.menu_item_id;
+        const current = itemCounts.get(key) || {
+          name: item.menu_item?.name || 'Unknown',
+          count: 0,
+          revenue: 0,
+        };
+        itemCounts.set(key, {
+          name: current.name,
+          count: current.count + item.quantity,
+          revenue: current.revenue + item.quantity * item.item_price,
         });
       });
+    });
+    const soldItems = Array.from(itemCounts.values()).sort((a, b) => b.count - a.count);
 
-      return Array.from(itemCounts.values()).sort((a, b) => b.count - a.count);
-    })(),
-  };
+    return {
+      totalRevenue,
+      totalOrders,
+      completedOrders,
+      cancelledOrders,
+      averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+      dineInOrders: filteredOrders.filter((order) => order.order_type === 'dine_in').length,
+      takeoutOrders: filteredOrders.filter((order) => order.order_type === 'takeout').length,
+      deliveryOrders: filteredOrders.filter((order) => order.order_type === 'delivery').length,
+      totalItems,
+      soldItems,
+    };
+  }, [filteredOrders]);
 
   // Calculate discount metrics
-  const totalDiscounts = filteredOrders.reduce(
-    (sum: number, order: any) => sum + (order.discount_amount ?? 0),
-    0,
+  const totalDiscounts = useMemo(
+    () => filteredOrders.reduce((sum, order) => sum + (order.discount_amount ?? 0), 0),
+    [filteredOrders],
   );
 
   // Calculate Z-Report metrics from payments
@@ -324,7 +319,7 @@ export default function ReportsPage() {
       paymentCount: zReportPayments.length,
       totalDiscounts,
     };
-    for (const p of zReportPayments as any[]) {
+    for (const p of zReportPayments) {
       const amount = p.amount || 0;
       const tip = p.tip_amount || 0;
       if (p.payment_method === 'cash') data.cashTotal += amount;
@@ -343,11 +338,11 @@ export default function ReportsPage() {
 
   // Calculate waste metrics
   const wasteMetrics = useMemo(() => {
-    const totalCost = wasteLogs.reduce((sum: number, log: any) => sum + (log.total_cost || 0), 0);
+    const totalCost = wasteLogs.reduce((sum, log) => sum + (log.total_cost || 0), 0);
     const totalItems = wasteLogs.length;
 
     const reasonMap = new Map<string, { count: number; cost: number }>();
-    wasteLogs.forEach((log: any) => {
+    wasteLogs.forEach((log) => {
       const reason = log.reason || 'other';
       const current = reasonMap.get(reason) || { count: 0, cost: 0 };
       reasonMap.set(reason, {
@@ -363,7 +358,7 @@ export default function ReportsPage() {
       string,
       { name: string; quantity: number; unit: string; cost: number }
     >();
-    wasteLogs.forEach((log: any) => {
+    wasteLogs.forEach((log) => {
       const key = log.item_name;
       const current = itemMap.get(key) || {
         name: log.item_name,
@@ -385,7 +380,7 @@ export default function ReportsPage() {
   }, [wasteLogs]);
 
   // Calculate staff performance metrics
-  const staffPerformance = (() => {
+  const staffPerformance = useMemo(() => {
     const performanceMap = new Map<
       string,
       {
@@ -401,7 +396,7 @@ export default function ReportsPage() {
     >();
 
     // Initialize with all staff members
-    staff?.forEach((member: any) => {
+    staff?.forEach((member) => {
       performanceMap.set(member.id, {
         id: member.id,
         name: member.full_name,
@@ -415,7 +410,7 @@ export default function ReportsPage() {
     });
 
     // Calculate metrics from orders
-    filteredOrders.forEach((order: any) => {
+    filteredOrders.forEach((order) => {
       const waiterId = order.assigned_waiter_id;
       if (!waiterId) return;
 
@@ -423,13 +418,9 @@ export default function ReportsPage() {
       if (!current) return;
 
       const orderTotal =
-        order.order_items?.reduce(
-          (sum: number, item: any) => sum + item.quantity * item.item_price,
-          0,
-        ) || 0;
+        order.order_items?.reduce((sum, item) => sum + item.quantity * item.item_price, 0) || 0;
 
-      const itemCount =
-        order.order_items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
+      const itemCount = order.order_items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
       performanceMap.set(waiterId, {
         ...current,
@@ -442,9 +433,9 @@ export default function ReportsPage() {
     });
 
     return Array.from(performanceMap.values())
-      .filter((p) => p.ordersHandled > 0) // Only show staff with orders
+      .filter((p) => p.ordersHandled > 0)
       .sort((a, b) => b.revenue - a.revenue);
-  })();
+  }, [filteredOrders, staff]);
 
   // Export to PDF function
   const exportToPDF = () => {
@@ -455,6 +446,9 @@ export default function ReportsPage() {
       staffPerformance,
       dateRangeLabel: getDateRangeLabel(),
       formatPrice,
+      translateRole: (role) => t(`staffMgmt.role.${role}`),
+      translateWasteReason: (reason) =>
+        t(`reports.wasteReason.${reason}`, { defaultValue: reason }),
     });
   };
 
@@ -627,7 +621,7 @@ export default function ReportsPage() {
             <p className="text-xs sm:text-sm text-gray-600">{t('reports.totalRevenue')}</p>
             <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
           </div>
-          <p className="text-lg sm:text-2xl font-bold">${metrics.totalRevenue.toFixed(2)}</p>
+          <p className="text-lg sm:text-2xl font-bold">{formatPrice(metrics.totalRevenue)}</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-3 sm:p-6">
@@ -643,7 +637,7 @@ export default function ReportsPage() {
             <p className="text-xs sm:text-sm text-gray-600">{t('reports.avgOrderShort')}</p>
             <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
           </div>
-          <p className="text-lg sm:text-2xl font-bold">${metrics.averageOrderValue.toFixed(2)}</p>
+          <p className="text-lg sm:text-2xl font-bold">{formatPrice(metrics.averageOrderValue)}</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-3 sm:p-6">
@@ -855,7 +849,7 @@ export default function ReportsPage() {
                   <p className="font-medium text-xs sm:text-sm">
                     {item.count} {t('reports.soldSuffix')}
                   </p>
-                  <p className="text-xs text-gray-600">${item.revenue.toFixed(2)}</p>
+                  <p className="text-xs text-gray-600">{formatPrice(item.revenue)}</p>
                 </div>
               </div>
             ))}
@@ -898,7 +892,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Staff Performance */}
-      <StaffPerformanceSection staffPerformance={staffPerformance} />
+      <StaffPerformanceSection staffPerformance={staffPerformance} formatPrice={formatPrice} />
     </div>
   );
 }

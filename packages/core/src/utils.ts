@@ -75,29 +75,6 @@ export function getDisplaySubtotal(subtotal: number, settings: PricingSettings):
 
 // ─── Cash Change Utilities ───────────────────────────────────────
 
-/**
- * Calculate change due from a cash payment
- */
-export function calculateChange(tendered: number, paymentAmount: number): number {
-  return Math.max(0, tendered - paymentAmount);
-}
-
-/**
- * Get common cash denominations for a currency
- */
-export function getDenominations(currencyCode: string): number[] {
-  const denominations: Record<string, number[]> = {
-    USD: [5, 10, 20, 50, 100],
-    EUR: [5, 10, 20, 50, 100],
-    AZN: [5, 10, 20, 50, 100],
-    TRY: [10, 20, 50, 100, 200],
-    GBP: [5, 10, 20, 50],
-    RUB: [100, 200, 500, 1000, 5000],
-    JPY: [1000, 2000, 5000, 10000],
-  };
-  return denominations[currencyCode] || [5, 10, 20, 50, 100];
-}
-
 // ─── Date Utilities ──────────────────────────────────────────────
 
 /**

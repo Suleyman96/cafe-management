@@ -55,14 +55,7 @@ export const WaiterCallTypeSchema = z.enum([
 
 export const WaiterCallPrioritySchema = z.enum(['low', 'normal', 'high', 'urgent']);
 
-export const FeedbackTypeSchema = z.enum([
-  'complaint_food',
-  'complaint_service',
-  'complaint_staff',
-  'question_menu',
-  'request_general',
-  'praise',
-]);
+export const FeedbackTypeSchema = z.enum(['complaint', 'praise']);
 
 export const FeedbackStatusSchema = z.enum(['pending', 'acknowledged', 'resolved', 'dismissed']);
 
@@ -207,7 +200,6 @@ export const CustomerFeedbackSchema = z.object({
   table_id: z.string().uuid().nullable(),
   order_id: z.string().uuid().nullable(),
   feedback_type: FeedbackTypeSchema,
-  subject: z.string().nullable(),
   message: z.string(),
   status: FeedbackStatusSchema,
   responded_by: z.string().uuid().nullable(),

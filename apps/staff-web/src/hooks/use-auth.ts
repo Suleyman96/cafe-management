@@ -33,16 +33,27 @@ export function useAuth() {
   const router = useRouter();
   const { staff, isLoading, setStaff, setIsLoading, clearAuth } = useAuthStore();
 
+  // Always initialize the Supabase session from localStorage and listen for changes.
+  // This must run even when Zustand already has staff data (e.g. after page refresh),
+  // otherwise the Supabase client won't have the JWT and mutations fail as anon.
   useEffect(() => {
-    // Skip if already have staff data or check is in progress
-    if (staff || sessionCheckInProgress) {
-      return;
-    }
+    const initSession = async () => {
+      // If Zustand already has staff, just ensure the Supabase session is loaded
+      if (staff) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) {
+          // Supabase session expired but Zustand still has stale data
+          clearAuth();
+          router.push('/login');
+        }
+        return;
+      }
 
-    sessionCheckInProgress = true;
-
-    // Check for existing session
-    const checkSession = async () => {
+      // No staff in store — do full session check
+      if (sessionCheckInProgress) return;
+      sessionCheckInProgress = true;
       setIsLoading(true);
 
       try {
@@ -84,9 +95,9 @@ export function useAuth() {
       }
     };
 
-    checkSession();
+    initSession();
 
-    // Listen for auth changes
+    // Always listen for auth changes (session expiry, sign out, etc.)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {

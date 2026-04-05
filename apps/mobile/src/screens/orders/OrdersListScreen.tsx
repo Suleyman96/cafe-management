@@ -21,10 +21,13 @@ type OrderWithJoins = Order & {
 
 const STATUS_FILTERS = [
   'all',
+  'pending_approval',
   'new',
   'preparing',
   'ready',
   'served',
+  'out_for_delivery',
+  'delivered',
   'closed',
   'cancelled',
 ] as const;

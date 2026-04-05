@@ -11,6 +11,7 @@ import { ReportsStack } from './ReportsStack';
 import { SchedulesStack } from './SchedulesStack';
 import { StaffManagementStack } from './StaffManagementStack';
 import { StockStack } from './StockStack';
+import { TakeoutStack } from './TakeoutStack';
 import { TasksStack } from './TasksStack';
 import { WasteStack } from './WasteStack';
 
@@ -27,6 +28,7 @@ export function DrawerNavigator() {
     >
       <Drawer.Screen name="Home" component={MainTabs} />
       <Drawer.Screen name="DeliveryTab" component={DeliveryStack} />
+      <Drawer.Screen name="TakeoutTab" component={TakeoutStack} />
       <Drawer.Screen name="TasksTab" component={TasksStack} />
       <Drawer.Screen name="FeedbackTab" component={FeedbackStack} />
       <Drawer.Screen name="StockTab" component={StockStack} />

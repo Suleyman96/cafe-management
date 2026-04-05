@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock,
   Hourglass,
+  Loader2,
   MessageSquare,
   Minus,
   Plus,
@@ -16,16 +17,17 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { FeedbackForm } from '@/components/feedback/feedback-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { PlatformFooter } from '@/components/ui/platform-footer';
-import { CallStaffModal } from '@/components/waiter/call-staff-modal';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useCancelOrder, useCancelOrderItem, useOrder } from '@/hooks/use-order';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
+import { useCreateWaiterCall } from '@/hooks/use-waiter-call';
 import { timeAgo } from '@/lib/utils';
 
 interface OrderStatusProps {
@@ -46,7 +48,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
 
   const cancelOrder = useCancelOrder();
   const cancelItem = useCancelOrderItem();
-  const [showCallStaffModal, setShowCallStaffModal] = useState(false);
+  const createWaiterCall = useCreateWaiterCall();
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [showCancelOrderConfirm, setShowCancelOrderConfirm] = useState(false);
   const [cancelItemModal, setCancelItemModal] = useState<{
@@ -60,6 +62,22 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
   const isLoading = tableLoading || orderLoading;
 
   const canCancel = order?.status === 'pending_approval' || order?.status === 'new';
+
+  const handleCallStaff = async () => {
+    if (!actualTableId || createWaiterCall.isPending) return;
+    try {
+      await createWaiterCall.mutateAsync({
+        tableId: actualTableId,
+        callType: 'assistance',
+        reason: t('callStaff.reason.assistance'),
+        priority: 'normal',
+      });
+      toast.success(t('callStaff.toastSuccess'));
+    } catch (error) {
+      console.error('Error calling staff:', error);
+      toast.error(t('callStaff.toastError'));
+    }
+  };
 
   const handleCancelOrder = async () => {
     if (!order) return;
@@ -361,9 +379,14 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
               variant="outline"
               size="lg"
               className="w-full"
-              onClick={() => setShowCallStaffModal(true)}
+              onClick={handleCallStaff}
+              disabled={createWaiterCall.isPending}
             >
-              <Bell className="mr-2 h-5 w-5" />
+              {createWaiterCall.isPending ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <Bell className="mr-2 h-5 w-5" />
+              )}
               {t('orderStatus.callStaff')}
             </Button>
 
@@ -403,13 +426,6 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
           </div>
         )}
       </div>
-
-      {/* Call Staff Modal */}
-      <CallStaffModal
-        tableId={actualTableId}
-        isOpen={showCallStaffModal}
-        onClose={() => setShowCallStaffModal(false)}
-      />
 
       {/* Cancel Order Confirmation Modal */}
       {showCancelOrderConfirm && (
