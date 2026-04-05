@@ -1,6 +1,6 @@
-import { PLAN_ORDER } from '@gustri/core';
-import type { PlanName } from '@gustri/core';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import type { PlanName } from '@gustri/core';
+import { PLAN_ORDER } from '@gustri/core';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { StyleSheet, View } from 'react-native';
@@ -52,7 +52,13 @@ const DRAWER_SECTIONS: DrawerSection[] = [
         icon: 'message-star',
         roles: ['waiter', 'admin', 'owner'],
       },
-      { key: 'StockTab', label: 'Stock', icon: 'package-variant', roles: ['admin', 'owner'], minPlan: 'pro' },
+      {
+        key: 'StockTab',
+        label: 'Stock',
+        icon: 'package-variant',
+        roles: ['admin', 'owner'],
+        minPlan: 'pro',
+      },
       {
         key: 'WasteTab',
         label: 'Waste',

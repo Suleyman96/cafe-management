@@ -26,12 +26,13 @@ export default function TablesListScreen() {
 
   // Cleanup stale empty orders on screen load (run once)
   const didCleanup = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fire-and-forget, guarded by ref
   useEffect(() => {
     if (!didCleanup.current) {
       didCleanup.current = true;
       cleanupEmptyOrders.mutate(undefined);
     }
-  }, []); // eslint-disable-line -- fire-and-forget, guarded by ref
+  }, []);
 
   const tableData = useMemo(() => {
     if (!tables) return [];

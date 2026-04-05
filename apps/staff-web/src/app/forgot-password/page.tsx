@@ -56,9 +56,7 @@ export default function ForgotPasswordPage() {
                 <Mail className="h-6 w-6 text-green-600" />
               </div>
               <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('resetLinkSent')}</h2>
-              <p className="text-sm text-gray-600 mb-6">
-                {t('resetLinkSentMessage', { email })}
-              </p>
+              <p className="text-sm text-gray-600 mb-6">{t('resetLinkSentMessage', { email })}</p>
               <Link
                 href="/login"
                 className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"

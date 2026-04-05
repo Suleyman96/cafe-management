@@ -52,7 +52,9 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
         .then(() => {
           // After context is set, check tenant plan for QR ordering gate
           (supabase.rpc as Function)('get_tenant_plan_from_context')
-            .then((res: any) => { if (res.data) setTenantPlan(res.data); })
+            .then((res: any) => {
+              if (res.data) setTenantPlan(res.data);
+            })
             .catch(console.warn);
         })
         .catch((err: any) => {
@@ -353,16 +355,13 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             <div
               className="w-full rounded-2xl py-4 px-6 text-center backdrop-blur-xl"
               style={{
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
                 border: '1px solid rgba(255,255,255,0.08)',
               }}
             >
-              <p className="text-sm font-medium text-white/70">
-                QR ordering is not available.
-              </p>
-              <p className="text-xs text-white/40 mt-1">
-                Please order at the counter.
-              </p>
+              <p className="text-sm font-medium text-white/70">QR ordering is not available.</p>
+              <p className="text-xs text-white/40 mt-1">Please order at the counter.</p>
             </div>
           ) : (
             <button

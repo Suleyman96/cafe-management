@@ -68,7 +68,9 @@ export function useCreateOrder() {
       if (max !== -1) {
         const cachedCount = queryClient.getQueryData<number>([QUERY_KEYS.MONTHLY_ORDER_COUNT]);
         if (cachedCount !== undefined && cachedCount >= max) {
-          throw new Error(`Your ${plan} plan allows up to ${max} orders/month. Upgrade to add more.`);
+          throw new Error(
+            `Your ${plan} plan allows up to ${max} orders/month. Upgrade to add more.`,
+          );
         }
       }
       return db.orders.create(orderData);

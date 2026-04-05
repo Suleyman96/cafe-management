@@ -703,6 +703,7 @@ export default function KitchenDisplayPage() {
               placeholder={t('kitchen.rejectReasonPlaceholder')}
               className="w-full border border-gray-300 rounded-lg p-3 text-sm mb-4 focus:ring-2 focus:ring-red-500 focus:border-red-500"
               rows={3}
+              // biome-ignore lint/a11y/noAutofocus: modal textarea should auto-focus
               autoFocus
             />
             <div className="flex gap-3">

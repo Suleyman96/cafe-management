@@ -260,7 +260,10 @@ export interface Database {
           notes: string | null;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['order_payments']['Row'], 'id' | 'tenant_id' | 'created_at'> & { tenant_id?: string };
+        Insert: Omit<
+          Database['public']['Tables']['order_payments']['Row'],
+          'id' | 'tenant_id' | 'created_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['order_payments']['Insert']>;
       };
       table_transfers: {
@@ -274,7 +277,10 @@ export interface Database {
           reason: string | null;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['table_transfers']['Row'], 'id' | 'tenant_id' | 'created_at'> & { tenant_id?: string };
+        Insert: Omit<
+          Database['public']['Tables']['table_transfers']['Row'],
+          'id' | 'tenant_id' | 'created_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['table_transfers']['Insert']>;
       };
       staff_schedules: {
@@ -387,7 +393,10 @@ export interface Database {
           performed_by: string | null;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['stock_movements']['Row'], 'id' | 'tenant_id' | 'created_at'> & { tenant_id?: string };
+        Insert: Omit<
+          Database['public']['Tables']['stock_movements']['Row'],
+          'id' | 'tenant_id' | 'created_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['stock_movements']['Insert']>;
       };
       expense_categories: {
@@ -451,7 +460,10 @@ export interface Database {
           waste_date: string;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['waste_logs']['Row'], 'id' | 'tenant_id' | 'created_at'> & { tenant_id?: string };
+        Insert: Omit<
+          Database['public']['Tables']['waste_logs']['Row'],
+          'id' | 'tenant_id' | 'created_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['waste_logs']['Insert']>;
       };
       task_categories: {
@@ -464,7 +476,10 @@ export interface Database {
           is_active: boolean;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['task_categories']['Row'], 'id' | 'tenant_id' | 'created_at'> & { tenant_id?: string };
+        Insert: Omit<
+          Database['public']['Tables']['task_categories']['Row'],
+          'id' | 'tenant_id' | 'created_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['task_categories']['Insert']>;
       };
       tasks: {
@@ -508,7 +523,10 @@ export interface Database {
           notes: string | null;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['refunds']['Row'], 'id' | 'tenant_id' | 'created_at'> & { tenant_id?: string };
+        Insert: Omit<
+          Database['public']['Tables']['refunds']['Row'],
+          'id' | 'tenant_id' | 'created_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['refunds']['Insert']>;
       };
       delivery_customers: {

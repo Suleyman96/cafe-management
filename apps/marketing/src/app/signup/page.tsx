@@ -1,7 +1,6 @@
 'use client';
 
 import { ArrowLeft, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -80,8 +79,8 @@ export default function SignupPage() {
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Check your email</h1>
           <p className="mt-4 text-gray-600 leading-relaxed">
-            We sent a confirmation link to <strong className="text-gray-900">{email}</strong>.
-            Click the link to activate your account and start managing your restaurant.
+            We sent a confirmation link to <strong className="text-gray-900">{email}</strong>. Click
+            the link to activate your account and start managing your restaurant.
           </p>
           <Link
             href="/"
@@ -108,12 +107,13 @@ export default function SignupPage() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
             Create your account
           </h1>
-          <p className="mt-2 text-gray-600">
-            Get started free — no credit card required.
-          </p>
+          <p className="mt-2 text-gray-600">Get started free — no credit card required.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm space-y-5">
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm space-y-5"
+        >
           <div>
             <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1.5">
               Full name
@@ -130,7 +130,10 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label htmlFor="restaurantName" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label
+              htmlFor="restaurantName"
+              className="block text-sm font-medium text-gray-700 mb-1.5"
+            >
               Restaurant name
             </label>
             <input
@@ -176,7 +179,10 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-gray-700 mb-1.5"
+            >
               Confirm password
             </label>
             <input
@@ -192,9 +198,7 @@ export default function SignupPage() {
           </div>
 
           {error && (
-            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
+            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
           )}
 
           <button

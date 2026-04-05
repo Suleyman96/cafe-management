@@ -88,7 +88,8 @@ export function useAuth() {
         postLoginSideEffects(staffData.id);
 
         // Fetch tenant plan
-        db.tenants.getCurrent()
+        db.tenants
+          .getCurrent()
           .then((tenant) => setTenantPlan(tenant.plan as any))
           .catch(console.warn);
       } catch (error) {
@@ -114,7 +115,8 @@ export function useAuth() {
           const staffData = (await db.staff.findByAuthId(session.user.id)) as Staff;
           setStaff(staffData);
           postLoginSideEffects(staffData.id);
-          db.tenants.getCurrent()
+          db.tenants
+            .getCurrent()
             .then((tenant) => setTenantPlan(tenant.plan as any))
             .catch(console.warn);
         } catch {

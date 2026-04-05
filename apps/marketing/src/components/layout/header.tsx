@@ -17,6 +17,7 @@ export function Header() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: close mobile nav on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);

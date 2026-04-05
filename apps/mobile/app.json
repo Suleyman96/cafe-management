@@ -11,9 +11,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gustri.app"
@@ -25,10 +23,7 @@
       },
       "package": "com.gustri.app",
       "versionCode": 1,
-      "permissions": [
-        "NOTIFICATIONS",
-        "VIBRATE"
-      ]
+      "permissions": ["NOTIFICATIONS", "VIBRATE"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -40,9 +35,7 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#ffffff",
-          "sounds": [
-            "./assets/sounds/new-order.wav"
-          ]
+          "sounds": ["./assets/sounds/new-order.wav"]
         }
       ],
       "expo-localization",

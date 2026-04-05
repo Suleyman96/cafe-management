@@ -1,4 +1,4 @@
-import type { ExpoConfig, ConfigContext } from 'expo/config';
+import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 // Default values for local development
 const LOCAL_SUPABASE_URL = 'http://192.168.40.106:54321';
@@ -11,8 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: config.slug || 'gustri',
   extra: {
     ...config.extra,
-    EXPO_PUBLIC_SUPABASE_URL:
-      process.env.EXPO_PUBLIC_SUPABASE_URL || LOCAL_SUPABASE_URL,
+    EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL || LOCAL_SUPABASE_URL,
     EXPO_PUBLIC_SUPABASE_ANON_KEY:
       process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || LOCAL_SUPABASE_ANON_KEY,
   },

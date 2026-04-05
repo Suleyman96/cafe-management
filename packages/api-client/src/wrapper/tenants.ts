@@ -11,11 +11,7 @@ type TenantRow = Database['public']['Tables']['tenants']['Row'];
 export function createTenantsWrapper(ctx: WrapperContext) {
   return {
     getCurrent: async (): Promise<TenantRow> => {
-      const { data, error } = await ctx.client
-        .from('tenants')
-        .select('*')
-        .limit(1)
-        .single();
+      const { data, error } = await ctx.client.from('tenants').select('*').limit(1).single();
 
       if (error) throw handleSupabaseError(error);
       return data;

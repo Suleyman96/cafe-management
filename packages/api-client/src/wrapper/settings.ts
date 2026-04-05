@@ -13,11 +13,7 @@ export function createSettingsWrapper(ctx: WrapperContext) {
   return {
     get: async (): Promise<CafeSettingsRow> => {
       // RLS scopes to current tenant; each tenant has one settings row
-      const { data, error } = await ctx.client
-        .from('cafe_settings')
-        .select('*')
-        .limit(1)
-        .single();
+      const { data, error } = await ctx.client.from('cafe_settings').select('*').limit(1).single();
 
       if (error) throw handleSupabaseError(error);
       return data;

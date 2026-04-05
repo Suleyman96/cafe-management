@@ -94,10 +94,54 @@ export const API_ENDPOINTS = {
 export type PlanName = 'free' | 'standard' | 'pro' | 'business';
 
 export const PLAN_LIMITS = {
-  free: { maxTables: 5, maxOrdersPerMonth: 100, qrOrdering: false, kitchenDisplay: true, inventory: false, waste: false, scheduling: false, tasks: false, customBranding: false, analytics: 'basic' as const },
-  standard: { maxTables: 10, maxOrdersPerMonth: 700, qrOrdering: true, kitchenDisplay: true, inventory: false, waste: false, scheduling: false, tasks: false, customBranding: true, analytics: 'full' as const },
-  pro: { maxTables: 20, maxOrdersPerMonth: 2200, qrOrdering: true, kitchenDisplay: true, inventory: true, waste: true, scheduling: true, tasks: true, customBranding: true, analytics: 'full' as const },
-  business: { maxTables: -1, maxOrdersPerMonth: -1, qrOrdering: true, kitchenDisplay: true, inventory: true, waste: true, scheduling: true, tasks: true, customBranding: true, analytics: 'full' as const },
+  free: {
+    maxTables: 5,
+    maxOrdersPerMonth: 100,
+    qrOrdering: false,
+    kitchenDisplay: true,
+    inventory: false,
+    waste: false,
+    scheduling: false,
+    tasks: false,
+    customBranding: false,
+    analytics: 'basic' as const,
+  },
+  standard: {
+    maxTables: 10,
+    maxOrdersPerMonth: 700,
+    qrOrdering: true,
+    kitchenDisplay: true,
+    inventory: false,
+    waste: false,
+    scheduling: false,
+    tasks: false,
+    customBranding: true,
+    analytics: 'full' as const,
+  },
+  pro: {
+    maxTables: 20,
+    maxOrdersPerMonth: 2200,
+    qrOrdering: true,
+    kitchenDisplay: true,
+    inventory: true,
+    waste: true,
+    scheduling: true,
+    tasks: true,
+    customBranding: true,
+    analytics: 'full' as const,
+  },
+  business: {
+    maxTables: -1,
+    maxOrdersPerMonth: -1,
+    qrOrdering: true,
+    kitchenDisplay: true,
+    inventory: true,
+    waste: true,
+    scheduling: true,
+    tasks: true,
+    customBranding: true,
+    analytics: 'full' as const,
+  },
 } as const;
 
 export const PLAN_ORDER: Record<PlanName, number> = { free: 0, standard: 1, pro: 2, business: 3 };

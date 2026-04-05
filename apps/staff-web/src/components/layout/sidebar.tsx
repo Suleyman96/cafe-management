@@ -1,7 +1,7 @@
 'use client';
 
-import { PLAN_ORDER, getLocalDateString } from '@gustri/core';
 import type { PlanName } from '@gustri/core';
+import { getLocalDateString, PLAN_ORDER } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import {
   BarChart3,
@@ -67,7 +67,12 @@ const navGroups: NavGroup[] = [
       { href: '/takeout', labelKey: 'takeout', icon: <Package className="h-5 w-5" /> },
       { href: '/kitchen', labelKey: 'kitchen', icon: <ChefHat className="h-5 w-5" /> },
       { href: '/calls', labelKey: 'waiterCalls', icon: <Bell className="h-5 w-5" /> },
-      { href: '/tasks', labelKey: 'tasks', icon: <ListTodo className="h-5 w-5" />, minPlan: 'pro' as PlanName },
+      {
+        href: '/tasks',
+        labelKey: 'tasks',
+        icon: <ListTodo className="h-5 w-5" />,
+        minPlan: 'pro' as PlanName,
+      },
     ],
   },
   {
@@ -76,8 +81,19 @@ const navGroups: NavGroup[] = [
     collapsible: true,
     items: [
       { href: '/feedback', labelKey: 'feedback', icon: <MessageSquare className="h-5 w-5" /> },
-      { href: '/stock', labelKey: 'stock', icon: <Package className="h-5 w-5" />, adminOnly: true, minPlan: 'pro' as PlanName },
-      { href: '/waste', labelKey: 'waste', icon: <Trash2 className="h-5 w-5" />, minPlan: 'pro' as PlanName },
+      {
+        href: '/stock',
+        labelKey: 'stock',
+        icon: <Package className="h-5 w-5" />,
+        adminOnly: true,
+        minPlan: 'pro' as PlanName,
+      },
+      {
+        href: '/waste',
+        labelKey: 'waste',
+        icon: <Trash2 className="h-5 w-5" />,
+        minPlan: 'pro' as PlanName,
+      },
       {
         href: '/expenses',
         labelKey: 'expenses',
