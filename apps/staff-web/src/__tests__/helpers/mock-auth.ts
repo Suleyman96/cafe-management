@@ -1,5 +1,6 @@
 export const mockAdminStaff = {
   id: 'staff-admin-1',
+  tenant_id: 'test-tenant-id',
   full_name: 'Test Admin',
   role: 'admin' as const,
   email: 'admin@test.com',

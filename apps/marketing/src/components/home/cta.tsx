@@ -22,7 +22,7 @@ export function CTA() {
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/pricing"
+                href="/signup"
                 className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-base font-semibold text-primary-600 hover:bg-primary-50 transition-colors shadow-lg"
               >
                 Start Free

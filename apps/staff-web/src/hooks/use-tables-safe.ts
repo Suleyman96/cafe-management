@@ -3,10 +3,11 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
-import { QUERY_KEYS } from '@gustri/core';
+import { PLAN_LIMITS, QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
+import { useAuthStore } from '@/store/auth-store';
 
 type TableRow = Database['public']['Tables']['tables']['Row'];
 type TableStatus = TableRow['status'];
@@ -51,8 +52,16 @@ export function useCreateTable() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (tableData: Database['public']['Tables']['tables']['Insert']) =>
-      db.tables.create(tableData),
+    mutationFn: async (tableData: Database['public']['Tables']['tables']['Insert']) => {
+      // Soft pre-check: verify table limit before sending to DB
+      const tables = queryClient.getQueryData<TableRow[]>([QUERY_KEYS.TABLES]);
+      const plan = useAuthStore.getState().tenantPlan ?? 'free';
+      const max = PLAN_LIMITS[plan].maxTables;
+      if (max !== -1 && (tables?.length ?? 0) >= max) {
+        throw new Error(`Your ${plan} plan allows up to ${max} tables. Upgrade to add more.`);
+      }
+      return db.tables.create(tableData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
     },

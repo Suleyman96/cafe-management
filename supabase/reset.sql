@@ -52,6 +52,13 @@ DROP FUNCTION IF EXISTS update_order_payment_status() CASCADE;
 DROP FUNCTION IF EXISTS validate_items_payment() CASCADE;
 DROP FUNCTION IF EXISTS auto_acknowledge_feedback() CASCADE;
 DROP FUNCTION IF EXISTS enforce_single_cafe_settings() CASCADE;
+DROP FUNCTION IF EXISTS current_tenant_id() CASCADE;
+DROP FUNCTION IF EXISTS handle_new_tenant_signup() CASCADE;
+DROP FUNCTION IF EXISTS cascade_order_status_to_items() CASCADE;
+DROP FUNCTION IF EXISTS check_table_limit() CASCADE;
+DROP FUNCTION IF EXISTS check_order_limit() CASCADE;
+DROP FUNCTION IF EXISTS get_monthly_order_count() CASCADE;
+DROP FUNCTION IF EXISTS get_tenant_plan_from_context() CASCADE;
 
 -- Drop tables (order matters due to foreign keys)
 DROP TABLE IF EXISTS staff_notes CASCADE;
@@ -71,6 +78,7 @@ DROP TABLE IF EXISTS categories CASCADE;
 DROP TABLE IF EXISTS tables CASCADE;
 DROP TABLE IF EXISTS cafe_settings CASCADE;
 DROP TABLE IF EXISTS staff CASCADE;
+DROP TABLE IF EXISTS tenants CASCADE;
 
 -- ============================================================
 -- STEP 1: Extensions
@@ -81,12 +89,32 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- STEP 2: Core Tables
 -- ============================================================
 
+-- Tenants (each restaurant is a tenant)
+CREATE TABLE tenants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  slug VARCHAR(100) UNIQUE NOT NULL,
+  plan VARCHAR(20) NOT NULL DEFAULT 'free'
+    CHECK (plan IN ('free', 'standard', 'pro', 'business')),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_tenants_slug ON tenants(slug);
+CREATE INDEX idx_tenants_active ON tenants(is_active);
+
+-- Insert default tenant for seed data
+INSERT INTO tenants (id, name, slug, plan)
+VALUES ('00000000-0000-0000-0000-000000000001', 'Gustri Demo', 'gustri-demo', 'pro');
+
 -- Staff table (linked to auth.users)
 CREATE TABLE staff (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   email VARCHAR(255) UNIQUE NOT NULL,
   full_name VARCHAR(255) NOT NULL,
-  role VARCHAR(20) NOT NULL CHECK (role IN ('waiter', 'admin', 'kitchen')),
+  role VARCHAR(20) NOT NULL CHECK (role IN ('waiter', 'admin', 'kitchen', 'owner')),
   phone VARCHAR(20),
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -98,10 +126,12 @@ CREATE TABLE staff (
 CREATE INDEX idx_staff_role ON staff(role);
 CREATE INDEX idx_staff_active ON staff(is_active);
 CREATE INDEX idx_staff_auth_user ON staff(auth_user_id);
+CREATE INDEX idx_staff_tenant ON staff(tenant_id);
 
 -- Tables (physical cafe tables)
 CREATE TABLE tables (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   table_number VARCHAR(10) UNIQUE NOT NULL,
   qr_code TEXT UNIQUE NOT NULL,
   capacity INTEGER NOT NULL DEFAULT 4,
@@ -119,10 +149,12 @@ CREATE TABLE tables (
 CREATE INDEX idx_tables_status ON tables(status);
 CREATE INDEX idx_tables_number ON tables(table_number);
 CREATE INDEX idx_tables_qr ON tables(qr_code);
+CREATE INDEX idx_tables_tenant ON tables(tenant_id);
 
 -- Categories
 CREATE TABLE categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   name VARCHAR(100) NOT NULL,
   description TEXT,
   icon VARCHAR(50),
@@ -134,10 +166,12 @@ CREATE TABLE categories (
 
 CREATE INDEX idx_categories_order ON categories(display_order);
 CREATE INDEX idx_categories_active ON categories(is_active);
+CREATE INDEX idx_categories_tenant ON categories(tenant_id);
 
 -- Menu Items
 CREATE TABLE menu_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
   name VARCHAR(255) NOT NULL,
   description TEXT,
@@ -161,10 +195,12 @@ CREATE INDEX idx_menu_items_category ON menu_items(category_id);
 CREATE INDEX idx_menu_items_available ON menu_items(is_available);
 CREATE INDEX idx_menu_items_popular ON menu_items(is_popular);
 CREATE INDEX idx_menu_items_order ON menu_items(display_order);
+CREATE INDEX idx_menu_items_tenant ON menu_items(tenant_id);
 
 -- Orders
 CREATE TABLE orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   table_id UUID REFERENCES tables(id) ON DELETE CASCADE,
   assigned_waiter_id UUID REFERENCES staff(id) ON DELETE SET NULL,
   order_number VARCHAR(15) UNIQUE NOT NULL,
@@ -216,10 +252,12 @@ CREATE INDEX idx_orders_created ON orders(created_at DESC);
 CREATE INDEX idx_orders_number ON orders(order_number);
 CREATE INDEX idx_orders_type ON orders(order_type);
 CREATE INDEX idx_orders_source ON orders(source);
+CREATE INDEX idx_orders_tenant ON orders(tenant_id);
 
 -- Order Items
 CREATE TABLE order_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   menu_item_id UUID NOT NULL REFERENCES menu_items(id) ON DELETE RESTRICT,
   item_name VARCHAR(255) NOT NULL,
@@ -236,10 +274,12 @@ CREATE INDEX idx_order_items_order ON order_items(order_id);
 CREATE INDEX idx_order_items_menu ON order_items(menu_item_id);
 CREATE INDEX idx_order_items_status ON order_items(status);
 CREATE INDEX IF NOT EXISTS idx_order_items_with_notes ON order_items(order_id) WHERE notes IS NOT NULL;
+CREATE INDEX idx_order_items_tenant ON order_items(tenant_id);
 
 -- Waiter Calls
 CREATE TABLE waiter_calls (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
   reason VARCHAR(50) DEFAULT 'assistance',
   call_type VARCHAR(50) DEFAULT 'assistance',
@@ -256,10 +296,12 @@ CREATE TABLE waiter_calls (
 CREATE INDEX idx_waiter_calls_table ON waiter_calls(table_id);
 CREATE INDEX idx_waiter_calls_status ON waiter_calls(status);
 CREATE INDEX idx_waiter_calls_created ON waiter_calls(created_at DESC);
+CREATE INDEX idx_waiter_calls_tenant ON waiter_calls(tenant_id);
 
 -- Customer Feedback
 CREATE TABLE customer_feedback (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   table_id UUID REFERENCES tables(id) ON DELETE SET NULL,
   order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
   feedback_type VARCHAR(50) NOT NULL CHECK (
@@ -281,10 +323,12 @@ CREATE INDEX idx_customer_feedback_status ON customer_feedback(status);
 CREATE INDEX idx_customer_feedback_table ON customer_feedback(table_id);
 CREATE INDEX idx_customer_feedback_type ON customer_feedback(feedback_type);
 CREATE INDEX idx_customer_feedback_created ON customer_feedback(created_at DESC);
+CREATE INDEX idx_customer_feedback_tenant ON customer_feedback(tenant_id);
 
 -- Order Payments
 CREATE TABLE order_payments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   received_by UUID NOT NULL REFERENCES staff(id) ON DELETE RESTRICT,
   payment_type VARCHAR(20) NOT NULL CHECK (
@@ -303,10 +347,12 @@ CREATE TABLE order_payments (
 CREATE INDEX idx_order_payments_order ON order_payments(order_id);
 CREATE INDEX idx_order_payments_staff ON order_payments(received_by);
 CREATE INDEX idx_order_payments_created ON order_payments(created_at DESC);
+CREATE INDEX idx_order_payments_tenant ON order_payments(tenant_id);
 
 -- Table Transfers
 CREATE TABLE table_transfers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   from_table_id UUID NOT NULL REFERENCES tables(id) ON DELETE RESTRICT,
   to_table_id UUID NOT NULL REFERENCES tables(id) ON DELETE RESTRICT,
@@ -320,10 +366,12 @@ CREATE INDEX idx_table_transfers_order ON table_transfers(order_id);
 CREATE INDEX idx_table_transfers_from ON table_transfers(from_table_id);
 CREATE INDEX idx_table_transfers_to ON table_transfers(to_table_id);
 CREATE INDEX idx_table_transfers_created ON table_transfers(created_at DESC);
+CREATE INDEX idx_table_transfers_tenant ON table_transfers(tenant_id);
 
 -- Cafe Settings
 CREATE TABLE cafe_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) UNIQUE,
   -- Restaurant info
   restaurant_name VARCHAR(255) NOT NULL DEFAULT 'Gustri',
   restaurant_address TEXT,
@@ -372,12 +420,13 @@ CREATE TABLE cafe_settings (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Insert default settings
-INSERT INTO cafe_settings (id) VALUES ('00000000-0000-0000-0000-000000000001');
+-- Insert default settings for demo tenant
+INSERT INTO cafe_settings (id, tenant_id) VALUES ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001');
 
 -- Stock Items
 CREATE TABLE stock_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   name VARCHAR NOT NULL,
   description TEXT,
   category VARCHAR NOT NULL DEFAULT 'General',
@@ -394,10 +443,12 @@ CREATE TABLE stock_items (
 
 CREATE INDEX idx_stock_items_category ON stock_items(category);
 CREATE INDEX idx_stock_items_is_active ON stock_items(is_active);
+CREATE INDEX idx_stock_items_tenant ON stock_items(tenant_id);
 
 -- Stock Movements (audit trail)
 CREATE TABLE stock_movements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   stock_item_id UUID NOT NULL REFERENCES stock_items(id) ON DELETE CASCADE,
   movement_type VARCHAR NOT NULL CHECK (movement_type IN ('in', 'out', 'adjustment')),
   quantity_change NUMERIC(12,2) NOT NULL,
@@ -409,10 +460,12 @@ CREATE TABLE stock_movements (
 
 CREATE INDEX idx_stock_movements_stock_item_id ON stock_movements(stock_item_id);
 CREATE INDEX idx_stock_movements_created_at ON stock_movements(created_at);
+CREATE INDEX idx_stock_movements_tenant ON stock_movements(tenant_id);
 
 -- Expense Categories
 CREATE TABLE expense_categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   name VARCHAR NOT NULL,
   description TEXT,
   icon VARCHAR,
@@ -423,6 +476,7 @@ CREATE TABLE expense_categories (
 -- Expenses
 CREATE TABLE expenses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   category_id UUID REFERENCES expense_categories(id) ON DELETE SET NULL,
   amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
   description TEXT NOT NULL,
@@ -438,10 +492,12 @@ CREATE TABLE expenses (
 CREATE INDEX idx_expenses_category_id ON expenses(category_id);
 CREATE INDEX idx_expenses_expense_date ON expenses(expense_date);
 CREATE INDEX idx_expenses_created_by ON expenses(created_by);
+CREATE INDEX idx_expenses_tenant ON expenses(tenant_id);
 
 -- Staff Schedules
 CREATE TABLE staff_schedules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
   staff_id UUID NOT NULL REFERENCES staff(id),
   date DATE NOT NULL,
   planned_start TIME NOT NULL,
@@ -523,25 +579,31 @@ CREATE TRIGGER set_order_number_trigger
   FOR EACH ROW
   EXECUTE FUNCTION set_order_number();
 
--- Function: Calculate order total (uses cafe_settings tax)
+-- Function: Calculate order total (uses cafe_settings tax, scoped by tenant)
 CREATE OR REPLACE FUNCTION calculate_order_total(order_uuid UUID)
 RETURNS VOID
-SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = ''
+AS $$
 DECLARE
   calculated_subtotal DECIMAL(10, 2);
   calculated_tax DECIMAL(10, 2);
   calculated_total DECIMAL(10, 2);
   settings_tax_enabled BOOLEAN;
   settings_tax_percentage DECIMAL(5, 2);
+  v_tenant_id UUID;
 BEGIN
+  SELECT tenant_id INTO v_tenant_id FROM public.orders WHERE id = order_uuid;
+
   SELECT tax_enabled, tax_percentage
   INTO settings_tax_enabled, settings_tax_percentage
-  FROM cafe_settings
+  FROM public.cafe_settings
+  WHERE tenant_id = v_tenant_id
   LIMIT 1;
 
   SELECT COALESCE(SUM(item_price * quantity), 0)
   INTO calculated_subtotal
-  FROM order_items
+  FROM public.order_items
   WHERE order_id = order_uuid;
 
   IF settings_tax_enabled = true AND settings_tax_percentage > 0 THEN
@@ -552,25 +614,23 @@ BEGIN
 
   calculated_total := calculated_subtotal + calculated_tax;
 
-  UPDATE orders
-  SET
-    subtotal = calculated_subtotal,
-    tax = calculated_tax,
-    total = calculated_total,
-    updated_at = NOW()
+  UPDATE public.orders
+  SET subtotal = calculated_subtotal, tax = calculated_tax, total = calculated_total, updated_at = NOW()
   WHERE id = order_uuid;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Function: Recalculate order total on item changes
 CREATE OR REPLACE FUNCTION recalculate_order_total()
 RETURNS TRIGGER
-SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = ''
+AS $$
 BEGIN
-  PERFORM calculate_order_total(COALESCE(NEW.order_id, OLD.order_id));
+  PERFORM public.calculate_order_total(COALESCE(NEW.order_id, OLD.order_id));
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE TRIGGER recalculate_on_item_insert
   AFTER INSERT ON order_items FOR EACH ROW EXECUTE FUNCTION recalculate_order_total();
@@ -610,13 +670,28 @@ CREATE TRIGGER update_table_on_order
   FOR EACH ROW
   EXECUTE FUNCTION update_table_status_on_order();
 
--- Function: Set table context for customers (RLS)
+-- Function: Set table context for customers (RLS + tenant isolation)
 CREATE OR REPLACE FUNCTION set_table_context(qr_token TEXT)
-RETURNS VOID AS $$
+RETURNS VOID
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_table_id UUID;
+  v_tenant_id UUID;
 BEGIN
+  SELECT id, tenant_id INTO v_table_id, v_tenant_id
+  FROM public.tables WHERE qr_code = qr_token;
+
+  IF v_table_id IS NULL THEN
+    RAISE EXCEPTION 'Invalid QR code';
+  END IF;
+
   PERFORM set_config('app.qr_token', qr_token, true);
+  PERFORM set_config('app.current_table_id', v_table_id::TEXT, true);
+  PERFORM set_config('app.current_tenant_id', v_tenant_id::TEXT, true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Function: Get order remaining balance
 CREATE OR REPLACE FUNCTION get_order_remaining_balance(order_uuid UUID)
@@ -757,22 +832,7 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER auto_acknowledge_feedback_trigger
   BEFORE UPDATE ON customer_feedback FOR EACH ROW EXECUTE FUNCTION auto_acknowledge_feedback();
 
--- Function: Enforce single cafe settings row
-CREATE OR REPLACE FUNCTION enforce_single_cafe_settings()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF (SELECT COUNT(*) FROM cafe_settings) > 0 THEN
-    RAISE EXCEPTION 'Only one cafe_settings row is allowed';
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER check_single_cafe_settings
-  BEFORE INSERT ON cafe_settings
-  FOR EACH ROW
-  WHEN (NEW.id != '00000000-0000-0000-0000-000000000001')
-  EXECUTE FUNCTION enforce_single_cafe_settings();
+-- Note: Single cafe_settings row per tenant is enforced by UNIQUE constraint on tenant_id
 
 -- ============================================================
 -- STEP 4: Views
@@ -835,25 +895,133 @@ GROUP BY o.id, o.order_number, o.total;
 GRANT SELECT ON order_payment_summary TO authenticated;
 
 -- ============================================================
--- STEP 5: Disable RLS for Development
+-- STEP 5: RLS — Tenant Isolation
 -- ============================================================
 
-ALTER TABLE staff DISABLE ROW LEVEL SECURITY;
-ALTER TABLE tables DISABLE ROW LEVEL SECURITY;
-ALTER TABLE categories DISABLE ROW LEVEL SECURITY;
-ALTER TABLE menu_items DISABLE ROW LEVEL SECURITY;
-ALTER TABLE orders DISABLE ROW LEVEL SECURITY;
-ALTER TABLE order_items DISABLE ROW LEVEL SECURITY;
-ALTER TABLE waiter_calls DISABLE ROW LEVEL SECURITY;
-ALTER TABLE customer_feedback DISABLE ROW LEVEL SECURITY;
-ALTER TABLE order_payments DISABLE ROW LEVEL SECURITY;
-ALTER TABLE table_transfers DISABLE ROW LEVEL SECURITY;
-ALTER TABLE cafe_settings DISABLE ROW LEVEL SECURITY;
-ALTER TABLE stock_items DISABLE ROW LEVEL SECURITY;
-ALTER TABLE stock_movements DISABLE ROW LEVEL SECURITY;
-ALTER TABLE expense_categories DISABLE ROW LEVEL SECURITY;
-ALTER TABLE expenses DISABLE ROW LEVEL SECURITY;
-ALTER TABLE staff_schedules DISABLE ROW LEVEL SECURITY;
+-- Helper function: get current user's tenant_id
+CREATE OR REPLACE FUNCTION current_tenant_id()
+RETURNS UUID
+LANGUAGE SQL STABLE SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT tenant_id FROM public.staff WHERE auth_user_id = auth.uid() LIMIT 1;
+$$;
+
+GRANT EXECUTE ON FUNCTION current_tenant_id() TO authenticated;
+
+-- Enable RLS on all tables
+ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE staff ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tables ENABLE ROW LEVEL SECURITY;
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE waiter_calls ENABLE ROW LEVEL SECURITY;
+ALTER TABLE customer_feedback ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE table_transfers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cafe_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE stock_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE stock_movements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expense_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE staff_schedules ENABLE ROW LEVEL SECURITY;
+
+-- Tenants: read own
+CREATE POLICY "tenant_read_own" ON tenants FOR SELECT TO authenticated
+  USING (id = current_tenant_id());
+
+-- Authenticated-only tables: full tenant isolation
+CREATE POLICY "tenant_isolation" ON staff FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "tenant_isolation" ON staff_schedules FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "tenant_isolation" ON stock_items FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "tenant_isolation" ON stock_movements FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "tenant_isolation" ON expense_categories FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "tenant_isolation" ON expenses FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "tenant_isolation" ON table_transfers FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+
+-- Customer-accessible tables: authenticated + anon via table context
+CREATE POLICY "tenant_isolation" ON tables FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "anon_read_via_context" ON tables FOR SELECT TO anon
+  USING (tenant_id::TEXT = current_setting('app.current_tenant_id', true));
+
+CREATE POLICY "tenant_isolation" ON categories FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "anon_read_via_context" ON categories FOR SELECT TO anon
+  USING (tenant_id::TEXT = current_setting('app.current_tenant_id', true));
+
+CREATE POLICY "tenant_isolation" ON menu_items FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "anon_read_via_context" ON menu_items FOR SELECT TO anon
+  USING (tenant_id::TEXT = current_setting('app.current_tenant_id', true));
+
+CREATE POLICY "tenant_isolation" ON cafe_settings FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "anon_read_via_context" ON cafe_settings FOR SELECT TO anon
+  USING (tenant_id::TEXT = current_setting('app.current_tenant_id', true));
+
+CREATE POLICY "tenant_isolation" ON orders FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "anon_read_via_context" ON orders FOR SELECT TO anon
+  USING (tenant_id::TEXT = current_setting('app.current_tenant_id', true));
+CREATE POLICY "anon_insert_via_context" ON orders FOR INSERT TO anon
+  WITH CHECK (tenant_id::TEXT = current_setting('app.current_tenant_id', true));
+CREATE POLICY "anon_update_cancel" ON orders FOR UPDATE TO anon
+  USING (tenant_id::TEXT = current_setting('app.current_tenant_id', true))
+  WITH CHECK (status = 'cancelled');
+
+CREATE POLICY "tenant_isolation" ON order_items FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "anon_read_via_context" ON order_items FOR SELECT TO anon
+  USING (tenant_id::TEXT = current_setting('app.current_tenant_id', true));
+CREATE POLICY "anon_insert_via_context" ON order_items FOR INSERT TO anon
+  WITH CHECK (tenant_id::TEXT = current_setting('app.current_tenant_id', true));
+
+CREATE POLICY "tenant_isolation" ON waiter_calls FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "anon_read_via_context" ON waiter_calls FOR SELECT TO anon
+  USING (tenant_id::TEXT = current_setting('app.current_tenant_id', true));
+CREATE POLICY "anon_insert_via_context" ON waiter_calls FOR INSERT TO anon
+  WITH CHECK (tenant_id::TEXT = current_setting('app.current_tenant_id', true));
+
+CREATE POLICY "tenant_isolation" ON customer_feedback FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "anon_read_via_context" ON customer_feedback FOR SELECT TO anon
+  USING (tenant_id::TEXT = current_setting('app.current_tenant_id', true));
+CREATE POLICY "anon_insert_via_context" ON customer_feedback FOR INSERT TO anon
+  WITH CHECK (tenant_id::TEXT = current_setting('app.current_tenant_id', true));
+
+CREATE POLICY "tenant_isolation" ON order_payments FOR ALL TO authenticated
+  USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+CREATE POLICY "anon_read_via_context" ON order_payments FOR SELECT TO anon
+  USING (tenant_id::TEXT = current_setting('app.current_tenant_id', true));
+
+-- Set column defaults (auto-fill tenant_id on insert for authenticated users)
+ALTER TABLE staff ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE tables ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE categories ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE menu_items ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE orders ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE order_items ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE waiter_calls ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE customer_feedback ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE order_payments ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE table_transfers ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE cafe_settings ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE staff_schedules ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE stock_items ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE stock_movements ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE expense_categories ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
+ALTER TABLE expenses ALTER COLUMN tenant_id SET DEFAULT current_tenant_id();
 
 -- ============================================================
 -- STEP 6: Enable Realtime
@@ -880,14 +1048,14 @@ GRANT EXECUTE ON FUNCTION get_order_remaining_balance TO authenticated, anon;
 -- STEP 8: Seed Default Expense Categories
 -- ============================================================
 
-INSERT INTO expense_categories (name, description, icon) VALUES
-  ('Rent', 'Monthly rent and lease payments', 'Building2'),
-  ('Utilities', 'Electricity, water, gas, internet', 'Zap'),
-  ('Salaries', 'Staff wages and benefits', 'Users'),
-  ('Supplies', 'Kitchen and cleaning supplies', 'ShoppingCart'),
-  ('Maintenance', 'Equipment repairs and maintenance', 'Wrench'),
-  ('Marketing', 'Advertising and promotions', 'Megaphone'),
-  ('Other', 'Miscellaneous expenses', 'MoreHorizontal');
+INSERT INTO expense_categories (tenant_id, name, description, icon) VALUES
+  ('00000000-0000-0000-0000-000000000001', 'Rent', 'Monthly rent and lease payments', 'Building2'),
+  ('00000000-0000-0000-0000-000000000001', 'Utilities', 'Electricity, water, gas, internet', 'Zap'),
+  ('00000000-0000-0000-0000-000000000001', 'Salaries', 'Staff wages and benefits', 'Users'),
+  ('00000000-0000-0000-0000-000000000001', 'Supplies', 'Kitchen and cleaning supplies', 'ShoppingCart'),
+  ('00000000-0000-0000-0000-000000000001', 'Maintenance', 'Equipment repairs and maintenance', 'Wrench'),
+  ('00000000-0000-0000-0000-000000000001', 'Marketing', 'Advertising and promotions', 'Megaphone'),
+  ('00000000-0000-0000-0000-000000000001', 'Other', 'Miscellaneous expenses', 'MoreHorizontal');
 
 -- ============================================================
 -- STEP 9: Create Storage Bucket for Branding
@@ -912,6 +1080,156 @@ BEGIN
         CREATE POLICY "Authenticated users can delete branding" ON storage.objects FOR DELETE USING (bucket_id = 'branding' AND auth.role() = 'authenticated');
     END IF;
 END $$;
+
+-- ============================================================
+-- STEP 10: Tenant Signup Trigger
+-- ============================================================
+
+CREATE TRIGGER update_tenants_updated_at
+  BEFORE UPDATE ON tenants
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Auto-provision tenant on self-service signup
+CREATE OR REPLACE FUNCTION handle_new_tenant_signup()
+RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_tenant_id UUID;
+  v_slug TEXT;
+  v_plan TEXT;
+BEGIN
+  IF NEW.raw_user_meta_data->>'signup' IS NULL THEN RETURN NEW; END IF;
+
+  v_plan := COALESCE(NEW.raw_user_meta_data->>'plan', 'free');
+  IF v_plan NOT IN ('free', 'standard', 'pro', 'business') THEN
+    v_plan := 'free';
+  END IF;
+
+  v_slug := lower(regexp_replace(
+    COALESCE(NEW.raw_user_meta_data->>'restaurant_name', 'restaurant'),
+    '[^a-zA-Z0-9]+', '-', 'g'
+  ));
+  v_slug := v_slug || '-' || substr(gen_random_uuid()::TEXT, 1, 8);
+
+  INSERT INTO public.tenants (name, slug, plan)
+  VALUES (COALESCE(NEW.raw_user_meta_data->>'restaurant_name', 'My Restaurant'), v_slug, v_plan)
+  RETURNING id INTO v_tenant_id;
+
+  INSERT INTO public.staff (auth_user_id, email, full_name, role, tenant_id)
+  VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'full_name', 'Owner'), 'owner', v_tenant_id);
+
+  INSERT INTO public.cafe_settings (tenant_id, restaurant_name)
+  VALUES (v_tenant_id, COALESCE(NEW.raw_user_meta_data->>'restaurant_name', 'My Restaurant'));
+
+  INSERT INTO public.task_categories (tenant_id, name, icon, color) VALUES
+    (v_tenant_id, 'Opening', '🌅', '#22c55e'),
+    (v_tenant_id, 'Closing', '🌙', '#6366f1'),
+    (v_tenant_id, 'Cleaning', '🧹', '#06b6d4'),
+    (v_tenant_id, 'Inventory', '📦', '#f59e0b'),
+    (v_tenant_id, 'General', '📋', '#64748b');
+
+  INSERT INTO public.expense_categories (tenant_id, name, icon) VALUES
+    (v_tenant_id, 'Food & Ingredients', '🍕'),
+    (v_tenant_id, 'Beverages', '☕'),
+    (v_tenant_id, 'Utilities', '💡'),
+    (v_tenant_id, 'Rent', '🏠'),
+    (v_tenant_id, 'Equipment', '🔧'),
+    (v_tenant_id, 'Other', '📌');
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER on_auth_user_created_tenant
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_tenant_signup();
+
+-- ============================================================
+-- Plan limit enforcement triggers
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION check_table_limit()
+RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_plan TEXT;
+  v_count INT;
+  v_max INT;
+BEGIN
+  SELECT t.plan INTO v_plan FROM public.tenants t WHERE t.id = NEW.tenant_id;
+  v_max := CASE v_plan
+    WHEN 'free' THEN 5 WHEN 'standard' THEN 10
+    WHEN 'pro' THEN 20 ELSE -1 END;
+  IF v_max = -1 THEN RETURN NEW; END IF;
+  SELECT COUNT(*) INTO v_count FROM public.tables WHERE tenant_id = NEW.tenant_id;
+  IF v_count >= v_max THEN
+    RAISE EXCEPTION 'Table limit reached for % plan (max %)', v_plan, v_max;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER enforce_table_limit
+  BEFORE INSERT ON tables
+  FOR EACH ROW EXECUTE FUNCTION check_table_limit();
+
+CREATE OR REPLACE FUNCTION check_order_limit()
+RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_plan TEXT;
+  v_count INT;
+  v_max INT;
+BEGIN
+  SELECT t.plan INTO v_plan FROM public.tenants t WHERE t.id = NEW.tenant_id;
+  v_max := CASE v_plan
+    WHEN 'free' THEN 100 WHEN 'standard' THEN 700
+    WHEN 'pro' THEN 2200 ELSE -1 END;
+  IF v_max = -1 THEN RETURN NEW; END IF;
+  SELECT COUNT(*) INTO v_count FROM public.orders
+    WHERE tenant_id = NEW.tenant_id
+    AND created_at >= date_trunc('month', NOW());
+  IF v_count >= v_max THEN
+    RAISE EXCEPTION 'Monthly order limit reached for % plan (max %)', v_plan, v_max;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER enforce_order_limit
+  BEFORE INSERT ON orders
+  FOR EACH ROW EXECUTE FUNCTION check_order_limit();
+
+-- RPC: Get monthly order count for current tenant
+CREATE OR REPLACE FUNCTION get_monthly_order_count()
+RETURNS INT
+LANGUAGE SQL STABLE SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT COUNT(*)::INT FROM public.orders
+  WHERE tenant_id = public.current_tenant_id()
+    AND created_at >= date_trunc('month', NOW());
+$$;
+
+GRANT EXECUTE ON FUNCTION get_monthly_order_count() TO authenticated;
+
+-- RPC: Get tenant plan from QR table context (for anon/customer-web)
+CREATE OR REPLACE FUNCTION get_tenant_plan_from_context()
+RETURNS TEXT
+LANGUAGE SQL STABLE SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT t.plan FROM public.tenants t
+  WHERE t.id = current_setting('app.current_tenant_id', true)::UUID;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_tenant_plan_from_context() TO anon;
 
 -- ============================================================
 -- DONE! Database is ready.

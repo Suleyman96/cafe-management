@@ -131,6 +131,7 @@ export function createMockDb() {
       'assignTo',
       'generateRecurringTasks',
     ),
+    tenants: mockResource('getCurrent', 'getMonthlyOrderCount'),
     rpc: mockResource('getRemainingBalance', 'transferTable', 'generateOrderNumber'),
     views: mockResource('getActiveOrders', 'getSalesSummary', 'getOrderPaymentSummary'),
     realtime: mockResource(

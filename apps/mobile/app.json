@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gustri.app"
@@ -22,7 +24,11 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.gustri.app",
-      "permissions": ["NOTIFICATIONS", "VIBRATE"]
+      "versionCode": 1,
+      "permissions": [
+        "NOTIFICATIONS",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,7 +40,9 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#ffffff",
-          "sounds": ["./assets/sounds/new-order.wav"]
+          "sounds": [
+            "./assets/sounds/new-order.wav"
+          ]
         }
       ],
       "expo-localization",
@@ -48,8 +56,12 @@
         "origin": false
       },
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "c0780054-a6d7-4e65-8ead-1a4b09f661a5"
       }
-    }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "owner": "hajilov-k"
   }
 }

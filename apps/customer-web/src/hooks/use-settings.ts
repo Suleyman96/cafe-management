@@ -17,6 +17,7 @@ const SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
 // Default settings in case the database fetch fails
 const DEFAULT_SETTINGS: CafeSettings = {
   id: SETTINGS_ID,
+  tenant_id: '00000000-0000-0000-0000-000000000000',
   restaurant_name: 'Restaurant',
   tax_enabled: true,
   tax_percentage: 18,

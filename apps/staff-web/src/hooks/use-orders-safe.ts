@@ -3,11 +3,12 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
-import { ORDER_STATUS, QUERY_KEYS } from '@gustri/core';
+import { ORDER_STATUS, PLAN_LIMITS, QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateOrders, invalidateOrdersAndTables } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
+import { useAuthStore } from '@/store/auth-store';
 import type { OrderWithDetails } from '@/types';
 
 type OrderStatus = Database['public']['Tables']['orders']['Row']['status'];
@@ -60,11 +61,23 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (orderData: OrderInsert) => db.orders.create(orderData),
+    mutationFn: async (orderData: OrderInsert) => {
+      // Soft pre-check: verify monthly order limit before sending to DB
+      const plan = useAuthStore.getState().tenantPlan ?? 'free';
+      const max = PLAN_LIMITS[plan].maxOrdersPerMonth;
+      if (max !== -1) {
+        const cachedCount = queryClient.getQueryData<number>([QUERY_KEYS.MONTHLY_ORDER_COUNT]);
+        if (cachedCount !== undefined && cachedCount >= max) {
+          throw new Error(`Your ${plan} plan allows up to ${max} orders/month. Upgrade to add more.`);
+        }
+      }
+      return db.orders.create(orderData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MONTHLY_ORDER_COUNT] });
     },
   });
 }
@@ -179,6 +192,11 @@ export function useCleanupEmptyOrders() {
       }
     },
   });
+}
+
+export function usePendingApprovalCount() {
+  const { data: orders } = useOrders({ status: 'pending_approval' as OrderStatus });
+  return (orders || []).length;
 }
 
 // Note: Payment-related hooks are in use-payments-safe.ts

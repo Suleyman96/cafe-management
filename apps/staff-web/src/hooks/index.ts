@@ -19,6 +19,7 @@ export * from './use-tables-safe';
 export * from './use-takeout-safe';
 export * from './use-tasks-safe';
 export * from './use-tax-multiplier';
+export * from './use-tenant-plan';
 export * from './use-waiter-calls-safe';
 export * from './use-waste-safe';
 export * from './use-z-report-safe';

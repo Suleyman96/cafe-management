@@ -7,15 +7,17 @@ import {
   CheckCircle,
   ChefHat,
   Package,
+  Smartphone,
   Timer,
   Truck,
   User,
   Utensils,
   UtensilsCrossed,
+  XCircle,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
+import { useCancelOrder, useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
 import { supabase } from '@/lib/supabase/client';
 
 export default function KitchenDisplayPage() {
@@ -23,7 +25,10 @@ export default function KitchenDisplayPage() {
   const { data: orders, isLoading: loading, error, refetch } = useOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
+  const cancelOrder = useCancelOrder();
   const [_currentTime, setCurrentTime] = useState(new Date());
+  const [rejectingOrder, setRejectingOrder] = useState<any>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   // Update current time every minute to refresh elapsed times
   useEffect(() => {
@@ -61,6 +66,14 @@ export default function KitchenDisplayPage() {
       if (aPriority !== bPriority) return aPriority - bPriority;
       return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     });
+
+  // Filter pending approval orders (QR orders awaiting staff approval)
+  const pendingApprovalOrders =
+    orders
+      ?.filter((order: any) => order.status === 'pending_approval')
+      .sort(
+        (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      ) || [];
 
   // Count orders by status
   const newOrdersCount = kitchenOrders?.filter((o: any) => o.status === 'new').length || 0;
@@ -191,6 +204,33 @@ export default function KitchenDisplayPage() {
         });
       }
       // Don't show toast in kitchen view to avoid distractions
+    } catch (_error) {
+      toast.error(t('orders.failedUpdateStatus'));
+    }
+  };
+
+  // Handle QR order approval
+  const handleApproveOrder = async (orderId: string) => {
+    try {
+      await updateOrderStatus.mutateAsync({ orderId, status: 'NEW' });
+      toast.success(t('kitchen.orderApproved'));
+    } catch (_error) {
+      toast.error(t('orders.failedUpdateStatus'));
+    }
+  };
+
+  // Handle QR order rejection
+  const handleRejectOrder = async () => {
+    if (!rejectingOrder || !rejectReason.trim()) return;
+    try {
+      await cancelOrder.mutateAsync({
+        orderId: rejectingOrder.id,
+        reason: rejectReason,
+        tableId: rejectingOrder.table_id,
+      });
+      toast.success(t('kitchen.orderRejected'));
+      setRejectingOrder(null);
+      setRejectReason('');
     } catch (_error) {
       toast.error(t('orders.failedUpdateStatus'));
     }
@@ -352,6 +392,92 @@ export default function KitchenDisplayPage() {
           </div>
         </div>
       </div>
+
+      {/* Pending QR Orders Section */}
+      {pendingApprovalOrders.length > 0 && (
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Smartphone className="h-5 w-5 text-amber-400" />
+            <h2 className="text-lg font-bold text-amber-400">
+              {t('kitchen.pendingQrOrders')} ({pendingApprovalOrders.length})
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+            {pendingApprovalOrders.map((order: any) => {
+              const elapsedMinutes = calculateElapsedTime(order.created_at);
+              const itemCount =
+                order.order_items?.filter((i: any) => i.status !== 'cancelled').length || 0;
+
+              return (
+                <div
+                  key={order.id}
+                  className="border-2 border-amber-500 bg-amber-950/50 rounded-xl p-3 sm:p-4 animate-pulse"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="text-xl sm:text-2xl font-black text-white">
+                        #{getOrderNumber(order.id)}
+                      </div>
+                      <div className="text-sm font-bold text-amber-300">
+                        {order.table?.table_number || t('orders.qrOrder', { ns: 'staff' })}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500 text-black text-xs font-bold">
+                      <Smartphone className="h-3 w-3" />
+                      QR
+                    </div>
+                  </div>
+
+                  {/* Timer */}
+                  <div className="flex items-center gap-1.5 mb-2 px-2 py-1 rounded-lg bg-white/10">
+                    <Timer className="h-4 w-4 text-amber-400" />
+                    <span className="text-base font-bold text-amber-300">{elapsedMinutes}</span>
+                    <span className="text-xs text-amber-400">{t('kitchen.min')}</span>
+                    <span className="ml-auto text-xs text-gray-400">
+                      {t('kitchen.itemCount', { count: itemCount })}
+                    </span>
+                  </div>
+
+                  {/* Order Items Preview */}
+                  <div className="space-y-1 mb-3 max-h-24 overflow-y-auto">
+                    {order.order_items
+                      ?.filter((item: any) => item.status !== 'cancelled')
+                      .map((item: any) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-1.5 text-sm text-gray-300"
+                        >
+                          <span className="font-bold text-white bg-white/10 px-1.5 py-0.5 rounded text-xs">
+                            {item.quantity}x
+                          </span>
+                          <span className="truncate">{item.menu_item?.name}</span>
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApproveOrder(order.id)}
+                      className="flex-1 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      {t('approve', { ns: 'common' })}
+                    </button>
+                    <button
+                      onClick={() => setRejectingOrder(order)}
+                      className="flex-1 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <XCircle className="h-4 w-4" />
+                      {t('reject', { ns: 'common' })}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Orders Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
@@ -553,12 +679,50 @@ export default function KitchenDisplayPage() {
       </div>
 
       {/* Empty State */}
-      {(!kitchenOrders || kitchenOrders.length === 0) && (
+      {(!kitchenOrders || kitchenOrders.length === 0) && pendingApprovalOrders.length === 0 && (
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
             <ChefHat className="h-32 w-32 mx-auto mb-6 text-gray-500" />
             <p className="text-4xl font-bold text-gray-400 mb-2">{t('kitchen.noActiveOrders')}</p>
             <p className="text-xl text-gray-500">{t('kitchen.waitingForOrders')}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Order Modal */}
+      {rejectingOrder && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              {t('reject', { ns: 'common' })} #{getOrderNumber(rejectingOrder.id)}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">{t('kitchen.rejectReason')}</p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder={t('kitchen.rejectReasonPlaceholder')}
+              className="w-full border border-gray-300 rounded-lg p-3 text-sm mb-4 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              rows={3}
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setRejectingOrder(null);
+                  setRejectReason('');
+                }}
+                className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50"
+              >
+                {t('cancel', { ns: 'common' })}
+              </button>
+              <button
+                onClick={handleRejectOrder}
+                disabled={!rejectReason.trim()}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {t('reject', { ns: 'common' })}
+              </button>
+            </div>
           </div>
         </div>
       )}

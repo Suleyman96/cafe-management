@@ -2,6 +2,7 @@
 
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { GustriLogo } from '@/components/ui/gustri-logo';
@@ -117,9 +118,17 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                {t('password')}
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  {t('password')}
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                >
+                  {t('forgotPassword')}
+                </Link>
+              </div>
               <div className="mt-1">
                 <input
                   id="password"

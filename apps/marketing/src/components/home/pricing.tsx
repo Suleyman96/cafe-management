@@ -64,7 +64,7 @@ export function Pricing() {
               </ul>
 
               <Link
-                href="/pricing"
+                href={`/signup?plan=${plan.name.toLowerCase()}`}
                 className={`mt-8 block w-full rounded-lg py-2.5 text-center text-sm font-semibold transition-colors ${
                   plan.highlighted
                     ? 'bg-white text-primary-600 hover:bg-primary-50'

@@ -345,7 +345,7 @@ describe('useAuth', () => {
       });
 
       // Simulate SIGNED_IN event — mock getSession for re-render when staff is set
-      const mockStaff = { id: 'staff-1', full_name: 'Test User', role: 'waiter' };
+      const mockStaff = { id: 'staff-1', tenant_id: 'test-tenant-id', full_name: 'Test User', role: 'waiter' };
       (db.staff.findByAuthId as any).mockResolvedValueOnce(mockStaff);
       (supabase.auth.getSession as any).mockResolvedValueOnce({
         data: { session: { user: { id: 'auth-user-1' } } },

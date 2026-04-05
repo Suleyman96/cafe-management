@@ -31,7 +31,7 @@ let sessionCheckInProgress = false;
 
 export function useAuth() {
   const router = useRouter();
-  const { staff, isLoading, setStaff, setIsLoading, clearAuth } = useAuthStore();
+  const { staff, isLoading, setStaff, setTenantPlan, setIsLoading, clearAuth } = useAuthStore();
 
   // Always initialize the Supabase session from localStorage and listen for changes.
   // This must run even when Zustand already has staff data (e.g. after page refresh),
@@ -86,6 +86,11 @@ export function useAuth() {
 
         setStaff(staffData);
         postLoginSideEffects(staffData.id);
+
+        // Fetch tenant plan
+        db.tenants.getCurrent()
+          .then((tenant) => setTenantPlan(tenant.plan as any))
+          .catch(console.warn);
       } catch (error) {
         console.error('Auth check error:', error);
         clearAuth();
@@ -109,6 +114,9 @@ export function useAuth() {
           const staffData = (await db.staff.findByAuthId(session.user.id)) as Staff;
           setStaff(staffData);
           postLoginSideEffects(staffData.id);
+          db.tenants.getCurrent()
+            .then((tenant) => setTenantPlan(tenant.plan as any))
+            .catch(console.warn);
         } catch {
           // Staff record not found — ignore
         }
@@ -118,7 +126,7 @@ export function useAuth() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [staff, clearAuth, router.push, setIsLoading, setStaff]);
+  }, [staff, clearAuth, router.push, setIsLoading, setStaff, setTenantPlan]);
 
   const logout = async () => {
     await supabase.auth.signOut();

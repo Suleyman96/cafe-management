@@ -129,6 +129,9 @@ importers:
 
   apps/marketing:
     dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.45.0
+        version: 2.100.1
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3
