@@ -114,7 +114,7 @@ export default function TableDetailPage() {
     }
   }, [activeOrders.length, selectedOrderIndex]);
 
-  // Reset selected order when tableId changes (navigating to a different table)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on table navigation
   useEffect(() => {
     setSelectedOrderIndex(0);
   }, [tableId]);

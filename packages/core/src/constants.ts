@@ -90,6 +90,62 @@ export const API_ENDPOINTS = {
   SALES_SUMMARY: '/rest/v1/sales_summary_view',
 } as const;
 
+// Subscription plan types and limits
+export type PlanName = 'free' | 'standard' | 'pro' | 'business';
+
+export const PLAN_LIMITS = {
+  free: {
+    maxTables: 5,
+    maxOrdersPerMonth: 100,
+    qrOrdering: false,
+    kitchenDisplay: true,
+    inventory: false,
+    waste: false,
+    scheduling: false,
+    tasks: false,
+    customBranding: false,
+    analytics: 'basic' as const,
+  },
+  standard: {
+    maxTables: 10,
+    maxOrdersPerMonth: 700,
+    qrOrdering: true,
+    kitchenDisplay: true,
+    inventory: false,
+    waste: false,
+    scheduling: false,
+    tasks: false,
+    customBranding: true,
+    analytics: 'full' as const,
+  },
+  pro: {
+    maxTables: 20,
+    maxOrdersPerMonth: 2200,
+    qrOrdering: true,
+    kitchenDisplay: true,
+    inventory: true,
+    waste: true,
+    scheduling: true,
+    tasks: true,
+    customBranding: true,
+    analytics: 'full' as const,
+  },
+  business: {
+    maxTables: -1,
+    maxOrdersPerMonth: -1,
+    qrOrdering: true,
+    kitchenDisplay: true,
+    inventory: true,
+    waste: true,
+    scheduling: true,
+    tasks: true,
+    customBranding: true,
+    analytics: 'full' as const,
+  },
+} as const;
+
+export const PLAN_ORDER: Record<PlanName, number> = { free: 0, standard: 1, pro: 2, business: 3 };
+
 // Query keys for React Query
 export const QUERY_KEYS = {
   TABLES: 'tables',
@@ -134,6 +190,8 @@ export const QUERY_KEYS = {
   PAYMENTS_BY_STAFF: 'payments_by_staff',
   WAITER_CALLS_COUNT: 'waiter_calls_count',
   Z_REPORT: 'z_report',
+  TENANT: 'tenant',
+  MONTHLY_ORDER_COUNT: 'monthly_order_count',
 } as const;
 
 // 30-minute interval time slots (00:00 to 23:30)

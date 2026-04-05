@@ -1,4 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import type { PlanName } from '@gustri/core';
+import { PLAN_ORDER } from '@gustri/core';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { StyleSheet, View } from 'react-native';
@@ -16,6 +18,7 @@ interface DrawerSection {
     label: string;
     icon: IconName;
     roles: string[];
+    minPlan?: PlanName;
   }[];
 }
 
@@ -36,6 +39,7 @@ const DRAWER_SECTIONS: DrawerSection[] = [
         label: 'Tasks',
         icon: 'checkbox-marked-outline',
         roles: ['waiter', 'admin', 'owner', 'kitchen'],
+        minPlan: 'pro',
       },
     ],
   },
@@ -48,12 +52,19 @@ const DRAWER_SECTIONS: DrawerSection[] = [
         icon: 'message-star',
         roles: ['waiter', 'admin', 'owner'],
       },
-      { key: 'StockTab', label: 'Stock', icon: 'package-variant', roles: ['admin', 'owner'] },
+      {
+        key: 'StockTab',
+        label: 'Stock',
+        icon: 'package-variant',
+        roles: ['admin', 'owner'],
+        minPlan: 'pro',
+      },
       {
         key: 'WasteTab',
         label: 'Waste',
         icon: 'delete-variant',
         roles: ['waiter', 'admin', 'owner', 'kitchen'],
+        minPlan: 'pro',
       },
       { key: 'ExpensesTab', label: 'Expenses', icon: 'cash-register', roles: ['admin', 'owner'] },
     ],
@@ -73,6 +84,7 @@ const DRAWER_SECTIONS: DrawerSection[] = [
         label: 'Schedules',
         icon: 'calendar-clock',
         roles: ['admin', 'owner'],
+        minPlan: 'pro',
       },
       { key: 'ReportsTab', label: 'Reports', icon: 'chart-bar', roles: ['owner'] },
       { key: 'CafeSettingsTab', label: 'Cafe Settings', icon: 'cog', roles: ['admin', 'owner'] },
@@ -82,6 +94,7 @@ const DRAWER_SECTIONS: DrawerSection[] = [
 
 export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const staff = useAuthStore((s) => s.staff);
+  const tenantPlan = useAuthStore((s) => s.tenantPlan) ?? 'free';
   const role = staff?.role || 'waiter';
   const currentRoute = props.state.routes[props.state.index]?.name;
   const myOpenCount = useMyOpenTasksCount(staff?.id);
@@ -103,7 +116,11 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
       <Divider style={styles.divider} />
 
       {DRAWER_SECTIONS.map((section) => {
-        const visibleItems = section.items.filter((item) => item.roles.includes(role));
+        const visibleItems = section.items.filter((item) => {
+          if (!item.roles.includes(role)) return false;
+          if (item.minPlan && PLAN_ORDER[tenantPlan] < PLAN_ORDER[item.minPlan]) return false;
+          return true;
+        });
         if (visibleItems.length === 0) return null;
 
         return (

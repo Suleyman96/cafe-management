@@ -10,9 +10,26 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export interface Database {
   public: {
     Tables: {
+      tenants: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string;
+          plan: 'free' | 'standard' | 'pro' | 'business';
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<
+          Database['public']['Tables']['tenants']['Row'],
+          'id' | 'created_at' | 'updated_at'
+        >;
+        Update: Partial<Database['public']['Tables']['tenants']['Insert']>;
+      };
       tables: {
         Row: {
           id: string;
+          tenant_id: string;
           table_number: string;
           qr_code: string;
           capacity: number;
@@ -27,13 +44,14 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['tables']['Row'],
-          'id' | 'created_at' | 'updated_at'
-        >;
+          'id' | 'tenant_id' | 'created_at' | 'updated_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['tables']['Insert']>;
       };
       categories: {
         Row: {
           id: string;
+          tenant_id: string;
           name: string;
           description: string | null;
           icon: string | null;
@@ -44,13 +62,14 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['categories']['Row'],
-          'id' | 'created_at' | 'updated_at'
-        >;
+          'id' | 'tenant_id' | 'created_at' | 'updated_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['categories']['Insert']>;
       };
       menu_items: {
         Row: {
           id: string;
+          tenant_id: string;
           category_id: string | null;
           name: string;
           description: string | null;
@@ -71,13 +90,14 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['menu_items']['Row'],
-          'id' | 'created_at' | 'updated_at'
-        >;
+          'id' | 'tenant_id' | 'created_at' | 'updated_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['menu_items']['Insert']>;
       };
       orders: {
         Row: {
           id: string;
+          tenant_id: string;
           table_id: string | null; // Nullable for takeout orders
           assigned_waiter_id: string | null;
           order_number: string;
@@ -125,6 +145,7 @@ export interface Database {
         Insert: Omit<
           Database['public']['Tables']['orders']['Row'],
           | 'id'
+          | 'tenant_id'
           | 'order_number'
           | 'created_at'
           | 'updated_at'
@@ -133,12 +154,13 @@ export interface Database {
           | 'discount_amount'
           | 'discount_reason'
           | 'discount_applied_by'
-        >;
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['orders']['Insert']>;
       };
       order_items: {
         Row: {
           id: string;
+          tenant_id: string;
           order_id: string;
           menu_item_id: string;
           item_name: string;
@@ -151,13 +173,14 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['order_items']['Row'],
-          'id' | 'created_at' | 'updated_at'
-        >;
+          'id' | 'tenant_id' | 'created_at' | 'updated_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['order_items']['Insert']>;
       };
       waiter_calls: {
         Row: {
           id: string;
+          tenant_id: string;
           table_id: string;
           reason: string;
           call_type: 'assistance' | 'bill' | 'complaint' | 'question' | 'emergency';
@@ -171,8 +194,8 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['waiter_calls']['Row'],
-          'id' | 'created_at' | 'acknowledged_at' | 'resolved_at'
-        >;
+          'id' | 'tenant_id' | 'created_at' | 'acknowledged_at' | 'resolved_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['waiter_calls']['Insert']> & {
           acknowledged_at?: string | null;
           resolved_at?: string | null;
@@ -181,6 +204,7 @@ export interface Database {
       staff: {
         Row: {
           id: string;
+          tenant_id: string;
           email: string;
           full_name: string;
           role: 'waiter' | 'admin' | 'kitchen' | 'owner';
@@ -194,13 +218,14 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['staff']['Row'],
-          'id' | 'created_at' | 'updated_at'
-        >;
+          'id' | 'tenant_id' | 'created_at' | 'updated_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['staff']['Insert']>;
       };
       customer_feedback: {
         Row: {
           id: string;
+          tenant_id: string;
           table_id: string | null;
           order_id: string | null;
           feedback_type: 'complaint' | 'praise';
@@ -214,8 +239,8 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['customer_feedback']['Row'],
-          'id' | 'created_at' | 'acknowledged_at' | 'resolved_at'
-        >;
+          'id' | 'tenant_id' | 'created_at' | 'acknowledged_at' | 'resolved_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['customer_feedback']['Insert']> & {
           acknowledged_at?: string | null;
           resolved_at?: string | null;
@@ -224,6 +249,7 @@ export interface Database {
       order_payments: {
         Row: {
           id: string;
+          tenant_id: string;
           order_id: string;
           received_by: string;
           payment_type: 'full' | 'partial_amount' | 'specific_items';
@@ -234,12 +260,16 @@ export interface Database {
           notes: string | null;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['order_payments']['Row'], 'id' | 'created_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['order_payments']['Row'],
+          'id' | 'tenant_id' | 'created_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['order_payments']['Insert']>;
       };
       table_transfers: {
         Row: {
           id: string;
+          tenant_id: string;
           order_id: string;
           from_table_id: string;
           to_table_id: string;
@@ -247,12 +277,16 @@ export interface Database {
           reason: string | null;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['table_transfers']['Row'], 'id' | 'created_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['table_transfers']['Row'],
+          'id' | 'tenant_id' | 'created_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['table_transfers']['Insert']>;
       };
       staff_schedules: {
         Row: {
           id: string;
+          tenant_id: string;
           staff_id: string;
           date: string;
           planned_start: string;
@@ -266,13 +300,14 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['staff_schedules']['Row'],
-          'id' | 'created_at' | 'updated_at'
-        >;
+          'id' | 'tenant_id' | 'created_at' | 'updated_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['staff_schedules']['Insert']>;
       };
       cafe_settings: {
         Row: {
           id: string;
+          tenant_id: string;
           restaurant_name: string;
           tax_enabled: boolean;
           tax_percentage: number;
@@ -319,13 +354,14 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['cafe_settings']['Row'],
-          'id' | 'created_at' | 'updated_at'
-        >;
+          'id' | 'tenant_id' | 'created_at' | 'updated_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['cafe_settings']['Insert']>;
       };
       stock_items: {
         Row: {
           id: string;
+          tenant_id: string;
           name: string;
           description: string | null;
           category: string;
@@ -341,13 +377,14 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['stock_items']['Row'],
-          'id' | 'created_at' | 'updated_at'
-        >;
+          'id' | 'tenant_id' | 'created_at' | 'updated_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['stock_items']['Insert']>;
       };
       stock_movements: {
         Row: {
           id: string;
+          tenant_id: string;
           stock_item_id: string;
           movement_type: 'in' | 'out' | 'adjustment';
           quantity_change: number;
@@ -356,12 +393,16 @@ export interface Database {
           performed_by: string | null;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['stock_movements']['Row'], 'id' | 'created_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['stock_movements']['Row'],
+          'id' | 'tenant_id' | 'created_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['stock_movements']['Insert']>;
       };
       expense_categories: {
         Row: {
           id: string;
+          tenant_id: string;
           name: string;
           description: string | null;
           icon: string | null;
@@ -370,13 +411,14 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['expense_categories']['Row'],
-          'id' | 'created_at'
-        >;
+          'id' | 'tenant_id' | 'created_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['expense_categories']['Insert']>;
       };
       expenses: {
         Row: {
           id: string;
+          tenant_id: string;
           category_id: string | null;
           amount: number;
           description: string;
@@ -390,13 +432,14 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['expenses']['Row'],
-          'id' | 'created_at' | 'updated_at'
-        >;
+          'id' | 'tenant_id' | 'created_at' | 'updated_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['expenses']['Insert']>;
       };
       waste_logs: {
         Row: {
           id: string;
+          tenant_id: string;
           item_name: string;
           category: string;
           quantity: number;
@@ -417,24 +460,32 @@ export interface Database {
           waste_date: string;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['waste_logs']['Row'], 'id' | 'created_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['waste_logs']['Row'],
+          'id' | 'tenant_id' | 'created_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['waste_logs']['Insert']>;
       };
       task_categories: {
         Row: {
           id: string;
+          tenant_id: string;
           name: string;
           icon: string | null;
           color: string;
           is_active: boolean;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['task_categories']['Row'], 'id' | 'created_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['task_categories']['Row'],
+          'id' | 'tenant_id' | 'created_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['task_categories']['Insert']>;
       };
       tasks: {
         Row: {
           id: string;
+          tenant_id: string;
           title: string;
           description: string | null;
           category_id: string | null;
@@ -455,13 +506,14 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['tasks']['Row'],
-          'id' | 'created_at' | 'updated_at'
-        >;
+          'id' | 'tenant_id' | 'created_at' | 'updated_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['tasks']['Insert']>;
       };
       refunds: {
         Row: {
           id: string;
+          tenant_id: string;
           order_id: string;
           processed_by: string;
           amount: number;
@@ -471,12 +523,16 @@ export interface Database {
           notes: string | null;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['refunds']['Row'], 'id' | 'created_at'>;
+        Insert: Omit<
+          Database['public']['Tables']['refunds']['Row'],
+          'id' | 'tenant_id' | 'created_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['refunds']['Insert']>;
       };
       delivery_customers: {
         Row: {
           id: string;
+          tenant_id: string;
           name: string;
           phone: string;
           address: string;
@@ -488,8 +544,8 @@ export interface Database {
         };
         Insert: Omit<
           Database['public']['Tables']['delivery_customers']['Row'],
-          'id' | 'order_count' | 'last_order_at' | 'created_at' | 'updated_at'
-        >;
+          'id' | 'tenant_id' | 'order_count' | 'last_order_at' | 'created_at' | 'updated_at'
+        > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['delivery_customers']['Insert']>;
       };
     };
@@ -497,6 +553,7 @@ export interface Database {
       active_orders_view: {
         Row: {
           id: string;
+          tenant_id: string;
           order_number: string;
           status: string;
           created_at: string;
@@ -513,6 +570,7 @@ export interface Database {
       };
       sales_summary_view: {
         Row: {
+          tenant_id: string;
           date: string;
           order_count: number;
           total_revenue: number;
@@ -523,6 +581,7 @@ export interface Database {
       };
       order_payment_summary: {
         Row: {
+          tenant_id: string;
           order_id: string;
           order_number: string;
           order_total: number;
@@ -559,6 +618,14 @@ export interface Database {
           p_reason?: string;
         };
         Returns: boolean;
+      };
+      get_monthly_order_count: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      get_tenant_plan_from_context: {
+        Args: Record<string, never>;
+        Returns: string;
       };
     };
   };

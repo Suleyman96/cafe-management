@@ -48,6 +48,7 @@ export type TaskUpdate = Tables['tasks']['Update'];
 export type DeliveryCustomerRow = Tables['delivery_customers']['Row'];
 export type DeliveryCustomerInsert = Tables['delivery_customers']['Insert'];
 export type DeliveryCustomerUpdate = Tables['delivery_customers']['Update'];
+export type TenantRow = Tables['tenants']['Row'];
 
 /**
  * Supabase client that bypasses strict typing.

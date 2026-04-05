@@ -23,7 +23,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useOrder } from '@/hooks/use-order';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
-import { setTableContext } from '@/lib/supabase';
+import { setTableContext, supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { useLanguageStore } from '@/store/language-store';
 
@@ -39,6 +39,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
   const { language, setLanguage } = useLanguageStore();
   const { data: settings } = useCafeSettings();
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
+  const [tenantPlan, setTenantPlan] = useState<string | null>(null);
 
   const actualTableId = table?.id || '';
   const { data: activeOrder, isLoading: orderLoading } = useOrder(actualTableId);
@@ -47,9 +48,18 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
 
   useEffect(() => {
     if (token) {
-      setTableContext(token).catch((err) => {
-        console.error('Failed to set table context:', err);
-      });
+      setTableContext(token)
+        .then(() => {
+          // After context is set, check tenant plan for QR ordering gate
+          (supabase.rpc as Function)('get_tenant_plan_from_context')
+            .then((res: any) => {
+              if (res.data) setTenantPlan(res.data);
+            })
+            .catch(console.warn);
+        })
+        .catch((err: any) => {
+          console.error('Failed to set table context:', err);
+        });
     }
   }, [token]);
 
@@ -341,24 +351,38 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
           </button>
 
           {/* Browse Menu CTA */}
-          <button
-            className="group w-full rounded-2xl py-4 px-6 text-base font-semibold transition-all active:scale-[0.97]"
-            style={{
-              background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
-              color: '#0C0C0E',
-              boxShadow: `0 8px 32px ${accentColor}30, 0 0 0 1px ${accentColor}40`,
-            }}
-            onClick={() => router.push(`/table/${tableId}/menu`)}
-          >
-            <span className="flex items-center justify-center gap-2">
-              {settings?.qr_ordering_enabled === false
-                ? t('table.viewMenu')
-                : activeOrder
-                  ? t('table.addMoreItems')
-                  : t('table.browseMenu')}
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </button>
+          {tenantPlan === 'free' ? (
+            <div
+              className="w-full rounded-2xl py-4 px-6 text-center backdrop-blur-xl"
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
+                border: '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              <p className="text-sm font-medium text-white/70">QR ordering is not available.</p>
+              <p className="text-xs text-white/40 mt-1">Please order at the counter.</p>
+            </div>
+          ) : (
+            <button
+              className="group w-full rounded-2xl py-4 px-6 text-base font-semibold transition-all active:scale-[0.97]"
+              style={{
+                background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
+                color: '#0C0C0E',
+                boxShadow: `0 8px 32px ${accentColor}30, 0 0 0 1px ${accentColor}40`,
+              }}
+              onClick={() => router.push(`/table/${tableId}/menu`)}
+            >
+              <span className="flex items-center justify-center gap-2">
+                {settings?.qr_ordering_enabled === false
+                  ? t('table.viewMenu')
+                  : activeOrder
+                    ? t('table.addMoreItems')
+                    : t('table.browseMenu')}
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </button>
+          )}
 
           {/* Social Links */}
           {hasSocialLinks && (

@@ -11,6 +11,7 @@ import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 const makeSettings = (overrides: Partial<CafeSettings> = {}): CafeSettings => ({
   id: '00000000-0000-0000-0000-000000000001',
+  tenant_id: '00000000-0000-0000-0000-000000000000',
   restaurant_name: 'Test Cafe',
   tax_enabled: true,
   tax_percentage: 18,

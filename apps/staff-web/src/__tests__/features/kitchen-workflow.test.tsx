@@ -19,6 +19,7 @@ vi.mock('@/hooks', () => ({
   }),
   useUpdateOrderStatus: () => mockUpdateOrderStatus,
   useUpdateOrderItemStatus: () => mockUpdateItemStatus,
+  useCancelOrder: () => ({ mutateAsync: vi.fn().mockResolvedValue({}) }),
 }));
 
 import KitchenDisplayPage from '@/app/(staff)/kitchen/page';

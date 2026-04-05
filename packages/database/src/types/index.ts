@@ -10,6 +10,11 @@ export * from './database';
 // Re-export common types
 import type { Database } from './database';
 
+// Tenant type
+export type Tenant = Database['public']['Tables']['tenants']['Row'];
+export type TenantInsert = Database['public']['Tables']['tenants']['Insert'];
+export type TenantUpdate = Database['public']['Tables']['tenants']['Update'];
+
 // Main types
 export type Table = Database['public']['Tables']['tables']['Row'];
 export type Tables = Table; // Alias for compatibility

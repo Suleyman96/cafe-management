@@ -9,28 +9,23 @@ import type { WrapperContext } from './types';
 type CafeSettingsRow = Database['public']['Tables']['cafe_settings']['Row'];
 type CafeSettingsUpdate = Database['public']['Tables']['cafe_settings']['Update'];
 
-// The single row ID for cafe settings
-const SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
-
 export function createSettingsWrapper(ctx: WrapperContext) {
   return {
     get: async (): Promise<CafeSettingsRow> => {
-      const { data, error } = await ctx.client
-        .from('cafe_settings')
-        .select('*')
-        .eq('id', SETTINGS_ID)
-        .single();
+      // RLS scopes to current tenant; each tenant has one settings row
+      const { data, error } = await ctx.client.from('cafe_settings').select('*').limit(1).single();
 
       if (error) throw handleSupabaseError(error);
       return data;
     },
 
     update: async (updates: CafeSettingsUpdate): Promise<CafeSettingsRow> => {
+      // RLS scopes to current tenant; update the single settings row
       const { data, error } = await ctx.anyClient
         .from('cafe_settings')
         .update(updates)
-        .eq('id', SETTINGS_ID)
         .select('*')
+        .limit(1)
         .single();
 
       if (error) throw handleSupabaseError(error);

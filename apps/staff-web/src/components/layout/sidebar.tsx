@@ -1,6 +1,7 @@
 'use client';
 
-import { getLocalDateString } from '@gustri/core';
+import type { PlanName } from '@gustri/core';
+import { getLocalDateString, PLAN_ORDER } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import {
   BarChart3,
@@ -31,9 +32,11 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { GustriIcon, GustriLogo } from '@/components/ui/gustri-logo';
 import { useAuth } from '@/hooks/use-auth';
+import { usePendingApprovalCount } from '@/hooks/use-orders-safe';
 import { useMyScheduleToday } from '@/hooks/use-schedules-safe';
 import { useCafeSettings } from '@/hooks/use-settings-safe';
-import { useMyTasks } from '@/hooks/use-tasks-safe';
+import { useMyTasks, useOverdueTasksCount } from '@/hooks/use-tasks-safe';
+import { useTenantPlan } from '@/hooks/use-tenant-plan';
 
 type NavItem = {
   href: string;
@@ -41,6 +44,7 @@ type NavItem = {
   icon: React.ReactNode;
   adminOnly?: boolean;
   ownerOnly?: boolean;
+  minPlan?: PlanName;
 };
 
 type NavGroup = {
@@ -63,7 +67,12 @@ const navGroups: NavGroup[] = [
       { href: '/takeout', labelKey: 'takeout', icon: <Package className="h-5 w-5" /> },
       { href: '/kitchen', labelKey: 'kitchen', icon: <ChefHat className="h-5 w-5" /> },
       { href: '/calls', labelKey: 'waiterCalls', icon: <Bell className="h-5 w-5" /> },
-      { href: '/tasks', labelKey: 'tasks', icon: <ListTodo className="h-5 w-5" /> },
+      {
+        href: '/tasks',
+        labelKey: 'tasks',
+        icon: <ListTodo className="h-5 w-5" />,
+        minPlan: 'pro' as PlanName,
+      },
     ],
   },
   {
@@ -72,8 +81,19 @@ const navGroups: NavGroup[] = [
     collapsible: true,
     items: [
       { href: '/feedback', labelKey: 'feedback', icon: <MessageSquare className="h-5 w-5" /> },
-      { href: '/stock', labelKey: 'stock', icon: <Package className="h-5 w-5" />, adminOnly: true },
-      { href: '/waste', labelKey: 'waste', icon: <Trash2 className="h-5 w-5" /> },
+      {
+        href: '/stock',
+        labelKey: 'stock',
+        icon: <Package className="h-5 w-5" />,
+        adminOnly: true,
+        minPlan: 'pro' as PlanName,
+      },
+      {
+        href: '/waste',
+        labelKey: 'waste',
+        icon: <Trash2 className="h-5 w-5" />,
+        minPlan: 'pro' as PlanName,
+      },
       {
         href: '/expenses',
         labelKey: 'expenses',
@@ -94,6 +114,7 @@ const navGroups: NavGroup[] = [
         href: '/schedules',
         labelKey: 'schedules',
         icon: <CalendarDays className="h-5 w-5" />,
+        minPlan: 'pro' as PlanName,
       },
       {
         href: '/reports',
@@ -125,7 +146,10 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const { data: overdueCount = 0 } = useOverdueTasksCount();
+  const pendingApprovalCount = usePendingApprovalCount();
   const { data: cafeSettings } = useCafeSettings();
+  const tenantPlan = useTenantPlan();
 
   const isOwner = staff?.role === 'owner';
   const isAdmin = staff?.role === 'admin' || isOwner;
@@ -134,6 +158,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
     items.filter((item) => {
       if (item.ownerOnly && !isOwner) return false;
       if (item.adminOnly && !isAdmin) return false;
+      if (item.minPlan && PLAN_ORDER[tenantPlan] < PLAN_ORDER[item.minPlan]) return false;
       if (item.href === '/waste' && !cafeSettings?.waste_tracking_enabled) return false;
       return true;
     });
@@ -277,7 +302,21 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
                           <span className={isActive ? 'text-blue-600' : 'text-gray-500'}>
                             {item.icon}
                           </span>
-                          {(!isCollapsed || isMobile) && label}
+                          {(!isCollapsed || isMobile) && (
+                            <>
+                              {label}
+                              {item.href === '/orders' && pendingApprovalCount > 0 && (
+                                <span className="ml-auto text-xs bg-amber-500 text-white px-1.5 py-0.5 rounded-full min-w-[20px] text-center animate-pulse">
+                                  {pendingApprovalCount}
+                                </span>
+                              )}
+                              {item.href === '/tasks' && overdueCount > 0 && (
+                                <span className="ml-auto text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                                  {overdueCount}
+                                </span>
+                              )}
+                            </>
+                          )}
                         </Link>
                       </li>
                     );

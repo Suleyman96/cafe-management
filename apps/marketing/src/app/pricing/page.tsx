@@ -78,7 +78,11 @@ export default function PricingPage() {
                 </ul>
 
                 <Link
-                  href={plan.name === 'Business' ? '/contact' : '/pricing'}
+                  href={
+                    plan.name === 'Business'
+                      ? '/contact'
+                      : `/signup?plan=${plan.name.toLowerCase()}`
+                  }
                   className={`mt-8 block w-full rounded-lg py-2.5 text-center text-sm font-semibold transition-colors ${
                     plan.highlighted
                       ? 'bg-white text-primary-600 hover:bg-primary-50'
@@ -93,8 +97,7 @@ export default function PricingPage() {
 
           {/* Comparison note */}
           <p className="mt-12 text-center text-sm text-gray-500">
-            All plans include QR ordering, kitchen display, and basic analytics. Prices in USD,
-            billed monthly.
+            All plans include POS, QR ordering, and kitchen display. Prices in USD, billed monthly.
           </p>
         </div>
       </section>

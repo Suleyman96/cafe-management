@@ -22,6 +22,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.gustri.app",
+      "versionCode": 1,
       "permissions": ["NOTIFICATIONS", "VIBRATE"]
     },
     "web": {
@@ -48,8 +49,12 @@
         "origin": false
       },
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "c0780054-a6d7-4e65-8ead-1a4b09f661a5"
       }
-    }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "owner": "hajilov-k"
   }
 }
