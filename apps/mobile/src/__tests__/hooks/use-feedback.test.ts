@@ -1,11 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  useAcknowledgeFeedback,
-  useDismissFeedback,
-  useFeedback,
-  usePendingFeedbackCount,
-  useRespondToFeedback,
-} from '@/hooks/use-feedback';
+import { useFeedback, useMarkFeedbackRead, usePendingFeedbackCount } from '@/hooks/use-feedback';
 import { db } from '@/lib/supabase';
 import { renderHookWithProviders } from '../helpers/test-utils';
 
@@ -28,41 +22,12 @@ describe('usePendingFeedbackCount', () => {
   });
 });
 
-describe('useAcknowledgeFeedback', () => {
+describe('useMarkFeedbackRead', () => {
   it('invalidates feedback on success', async () => {
-    const { result, queryClient } = renderHookWithProviders(() => useAcknowledgeFeedback());
+    const { result, queryClient } = renderHookWithProviders(() => useMarkFeedbackRead());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
 
     await result.current.mutateAsync({ id: 'f1', staffId: 's1' });
-
-    const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['feedback']);
-  });
-});
-
-describe('useRespondToFeedback', () => {
-  it('invalidates feedback on success', async () => {
-    const { result, queryClient } = renderHookWithProviders(() => useRespondToFeedback());
-    const spy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    await result.current.mutateAsync({
-      id: 'f1',
-      staffId: 's1',
-      response: 'Thanks',
-      status: 'resolved',
-    });
-
-    const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['feedback']);
-  });
-});
-
-describe('useDismissFeedback', () => {
-  it('invalidates feedback on success', async () => {
-    const { result, queryClient } = renderHookWithProviders(() => useDismissFeedback());
-    const spy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    await result.current.mutateAsync('f1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual(['feedback']);

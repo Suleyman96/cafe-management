@@ -47,7 +47,9 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
 
   useEffect(() => {
     if (token) {
-      setTableContext(token);
+      setTableContext(token).catch((err) => {
+        console.error('Failed to set table context:', err);
+      });
     }
   }, [token]);
 

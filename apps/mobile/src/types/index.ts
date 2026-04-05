@@ -69,6 +69,7 @@ export type ProfileStackParamList = {
 export type DrawerParamList = {
   Home: undefined;
   DeliveryTab: undefined;
+  TakeoutTab: undefined;
   TasksTab: undefined;
   FeedbackTab: undefined;
   StockTab: undefined;
@@ -84,6 +85,10 @@ export type DrawerParamList = {
 // New stack param lists
 export type DeliveryStackParamList = {
   DeliveryList: undefined;
+};
+
+export type TakeoutStackParamList = {
+  TakeoutList: undefined;
 };
 
 export type TasksStackParamList = {

@@ -80,6 +80,10 @@ export type Refund = Database['public']['Tables']['refunds']['Row'];
 export type RefundInsert = Database['public']['Tables']['refunds']['Insert'];
 export type RefundUpdate = Database['public']['Tables']['refunds']['Update'];
 
+export type DeliveryCustomer = Database['public']['Tables']['delivery_customers']['Row'];
+export type DeliveryCustomerInsert = Database['public']['Tables']['delivery_customers']['Insert'];
+export type DeliveryCustomerUpdate = Database['public']['Tables']['delivery_customers']['Update'];
+
 // Extended types with relations
 export interface OrderWithDetails extends Order {
   table: Pick<Table, 'table_number' | 'location'>;

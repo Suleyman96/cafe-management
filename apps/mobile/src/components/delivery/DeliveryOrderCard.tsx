@@ -61,9 +61,8 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
   onMarkDelivered,
   onCancel,
 }: DeliveryOrderCardProps) {
-  const itemsTotal = calculateOrderTotal(order);
+  const grandTotal = calculateOrderTotal(order); // already includes delivery_fee from DB
   const deliveryFee = order.delivery_fee ?? 0;
-  const grandTotal = itemsTotal + deliveryFee;
   const hasItems = order.order_items?.some((i) => i.status !== 'cancelled') ?? false;
 
   return (

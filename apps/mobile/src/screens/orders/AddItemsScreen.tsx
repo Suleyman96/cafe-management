@@ -1,14 +1,15 @@
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import { useMemo, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Chip } from 'react-native-paper';
+import { useEffect, useMemo, useState } from 'react';
+import { Dimensions, FlatList, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Button, IconButton } from 'react-native-paper';
 import { MenuItemCard } from '@/components/orders/MenuItemCard';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useAddOrderItems, useCategories, useCreateOrder, useMenuItems } from '@/hooks';
 import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 import type { OrdersStackParamList } from '@/types';
 
@@ -21,6 +22,8 @@ interface CartItem {
   price: number;
   name: string;
 }
+
+const FOOTER_HEIGHT = 64;
 
 export default function AddItemsScreen() {
   const route = useRoute<Route>();
@@ -43,13 +46,20 @@ export default function AddItemsScreen() {
   const addOrderItems = useAddOrderItems();
   const createOrder = useCreateOrder();
 
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Auto-select first category (no "All" option)
+  useEffect(() => {
+    if (categories?.length && selectedCategory === null) {
+      setSelectedCategory(categories[0].id);
+    }
+  }, [categories, selectedCategory]);
+
   const filteredItems = useMemo(() => {
     if (!menuItems) return [];
-    if (selectedCategory === 'all') return menuItems;
+    if (!selectedCategory) return menuItems;
     return menuItems.filter((item: any) => item.category_id === selectedCategory);
   }, [menuItems, selectedCategory]);
 
@@ -60,6 +70,9 @@ export default function AddItemsScreen() {
       total: items.reduce((sum, i) => sum + i.price * i.quantity, 0),
     };
   }, [cart]);
+
+  const cartItems = Object.values(cart);
+  const hasCartItems = cartItems.length > 0;
 
   const handleAdd = (item: any) => {
     setCart((prev) => {
@@ -91,8 +104,8 @@ export default function AddItemsScreen() {
   };
 
   const handleSubmit = async () => {
-    const cartItems = Object.values(cart);
-    if (cartItems.length === 0) return;
+    const items = Object.values(cart);
+    if (items.length === 0) return;
 
     setSubmitting(true);
     try {
@@ -128,7 +141,7 @@ export default function AddItemsScreen() {
         targetOrderId = newOrder.id;
       }
 
-      const items = cartItems.map((c) => ({
+      const orderItems = items.map((c) => ({
         order_id: targetOrderId!,
         menu_item_id: c.menuItemId,
         quantity: c.quantity,
@@ -138,7 +151,7 @@ export default function AddItemsScreen() {
         status: 'pending' as const,
       }));
 
-      await addOrderItems.mutateAsync(items);
+      await addOrderItems.mutateAsync(orderItems);
       showSuccess(
         isNewOrder
           ? `Order created with ${cartSummary.count} items`
@@ -159,57 +172,128 @@ export default function AddItemsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Category filter */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow}>
-        <Chip
-          selected={selectedCategory === 'all'}
-          onPress={() => setSelectedCategory('all')}
-          style={styles.categoryChip}
-          compact
-        >
-          All
-        </Chip>
-        {categories?.map((cat) => (
-          <Chip
-            key={cat.id}
-            selected={selectedCategory === cat.id}
-            onPress={() => setSelectedCategory(cat.id)}
-            style={styles.categoryChip}
-            compact
+      {/* Menu — top section (categories sidebar + items) */}
+      <View style={[styles.menuSection, hasCartItems && styles.menuSectionHalf]}>
+        <View style={styles.content}>
+          {/* Category Sidebar */}
+          <ScrollView
+            style={styles.categorySidebar}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.categorySidebarContent}
           >
-            {cat.name || 'Category'}
-          </Chip>
-        ))}
-      </ScrollView>
+            {categories?.map((cat: any) => (
+              <TouchableOpacity
+                key={cat.id}
+                onPress={() => setSelectedCategory(cat.id)}
+                style={[
+                  styles.categoryItem,
+                  selectedCategory === cat.id && styles.categoryItemActive,
+                ]}
+              >
+                <Text style={styles.categoryIcon}>{cat.icon || '📋'}</Text>
+                <Text style={styles.categoryLabel} numberOfLines={1}>
+                  {cat.name || 'Category'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
-      {/* Menu items */}
-      <FlatList
-        data={filteredItems}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <MenuItemCard
-            menuItem={item}
-            quantity={cart[item.id]?.quantity || 0}
-            onAdd={() => handleAdd(item)}
-            onRemove={() => handleRemove(item.id)}
+          {/* Menu Items */}
+          <FlatList
+            data={filteredItems}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <MenuItemCard
+                menuItem={item}
+                quantity={cart[item.id]?.quantity || 0}
+                onAdd={() => handleAdd(item)}
+                onRemove={() => handleRemove(item.id)}
+              />
+            )}
+            style={styles.menuList}
+            contentContainerStyle={styles.menuListContent}
           />
-        )}
-        contentContainerStyle={styles.list}
-      />
+        </View>
+      </View>
 
-      {/* Cart footer */}
-      {cartSummary.count > 0 && (
+      {/* Cart — bottom section */}
+      {hasCartItems && (
+        <View style={styles.cartSection}>
+          {/* Cart header */}
+          <View style={styles.cartHeader}>
+            <IconButton icon="cart" size={18} iconColor="#2563eb" style={styles.cartHeaderIcon} />
+            <Text variant="titleSmall" style={styles.cartHeaderTitle}>
+              {isNewOrder ? 'New Order' : 'Add Items'}
+            </Text>
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{cartSummary.count}</Text>
+            </View>
+          </View>
+
+          {/* Cart items — scrollable */}
+          <ScrollView
+            style={styles.cartScroll}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.cartScrollContent}
+          >
+            {cartItems.map((item) => (
+              <View key={item.menuItemId} style={styles.cartItem}>
+                <View style={styles.cartItemInfo}>
+                  <Text variant="bodyMedium" style={styles.cartItemName}>
+                    {item.name}
+                  </Text>
+                  <Text variant="bodySmall" style={styles.cartItemPrice}>
+                    {currencySymbol}
+                    {item.price.toFixed(2)} x {item.quantity}
+                  </Text>
+                </View>
+                <View style={styles.cartItemControls}>
+                  <IconButton
+                    icon="minus"
+                    mode="contained-tonal"
+                    size={16}
+                    onPress={() => handleRemove(item.menuItemId)}
+                  />
+                  <Text style={styles.cartItemQty}>{item.quantity}</Text>
+                  <IconButton
+                    icon="plus"
+                    mode="contained"
+                    size={16}
+                    onPress={() =>
+                      handleAdd({
+                        id: item.menuItemId,
+                        price: item.price,
+                        name: item.name,
+                      })
+                    }
+                  />
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Fixed footer — total + submit */}
+      {hasCartItems && (
         <View style={styles.footer}>
+          <View style={styles.footerInfo}>
+            <View style={styles.footerBadge}>
+              <Text style={styles.footerBadgeText}>{cartSummary.count}</Text>
+            </View>
+            <Text variant="titleSmall" style={styles.footerTotal}>
+              {currencySymbol}
+              {cartSummary.total.toFixed(2)}
+            </Text>
+          </View>
           <Button
             mode="contained"
             onPress={handleSubmit}
             loading={isLoading}
             disabled={isLoading}
-            contentStyle={styles.submitButtonContent}
+            compact
           >
-            {isNewOrder ? 'Create Order' : 'Add'} — {cartSummary.count} item
-            {cartSummary.count > 1 ? 's' : ''} ({currencySymbol}
-            {cartSummary.total.toFixed(2)})
+            {isNewOrder ? 'Create Order' : 'Add Items'}
           </Button>
         </View>
       )}
@@ -217,17 +301,131 @@ export default function AddItemsScreen() {
   );
 }
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
-  categoryRow: { paddingHorizontal: 12, paddingVertical: 8, maxHeight: 52 },
-  categoryChip: { marginHorizontal: 4 },
-  list: { paddingTop: 4, paddingBottom: 100 },
+  menuSection: { flex: 1 },
+  menuSectionHalf: { height: SCREEN_HEIGHT * 0.45, flex: 0 },
+  content: { flex: 1, flexDirection: 'row' },
+  categorySidebar: {
+    width: 88,
+    backgroundColor: '#fff',
+    borderRightWidth: 1,
+    borderRightColor: '#e5e7eb',
+  },
+  categorySidebarContent: {
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+  },
+  categoryItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  categoryItemActive: {
+    backgroundColor: '#dbeafe',
+  },
+  categoryIcon: {
+    fontSize: 20,
+  },
+  categoryLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#4b5563',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  menuList: {
+    flex: 1,
+  },
+  menuListContent: {
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  cartSection: {
+    flex: 1,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    backgroundColor: '#fff',
+  },
+  cartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    backgroundColor: '#f9fafb',
+  },
+  cartHeaderIcon: {
+    margin: 0,
+  },
+  cartHeaderTitle: {
+    fontWeight: '600',
+    color: '#1e293b',
+    flex: 1,
+  },
+  cartBadge: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  cartBadgeText: {
+    color: '#2563eb',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  cartScroll: {
+    flex: 1,
+  },
+  cartScrollContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingBottom: FOOTER_HEIGHT + 8,
+  },
+  cartItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  cartItemInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  cartItemName: {
+    fontWeight: '600',
+    color: '#1e293b',
+  },
+  cartItemPrice: {
+    color: '#6b7280',
+  },
+  cartItemControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cartItemQty: {
+    minWidth: 24,
+    textAlign: 'center',
+    fontWeight: '700',
+  },
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
+    height: FOOTER_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
@@ -237,5 +435,24 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  submitButtonContent: { paddingVertical: 6 },
+  footerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  footerBadge: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  footerBadgeText: {
+    color: '#2563eb',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  footerTotal: {
+    fontWeight: '700',
+    color: '#1e293b',
+  },
 });

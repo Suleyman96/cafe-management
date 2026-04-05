@@ -17,55 +17,17 @@ export function usePendingFeedbackCount() {
   });
 }
 
-export function useAcknowledgeFeedback() {
+export function useMarkFeedbackRead() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id, staffId }: { id: string; staffId: string }) =>
-      db.feedback.acknowledge(id, staffId),
+      db.feedback.markRead(id, staffId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FEEDBACK] });
     },
     onError: (error: Error) => {
-      console.error('Failed to acknowledge feedback:', error.message);
-    },
-  });
-}
-
-export function useRespondToFeedback() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      id,
-      staffId,
-      response,
-      status,
-    }: {
-      id: string;
-      staffId: string;
-      response: string;
-      status?: CustomerFeedback['status'];
-    }) => db.feedback.respond(id, staffId, response, status ?? 'acknowledged'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FEEDBACK] });
-    },
-    onError: (error: Error) => {
-      console.error('Failed to respond to feedback:', error.message);
-    },
-  });
-}
-
-export function useDismissFeedback() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => db.feedback.dismiss(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FEEDBACK] });
-    },
-    onError: (error: Error) => {
-      console.error('Failed to dismiss feedback:', error.message);
+      console.error('Failed to mark feedback as read:', error.message);
     },
   });
 }

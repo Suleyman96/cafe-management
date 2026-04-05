@@ -25,7 +25,6 @@ type OrderStatus =
   | 'served'
   | 'out_for_delivery'
   | 'delivered'
-  | 'paid'
   | 'cancelled';
 
 interface OrderListCardProps {
@@ -72,8 +71,6 @@ const getStatusColor = (status: OrderStatus) => {
       return 'bg-violet-100 text-violet-800';
     case 'delivered':
       return 'bg-emerald-100 text-emerald-800';
-    case 'paid':
-      return 'bg-gray-100 text-gray-800';
     case 'cancelled':
       return 'bg-red-100 text-red-800';
     default:
@@ -162,6 +159,12 @@ export function OrderListCard({
 
         <div className="text-left sm:text-right flex sm:block items-center gap-3 sm:gap-0">
           <div className="text-base sm:text-lg font-semibold">{formatPrice(total)}</div>
+          {isDelivery && (order.delivery_fee ?? 0) > 0 && (
+            <div className="text-xs text-gray-500">
+              {t('orders.inclDelivery')} {formatPrice(order.delivery_fee)}{' '}
+              {t('deliveryFee', { ns: 'common' }).toLowerCase()}
+            </div>
+          )}
           {paid > 0 && (
             <div className="text-xs sm:text-sm text-green-600">
               {t('orders.paidAmount')} {formatPrice(paid)}
@@ -231,8 +234,7 @@ export function OrderListCard({
             onClick={() => onStatusUpdate(order.id, 'preparing')}
           >
             <ChefHat className="h-4 w-4 mr-1" />
-            <span className="hidden xs:inline">{t('orders.startPreparing')}</span>
-            <span className="xs:hidden">{t('orders.preparing')}</span>
+            {t('orders.startPreparing')}
           </Button>
         )}
         {order.status === 'preparing' && (

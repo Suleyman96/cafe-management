@@ -5,7 +5,7 @@ CREATE TABLE cafe_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
   -- Restaurant info
-  restaurant_name VARCHAR(255) NOT NULL DEFAULT 'Café İdarə',
+  restaurant_name VARCHAR(255) NOT NULL DEFAULT 'Gustri',
 
   -- Tax settings
   tax_enabled BOOLEAN NOT NULL DEFAULT false,

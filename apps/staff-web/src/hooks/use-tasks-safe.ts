@@ -2,7 +2,7 @@
  * Type-Safe Tasks Hooks
  */
 
-import { QUERY_KEYS } from '@gustri/core';
+import { getLocalDateString, QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateTasks, refetchTasks } from '@/lib/query-helpers';
@@ -55,6 +55,13 @@ export function useOverdueTasksCount() {
   });
 }
 
+export function useOpenTasksCount() {
+  return useQuery({
+    queryKey: [QUERY_KEYS.OPEN_TASKS_COUNT],
+    queryFn: async (): Promise<number> => db.tasks.getOpenTasksCount(),
+  });
+}
+
 export function useRecurringTemplates() {
   return useQuery({
     queryKey: [QUERY_KEYS.TASKS, 'templates'],
@@ -67,7 +74,10 @@ export function useCreateTask() {
 
   return useMutation({
     mutationFn: (data: TaskInsert) => db.tasks.create(data),
-    onSuccess: () => {
+    onSuccess: async (_result, data) => {
+      if (data.is_recurring) {
+        await db.tasks.generateRecurringTasks(getLocalDateString());
+      }
       invalidateTasks(queryClient);
     },
     onSettled: () => {
@@ -82,7 +92,10 @@ export function useUpdateTask() {
   return useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<TaskUpdate> }) =>
       db.tasks.update(id, updates),
-    onSuccess: () => {
+    onSuccess: async (_result, { updates }) => {
+      if (updates.is_recurring) {
+        await db.tasks.generateRecurringTasks(getLocalDateString());
+      }
       invalidateTasks(queryClient);
     },
     onSettled: () => {
@@ -111,10 +124,10 @@ export function useMarkTaskInProgress() {
   return useMutation({
     mutationFn: (id: string) => db.tasks.markInProgress(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
+      invalidateTasks(queryClient);
     },
     onSettled: () => {
-      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.TASKS] });
+      refetchTasks(queryClient);
     },
   });
 }
@@ -145,6 +158,12 @@ export function useMarkTaskCancelled() {
       refetchTasks(queryClient);
     },
   });
+}
+
+export function useMyOpenTasksCount(staffId: string) {
+  const { data: myTasks } = useMyTasks(staffId);
+  return (myTasks || []).filter((t: any) => t.status === 'pending' || t.status === 'in_progress')
+    .length;
 }
 
 export function useGenerateRecurringTasks() {

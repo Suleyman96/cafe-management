@@ -6,13 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { db } from '@/lib/supabase';
 
-type FeedbackType =
-  | 'complaint_food'
-  | 'complaint_service'
-  | 'complaint_staff'
-  | 'question_menu'
-  | 'request_general'
-  | 'praise';
+type FeedbackType = 'complaint' | 'praise';
 
 interface FeedbackFormProps {
   tableId: string;
@@ -23,8 +17,7 @@ interface FeedbackFormProps {
 
 export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: FeedbackFormProps) {
   const { t } = useTranslation('customer');
-  const [feedbackType, setFeedbackType] = useState<FeedbackType>('request_general');
-  const [subject, setSubject] = useState('');
+  const [feedbackType, setFeedbackType] = useState<FeedbackType | null>(null);
   const [message, setMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -40,16 +33,17 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
   }, []);
 
   const FEEDBACK_TYPES: Array<{ value: FeedbackType; label: string; icon: string }> = [
-    { value: 'complaint_food', label: t('feedback.type.foodQuality'), icon: '🍽️' },
-    { value: 'complaint_service', label: t('feedback.type.service'), icon: '⚠️' },
-    { value: 'complaint_staff', label: t('feedback.type.staff'), icon: '👤' },
-    { value: 'question_menu', label: t('feedback.type.menuQuestion'), icon: '❓' },
-    { value: 'request_general', label: t('feedback.type.general'), icon: '📝' },
-    { value: 'praise', label: t('feedback.type.praise'), icon: '⭐' },
+    { value: 'complaint', label: t('feedback.type.complaint'), icon: '😟' },
+    { value: 'praise', label: t('feedback.type.praise'), icon: '😊' },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!feedbackType) {
+      toast.error(t('feedback.errorNoType'));
+      return;
+    }
 
     if (!message.trim()) {
       toast.error(t('feedback.errorEmpty'));
@@ -64,7 +58,6 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
         table_id: tableId,
         order_id: orderId || null,
         feedback_type: feedbackType,
-        subject: subject.trim() || null,
         message: message.trim(),
       });
 
@@ -99,50 +92,23 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
         <label className="block text-sm font-medium text-gray-700 mb-3">
           {t('feedback.typeLabel')}
         </label>
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {FEEDBACK_TYPES.map((type) => (
             <button
               key={type.value}
               type="button"
               onClick={() => setFeedbackType(type.value)}
-              className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+              className={`flex flex-col items-center gap-2 p-5 rounded-xl border-2 transition-all ${
                 feedbackType === type.value
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <div className="text-2xl">{type.icon}</div>
-              <div className="flex-1 font-medium text-gray-900">{type.label}</div>
-              {feedbackType === type.value && (
-                <div className="text-blue-500">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-              )}
+              <div className="text-4xl">{type.icon}</div>
+              <div className="font-medium text-gray-900 text-center">{type.label}</div>
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Subject (Optional) */}
-      <div>
-        <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-          {t('feedback.subjectLabel')}
-        </label>
-        <input
-          type="text"
-          id="subject"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder={t('feedback.subjectPlaceholder')}
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          maxLength={255}
-        />
       </div>
 
       {/* Message (Required) */}
@@ -179,7 +145,7 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
         <Button
           type="submit"
           className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-          disabled={isSubmitting || !message.trim()}
+          disabled={isSubmitting || !feedbackType || !message.trim()}
         >
           {isSubmitting ? t('feedback.submitting') : t('feedback.submit')}
         </Button>

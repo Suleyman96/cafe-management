@@ -588,32 +588,41 @@ export default function OrderDetailPage() {
           })}
         </div>
         <div className="border-t px-4 py-3 space-y-2">
-          {order && (order.tax > 0 || (order.discount_amount ?? 0) > 0) && (
-            <>
-              <div className="flex justify-between items-center text-sm text-gray-600">
-                <span>{t('subtotal', { ns: 'common' })}</span>
-                <span>{formatPrice(order.subtotal)}</span>
-              </div>
-              {(order.discount_amount ?? 0) > 0 && (
-                <div className="flex justify-between items-center text-sm text-red-600">
-                  <span>
-                    {t('orders.discount')} (
-                    {order.discount_type === 'percentage'
-                      ? `${order.discount_value}%`
-                      : formatPrice(order.discount_value ?? 0)}
-                    )
-                  </span>
-                  <span>-{formatPrice(order.discount_amount ?? 0)}</span>
-                </div>
-              )}
-              {order.tax > 0 && (
+          {order &&
+            (order.tax > 0 ||
+              (order.discount_amount ?? 0) > 0 ||
+              (order.delivery_fee ?? 0) > 0) && (
+              <>
                 <div className="flex justify-between items-center text-sm text-gray-600">
-                  <span>{t('orders.tax')}</span>
-                  <span>{formatPrice(order.tax)}</span>
+                  <span>{t('subtotal', { ns: 'common' })}</span>
+                  <span>{formatPrice(order.subtotal)}</span>
                 </div>
-              )}
-            </>
-          )}
+                {(order.discount_amount ?? 0) > 0 && (
+                  <div className="flex justify-between items-center text-sm text-red-600">
+                    <span>
+                      {t('orders.discount')} (
+                      {order.discount_type === 'percentage'
+                        ? `${order.discount_value}%`
+                        : formatPrice(order.discount_value ?? 0)}
+                      )
+                    </span>
+                    <span>-{formatPrice(order.discount_amount ?? 0)}</span>
+                  </div>
+                )}
+                {order.tax > 0 && (
+                  <div className="flex justify-between items-center text-sm text-gray-600">
+                    <span>{t('orders.tax')}</span>
+                    <span>{formatPrice(order.tax)}</span>
+                  </div>
+                )}
+                {order.order_type === 'delivery' && (order.delivery_fee ?? 0) > 0 && (
+                  <div className="flex justify-between items-center text-sm text-purple-600">
+                    <span>{t('deliveryFee', { ns: 'common' })}</span>
+                    <span>{formatPrice(order.delivery_fee ?? 0)}</span>
+                  </div>
+                )}
+              </>
+            )}
           <div
             className={`flex justify-between items-center text-lg font-semibold ${order && order.tax > 0 ? 'pt-2 border-t' : ''}`}
           >

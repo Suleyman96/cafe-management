@@ -38,6 +38,7 @@
   "orders.delivered": "Çatdırıldı",
   "orders.paid": "Ödənildi",
   "orders.cancelled": "Ləğv Edildi",
+  "orders.closed": "Bağlandı",
   "orders.allSources": "Bütün Mənbələr",
   "orders.customer": "Müştəri",
   "orders.waiter": "Ofisiant",
@@ -441,6 +442,11 @@
   "calls.errorLoading": "Ofisiant çağrılarını yükləməkdə xəta",
   "calls.respond": "Cavab Ver",
   "calls.respondedBy": "{{name}} tərəfindən cavab verildi:",
+  "calls.acknowledge": "Təsdiq et",
+  "calls.acknowledged": "Təsdiqləndi",
+  "calls.callAcknowledged": "Zəng təsdiqləndi",
+  "calls.resolve": "Həll et",
+  "calls.resolved": "Həll edildi",
   "calls.noCalls": "Çağrı yoxdur",
   "cafeSettings.title": "Kafe Parametrləri",
   "cafeSettings.restaurantInformation": "Restoran Məlumatı",
@@ -623,6 +629,12 @@
   "delivery.fullDeliveryAddress": "Tam çatdırılma ünvanı",
   "delivery.ringDoorbell": "Məs., Zəngi basın, qapıda buraxın...",
   "delivery.openInMaps": "Google Maps-də aç",
+  "delivery.searchSavedCustomers": "Saxlanmış müştəriləri axtar...",
+  "delivery.savedCustomer": "Saxlanmış müştəri",
+  "delivery.newCustomer": "Yeni müştəri",
+  "delivery.saveCustomer": "Müştərini gələcək sifarişlər üçün saxla",
+  "delivery.customerOrders": "{{count}} sifariş",
+  "delivery.noSavedCustomers": "Saxlanmış müştəri tapılmadı",
   "expenses.editExpense": "Xərci Redaktə Et",
   "expenses.validAmount": "Düzgün məbləğ daxil edin",
   "expenses.updatingExpense": "Xərc yenilənir...",
@@ -796,5 +808,8 @@
   "feedback.status.pending": "Gözləmədə",
   "feedback.status.acknowledged": "Qəbul edildi",
   "feedback.status.resolved": "Həll edildi",
-  "feedback.status.dismissed": "Rədd edildi"
+  "feedback.status.dismissed": "Rədd edildi",
+
+  "menu.items": "{{count}} məhsul",
+  "menu.categories": "{{count}} kateqoriya"
 }

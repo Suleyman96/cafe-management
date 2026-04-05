@@ -59,9 +59,9 @@ export function WasteSection({ wasteMetrics, formatPrice }: WasteSectionProps) {
                   {wasteMetrics.byReason.map((item) => {
                     const percentage =
                       wasteMetrics.totalCost > 0 ? (item.cost / wasteMetrics.totalCost) * 100 : 0;
-                    const reasonLabel = item.reason
-                      .replace(/_/g, ' ')
-                      .replace(/\b\w/g, (c: string) => c.toUpperCase());
+                    const reasonLabel = t(`reports.wasteReason.${item.reason}`, {
+                      defaultValue: item.reason,
+                    });
                     return (
                       <div key={item.reason} className="flex items-center gap-3">
                         <span className="text-xs sm:text-sm text-gray-600 w-28 sm:w-36 truncate">

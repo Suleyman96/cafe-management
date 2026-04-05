@@ -2,7 +2,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { StyleSheet, View } from 'react-native';
-import { Divider, Text } from 'react-native-paper';
+import { Badge, Divider, Text } from 'react-native-paper';
+import { useMyOpenTasksCount } from '@/hooks';
 import { useAuthStore } from '@/store/auth-store';
 import type { DrawerParamList } from '@/types';
 
@@ -24,6 +25,12 @@ const DRAWER_SECTIONS: DrawerSection[] = [
     items: [
       { key: 'Home', label: 'Home', icon: 'home', roles: ['waiter', 'admin', 'owner', 'kitchen'] },
       { key: 'DeliveryTab', label: 'Delivery', icon: 'moped', roles: ['waiter', 'admin', 'owner'] },
+      {
+        key: 'TakeoutTab',
+        label: 'Takeout',
+        icon: 'shopping',
+        roles: ['waiter', 'admin', 'owner'],
+      },
       {
         key: 'TasksTab',
         label: 'Tasks',
@@ -77,6 +84,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const staff = useAuthStore((s) => s.staff);
   const role = staff?.role || 'waiter';
   const currentRoute = props.state.routes[props.state.index]?.name;
+  const myOpenCount = useMyOpenTasksCount(staff?.id);
 
   return (
     <DrawerContentScrollView {...props} style={styles.container}>
@@ -106,7 +114,16 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
             {visibleItems.map((item) => (
               <DrawerItem
                 key={item.key}
-                label={item.label}
+                label={({ color }) => (
+                  <View style={styles.drawerLabel}>
+                    <Text style={[styles.drawerLabelText, { color }]}>{item.label}</Text>
+                    {item.key === 'TasksTab' && myOpenCount > 0 && (
+                      <Badge size={20} style={styles.taskBadge}>
+                        {myOpenCount}
+                      </Badge>
+                    )}
+                  </View>
+                )}
                 focused={currentRoute === item.key}
                 icon={({ color, size }: { color: string; size: number }) => (
                   <MaterialCommunityIcons name={item.icon} size={size} color={color} />
@@ -153,5 +170,17 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     fontWeight: '600',
     letterSpacing: 0.5,
+  },
+  drawerLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  drawerLabelText: {
+    flex: 1,
+    fontSize: 14,
+  },
+  taskBadge: {
+    backgroundColor: '#6366f1',
   },
 });

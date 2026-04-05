@@ -7,6 +7,7 @@ import { Button, LoadingSpinner } from '@gustri/ui';
 import {
   ArrowLeft,
   ArrowRightLeft,
+  Bell,
   CheckCircle,
   ChefHat,
   Clock,
@@ -43,6 +44,7 @@ import {
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { useActiveCallsForTable, useResolveWaiterCall } from '@/hooks/use-waiter-calls-safe';
 import { supabase } from '@/lib/supabase/client';
 import type { OrderWithDetails } from '@/types';
 
@@ -75,6 +77,8 @@ export default function TableDetailPage() {
   const cancelOrderItem = useCancelOrderItem();
   const formatPrice = useFormatPrice();
   const taxMultiplier = useTaxMultiplier();
+  const { data: activeCallsForTable } = useActiveCallsForTable(tableId);
+  const resolveWaiterCall = useResolveWaiterCall();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -114,6 +118,13 @@ export default function TableDetailPage() {
   useEffect(() => {
     setSelectedOrderIndex(0);
   }, [tableId]);
+
+  // Auto-select first category (no "All" option)
+  useEffect(() => {
+    if (categories?.length && selectedCategory === null) {
+      setSelectedCategory(categories[0].id);
+    }
+  }, [categories, selectedCategory]);
 
   // Create order with items (for new orders on free tables)
   const handleCreateOrderWithItems = async () => {
@@ -439,207 +450,252 @@ export default function TableDetailPage() {
   }
 
   return (
-    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/tables')}>
-            <ArrowLeft className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{t('back', { ns: 'common' })}</span>
-          </Button>
-          <h1 className="text-xl sm:text-2xl font-bold">{table.table_number}</h1>
-          {activeOrder && (
-            <span
-              className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(activeOrder.status)}`}
-            >
-              {activeOrder.status.toUpperCase()}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Multiple Orders Tab Selector */}
-      {activeOrders.length > 1 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Layers className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-medium text-amber-800">
-              {activeOrders.length} {t('tables.ordersOnTable')}
-            </span>
-            <span className="text-sm text-amber-600">
-              ({t('tables.combinedTotal')}: {formatPrice(combinedTotal)})
-            </span>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {activeOrders.map((order, index) => {
-              const orderItemsTotal =
-                order.order_items
-                  ?.filter((item: OrderItem) => item.status !== 'cancelled')
-                  .reduce(
-                    (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
-                    0,
-                  ) ?? 0;
-              return (
-                <button
-                  key={order.id}
-                  onClick={() => setSelectedOrderIndex(index)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    selectedOrderIndex === index
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-white text-amber-700 hover:bg-amber-100 border border-amber-300'
-                  }`}
-                >
-                  {t('orders.order')} #{index + 1} ({formatPrice(orderItemsTotal)})
-                </button>
-              );
-            })}
+    <div className="flex flex-col h-screen overflow-hidden">
+      {/* Header + Order Info */}
+      <div
+        className={`flex-shrink-0 overflow-y-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-2 ${cart.length > 0 ? 'max-h-[25vh]' : 'max-h-[40vh]'}`}
+      >
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button variant="ghost" size="sm" onClick={() => router.push('/tables')}>
+              <ArrowLeft className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('back', { ns: 'common' })}</span>
+            </Button>
+            <h1 className="text-xl sm:text-2xl font-bold">{table.table_number}</h1>
+            {activeOrder && (
+              <span
+                className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(activeOrder.status)}`}
+              >
+                {activeOrder.status.toUpperCase()}
+              </span>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Active order info */}
-      {activeOrder && (
-        <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3">
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600">
-                <span className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  {formatDuration(activeOrder.created_at)}
-                </span>
-                <span className="flex items-center gap-1">
-                  <DollarSign className="h-4 w-4" />
-                  {formatPrice(orderTotal)}
-                </span>
-                {/* Order Taken By */}
-                {activeOrder.assigned_waiter && (
-                  <span className="flex items-center gap-1">
-                    <UserCheck className="h-4 w-4 text-green-600" />
-                    <span className="text-green-700">
-                      {t('orders.takenBy')} {activeOrder.assigned_waiter.full_name}
-                    </span>
-                  </span>
-                )}
-              </div>
-              {/* Customer Notes */}
-              {activeOrder.customer_notes && (
-                <div className="mt-2 p-2 bg-amber-100 rounded-lg border border-amber-300">
-                  <p className="text-sm text-amber-800">
-                    <span className="font-medium">{t('notes', { ns: 'common' })}:</span>{' '}
-                    {activeOrder.customer_notes}
-                  </p>
-                </div>
-              )}
+        {/* Waiter Call Banner */}
+        {activeCallsForTable && activeCallsForTable.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bell className="h-4 w-4 text-red-600" />
+              <span className="text-sm font-medium text-red-800">
+                {activeCallsForTable[0].reason || t('calls.needAssistance')}
+              </span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {/* Pending Approval: Show approve button and QR indicator */}
-              {activeOrder.status === 'pending_approval' && (
-                <>
-                  <Button
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={() => handleStatusUpdate('NEW')}
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-red-300 text-red-700 hover:bg-red-100"
+              disabled={resolveWaiterCall.isPending}
+              onClick={async () => {
+                try {
+                  for (const call of activeCallsForTable) {
+                    await resolveWaiterCall.mutateAsync({ callId: call.id });
+                  }
+                  toast.success(t('calls.resolved'));
+                } catch (error) {
+                  console.error('Failed to resolve call:', error);
+                  toast.error(t('calls.failedRespond'));
+                }
+              }}
+            >
+              {resolveWaiterCall.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              ) : (
+                <CheckCircle className="h-3 w-3 mr-1" />
+              )}
+              {t('calls.resolve')}
+            </Button>
+          </div>
+        )}
+
+        {/* Multiple Orders Tab Selector */}
+        {activeOrders.length > 1 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Layers className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-medium text-amber-800">
+                {activeOrders.length} {t('tables.ordersOnTable')}
+              </span>
+              <span className="text-sm text-amber-600">
+                ({t('tables.combinedTotal')}: {formatPrice(combinedTotal)})
+              </span>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {activeOrders.map((order, index) => {
+                const orderItemsTotal =
+                  order.order_items
+                    ?.filter((item: OrderItem) => item.status !== 'cancelled')
+                    .reduce(
+                      (sum: number, item: OrderItem) => sum + item.quantity * item.item_price,
+                      0,
+                    ) ?? 0;
+                return (
+                  <button
+                    key={order.id}
+                    onClick={() => setSelectedOrderIndex(index)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      selectedOrderIndex === index
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-white text-amber-700 hover:bg-amber-100 border border-amber-300'
+                    }`}
                   >
-                    <ThumbsUp className="h-4 w-4 mr-1" />
-                    {t('approve', { ns: 'common' })}
-                  </Button>
-                  {activeOrder.source === 'customer' && (
-                    <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
-                      <Smartphone className="h-3 w-3" />
-                      {t('orders.qrOrder')}
+                    {t('orders.order')} #{index + 1} ({formatPrice(orderItemsTotal)})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Active order info */}
+        {activeOrder && (
+          <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    {formatDuration(activeOrder.created_at)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <DollarSign className="h-4 w-4" />
+                    {formatPrice(orderTotal)}
+                  </span>
+                  {/* Order Taken By */}
+                  {activeOrder.assigned_waiter && (
+                    <span className="flex items-center gap-1">
+                      <UserCheck className="h-4 w-4 text-green-600" />
+                      <span className="text-green-700">
+                        {t('orders.takenBy')} {activeOrder.assigned_waiter.full_name}
+                      </span>
                     </span>
                   )}
-                </>
-              )}
-              {activeOrder.status === 'new' && (
-                <Button size="sm" onClick={() => handleStatusUpdate('PREPARING')}>
-                  <ChefHat className="h-4 w-4 mr-1" />
-                  <span className="hidden xs:inline">{t('start', { ns: 'common' })} </span>
-                  {t('orders.preparing')}
-                </Button>
-              )}
-              {activeOrder.status === 'preparing' && (
-                <Button size="sm" onClick={() => handleStatusUpdate('READY')}>
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  <span className="hidden xs:inline">{t('mark', { ns: 'common' })} </span>
-                  {t('orders.ready')}
-                </Button>
-              )}
-              {activeOrder.status === 'ready' && (
-                <Button size="sm" onClick={() => handleStatusUpdate('SERVED')}>
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  <span className="hidden xs:inline">{t('mark', { ns: 'common' })} </span>
-                  {t('orders.served')}
-                </Button>
-              )}
-              {activeOrder.status === 'served' && (
-                <Button size="sm" onClick={() => router.push(`/orders/${activeOrder.id}`)}>
-                  <CreditCard className="h-4 w-4 mr-1" />
-                  {t('orders.payment')}
-                </Button>
-              )}
-              {/* Transfer Items button */}
-              {activeOrder.order_items?.some((i: OrderItem) => i.status !== 'cancelled') && (
-                <Button size="sm" variant="outline" onClick={() => setShowItemTransferModal(true)}>
-                  <ArrowRightLeft className="h-4 w-4 mr-1" />
-                  {t('tables.transferItems')}
-                </Button>
-              )}
-              {/* Cancel/Reject button - available for active orders */}
-              {['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(
-                activeOrder.status,
-              ) && (
-                <Button size="sm" variant="destructive" onClick={() => setShowCancelModal(true)}>
-                  <XCircle className="h-4 w-4 mr-1" />
-                  {activeOrder.status === 'pending_approval'
-                    ? t('reject', { ns: 'common' })
-                    : t('cancel', { ns: 'common' })}
-                </Button>
-              )}
+                </div>
+                {/* Customer Notes */}
+                {activeOrder.customer_notes && (
+                  <div className="mt-2 p-2 bg-amber-100 rounded-lg border border-amber-300">
+                    <p className="text-sm text-amber-800">
+                      <span className="font-medium">{t('notes', { ns: 'common' })}:</span>{' '}
+                      {activeOrder.customer_notes}
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {/* Pending Approval: Show approve button and QR indicator */}
+                {activeOrder.status === 'pending_approval' && (
+                  <>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => handleStatusUpdate('NEW')}
+                    >
+                      <ThumbsUp className="h-4 w-4 mr-1" />
+                      {t('approve', { ns: 'common' })}
+                    </Button>
+                    {activeOrder.source === 'customer' && (
+                      <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
+                        <Smartphone className="h-3 w-3" />
+                        {t('orders.qrOrder')}
+                      </span>
+                    )}
+                  </>
+                )}
+                {activeOrder.status === 'new' && (
+                  <Button size="sm" onClick={() => handleStatusUpdate('PREPARING')}>
+                    <ChefHat className="h-4 w-4 mr-1" />
+                    <span className="hidden xs:inline">{t('start', { ns: 'common' })} </span>
+                    {t('orders.preparing')}
+                  </Button>
+                )}
+                {activeOrder.status === 'preparing' && (
+                  <Button size="sm" onClick={() => handleStatusUpdate('READY')}>
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    <span className="hidden xs:inline">{t('mark', { ns: 'common' })} </span>
+                    {t('orders.ready')}
+                  </Button>
+                )}
+                {activeOrder.status === 'ready' && (
+                  <Button size="sm" onClick={() => handleStatusUpdate('SERVED')}>
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    <span className="hidden xs:inline">{t('mark', { ns: 'common' })} </span>
+                    {t('orders.served')}
+                  </Button>
+                )}
+                {activeOrder.status === 'served' && (
+                  <Button size="sm" onClick={() => router.push(`/orders/${activeOrder.id}`)}>
+                    <CreditCard className="h-4 w-4 mr-1" />
+                    {t('orders.payment')}
+                  </Button>
+                )}
+                {/* Transfer Items button */}
+                {activeOrder.order_items?.some((i: OrderItem) => i.status !== 'cancelled') && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowItemTransferModal(true)}
+                  >
+                    <ArrowRightLeft className="h-4 w-4 mr-1" />
+                    {t('tables.transferItems')}
+                  </Button>
+                )}
+                {/* Cancel/Reject button - available for active orders */}
+                {['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(
+                  activeOrder.status,
+                ) && (
+                  <Button size="sm" variant="destructive" onClick={() => setShowCancelModal(true)}>
+                    <XCircle className="h-4 w-4 mr-1" />
+                    {activeOrder.status === 'pending_approval'
+                      ? t('reject', { ns: 'common' })
+                      : t('cancel', { ns: 'common' })}
+                  </Button>
+                )}
+              </div>
             </div>
+
+            {/* Current order items */}
+            <OrderItemsList
+              items={activeOrder.order_items || []}
+              onItemStatusUpdate={handleItemStatusUpdate}
+              onCancelItem={(item) => {
+                setCancelItemConfirm(item);
+                setCancelItemQty(1);
+              }}
+              formatPrice={formatPrice}
+            />
           </div>
-
-          {/* Current order items */}
-          <OrderItemsList
-            items={activeOrder.order_items || []}
-            onItemStatusUpdate={handleItemStatusUpdate}
-            onCancelItem={(item) => {
-              setCancelItemConfirm(item);
-              setCancelItemQty(1);
-            }}
-            formatPrice={formatPrice}
-          />
-        </div>
-      )}
-
-      {/* Menu and Cart - always show */}
-      {/* Category Filter */}
-      <div className="flex gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
-        <Button
-          variant={selectedCategory === null ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setSelectedCategory(null)}
-          className="flex-shrink-0"
-        >
-          {t('all', { ns: 'common' })}
-        </Button>
-        {categories?.map((category: Category) => (
-          <Button
-            key={category.id}
-            variant={selectedCategory === category.id ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setSelectedCategory(category.id)}
-            className="flex-shrink-0"
-          >
-            {category.name}
-          </Button>
-        ))}
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      {/* Menu — categories sidebar + items grid */}
+      <div
+        className={`flex gap-3 px-3 sm:px-4 min-h-0 overflow-hidden ${cart.length > 0 ? 'h-[35%] flex-shrink-0' : 'flex-1'}`}
+      >
+        {/* Category Sidebar */}
+        <div className="w-24 sm:w-32 lg:w-44 flex-shrink-0 overflow-y-auto py-2">
+          <div className="space-y-1">
+            {categories?.map((category: Category) => (
+              <button
+                type="button"
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
+                className={`w-full flex items-center gap-2 px-2 py-2.5 rounded-lg text-sm transition-colors ${
+                  selectedCategory === category.id
+                    ? 'bg-blue-100 text-blue-700 font-medium'
+                    : 'hover:bg-gray-100 text-gray-700'
+                }`}
+              >
+                <span className="text-lg flex-shrink-0">{category.icon || '📋'}</span>
+                <span className="truncate text-xs sm:text-sm">{category.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Menu Items Grid */}
-        <div className="lg:col-span-2 order-2 lg:order-1">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+        <div className="flex-1 min-w-0 overflow-y-auto py-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
             {filteredItems?.map((item: MenuItem) => {
               const quantity = getCartQuantity(item.id);
               return (
@@ -671,22 +727,26 @@ export default function TableDetailPage() {
             })}
           </div>
         </div>
-
-        {/* Cart Sidebar */}
-        <TableCart
-          cart={cart}
-          activeOrder={activeOrder}
-          selectedOrderIndex={selectedOrderIndex}
-          submitting={submitting}
-          orderNotes={orderNotes}
-          cartTotal={cartTotal}
-          formatPrice={formatPrice}
-          onAddToCart={addToCart}
-          onRemoveFromCart={removeFromCart}
-          onSetOrderNotes={setOrderNotes}
-          onSubmit={activeOrder ? handleAddItemsToOrder : handleCreateOrderWithItems}
-        />
       </div>
+
+      {/* Cart — bottom half */}
+      {cart.length > 0 && (
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <TableCart
+            cart={cart}
+            activeOrder={activeOrder}
+            selectedOrderIndex={selectedOrderIndex}
+            submitting={submitting}
+            orderNotes={orderNotes}
+            cartTotal={cartTotal}
+            formatPrice={formatPrice}
+            onAddToCart={addToCart}
+            onRemoveFromCart={removeFromCart}
+            onSetOrderNotes={setOrderNotes}
+            onSubmit={activeOrder ? handleAddItemsToOrder : handleCreateOrderWithItems}
+          />
+        </div>
+      )}
 
       {/* Cancel Order Modal */}
       {showCancelModal && (

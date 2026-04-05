@@ -41,6 +41,7 @@ interface TaskCardProps {
   isTemplate?: boolean;
   onMarkInProgress: (id: string) => void;
   onMarkCompleted: (id: string) => void;
+  onMarkCancelled: (id: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
 }
@@ -51,6 +52,7 @@ export const TaskCard = React.memo(function TaskCard({
   isTemplate,
   onMarkInProgress,
   onMarkCompleted,
+  onMarkCancelled,
   onEdit,
   onDelete,
 }: TaskCardProps) {
@@ -168,6 +170,15 @@ export const TaskCard = React.memo(function TaskCard({
               size={18}
               iconColor="#10b981"
               onPress={() => onMarkCompleted(task.id)}
+              style={styles.actionBtn}
+            />
+          )}
+          {!isTemplate && (task.status === 'pending' || task.status === 'in_progress') && (
+            <IconButton
+              icon="close-circle"
+              size={18}
+              iconColor="#9ca3af"
+              onPress={() => onMarkCancelled(task.id)}
               style={styles.actionBtn}
             />
           )}

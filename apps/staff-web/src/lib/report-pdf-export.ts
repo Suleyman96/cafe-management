@@ -52,6 +52,8 @@ interface ExportParams {
   staffPerformance: StaffMember[];
   dateRangeLabel: string;
   formatPrice: (amount: number) => string;
+  translateRole?: (role: string) => string;
+  translateWasteReason?: (reason: string) => string;
 }
 
 export function exportReportToPDF({
@@ -61,6 +63,8 @@ export function exportReportToPDF({
   staffPerformance,
   dateRangeLabel,
   formatPrice,
+  translateRole,
+  translateWasteReason,
 }: ExportParams) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -82,11 +86,11 @@ export function exportReportToPDF({
   doc.text('Key Metrics', 14, 48);
 
   const metricsData = [
-    ['Total Revenue', `$${metrics.totalRevenue.toFixed(2)}`],
+    ['Total Revenue', formatPrice(metrics.totalRevenue)],
     ['Total Orders', metrics.totalOrders.toString()],
     ['Completed Orders', metrics.completedOrders.toString()],
     ['Cancelled Orders', metrics.cancelledOrders.toString()],
-    ['Average Order Value', `$${metrics.averageOrderValue.toFixed(2)}`],
+    ['Average Order Value', formatPrice(metrics.averageOrderValue)],
     [
       'Completion Rate',
       `${metrics.totalOrders > 0 ? Math.round((metrics.completedOrders / metrics.totalOrders) * 100) : 0}%`,
@@ -188,7 +192,7 @@ export function exportReportToPDF({
       doc.text('Waste by Reason', 14, reasonStartY);
 
       const reasonData = wasteMetrics.byReason.map((item) => [
-        item.reason.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
+        translateWasteReason ? translateWasteReason(item.reason) : item.reason,
         item.count.toString(),
         formatPrice(item.cost),
         `${wasteMetrics.totalCost > 0 ? ((item.cost / wasteMetrics.totalCost) * 100).toFixed(1) : '0.0'}%`,
@@ -239,7 +243,7 @@ export function exportReportToPDF({
       `#${index + 1}`,
       item.name,
       item.count.toString(),
-      `$${item.revenue.toFixed(2)}`,
+      formatPrice(item.revenue),
     ]);
 
     autoTable(doc, {
@@ -270,11 +274,11 @@ export function exportReportToPDF({
     const staffData = staffPerformance.map((member, index) => [
       `#${index + 1}`,
       member.name,
-      member.role.charAt(0).toUpperCase() + member.role.slice(1),
+      translateRole ? translateRole(member.role) : member.role,
       member.ordersHandled.toString(),
       member.itemsSold.toString(),
-      `$${member.revenue.toFixed(2)}`,
-      `$${member.ordersHandled > 0 ? (member.revenue / member.ordersHandled).toFixed(2) : '0.00'}`,
+      formatPrice(member.revenue),
+      formatPrice(member.ordersHandled > 0 ? member.revenue / member.ordersHandled : 0),
       `${member.ordersHandled > 0 ? Math.round((member.completedOrders / member.ordersHandled) * 100) : 0}%`,
     ]);
 

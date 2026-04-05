@@ -36,6 +36,7 @@
   "orders.delivered": "Livrée",
   "orders.paid": "Payée",
   "orders.cancelled": "Annulée",
+  "orders.closed": "Fermé",
   "orders.allSources": "Toutes les sources",
   "orders.customer": "Client",
   "orders.waiter": "Serveur",
@@ -433,6 +434,11 @@
   "calls.errorLoading": "Erreur lors du chargement des appels",
   "calls.respond": "Répondre",
   "calls.respondedBy": "Répondu par {{name}} à",
+  "calls.acknowledge": "Confirmer",
+  "calls.acknowledged": "Confirmé",
+  "calls.callAcknowledged": "Appel confirmé",
+  "calls.resolve": "Résoudre",
+  "calls.resolved": "Résolu",
   "calls.noCalls": "Aucun appel",
   "cafeSettings.title": "Paramètres du café",
   "cafeSettings.restaurantInformation": "Informations sur le restaurant",
@@ -605,6 +611,13 @@
   "delivery.deliveryHint": "Ceci créera une nouvelle commande de livraison. Vous pourrez ajouter des articles dans l'écran suivant.",
   "delivery.fullDeliveryAddress": "Adresse de livraison complète",
   "delivery.ringDoorbell": "ex. : Sonner, laisser devant la porte...",
+  "delivery.openInMaps": "Open in Google Maps",
+  "delivery.searchSavedCustomers": "Search saved customers...",
+  "delivery.savedCustomer": "Saved customer",
+  "delivery.newCustomer": "New customer",
+  "delivery.saveCustomer": "Save customer for future orders",
+  "delivery.customerOrders": "{{count}} orders",
+  "delivery.noSavedCustomers": "No saved customers found",
   "expenses.editExpense": "Modifier la dépense",
   "expenses.validAmount": "Veuillez entrer un montant valide",
   "expenses.updatingExpense": "Mise à jour de la dépense...",
@@ -778,5 +791,8 @@
   "feedback.status.pending": "En attente",
   "feedback.status.acknowledged": "Pris en compte",
   "feedback.status.resolved": "Résolu",
-  "feedback.status.dismissed": "Rejeté"
+  "feedback.status.dismissed": "Rejeté",
+
+  "menu.items": "{{count}} articles",
+  "menu.categories": "{{count}} catégories"
 }

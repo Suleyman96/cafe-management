@@ -18,6 +18,9 @@ describe('FeedbackForm', () => {
 
     renderWithProviders(<FeedbackForm {...defaultProps} />);
 
+    // Select a feedback type
+    await user.click(screen.getByText('feedback.type.praise'));
+
     // Type a message in the textarea
     const messageInput = screen.getByRole('textbox', { name: /feedback\.messageLabel/i });
     await user.type(messageInput, 'Great food!');
@@ -27,13 +30,13 @@ describe('FeedbackForm', () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(db.feedback.create).toHaveBeenCalledWith({
-        table_id: 't1',
-        order_id: 'o1',
-        feedback_type: 'request_general',
-        subject: null,
-        message: 'Great food!',
-      });
+      expect(db.feedback.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          table_id: 't1',
+          order_id: 'o1',
+          message: 'Great food!',
+        }),
+      );
     });
   });
 
@@ -61,6 +64,9 @@ describe('FeedbackForm', () => {
 
     renderWithProviders(<FeedbackForm {...defaultProps} />);
 
+    // Select a feedback type
+    await user.click(screen.getByText('feedback.type.complaint'));
+
     // Type a message
     const messageInput = screen.getByRole('textbox', { name: /feedback\.messageLabel/i });
     await user.type(messageInput, 'Excellent service!');
@@ -87,6 +93,9 @@ describe('FeedbackForm', () => {
     );
 
     renderWithProviders(<FeedbackForm {...defaultProps} />);
+
+    // Select a feedback type
+    await user.click(screen.getByText('feedback.type.praise'));
 
     // Type a message
     const messageInput = screen.getByRole('textbox', { name: /feedback\.messageLabel/i });

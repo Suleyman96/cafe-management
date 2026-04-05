@@ -15,6 +15,8 @@ export function invalidateOrders(qc: QueryClient, orderId?: string) {
   }
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+  qc.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDERS] });
+  qc.invalidateQueries({ queryKey: [QUERY_KEYS.TAKEOUT_ORDERS] });
 }
 
 /** Invalidate orders + tables (for status changes that affect table state). */
@@ -23,12 +25,23 @@ export function invalidateOrdersAndTables(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+  qc.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDERS] });
+  qc.invalidateQueries({ queryKey: [QUERY_KEYS.TAKEOUT_ORDERS] });
 }
 
 // ─── Delivery ───────────────────────────────────────────────────────────────
 
 export function invalidateDeliveryOrders(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDERS] });
+  qc.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+  qc.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
+  qc.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+}
+
+// ─── Takeout ────────────────────────────────────────────────────────────────
+
+export function invalidateTakeoutOrders(qc: QueryClient) {
+  qc.invalidateQueries({ queryKey: [QUERY_KEYS.TAKEOUT_ORDERS] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
@@ -81,11 +94,13 @@ export function refetchWaste(qc: QueryClient) {
 export function invalidateTasks(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.TASKS] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT] });
+  qc.invalidateQueries({ queryKey: [QUERY_KEYS.OPEN_TASKS_COUNT] });
 }
 
 export function refetchTasks(qc: QueryClient) {
   qc.refetchQueries({ queryKey: [QUERY_KEYS.TASKS] });
   qc.refetchQueries({ queryKey: [QUERY_KEYS.OVERDUE_TASKS_COUNT] });
+  qc.refetchQueries({ queryKey: [QUERY_KEYS.OPEN_TASKS_COUNT] });
 }
 
 // ─── Schedules ──────────────────────────────────────────────────────────────

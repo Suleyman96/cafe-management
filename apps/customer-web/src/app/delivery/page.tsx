@@ -3,7 +3,7 @@
 import { useTranslation } from '@gustri/i18n';
 import { MapPin, Phone, Truck, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useCafeSettings } from '@/hooks/use-settings';
@@ -21,6 +21,14 @@ export default function DeliveryPage() {
   const [address, setAddress] = useState(deliveryAddress);
   const [notes, setNotes] = useState(deliveryNotes);
   const [error, setError] = useState('');
+
+  // Sync local state when store values change (e.g. navigating back to edit)
+  useEffect(() => {
+    setName(customerName);
+    setPhone(customerPhone);
+    setAddress(deliveryAddress);
+    setNotes(deliveryNotes);
+  }, [customerName, customerPhone, deliveryAddress, deliveryNotes]);
 
   if (isLoading) {
     return <LoadingSpinner fullScreen />;

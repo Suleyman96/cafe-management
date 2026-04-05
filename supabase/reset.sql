@@ -1,5 +1,5 @@
 -- ============================================================
--- Café İdarə - Complete Database Reset SQL
+-- Gustri - Complete Database Reset SQL
 -- Run this in Supabase Dashboard > SQL Editor to set up
 -- the database from scratch.
 --
@@ -325,7 +325,7 @@ CREATE INDEX idx_table_transfers_created ON table_transfers(created_at DESC);
 CREATE TABLE cafe_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   -- Restaurant info
-  restaurant_name VARCHAR(255) NOT NULL DEFAULT 'Cafe Idare',
+  restaurant_name VARCHAR(255) NOT NULL DEFAULT 'Gustri',
   restaurant_address TEXT,
   -- Tax settings
   tax_enabled BOOLEAN NOT NULL DEFAULT true,
@@ -525,7 +525,8 @@ CREATE TRIGGER set_order_number_trigger
 
 -- Function: Calculate order total (uses cafe_settings tax)
 CREATE OR REPLACE FUNCTION calculate_order_total(order_uuid UUID)
-RETURNS VOID AS $$
+RETURNS VOID
+SECURITY DEFINER AS $$
 DECLARE
   calculated_subtotal DECIMAL(10, 2);
   calculated_tax DECIMAL(10, 2);
@@ -563,7 +564,8 @@ $$ LANGUAGE plpgsql;
 
 -- Function: Recalculate order total on item changes
 CREATE OR REPLACE FUNCTION recalculate_order_total()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+SECURITY DEFINER AS $$
 BEGIN
   PERFORM calculate_order_total(COALESCE(NEW.order_id, OLD.order_id));
   RETURN NEW;

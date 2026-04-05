@@ -157,7 +157,10 @@ export default function KitchenDisplayScreen() {
           showError(t('kitchen.partialItemError', { succeeded, total }));
         }
 
-        await updateOrderStatus.mutateAsync({ orderId, status: 'served' });
+        // Don't set delivery orders to "served" — they use out_for_delivery flow
+        if ((order as any).order_type !== 'delivery') {
+          await updateOrderStatus.mutateAsync({ orderId, status: 'served' });
+        }
         showSuccess(t('kitchen.orderServed'));
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : t('kitchen.failedMarkServed');
