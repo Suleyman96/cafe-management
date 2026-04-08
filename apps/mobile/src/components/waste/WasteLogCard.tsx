@@ -7,7 +7,7 @@ const REASON_COLORS: Record<string, string> = {
   spoiled: '#dc2626',
   overcooked: '#f59e0b',
   dropped: '#8b5cf6',
-  returned_by_customer: '#3b82f6',
+  returned_by_customer: '#367B8B',
   preparation_waste: '#6b7280',
   other: '#9ca3af',
 };

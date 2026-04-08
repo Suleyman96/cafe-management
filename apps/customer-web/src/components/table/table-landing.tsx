@@ -509,7 +509,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             <p className="text-xs text-white/20 font-light">
               Powered by{' '}
               <span className="font-medium" style={{ color: `${accentColor}80` }}>
-                Gustri
+                gustri
               </span>
             </p>
           </div>

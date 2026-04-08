@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "biome check ./src",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "eas-build-post-install": "cd ../.. && npx turbo run build --filter=@gustri/database --filter=@gustri/core --filter=@gustri/api-client --filter=@gustri/i18n"
   },
   "dependencies": {
     "@gustri/api-client": "workspace:*",

@@ -31,11 +31,12 @@ export function Header() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary-500 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">G</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">{SITE_NAME}</span>
+          <Link href="/" className="flex items-center gap-2.5">
+            <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="2" width="44" height="44" rx="12" fill="#367B8B" />
+              <path d="M 30 10 A 10 10 0 1 0 30 26 L 30 36 Q 30 42 22 42 Q 14 42 14 36" stroke="white" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="text-xl font-bold tracking-wide text-gray-900">{SITE_NAME}</span>
           </Link>
 
           {/* Desktop nav */}

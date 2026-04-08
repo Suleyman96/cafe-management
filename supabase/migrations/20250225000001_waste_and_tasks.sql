@@ -93,7 +93,7 @@ ALTER TABLE tasks REPLICA IDENTITY FULL;
 -- 7. Seed Default Task Categories
 -- ============================================
 INSERT INTO task_categories (name, icon, color) VALUES
-  ('Cleaning', 'Sparkles', '#3B82F6'),
+  ('Cleaning', 'Sparkles', '#367B8B'),
   ('Inventory', 'Package', '#F59E0B'),
   ('Maintenance', 'Wrench', '#EF4444'),
   ('Preparation', 'ChefHat', '#8B5CF6'),

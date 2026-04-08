@@ -78,7 +78,7 @@ self.addEventListener('push', (event) => {
     },
   };
 
-  event.waitUntil(self.registration.showNotification(data.title || 'Gustri', options));
+  event.waitUntil(self.registration.showNotification(data.title || 'gustri', options));
 });
 
 // Handle notification clicks

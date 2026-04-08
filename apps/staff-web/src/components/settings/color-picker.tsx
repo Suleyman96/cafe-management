@@ -10,7 +10,7 @@ interface ColorPickerProps {
 }
 
 const DEFAULT_PRESETS = [
-  '#3B82F6', // Blue
+  '#367B8B', // Blue
   '#10B981', // Green
   '#F59E0B', // Amber
   '#EF4444', // Red

@@ -6,7 +6,7 @@ import { Card, Chip, Text } from 'react-native-paper';
 
 export const ROLE_COLORS: Record<string, string> = {
   owner: '#8b5cf6',
-  admin: '#3b82f6',
+  admin: '#367B8B',
   waiter: '#10b981',
   kitchen: '#f59e0b',
 };

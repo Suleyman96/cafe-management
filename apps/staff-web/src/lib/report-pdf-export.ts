@@ -304,7 +304,7 @@ export function exportReportToPDF({
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.text(
-      `Gustri - Sales Report | Page ${i} of ${pageCount}`,
+      `gustri - Sales Report | Page ${i} of ${pageCount}`,
       pageWidth / 2,
       doc.internal.pageSize.getHeight() - 10,
       { align: 'center' },

@@ -301,7 +301,7 @@ export default function StockListScreen() {
                         style={{
                           color:
                             m.movement_type === 'adjustment'
-                              ? '#3b82f6'
+                              ? '#367B8B'
                               : m.quantity_change >= 0
                                 ? '#10b981'
                                 : '#ef4444',

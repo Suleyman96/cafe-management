@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
   summaryCard: { flex: 1 },
   totalValue: { fontWeight: '700', color: '#ef4444' },
-  transValue: { fontWeight: '700', color: '#3b82f6' },
+  transValue: { fontWeight: '700', color: '#367B8B' },
   topCatValue: { fontWeight: '700', color: '#8b5cf6' },
   breakdownCard: { marginHorizontal: 16, marginBottom: 8 },
   breakdownRow: { marginBottom: 8 },

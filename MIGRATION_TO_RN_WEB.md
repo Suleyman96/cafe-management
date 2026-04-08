@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   title: { fontWeight: '600' },
   subtitle: { color: '#6b7280' },
   button: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#367B8B',
     padding: 8,
     borderRadius: 4,
   },

@@ -1,4 +1,4 @@
-export const SITE_NAME = 'Gustri';
+export const SITE_NAME = 'gustri';
 export const SITE_DESCRIPTION =
   'All-in-one restaurant management platform. POS, QR ordering, kitchen display, delivery, inventory, and staff scheduling — simplified.';
 export const SITE_URL = 'https://gustri.com';

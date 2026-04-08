@@ -393,7 +393,7 @@ CREATE TABLE cafe_settings (
   -- Branding
   cafe_logo_url TEXT,
   hero_image_url TEXT,
-  brand_primary_color VARCHAR(7) DEFAULT '#3B82F6',
+  brand_primary_color VARCHAR(7) DEFAULT '#367B8B',
   brand_secondary_color VARCHAR(7) DEFAULT '#1E40AF',
   welcome_heading VARCHAR(255),
   welcome_message TEXT,

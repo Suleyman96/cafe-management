@@ -24,7 +24,7 @@ export const kitchenDarkTheme = {
 
 export const ORDER_STATUS_COLORS: Record<string, string> = {
   pending_approval: '#f97316',
-  new: '#3b82f6',
+  new: '#367B8B',
   preparing: '#f59e0b',
   ready: '#10b981',
   served: '#06b6d4',
@@ -37,7 +37,7 @@ export const ORDER_STATUS_COLORS: Record<string, string> = {
 export const TABLE_STATUS_COLORS: Record<string, string> = {
   free: '#10b981',
   occupied: '#f59e0b',
-  reserved: '#3b82f6',
+  reserved: '#367B8B',
   closed: '#6b7280',
 };
 
@@ -45,6 +45,6 @@ export const WAITER_CALL_REASON_COLORS: Record<string, string> = {
   emergency: '#ef4444',
   complaint: '#f97316',
   bill: '#10b981',
-  question: '#3b82f6',
+  question: '#367B8B',
   assistance: '#6b7280',
 };
