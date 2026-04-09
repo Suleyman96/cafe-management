@@ -8,9 +8,7 @@ export function GustriLogo({ size = 40, className = '', showText = true }: Gustr
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <GustriIcon size={size} />
-      {showText && (
-        <span className="text-xl font-bold tracking-wide text-[#367B8B]">gustri</span>
-      )}
+      {showText && <span className="text-xl font-bold tracking-wide text-[#367B8B]">gustri</span>}
     </div>
   );
 }
