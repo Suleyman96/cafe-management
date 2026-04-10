@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -43,6 +44,8 @@ export default function TableDetailScreen() {
   const { tableId } = route.params;
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
 
   const { data: table, isLoading, error, refetch } = useTable(tableId);
   const { data: orders } = useOrders();
@@ -78,16 +81,16 @@ export default function TableDetailScreen() {
   const handleStatusChange = async (newStatus: Table['status']) => {
     try {
       await updateTableStatus.mutateAsync({ tableId, status: newStatus });
-      showSuccess(`Table set to ${newStatus}`);
+      showSuccess(t('tables.statusUpdated', { status: newStatus }));
       setStatusConfirm(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to update status');
+      showError(err instanceof Error ? err.message : t('tables.failedUpdateStatus'));
     }
   };
 
   const handleRespondCall = async (callId: string) => {
     if (!staff?.id) {
-      showError('Not authenticated');
+      showError(t('payment.notAuthenticated'));
       return;
     }
     try {
@@ -96,14 +99,15 @@ export default function TableDetailScreen() {
         status: 'acknowledged',
         staffId: staff.id,
       });
-      showSuccess('Call acknowledged');
+      showSuccess(t('calls.callAcknowledged'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to respond');
+      showError(err instanceof Error ? err.message : t('calls.failedRespond'));
     }
   };
 
   if (isLoading) return <LoadingScreen />;
-  if (error || !table) return <ErrorScreen error={error || 'Table not found'} onRetry={refetch} />;
+  if (error || !table)
+    return <ErrorScreen error={error || t('tables.tableNotFound')} onRetry={refetch} />;
 
   return (
     <View style={styles.container}>
@@ -117,7 +121,7 @@ export default function TableDetailScreen() {
               <Card.Content>
                 <View style={styles.row}>
                   <Text variant="headlineMedium" style={styles.bold}>
-                    Table #{table.table_number}
+                    {t('tables.tableHash', { number: table.table_number })}
                   </Text>
                   <StatusBadge status={table.status} type="table" />
                 </View>
@@ -128,7 +132,7 @@ export default function TableDetailScreen() {
                 )}
                 {table.capacity && (
                   <Text variant="bodySmall" style={styles.muted}>
-                    Capacity: {table.capacity}
+                    {t('tables.capacity')}: {table.capacity}
                   </Text>
                 )}
                 <View style={styles.chipRow}>
@@ -146,7 +150,7 @@ export default function TableDetailScreen() {
                       ]}
                       textStyle={table.status === s ? { color: '#fff' } : undefined}
                     >
-                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                      {t(`tables.${s}`)}
                     </Chip>
                   ))}
                 </View>
@@ -157,7 +161,7 @@ export default function TableDetailScreen() {
               <Card style={[styles.card, styles.callCard]}>
                 <Card.Content>
                   <Text variant="titleMedium" style={styles.bold}>
-                    Waiter Calls
+                    {t('calls.title')}
                   </Text>
                   {pendingCalls.map(
                     (call: {
@@ -176,7 +180,7 @@ export default function TableDetailScreen() {
                               style={[styles.reasonChip, { backgroundColor: `${chipColor}20` }]}
                               textStyle={{ color: chipColor, fontWeight: '600' }}
                             >
-                              {callType.replace(/_/g, ' ')}
+                              {t(`calls.${callType}`) || callType.replace(/_/g, ' ')}
                             </Chip>
                             <TimeElapsed createdAt={call.created_at} />
                           </View>
@@ -185,7 +189,7 @@ export default function TableDetailScreen() {
                             mode="contained"
                             onPress={() => handleRespondCall(call.id)}
                           >
-                            Respond
+                            {t('calls.respond')}
                           </Button>
                         </View>
                       );
@@ -197,7 +201,7 @@ export default function TableDetailScreen() {
 
             {activeOrders.length > 0 && (
               <Text variant="titleMedium" style={styles.sectionTitle}>
-                Active Orders ({activeOrders.length})
+                {t('orders.activeOrders', { count: activeOrders.length })}
               </Text>
             )}
           </View>
@@ -221,7 +225,7 @@ export default function TableDetailScreen() {
               </View>
               <View style={styles.row}>
                 <Text variant="bodySmall" style={styles.muted}>
-                  {order.order_items?.length || 0} items
+                  {t('orders.itemsCount', { count: order.order_items?.length || 0 })}
                 </Text>
                 <Text variant="bodyMedium" style={styles.bold}>
                   {currencySymbol}
@@ -235,19 +239,27 @@ export default function TableDetailScreen() {
         ListEmptyComponent={
           <View style={styles.emptyOrders}>
             <Text variant="bodyMedium" style={styles.muted}>
-              No active orders for this table
+              {t('orders.noActiveOrdersForTable')}
             </Text>
           </View>
         }
         contentContainerStyle={styles.listContent}
       />
 
-      <FAB icon="plus" label="New Order" onPress={handleCreateOrder} style={styles.fab} />
+      <FAB
+        icon="plus"
+        label={t('orders.newOrder')}
+        onPress={handleCreateOrder}
+        style={styles.fab}
+      />
 
       <ConfirmDialog
         visible={!!statusConfirm}
-        title="Change Table Status"
-        message={`Set table #${table.table_number} to "${statusConfirm}"?`}
+        title={t('tables.changeStatus')}
+        message={t('tables.changeStatusConfirm', {
+          number: table.table_number,
+          status: statusConfirm,
+        })}
         onConfirm={() => statusConfirm && handleStatusChange(statusConfirm)}
         onCancel={() => setStatusConfirm(null)}
       />

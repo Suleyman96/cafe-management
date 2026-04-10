@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, FAB, Modal, Portal, Searchbar } from 'react-native-paper';
@@ -23,6 +24,8 @@ import { useAuthStore } from '@/store/auth-store';
 export default function StockListScreen() {
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | undefined>();
 
@@ -77,15 +80,15 @@ export default function StockListScreen() {
     try {
       if (editItem) {
         await updateItem.mutateAsync({ id: editItem.id, data });
-        showSuccess('Item updated');
+        showSuccess(t('stock.itemUpdated'));
       } else {
         await createItem.mutateAsync(data);
-        showSuccess('Item created');
+        showSuccess(t('stock.itemCreated'));
       }
       setShowItemModal(false);
       setEditItem(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to save item');
+      showError(err instanceof Error ? err.message : t('stock.failedSave'));
     }
   };
 
@@ -101,10 +104,10 @@ export default function StockListScreen() {
     if (!deleteItemId) return;
     try {
       await deleteItem.mutateAsync(deleteItemId);
-      showSuccess('Item deleted');
+      showSuccess(t('stock.itemDeleted'));
       setDeleteItemId(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to delete');
+      showError(err instanceof Error ? err.message : t('stock.failedDelete'));
     }
   };
 
@@ -123,7 +126,7 @@ export default function StockListScreen() {
   }) => {
     if (!movementItem) return;
     if (!staff?.id) {
-      showError('Not authenticated');
+      showError(t('payment.notAuthenticated'));
       return;
     }
     try {
@@ -131,14 +134,14 @@ export default function StockListScreen() {
         id: movementItem.id,
         data: { ...data, performedBy: staff.id },
       });
-      showSuccess('Stock adjusted');
+      showSuccess(t('stock.stockAdjusted'));
       setMovementItem(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to adjust stock');
+      showError(err instanceof Error ? err.message : t('stock.failedAdjust'));
     }
   };
 
-  if (isLoading) return <LoadingScreen message="Loading stock..." />;
+  if (isLoading) return <LoadingScreen message={t('stock.loadingStock')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
   return (
@@ -148,7 +151,7 @@ export default function StockListScreen() {
         <Card style={styles.summaryCard}>
           <Card.Content>
             <Text variant="bodySmall" style={styles.muted}>
-              Items
+              {tCommon('items')}
             </Text>
             <Text variant="titleMedium" style={styles.itemsValue}>
               {(items || []).length}
@@ -158,7 +161,7 @@ export default function StockListScreen() {
         <Card style={styles.summaryCard}>
           <Card.Content>
             <Text variant="bodySmall" style={styles.muted}>
-              Low Stock
+              {t('stock.lowStock')}
             </Text>
             <Text variant="titleMedium" style={styles.lowValue}>
               {lowCount || 0}
@@ -168,7 +171,7 @@ export default function StockListScreen() {
         <Card style={styles.summaryCard}>
           <Card.Content>
             <Text variant="bodySmall" style={styles.muted}>
-              Value
+              {t('stock.value')}
             </Text>
             <Text variant="titleMedium" style={styles.valueValue}>
               {currencySymbol}
@@ -179,7 +182,7 @@ export default function StockListScreen() {
       </View>
 
       <Searchbar
-        placeholder="Search items..."
+        placeholder={t('stock.searchItems')}
         value={search}
         onChangeText={setSearch}
         style={styles.search}
@@ -192,7 +195,7 @@ export default function StockListScreen() {
         contentContainerStyle={styles.filterChips}
       >
         <Chip compact selected={!categoryFilter} onPress={() => setCategoryFilter(undefined)}>
-          All ({(items || []).length})
+          {tCommon('all')} ({(items || []).length})
         </Chip>
         {usedCategories.map((cat) => (
           <Chip
@@ -208,8 +211,8 @@ export default function StockListScreen() {
 
       {/* Count */}
       <Text variant="bodySmall" style={styles.countText}>
-        {filtered.length} item{filtered.length !== 1 ? 's' : ''}
-        {search ? ` for "${search}"` : ''}
+        {t('stock.itemCount', { count: filtered.length })}
+        {search ? ` ${t('stock.forSearch', { query: search })}` : ''}
       </Text>
 
       <FlatList
@@ -230,8 +233,8 @@ export default function StockListScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="package-variant-closed"
-            title="No stock items"
-            description={search ? 'Try a different search' : 'Add your first stock item'}
+            title={t('stock.noStockItems')}
+            description={search ? t('stock.tryDifferentSearch') : t('stock.addFirstItem')}
           />
         }
         contentContainerStyle={styles.list}
@@ -239,7 +242,7 @@ export default function StockListScreen() {
 
       <FAB
         icon="plus"
-        label="Add Item"
+        label={t('stock.addItem')}
         style={styles.fab}
         onPress={() => {
           setEditItem(null);
@@ -278,10 +281,10 @@ export default function StockListScreen() {
           contentContainerStyle={styles.modal}
         >
           <Text variant="titleMedium" style={styles.modalTitle}>
-            Movement History
+            {t('stock.movementHistory')}
           </Text>
           {(movements || []).length === 0 ? (
-            <Text style={styles.muted}>No movements recorded</Text>
+            <Text style={styles.muted}>{t('stock.noMovements')}</Text>
           ) : (
             movements
               ?.slice(0, 20)
@@ -330,15 +333,15 @@ export default function StockListScreen() {
               )
           )}
           <Button onPress={() => setHistoryItemId(undefined)} style={styles.closeBtn}>
-            Close
+            {tCommon('close')}
           </Button>
         </Modal>
       </Portal>
 
       <ConfirmDialog
         visible={!!deleteItemId}
-        title="Delete Stock Item"
-        message="Are you sure you want to delete this stock item? Movement history will also be deleted."
+        title={t('stock.deleteStockItem')}
+        message={t('stock.deleteStockConfirm')}
         onConfirm={handleDeleteItem}
         onCancel={() => setDeleteItemId(null)}
         destructive

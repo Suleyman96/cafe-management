@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '@gustri/i18n';
 import { StyleSheet, View } from 'react-native';
 import { Card, Text } from 'react-native-paper';
 import { TextInput } from '@/lib/paper-compat';
@@ -22,13 +23,14 @@ const SOCIAL_FIELDS = [
 ];
 
 export function SocialMediaSection({ form, updateField }: SettingsSectionProps) {
+  const { t } = useTranslation('staff');
   return (
     <Card>
       <Card.Content>
         <View style={styles.headerRow}>
           <MaterialCommunityIcons name="earth" size={20} color="#4b5563" />
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            Social Media
+            {t('cafeSettings.socialMedia')}
           </Text>
         </View>
         {SOCIAL_FIELDS.map((field) => (

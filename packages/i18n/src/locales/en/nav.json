@@ -23,6 +23,9 @@
   "onShift": "On Shift",
   "offShift": "Off Shift",
   "myTasks": "My Tasks",
-  "signOut": "Sign out",
-  "accountSettings": "Account Settings"
+  "signOut": "Sign Out",
+  "accountSettings": "Account Settings",
+  "collapseSidebar": "Collapse sidebar",
+  "expandSidebar": "Expand sidebar",
+  "moreTasksCount": "+{{count}} more"
 }

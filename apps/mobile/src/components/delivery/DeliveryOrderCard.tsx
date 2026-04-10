@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { Linking, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Card } from 'react-native-paper';
@@ -61,6 +62,9 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
   onMarkDelivered,
   onCancel,
 }: DeliveryOrderCardProps) {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
+
   const grandTotal = calculateOrderTotal(order); // already includes delivery_fee from DB
   const deliveryFee = order.delivery_fee ?? 0;
   const hasItems = order.order_items?.some((i) => i.status !== 'cancelled') ?? false;
@@ -140,7 +144,7 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
           <View style={styles.driverRow}>
             <MaterialCommunityIcons name="truck-delivery" size={13} color="#6b7280" />
             <Text variant="bodySmall" style={styles.driverText}>
-              Driver: {order.delivery_person.full_name}
+              {t('delivery.driver')} {order.delivery_person.full_name}
             </Text>
           </View>
         )}
@@ -163,7 +167,7 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
             ))}
             {order.order_items.length > 3 && (
               <Text variant="bodySmall" style={styles.moreItems}>
-                +{order.order_items.length - 3} more items
+                {t('delivery.moreItems', { count: order.order_items.length - 3 })}
               </Text>
             )}
           </View>
@@ -178,7 +182,7 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
               onPress={() => onApprove(order.id)}
               style={styles.approveBtn}
             >
-              Approve
+              {tCommon('approve')}
             </Button>
           )}
           {order.status === 'new' && onStartPreparing && (
@@ -189,7 +193,7 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
               onPress={() => onStartPreparing(order.id)}
               style={styles.prepareBtn}
             >
-              Start Preparing
+              {t('delivery.startPreparing')}
             </Button>
           )}
           {order.status === 'preparing' && onMarkReady && (
@@ -200,7 +204,7 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
               onPress={() => onMarkReady(order.id)}
               style={styles.readyBtn}
             >
-              Mark Ready
+              {t('delivery.markReady')}
             </Button>
           )}
           {order.status === 'ready' && onSendOut && (
@@ -211,7 +215,7 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
               onPress={() => onSendOut(order.id)}
               style={styles.outForDeliveryBtn}
             >
-              Out for Delivery
+              {t('delivery.outForDelivery')}
             </Button>
           )}
           {order.status === 'out_for_delivery' && onMarkDelivered && (
@@ -222,12 +226,12 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
               onPress={() => onMarkDelivered(order.id)}
               style={styles.deliveredBtn}
             >
-              Delivered
+              {t('delivery.delivered')}
             </Button>
           )}
           {!['delivered', 'cancelled', 'closed'].includes(order.status) && onCancel && (
             <Button compact onPress={() => onCancel(order.id)} textColor="#ef4444">
-              {order.status === 'pending_approval' ? 'Reject' : 'Cancel'}
+              {order.status === 'pending_approval' ? tCommon('reject') : tCommon('cancel')}
             </Button>
           )}
         </View>

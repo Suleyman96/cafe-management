@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '@gustri/i18n';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Chip, Dialog, FAB, Portal, Searchbar } from 'react-native-paper';
@@ -30,9 +31,21 @@ const STATUS_FILTERS = [
 
 const ACTIVE_STATUSES = ['pending_approval', 'new', 'preparing', 'ready', 'out_for_delivery'];
 
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  pending_approval: 'orders.pendingApproval',
+  new: 'orders.new',
+  preparing: 'orders.preparing',
+  ready: 'orders.ready',
+  out_for_delivery: 'orders.outForDelivery',
+  delivered: 'orders.delivered',
+  cancelled: 'orders.cancelled',
+};
+
 export default function DeliveryListScreen() {
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -84,45 +97,45 @@ export default function DeliveryListScreen() {
   const handleApprove = async (orderId: string) => {
     try {
       await updateOrderStatus.mutateAsync({ orderId, status: 'new' });
-      showSuccess('Order approved');
+      showSuccess(t('delivery.orderApproved'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to approve');
+      showError(err instanceof Error ? err.message : t('delivery.failedApprove'));
     }
   };
 
   const handleStartPreparing = async (orderId: string) => {
     try {
       await updateOrderStatus.mutateAsync({ orderId, status: 'preparing' });
-      showSuccess('Preparing started');
+      showSuccess(t('delivery.preparingStarted'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to start preparing');
+      showError(err instanceof Error ? err.message : t('delivery.failedPrepare'));
     }
   };
 
   const handleMarkReady = async (orderId: string) => {
     try {
       await updateOrderStatus.mutateAsync({ orderId, status: 'ready' });
-      showSuccess('Order marked ready');
+      showSuccess(t('delivery.orderMarkedReady'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to mark ready');
+      showError(err instanceof Error ? err.message : t('delivery.failedReady'));
     }
   };
 
   const handleSendOut = async (orderId: string) => {
     try {
       await markOutForDelivery.mutateAsync({ orderId, deliveryPersonId: staff?.id || '' });
-      showSuccess('Order sent out for delivery');
+      showSuccess(t('delivery.orderSentOut'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to send out');
+      showError(err instanceof Error ? err.message : t('delivery.failedSend'));
     }
   };
 
   const handleMarkDelivered = async (orderId: string) => {
     try {
       await markDelivered.mutateAsync(orderId);
-      showSuccess('Order delivered');
+      showSuccess(t('delivery.orderDelivered'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to mark delivered');
+      showError(err instanceof Error ? err.message : t('delivery.failedDelivered'));
     }
   };
 
@@ -138,17 +151,17 @@ export default function DeliveryListScreen() {
     setCancelling(true);
     try {
       await cancelOrder.mutateAsync({ orderId: cancelTarget.id, reason: cancelReason.trim() });
-      showSuccess('Order cancelled');
+      showSuccess(t('orders.orderCancelled'));
       setCancelTarget(null);
       setCancelReason('');
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to cancel');
+      showError(err instanceof Error ? err.message : t('delivery.failedCancel'));
     } finally {
       setCancelling(false);
     }
   };
 
-  if (isLoading) return <LoadingScreen message="Loading delivery orders..." />;
+  if (isLoading) return <LoadingScreen message={t('delivery.loadingDelivery')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
   return (
@@ -158,14 +171,14 @@ export default function DeliveryListScreen() {
         <View style={styles.activeCountRow}>
           <MaterialCommunityIcons name="truck-delivery" size={16} color="#7c3aed" />
           <Text variant="bodySmall" style={styles.activeCountText}>
-            {activeCount} active
+            {activeCount} {t('delivery.activeCount')}
           </Text>
         </View>
       )}
 
       {/* Search bar */}
       <Searchbar
-        placeholder="Search name, address, phone..."
+        placeholder={t('delivery.searchDelivery')}
         value={searchTerm}
         onChangeText={setSearchTerm}
         style={styles.searchbar}
@@ -176,7 +189,7 @@ export default function DeliveryListScreen() {
       <View style={styles.filterRow}>
         {STATUS_FILTERS.map((s) => (
           <Chip key={s} compact selected={statusFilter === s} onPress={() => setStatusFilter(s)}>
-            {s === 'all' ? 'All' : s.replace(/_/g, ' ')}
+            {s === 'all' ? tCommon('all') : t(STATUS_LABEL_KEYS[s] || s)}
           </Chip>
         ))}
       </View>
@@ -200,11 +213,9 @@ export default function DeliveryListScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="moped"
-            title="No delivery orders"
+            title={t('delivery.noDeliveryOrders')}
             description={
-              statusFilter !== 'all'
-                ? 'No orders match the selected filter'
-                : 'Delivery orders will appear here'
+              statusFilter !== 'all' ? t('delivery.noOrdersMatch') : t('delivery.ordersAppear')
             }
           />
         }
@@ -214,7 +225,7 @@ export default function DeliveryListScreen() {
       {/* FAB to create new delivery order */}
       <FAB
         icon="plus"
-        label="New Delivery"
+        label={t('delivery.newDeliveryOrder')}
         onPress={() => setShowCreateModal(true)}
         style={styles.fab}
         color="#fff"
@@ -239,7 +250,9 @@ export default function DeliveryListScreen() {
             setCancelReason('');
           }}
         >
-          <Dialog.Title style={styles.cancelTitle}>Cancel Delivery Order</Dialog.Title>
+          <Dialog.Title style={styles.cancelTitle}>
+            {t('delivery.cancelDeliveryOrder')}
+          </Dialog.Title>
           <Dialog.Content>
             {cancelTarget?.customer_name && (
               <View style={styles.cancelOrderInfo}>
@@ -252,10 +265,10 @@ export default function DeliveryListScreen() {
               </View>
             )}
             <Text variant="bodySmall" style={styles.cancelHint}>
-              Please provide a reason for cancellation:
+              {t('delivery.cancelReasonHint')}
             </Text>
             <TextInput
-              label="Cancellation Reason *"
+              label={t('delivery.cancellationReasonLabel')}
               value={cancelReason}
               onChangeText={setCancelReason}
               mode="outlined"
@@ -272,7 +285,7 @@ export default function DeliveryListScreen() {
               }}
               disabled={cancelling}
             >
-              Keep Order
+              {t('orders.keepOrder')}
             </Button>
             <Button
               mode="contained"
@@ -282,7 +295,7 @@ export default function DeliveryListScreen() {
               textColor="#fff"
               style={styles.cancelBtn}
             >
-              Cancel Order
+              {t('orders.cancelOrder')}
             </Button>
           </Dialog.Actions>
         </Dialog>

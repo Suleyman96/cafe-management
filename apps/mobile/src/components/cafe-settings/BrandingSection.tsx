@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '@gustri/i18n';
 import { StyleSheet, View } from 'react-native';
 import { Card, Text } from 'react-native-paper';
 import { TextInput } from '@/lib/paper-compat';
@@ -6,6 +7,8 @@ import type { SettingsSectionProps } from './ToggleRow';
 import { ToggleRow } from './ToggleRow';
 
 export function BrandingSection({ form, updateField }: SettingsSectionProps) {
+  const { t } = useTranslation('staff');
+
   return (
     <>
       {/* Welcome Screen */}
@@ -14,30 +17,30 @@ export function BrandingSection({ form, updateField }: SettingsSectionProps) {
           <View style={styles.headerRow}>
             <MaterialCommunityIcons name="message-text-outline" size={20} color="#4b5563" />
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              Welcome Screen
+              {t('cafeSettings.welcomeScreen')}
             </Text>
           </View>
           <Text variant="bodySmall" style={styles.helperText}>
-            Customize the welcome message shown to customers
+            {t('cafeSettings.customizeWelcome')}
           </Text>
           <TextInput
-            label="Welcome Heading"
+            label={t('cafeSettings.welcomeHeading')}
             value={form.welcome_heading || ''}
             onChangeText={(v: string) => updateField('welcome_heading', v || null)}
             mode="outlined"
             dense
-            placeholder="Welcome to our restaurant!"
+            placeholder={t('cafeSettings.welcomeHeadingPlaceholder')}
             style={styles.input}
           />
           <TextInput
-            label="Welcome Message"
+            label={t('cafeSettings.welcomeMessage')}
             value={form.welcome_message || ''}
             onChangeText={(v: string) => updateField('welcome_message', v || null)}
             mode="outlined"
             dense
             multiline
             numberOfLines={3}
-            placeholder="Browse our menu and place your order..."
+            placeholder={t('cafeSettings.welcomeMessagePlaceholder')}
             style={styles.input}
           />
         </Card.Content>
@@ -49,12 +52,12 @@ export function BrandingSection({ form, updateField }: SettingsSectionProps) {
           <View style={styles.headerRow}>
             <MaterialCommunityIcons name="qrcode" size={20} color="#4b5563" />
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              QR Menu Features
+              {t('cafeSettings.qrMenuFeatures')}
             </Text>
           </View>
           <ToggleRow
-            label="Enable QR Ordering"
-            description="Allow customers to place orders via QR code menu"
+            label={t('cafeSettings.enableQrOrdering')}
+            description={t('cafeSettings.qrOrderingDescription')}
             value={!!form.qr_ordering_enabled}
             onChange={(v) => updateField('qr_ordering_enabled', v)}
           />

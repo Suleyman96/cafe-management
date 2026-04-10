@@ -1,4 +1,5 @@
 import { DAYS_OF_WEEK, TIME_OPTIONS } from '@gustri/core';
+import { useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, Modal, Portal, Switch, Text } from 'react-native-paper';
@@ -35,6 +36,8 @@ export function ScheduleModal({
   defaultDate,
 }: ScheduleModalProps) {
   const isEdit = !!initialData;
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
 
   const [staffId, setStaffId] = useState('');
   const [date, setDate] = useState('');
@@ -170,12 +173,12 @@ export function ScheduleModal({
       <Modal visible={visible} onDismiss={onDismiss} contentContainerStyle={styles.modal}>
         <ScrollView>
           <Text variant="titleMedium" style={styles.title}>
-            {isEdit ? 'Edit Schedule' : 'New Schedule'}
+            {isEdit ? t('schedules.editSchedule') : t('schedules.newSchedule')}
           </Text>
 
           {/* Staff Selector */}
           <Text variant="bodySmall" style={styles.label}>
-            Staff Member *
+            {t('schedules.staffMember')} *
           </Text>
           <View style={styles.chipRow}>
             {activeStaff.map((s) => (
@@ -188,37 +191,37 @@ export function ScheduleModal({
 
           {/* Date */}
           <TextInput
-            label="Date *"
+            label={t('schedules.dateRequired')}
             value={date}
             onChangeText={setDate}
             mode="outlined"
             dense
-            placeholder="YYYY-MM-DD"
+            placeholder={t('schedules.datePlaceholder')}
             style={styles.input}
           />
 
           {/* Planned Times */}
           <Text variant="bodySmall" style={styles.label}>
-            Start Time
+            {t('schedules.startTime')}
           </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.timeChips}
           >
-            {commonTimes.map((t) => (
+            {commonTimes.map((time) => (
               <Chip
-                key={`s-${t}`}
+                key={`s-${time}`}
                 compact
-                selected={plannedStart === t}
-                onPress={() => setPlannedStart(t)}
+                selected={plannedStart === time}
+                onPress={() => setPlannedStart(time)}
               >
-                {t}
+                {time}
               </Chip>
             ))}
           </ScrollView>
           <TextInput
-            label="Custom start (HH:MM)"
+            label={t('schedules.customStart')}
             value={plannedStart}
             onChangeText={setPlannedStart}
             mode="outlined"
@@ -227,26 +230,26 @@ export function ScheduleModal({
           />
 
           <Text variant="bodySmall" style={styles.label}>
-            End Time
+            {t('schedules.endTime')}
           </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.timeChips}
           >
-            {commonTimes.map((t) => (
+            {commonTimes.map((time) => (
               <Chip
-                key={`e-${t}`}
+                key={`e-${time}`}
                 compact
-                selected={plannedEnd === t}
-                onPress={() => setPlannedEnd(t)}
+                selected={plannedEnd === time}
+                onPress={() => setPlannedEnd(time)}
               >
-                {t}
+                {time}
               </Chip>
             ))}
           </ScrollView>
           <TextInput
-            label="Custom end (HH:MM)"
+            label={t('schedules.customEnd')}
             value={plannedEnd}
             onChangeText={setPlannedEnd}
             mode="outlined"
@@ -258,7 +261,7 @@ export function ScheduleModal({
           {isEdit && (
             <>
               <Text variant="bodySmall" style={styles.label}>
-                Status
+                {tCommon('status')}
               </Text>
               <View style={styles.chipRow}>
                 {STATUSES.map((s) => (
@@ -270,27 +273,27 @@ export function ScheduleModal({
                     style={status === s ? { backgroundColor: STATUS_COLORS[s] } : undefined}
                     textStyle={status === s ? { color: '#fff', fontWeight: '600' } : undefined}
                   >
-                    {s.replace(/_/g, ' ')}
+                    {t(`schedules.${s}`)}
                   </Chip>
                 ))}
               </View>
 
               <TextInput
-                label="Actual Start (HH:MM)"
+                label={t('schedules.actualStart')}
                 value={actualStart}
                 onChangeText={setActualStart}
                 mode="outlined"
                 dense
-                placeholder="e.g. 09:05"
+                placeholder={t('schedules.actualStartPlaceholder')}
                 style={styles.input}
               />
               <TextInput
-                label="Actual End (HH:MM)"
+                label={t('schedules.actualEnd')}
                 value={actualEnd}
                 onChangeText={setActualEnd}
                 mode="outlined"
                 dense
-                placeholder="e.g. 17:15"
+                placeholder={t('schedules.actualEndPlaceholder')}
                 style={styles.input}
               />
             </>
@@ -298,7 +301,7 @@ export function ScheduleModal({
 
           {/* Notes */}
           <TextInput
-            label="Notes (optional)"
+            label={t('schedules.notesOptional')}
             value={notes}
             onChangeText={setNotes}
             mode="outlined"
@@ -312,14 +315,14 @@ export function ScheduleModal({
           {!isEdit && (
             <View style={styles.repeatSection}>
               <View style={styles.switchRow}>
-                <Text variant="bodyMedium">Repeat on multiple days</Text>
+                <Text variant="bodyMedium">{t('schedules.repeatMultipleDays')}</Text>
                 <Switch value={repeatEnabled} onValueChange={setRepeatEnabled} />
               </View>
 
               {repeatEnabled && (
                 <>
                   <Text variant="bodySmall" style={styles.label}>
-                    Days of week
+                    {t('schedules.daysOfWeek')}
                   </Text>
                   <View style={styles.chipRow}>
                     {DAYS_OF_WEEK.map((day) => (
@@ -345,7 +348,7 @@ export function ScheduleModal({
                   </View>
 
                   <Text variant="bodySmall" style={styles.label}>
-                    Number of weeks
+                    {t('schedules.numberOfWeeks')}
                   </Text>
                   <View style={styles.chipRow}>
                     {[1, 2, 3, 4].map((n) => (
@@ -355,7 +358,7 @@ export function ScheduleModal({
                         selected={repeatWeeks === n}
                         onPress={() => setRepeatWeeks(n)}
                       >
-                        {n} week{n > 1 ? 's' : ''}
+                        {n} {n > 1 ? t('schedules.weeks') : t('schedules.week')}
                       </Chip>
                     ))}
                   </View>
@@ -373,13 +376,13 @@ export function ScheduleModal({
                 style={styles.deleteBtn}
                 onPress={() => onDelete(initialData.id)}
               >
-                Delete
+                {tCommon('delete')}
               </Button>
             )}
             <View style={styles.spacer} />
-            <Button onPress={onDismiss}>Cancel</Button>
+            <Button onPress={onDismiss}>{tCommon('cancel')}</Button>
             <Button mode="contained" onPress={handleSubmit} loading={loading} disabled={!staffId}>
-              {isEdit ? 'Update' : 'Create'}
+              {isEdit ? tCommon('update') : tCommon('create')}
             </Button>
           </View>
         </ScrollView>

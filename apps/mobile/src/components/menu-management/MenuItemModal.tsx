@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, Modal, Portal, Switch, Text } from 'react-native-paper';
@@ -24,6 +25,8 @@ export function MenuItemModal({
   categories,
   currencySymbol = '$',
 }: MenuItemModalProps) {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -103,11 +106,11 @@ export function MenuItemModal({
       <Modal visible={visible} onDismiss={onDismiss} contentContainerStyle={styles.modal}>
         <ScrollView>
           <Text variant="titleMedium" style={styles.title}>
-            {initialData ? 'Edit Menu Item' : 'New Menu Item'}
+            {initialData ? t('menu.editMenuItem') : t('menu.newMenuItem')}
           </Text>
 
           <TextInput
-            label="Name *"
+            label={t('menu.nameRequired')}
             value={form.name}
             onChangeText={(v: string) => setForm({ ...form, name: v })}
             mode="outlined"
@@ -115,7 +118,7 @@ export function MenuItemModal({
             style={styles.input}
           />
           <TextInput
-            label="Description"
+            label={tCommon('description')}
             value={form.description}
             onChangeText={(v: string) => setForm({ ...form, description: v })}
             mode="outlined"
@@ -124,7 +127,7 @@ export function MenuItemModal({
             style={styles.input}
           />
           <TextInput
-            label="Price *"
+            label={t('menu.priceRequired')}
             value={form.price}
             onChangeText={(v: string) => setForm({ ...form, price: v })}
             mode="outlined"
@@ -135,7 +138,7 @@ export function MenuItemModal({
           />
           <View style={styles.rowInputs}>
             <TextInput
-              label="Prep Time (min)"
+              label={t('menu.prepTime')}
               value={form.preparation_time}
               onChangeText={(v: string) => setForm({ ...form, preparation_time: v })}
               mode="outlined"
@@ -144,7 +147,7 @@ export function MenuItemModal({
               style={[styles.input, styles.halfInput]}
             />
             <TextInput
-              label="Display Order"
+              label={t('menu.displayOrder')}
               value={form.display_order}
               onChangeText={(v: string) => setForm({ ...form, display_order: v })}
               mode="outlined"
@@ -157,7 +160,7 @@ export function MenuItemModal({
           {categories.length > 0 && (
             <>
               <Text variant="bodySmall" style={styles.label}>
-                Category
+                {tCommon('category')}
               </Text>
               <View style={styles.chipRow}>
                 <Chip
@@ -165,7 +168,7 @@ export function MenuItemModal({
                   selected={!form.category_id}
                   onPress={() => setForm({ ...form, category_id: '' })}
                 >
-                  None
+                  {t('menu.none')}
                 </Chip>
                 {categories.map((c: any) => (
                   <Chip
@@ -182,7 +185,7 @@ export function MenuItemModal({
           )}
 
           <Text variant="bodySmall" style={styles.label}>
-            Flags
+            {t('menu.flags')}
           </Text>
           {(
             [
@@ -206,7 +209,7 @@ export function MenuItemModal({
 
           {/* Allergens */}
           <Text variant="bodySmall" style={styles.label}>
-            Allergens
+            {t('menu.allergens')}
           </Text>
           <View style={styles.chipRow}>
             {COMMON_ALLERGENS.map((allergen) => (
@@ -228,14 +231,14 @@ export function MenuItemModal({
           </View>
 
           <View style={styles.actions}>
-            <Button onPress={onDismiss}>Cancel</Button>
+            <Button onPress={onDismiss}>{tCommon('cancel')}</Button>
             <Button
               mode="contained"
               onPress={handleSubmit}
               loading={loading}
               disabled={!form.name.trim()}
             >
-              {initialData ? 'Update' : 'Create'}
+              {initialData ? t('menu.update') : t('menu.create')}
             </Button>
           </View>
         </ScrollView>

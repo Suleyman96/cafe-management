@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, FAB, IconButton, Searchbar } from 'react-native-paper';
@@ -20,6 +21,8 @@ import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 
 export default function MenuManagementScreen() {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const { showSuccess, showError } = useSnackbar();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | undefined>();
@@ -69,7 +72,7 @@ export default function MenuManagementScreen() {
     try {
       await toggleAvailability.mutateAsync({ id, currentAvailable });
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to toggle');
+      showError(err instanceof Error ? err.message : t('menu.failedToggle'));
     }
   };
 
@@ -85,15 +88,15 @@ export default function MenuManagementScreen() {
     try {
       if (editItem) {
         await updateItem.mutateAsync({ id: editItem.id, data });
-        showSuccess('Item updated');
+        showSuccess(t('menu.itemUpdated'));
       } else {
         await createItem.mutateAsync(data);
-        showSuccess('Item created');
+        showSuccess(t('menu.itemCreated'));
       }
       setShowItemModal(false);
       setEditItem(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to save item');
+      showError(err instanceof Error ? err.message : t('menu.failedSaveItem'));
     }
   };
 
@@ -101,10 +104,10 @@ export default function MenuManagementScreen() {
     if (!deleteItemId) return;
     try {
       await deleteItem.mutateAsync(deleteItemId);
-      showSuccess('Item deleted');
+      showSuccess(t('menu.itemDeleted'));
       setDeleteItemId(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to delete');
+      showError(err instanceof Error ? err.message : t('menu.failedDelete'));
     }
   };
 
@@ -113,15 +116,15 @@ export default function MenuManagementScreen() {
     try {
       if (editCategory) {
         await updateCategory.mutateAsync({ id: editCategory.id, data });
-        showSuccess('Category updated');
+        showSuccess(t('menu.categoryUpdated'));
       } else {
         await createCategory.mutateAsync(data);
-        showSuccess('Category created');
+        showSuccess(t('menu.categoryCreated'));
       }
       setShowCategoryModal(false);
       setEditCategory(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to save category');
+      showError(err instanceof Error ? err.message : t('menu.failedSaveCategory'));
     }
   };
 
@@ -129,15 +132,15 @@ export default function MenuManagementScreen() {
     if (!deleteCategoryId) return;
     try {
       await deleteCategory.mutateAsync(deleteCategoryId);
-      showSuccess('Category deleted');
+      showSuccess(t('menu.categoryDeleted'));
       setDeleteCategoryId(null);
       if (categoryFilter === deleteCategoryId) setCategoryFilter(undefined);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to delete category');
+      showError(err instanceof Error ? err.message : t('menu.failedDeleteCategory'));
     }
   };
 
-  if (isLoading) return <LoadingScreen message="Loading menu..." />;
+  if (isLoading) return <LoadingScreen message={t('menu.loadingMenu')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
   return (
@@ -145,7 +148,8 @@ export default function MenuManagementScreen() {
       {/* Counts */}
       <View style={styles.countsRow}>
         <Text variant="bodySmall" style={styles.countText}>
-          {(items || []).length} items · {(categories || []).length} categories
+          {(items || []).length} {tCommon('items')} · {(categories || []).length}{' '}
+          {t('menu.categories')}
         </Text>
         <Button
           compact
@@ -158,12 +162,12 @@ export default function MenuManagementScreen() {
           style={styles.addCategoryBtn}
           labelStyle={styles.addCategoryLabel}
         >
-          + Category
+          {t('menu.addCategory')}
         </Button>
       </View>
 
       <Searchbar
-        placeholder="Search menu items..."
+        placeholder={t('menu.searchItems')}
         value={search}
         onChangeText={setSearch}
         style={styles.search}
@@ -172,7 +176,7 @@ export default function MenuManagementScreen() {
       {/* Search results count */}
       {search.trim() && (
         <Text variant="bodySmall" style={styles.searchCount}>
-          {filtered.length} results for "{search}"
+          {t('menu.searchResultsCount', { count: filtered.length, query: search })}
         </Text>
       )}
 
@@ -184,7 +188,7 @@ export default function MenuManagementScreen() {
         contentContainerStyle={styles.categoryContent}
       >
         <Chip compact selected={!categoryFilter} onPress={() => setCategoryFilter(undefined)}>
-          All ({(items || []).length})
+          {tCommon('all')} ({(items || []).length})
         </Chip>
         {(categories || []).map((c: any) => (
           <Chip
@@ -212,7 +216,7 @@ export default function MenuManagementScreen() {
                     {cat.name}
                   </Text>
                   <Text variant="bodySmall" style={styles.categoryItemCount}>
-                    · {getCategoryItemCount(cat.id)} items
+                    · {getCategoryItemCount(cat.id)} {tCommon('items')}
                   </Text>
                 </View>
                 <View style={styles.categoryActions}>
@@ -253,8 +257,8 @@ export default function MenuManagementScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="food-off"
-            title="No menu items"
-            description={search ? 'Try a different search' : 'Create your first menu item'}
+            title={t('menu.noMenuItems')}
+            description={search ? t('menu.tryDifferentSearch') : t('menu.noMenuItemsDescription')}
           />
         }
         contentContainerStyle={styles.list}
@@ -262,7 +266,7 @@ export default function MenuManagementScreen() {
 
       <FAB
         icon="plus"
-        label="Add Item"
+        label={t('menu.addItem')}
         style={styles.fab}
         onPress={() => {
           setEditItem(null);
@@ -296,8 +300,8 @@ export default function MenuManagementScreen() {
 
       <ConfirmDialog
         visible={!!deleteItemId}
-        title="Delete Item"
-        message="Are you sure you want to delete this menu item?"
+        title={t('menu.deleteItem')}
+        message={t('menu.deleteItemConfirm')}
         onConfirm={handleDelete}
         onCancel={() => setDeleteItemId(null)}
         destructive
@@ -305,8 +309,8 @@ export default function MenuManagementScreen() {
 
       <ConfirmDialog
         visible={!!deleteCategoryId}
-        title="Delete Category"
-        message="Are you sure you want to delete this category? Items in this category will become uncategorized."
+        title={t('menu.deleteCategory')}
+        message={t('menu.deleteCategoryConfirm')}
         onConfirm={handleDeleteCategory}
         onCancel={() => setDeleteCategoryId(null)}
         destructive

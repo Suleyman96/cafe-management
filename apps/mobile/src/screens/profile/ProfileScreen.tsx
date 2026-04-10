@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Avatar, Button, Card, Chip, Divider, List, Text } from 'react-native-paper';
@@ -19,6 +20,10 @@ export default function ProfileScreen() {
   const { staff, clearAuth } = useAuthStore();
   const { showError } = useSnackbar();
   const [loggingOut, setLoggingOut] = useState(false);
+  const { t: tCommon } = useTranslation('common');
+  const { t } = useTranslation('staff');
+  const { t: tNav } = useTranslation('nav');
+  const { t: tRoles } = useTranslation('roles');
 
   if (!staff) return null;
 
@@ -36,7 +41,7 @@ export default function ProfileScreen() {
       await logout();
       clearAuth();
     } catch (err: any) {
-      showError(err?.message || 'Failed to sign out');
+      showError(err?.message || t('profile.failedSignOut'));
     } finally {
       setLoggingOut(false);
     }
@@ -55,7 +60,7 @@ export default function ProfileScreen() {
           style={{ backgroundColor: ROLE_COLORS[staff.role] || '#6b7280' }}
           textStyle={{ color: '#fff', fontWeight: '600' }}
         >
-          {staff.role.charAt(0).toUpperCase() + staff.role.slice(1)}
+          {tRoles(staff.role)}
         </Chip>
       </View>
 
@@ -63,21 +68,21 @@ export default function ProfileScreen() {
       <Card style={styles.card}>
         <Card.Content>
           <List.Item
-            title="Email"
+            title={tCommon('email')}
             description={staff.email}
             left={(props) => <List.Icon {...props} icon="email" />}
           />
           <Divider />
           <List.Item
-            title="Role"
-            description={staff.role}
+            title={tCommon('role')}
+            description={tRoles(staff.role)}
             left={(props) => <List.Icon {...props} icon="shield-account" />}
           />
           {staff.phone && (
             <>
               <Divider />
               <List.Item
-                title="Phone"
+                title={tCommon('phone')}
                 description={staff.phone}
                 left={(props) => <List.Icon {...props} icon="phone" />}
               />
@@ -87,7 +92,7 @@ export default function ProfileScreen() {
             <>
               <Divider />
               <List.Item
-                title="Last Login"
+                title={t('staffMgmt.lastLogin')}
                 description={new Date(staff.last_login_at).toLocaleString()}
                 left={(props) => <List.Icon {...props} icon="clock-outline" />}
               />
@@ -106,7 +111,7 @@ export default function ProfileScreen() {
           textColor="#ef4444"
           style={styles.logoutButton}
         >
-          Sign Out
+          {tNav('signOut')}
         </Button>
       </View>
     </View>

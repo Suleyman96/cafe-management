@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -34,6 +35,7 @@ export default function AddItemsScreen() {
   const isNewOrder = !orderId && !!tableId;
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
+  const { t } = useTranslation('staff');
   const { data: settings } = useCafeSettings();
   const currencySymbol = settings?.currency_symbol || '$';
 
@@ -152,20 +154,16 @@ export default function AddItemsScreen() {
       }));
 
       await addOrderItems.mutateAsync(orderItems);
-      showSuccess(
-        isNewOrder
-          ? `Order created with ${cartSummary.count} items`
-          : `Added ${cartSummary.count} items`,
-      );
+      showSuccess(isNewOrder ? t('orders.orderCreatedSuccess') : t('orders.itemsAddedToOrder'));
       navigation.goBack();
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to add items');
+      showError(err instanceof Error ? err.message : t('orders.failedAddItems'));
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (menuLoading) return <LoadingScreen message="Loading menu..." />;
+  if (menuLoading) return <LoadingScreen message={t('orders.loadingMenu')} />;
   if (menuError) return <ErrorScreen error={menuError} />;
 
   const isLoading = submitting || addOrderItems.isPending;
@@ -223,7 +221,7 @@ export default function AddItemsScreen() {
           <View style={styles.cartHeader}>
             <IconButton icon="cart" size={18} iconColor="#2563eb" style={styles.cartHeaderIcon} />
             <Text variant="titleSmall" style={styles.cartHeaderTitle}>
-              {isNewOrder ? 'New Order' : 'Add Items'}
+              {isNewOrder ? t('orders.newOrder') : t('orders.addItems')}
             </Text>
             <View style={styles.cartBadge}>
               <Text style={styles.cartBadgeText}>{cartSummary.count}</Text>
@@ -293,7 +291,7 @@ export default function AddItemsScreen() {
             disabled={isLoading}
             compact
           >
-            {isNewOrder ? 'Create Order' : 'Add Items'}
+            {isNewOrder ? t('orders.createOrder') : t('orders.addItems')}
           </Button>
         </View>
       )}

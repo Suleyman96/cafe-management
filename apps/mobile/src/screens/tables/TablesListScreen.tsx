@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useEffect, useMemo, useRef } from 'react';
@@ -15,6 +16,7 @@ const ACTIVE_STATUSES = ['pending_approval', 'new', 'preparing', 'ready', 'serve
 
 export default function TablesListScreen() {
   const navigation = useNavigation<Nav>();
+  const { t } = useTranslation('staff');
   const insets = useSafeAreaInsets();
   const { data: tables, isLoading, error, refetch } = useTables();
   const { data: orders } = useOrders();
@@ -54,7 +56,7 @@ export default function TablesListScreen() {
     });
   }, [tables, orders, waiterCalls]);
 
-  if (isLoading) return <LoadingScreen message="Loading tables..." />;
+  if (isLoading) return <LoadingScreen message={t('tables.loadingTables')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
   return (
@@ -78,8 +80,8 @@ export default function TablesListScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="table-furniture"
-            title="No tables"
-            description="No tables have been set up yet"
+            title={t('tables.noTables')}
+            description={t('tables.noTablesDescription')}
           />
         }
       />

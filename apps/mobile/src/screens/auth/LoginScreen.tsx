@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Button } from 'react-native-paper';
@@ -13,6 +14,7 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { setStaff } = useAuthStore();
   const { showError } = useSnackbar();
+  const { t } = useTranslation('auth');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +23,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      showError('Please enter email and password');
+      showError(t('enterEmailAndPassword'));
       return;
     }
 
@@ -50,7 +52,7 @@ export default function LoginScreen() {
           // Schedule update is non-critical, silently ignore errors
         });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      const message = err instanceof Error ? err.message : t('loginFailed');
       showError(message);
     } finally {
       setLoading(false);
@@ -71,13 +73,13 @@ export default function LoginScreen() {
             gustri
           </Text>
           <Text variant="bodyLarge" style={styles.subtitle}>
-            Staff Portal
+            {t('staffPortal')}
           </Text>
         </View>
 
         <View style={styles.form}>
           <TextInput
-            label="Email"
+            label={t('emailAddress')}
             value={email}
             onChangeText={setEmail}
             mode="outlined"
@@ -89,7 +91,7 @@ export default function LoginScreen() {
           />
 
           <TextInput
-            label="Password"
+            label={t('password')}
             value={password}
             onChangeText={setPassword}
             mode="outlined"
@@ -114,7 +116,7 @@ export default function LoginScreen() {
             style={styles.button}
             contentStyle={styles.buttonContent}
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? t('signingIn') : t('signIn')}
           </Button>
         </View>
       </ScrollView>

@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, IconButton } from 'react-native-paper';
@@ -47,6 +48,8 @@ export const ScheduleCard = React.memo(function ScheduleCard({
 }: ScheduleCardProps) {
   const statusColor = STATUS_COLORS[schedule.status] || '#6b7280';
   const statusBg = STATUS_BG[schedule.status] || '#f3f4f6';
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   // planned_start/planned_end are stored as HH:MM strings, not ISO datetimes
   const formatTime = (timeStr: string) => timeStr?.slice(0, 5) || '';
 
@@ -58,7 +61,7 @@ export const ScheduleCard = React.memo(function ScheduleCard({
         <View style={styles.topRow}>
           <View style={styles.info}>
             <Text variant="titleSmall" style={styles.staffName}>
-              {schedule.staff?.full_name || 'Unknown'}
+              {schedule.staff?.full_name || tCommon('unknown')}
             </Text>
             {schedule.staff?.role && (
               <Text variant="bodySmall" style={styles.role}>
@@ -73,14 +76,14 @@ export const ScheduleCard = React.memo(function ScheduleCard({
           >
             <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
             {'  '}
-            {schedule.status.replace(/_/g, ' ')}
+            {t(`schedules.${schedule.status}`)}
           </Chip>
         </View>
 
         {/* Planned times */}
         <View style={styles.timeRow}>
           <Text variant="bodySmall" style={styles.timeLabel}>
-            Planned:
+            {t('schedules.planned')}:
           </Text>
           <Text variant="bodyMedium" style={styles.timeValue}>
             {formatTime(schedule.planned_start)} — {formatTime(schedule.planned_end)}
@@ -91,7 +94,7 @@ export const ScheduleCard = React.memo(function ScheduleCard({
         {(schedule.actual_start || schedule.actual_end) && (
           <View style={styles.timeRow}>
             <Text variant="bodySmall" style={styles.timeLabel}>
-              Actual:
+              {t('schedules.actual')}
             </Text>
             <Text variant="bodyMedium" style={styles.timeValue}>
               {schedule.actual_start ? formatTime(schedule.actual_start) : '—'} —{' '}
@@ -123,7 +126,7 @@ export const ScheduleCard = React.memo(function ScheduleCard({
                 style={{ backgroundColor: '#367B8B' }}
                 labelStyle={styles.actionLabel}
               >
-                Start Shift
+                {t('schedules.startShift')}
               </Button>
             )}
             {schedule.status === 'in_progress' && onMarkCompleted && (
@@ -134,7 +137,7 @@ export const ScheduleCard = React.memo(function ScheduleCard({
                 style={{ backgroundColor: '#10b981' }}
                 labelStyle={styles.actionLabel}
               >
-                Complete
+                {tCommon('complete')}
               </Button>
             )}
           </View>

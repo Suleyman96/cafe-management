@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
@@ -19,6 +20,8 @@ export const StatusActions = React.memo(function StatusActions({
   onNavigateAddItems,
   isLoading = false,
 }: StatusActionsProps) {
+  const { t } = useTranslation('staff');
+
   const canAdvance = hasItems;
 
   return (
@@ -27,7 +30,7 @@ export const StatusActions = React.memo(function StatusActions({
         <>
           {!canAdvance && (
             <Text variant="bodySmall" style={styles.warning}>
-              Add items before advancing this order
+              {t('orders.addItemsBefore')}
             </Text>
           )}
           <Button
@@ -38,10 +41,10 @@ export const StatusActions = React.memo(function StatusActions({
             icon="chef-hat"
             style={styles.primaryButton}
           >
-            Start Preparing
+            {t('orders.startPreparing')}
           </Button>
           <Button mode="outlined" onPress={onNavigateAddItems} icon="plus">
-            Add Items
+            {t('orders.addItems')}
           </Button>
         </>
       )}
@@ -50,7 +53,7 @@ export const StatusActions = React.memo(function StatusActions({
         <>
           {!canAdvance && (
             <Text variant="bodySmall" style={styles.warning}>
-              Add items before advancing this order
+              {t('orders.addItemsBefore')}
             </Text>
           )}
           <Button
@@ -61,10 +64,10 @@ export const StatusActions = React.memo(function StatusActions({
             icon="check-circle"
             style={[styles.primaryButton, { backgroundColor: '#10b981' }]}
           >
-            Mark Ready
+            {t('orders.markReady')}
           </Button>
           <Button mode="outlined" onPress={onNavigateAddItems} icon="plus">
-            Add Items
+            {t('orders.addItems')}
           </Button>
         </>
       )}
@@ -78,7 +81,7 @@ export const StatusActions = React.memo(function StatusActions({
           icon="silverware-fork-knife"
           style={[styles.primaryButton, { backgroundColor: '#06b6d4' }]}
         >
-          Mark Served
+          {t('orders.markServed')}
         </Button>
       )}
 
@@ -89,7 +92,7 @@ export const StatusActions = React.memo(function StatusActions({
           icon="credit-card"
           style={[styles.primaryButton, { backgroundColor: '#7c3aed' }]}
         >
-          Process Payment
+          {t('orders.processPayment')}
         </Button>
       )}
 
@@ -101,7 +104,7 @@ export const StatusActions = React.memo(function StatusActions({
           style={styles.cancelButton}
           icon="close-circle"
         >
-          Cancel Order
+          {t('orders.cancelOrder')}
         </Button>
       )}
     </View>

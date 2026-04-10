@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Card, Chip, FAB, SegmentedButtons, Text } from 'react-native-paper';
@@ -26,31 +27,39 @@ import type { Task } from '@/types';
 
 type TabView = 'today' | 'all' | 'my' | 'templates';
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'All' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' },
-];
-
-const PRIORITY_OPTIONS = [
-  { value: '', label: 'All' },
-  { value: 'low', label: 'Low' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'high', label: 'High' },
-  { value: 'urgent', label: 'Urgent' },
-];
-
 export default function TasksListScreen() {
   const staff = useAuthStore((s) => s.staff);
   const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
   const { showSuccess, showError } = useSnackbar();
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const [tab, setTab] = useState<TabView>('today');
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  const statusOptions = useMemo(
+    () => [
+      { value: '', label: tCommon('all') },
+      { value: 'pending', label: t('tasks.pending') },
+      { value: 'in_progress', label: t('tasks.inProgress') },
+      { value: 'completed', label: t('tasks.completed') },
+      { value: 'cancelled', label: t('tasks.cancelled') },
+    ],
+    [t, tCommon],
+  );
+
+  const priorityOptions = useMemo(
+    () => [
+      { value: '', label: tCommon('all') },
+      { value: 'low', label: t('tasks.low') },
+      { value: 'normal', label: t('tasks.normal') },
+      { value: 'high', label: t('tasks.high') },
+      { value: 'urgent', label: t('tasks.urgent') },
+    ],
+    [t, tCommon],
+  );
 
   const { data: todayTasks, isLoading: loadingToday, refetch: refetchToday } = useTodaysTasks();
   const {
@@ -134,38 +143,38 @@ export default function TasksListScreen() {
 
   const tabOptions = useMemo(() => {
     const base = [
-      { value: 'today', label: 'Today' },
-      { value: 'all', label: 'All' },
-      { value: 'my', label: 'My Tasks' },
+      { value: 'today', label: t('tasks.today') },
+      { value: 'all', label: tCommon('all') },
+      { value: 'my', label: t('tasks.myTasks') },
     ];
-    if (isAdmin) base.push({ value: 'templates', label: 'Templates' });
+    if (isAdmin) base.push({ value: 'templates', label: t('tasks.templates') });
     return base;
-  }, [isAdmin]);
+  }, [isAdmin, t, tCommon]);
 
   const handleMarkInProgress = async (id: string) => {
     try {
       await markInProgress.mutateAsync(id);
-      showSuccess('Task started');
+      showSuccess(t('tasks.taskStarted'));
     } catch (err: any) {
-      showError(err?.message || 'Failed to start task');
+      showError(err?.message || t('tasks.failedStart'));
     }
   };
 
   const handleMarkCompleted = async (id: string) => {
     try {
       await markCompleted.mutateAsync(id);
-      showSuccess('Task completed');
+      showSuccess(t('tasks.taskCompleted'));
     } catch (err: any) {
-      showError(err?.message || 'Failed to complete task');
+      showError(err?.message || t('tasks.failedComplete'));
     }
   };
 
   const handleMarkCancelled = async (id: string) => {
     try {
       await markCancelled.mutateAsync(id);
-      showSuccess('Task cancelled');
+      showSuccess(t('tasks.taskCancelled'));
     } catch (err: any) {
-      showError(err?.message || 'Failed to cancel task');
+      showError(err?.message || t('tasks.failedCancel'));
     }
   };
 
@@ -175,17 +184,17 @@ export default function TasksListScreen() {
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert('Delete Task', 'Are you sure you want to delete this task?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('tasks.deleteTask'), t('tasks.deleteTaskConfirm'), [
+      { text: tCommon('cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: tCommon('delete'),
         style: 'destructive',
         onPress: async () => {
           try {
             await deleteTask.mutateAsync(id);
-            showSuccess('Task deleted');
+            showSuccess(t('tasks.taskDeleted'));
           } catch (err: any) {
-            showError(err?.message || 'Failed to delete task');
+            showError(err?.message || t('tasks.failedDelete'));
           }
         },
       },
@@ -196,19 +205,19 @@ export default function TasksListScreen() {
     try {
       if (editingTask) {
         await updateTask.mutateAsync({ id: editingTask.id, updates: data });
-        showSuccess('Task updated');
+        showSuccess(t('tasks.taskUpdated'));
       } else {
         await createTask.mutateAsync(data);
-        showSuccess('Task created');
+        showSuccess(t('tasks.taskCreated'));
       }
       setShowTaskModal(false);
       setEditingTask(null);
     } catch (err: any) {
-      showError(err?.message || 'Failed to save task');
+      showError(err?.message || t('tasks.failedSave'));
     }
   };
 
-  if (isLoading) return <LoadingScreen message="Loading tasks..." />;
+  if (isLoading) return <LoadingScreen message={t('tasks.loadingTasks')} />;
 
   return (
     <View style={styles.container}>
@@ -224,7 +233,7 @@ export default function TasksListScreen() {
         <Card style={styles.summaryCard}>
           <Card.Content style={styles.summaryContent}>
             <Text variant="bodySmall" style={styles.muted}>
-              Open
+              {t('tasks.open')}
             </Text>
             <Text variant="titleLarge" style={styles.boldText}>
               {openTasksCount}
@@ -234,7 +243,7 @@ export default function TasksListScreen() {
         <Card style={[styles.summaryCard, overdueCount ? styles.overdueCard : null]}>
           <Card.Content style={styles.summaryContent}>
             <Text variant="bodySmall" style={styles.muted}>
-              Overdue
+              {t('tasks.overdue')}
             </Text>
             <Text variant="titleLarge" style={[styles.boldText, { color: '#ef4444' }]}>
               {overdueCount ?? 0}
@@ -244,7 +253,7 @@ export default function TasksListScreen() {
         <Card style={styles.summaryCard}>
           <Card.Content style={styles.summaryContent}>
             <Text variant="bodySmall" style={styles.muted}>
-              Done Today
+              {t('tasks.doneToday')}
             </Text>
             <Text variant="titleLarge" style={[styles.boldText, { color: '#10b981' }]}>
               {completedToday}
@@ -256,10 +265,10 @@ export default function TasksListScreen() {
       {(tab === 'all' || tab === 'my') && (
         <View style={styles.filterSection}>
           <Text variant="labelSmall" style={styles.filterLabel}>
-            Status
+            {tCommon('status')}
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
-            {STATUS_OPTIONS.map((opt) => (
+            {statusOptions.map((opt) => (
               <Chip
                 key={opt.value}
                 selected={statusFilter === opt.value}
@@ -272,10 +281,10 @@ export default function TasksListScreen() {
             ))}
           </ScrollView>
           <Text variant="labelSmall" style={[styles.filterLabel, { marginTop: 4 }]}>
-            Priority
+            {t('tasks.priority')}
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
-            {PRIORITY_OPTIONS.map((opt) => (
+            {priorityOptions.map((opt) => (
               <Chip
                 key={opt.value}
                 selected={priorityFilter === opt.value}
@@ -309,9 +318,9 @@ export default function TasksListScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="checkbox-blank-outline"
-            title={tab === 'templates' ? 'No recurring templates' : 'No tasks'}
+            title={tab === 'templates' ? t('tasks.noRecurringTemplates') : t('tasks.noTasks')}
             description={
-              tab === 'templates' ? 'Create a recurring task template' : 'All caught up!'
+              tab === 'templates' ? t('tasks.createRecurringHint') : t('tasks.allCaughtUp')
             }
           />
         }

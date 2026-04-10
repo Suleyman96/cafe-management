@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '@gustri/i18n';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, Text } from 'react-native-paper';
 import { TextInput } from '@/lib/paper-compat';
@@ -10,18 +11,20 @@ const POSITION_OPTIONS = [
 ];
 
 export function CurrencySection({ form, updateField }: SettingsSectionProps) {
+  const { t } = useTranslation('staff');
+
   return (
     <Card>
       <Card.Content>
         <View style={styles.headerRow}>
           <MaterialCommunityIcons name="currency-usd" size={20} color="#4b5563" />
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            Currency Settings
+            {t('cafeSettings.currencySettings')}
           </Text>
         </View>
         <View style={styles.row}>
           <TextInput
-            label="Currency Symbol"
+            label={t('cafeSettings.currencySymbol')}
             value={form.currency_symbol || ''}
             onChangeText={(v: string) => updateField('currency_symbol', v)}
             mode="outlined"
@@ -29,7 +32,7 @@ export function CurrencySection({ form, updateField }: SettingsSectionProps) {
             style={[styles.input, styles.flex1]}
           />
           <TextInput
-            label="Currency Code"
+            label={t('cafeSettings.currencyCode')}
             value={form.currency_code || ''}
             onChangeText={(v: string) => updateField('currency_code', v.toUpperCase())}
             mode="outlined"
@@ -39,7 +42,7 @@ export function CurrencySection({ form, updateField }: SettingsSectionProps) {
           />
         </View>
         <Text variant="labelMedium" style={styles.fieldLabel}>
-          Symbol Position
+          {t('cafeSettings.symbolPosition')}
         </Text>
         <View style={styles.chipRow}>
           {POSITION_OPTIONS.map((opt) => (
@@ -54,7 +57,7 @@ export function CurrencySection({ form, updateField }: SettingsSectionProps) {
           ))}
         </View>
         <Text variant="labelMedium" style={styles.fieldLabel}>
-          Decimal Places
+          {t('cafeSettings.decimalPlaces')}
         </Text>
         <View style={styles.chipRow}>
           {[0, 1, 2].map((n) => (

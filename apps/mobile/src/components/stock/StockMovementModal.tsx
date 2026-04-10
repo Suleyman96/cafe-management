@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Modal, Portal, Text } from 'react-native-paper';
@@ -34,6 +35,8 @@ export function StockMovementModal({
   initialType = 'in',
   item,
 }: StockMovementModalProps) {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const [type, setType] = useState<'in' | 'out' | 'adjustment'>(initialType);
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState('');
@@ -72,14 +75,15 @@ export function StockMovementModal({
     <Portal>
       <Modal visible={visible} onDismiss={handleDismiss} contentContainerStyle={styles.modal}>
         <Text variant="titleMedium" style={styles.title}>
-          Adjust Stock{item ? `: ${item.name}` : ''}
+          {t('stock.adjustStock')}
+          {item ? `: ${item.name}` : ''}
         </Text>
 
         {/* Current Stock */}
         <Card style={styles.currentCard}>
           <Card.Content style={styles.currentContent}>
             <Text variant="bodySmall" style={styles.currentLabel}>
-              Current Stock
+              {t('stock.currentStock')}
             </Text>
             <Text variant="headlineSmall" style={styles.currentValue}>
               {currentQty} {unit}
@@ -89,7 +93,7 @@ export function StockMovementModal({
 
         {/* Movement Type */}
         <Text variant="bodySmall" style={styles.label}>
-          Movement Type
+          {t('stock.movementType')}
         </Text>
         <View style={styles.typeRow}>
           {MOVEMENT_TYPES.map((mt) => (
@@ -108,7 +112,7 @@ export function StockMovementModal({
 
         {/* Quantity */}
         <TextInput
-          label={type === 'adjustment' ? 'New Quantity' : 'Quantity'}
+          label={type === 'adjustment' ? t('stock.newQuantity') : t('stock.quantityLabel')}
           value={quantity}
           onChangeText={setQuantity}
           mode="outlined"
@@ -119,7 +123,7 @@ export function StockMovementModal({
         />
         {isInvalid && (
           <Text variant="bodySmall" style={styles.errorText}>
-            Cannot remove more than available ({currentQty})
+            {t('stock.cannotRemoveMore')} ({currentQty})
           </Text>
         )}
 
@@ -128,7 +132,7 @@ export function StockMovementModal({
           <Card style={styles.previewCard}>
             <Card.Content style={styles.previewContent}>
               <Text variant="bodySmall" style={styles.previewLabel}>
-                New Stock Level
+                {t('stock.newStockLevel')}
               </Text>
               <Text variant="titleLarge" style={styles.previewValue}>
                 {newQty.toFixed(2)} {unit}
@@ -139,7 +143,7 @@ export function StockMovementModal({
 
         {/* Reason */}
         <TextInput
-          label="Reason (optional)"
+          label={t('stock.reasonOptional')}
           value={reason}
           onChangeText={setReason}
           mode="outlined"
@@ -148,14 +152,14 @@ export function StockMovementModal({
         />
 
         <View style={styles.actions}>
-          <Button onPress={handleDismiss}>Cancel</Button>
+          <Button onPress={handleDismiss}>{tCommon('cancel')}</Button>
           <Button
             mode="contained"
             onPress={handleSubmit}
             loading={loading}
             disabled={qty <= 0 || isInvalid}
           >
-            Confirm
+            {tCommon('confirm')}
           </Button>
         </View>
       </Modal>

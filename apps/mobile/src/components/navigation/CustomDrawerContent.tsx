@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { PlanName } from '@gustri/core';
 import { PLAN_ORDER } from '@gustri/core';
+import { useTranslation } from '@gustri/i18n';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { StyleSheet, View } from 'react-native';
@@ -12,10 +13,10 @@ import type { DrawerParamList } from '@/types';
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 interface DrawerSection {
-  label: string;
+  labelKey: string;
   items: {
     key: keyof DrawerParamList;
-    label: string;
+    labelKey: string;
     icon: IconName;
     roles: string[];
     minPlan?: PlanName;
@@ -24,19 +25,29 @@ interface DrawerSection {
 
 const DRAWER_SECTIONS: DrawerSection[] = [
   {
-    label: 'Main',
+    labelKey: 'mainSection',
     items: [
-      { key: 'Home', label: 'Home', icon: 'home', roles: ['waiter', 'admin', 'owner', 'kitchen'] },
-      { key: 'DeliveryTab', label: 'Delivery', icon: 'moped', roles: ['waiter', 'admin', 'owner'] },
+      {
+        key: 'Home',
+        labelKey: 'tables',
+        icon: 'home',
+        roles: ['waiter', 'admin', 'owner', 'kitchen'],
+      },
+      {
+        key: 'DeliveryTab',
+        labelKey: 'delivery',
+        icon: 'moped',
+        roles: ['waiter', 'admin', 'owner'],
+      },
       {
         key: 'TakeoutTab',
-        label: 'Takeout',
+        labelKey: 'takeout',
         icon: 'shopping',
         roles: ['waiter', 'admin', 'owner'],
       },
       {
         key: 'TasksTab',
-        label: 'Tasks',
+        labelKey: 'tasks',
         icon: 'checkbox-marked-outline',
         roles: ['waiter', 'admin', 'owner', 'kitchen'],
         minPlan: 'pro',
@@ -44,50 +55,55 @@ const DRAWER_SECTIONS: DrawerSection[] = [
     ],
   },
   {
-    label: 'Management',
+    labelKey: 'managementSection',
     items: [
       {
         key: 'FeedbackTab',
-        label: 'Feedback',
+        labelKey: 'feedback',
         icon: 'message-star',
         roles: ['waiter', 'admin', 'owner'],
       },
       {
         key: 'StockTab',
-        label: 'Stock',
+        labelKey: 'stock',
         icon: 'package-variant',
         roles: ['admin', 'owner'],
         minPlan: 'pro',
       },
       {
         key: 'WasteTab',
-        label: 'Waste',
+        labelKey: 'waste',
         icon: 'delete-variant',
         roles: ['waiter', 'admin', 'owner', 'kitchen'],
         minPlan: 'pro',
       },
-      { key: 'ExpensesTab', label: 'Expenses', icon: 'cash-register', roles: ['admin', 'owner'] },
+      {
+        key: 'ExpensesTab',
+        labelKey: 'expenses',
+        icon: 'cash-register',
+        roles: ['admin', 'owner'],
+      },
     ],
   },
   {
-    label: 'Admin',
+    labelKey: 'adminSection',
     items: [
       {
         key: 'StaffManagementTab',
-        label: 'Staff',
+        labelKey: 'staff',
         icon: 'account-group',
         roles: ['admin', 'owner'],
       },
-      { key: 'MenuManagementTab', label: 'Menu', icon: 'food', roles: ['admin', 'owner'] },
+      { key: 'MenuManagementTab', labelKey: 'menu', icon: 'food', roles: ['admin', 'owner'] },
       {
         key: 'SchedulesTab',
-        label: 'Schedules',
+        labelKey: 'schedules',
         icon: 'calendar-clock',
         roles: ['admin', 'owner'],
         minPlan: 'pro',
       },
-      { key: 'ReportsTab', label: 'Reports', icon: 'chart-bar', roles: ['owner'] },
-      { key: 'CafeSettingsTab', label: 'Cafe Settings', icon: 'cog', roles: ['admin', 'owner'] },
+      { key: 'ReportsTab', labelKey: 'reports', icon: 'chart-bar', roles: ['owner'] },
+      { key: 'CafeSettingsTab', labelKey: 'cafeSettings', icon: 'cog', roles: ['admin', 'owner'] },
     ],
   },
 ];
@@ -98,6 +114,8 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const role = staff?.role || 'waiter';
   const currentRoute = props.state.routes[props.state.index]?.name;
   const myOpenCount = useMyOpenTasksCount(staff?.id);
+  const { t: tNav } = useTranslation('nav');
+  const { t: tRoles } = useTranslation('roles');
 
   return (
     <DrawerContentScrollView {...props} style={styles.container}>
@@ -106,10 +124,10 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         <MaterialCommunityIcons name="account-circle" size={48} color="#6366f1" />
         <View style={styles.headerInfo}>
           <Text variant="titleMedium" style={styles.headerName}>
-            {staff?.full_name || 'Staff'}
+            {staff?.full_name || tRoles('staff')}
           </Text>
           <Text variant="bodySmall" style={styles.headerRole}>
-            {role.charAt(0).toUpperCase() + role.slice(1)}
+            {tRoles(role)}
           </Text>
         </View>
       </View>
@@ -124,16 +142,16 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         if (visibleItems.length === 0) return null;
 
         return (
-          <View key={section.label}>
+          <View key={section.labelKey}>
             <Text variant="labelSmall" style={styles.sectionLabel}>
-              {section.label.toUpperCase()}
+              {tNav(section.labelKey).toUpperCase()}
             </Text>
             {visibleItems.map((item) => (
               <DrawerItem
                 key={item.key}
                 label={({ color }) => (
                   <View style={styles.drawerLabel}>
-                    <Text style={[styles.drawerLabelText, { color }]}>{item.label}</Text>
+                    <Text style={[styles.drawerLabelText, { color }]}>{tNav(item.labelKey)}</Text>
                     {item.key === 'TasksTab' && myOpenCount > 0 && (
                       <Badge size={20} style={styles.taskBadge}>
                         {myOpenCount}

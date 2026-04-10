@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import { AlertTriangle, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
@@ -21,10 +22,13 @@ export function ConfirmDialog({
   onConfirm,
   title,
   message,
-  confirmLabel = 'Delete',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   loading = false,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation('common');
+  const resolvedConfirmLabel = confirmLabel ?? t('delete');
+  const resolvedCancelLabel = cancelLabel ?? t('cancel');
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -72,10 +76,10 @@ export function ConfirmDialog({
 
         <div className="flex gap-3 justify-end pt-2">
           <Button ref={cancelRef} variant="outline" size="sm" onClick={onClose} disabled={loading}>
-            {cancelLabel}
+            {resolvedCancelLabel}
           </Button>
           <Button variant="destructive" size="sm" onClick={onConfirm} disabled={loading}>
-            {loading ? 'Deleting...' : confirmLabel}
+            {loading ? t('deleting') : resolvedConfirmLabel}
           </Button>
         </div>
       </div>

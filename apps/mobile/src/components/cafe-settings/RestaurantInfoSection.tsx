@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '@gustri/i18n';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, Text } from 'react-native-paper';
 import { TextInput } from '@/lib/paper-compat';
@@ -12,17 +13,19 @@ const LANGUAGE_OPTIONS = [
 ];
 
 export function RestaurantInfoSection({ form, updateField }: SettingsSectionProps) {
+  const { t } = useTranslation('staff');
+
   return (
     <Card>
       <Card.Content>
         <View style={styles.headerRow}>
           <MaterialCommunityIcons name="store" size={20} color="#4b5563" />
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            Restaurant Information
+            {t('cafeSettings.restaurantInformation')}
           </Text>
         </View>
         <TextInput
-          label="Restaurant Name"
+          label={t('cafeSettings.restaurantName')}
           value={form.restaurant_name || ''}
           onChangeText={(v: string) => updateField('restaurant_name', v)}
           mode="outlined"
@@ -30,7 +33,7 @@ export function RestaurantInfoSection({ form, updateField }: SettingsSectionProp
           style={styles.input}
         />
         <TextInput
-          label="Restaurant Address"
+          label={t('cafeSettings.restaurantAddress')}
           value={form.restaurant_address || ''}
           onChangeText={(v: string) => updateField('restaurant_address', v || null)}
           mode="outlined"
@@ -39,10 +42,10 @@ export function RestaurantInfoSection({ form, updateField }: SettingsSectionProp
           style={styles.input}
         />
         <Text variant="labelMedium" style={styles.fieldLabel}>
-          Default Menu Language
+          {t('cafeSettings.defaultMenuLanguage')}
         </Text>
         <Text variant="bodySmall" style={styles.helperText}>
-          Language shown to customers when they first scan the QR code
+          {t('cafeSettings.languageHint')}
         </Text>
         <View style={styles.chipRow}>
           {LANGUAGE_OPTIONS.map((lang) => (

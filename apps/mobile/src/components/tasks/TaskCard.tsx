@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React from 'react';
+import { useTranslation } from '@gustri/i18n';
+import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, IconButton } from 'react-native-paper';
 import { getLocalDateString } from '@/lib/date-utils';
@@ -18,12 +19,6 @@ const STATUS_CONFIG: Record<string, { icon: string; color: string }> = {
   in_progress: { icon: 'play-circle', color: '#367B8B' },
   completed: { icon: 'check-circle', color: '#10b981' },
   cancelled: { icon: 'close-circle', color: '#9ca3af' },
-};
-
-const RECURRENCE_LABELS: Record<string, string> = {
-  daily: 'Daily',
-  weekly: 'Weekly',
-  monthly: 'Monthly',
 };
 
 const WEEKDAY_NAMES = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -56,6 +51,17 @@ export const TaskCard = React.memo(function TaskCard({
   onEdit,
   onDelete,
 }: TaskCardProps) {
+  const { t } = useTranslation('staff');
+
+  const RECURRENCE_LABELS: Record<string, string> = useMemo(
+    () => ({
+      daily: t('tasks.daily'),
+      weekly: t('tasks.weekly'),
+      monthly: t('tasks.monthly'),
+    }),
+    [t],
+  );
+
   const priority = task.priority || 'normal';
   const priorityStyle = PRIORITY_COLORS[priority] || PRIORITY_COLORS.normal;
   const statusConfig = STATUS_CONFIG[task.status] || STATUS_CONFIG.pending;

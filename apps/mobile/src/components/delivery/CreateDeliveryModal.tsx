@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { OrdersInsert } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
 import React, { useEffect, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Dialog, Portal } from 'react-native-paper';
@@ -19,6 +20,8 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
   onDismiss,
   onSuccess,
 }: CreateDeliveryModalProps) {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const createOrder = useCreateOrder();
   const { data: settings } = useCafeSettings();
   const { showSuccess, showError } = useSnackbar();
@@ -87,7 +90,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
           <View style={styles.titleRow}>
             <MaterialCommunityIcons name="truck-delivery" size={20} color="#7c3aed" />
             <Text variant="titleMedium" style={styles.titleText}>
-              New Delivery Order
+              {t('delivery.newDeliveryOrder')}
             </Text>
           </View>
         </Dialog.Title>
@@ -95,14 +98,14 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
           <ScrollView>
             <View style={styles.form}>
               <TextInput
-                label="Customer Name *"
+                label={t('delivery.customerName')}
                 value={customerName}
                 onChangeText={setCustomerName}
                 mode="outlined"
                 left={<TextInput.Icon icon="account" />}
               />
               <TextInput
-                label="Phone Number *"
+                label={t('delivery.phoneNumber')}
                 value={customerPhone}
                 onChangeText={setCustomerPhone}
                 mode="outlined"
@@ -111,7 +114,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
               />
               <View>
                 <TextInput
-                  label="Delivery Address *"
+                  label={t('delivery.deliveryAddress')}
                   value={deliveryAddress}
                   onChangeText={setDeliveryAddress}
                   mode="outlined"
@@ -123,13 +126,13 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
                   <TouchableOpacity onPress={openInMaps} style={styles.mapsLink}>
                     <MaterialCommunityIcons name="google-maps" size={14} color="#7c3aed" />
                     <Text variant="bodySmall" style={styles.mapsText}>
-                      View on Maps
+                      {t('delivery.viewOnMaps')}
                     </Text>
                   </TouchableOpacity>
                 )}
               </View>
               <TextInput
-                label="Delivery Notes"
+                label={t('delivery.deliveryNotes')}
                 value={deliveryNotes}
                 onChangeText={setDeliveryNotes}
                 mode="outlined"
@@ -138,7 +141,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
                 left={<TextInput.Icon icon="note-text" />}
               />
               <TextInput
-                label="Delivery Fee"
+                label={tCommon('deliveryFee')}
                 value={deliveryFee}
                 onChangeText={setDeliveryFee}
                 mode="outlined"
@@ -147,14 +150,14 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
               />
               {settings?.delivery_fee_default != null ? (
                 <Text variant="bodySmall" style={styles.defaultFee}>
-                  Default: {settings.currency_symbol || '$'}
+                  {t('delivery.defaultLabel')} {settings.currency_symbol || '$'}
                   {settings.delivery_fee_default.toFixed(2)}
                 </Text>
               ) : null}
               <View style={styles.hint}>
                 <MaterialCommunityIcons name="information" size={16} color="#7c3aed" />
                 <Text variant="bodySmall" style={styles.hintText}>
-                  Order will be created without items. Add items after creation.
+                  {t('delivery.orderWithoutItems')}
                 </Text>
               </View>
             </View>
@@ -162,7 +165,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
         </Dialog.ScrollArea>
         <Dialog.Actions>
           <Button onPress={handleDismiss} disabled={loading}>
-            Cancel
+            {tCommon('cancel')}
           </Button>
           <Button
             mode="contained"
@@ -171,7 +174,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
             loading={loading}
             style={styles.createBtn}
           >
-            Create Order
+            {t('delivery.createOrder')}
           </Button>
         </Dialog.Actions>
       </Dialog>

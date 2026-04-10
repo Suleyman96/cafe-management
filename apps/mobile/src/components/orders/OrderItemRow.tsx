@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
@@ -28,6 +29,8 @@ export const OrderItemRow = React.memo(function OrderItemRow({
   showActions = false,
   onMarkReady,
 }: OrderItemRowProps) {
+  const { t } = useTranslation('staff');
+
   const name = item.menu_item?.name || item.menu_item?.name_en || 'Unknown Item';
 
   return (
@@ -39,7 +42,7 @@ export const OrderItemRow = React.memo(function OrderItemRow({
           </Text>
           {item.notes && (
             <Text variant="bodySmall" style={styles.notes}>
-              Note: {item.notes}
+              {t('orders.note')} {item.notes}
             </Text>
           )}
         </View>
@@ -61,7 +64,7 @@ export const OrderItemRow = React.memo(function OrderItemRow({
           onPress={() => onMarkReady(item.id)}
           style={styles.actionButton}
         >
-          Mark Ready
+          {t('orders.markReady')}
         </Button>
       )}
     </View>
