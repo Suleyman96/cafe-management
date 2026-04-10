@@ -40,11 +40,7 @@ export function GustriLogo({
  * Logomark: full circle bowl + diagonal ear + separate half-circle descender.
  * No connecting stem — circle and half-circle are visually separated.
  */
-export function GustriIcon({
-  size = 32,
-  className = '',
-  variant = 'color',
-}: LogoProps) {
+export function GustriIcon({ size = 32, className = '', variant = 'color' }: LogoProps) {
   const hasBg = variant === 'color';
   const bg = BRAND;
   const mark = variant === 'dark' ? '#FFFFFF' : variant === 'light' ? '#1A1A1A' : '#FFFFFF';
