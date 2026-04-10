@@ -1,14 +1,6 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Rounded square background -->
-  <rect x="21" y="21" width="470" height="470" rx="128" fill="#367B8B"/>
-
-  <!-- Modern lowercase "g" letterform -->
-  <path
-    d="M 320 107 A 107 107 0 1 0 320 278 L 320 384 Q 320 448 235 448 Q 149 448 149 384"
-    stroke="white"
-    stroke-width="43"
-    fill="none"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  />
+  <rect width="512" height="512" rx="112" fill="#367B8B"/>
+  <circle cx="248" cy="172" r="95" stroke="white" stroke-width="50" fill="none"/>
+  <line x1="340" y1="148" x2="368" y2="114" stroke="white" stroke-width="50" stroke-linecap="round"/>
+  <path d="M 343 345 A 95 95 0 0 1 153 345" stroke="white" stroke-width="50" fill="none" stroke-linecap="round"/>
 </svg>

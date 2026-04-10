@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 256" fill="none">
+  <g transform="translate(0,0) scale(0.5)">
+    <rect width="512" height="512" rx="112" fill="#367B8B"/>
+    <circle cx="248" cy="172" r="95" stroke="white" stroke-width="50" fill="none"/>
+    <line x1="340" y1="148" x2="368" y2="114" stroke="white" stroke-width="50" stroke-linecap="round"/>
+    <path d="M 343 345 A 95 95 0 0 1 153 345" stroke="white" stroke-width="50" fill="none" stroke-linecap="round"/>
+  </g>
+  <text
+    x="296"
+    y="148"
+    font-family="'Inter', 'SF Pro Display', -apple-system, 'Segoe UI', 'Helvetica Neue', sans-serif"
+    font-size="120"
+    font-weight="700"
+    fill="#367B8B"
+    letter-spacing="-3"
+    dominant-baseline="central"
+  >gustri</text>
+</svg>

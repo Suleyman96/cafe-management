@@ -35,21 +35,16 @@ export function Header() {
             <svg
               width="32"
               height="32"
-              viewBox="0 0 48 48"
+              viewBox="0 0 512 512"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <rect x="2" y="2" width="44" height="44" rx="12" fill="#367B8B" />
-              <path
-                d="M 30 10 A 10 10 0 1 0 30 26 L 30 36 Q 30 42 22 42 Q 14 42 14 36"
-                stroke="white"
-                strokeWidth="4"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+              <rect width="512" height="512" rx="112" fill="#367B8B" />
+              <circle cx="248" cy="172" r="95" stroke="white" strokeWidth="50" fill="none" />
+              <line x1="340" y1="148" x2="368" y2="114" stroke="white" strokeWidth="50" strokeLinecap="round" />
+              <path d="M 343 345 A 95 95 0 0 1 153 345" stroke="white" strokeWidth="50" fill="none" strokeLinecap="round" />
             </svg>
-            <span className="text-xl font-bold tracking-wide text-gray-900">{SITE_NAME}</span>
+            <span className="text-xl font-bold tracking-tight text-gray-900">{SITE_NAME}</span>
           </Link>
 
           {/* Desktop nav */}

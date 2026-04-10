@@ -1,40 +1,88 @@
-interface GustriLogoProps {
+interface LogoProps {
   size?: number;
   className?: string;
+  variant?: 'color' | 'dark' | 'light';
+}
+
+interface LogoFullProps extends LogoProps {
   showText?: boolean;
 }
 
-export function GustriLogo({ size = 40, className = '', showText = true }: GustriLogoProps) {
+const BRAND = '#367B8B';
+
+/**
+ * Full lockup: logomark + "gustri" wordmark.
+ */
+export function GustriLogo({
+  size = 40,
+  className = '',
+  showText = true,
+  variant = 'color',
+}: LogoFullProps) {
+  const textColor = variant === 'dark' ? '#FFFFFF' : variant === 'light' ? '#1A1A1A' : BRAND;
+
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
-      <GustriIcon size={size} />
-      {showText && <span className="text-xl font-bold tracking-wide text-[#367B8B]">gustri</span>}
+      <GustriIcon size={size} variant={variant} />
+      {showText && (
+        <span
+          className="font-bold tracking-tight"
+          style={{ fontSize: size * 0.55, color: textColor, letterSpacing: '-0.02em' }}
+        >
+          gustri
+        </span>
+      )}
     </div>
   );
 }
 
-// Icon-only version for favicons and compact spaces
-export function GustriIcon({ size = 32, className = '' }: { size?: number; className?: string }) {
+/**
+ * Logomark: full circle bowl + diagonal ear + separate half-circle descender.
+ * No connecting stem — circle and half-circle are visually separated.
+ */
+export function GustriIcon({
+  size = 32,
+  className = '',
+  variant = 'color',
+}: LogoProps) {
+  const hasBg = variant === 'color';
+  const bg = BRAND;
+  const mark = variant === 'dark' ? '#FFFFFF' : variant === 'light' ? '#1A1A1A' : '#FFFFFF';
+
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 48 48"
+      viewBox="0 0 512 512"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      role="img"
+      aria-label="Gustri logo"
     >
-      {/* Rounded square background */}
-      <rect x="2" y="2" width="44" height="44" rx="12" fill="#367B8B" />
+      {hasBg && <rect width="512" height="512" rx="112" fill={bg} />}
 
-      {/* Modern lowercase "g" letterform */}
+      {/* Bowl: full circle */}
+      <circle cx="248" cy="172" r="95" stroke={mark} strokeWidth="50" fill="none" />
+
+      {/* Ear: diagonal from top-right of circle */}
+      <line
+        x1="340"
+        y1="148"
+        x2="368"
+        y2="114"
+        stroke={mark}
+        strokeWidth="50"
+        strokeLinecap="round"
+      />
+
+      {/* Descender: separate half-circle, no stem */}
       <path
-        d="M 30 10 A 10 10 0 1 0 30 26 L 30 36 Q 30 42 22 42 Q 14 42 14 36"
-        stroke="white"
-        strokeWidth="4"
+        d="M 343 345 A 95 95 0 0 1 153 345"
+        stroke={mark}
+        strokeWidth="50"
         fill="none"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );
