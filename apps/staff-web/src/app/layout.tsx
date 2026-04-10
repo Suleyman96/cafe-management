@@ -4,13 +4,13 @@ import { ServiceWorkerRegistration } from '@/components/pwa/service-worker-regis
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  title: 'Gustri | Staff Portal',
-  description: 'Restaurant management system by Gustri',
+  title: 'gustri | Staff Portal',
+  description: 'Restaurant management system by gustri',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Gustri',
+    title: 'gustri',
   },
   formatDetection: {
     telephone: false,
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#3B82F6',
+  themeColor: '#367B8B',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

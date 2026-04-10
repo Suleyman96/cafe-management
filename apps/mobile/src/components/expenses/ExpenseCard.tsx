@@ -5,7 +5,7 @@ import { Text } from '@/lib/paper-compat';
 
 const METHOD_COLORS: Record<string, string> = {
   cash: '#10b981',
-  card: '#3b82f6',
+  card: '#367B8B',
   digital: '#8b5cf6',
   bank_transfer: '#f59e0b',
 };

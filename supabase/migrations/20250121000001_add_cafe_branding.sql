@@ -6,7 +6,7 @@ ALTER TABLE cafe_settings
 -- Visual branding
 ADD COLUMN IF NOT EXISTS cafe_logo_url TEXT,
 ADD COLUMN IF NOT EXISTS hero_image_url TEXT,
-ADD COLUMN IF NOT EXISTS brand_primary_color VARCHAR(7) DEFAULT '#3B82F6',
+ADD COLUMN IF NOT EXISTS brand_primary_color VARCHAR(7) DEFAULT '#367B8B',
 ADD COLUMN IF NOT EXISTS brand_secondary_color VARCHAR(7) DEFAULT '#1E40AF',
 -- Welcome screen customization
 ADD COLUMN IF NOT EXISTS welcome_heading VARCHAR(255),

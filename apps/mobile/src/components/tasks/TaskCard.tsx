@@ -15,7 +15,7 @@ const PRIORITY_COLORS: Record<string, { bg: string; text: string }> = {
 
 const STATUS_CONFIG: Record<string, { icon: string; color: string }> = {
   pending: { icon: 'circle-outline', color: '#9ca3af' },
-  in_progress: { icon: 'play-circle', color: '#3b82f6' },
+  in_progress: { icon: 'play-circle', color: '#367B8B' },
   completed: { icon: 'check-circle', color: '#10b981' },
   cancelled: { icon: 'close-circle', color: '#9ca3af' },
 };
@@ -138,8 +138,8 @@ export const TaskCard = React.memo(function TaskCard({
 
           {task.is_recurring && (
             <View style={styles.metaItem}>
-              <MaterialCommunityIcons name="repeat" size={12} color="#3b82f6" />
-              <Text variant="bodySmall" style={[styles.metaText, { color: '#3b82f6' }]}>
+              <MaterialCommunityIcons name="repeat" size={12} color="#367B8B" />
+              <Text variant="bodySmall" style={[styles.metaText, { color: '#367B8B' }]}>
                 {RECURRENCE_LABELS[task.recurrence_pattern || ''] || task.recurrence_pattern}
                 {task.recurrence_pattern === 'weekly' && task.recurrence_days?.length
                   ? ` (${getWeekdayLabels(task.recurrence_days)})`
@@ -159,7 +159,7 @@ export const TaskCard = React.memo(function TaskCard({
             <IconButton
               icon="play"
               size={18}
-              iconColor="#3b82f6"
+              iconColor="#367B8B"
               onPress={() => onMarkInProgress(task.id)}
               style={styles.actionBtn}
             />

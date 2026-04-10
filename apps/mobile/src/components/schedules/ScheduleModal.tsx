@@ -8,7 +8,7 @@ import { TextInput } from '@/lib/paper-compat';
 const STATUSES = ['scheduled', 'in_progress', 'completed', 'missed'] as const;
 const STATUS_COLORS: Record<string, string> = {
   scheduled: '#6b7280',
-  in_progress: '#3b82f6',
+  in_progress: '#367B8B',
   completed: '#10b981',
   missed: '#ef4444',
 };
@@ -330,7 +330,7 @@ export function ScheduleModal({
                         onPress={() => toggleRepeatDay(day.value)}
                         style={
                           repeatDays.includes(day.value)
-                            ? { backgroundColor: '#3b82f6' }
+                            ? { backgroundColor: '#367B8B' }
                             : undefined
                         }
                         textStyle={

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Gustri",
+    "name": "gustri",
     "slug": "gustri",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -22,7 +22,6 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.gustri.app",
-      "versionCode": 1,
       "permissions": ["NOTIFICATIONS", "VIBRATE"]
     },
     "web": {
@@ -35,7 +34,7 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#ffffff",
-          "sounds": ["./assets/sounds/new-order.wav"]
+          "sounds": ["./assets/sounds/new_order.wav"]
         }
       ],
       "expo-localization",

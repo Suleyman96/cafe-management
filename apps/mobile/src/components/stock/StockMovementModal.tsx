@@ -6,7 +6,7 @@ import { TextInput } from '@/lib/paper-compat';
 const MOVEMENT_TYPES = [
   { value: 'in', label: '+ Add', color: '#10b981', bg: '#d1fae5' },
   { value: 'out', label: '- Remove', color: '#ef4444', bg: '#fee2e2' },
-  { value: 'adjustment', label: 'Set To', color: '#3b82f6', bg: '#dbeafe' },
+  { value: 'adjustment', label: 'Set To', color: '#367B8B', bg: '#dbeafe' },
 ] as const;
 
 interface StockMovementModalProps {
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   currentValue: { fontWeight: '700', color: '#1e293b' },
   previewCard: { backgroundColor: '#eff6ff', marginBottom: 8 },
   previewContent: { alignItems: 'center' },
-  previewLabel: { color: '#3b82f6' },
+  previewLabel: { color: '#367B8B' },
   previewValue: { fontWeight: '700', color: '#1e40af' },
   errorText: { color: '#ef4444', marginBottom: 8, marginTop: -4 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 12 },

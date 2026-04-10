@@ -1,21 +1,6 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background -->
-  <rect width="512" height="512" rx="96" fill="#3B82F6"/>
-
-  <!-- Cup body -->
-  <path d="M96 176C96 164.954 104.954 156 116 156H340C351.046 156 360 164.954 360 176V364C360 408.183 324.183 444 280 444H176C131.817 444 96 408.183 96 364V176Z" fill="white"/>
-
-  <!-- Cup handle -->
-  <path d="M360 196H380C413.137 196 440 222.863 440 256C440 289.137 413.137 316 380 316H360" stroke="white" stroke-width="32" stroke-linecap="round"/>
-
-  <!-- Steam lines -->
-  <path d="M156 116C156 116 168 92 156 68" stroke="white" stroke-width="20" stroke-linecap="round"/>
-  <path d="M228 116C228 116 244 80 228 48" stroke="white" stroke-width="20" stroke-linecap="round"/>
-  <path d="M300 116C300 116 312 92 300 68" stroke="white" stroke-width="20" stroke-linecap="round"/>
-
-  <!-- Dashboard grid inside cup -->
-  <rect x="132" y="212" width="72" height="72" rx="8" fill="#3B82F6" opacity="0.9"/>
-  <rect x="252" y="212" width="72" height="72" rx="8" fill="#3B82F6" opacity="0.6"/>
-  <rect x="132" y="324" width="72" height="72" rx="8" fill="#3B82F6" opacity="0.6"/>
-  <rect x="252" y="324" width="72" height="72" rx="8" fill="#3B82F6" opacity="0.3"/>
+  <rect width="512" height="512" rx="112" fill="#367B8B"/>
+  <circle cx="248" cy="172" r="95" stroke="white" stroke-width="50" fill="none"/>
+  <line x1="340" y1="148" x2="368" y2="114" stroke="white" stroke-width="50" stroke-linecap="round"/>
+  <path d="M 343 345 A 95 95 0 0 1 153 345" stroke="white" stroke-width="50" fill="none" stroke-linecap="round"/>
 </svg>

@@ -68,7 +68,7 @@ export default function LoginScreen() {
       >
         <View style={styles.header}>
           <Text variant="headlineLarge" style={styles.title}>
-            Gustri
+            gustri
           </Text>
           <Text variant="bodyLarge" style={styles.subtitle}>
             Staff Portal

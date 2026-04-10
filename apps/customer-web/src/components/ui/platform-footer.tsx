@@ -15,7 +15,7 @@ export function PlatformFooter({ className = '' }: PlatformFooterProps) {
       <p className="text-xs text-muted-foreground/60">
         Powered by{' '}
         <span className="font-medium" style={{ color: secondaryColor }}>
-          Gustri
+          gustri
         </span>
       </p>
     </div>

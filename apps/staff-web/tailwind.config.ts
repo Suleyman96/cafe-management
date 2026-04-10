@@ -10,6 +10,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Brand teal palette (overrides default blue)
+        blue: {
+          50: '#f0fafb',
+          100: '#d4eff4',
+          200: '#aee0ea',
+          300: '#7acad9',
+          400: '#4aadc1',
+          500: '#367B8B',
+          600: '#2d6878',
+          700: '#285766',
+          800: '#274856',
+          900: '#243d49',
+          950: '#132730',
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

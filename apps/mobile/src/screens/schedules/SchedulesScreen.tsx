@@ -48,7 +48,7 @@ function formatTime(time: string) {
 
 const STATUS_DOT_COLOR: Record<string, string> = {
   scheduled: '#9ca3af',
-  in_progress: '#3b82f6',
+  in_progress: '#367B8B',
   completed: '#10b981',
   missed: '#ef4444',
 };
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
   summaryCard: { flex: 1 },
   summaryTotal: { fontWeight: '700', color: '#1e293b' },
-  summaryInProgress: { fontWeight: '700', color: '#3b82f6' },
+  summaryInProgress: { fontWeight: '700', color: '#367B8B' },
   summaryCompleted: { fontWeight: '700', color: '#10b981' },
   muted: { color: '#6b7280' },
   // Day picker
@@ -472,12 +472,12 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
     minWidth: 52,
   },
-  dayBtnSelected: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
+  dayBtnSelected: { backgroundColor: '#367B8B', borderColor: '#367B8B' },
   dayBtnToday: { borderColor: '#93c5fd', backgroundColor: '#eff6ff' },
   dayWeekday: { fontSize: 11, color: '#6b7280', fontWeight: '500' },
   dayNumber: { fontWeight: '700', color: '#1e293b' },
   dayTextSelected: { color: '#fff' },
-  dayDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#3b82f6', marginTop: 3 },
+  dayDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#367B8B', marginTop: 3 },
   dayDotSelected: { backgroundColor: '#fff' },
   countText: { color: '#9ca3af', paddingHorizontal: 16, marginBottom: 4 },
   list: { paddingTop: 4, paddingBottom: 80 },
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   weeklyDayLabel: { fontWeight: '600', color: '#374151' },
-  weeklyDayLabelToday: { color: '#3b82f6' },
+  weeklyDayLabelToday: { color: '#367B8B' },
   countChip: { backgroundColor: '#f3f4f6' },
   countChipText: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
   noShifts: { color: '#d1d5db', fontStyle: 'italic' },

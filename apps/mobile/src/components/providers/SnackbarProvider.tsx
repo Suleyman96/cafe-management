@@ -15,7 +15,7 @@ export const SnackbarContext = createContext<SnackbarContextValue>({
 const TYPE_COLORS: Record<SnackbarType, string> = {
   success: '#10b981',
   error: '#ef4444',
-  info: '#3b82f6',
+  info: '#367B8B',
 };
 
 export function SnackbarProvider({ children }: { children: React.ReactNode }) {

@@ -5,7 +5,7 @@ import { Text } from '@/lib/paper-compat';
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: '#6b7280',
-  in_progress: '#3b82f6',
+  in_progress: '#367B8B',
   completed: '#10b981',
   missed: '#ef4444',
 };
@@ -120,7 +120,7 @@ export const ScheduleCard = React.memo(function ScheduleCard({
                 compact
                 mode="contained"
                 onPress={() => onMarkInProgress(schedule.id)}
-                style={{ backgroundColor: '#3b82f6' }}
+                style={{ backgroundColor: '#367B8B' }}
                 labelStyle={styles.actionLabel}
               >
                 Start Shift

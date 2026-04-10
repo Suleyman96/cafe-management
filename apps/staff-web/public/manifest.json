@@ -1,11 +1,11 @@
 {
-  "name": "Gustri Staff Portal",
-  "short_name": "Gustri",
+  "name": "gustri Staff Portal",
+  "short_name": "gustri",
   "description": "Restaurant management system for staff",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#3B82F6",
+  "theme_color": "#367B8B",
   "orientation": "any",
   "categories": ["business", "productivity"],
   "shortcuts": [

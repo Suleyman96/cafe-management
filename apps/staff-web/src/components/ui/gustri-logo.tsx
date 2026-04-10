@@ -1,87 +1,85 @@
-interface GustriLogoProps {
+interface LogoProps {
   size?: number;
   className?: string;
+  variant?: 'color' | 'dark' | 'light';
+}
+
+interface LogoFullProps extends LogoProps {
   showText?: boolean;
 }
 
-export function GustriLogo({ size = 40, className = '', showText = true }: GustriLogoProps) {
+const BRAND = '#367B8B';
+
+/**
+ * Full lockup: logomark + "gustri" wordmark.
+ */
+export function GustriLogo({
+  size = 40,
+  className = '',
+  showText = true,
+  variant = 'color',
+}: LogoFullProps) {
+  const textColor = variant === 'dark' ? '#FFFFFF' : variant === 'light' ? '#1A1A1A' : BRAND;
+
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      {/* Icon - Coffee cup with dashboard grid */}
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 48 48"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Cup body */}
-        <path
-          d="M8 16C8 14.8954 8.89543 14 10 14H32C33.1046 14 34 14.8954 34 16V34C34 38.4183 30.4183 42 26 42H16C11.5817 42 8 38.4183 8 34V16Z"
-          fill="#3B82F6"
-        />
-
-        {/* Cup handle */}
-        <path
-          d="M34 18H36C39.3137 18 42 20.6863 42 24C42 27.3137 39.3137 30 36 30H34"
-          stroke="#3B82F6"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-
-        {/* Steam lines */}
-        <path d="M14 10C14 10 15 8 14 6" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
-        <path d="M21 10C21 10 22 7 21 4" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
-        <path d="M28 10C28 10 29 8 28 6" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
-
-        {/* Dashboard grid inside cup */}
-        <rect x="12" y="20" width="7" height="7" rx="1" fill="white" opacity="0.9" />
-        <rect x="23" y="20" width="7" height="7" rx="1" fill="white" opacity="0.7" />
-        <rect x="12" y="31" width="7" height="7" rx="1" fill="white" opacity="0.7" />
-        <rect x="23" y="31" width="7" height="7" rx="1" fill="white" opacity="0.5" />
-      </svg>
-
-      {/* Text */}
-      {showText && <span className="text-xl font-bold text-blue-600">Gustri</span>}
+    <div className={`flex items-center gap-2.5 ${className}`}>
+      <GustriIcon size={size} variant={variant} />
+      {showText && (
+        <span
+          className="font-bold tracking-tight"
+          style={{ fontSize: size * 0.55, color: textColor, letterSpacing: '-0.02em' }}
+        >
+          gustri
+        </span>
+      )}
     </div>
   );
 }
 
-// Icon-only version for favicons
-export function GustriIcon({ size = 32, className = '' }: { size?: number; className?: string }) {
+/**
+ * Logomark: full circle bowl + diagonal ear + separate half-circle descender.
+ * No connecting stem — circle and half-circle are visually separated.
+ */
+export function GustriIcon({ size = 32, className = '', variant = 'color' }: LogoProps) {
+  const hasBg = variant === 'color';
+  const bg = BRAND;
+  const mark = variant === 'dark' ? '#FFFFFF' : variant === 'light' ? '#1A1A1A' : '#FFFFFF';
+
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 48 48"
+      viewBox="0 0 512 512"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      role="img"
+      aria-label="Gustri logo"
     >
-      {/* Cup body */}
-      <path
-        d="M8 16C8 14.8954 8.89543 14 10 14H32C33.1046 14 34 14.8954 34 16V34C34 38.4183 30.4183 42 26 42H16C11.5817 42 8 38.4183 8 34V16Z"
-        fill="#3B82F6"
-      />
+      {hasBg && <rect width="512" height="512" rx="112" fill={bg} />}
 
-      {/* Cup handle */}
-      <path
-        d="M34 18H36C39.3137 18 42 20.6863 42 24C42 27.3137 39.3137 30 36 30H34"
-        stroke="#3B82F6"
-        strokeWidth="3"
+      {/* Bowl: full circle */}
+      <circle cx="248" cy="172" r="95" stroke={mark} strokeWidth="50" fill="none" />
+
+      {/* Ear: diagonal from top-right of circle */}
+      <line
+        x1="340"
+        y1="148"
+        x2="368"
+        y2="114"
+        stroke={mark}
+        strokeWidth="50"
         strokeLinecap="round"
       />
 
-      {/* Steam lines */}
-      <path d="M14 10C14 10 15 8 14 6" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
-      <path d="M21 10C21 10 22 7 21 4" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
-      <path d="M28 10C28 10 29 8 28 6" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
-
-      {/* Dashboard grid inside cup */}
-      <rect x="12" y="20" width="7" height="7" rx="1" fill="white" opacity="0.9" />
-      <rect x="23" y="20" width="7" height="7" rx="1" fill="white" opacity="0.7" />
-      <rect x="12" y="31" width="7" height="7" rx="1" fill="white" opacity="0.7" />
-      <rect x="23" y="31" width="7" height="7" rx="1" fill="white" opacity="0.5" />
+      {/* Descender: separate half-circle, no stem */}
+      <path
+        d="M 343 345 A 95 95 0 0 1 153 345"
+        stroke={mark}
+        strokeWidth="50"
+        fill="none"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

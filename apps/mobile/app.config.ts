@@ -7,7 +7,7 @@ const LOCAL_SUPABASE_ANON_KEY =
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: config.name || 'Gustri',
+  name: config.name || 'gustri',
   slug: config.slug || 'gustri',
   extra: {
     ...config.extra,

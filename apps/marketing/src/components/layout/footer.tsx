@@ -24,11 +24,34 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-primary-500 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">G</span>
-              </div>
-              <span className="text-lg font-bold text-white">{SITE_NAME}</span>
+            <Link href="/" className="flex items-center gap-2.5">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 512 512"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect width="512" height="512" rx="112" fill="#367B8B" />
+                <circle cx="248" cy="172" r="95" stroke="white" strokeWidth="50" fill="none" />
+                <line
+                  x1="340"
+                  y1="148"
+                  x2="368"
+                  y2="114"
+                  stroke="white"
+                  strokeWidth="50"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M 343 345 A 95 95 0 0 1 153 345"
+                  stroke="white"
+                  strokeWidth="50"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span className="text-lg font-bold tracking-tight text-white">{SITE_NAME}</span>
             </Link>
             <p className="mt-4 text-sm leading-relaxed">
               All-in-one restaurant management platform. Simplified.

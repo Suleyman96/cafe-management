@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconBtnSelected: {
-    borderColor: '#3b82f6',
+    borderColor: '#367B8B',
     backgroundColor: '#eff6ff',
     borderWidth: 2,
   },

@@ -187,7 +187,7 @@ export default function KitchenDisplayScreen() {
         <View style={styles.summary}>
           <Chip
             compact
-            style={[styles.summaryChip, { backgroundColor: '#3b82f6' }]}
+            style={[styles.summaryChip, { backgroundColor: '#367B8B' }]}
             textStyle={styles.summaryText}
           >
             {counts.new} {t('kitchen.new')}

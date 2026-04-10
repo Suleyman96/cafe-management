@@ -34,7 +34,7 @@ const DEFAULT_SETTINGS: CafeSettings = {
   // Branding defaults
   cafe_logo_url: null,
   hero_image_url: null,
-  brand_primary_color: '#3B82F6',
+  brand_primary_color: '#367B8B',
   brand_secondary_color: '#1E40AF',
   // Welcome screen defaults
   welcome_heading: null,
