@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Divider, IconButton, Modal, Portal, Text } from 'react-native-paper';
@@ -23,6 +24,8 @@ export function ExpenseCategoryModal({
   onDelete,
   loading,
 }: ExpenseCategoryModalProps) {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -73,7 +76,7 @@ export function ExpenseCategoryModal({
     <Portal>
       <Modal visible={visible} onDismiss={onDismiss} contentContainerStyle={styles.modal}>
         <Text variant="titleMedium" style={styles.title}>
-          Manage Categories
+          {t('expenses.manageCategories')}
         </Text>
 
         <FlatList
@@ -106,7 +109,7 @@ export function ExpenseCategoryModal({
           )}
           ListEmptyComponent={
             <Text variant="bodySmall" style={styles.emptyText}>
-              No categories yet
+              {t('expenses.noCategoriesYet')}
             </Text>
           }
         />
@@ -116,10 +119,10 @@ export function ExpenseCategoryModal({
         {showForm ? (
           <View style={styles.formSection}>
             <Text variant="bodySmall" style={styles.formLabel}>
-              {editId ? 'Edit Category' : 'New Category'}
+              {editId ? t('expenses.editCategory') : t('expenses.newCategory')}
             </Text>
             <TextInput
-              label="Name *"
+              label={t('expenses.nameRequired')}
               value={name}
               onChangeText={setName}
               mode="outlined"
@@ -127,7 +130,7 @@ export function ExpenseCategoryModal({
               style={styles.input}
             />
             <TextInput
-              label="Description"
+              label={tCommon('description')}
               value={description}
               onChangeText={setDescription}
               mode="outlined"
@@ -136,7 +139,7 @@ export function ExpenseCategoryModal({
             />
             <View style={styles.formActions}>
               <Button compact onPress={resetForm}>
-                Cancel
+                {tCommon('cancel')}
               </Button>
               <Button
                 compact
@@ -145,7 +148,7 @@ export function ExpenseCategoryModal({
                 loading={loading}
                 disabled={!name.trim()}
               >
-                {editId ? 'Update' : 'Add'}
+                {editId ? tCommon('update') : tCommon('add')}
               </Button>
             </View>
           </View>
@@ -156,12 +159,12 @@ export function ExpenseCategoryModal({
             onPress={() => setShowForm(true)}
             style={styles.addBtn}
           >
-            Add Category
+            {t('expenses.addCategory')}
           </Button>
         )}
 
         <View style={styles.closeRow}>
-          <Button onPress={onDismiss}>Close</Button>
+          <Button onPress={onDismiss}>{tCommon('close')}</Button>
         </View>
 
         <ConfirmDialog

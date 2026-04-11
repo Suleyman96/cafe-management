@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '@gustri/i18n';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Chip, Dialog, FAB, Portal, Searchbar } from 'react-native-paper';
@@ -20,10 +21,21 @@ const STATUS_FILTERS = [
   'cancelled',
 ];
 
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  pending_approval: 'orders.pendingApproval',
+  new: 'orders.new',
+  preparing: 'orders.preparing',
+  ready: 'orders.ready',
+  closed: 'orders.closed',
+  cancelled: 'orders.cancelled',
+};
+
 const ACTIVE_STATUSES = ['pending_approval', 'new', 'preparing', 'ready'];
 
 export default function TakeoutListScreen() {
   const { showSuccess, showError } = useSnackbar();
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -72,27 +84,27 @@ export default function TakeoutListScreen() {
   const handleApprove = async (orderId: string) => {
     try {
       await updateOrderStatus.mutateAsync({ orderId, status: 'new' });
-      showSuccess('Order approved');
+      showSuccess(t('takeout.orderApproved'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to approve');
+      showError(err instanceof Error ? err.message : t('takeout.failedApprove'));
     }
   };
 
   const handleStartPreparing = async (orderId: string) => {
     try {
       await updateOrderStatus.mutateAsync({ orderId, status: 'preparing' });
-      showSuccess('Preparing started');
+      showSuccess(t('takeout.preparingStarted'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to start preparing');
+      showError(err instanceof Error ? err.message : t('takeout.failedPrepare'));
     }
   };
 
   const handleMarkReady = async (orderId: string) => {
     try {
       await updateOrderStatus.mutateAsync({ orderId, status: 'ready' });
-      showSuccess('Order ready for pickup');
+      showSuccess(t('takeout.orderReadyForPickup'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to mark ready');
+      showError(err instanceof Error ? err.message : t('takeout.failedReady'));
     }
   };
 
@@ -108,17 +120,17 @@ export default function TakeoutListScreen() {
     setCancelling(true);
     try {
       await cancelOrder.mutateAsync({ orderId: cancelTarget.id, reason: cancelReason.trim() });
-      showSuccess('Order cancelled');
+      showSuccess(t('orders.orderCancelled'));
       setCancelTarget(null);
       setCancelReason('');
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to cancel');
+      showError(err instanceof Error ? err.message : t('takeout.failedCancel'));
     } finally {
       setCancelling(false);
     }
   };
 
-  if (isLoading) return <LoadingScreen message="Loading takeout orders..." />;
+  if (isLoading) return <LoadingScreen message={t('takeout.loadingTakeout')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
   return (
@@ -128,14 +140,14 @@ export default function TakeoutListScreen() {
         <View style={styles.activeCountRow}>
           <MaterialCommunityIcons name="shopping" size={16} color="#ea580c" />
           <Text variant="bodySmall" style={styles.activeCountText}>
-            {activeCount} active
+            {activeCount} {t('takeout.activeCount')}
           </Text>
         </View>
       )}
 
       {/* Search bar */}
       <Searchbar
-        placeholder="Search name, phone..."
+        placeholder={t('takeout.searchTakeout')}
         value={searchTerm}
         onChangeText={setSearchTerm}
         style={styles.searchbar}
@@ -146,7 +158,7 @@ export default function TakeoutListScreen() {
       <View style={styles.filterRow}>
         {STATUS_FILTERS.map((s) => (
           <Chip key={s} compact selected={statusFilter === s} onPress={() => setStatusFilter(s)}>
-            {s === 'all' ? 'All' : s.replace(/_/g, ' ')}
+            {s === 'all' ? tCommon('all') : t(STATUS_LABEL_KEYS[s] || s)}
           </Chip>
         ))}
       </View>
@@ -168,11 +180,9 @@ export default function TakeoutListScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="shopping"
-            title="No takeout orders"
+            title={t('takeout.noTakeoutOrders')}
             description={
-              statusFilter !== 'all'
-                ? 'No orders match the selected filter'
-                : 'Takeout orders will appear here'
+              statusFilter !== 'all' ? t('takeout.noOrdersMatch') : t('takeout.ordersAppear')
             }
           />
         }
@@ -182,7 +192,7 @@ export default function TakeoutListScreen() {
       {/* FAB to create new takeout order */}
       <FAB
         icon="plus"
-        label="New Takeout"
+        label={t('takeout.newTakeoutOrder')}
         onPress={() => setShowCreateModal(true)}
         style={styles.fab}
         color="#fff"
@@ -207,7 +217,7 @@ export default function TakeoutListScreen() {
             setCancelReason('');
           }}
         >
-          <Dialog.Title style={styles.cancelTitle}>Cancel Takeout Order</Dialog.Title>
+          <Dialog.Title style={styles.cancelTitle}>{t('takeout.cancelTakeoutOrder')}</Dialog.Title>
           <Dialog.Content>
             {cancelTarget?.customer_name && (
               <View style={styles.cancelOrderInfo}>
@@ -220,10 +230,10 @@ export default function TakeoutListScreen() {
               </View>
             )}
             <Text variant="bodySmall" style={styles.cancelHint}>
-              Please provide a reason for cancellation:
+              {t('takeout.cancelReasonHint')}
             </Text>
             <TextInput
-              label="Cancellation Reason *"
+              label={t('takeout.cancellationReasonLabel')}
               value={cancelReason}
               onChangeText={setCancelReason}
               mode="outlined"
@@ -240,7 +250,7 @@ export default function TakeoutListScreen() {
               }}
               disabled={cancelling}
             >
-              Keep Order
+              {t('orders.keepOrder')}
             </Button>
             <Button
               mode="contained"
@@ -250,7 +260,7 @@ export default function TakeoutListScreen() {
               textColor="#fff"
               style={styles.cancelBtn}
             >
-              Cancel Order
+              {t('orders.cancelOrder')}
             </Button>
           </Dialog.Actions>
         </Dialog>

@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -34,6 +35,8 @@ export default function OrderDetailScreen() {
   const { orderId } = route.params;
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
 
   const { data: order, isLoading, error, refetch } = useOrder(orderId);
   const { data: payments } = useOrderPayments(orderId);
@@ -60,30 +63,31 @@ export default function OrderDetailScreen() {
         orderId,
         status: newStatus as Order['status'],
       });
-      showSuccess(`Order ${newStatus}`);
+      showSuccess(t('orders.orderStatusChanged', { status: newStatus }));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to update status');
+      showError(err instanceof Error ? err.message : t('orders.failedUpdateStatus'));
     }
   };
 
   const handleMarkItemReady = async (itemId: string) => {
     try {
       await updateItemStatus.mutateAsync({ itemId, status: 'ready' });
-      showSuccess('Item marked as ready');
+      showSuccess(t('orders.itemMarkedAs', { status: 'ready' }));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to update item');
+      showError(err instanceof Error ? err.message : t('orders.failedUpdateItemStatus'));
     }
   };
 
   if (isLoading) return <LoadingScreen />;
-  if (error || !order) return <ErrorScreen error={error || 'Order not found'} onRetry={refetch} />;
+  if (error || !order)
+    return <ErrorScreen error={error || t('orders.orderNotFound')} onRetry={refetch} />;
 
   const tableLabel = details?.table
-    ? `Table #${details.table.table_number}`
+    ? t('tables.tableHash', { number: details.table.table_number })
     : order.order_type === 'takeout'
-      ? 'Takeout'
+      ? t('orders.takeout')
       : order.order_type === 'delivery'
-        ? 'Delivery'
+        ? t('orders.delivery')
         : '—';
 
   return (
@@ -108,7 +112,7 @@ export default function OrderDetailScreen() {
                 </Text>
                 {details?.assigned_waiter?.full_name && (
                   <Text variant="bodySmall" style={styles.muted}>
-                    Waiter: {details.assigned_waiter.full_name}
+                    {t('orders.waiterLabel', { name: details.assigned_waiter.full_name })}
                   </Text>
                 )}
                 <TimeElapsed createdAt={order.created_at} />
@@ -134,11 +138,11 @@ export default function OrderDetailScreen() {
               <Card style={styles.card}>
                 <Card.Content>
                   <Text variant="titleMedium" style={styles.bold}>
-                    Payment
+                    {t('orders.payment')}
                   </Text>
                   <View style={styles.paymentRow}>
                     <Text variant="bodyMedium" style={styles.muted}>
-                      Total
+                      {tCommon('total')}
                     </Text>
                     <Text variant="bodyMedium" style={styles.bold}>
                       {currencySymbol}
@@ -147,7 +151,7 @@ export default function OrderDetailScreen() {
                   </View>
                   <View style={styles.paymentRow}>
                     <Text variant="bodyMedium" style={styles.muted}>
-                      Paid
+                      {t('orders.paid')}
                     </Text>
                     <Text variant="bodyMedium" style={{ color: '#10b981', fontWeight: '600' }}>
                       {currencySymbol}
@@ -157,7 +161,7 @@ export default function OrderDetailScreen() {
                   {remaining > 0 && (
                     <View style={styles.paymentRow}>
                       <Text variant="bodyMedium" style={styles.muted}>
-                        Remaining
+                        {t('orders.remaining')}
                       </Text>
                       <Text variant="bodyMedium" style={{ color: '#ef4444', fontWeight: '600' }}>
                         {currencySymbol}
@@ -175,7 +179,7 @@ export default function OrderDetailScreen() {
                 <Card.Content>
                   <View style={styles.paymentRow}>
                     <Text variant="bodyMedium" style={styles.muted}>
-                      Discount (
+                      {t('orders.discount')} (
                       {order.discount_type === 'percentage'
                         ? `${order.discount_value}%`
                         : `${currencySymbol}${(order.discount_value ?? 0).toFixed(2)}`}
@@ -197,7 +201,7 @@ export default function OrderDetailScreen() {
 
             {/* Items header */}
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              Items ({items.length})
+              {t('orders.orderItems')} ({items.length})
             </Text>
           </View>
         }
@@ -218,7 +222,7 @@ export default function OrderDetailScreen() {
             <Divider style={styles.divider} />
             <View style={styles.totalRow}>
               <Text variant="titleMedium" style={styles.bold}>
-                Total
+                {tCommon('total')}
               </Text>
               <Text variant="titleLarge" style={styles.bold}>
                 {currencySymbol}

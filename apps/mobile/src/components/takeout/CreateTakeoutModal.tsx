@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { OrdersInsert } from '@gustri/database';
+import { useTranslation } from '@gustri/i18n';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Dialog, Portal } from 'react-native-paper';
@@ -18,6 +19,8 @@ export const CreateTakeoutModal = React.memo(function CreateTakeoutModal({
   onDismiss,
   onSuccess,
 }: CreateTakeoutModalProps) {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const createOrder = useCreateOrder();
   const { showSuccess, showError } = useSnackbar();
 
@@ -46,11 +49,11 @@ export const CreateTakeoutModal = React.memo(function CreateTakeoutModal({
         customer_phone: customerPhone.trim(),
         customer_notes: customerNotes.trim() || null,
       } as Partial<OrdersInsert> as OrdersInsert);
-      showSuccess('Takeout order created');
+      showSuccess(t('takeout.takeoutOrderCreated'));
       resetForm();
       onSuccess();
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to create takeout order');
+      showError(err instanceof Error ? err.message : t('takeout.failedCreateTakeout'));
     } finally {
       setLoading(false);
     }
@@ -68,7 +71,7 @@ export const CreateTakeoutModal = React.memo(function CreateTakeoutModal({
           <View style={styles.titleRow}>
             <MaterialCommunityIcons name="shopping" size={20} color="#ea580c" />
             <Text variant="titleMedium" style={styles.titleText}>
-              New Takeout Order
+              {t('takeout.newTakeoutOrder')}
             </Text>
           </View>
         </Dialog.Title>
@@ -76,14 +79,14 @@ export const CreateTakeoutModal = React.memo(function CreateTakeoutModal({
           <ScrollView>
             <View style={styles.form}>
               <TextInput
-                label="Customer Name *"
+                label={t('takeout.customerName')}
                 value={customerName}
                 onChangeText={setCustomerName}
                 mode="outlined"
                 left={<TextInput.Icon icon="account" />}
               />
               <TextInput
-                label="Phone Number *"
+                label={t('takeout.phoneNumber')}
                 value={customerPhone}
                 onChangeText={setCustomerPhone}
                 mode="outlined"
@@ -91,7 +94,7 @@ export const CreateTakeoutModal = React.memo(function CreateTakeoutModal({
                 left={<TextInput.Icon icon="phone" />}
               />
               <TextInput
-                label="Notes"
+                label={tCommon('notes')}
                 value={customerNotes}
                 onChangeText={setCustomerNotes}
                 mode="outlined"
@@ -102,7 +105,7 @@ export const CreateTakeoutModal = React.memo(function CreateTakeoutModal({
               <View style={styles.hint}>
                 <MaterialCommunityIcons name="information" size={16} color="#ea580c" />
                 <Text variant="bodySmall" style={styles.hintText}>
-                  Order will be created without items. Add items after creation.
+                  {t('takeout.orderWithoutItems')}
                 </Text>
               </View>
             </View>
@@ -110,7 +113,7 @@ export const CreateTakeoutModal = React.memo(function CreateTakeoutModal({
         </Dialog.ScrollArea>
         <Dialog.Actions>
           <Button onPress={handleDismiss} disabled={loading}>
-            Cancel
+            {tCommon('cancel')}
           </Button>
           <Button
             mode="contained"
@@ -119,7 +122,7 @@ export const CreateTakeoutModal = React.memo(function CreateTakeoutModal({
             loading={loading}
             style={styles.createBtn}
           >
-            Create Order
+            {t('takeout.createOrder')}
           </Button>
         </Dialog.Actions>
       </Dialog>

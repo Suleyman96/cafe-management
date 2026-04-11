@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, IconButton } from 'react-native-paper';
@@ -22,6 +23,8 @@ export const MenuItemCard = React.memo(function MenuItemCard({
   onAdd,
   onRemove,
 }: MenuItemCardProps) {
+  const { t } = useTranslation('staff');
+
   const unavailable = menuItem.is_available === false;
 
   return (
@@ -29,7 +32,7 @@ export const MenuItemCard = React.memo(function MenuItemCard({
       <Card.Content style={styles.content}>
         <View style={styles.info}>
           <Text variant="bodyLarge" style={styles.name}>
-            {menuItem.name_en || 'Unnamed'}
+            {menuItem.name_en || t('orders.unnamed')}
           </Text>
           {menuItem.description_en && (
             <Text variant="bodySmall" style={styles.description} numberOfLines={2}>
@@ -64,7 +67,7 @@ export const MenuItemCard = React.memo(function MenuItemCard({
       {unavailable && (
         <View style={styles.unavailableOverlay}>
           <Text variant="labelMedium" style={styles.unavailableText}>
-            Unavailable
+            {t('orders.unavailable')}
           </Text>
         </View>
       )}

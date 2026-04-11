@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, Text } from 'react-native-paper';
@@ -31,9 +32,9 @@ export const WasteLogCard = React.memo(function WasteLogCard({
   log,
   currencySymbol = '$',
 }: WasteLogCardProps) {
+  const { t } = useTranslation('staff');
   const reason = log.reason || 'other';
   const reasonColor = REASON_COLORS[reason] || '#9ca3af';
-  const reasonLabel = reason.replace(/_/g, ' ');
 
   return (
     <Card style={styles.card}>
@@ -41,7 +42,7 @@ export const WasteLogCard = React.memo(function WasteLogCard({
         <View style={styles.topRow}>
           <View style={styles.itemInfo}>
             <Text variant="titleSmall" style={styles.itemName}>
-              {log.stock_item?.name || 'Unknown Item'}
+              {log.stock_item?.name || t('kitchen.unknownItem')}
             </Text>
             <Text variant="bodySmall" style={styles.muted}>
               {log.quantity} {log.unit || 'units'}
@@ -59,7 +60,7 @@ export const WasteLogCard = React.memo(function WasteLogCard({
             style={[styles.reasonChip, { backgroundColor: reasonColor }]}
             textStyle={{ color: '#fff', fontSize: 10, fontWeight: '600' }}
           >
-            {reasonLabel.charAt(0).toUpperCase() + reasonLabel.slice(1)}
+            {t(`waste.${reason}`)}
           </Chip>
           <Text variant="bodySmall" style={styles.muted}>
             {log.staff?.full_name || '—'} · {new Date(log.created_at).toLocaleDateString()}

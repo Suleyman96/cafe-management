@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, Modal, Portal, Text } from 'react-native-paper';
@@ -34,6 +35,8 @@ export function StockItemModal({
   initialData,
   currencySymbol = '$',
 }: StockItemModalProps) {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const isEdit = !!initialData;
 
   const [form, setForm] = useState({
@@ -97,11 +100,11 @@ export function StockItemModal({
       <Modal visible={visible} onDismiss={onDismiss} contentContainerStyle={styles.modal}>
         <ScrollView>
           <Text variant="titleMedium" style={styles.title}>
-            {isEdit ? 'Edit Stock Item' : 'New Stock Item'}
+            {isEdit ? t('stock.editStockItem') : t('stock.newStockItem')}
           </Text>
 
           <TextInput
-            label="Name *"
+            label={t('stock.nameRequired')}
             value={form.name}
             onChangeText={(v: string) => setForm({ ...form, name: v })}
             mode="outlined"
@@ -110,7 +113,7 @@ export function StockItemModal({
           />
 
           <TextInput
-            label="Description"
+            label={tCommon('description')}
             value={form.description}
             onChangeText={(v: string) => setForm({ ...form, description: v })}
             mode="outlined"
@@ -120,7 +123,7 @@ export function StockItemModal({
           />
 
           <Text variant="bodySmall" style={styles.label}>
-            Category
+            {tCommon('category')}
           </Text>
           <View style={styles.chipRow}>
             {CATEGORIES.map((cat) => (
@@ -136,7 +139,7 @@ export function StockItemModal({
           </View>
 
           <Text variant="bodySmall" style={styles.label}>
-            Unit
+            {t('stock.unit')}
           </Text>
           <View style={styles.chipRow}>
             {UNITS.map((u) => (
@@ -154,7 +157,7 @@ export function StockItemModal({
           <View style={styles.rowInputs}>
             {!isEdit && (
               <TextInput
-                label="Initial Qty"
+                label={t('stock.initialQty')}
                 value={form.quantity}
                 onChangeText={(v: string) => setForm({ ...form, quantity: v })}
                 mode="outlined"
@@ -164,7 +167,7 @@ export function StockItemModal({
               />
             )}
             <TextInput
-              label={`Cost Price (${currencySymbol})`}
+              label={`${t('stock.costPrice')} (${currencySymbol})`}
               value={form.cost_price}
               onChangeText={(v: string) => setForm({ ...form, cost_price: v })}
               mode="outlined"
@@ -175,7 +178,7 @@ export function StockItemModal({
           </View>
 
           <TextInput
-            label="Minimum Stock Level"
+            label={t('stock.minimumStockLevel')}
             value={form.minimum_stock_level}
             onChangeText={(v: string) => setForm({ ...form, minimum_stock_level: v })}
             mode="outlined"
@@ -185,7 +188,7 @@ export function StockItemModal({
           />
 
           <TextInput
-            label="Supplier Name"
+            label={t('stock.supplierName')}
             value={form.supplier_name}
             onChangeText={(v: string) => setForm({ ...form, supplier_name: v })}
             mode="outlined"
@@ -194,7 +197,7 @@ export function StockItemModal({
           />
 
           <TextInput
-            label="Notes"
+            label={tCommon('notes')}
             value={form.notes}
             onChangeText={(v: string) => setForm({ ...form, notes: v })}
             mode="outlined"
@@ -205,14 +208,14 @@ export function StockItemModal({
           />
 
           <View style={styles.actions}>
-            <Button onPress={onDismiss}>Cancel</Button>
+            <Button onPress={onDismiss}>{tCommon('cancel')}</Button>
             <Button
               mode="contained"
               onPress={handleSubmit}
               loading={loading}
               disabled={!form.name.trim()}
             >
-              {isEdit ? 'Update' : 'Create'}
+              {isEdit ? tCommon('update') : tCommon('add')}
             </Button>
           </View>
         </ScrollView>

@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Modal, Portal, Switch, Text } from 'react-native-paper';
@@ -36,6 +37,8 @@ export function CategoryModal({
   loading,
   initialData,
 }: CategoryModalProps) {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -76,12 +79,12 @@ export function CategoryModal({
       <Modal visible={visible} onDismiss={onDismiss} contentContainerStyle={styles.modal}>
         <ScrollView>
           <Text variant="titleMedium" style={styles.title}>
-            {initialData ? 'Edit Category' : 'New Category'}
+            {initialData ? t('menu.editCategory') : t('menu.createCategory')}
           </Text>
 
           {/* Icon Selector */}
           <Text variant="bodySmall" style={styles.label}>
-            Icon
+            {t('menu.icon')}
           </Text>
           <View style={styles.iconGrid}>
             {COMMON_ICONS.map((icon) => (
@@ -95,7 +98,7 @@ export function CategoryModal({
             ))}
           </View>
           <TextInput
-            label="Custom emoji"
+            label={t('menu.customEmoji')}
             value={form.icon}
             onChangeText={(v: string) => setForm({ ...form, icon: v })}
             mode="outlined"
@@ -104,7 +107,7 @@ export function CategoryModal({
           />
 
           <TextInput
-            label="Name *"
+            label={t('menu.categoryName')}
             value={form.name}
             onChangeText={(v: string) => setForm({ ...form, name: v })}
             mode="outlined"
@@ -112,7 +115,7 @@ export function CategoryModal({
             style={styles.input}
           />
           <TextInput
-            label="Description"
+            label={tCommon('description')}
             value={form.description}
             onChangeText={(v: string) => setForm({ ...form, description: v })}
             mode="outlined"
@@ -121,7 +124,7 @@ export function CategoryModal({
             style={styles.input}
           />
           <TextInput
-            label="Display Order"
+            label={t('menu.displayOrder')}
             value={form.display_order}
             onChangeText={(v: string) => setForm({ ...form, display_order: v })}
             mode="outlined"
@@ -131,7 +134,7 @@ export function CategoryModal({
           />
 
           <View style={styles.switchRow}>
-            <Text variant="bodyMedium">Active</Text>
+            <Text variant="bodyMedium">{tCommon('active')}</Text>
             <Switch
               value={form.is_active}
               onValueChange={(v: boolean) => setForm({ ...form, is_active: v })}
@@ -139,14 +142,14 @@ export function CategoryModal({
           </View>
 
           <View style={styles.actions}>
-            <Button onPress={onDismiss}>Cancel</Button>
+            <Button onPress={onDismiss}>{tCommon('cancel')}</Button>
             <Button
               mode="contained"
               onPress={handleSubmit}
               loading={loading}
               disabled={!form.name.trim()}
             >
-              {initialData ? 'Update' : 'Create'}
+              {initialData ? tCommon('update') : tCommon('create')}
             </Button>
           </View>
         </ScrollView>

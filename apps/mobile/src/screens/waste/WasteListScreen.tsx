@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, FAB, Modal, Portal, Text } from 'react-native-paper';
@@ -26,9 +27,21 @@ const REASONS: WasteLog['reason'][] = [
   'other',
 ];
 
+const REASON_KEYS: Record<string, string> = {
+  expired: 'waste.expired',
+  spoiled: 'waste.spoiled',
+  overcooked: 'waste.overcooked',
+  dropped: 'waste.dropped',
+  returned_by_customer: 'waste.returnedByCustomer',
+  preparation_waste: 'waste.preparationWaste',
+  other: 'waste.other',
+};
+
 export default function WasteListScreen() {
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -85,7 +98,7 @@ export default function WasteListScreen() {
         waste_date: getLocalDateString(),
         stock_item_id: null,
       });
-      showSuccess('Waste log created');
+      showSuccess(t('waste.wasteLogged'));
       setShowCreateModal(false);
       setNewItem({
         item_name: '',
@@ -96,16 +109,16 @@ export default function WasteListScreen() {
         notes: '',
       });
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to create waste log');
+      showError(err instanceof Error ? err.message : t('waste.failedLog'));
     }
   };
 
   const _handleDelete = async (id: string) => {
     try {
       await deleteWaste.mutateAsync(id);
-      showSuccess('Waste log deleted');
+      showSuccess(t('waste.wasteLogDeleted'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to delete');
+      showError(err instanceof Error ? err.message : t('waste.failedDelete'));
     }
   };
 
@@ -123,7 +136,7 @@ export default function WasteListScreen() {
     } else setMonth(month + 1);
   };
 
-  if (isLoading) return <LoadingScreen message="Loading waste logs..." />;
+  if (isLoading) return <LoadingScreen message={t('waste.loadingWaste')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
   return (
@@ -131,13 +144,13 @@ export default function WasteListScreen() {
       {/* Month Navigation */}
       <View style={styles.monthNav}>
         <Button compact onPress={handlePrevMonth}>
-          Prev
+          {t('expenses.prev')}
         </Button>
         <Text variant="titleMedium" style={styles.monthLabel}>
           {new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}
         </Text>
         <Button compact onPress={handleNextMonth}>
-          Next
+          {t('expenses.next')}
         </Button>
       </View>
 
@@ -147,7 +160,7 @@ export default function WasteListScreen() {
           <Card style={styles.summaryCard}>
             <Card.Content>
               <Text variant="bodySmall" style={styles.muted}>
-                Total Cost
+                {t('waste.totalCost')}
               </Text>
               <Text variant="titleMedium" style={{ fontWeight: '700', color: '#ef4444' }}>
                 {currencySymbol}
@@ -158,7 +171,7 @@ export default function WasteListScreen() {
           <Card style={styles.summaryCard}>
             <Card.Content>
               <Text variant="bodySmall" style={styles.muted}>
-                Entries
+                {t('waste.wasteEvents')}
               </Text>
               <Text variant="titleMedium" style={{ fontWeight: '700' }}>
                 {summary.count || 0}
@@ -176,7 +189,7 @@ export default function WasteListScreen() {
           onPress={() => setReasonFilter(undefined)}
           style={styles.filterChip}
         >
-          All
+          {tCommon('all')}
         </Chip>
         {REASONS.map((r) => (
           <Chip
@@ -186,7 +199,7 @@ export default function WasteListScreen() {
             onPress={() => setReasonFilter(reasonFilter === r ? undefined : r)}
             style={styles.filterChip}
           >
-            {r.replace(/_/g, ' ')}
+            {t(REASON_KEYS[r] || r)}
           </Chip>
         ))}
       </View>
@@ -199,8 +212,8 @@ export default function WasteListScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="delete-off"
-            title="No waste logs"
-            description="No waste recorded this month"
+            title={t('waste.noWasteLogs')}
+            description={t('waste.noWasteDescription')}
           />
         }
         contentContainerStyle={styles.list}
@@ -216,10 +229,10 @@ export default function WasteListScreen() {
           contentContainerStyle={styles.modal}
         >
           <Text variant="titleMedium" style={{ fontWeight: '700', marginBottom: 12 }}>
-            Log Waste
+            {t('waste.addWasteLog')}
           </Text>
           <TextInput
-            label="Quantity"
+            label={tCommon('quantity')}
             value={newItem.quantity}
             onChangeText={(v: string) => setNewItem({ ...newItem, quantity: v })}
             mode="outlined"
@@ -228,7 +241,7 @@ export default function WasteListScreen() {
             style={styles.input}
           />
           <TextInput
-            label="Unit"
+            label={t('stock.unit')}
             value={newItem.unit}
             onChangeText={(v: string) => setNewItem({ ...newItem, unit: v })}
             mode="outlined"
@@ -236,7 +249,7 @@ export default function WasteListScreen() {
             style={styles.input}
           />
           <TextInput
-            label="Cost"
+            label={t('waste.costPerUnit')}
             value={newItem.cost}
             onChangeText={(v: string) => setNewItem({ ...newItem, cost: v })}
             mode="outlined"
@@ -254,12 +267,12 @@ export default function WasteListScreen() {
                 onPress={() => setNewItem({ ...newItem, reason: r })}
                 style={styles.filterChip}
               >
-                {r.replace(/_/g, ' ')}
+                {t(REASON_KEYS[r] || r)}
               </Chip>
             ))}
           </View>
           <TextInput
-            label="Notes (optional)"
+            label={`${tCommon('notes')} (${tCommon('optional')})`}
             value={newItem.notes}
             onChangeText={(v: string) => setNewItem({ ...newItem, notes: v })}
             mode="outlined"
@@ -268,9 +281,9 @@ export default function WasteListScreen() {
             style={styles.input}
           />
           <View style={styles.modalActions}>
-            <Button onPress={() => setShowCreateModal(false)}>Cancel</Button>
+            <Button onPress={() => setShowCreateModal(false)}>{tCommon('cancel')}</Button>
             <Button mode="contained" onPress={handleCreate} loading={createWaste.isPending}>
-              Create
+              {tCommon('save')}
             </Button>
           </View>
         </Modal>

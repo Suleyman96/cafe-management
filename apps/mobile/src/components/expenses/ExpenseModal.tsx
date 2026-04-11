@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, Modal, Portal, Text } from 'react-native-paper';
@@ -33,6 +34,8 @@ export function ExpenseModal({
   categories,
   currencySymbol = '$',
 }: ExpenseModalProps) {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const [form, setForm] = useState({
     description: '',
     amount: '',
@@ -85,11 +88,11 @@ export function ExpenseModal({
       <Modal visible={visible} onDismiss={onDismiss} contentContainerStyle={styles.modal}>
         <ScrollView>
           <Text variant="titleMedium" style={styles.title}>
-            {initialData ? 'Edit Expense' : 'New Expense'}
+            {initialData ? t('expenses.editExpense') : t('expenses.newExpense')}
           </Text>
 
           <TextInput
-            label="Amount *"
+            label={t('expenses.amountRequired')}
             value={form.amount}
             onChangeText={(v: string) => setForm({ ...form, amount: v })}
             mode="outlined"
@@ -100,7 +103,7 @@ export function ExpenseModal({
           />
 
           <TextInput
-            label="Description *"
+            label={t('expenses.descriptionRequired')}
             value={form.description}
             onChangeText={(v: string) => setForm({ ...form, description: v })}
             mode="outlined"
@@ -109,7 +112,7 @@ export function ExpenseModal({
           />
 
           <Text variant="bodySmall" style={styles.label}>
-            Payment Method
+            {t('expenses.paymentMethod')}
           </Text>
           <View style={styles.chipRow}>
             {PAYMENT_METHODS.map((m) => (
@@ -127,7 +130,7 @@ export function ExpenseModal({
           {categories.length > 0 && (
             <>
               <Text variant="bodySmall" style={styles.label}>
-                Category
+                {tCommon('category')}
               </Text>
               <View style={styles.chipRow}>
                 <Chip
@@ -135,7 +138,7 @@ export function ExpenseModal({
                   selected={!form.category_id}
                   onPress={() => setForm({ ...form, category_id: '' })}
                 >
-                  None
+                  {t('expenses.none')}
                 </Chip>
                 {categories.map((c) => (
                   <Chip
@@ -152,7 +155,7 @@ export function ExpenseModal({
           )}
 
           <TextInput
-            label="Date"
+            label={t('expenses.dateLabel')}
             value={form.expense_date}
             onChangeText={(v: string) => setForm({ ...form, expense_date: v })}
             mode="outlined"
@@ -162,7 +165,7 @@ export function ExpenseModal({
           />
 
           <TextInput
-            label="Notes"
+            label={tCommon('notes')}
             value={form.notes}
             onChangeText={(v: string) => setForm({ ...form, notes: v })}
             mode="outlined"
@@ -173,9 +176,9 @@ export function ExpenseModal({
           />
 
           <View style={styles.actions}>
-            <Button onPress={onDismiss}>Cancel</Button>
+            <Button onPress={onDismiss}>{tCommon('cancel')}</Button>
             <Button mode="contained" onPress={handleSubmit} loading={loading} disabled={!isValid}>
-              {initialData ? 'Update' : 'Create'}
+              {initialData ? t('expenses.update') : t('expenses.create')}
             </Button>
           </View>
         </ScrollView>

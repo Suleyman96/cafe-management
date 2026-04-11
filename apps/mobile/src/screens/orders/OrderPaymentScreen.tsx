@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
@@ -18,18 +19,24 @@ import type { OrdersStackParamList } from '@/types';
 
 type Route = RouteProp<OrdersStackParamList, 'OrderPayment'>;
 
-const PAYMENT_METHODS = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'card', label: 'Card' },
-  { value: 'digital', label: 'Digital' },
-] as const;
-
 export default function OrderPaymentScreen() {
   const route = useRoute<Route>();
   const navigation = useNavigation();
   const { orderId } = route.params;
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
+
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
+
+  const paymentMethods = useMemo(
+    () => [
+      { value: 'cash', label: tCommon('cash') },
+      { value: 'card', label: tCommon('card') },
+      { value: 'digital', label: tCommon('digital') },
+    ],
+    [tCommon],
+  );
 
   const { data: order, isLoading, error } = useOrder(orderId);
   const { data: payments } = useOrderPayments(orderId);
@@ -55,12 +62,12 @@ export default function OrderPaymentScreen() {
   const handleSubmit = async () => {
     const paymentAmount = parseFloat(amount);
     if (Number.isNaN(paymentAmount) || paymentAmount <= 0) {
-      showError('Please enter a valid amount');
+      showError(t('payment.validAmount'));
       return;
     }
 
     if (!staff?.id) {
-      showError('Not authenticated');
+      showError(t('payment.notAuthenticated'));
       return;
     }
 
@@ -75,19 +82,21 @@ export default function OrderPaymentScreen() {
       const newRemaining = remaining - paymentAmount;
       if (newRemaining <= 0) {
         await updateOrderStatus.mutateAsync({ orderId, status: 'closed' });
-        showSuccess('Payment complete — order paid');
+        showSuccess(t('orders.paymentProcessed'));
       } else {
-        showSuccess(`Payment of ${currencySymbol}${paymentAmount.toFixed(2)} recorded`);
+        showSuccess(
+          t('payment.paymentRecorded', { amount: `${currencySymbol}${paymentAmount.toFixed(2)}` }),
+        );
       }
 
       navigation.goBack();
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Payment failed');
+      showError(err instanceof Error ? err.message : t('payment.paymentFailed'));
     }
   };
 
   if (isLoading) return <LoadingScreen />;
-  if (error || !order) return <ErrorScreen error={error || 'Order not found'} />;
+  if (error || !order) return <ErrorScreen error={error || t('orders.orderNotFound')} />;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -95,18 +104,18 @@ export default function OrderPaymentScreen() {
       <Card style={styles.card}>
         <Card.Content>
           <Text variant="titleMedium" style={styles.bold}>
-            Order #{order.order_number || '—'}
+            {t('orders.orderHash', { number: order.order_number || '—' })}
           </Text>
           <Divider style={styles.divider} />
           <View style={styles.summaryRow}>
-            <Text variant="bodyMedium">Total</Text>
+            <Text variant="bodyMedium">{tCommon('total')}</Text>
             <Text variant="titleMedium" style={styles.bold}>
               {currencySymbol}
               {(order.total ?? 0).toFixed(2)}
             </Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text variant="bodyMedium">Already Paid</Text>
+            <Text variant="bodyMedium">{t('payment.alreadyPaid')}</Text>
             <Text variant="bodyMedium" style={{ color: '#10b981', fontWeight: '600' }}>
               {currencySymbol}
               {totalPaid.toFixed(2)}
@@ -115,7 +124,7 @@ export default function OrderPaymentScreen() {
           <Divider style={styles.divider} />
           <View style={styles.summaryRow}>
             <Text variant="titleMedium" style={styles.bold}>
-              Remaining
+              {t('orders.remaining')}
             </Text>
             <Text
               variant="titleLarge"
@@ -134,10 +143,10 @@ export default function OrderPaymentScreen() {
           <Card style={styles.card}>
             <Card.Content>
               <Text variant="titleMedium" style={styles.bold}>
-                Payment Method
+                {t('payment.paymentMethod')}
               </Text>
               <RadioButton.Group onValueChange={setMethod} value={method}>
-                {PAYMENT_METHODS.map((m) => (
+                {paymentMethods.map((m) => (
                   <RadioButton.Item key={m.value} label={m.label} value={m.value} />
                 ))}
               </RadioButton.Group>
@@ -148,7 +157,7 @@ export default function OrderPaymentScreen() {
           <Card style={styles.card}>
             <Card.Content style={styles.amountSection}>
               <TextInput
-                label="Amount"
+                label={tCommon('amount')}
                 value={amount}
                 onChangeText={setAmount}
                 mode="outlined"
@@ -156,8 +165,7 @@ export default function OrderPaymentScreen() {
                 left={<TextInput.Affix text={currencySymbol} />}
               />
               <Button mode="outlined" onPress={handlePayFull} compact>
-                Pay Full ({currencySymbol}
-                {remaining.toFixed(2)})
+                {t('payment.payFull', { amount: `${currencySymbol}${remaining.toFixed(2)}` })}
               </Button>
             </Card.Content>
           </Card>
@@ -170,7 +178,7 @@ export default function OrderPaymentScreen() {
             style={styles.submitButton}
             contentStyle={styles.submitButtonContent}
           >
-            Process Payment
+            {t('payment.processPaymentBtn')}
           </Button>
         </>
       )}
@@ -180,7 +188,7 @@ export default function OrderPaymentScreen() {
         <Card style={styles.card}>
           <Card.Content>
             <Text variant="titleMedium" style={styles.bold}>
-              Payment History
+              {t('orders.paymentHistory')}
             </Text>
             {payments.map((p: any) => (
               <View key={p.id} style={styles.paymentItem}>

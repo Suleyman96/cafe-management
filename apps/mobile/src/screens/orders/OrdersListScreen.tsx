@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useMemo, useState } from 'react';
@@ -32,8 +33,22 @@ const STATUS_FILTERS = [
   'cancelled',
 ] as const;
 
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  pending_approval: 'orders.pendingApproval',
+  new: 'orders.new',
+  preparing: 'orders.preparing',
+  ready: 'orders.ready',
+  served: 'orders.served',
+  out_for_delivery: 'orders.outForDelivery',
+  delivered: 'orders.delivered',
+  closed: 'orders.closed',
+  cancelled: 'orders.cancelled',
+};
+
 export default function OrdersListScreen() {
   const navigation = useNavigation<Nav>();
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const { data: orders, isLoading, error, refetch } = useOrders();
   const { data: settings } = useCafeSettings();
   const currencySymbol = settings?.currency_symbol || '$';
@@ -61,13 +76,13 @@ export default function OrdersListScreen() {
     return filtered;
   }, [orders, selectedStatus, search]);
 
-  if (isLoading) return <LoadingScreen message="Loading orders..." />;
+  if (isLoading) return <LoadingScreen message={t('orders.loadingOrders')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
   return (
     <View style={styles.container}>
       <Searchbar
-        placeholder="Search by order #"
+        placeholder={t('orders.searchByOrderNumber')}
         value={search}
         onChangeText={setSearch}
         style={styles.searchbar}
@@ -88,7 +103,7 @@ export default function OrdersListScreen() {
             textStyle={selectedStatus === s ? { color: '#fff' } : undefined}
             compact
           >
-            {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+            {s === 'all' ? tCommon('all') : t(STATUS_LABEL_KEYS[s] || s)}
           </Chip>
         ))}
       </ScrollView>
@@ -107,8 +122,17 @@ export default function OrdersListScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="clipboard-text-off"
-            title="No orders"
-            description={selectedStatus === 'all' ? 'No orders yet' : `No ${selectedStatus} orders`}
+            title={t('orders.noOrders')}
+            description={
+              selectedStatus === 'all'
+                ? t('orders.noOrdersYet')
+                : t('orders.noOrdersWithStatus', {
+                    status:
+                      selectedStatus === 'all'
+                        ? ''
+                        : t(STATUS_LABEL_KEYS[selectedStatus] || selectedStatus),
+                  })
+            }
           />
         }
         contentContainerStyle={styles.list}

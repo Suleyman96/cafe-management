@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card } from 'react-native-paper';
@@ -49,6 +50,9 @@ export const TakeoutOrderCard = React.memo(function TakeoutOrderCard({
   onMarkReady,
   onCancel,
 }: TakeoutOrderCardProps) {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
+
   const grandTotal = calculateOrderTotal(order);
   const hasItems = order.order_items?.some((i) => i.status !== 'cancelled') ?? false;
 
@@ -128,7 +132,7 @@ export const TakeoutOrderCard = React.memo(function TakeoutOrderCard({
               onPress={() => onApprove(order.id)}
               style={styles.approveBtn}
             >
-              Approve
+              {tCommon('approve')}
             </Button>
           )}
           {order.status === 'new' && onStartPreparing && (
@@ -139,7 +143,7 @@ export const TakeoutOrderCard = React.memo(function TakeoutOrderCard({
               onPress={() => onStartPreparing(order.id)}
               style={styles.prepareBtn}
             >
-              Start Preparing
+              {t('takeout.startPreparing')}
             </Button>
           )}
           {order.status === 'preparing' && onMarkReady && (
@@ -150,12 +154,12 @@ export const TakeoutOrderCard = React.memo(function TakeoutOrderCard({
               onPress={() => onMarkReady(order.id)}
               style={styles.readyBtn}
             >
-              Ready for Pickup
+              {t('takeout.readyForPickup')}
             </Button>
           )}
           {!['ready', 'closed', 'cancelled'].includes(order.status) && onCancel && (
             <Button compact onPress={() => onCancel(order.id)} textColor="#ef4444">
-              {order.status === 'pending_approval' ? 'Reject' : 'Cancel'}
+              {order.status === 'pending_approval' ? tCommon('reject') : tCommon('cancel')}
             </Button>
           )}
         </View>

@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, IconButton, Switch } from 'react-native-paper';
@@ -41,6 +42,8 @@ export const MenuItemManageCard = React.memo(function MenuItemManageCard({
   onEdit,
   onDelete,
 }: MenuItemManageCardProps) {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const dietaryBadges = Object.entries(BADGE_CONFIG).filter(
     ([key]) => item[key as keyof typeof item],
   );
@@ -87,7 +90,7 @@ export const MenuItemManageCard = React.memo(function MenuItemManageCard({
             style={styles.unavailableBadge}
             textStyle={{ color: '#fff', fontSize: 10, fontWeight: '700' }}
           >
-            UNAVAILABLE
+            {t('menu.unavailable')}
           </Chip>
         )}
 
@@ -98,7 +101,7 @@ export const MenuItemManageCard = React.memo(function MenuItemManageCard({
             style={styles.dailySpecialBadge}
             textStyle={{ color: '#fff', fontSize: 10, fontWeight: '700' }}
           >
-            ✨ Daily Special
+            ✨ {t('menu.dailySpecial')}
           </Chip>
         )}
 
@@ -130,7 +133,7 @@ export const MenuItemManageCard = React.memo(function MenuItemManageCard({
               variant="bodySmall"
               style={item.is_available ? styles.availableText : styles.unavailableText}
             >
-              {item.is_available ? 'Available' : 'Unavailable'}
+              {item.is_available ? t('menu.available') : tCommon('inactive')}
             </Text>
           </View>
           <View style={styles.iconRow}>

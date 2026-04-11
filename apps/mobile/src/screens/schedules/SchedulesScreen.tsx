@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useMemo, useState } from 'react';
 import {
   FlatList,
@@ -55,6 +56,8 @@ const STATUS_DOT_COLOR: Record<string, string> = {
 
 export default function SchedulesScreen() {
   const { showSuccess, showError } = useSnackbar();
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const todayStr = formatDate(new Date());
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState(todayStr);
@@ -119,18 +122,18 @@ export default function SchedulesScreen() {
   const handleMarkInProgress = async (id: string) => {
     try {
       await markInProgress.mutateAsync({ id, actualStart: new Date().toISOString() });
-      showSuccess('Shift started');
+      showSuccess(t('schedules.shiftStarted'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to start shift');
+      showError(err instanceof Error ? err.message : t('schedules.failedStartShift'));
     }
   };
 
   const handleMarkCompleted = async (id: string) => {
     try {
       await markCompleted.mutateAsync({ id, actualEnd: new Date().toISOString() });
-      showSuccess('Shift completed');
+      showSuccess(t('schedules.shiftCompleted'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to complete shift');
+      showError(err instanceof Error ? err.message : t('schedules.failedCompleteShift'));
     }
   };
 
@@ -146,7 +149,7 @@ export default function SchedulesScreen() {
     try {
       if (payload.mode === 'edit') {
         await updateSchedule.mutateAsync({ id: payload.id, data: payload.data });
-        showSuccess('Schedule updated');
+        showSuccess(t('schedules.scheduleUpdated'));
       } else if (payload.mode === 'bulk') {
         const results = await Promise.allSettled(
           payload.entries.map((entry: any) => createSchedule.mutateAsync(entry)),
@@ -154,18 +157,18 @@ export default function SchedulesScreen() {
         const successCount = results.filter((r) => r.status === 'fulfilled').length;
         const failCount = results.length - successCount;
         if (failCount > 0) {
-          showError(`Created ${successCount} schedules, ${failCount} failed`);
+          showError(t('schedules.bulkCreatePartial', { successCount, failCount }));
         } else {
-          showSuccess(`Created ${successCount} schedules`);
+          showSuccess(t('schedules.bulkCreateSuccess', { count: successCount }));
         }
       } else {
         await createSchedule.mutateAsync(payload.data);
-        showSuccess('Schedule created');
+        showSuccess(t('schedules.scheduleCreated'));
       }
       setShowModal(false);
       setEditSchedule(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to save schedule');
+      showError(err instanceof Error ? err.message : t('schedules.failedSave'));
     }
   };
 
@@ -173,16 +176,16 @@ export default function SchedulesScreen() {
     if (!deleteScheduleId) return;
     try {
       await deleteScheduleMut.mutateAsync(deleteScheduleId);
-      showSuccess('Schedule deleted');
+      showSuccess(t('schedules.scheduleDeleted'));
       setDeleteScheduleId(null);
       setShowModal(false);
       setEditSchedule(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to delete');
+      showError(err instanceof Error ? err.message : t('schedules.failedDelete'));
     }
   };
 
-  if (isLoading) return <LoadingScreen message="Loading schedules..." />;
+  if (isLoading) return <LoadingScreen message={t('schedules.loadingSchedules')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
   const isToday = (d: Date) => formatDate(d) === todayStr;
@@ -195,8 +198,8 @@ export default function SchedulesScreen() {
           value={viewMode}
           onValueChange={setViewMode}
           buttons={[
-            { value: 'daily', label: 'Daily' },
-            { value: 'weekly', label: 'Weekly' },
+            { value: 'daily', label: t('schedules.week') },
+            { value: 'weekly', label: t('schedules.list') },
           ]}
           style={styles.segmented}
         />
@@ -205,7 +208,7 @@ export default function SchedulesScreen() {
       {/* Week Navigation */}
       <View style={styles.weekNav}>
         <Button compact onPress={() => setWeekOffset((p) => p - 1)}>
-          Prev
+          {t('expenses.prev')}
         </Button>
         <View style={styles.weekCenter}>
           <Text variant="titleSmall" style={styles.weekLabel}>
@@ -218,12 +221,12 @@ export default function SchedulesScreen() {
           </Text>
           {weekOffset !== 0 && (
             <Button compact onPress={() => setWeekOffset(0)}>
-              This Week
+              {tCommon('thisWeek')}
             </Button>
           )}
         </View>
         <Button compact onPress={() => setWeekOffset((p) => p + 1)}>
-          Next
+          {t('expenses.next')}
         </Button>
       </View>
 
@@ -232,7 +235,7 @@ export default function SchedulesScreen() {
         <Card style={styles.summaryCard}>
           <Card.Content>
             <Text variant="bodySmall" style={styles.muted}>
-              Total
+              {tCommon('total')}
             </Text>
             <Text variant="titleMedium" style={styles.summaryTotal}>
               {weekSummary.total}
@@ -242,7 +245,7 @@ export default function SchedulesScreen() {
         <Card style={styles.summaryCard}>
           <Card.Content>
             <Text variant="bodySmall" style={styles.muted}>
-              In Progress
+              {t('schedules.inProgress')}
             </Text>
             <Text variant="titleMedium" style={styles.summaryInProgress}>
               {weekSummary.inProgress}
@@ -252,7 +255,7 @@ export default function SchedulesScreen() {
         <Card style={styles.summaryCard}>
           <Card.Content>
             <Text variant="bodySmall" style={styles.muted}>
-              Completed
+              {tCommon('completed')}
             </Text>
             <Text variant="titleMedium" style={styles.summaryCompleted}>
               {weekSummary.completed}
@@ -326,8 +329,8 @@ export default function SchedulesScreen() {
             ListEmptyComponent={
               <EmptyState
                 icon="calendar-blank"
-                title="No schedules"
-                description="No shifts scheduled for this day"
+                title={t('schedules.noSchedules')}
+                description={t('schedules.noSchedulesDescription')}
               />
             }
             contentContainerStyle={styles.list}
@@ -364,7 +367,7 @@ export default function SchedulesScreen() {
                 </View>
                 {daySchedules.length === 0 ? (
                   <Text variant="bodySmall" style={styles.noShifts}>
-                    No shifts
+                    {t('schedules.noShifts')}
                   </Text>
                 ) : (
                   daySchedules.map((sched: any) => (
@@ -381,7 +384,7 @@ export default function SchedulesScreen() {
                       />
                       <View style={styles.weeklyBlockInfo}>
                         <Text variant="bodySmall" style={styles.weeklyStaff} numberOfLines={1}>
-                          {sched.staff?.full_name || 'Unknown'}
+                          {sched.staff?.full_name || tCommon('unknown')}
                         </Text>
                         <Text variant="bodySmall" style={styles.weeklyTime}>
                           {formatTime(sched.planned_start)} – {formatTime(sched.planned_end)}
@@ -394,7 +397,7 @@ export default function SchedulesScreen() {
                           { color: STATUS_DOT_COLOR[sched.status] || '#9ca3af' },
                         ]}
                       >
-                        {sched.status.replace(/_/g, ' ')}
+                        {t(`schedules.${sched.status}`)}
                       </Text>
                     </TouchableOpacity>
                   ))
@@ -407,7 +410,7 @@ export default function SchedulesScreen() {
 
       <FAB
         icon="plus"
-        label="Add Schedule"
+        label={t('schedules.addSchedule')}
         style={styles.fab}
         onPress={() => {
           setEditSchedule(null);
@@ -431,8 +434,8 @@ export default function SchedulesScreen() {
 
       <ConfirmDialog
         visible={!!deleteScheduleId}
-        title="Delete Schedule"
-        message="Are you sure you want to delete this schedule?"
+        title={t('schedules.deleteSchedule')}
+        message={t('schedules.deleteScheduleConfirm')}
         onConfirm={handleDeleteSchedule}
         onCancel={() => setDeleteScheduleId(null)}
         destructive

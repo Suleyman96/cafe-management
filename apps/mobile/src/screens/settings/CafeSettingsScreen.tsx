@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, SegmentedButtons } from 'react-native-paper';
@@ -18,6 +19,8 @@ import { useSnackbar } from '@/hooks/use-snackbar';
 type TabView = 'general' | 'branding' | 'contact';
 
 export default function CafeSettingsScreen() {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const { showSuccess, showError } = useSnackbar();
   const { data: settings, isLoading, error, refetch } = useCafeSettings();
   const updateSettings = useUpdateCafeSettings();
@@ -40,10 +43,10 @@ export default function CafeSettingsScreen() {
   const handleSave = async () => {
     try {
       await updateSettings.mutateAsync(form);
-      showSuccess('Settings saved');
+      showSuccess(t('cafeSettings.settingsSaved'));
       setHasChanges(false);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to save settings');
+      showError(err instanceof Error ? err.message : t('cafeSettings.failedSave'));
     }
   };
 
@@ -54,7 +57,7 @@ export default function CafeSettingsScreen() {
     }
   };
 
-  if (isLoading) return <LoadingScreen message="Loading settings..." />;
+  if (isLoading) return <LoadingScreen message={t('cafeSettings.loadingSettings')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
   return (
@@ -63,9 +66,9 @@ export default function CafeSettingsScreen() {
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as TabView)}
         buttons={[
-          { value: 'general', label: 'General' },
-          { value: 'branding', label: 'Branding' },
-          { value: 'contact', label: 'Contact' },
+          { value: 'general', label: t('cafeSettings.general') },
+          { value: 'branding', label: t('cafeSettings.branding') },
+          { value: 'contact', label: t('cafeSettings.contact') },
         ]}
         style={styles.tabs}
         density="small"
@@ -95,10 +98,10 @@ export default function CafeSettingsScreen() {
       {hasChanges && (
         <View style={styles.saveBar}>
           <Button mode="outlined" onPress={handleReset}>
-            Reset
+            {tCommon('reset')}
           </Button>
           <Button mode="contained" onPress={handleSave} loading={updateSettings.isPending}>
-            Save Changes
+            {tCommon('saveChanges')}
           </Button>
         </View>
       )}

@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { Button, Dialog, Portal, Text } from 'react-native-paper';
 
@@ -16,12 +17,14 @@ export const ConfirmDialog = React.memo(function ConfirmDialog({
   visible,
   title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   destructive = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation('common');
+
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onCancel}>
@@ -30,9 +33,9 @@ export const ConfirmDialog = React.memo(function ConfirmDialog({
           <Text variant="bodyMedium">{message}</Text>
         </Dialog.Content>
         <Dialog.Actions>
-          <Button onPress={onCancel}>{cancelLabel}</Button>
+          <Button onPress={onCancel}>{cancelLabel ?? t('cancel')}</Button>
           <Button onPress={onConfirm} textColor={destructive ? '#ef4444' : undefined}>
-            {confirmLabel}
+            {confirmLabel ?? t('confirm')}
           </Button>
         </Dialog.Actions>
       </Dialog>

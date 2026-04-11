@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Text } from 'react-native-paper';
@@ -24,12 +25,15 @@ export const OrderCard = React.memo(function OrderCard({
   currencySymbol,
   onPress,
 }: OrderCardProps) {
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
+
   const tableLabel = order.table
     ? `Table #${order.table.table_number}`
     : order.order_type === 'takeout'
-      ? 'Takeout'
+      ? t('orders.takeout')
       : order.order_type === 'delivery'
-        ? 'Delivery'
+        ? t('orders.delivery')
         : '—';
 
   return (
@@ -50,7 +54,7 @@ export const OrderCard = React.memo(function OrderCard({
         <View style={styles.bottomRow}>
           <View style={styles.meta}>
             <Text variant="bodySmall" style={styles.muted}>
-              {order.order_items?.length || 0} items
+              {order.order_items?.length || 0} {tCommon('items')}
             </Text>
             <TimeElapsed createdAt={order.created_at} showColor={false} />
           </View>

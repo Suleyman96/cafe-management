@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '@gustri/i18n';
 import { StyleSheet, View } from 'react-native';
 import { Card, Text } from 'react-native-paper';
 import { TextInput } from '@/lib/paper-compat';
@@ -6,17 +7,19 @@ import type { SettingsSectionProps } from './ToggleRow';
 import { ToggleRow } from './ToggleRow';
 
 export function OrderSettingsSection({ form, updateField }: SettingsSectionProps) {
+  const { t } = useTranslation('staff');
+
   return (
     <Card>
       <Card.Content>
         <View style={styles.headerRow}>
           <MaterialCommunityIcons name="clipboard-list" size={20} color="#4b5563" />
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            Order Settings
+            {t('cafeSettings.orderSettings')}
           </Text>
         </View>
         <TextInput
-          label={`Minimum Order Amount (${form.currency_symbol || '₼'})`}
+          label={`${t('cafeSettings.minimumOrderAmount')} (${form.currency_symbol || '₼'})`}
           value={String(form.minimum_order_amount ?? '')}
           onChangeText={(v: string) =>
             updateField('minimum_order_amount', Number.parseFloat(v) || 0)
@@ -27,26 +30,26 @@ export function OrderSettingsSection({ form, updateField }: SettingsSectionProps
           style={styles.input}
         />
         <ToggleRow
-          label="Allow Item Notes"
-          description="Customers can add notes to items"
+          label={t('cafeSettings.allowItemNotes')}
+          description={t('cafeSettings.customerItemNotes')}
           value={!!form.allow_item_notes}
           onChange={(v) => updateField('allow_item_notes', v)}
         />
         <ToggleRow
-          label="Allow Order Notes"
-          description="Customers can add notes to orders"
+          label={t('cafeSettings.allowOrderNotes')}
+          description={t('cafeSettings.customerOrderNotes')}
           value={!!form.allow_order_notes}
           onChange={(v) => updateField('allow_order_notes', v)}
         />
         <ToggleRow
-          label="Enable Tips"
-          description="Allow staff to accept tips"
+          label={t('cafeSettings.enableTips')}
+          description={t('cafeSettings.allowTips')}
           value={!!form.tips_enabled}
           onChange={(v) => updateField('tips_enabled', v)}
         />
         <ToggleRow
-          label="Waste Tracking"
-          description="Track food waste and costs"
+          label={t('cafeSettings.wasteTracking')}
+          description={t('cafeSettings.trackWaste')}
           value={!!form.waste_tracking_enabled}
           onChange={(v) => updateField('waste_tracking_enabled', v)}
         />

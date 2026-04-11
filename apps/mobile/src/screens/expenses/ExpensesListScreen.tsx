@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, FAB } from 'react-native-paper';
@@ -27,6 +28,8 @@ const PAYMENT_METHODS: Expense['payment_method'][] = ['cash', 'card', 'digital',
 export default function ExpensesListScreen() {
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
+  const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -99,10 +102,10 @@ export default function ExpensesListScreen() {
     try {
       if (editExpense) {
         await updateExpense.mutateAsync({ id: editExpense.id, data });
-        showSuccess('Expense updated');
+        showSuccess(t('expenses.expenseUpdated'));
       } else {
         if (!staff?.id) {
-          showError('Not authenticated');
+          showError(t('payment.notAuthenticated'));
           return;
         }
         await createExpense.mutateAsync({
@@ -110,12 +113,12 @@ export default function ExpensesListScreen() {
           created_by: staff.id,
           receipt_url: null,
         });
-        showSuccess('Expense recorded');
+        showSuccess(t('expenses.expenseRecorded'));
       }
       setShowExpenseModal(false);
       setEditExpense(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to save expense');
+      showError(err instanceof Error ? err.message : t('expenses.failedSave'));
     }
   };
 
@@ -123,10 +126,10 @@ export default function ExpensesListScreen() {
     if (!deleteExpenseId) return;
     try {
       await deleteExpenseMut.mutateAsync(deleteExpenseId);
-      showSuccess('Expense deleted');
+      showSuccess(t('expenses.expenseDeleted'));
       setDeleteExpenseId(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to delete');
+      showError(err instanceof Error ? err.message : t('expenses.failedDelete'));
     }
   };
 
@@ -146,9 +149,9 @@ export default function ExpensesListScreen() {
         icon: null,
         is_active: true,
       });
-      showSuccess('Category created');
+      showSuccess(t('expenses.categoryCreated'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to create category');
+      showError(err instanceof Error ? err.message : t('expenses.failedCreateCategory'));
     }
   };
 
@@ -158,23 +161,23 @@ export default function ExpensesListScreen() {
         id,
         data: { name: data.name, description: data.description },
       });
-      showSuccess('Category updated');
+      showSuccess(t('expenses.categoryUpdated'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to update category');
+      showError(err instanceof Error ? err.message : t('expenses.failedUpdateCategory'));
     }
   };
 
   const handleCategoryDelete = async (id: string) => {
     try {
       await deleteCategory.mutateAsync(id);
-      showSuccess('Category deleted');
+      showSuccess(t('expenses.categoryDeleted'));
       if (categoryFilter === id) setCategoryFilter(undefined);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to delete category');
+      showError(err instanceof Error ? err.message : t('expenses.failedDeleteCategory'));
     }
   };
 
-  if (isLoading) return <LoadingScreen message="Loading expenses..." />;
+  if (isLoading) return <LoadingScreen message={t('expenses.loadingExpenses')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
   return (
@@ -182,13 +185,13 @@ export default function ExpensesListScreen() {
       {/* Month Navigation */}
       <View style={styles.monthNav}>
         <Button compact onPress={handlePrevMonth}>
-          Prev
+          {t('expenses.prev')}
         </Button>
         <Text variant="titleMedium" style={styles.monthLabel}>
           {new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}
         </Text>
         <Button compact onPress={handleNextMonth}>
-          Next
+          {t('expenses.next')}
         </Button>
       </View>
 
@@ -198,7 +201,7 @@ export default function ExpensesListScreen() {
           <Card style={styles.summaryCard}>
             <Card.Content>
               <Text variant="bodySmall" style={styles.muted}>
-                Total
+                {tCommon('total')}
               </Text>
               <Text variant="titleMedium" style={styles.totalValue}>
                 {currencySymbol}
@@ -209,7 +212,7 @@ export default function ExpensesListScreen() {
           <Card style={styles.summaryCard}>
             <Card.Content>
               <Text variant="bodySmall" style={styles.muted}>
-                Transactions
+                {t('expenses.transactions')}
               </Text>
               <Text variant="titleMedium" style={styles.transValue}>
                 {summary.count || 0}
@@ -219,7 +222,7 @@ export default function ExpensesListScreen() {
           <Card style={styles.summaryCard}>
             <Card.Content>
               <Text variant="bodySmall" style={styles.muted}>
-                Top Category
+                {t('expenses.topCategory')}
               </Text>
               <Text variant="titleSmall" style={styles.topCatValue} numberOfLines={1}>
                 {topCategory?.name || '—'}
@@ -234,7 +237,7 @@ export default function ExpensesListScreen() {
         <Card style={styles.breakdownCard}>
           <Card.Content>
             <Text variant="bodySmall" style={[styles.muted, { marginBottom: 8 }]}>
-              Category Breakdown
+              {t('expenses.categoryBreakdown')}
             </Text>
             {categoryBreakdown.map((cat) => (
               <View key={cat.name} style={styles.breakdownRow}>
@@ -260,7 +263,7 @@ export default function ExpensesListScreen() {
       <View style={styles.filterSection}>
         <View style={styles.filterHeader}>
           <Text variant="bodySmall" style={styles.muted}>
-            Filters
+            {t('expenses.filters')}
           </Text>
           <Button
             compact
@@ -270,7 +273,7 @@ export default function ExpensesListScreen() {
             labelStyle={styles.manageCatLabel}
             style={styles.manageCatBtn}
           >
-            Categories
+            {t('expenses.categories')}
           </Button>
         </View>
         <ScrollView
@@ -279,7 +282,7 @@ export default function ExpensesListScreen() {
           contentContainerStyle={styles.filterChips}
         >
           <Chip compact selected={!categoryFilter} onPress={() => setCategoryFilter(undefined)}>
-            All Categories
+            {t('expenses.allCategories')}
           </Chip>
           {(categories || []).map((c: { id: string; name: string }) => (
             <Chip
@@ -298,7 +301,7 @@ export default function ExpensesListScreen() {
           contentContainerStyle={styles.filterChips}
         >
           <Chip compact selected={!methodFilter} onPress={() => setMethodFilter(undefined)}>
-            All Methods
+            {t('expenses.allMethods')}
           </Chip>
           {PAYMENT_METHODS.map((m) => (
             <Chip
@@ -307,7 +310,7 @@ export default function ExpensesListScreen() {
               selected={methodFilter === m}
               onPress={() => setMethodFilter(methodFilter === m ? undefined : m)}
             >
-              {m.replace(/_/g, ' ')}
+              {m === 'bank_transfer' ? tCommon('bankTransfer') : tCommon(m)}
             </Chip>
           ))}
         </ScrollView>
@@ -315,7 +318,7 @@ export default function ExpensesListScreen() {
 
       {/* Expense count */}
       <Text variant="bodySmall" style={styles.countText}>
-        {(expenses || []).length} expenses
+        {t('expenses.expenseCount', { count: (expenses || []).length })}
       </Text>
 
       <FlatList
@@ -333,8 +336,8 @@ export default function ExpensesListScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="cash-off"
-            title="No expenses"
-            description="No expenses recorded this month"
+            title={t('expenses.noExpenses')}
+            description={t('expenses.noExpensesThisMonth')}
           />
         }
         contentContainerStyle={styles.list}
@@ -342,7 +345,7 @@ export default function ExpensesListScreen() {
 
       <FAB
         icon="plus"
-        label="Add Expense"
+        label={t('expenses.addExpense')}
         style={styles.fab}
         onPress={() => {
           setEditExpense(null);
@@ -375,8 +378,8 @@ export default function ExpensesListScreen() {
 
       <ConfirmDialog
         visible={!!deleteExpenseId}
-        title="Delete Expense"
-        message="Are you sure you want to delete this expense?"
+        title={t('expenses.deleteExpense')}
+        message={t('expenses.deleteExpenseConfirm')}
         onConfirm={handleDeleteExpense}
         onCancel={() => setDeleteExpenseId(null)}
         destructive

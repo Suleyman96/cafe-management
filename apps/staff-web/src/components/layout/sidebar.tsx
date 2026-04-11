@@ -240,7 +240,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
           <button
             onClick={onToggle}
             className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-            title="Collapse sidebar"
+            title={tNav('collapseSidebar')}
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -249,7 +249,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
           <button
             onClick={onToggle}
             className="absolute -right-3 top-6 p-1 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 text-gray-500 transition-colors z-10"
-            title="Expand sidebar"
+            title={tNav('expandSidebar')}
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -456,7 +456,9 @@ function MyTasksIndicator({ staffId }: { staffId: string }) {
             </div>
           ))}
           {activeTasks.length > 3 && (
-            <div className="text-amber-600">+{activeTasks.length - 3} more</div>
+            <div className="text-amber-600">
+              {t('moreTasksCount', { count: activeTasks.length - 3 })}
+            </div>
           )}
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, IconButton } from 'react-native-paper';
@@ -33,6 +34,7 @@ export const StockItemCard = React.memo(function StockItemCard({
   onEdit,
   onDelete,
 }: StockItemCardProps) {
+  const { t } = useTranslation('staff');
   const minLevel = item.minimum_stock_level || 0;
   const isLow = item.quantity <= minLevel && minLevel > 0;
   const isNearLow = !isLow && item.quantity <= minLevel * 1.5 && minLevel > 0;
@@ -54,7 +56,7 @@ export const StockItemCard = React.memo(function StockItemCard({
                   style={styles.lowBadge}
                   textStyle={{ color: '#fff', fontSize: 9, fontWeight: '700' }}
                 >
-                  LOW
+                  {t('stock.low')}
                 </Chip>
               )}
             </View>
@@ -77,7 +79,7 @@ export const StockItemCard = React.memo(function StockItemCard({
               {unit}
             </Text>
             <Text variant="bodySmall" style={styles.minLabel}>
-              min: {minLevel}
+              {t('stock.min')} {minLevel}
             </Text>
           </View>
         </View>
@@ -108,7 +110,7 @@ export const StockItemCard = React.memo(function StockItemCard({
         <View style={styles.actionsRow}>
           <View style={styles.stockBtns}>
             <Button compact mode="contained-tonal" onPress={() => onAddStock(item.id)} icon="plus">
-              Add
+              {t('stock.add')}
             </Button>
             <Button
               compact
@@ -116,10 +118,10 @@ export const StockItemCard = React.memo(function StockItemCard({
               onPress={() => onRemoveStock(item.id)}
               icon="minus"
             >
-              Remove
+              {t('stock.remove')}
             </Button>
             <Button compact onPress={() => onViewHistory(item.id)} icon="history">
-              History
+              {t('stock.history')}
             </Button>
           </View>
           <View style={styles.editBtns}>

@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Text } from 'react-native-paper';
@@ -20,6 +21,14 @@ interface WaiterCallCardProps {
   onResolve: (callId: string) => void;
 }
 
+const CALL_TYPE_KEYS: Record<string, string> = {
+  assistance: 'calls.assistance',
+  bill: 'calls.requestBill',
+  complaint: 'calls.complaint',
+  question: 'calls.question',
+  emergency: 'calls.emergency',
+};
+
 export const WaiterCallCard = React.memo(function WaiterCallCard({
   call,
   onAcknowledge,
@@ -27,6 +36,7 @@ export const WaiterCallCard = React.memo(function WaiterCallCard({
 }: WaiterCallCardProps) {
   const callType = call.call_type || 'assistance';
   const reasonColor = WAITER_CALL_REASON_COLORS[callType] || '#6b7280';
+  const { t } = useTranslation('staff');
 
   return (
     <Card style={[styles.card, { borderLeftColor: reasonColor }]}>
@@ -34,7 +44,7 @@ export const WaiterCallCard = React.memo(function WaiterCallCard({
         <View style={styles.topRow}>
           <View style={styles.tableInfo}>
             <Text variant="titleLarge" style={styles.tableNumber}>
-              Table #{call.table?.table_number || '—'}
+              {t('tables.table')} #{call.table?.table_number || '—'}
             </Text>
             {call.table?.location && (
               <Text variant="bodySmall" style={styles.muted}>
@@ -50,7 +60,7 @@ export const WaiterCallCard = React.memo(function WaiterCallCard({
           style={[styles.reasonChip, { backgroundColor: reasonColor }]}
           textStyle={{ color: '#fff', fontSize: 11, fontWeight: '600' }}
         >
-          {callType.charAt(0).toUpperCase() + callType.slice(1)}
+          {t(CALL_TYPE_KEYS[callType] || `calls.${callType}`)}
         </Chip>
 
         {call.reason ? (
@@ -65,7 +75,7 @@ export const WaiterCallCard = React.memo(function WaiterCallCard({
             onPress={() => onAcknowledge(call.id)}
             style={styles.actionButton}
           >
-            Acknowledge
+            {t('calls.acknowledge')}
           </Button>
         )}
 
@@ -75,13 +85,13 @@ export const WaiterCallCard = React.memo(function WaiterCallCard({
             onPress={() => onResolve(call.id)}
             style={[styles.actionButton, { backgroundColor: '#10b981' }]}
           >
-            Resolve
+            {t('calls.resolve')}
           </Button>
         )}
 
         {call.status === 'resolved' && call.resolved_at && (
           <Text variant="bodySmall" style={styles.muted}>
-            Resolved at {new Date(call.resolved_at).toLocaleTimeString()}
+            {t('calls.resolvedAt')} {new Date(call.resolved_at).toLocaleTimeString()}
           </Text>
         )}
       </Card.Content>

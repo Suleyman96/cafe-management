@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, IconButton } from 'react-native-paper';
@@ -33,6 +34,7 @@ export const ExpenseCard = React.memo(function ExpenseCard({
   onEdit,
   onDelete,
 }: ExpenseCardProps) {
+  const { t } = useTranslation('staff');
   const method = expense.payment_method || 'cash';
   const methodColor = METHOD_COLORS[method] || '#6b7280';
   const displayDate = expense.expense_date || expense.created_at;
@@ -43,10 +45,10 @@ export const ExpenseCard = React.memo(function ExpenseCard({
         <View style={styles.topRow}>
           <View style={styles.info}>
             <Text variant="titleSmall" style={styles.description}>
-              {expense.description || 'No description'}
+              {expense.description || t('expenses.noDescription')}
             </Text>
             <Text variant="bodySmall" style={styles.muted}>
-              {expense.category?.name || 'Uncategorized'} ·{' '}
+              {expense.category?.name || t('expenses.uncategorized')} ·{' '}
               {expense.created_by_staff?.full_name || '—'}
             </Text>
             {expense.notes && (
