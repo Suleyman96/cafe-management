@@ -164,6 +164,7 @@ vi.mock('@gustri/i18n', () => {
   };
 
   return {
+    initI18n: vi.fn(),
     useTranslation: () => ({
       t: (key: string) => en[key] ?? key,
       i18n: { language: 'en', changeLanguage: vi.fn() },
