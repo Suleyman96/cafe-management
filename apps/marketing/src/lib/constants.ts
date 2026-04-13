@@ -180,7 +180,7 @@ export const FAQ_ITEMS = [
   {
     question: 'Do you support multiple languages?',
     answer:
-      'Yes. The staff interface supports 20 languages including English, Azerbaijani, Turkish, Russian, Spanish, French, German, Japanese, Korean, Arabic, and more.',
+      'Yes. The staff interface supports 20 languages including Japanese, English, Korean, Spanish, French, German, Arabic, Turkish, Russian, and more.',
   },
   {
     question: 'Can I use Gustri for delivery orders?',

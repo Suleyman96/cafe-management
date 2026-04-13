@@ -9,16 +9,16 @@ CREATE TABLE cafe_settings (
 
   -- Tax settings
   tax_enabled BOOLEAN NOT NULL DEFAULT false,
-  tax_percentage DECIMAL(5, 2) NOT NULL DEFAULT 18.00,
+  tax_percentage DECIMAL(5, 2) NOT NULL DEFAULT 10.00,
   tax_label VARCHAR(50) NOT NULL DEFAULT 'Tax',
   prices_include_tax BOOLEAN NOT NULL DEFAULT false,
   show_tax_separately BOOLEAN NOT NULL DEFAULT true,
 
   -- Currency settings
-  currency_symbol VARCHAR(10) NOT NULL DEFAULT '₼',
-  currency_code VARCHAR(3) NOT NULL DEFAULT 'AZN',
-  currency_position VARCHAR(10) NOT NULL DEFAULT 'after' CHECK (currency_position IN ('before', 'after')),
-  currency_decimal_places INTEGER NOT NULL DEFAULT 2,
+  currency_symbol VARCHAR(10) NOT NULL DEFAULT '¥',
+  currency_code VARCHAR(3) NOT NULL DEFAULT 'JPY',
+  currency_position VARCHAR(10) NOT NULL DEFAULT 'before' CHECK (currency_position IN ('before', 'after')),
+  currency_decimal_places INTEGER NOT NULL DEFAULT 0,
 
   -- Order settings
   minimum_order_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,

@@ -23,12 +23,12 @@ export default function CafeSettingsPage() {
     restaurant_name: '',
     restaurant_address: null,
     tax_enabled: true,
-    tax_percentage: 18,
+    tax_percentage: 10,
     tax_label: 'Tax',
-    currency_symbol: '₼',
-    currency_code: 'AZN',
-    currency_position: 'after',
-    currency_decimal_places: 2,
+    currency_symbol: '¥',
+    currency_code: 'JPY',
+    currency_position: 'before',
+    currency_decimal_places: 0,
     minimum_order_amount: 0,
     allow_item_notes: true,
     allow_order_notes: true,
@@ -53,7 +53,7 @@ export default function CafeSettingsPage() {
     social_telegram: null,
     social_line: null,
     location_maps_url: null,
-    default_language: 'en',
+    default_language: 'ja',
   });
 
   const [hasChanges, setHasChanges] = useState(false);
@@ -96,7 +96,7 @@ export default function CafeSettingsPage() {
         social_telegram: settings.social_telegram,
         social_line: settings.social_line,
         location_maps_url: settings.location_maps_url,
-        default_language: settings.default_language ?? 'en',
+        default_language: settings.default_language ?? 'ja',
       });
       setHasChanges(false);
     }
@@ -172,7 +172,7 @@ export default function CafeSettingsPage() {
         social_telegram: settings.social_telegram,
         social_line: settings.social_line,
         location_maps_url: settings.location_maps_url,
-        default_language: settings.default_language ?? 'en',
+        default_language: settings.default_language ?? 'ja',
       });
       setHasChanges(false);
     }

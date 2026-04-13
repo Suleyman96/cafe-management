@@ -1,22 +1,22 @@
 'use client';
 
 import { i18n, initI18n } from '@gustri/i18n';
-import authEn from '@gustri/i18n/locales/en/auth.json';
-import commonEn from '@gustri/i18n/locales/en/common.json';
-import navEn from '@gustri/i18n/locales/en/nav.json';
-import rolesEn from '@gustri/i18n/locales/en/roles.json';
-import staffEn from '@gustri/i18n/locales/en/staff.json';
+import authJa from '@gustri/i18n/locales/ja/auth.json';
+import commonJa from '@gustri/i18n/locales/ja/common.json';
+import navJa from '@gustri/i18n/locales/ja/nav.json';
+import rolesJa from '@gustri/i18n/locales/ja/roles.json';
+import staffJa from '@gustri/i18n/locales/ja/staff.json';
 
 initI18n({
-  lng: 'en',
+  lng: 'ja',
   namespaces: ['common', 'nav', 'auth', 'staff', 'roles'],
   resources: {
-    en: {
-      common: commonEn,
-      nav: navEn,
-      auth: authEn,
-      staff: staffEn,
-      roles: rolesEn,
+    ja: {
+      common: commonJa,
+      nav: navJa,
+      auth: authJa,
+      staff: staffJa,
+      roles: rolesJa,
     },
   },
 });
@@ -31,6 +31,13 @@ type NamespaceBundles = {
 
 // Static import map — webpack can resolve each path at build time
 const languageLoaders: Record<string, () => Promise<NamespaceBundles>> = {
+  en: async () => ({
+    common: (await import('@gustri/i18n/locales/en/common.json')).default,
+    nav: (await import('@gustri/i18n/locales/en/nav.json')).default,
+    auth: (await import('@gustri/i18n/locales/en/auth.json')).default,
+    staff: (await import('@gustri/i18n/locales/en/staff.json')).default,
+    roles: (await import('@gustri/i18n/locales/en/roles.json')).default,
+  }),
   az: async () => ({
     common: (await import('@gustri/i18n/locales/az/common.json')).default,
     nav: (await import('@gustri/i18n/locales/az/nav.json')).default,
@@ -51,13 +58,6 @@ const languageLoaders: Record<string, () => Promise<NamespaceBundles>> = {
     auth: (await import('@gustri/i18n/locales/tr/auth.json')).default,
     staff: (await import('@gustri/i18n/locales/tr/staff.json')).default,
     roles: (await import('@gustri/i18n/locales/tr/roles.json')).default,
-  }),
-  ja: async () => ({
-    common: (await import('@gustri/i18n/locales/ja/common.json')).default,
-    nav: (await import('@gustri/i18n/locales/ja/nav.json')).default,
-    auth: (await import('@gustri/i18n/locales/ja/auth.json')).default,
-    staff: (await import('@gustri/i18n/locales/ja/staff.json')).default,
-    roles: (await import('@gustri/i18n/locales/ja/roles.json')).default,
   }),
   ka: async () => ({
     common: (await import('@gustri/i18n/locales/ka/common.json')).default,
@@ -168,8 +168,8 @@ const languageLoaders: Record<string, () => Promise<NamespaceBundles>> = {
 
 // Dynamically load and switch language (only loads the requested language on demand)
 export async function loadAndSwitchLanguage(lang: string) {
-  if (lang === 'en') {
-    i18n.changeLanguage('en');
+  if (lang === 'ja') {
+    i18n.changeLanguage('ja');
     return;
   }
 

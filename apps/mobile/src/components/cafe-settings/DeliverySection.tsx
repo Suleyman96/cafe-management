@@ -27,7 +27,7 @@ export function DeliverySection({ form, updateField }: SettingsSectionProps) {
         {!!form.delivery_enabled && (
           <>
             <TextInput
-              label={`${t('cafeSettings.defaultDeliveryFee')} (${form.currency_symbol || '₼'})`}
+              label={`${t('cafeSettings.defaultDeliveryFee')} (${form.currency_symbol || '¥'})`}
               value={String(form.delivery_fee_default ?? '')}
               onChangeText={(v: string) =>
                 updateField('delivery_fee_default', Number.parseFloat(v) || 0)
@@ -38,7 +38,7 @@ export function DeliverySection({ form, updateField }: SettingsSectionProps) {
               style={styles.input}
             />
             <TextInput
-              label={`${t('cafeSettings.minimumDeliveryAmount')} (${form.currency_symbol || '₼'})`}
+              label={`${t('cafeSettings.minimumDeliveryAmount')} (${form.currency_symbol || '¥'})`}
               value={String(form.minimum_delivery_amount ?? '')}
               onChangeText={(v: string) =>
                 updateField('minimum_delivery_amount', Number.parseFloat(v) || 0)
