@@ -32,7 +32,7 @@ export function createSettingsWrapper(ctx: WrapperContext) {
       const { data, error } = await ctx.anyClient
         .from('cafe_settings')
         .update(updates)
-        .eq('id', current.id)
+        .eq('id', (current as { id: string }).id)
         .select('*')
         .single();
 
