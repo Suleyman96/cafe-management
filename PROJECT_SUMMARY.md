@@ -8,7 +8,7 @@
 
 ### Customer Features (Web App)
 - 📱 QR code-based ordering (no app download required)
-- 🌍 Multi-language support (English, Azerbaijani, Russian, Turkish)
+- 🌍 Multi-language support (Japanese, English, Korean, and 17 more)
 - 🍽️ Browse menu with images, descriptions, and allergen information
 - 🛒 Add items to cart with custom notes
 - 📊 Real-time order status tracking

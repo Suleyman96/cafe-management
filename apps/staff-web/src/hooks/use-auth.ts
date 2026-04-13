@@ -2,7 +2,8 @@
 
 import type { Database } from '@gustri/database';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { loadAndSwitchLanguage } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/wrapped-client';
 import { useAuthStore } from '@/store/auth-store';
@@ -26,120 +27,151 @@ export async function postLoginSideEffects(staffId: string) {
     .catch(console.warn);
 }
 
-// Global flag to prevent multiple concurrent session checks
-let sessionCheckInProgress = false;
+// Shared promise so concurrent callers wait for the same check
+let sessionCheckPromise: Promise<void> | null = null;
+
+async function loadStaffAndSetup(
+  userId: string,
+  setStaff: (s: Staff) => void,
+  setTenantPlan: (p: any) => void,
+) {
+  const staffData = (await db.staff.findByAuthId(userId)) as Staff;
+  setStaff(staffData);
+  postLoginSideEffects(staffData.id);
+
+  if (staffData.preferred_language && staffData.preferred_language !== 'en') {
+    loadAndSwitchLanguage(staffData.preferred_language).catch(console.warn);
+  }
+
+  db.tenants
+    .getCurrent()
+    .then((tenant) => setTenantPlan(tenant.plan as any))
+    .catch(console.warn);
+}
 
 export function useAuth() {
   const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
+
   const { staff, isLoading, setStaff, setTenantPlan, setIsLoading, clearAuth } = useAuthStore();
 
-  // Always initialize the Supabase session from localStorage and listen for changes.
-  // This must run even when Zustand already has staff data (e.g. after page refresh),
-  // otherwise the Supabase client won't have the JWT and mutations fail as anon.
+  const stableLogout = useCallback(async () => {
+    await supabase.auth.signOut();
+    clearAuth();
+    routerRef.current.push('/login');
+  }, [clearAuth]);
+
   useEffect(() => {
+    let cancelled = false;
+
     const initSession = async () => {
       // If Zustand already has staff, just ensure the Supabase session is loaded
       if (staff) {
         const {
           data: { session },
         } = await supabase.auth.getSession();
-        if (!session) {
-          // Supabase session expired but Zustand still has stale data
+        if (!session && !cancelled) {
           clearAuth();
-          router.push('/login');
+          routerRef.current.push('/login');
         }
         return;
       }
 
-      // No staff in store — do full session check
-      if (sessionCheckInProgress) return;
-      sessionCheckInProgress = true;
+      // If another caller is already checking, wait for it instead of returning early
+      if (sessionCheckPromise) {
+        await sessionCheckPromise;
+        // If staff was loaded (or auth cleared), we're done
+        if (useAuthStore.getState().staff || !useAuthStore.getState().isLoading) {
+          return;
+        }
+        // Otherwise, the previous check was cancelled (e.g. StrictMode) — fall through
+      }
+
       setIsLoading(true);
 
-      try {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          clearAuth();
-          return;
-        }
-
-        if (!session?.user) {
-          clearAuth();
-          return;
-        }
-
-        // Fetch staff record
-        let staffData: Staff | null = null;
+      sessionCheckPromise = (async () => {
         try {
-          staffData = (await db.staff.findByAuthId(session.user.id)) as Staff;
-        } catch (staffError) {
-          console.error('Staff fetch error:', staffError);
-          await supabase.auth.signOut();
-          clearAuth();
-          return;
+          const {
+            data: { session },
+            error: sessionError,
+          } = await supabase.auth.getSession();
+
+          if (cancelled) return;
+
+          if (sessionError) {
+            console.error('Session error:', sessionError);
+            clearAuth();
+            return;
+          }
+
+          if (!session?.user) {
+            clearAuth();
+            return;
+          }
+
+          try {
+            await loadStaffAndSetup(session.user.id, setStaff, setTenantPlan);
+          } catch (staffError) {
+            console.error('Staff fetch error:', staffError);
+            if (!cancelled) {
+              await supabase.auth.signOut();
+              clearAuth();
+            }
+          }
+        } catch (error) {
+          console.error('Auth check error:', error);
+          if (!cancelled) clearAuth();
+        } finally {
+          if (!cancelled) setIsLoading(false);
+          sessionCheckPromise = null;
         }
+      })();
 
-        setStaff(staffData);
-        postLoginSideEffects(staffData.id);
-
-        // Fetch tenant plan
-        db.tenants
-          .getCurrent()
-          .then((tenant) => setTenantPlan(tenant.plan as any))
-          .catch(console.warn);
-      } catch (error) {
-        console.error('Auth check error:', error);
-        clearAuth();
-      } finally {
-        setIsLoading(false);
-        sessionCheckInProgress = false;
-      }
+      await sessionCheckPromise;
     };
 
     initSession();
 
-    // Always listen for auth changes (session expiry, sign out, etc.)
+    // Listen for auth changes (session expiry, sign out, token refresh, etc.)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (cancelled) return;
+
       if (event === 'SIGNED_OUT' || !session) {
         clearAuth();
-        router.push('/login');
-      } else if (event === 'SIGNED_IN' && session.user) {
-        try {
-          const staffData = (await db.staff.findByAuthId(session.user.id)) as Staff;
-          setStaff(staffData);
-          postLoginSideEffects(staffData.id);
-          db.tenants
-            .getCurrent()
-            .then((tenant) => setTenantPlan(tenant.plan as any))
-            .catch(console.warn);
-        } catch {
-          // Staff record not found — ignore
+        routerRef.current.push('/login');
+      } else if (
+        (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') &&
+        session.user
+      ) {
+        // Only load staff if we don't have it yet
+        if (!useAuthStore.getState().staff) {
+          try {
+            await loadStaffAndSetup(session.user.id, setStaff, setTenantPlan);
+            setIsLoading(false);
+          } catch (err) {
+            console.error('Failed to load staff from auth event:', err);
+            if (!cancelled) {
+              await supabase.auth.signOut();
+              clearAuth();
+            }
+          }
         }
       }
     });
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
     };
-  }, [staff, clearAuth, router.push, setIsLoading, setStaff, setTenantPlan]);
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-    clearAuth();
-    router.push('/login');
-  };
+  }, [staff, clearAuth, setIsLoading, setStaff, setTenantPlan]);
 
   return {
     staff,
     isLoading,
     isAuthenticated: !!staff,
-    logout,
+    logout: stableLogout,
   };
 }

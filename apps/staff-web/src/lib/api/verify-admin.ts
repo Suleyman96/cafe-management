@@ -38,7 +38,7 @@ export async function verifyAdmin(request: NextRequest) {
 
   const { data: staffData, error: staffError } = await supabaseAdmin
     .from('staff')
-    .select('id, role')
+    .select('id, role, tenant_id')
     .eq('auth_user_id', user.id)
     .eq('is_active', true)
     .single();

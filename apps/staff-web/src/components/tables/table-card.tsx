@@ -364,7 +364,9 @@ export function TableCard({
         <div key={call.id} className="mt-3 p-3 bg-red-100 border border-red-300 rounded-lg">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-red-600" />
-            <span className="font-semibold text-red-700 text-sm">{call.reason.toUpperCase()}</span>
+            <span className="font-semibold text-red-700 text-sm">
+              {t(`calls.${call.reason}`, { defaultValue: call.reason })}
+            </span>
           </div>
           {call.message && <p className="text-red-600 text-sm mt-1">{call.message}</p>}
         </div>

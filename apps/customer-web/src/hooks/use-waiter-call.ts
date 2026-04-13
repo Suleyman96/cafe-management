@@ -19,6 +19,7 @@ interface CreateWaiterCallData {
   reason: string;
   priority: CallPriority;
   notes?: string;
+  tenantId: string;
 }
 
 export function useCreateWaiterCall() {
@@ -31,9 +32,11 @@ export function useCreateWaiterCall() {
       reason,
       priority,
       notes,
+      tenantId,
     }: CreateWaiterCallData): Promise<WaiterCall> =>
       db.waiterCalls.create({
         table_id: tableId,
+        tenant_id: tenantId,
         call_type: callType,
         reason: reason,
         priority: priority,

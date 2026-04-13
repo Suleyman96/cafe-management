@@ -5,11 +5,11 @@ import { createMockContext } from './helpers/mock-supabase';
 const validSettings = {
   id: '00000000-0000-0000-0000-000000000001',
   restaurant_name: 'Test Cafe',
-  currency_symbol: '₼',
-  currency_code: 'AZN',
+  currency_symbol: '¥',
+  currency_code: 'JPY',
   tax_enabled: true,
-  tax_percentage: 18,
-  default_language: 'az',
+  tax_percentage: 10,
+  default_language: 'ja',
 };
 
 describe('SettingsWrapper', () => {
@@ -34,7 +34,7 @@ describe('SettingsWrapper', () => {
     const settings = createSettingsWrapper(ctx);
     const result = await settings.update({ restaurant_name: 'Updated Cafe' } as any);
     expect(result.restaurant_name).toBe('Updated Cafe');
-    expect(ctx.getCalls()[0].method).toBe('update');
+    expect(ctx.getCalls()[1].method).toBe('update');
   });
 
   it('throws on supabase error for get', async () => {

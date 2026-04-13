@@ -39,10 +39,12 @@ describe('useCreateWaiterCall', () => {
       callType: 'assistance',
       reason: 'Need help',
       priority: 'normal',
+      tenantId: 'tenant-1',
     });
 
     expect(db.waiterCalls.create).toHaveBeenCalledWith({
       table_id: 'table-1',
+      tenant_id: 'tenant-1',
       call_type: 'assistance',
       reason: 'Need help',
       priority: 'normal',
@@ -58,10 +60,12 @@ describe('useCreateWaiterCall', () => {
       reason: 'Default reason',
       priority: 'high',
       notes: 'Custom note',
+      tenantId: 'tenant-1',
     });
 
     expect(db.waiterCalls.create).toHaveBeenCalledWith({
       table_id: 'table-1',
+      tenant_id: 'tenant-1',
       call_type: 'bill',
       reason: 'Default reason',
       priority: 'high',
@@ -78,10 +82,12 @@ describe('useCreateWaiterCall', () => {
       reason: 'Original reason',
       priority: 'low',
       notes: '',
+      tenantId: 'tenant-1',
     });
 
     expect(db.waiterCalls.create).toHaveBeenCalledWith({
       table_id: 'table-1',
+      tenant_id: 'tenant-1',
       call_type: 'question',
       reason: 'Original reason',
       priority: 'low',
@@ -97,6 +103,7 @@ describe('useCreateWaiterCall', () => {
       callType: 'assistance',
       reason: 'Help',
       priority: 'normal',
+      tenantId: 'tenant-1',
     });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
@@ -116,6 +123,7 @@ describe('useCreateWaiterCall - error handling', () => {
         callType: 'assistance',
         reason: 'Help',
         priority: 'normal',
+        tenantId: 'tenant-1',
       }),
     ).rejects.toThrow('Create failed');
   });

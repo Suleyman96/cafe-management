@@ -1,4 +1,5 @@
 import { createStackNavigator } from '@react-navigation/stack';
+import { IconButton } from 'react-native-paper';
 import { DrawerMenuButton } from '@/components/navigation/DrawerMenuButton';
 import AddItemsScreen from '@/screens/orders/AddItemsScreen';
 import OrderDetailScreen from '@/screens/orders/OrderDetailScreen';
@@ -17,7 +18,16 @@ export function OrdersStack() {
         options={{ title: 'Orders', headerLeft: () => <DrawerMenuButton /> }}
       />
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ title: 'Order' }} />
-      <Stack.Screen name="AddItems" component={AddItemsScreen} options={{ title: 'Add Items' }} />
+      <Stack.Screen
+        name="AddItems"
+        component={AddItemsScreen}
+        options={({ navigation }) => ({
+          title: 'Add Items',
+          headerRight: () => (
+            <IconButton icon="close" size={22} onPress={() => navigation.goBack()} />
+          ),
+        })}
+      />
       <Stack.Screen
         name="OrderPayment"
         component={OrderPaymentScreen}

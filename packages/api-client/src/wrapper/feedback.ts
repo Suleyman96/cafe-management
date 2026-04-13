@@ -9,6 +9,7 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
   return {
     create: async (data: {
       table_id: string;
+      tenant_id?: string;
       feedback_type: string;
       message?: string;
       order_id?: string | null;

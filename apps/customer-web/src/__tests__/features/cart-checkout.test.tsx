@@ -109,6 +109,7 @@ describe('CartScreen — checkout flow', () => {
       table_number: 'T01',
       status: 'occupied',
       location: null,
+      tenant_id: 'tenant-1',
     });
 
     // Mock no existing order for this table
@@ -177,6 +178,7 @@ describe('CartScreen — checkout flow', () => {
       table_number: 'T01',
       status: 'occupied',
       location: null,
+      tenant_id: 'tenant-1',
     });
 
     // Mock no existing order
@@ -217,6 +219,7 @@ describe('CartScreen — checkout flow', () => {
       table_number: 'T01',
       status: 'occupied',
       location: null,
+      tenant_id: 'tenant-1',
     });
 
     // Mock no existing order

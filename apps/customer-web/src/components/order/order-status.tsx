@@ -71,6 +71,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
         callType: 'assistance',
         reason: t('callStaff.reason.assistance'),
         priority: 'normal',
+        tenantId: table?.tenant_id || '',
       });
       toast.success(t('callStaff.toastSuccess'));
     } catch (error) {
@@ -365,6 +366,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
           <div className="bg-card rounded-lg p-6 border">
             <FeedbackForm
               tableId={actualTableId}
+              tenantId={table?.tenant_id || ''}
               orderId={order.id}
               onSuccess={() => setShowFeedbackForm(false)}
               onCancel={() => setShowFeedbackForm(false)}

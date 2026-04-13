@@ -21,6 +21,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { TaskModal } from '@/components/modals/task-modal';
 import { Button } from '@/components/ui/button';
 import {
@@ -71,6 +72,7 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState('');
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [deleteConfirmTask, setDeleteConfirmTask] = useState<Task | null>(null);
 
   const generateRecurring = useGenerateRecurringTasks();
   const { data: todaysTasks = [], isLoading: todayLoading } = useTodaysTasks();
@@ -116,11 +118,12 @@ export default function TasksPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+  const handleDelete = async () => {
+    if (!deleteConfirmTask) return;
     try {
-      await deleteTask.mutateAsync(id);
+      await deleteTask.mutateAsync(deleteConfirmTask.id);
       toast.success(t('tasks.taskDeleted'));
+      setDeleteConfirmTask(null);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t('tasks.failedUpdateTask');
       toast.error(message);
@@ -171,9 +174,18 @@ export default function TasksPage() {
     monthly: t('tasks.monthly'),
   };
 
+  const WEEKDAY_KEYS = [
+    '',
+    'weekdays.mon',
+    'weekdays.tue',
+    'weekdays.wed',
+    'weekdays.thu',
+    'weekdays.fri',
+    'weekdays.sat',
+    'weekdays.sun',
+  ];
   const getWeekdayLabels = (days: number[]) => {
-    const names = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days.map((d) => names[d] || d).join(', ');
+    return days.map((d) => t(WEEKDAY_KEYS[d])).join(', ');
   };
 
   if (isLoading) {
@@ -309,7 +321,7 @@ export default function TasksPage() {
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_COLORS[task.priority]}`}
                   >
-                    {task.priority}
+                    {t(`tasks.${task.priority}`)}
                   </span>
                   {task.assigned_to_staff?.full_name && (
                     <span className="text-xs text-gray-500">
@@ -334,7 +346,9 @@ export default function TasksPage() {
                       )}
                       {task.recurrence_pattern === 'monthly' &&
                         task.recurrence_days?.length > 0 && (
-                          <span>(Day {task.recurrence_days[0]})</span>
+                          <span>
+                            ({t('reports.day')} {task.recurrence_days[0]})
+                          </span>
                         )}
                     </span>
                   )}
@@ -343,6 +357,7 @@ export default function TasksPage() {
               <div className="flex items-center gap-1 flex-shrink-0">
                 {task.status === 'pending' && !task.is_recurring && (
                   <button
+                    type="button"
                     onClick={() => handleQuickAction(task.id, 'start')}
                     className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
                     title={t('start', { ns: 'common' })}
@@ -353,6 +368,7 @@ export default function TasksPage() {
                 {(task.status === 'pending' || task.status === 'in_progress') &&
                   !task.is_recurring && (
                     <button
+                      type="button"
                       onClick={() => handleQuickAction(task.id, 'complete')}
                       className="p-1.5 text-gray-400 hover:text-green-600 rounded"
                       title={t('complete', { ns: 'common' })}
@@ -361,6 +377,7 @@ export default function TasksPage() {
                     </button>
                   )}
                 <button
+                  type="button"
                   onClick={() => {
                     setEditingTask(task);
                     setShowTaskModal(true);
@@ -372,7 +389,8 @@ export default function TasksPage() {
                 </button>
                 {isAdmin && (
                   <button
-                    onClick={() => handleDelete(task.id)}
+                    type="button"
+                    onClick={() => setDeleteConfirmTask(task)}
                     className="p-1.5 text-gray-400 hover:text-red-600 rounded"
                     title={t('delete', { ns: 'common' })}
                   >
@@ -400,6 +418,15 @@ export default function TasksPage() {
           }}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!deleteConfirmTask}
+        onClose={() => setDeleteConfirmTask(null)}
+        onConfirm={handleDelete}
+        title={t('tasks.deleteTask')}
+        message={t('tasks.deleteTaskConfirm')}
+        loading={deleteTask.isPending}
+      />
     </div>
   );
 }

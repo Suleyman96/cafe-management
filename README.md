@@ -217,7 +217,7 @@ pnpm db:studio
 - **Digital Menu** - Browse categories, view item details, dietary info
 - **Cart** - Add items with notes, review before ordering
 - **Real-time Tracking** - Live order status updates via Supabase Realtime
-- **Multi-language** - English, Azerbaijani, Russian, Turkish
+- **Multi-language** - Japanese, English, Korean, and 17 more
 - **Feedback** - Submit complaints, questions, and praise
 - **Call Waiter** - Request assistance from staff
 

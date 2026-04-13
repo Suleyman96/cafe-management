@@ -327,7 +327,11 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               {t('cancel', { ns: 'common' })}
             </Button>
-            <Button type="submit" className="flex-1">
+            <Button
+              type="submit"
+              className="flex-1"
+              disabled={createWaste.isPending || updateWaste.isPending}
+            >
               {isEditing ? t('tasks.update') : t('waste.logWaste')}
             </Button>
           </div>

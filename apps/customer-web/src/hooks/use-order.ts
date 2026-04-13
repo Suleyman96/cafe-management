@@ -71,9 +71,18 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ tableId, notes }: { tableId: string; notes?: string }): Promise<Order> =>
+    mutationFn: async ({
+      tableId,
+      notes,
+      tenantId,
+    }: {
+      tableId: string;
+      notes?: string;
+      tenantId: string;
+    }): Promise<Order> =>
       db.orders.create({
         table_id: tableId,
+        tenant_id: tenantId,
         customer_notes: notes,
         status: 'pending_approval',
         source: 'customer',
@@ -124,6 +133,7 @@ export function useAddOrderItems() {
     mutationFn: async ({
       orderId,
       items,
+      tenantId,
     }: {
       orderId: string;
       items: Array<{
@@ -133,10 +143,12 @@ export function useAddOrderItems() {
         quantity: number;
         notes?: string;
       }>;
+      tenantId: string;
     }): Promise<OrderItem[]> =>
       db.orderItems.create(
         items.map((item) => ({
           order_id: orderId,
+          tenant_id: tenantId,
           ...item,
           notes: item.notes ?? null,
           status: 'pending' as const,

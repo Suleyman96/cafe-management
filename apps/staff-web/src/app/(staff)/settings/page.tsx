@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
 import { loadAndSwitchLanguage } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase/client';
+import { db } from '@/lib/supabase/wrapped-client';
 
 export default function SettingsPage() {
   const { staff, isLoading } = useAuth();
@@ -26,6 +27,9 @@ export default function SettingsPage() {
     setLanguageLoading(true);
     try {
       await loadAndSwitchLanguage(lang);
+      if (staff?.id) {
+        await db.staff.update(staff.id, { preferred_language: lang });
+      }
       toast.success(t('settings.languageChanged'));
     } catch {
       toast.error(t('error', { ns: 'common' }));

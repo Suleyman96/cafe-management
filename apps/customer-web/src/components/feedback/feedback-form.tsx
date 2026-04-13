@@ -10,12 +10,19 @@ type FeedbackType = 'complaint' | 'praise';
 
 interface FeedbackFormProps {
   tableId: string;
+  tenantId: string;
   orderId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: FeedbackFormProps) {
+export function FeedbackForm({
+  tableId,
+  tenantId,
+  orderId,
+  onSuccess,
+  onCancel,
+}: FeedbackFormProps) {
   const { t } = useTranslation('customer');
   const [feedbackType, setFeedbackType] = useState<FeedbackType | null>(null);
   const [message, setMessage] = useState('');
@@ -56,6 +63,7 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
     try {
       await db.feedback.create({
         table_id: tableId,
+        tenant_id: tenantId,
         order_id: orderId || null,
         feedback_type: feedbackType,
         message: message.trim(),

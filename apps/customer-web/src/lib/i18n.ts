@@ -1,16 +1,16 @@
 'use client';
 
 import { i18n, initI18n } from '@gustri/i18n';
-import commonEn from '@gustri/i18n/locales/en/common.json';
-import customerEn from '@gustri/i18n/locales/en/customer.json';
+import commonJa from '@gustri/i18n/locales/ja/common.json';
+import customerJa from '@gustri/i18n/locales/ja/customer.json';
 
 initI18n({
-  lng: 'en',
+  lng: 'ja',
   namespaces: ['common', 'customer'],
   resources: {
-    en: {
-      common: commonEn,
-      customer: customerEn,
+    ja: {
+      common: commonJa,
+      customer: customerJa,
     },
   },
 });
@@ -22,6 +22,10 @@ type NamespaceBundles = {
 
 // Static import map — webpack can resolve each path at build time
 const languageLoaders: Record<string, () => Promise<NamespaceBundles>> = {
+  en: async () => ({
+    common: (await import('@gustri/i18n/locales/en/common.json')).default,
+    customer: (await import('@gustri/i18n/locales/en/customer.json')).default,
+  }),
   az: async () => ({
     common: (await import('@gustri/i18n/locales/az/common.json')).default,
     customer: (await import('@gustri/i18n/locales/az/customer.json')).default,
@@ -33,10 +37,6 @@ const languageLoaders: Record<string, () => Promise<NamespaceBundles>> = {
   tr: async () => ({
     common: (await import('@gustri/i18n/locales/tr/common.json')).default,
     customer: (await import('@gustri/i18n/locales/tr/customer.json')).default,
-  }),
-  ja: async () => ({
-    common: (await import('@gustri/i18n/locales/ja/common.json')).default,
-    customer: (await import('@gustri/i18n/locales/ja/customer.json')).default,
   }),
   ka: async () => ({
     common: (await import('@gustri/i18n/locales/ka/common.json')).default,
@@ -102,8 +102,8 @@ const languageLoaders: Record<string, () => Promise<NamespaceBundles>> = {
 
 // Dynamically load and switch language (only loads the requested language on demand)
 export async function loadAndSwitchLanguage(lang: string) {
-  if (lang === 'en') {
-    i18n.changeLanguage('en');
+  if (lang === 'ja') {
+    i18n.changeLanguage('ja');
     return;
   }
 
@@ -125,7 +125,7 @@ export async function loadAndSwitchLanguage(lang: string) {
     i18n.addResourceBundle(lang, 'customer', bundles.customer);
     i18n.changeLanguage(lang);
   } catch (err) {
-    console.warn(`Failed to load translations for ${lang}, falling back to English`, err);
-    i18n.changeLanguage('en');
+    console.warn(`Failed to load translations for ${lang}, falling back to Japanese`, err);
+    i18n.changeLanguage('ja');
   }
 }

@@ -20,6 +20,18 @@ import { toast } from 'sonner';
 import { useCancelOrder, useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
 import { supabase } from '@/lib/supabase/client';
 
+const ORDER_STATUS_KEYS: Record<string, string> = {
+  pending_approval: 'orders.pendingApproval',
+  new: 'orders.new',
+  preparing: 'orders.preparing',
+  ready: 'orders.ready',
+  served: 'orders.served',
+  out_for_delivery: 'orders.outForDelivery',
+  delivered: 'orders.delivered',
+  closed: 'orders.closed',
+  cancelled: 'orders.cancelled',
+};
+
 export default function KitchenDisplayPage() {
   const { t } = useTranslation('staff');
   const { data: orders, isLoading: loading, error, refetch } = useOrders();
@@ -141,8 +153,10 @@ export default function KitchenDisplayPage() {
         return t('kitchen.cookingStatus');
       case 'ready':
         return t('kitchen.readyStatus');
-      default:
-        return status.toUpperCase();
+      default: {
+        const key = ORDER_STATUS_KEYS[status];
+        return key ? t(key) : status;
+      }
     }
   };
 
@@ -506,12 +520,12 @@ export default function KitchenDisplayPage() {
                     ) : order.order_type === 'delivery' ? (
                       <span className="flex items-center gap-1 sm:gap-2 text-purple-700">
                         <Truck className="h-4 sm:h-5 w-4 sm:w-5" />
-                        {t('orders.delivery').toUpperCase()}
+                        {t('orders.delivery')}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 sm:gap-2 text-orange-700">
                         <Package className="h-4 sm:h-5 w-4 sm:w-5" />
-                        {t('tables.takeout').toUpperCase()}
+                        {t('tables.takeout')}
                       </span>
                     )}
                   </h3>

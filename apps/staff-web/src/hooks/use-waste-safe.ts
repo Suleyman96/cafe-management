@@ -5,7 +5,7 @@
 import { QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { invalidateWaste, refetchWaste } from '@/lib/query-helpers';
+import { invalidateWaste } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type WasteLogInsert = Database['public']['Tables']['waste_logs']['Insert'];
@@ -40,9 +40,6 @@ export function useCreateWasteLog() {
       invalidateWaste(queryClient);
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
     },
-    onSettled: () => {
-      refetchWaste(queryClient);
-    },
   });
 }
 
@@ -56,9 +53,6 @@ export function useUpdateWasteLog() {
       invalidateWaste(queryClient);
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
     },
-    onSettled: () => {
-      refetchWaste(queryClient);
-    },
   });
 }
 
@@ -70,9 +64,6 @@ export function useDeleteWasteLog() {
     onSuccess: () => {
       invalidateWaste(queryClient);
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-    },
-    onSettled: () => {
-      refetchWaste(queryClient);
     },
   });
 }

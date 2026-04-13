@@ -55,18 +55,23 @@ export function CartScreen({ tableId }: CartScreenProps) {
     }
 
     try {
+      const tenantId = table?.tenant_id;
+      if (!tenantId) throw new Error('Missing tenant context');
+
       let orderId = existingOrder?.id;
 
       if (!orderId) {
         const newOrder = await createOrder.mutateAsync({
           tableId: actualTableId,
           notes: orderNotes,
+          tenantId,
         });
         orderId = newOrder.id;
       }
 
       await addOrderItems.mutateAsync({
         orderId,
+        tenantId,
         items: items.map((item) => ({
           menu_item_id: item.menuItem.id,
           item_name: item.menuItem.name,

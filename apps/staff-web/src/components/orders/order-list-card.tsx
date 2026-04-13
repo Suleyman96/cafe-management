@@ -55,6 +55,18 @@ const formatTime = (timestamp: string) => {
   });
 };
 
+const ORDER_STATUS_KEYS: Record<string, string> = {
+  pending_approval: 'orders.pendingApproval',
+  new: 'orders.new',
+  preparing: 'orders.preparing',
+  ready: 'orders.ready',
+  served: 'orders.served',
+  out_for_delivery: 'orders.outForDelivery',
+  delivered: 'orders.delivered',
+  closed: 'orders.closed',
+  cancelled: 'orders.cancelled',
+};
+
 const getStatusColor = (status: OrderStatus) => {
   switch (status) {
     case 'pending_approval':
@@ -132,7 +144,7 @@ export function OrderListCard({
             <span
               className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}
             >
-              {order.status.toUpperCase()}
+              {t(ORDER_STATUS_KEYS[order.status] || order.status)}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 text-xs sm:text-sm text-gray-600">

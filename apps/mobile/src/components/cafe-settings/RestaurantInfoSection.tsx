@@ -6,10 +6,10 @@ import { TextInput } from '@/lib/paper-compat';
 import type { SettingsSectionProps } from './ToggleRow';
 
 const LANGUAGE_OPTIONS = [
+  { code: 'ja', label: 'Japanese' },
   { code: 'en', label: 'English' },
-  { code: 'az', label: 'Azerbaijani' },
+  { code: 'ko', label: 'Korean' },
   { code: 'ru', label: 'Russian' },
-  { code: 'tr', label: 'Turkish' },
 ];
 
 export function RestaurantInfoSection({ form, updateField }: SettingsSectionProps) {

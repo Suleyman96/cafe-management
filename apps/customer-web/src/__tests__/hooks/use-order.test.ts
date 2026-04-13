@@ -36,11 +36,12 @@ describe('useCreateOrder', () => {
   it('calls db.orders.create with correct shape', async () => {
     const { result } = renderHookWithProviders(() => useCreateOrder());
 
-    await result.current.mutateAsync({ tableId: 'table-1', notes: 'No ice' });
+    await result.current.mutateAsync({ tableId: 'table-1', notes: 'No ice', tenantId: 'tenant-1' });
 
     expect(db.orders.create).toHaveBeenCalledWith(
       expect.objectContaining({
         table_id: 'table-1',
+        tenant_id: 'tenant-1',
         customer_notes: 'No ice',
         status: 'pending_approval',
         source: 'customer',
@@ -55,7 +56,7 @@ describe('useCreateOrder', () => {
     const { result, queryClient } = renderHookWithProviders(() => useCreateOrder());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    await result.current.mutateAsync({ tableId: 'table-1' });
+    await result.current.mutateAsync({ tableId: 'table-1', tenantId: 'tenant-1' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual([QUERY_KEYS.ORDER, 'table-1']);
@@ -112,6 +113,7 @@ describe('useAddOrderItems', () => {
 
     await result.current.mutateAsync({
       orderId: 'order-1',
+      tenantId: 'tenant-1',
       items: [
         { menu_item_id: 'm1', item_name: 'Coffee', item_price: 5, quantity: 1 },
         { menu_item_id: 'm2', item_name: 'Tea', item_price: 3, quantity: 2, notes: 'Hot' },
@@ -121,6 +123,7 @@ describe('useAddOrderItems', () => {
     expect(db.orderItems.create).toHaveBeenCalledWith([
       {
         order_id: 'order-1',
+        tenant_id: 'tenant-1',
         menu_item_id: 'm1',
         item_name: 'Coffee',
         item_price: 5,
@@ -130,6 +133,7 @@ describe('useAddOrderItems', () => {
       },
       {
         order_id: 'order-1',
+        tenant_id: 'tenant-1',
         menu_item_id: 'm2',
         item_name: 'Tea',
         item_price: 3,
@@ -146,6 +150,7 @@ describe('useAddOrderItems', () => {
 
     await result.current.mutateAsync({
       orderId: 'order-1',
+      tenantId: 'tenant-1',
       items: [{ menu_item_id: 'm1', item_name: 'Coffee', item_price: 5, quantity: 1 }],
     });
 
