@@ -5,7 +5,7 @@
 import { QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { invalidateStock, refetchStock } from '@/lib/query-helpers';
+import { invalidateStock } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type StockItem = Database['public']['Tables']['stock_items']['Row'];
@@ -34,9 +34,6 @@ export function useCreateStockItem() {
     onSuccess: () => {
       invalidateStock(queryClient);
     },
-    onSettled: () => {
-      refetchStock(queryClient);
-    },
   });
 }
 
@@ -49,9 +46,6 @@ export function useUpdateStockItem() {
     onSuccess: () => {
       invalidateStock(queryClient);
     },
-    onSettled: () => {
-      refetchStock(queryClient);
-    },
   });
 }
 
@@ -62,9 +56,6 @@ export function useDeleteStockItem() {
     mutationFn: (id: string) => db.stockItems.delete(id),
     onSuccess: () => {
       invalidateStock(queryClient);
-    },
-    onSettled: () => {
-      refetchStock(queryClient);
     },
   });
 }
@@ -87,9 +78,6 @@ export function useAdjustStock() {
     }) => db.stockItems.adjustStock(id, data),
     onSuccess: () => {
       invalidateStock(queryClient, true);
-    },
-    onSettled: () => {
-      refetchStock(queryClient, true);
     },
   });
 }

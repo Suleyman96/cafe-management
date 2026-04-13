@@ -76,9 +76,11 @@ export function useCreateDeliveryOrder() {
       deliveryNotes: string;
       deliveryFee: number;
       orderNotes?: string;
+      tenantId: string;
     }): Promise<Order> =>
       db.orders.create({
         table_id: null,
+        tenant_id: data.tenantId,
         order_type: 'delivery',
         source: 'customer',
         status: 'pending_approval',
@@ -105,6 +107,7 @@ export function useAddDeliveryOrderItems() {
     mutationFn: async ({
       orderId,
       items,
+      tenantId,
     }: {
       orderId: string;
       items: Array<{
@@ -114,10 +117,12 @@ export function useAddDeliveryOrderItems() {
         quantity: number;
         notes?: string;
       }>;
+      tenantId: string;
     }): Promise<OrderItem[]> =>
       db.orderItems.create(
         items.map((item) => ({
           order_id: orderId,
+          tenant_id: tenantId,
           ...item,
           notes: item.notes ?? null,
           status: 'pending' as const,

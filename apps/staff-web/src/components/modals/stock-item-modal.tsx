@@ -15,7 +15,16 @@ interface StockItemModalProps {
   onClose: () => void;
 }
 
-const UNITS = ['pieces', 'kg', 'liters', 'boxes', 'bags', 'bottles', 'packs'];
+const UNITS = ['pieces', 'kg', 'liters', 'boxes', 'bags', 'bottles', 'packs'] as const;
+const UNIT_KEYS: Record<string, string> = {
+  pieces: 'stock.unitPieces',
+  kg: 'stock.unitKg',
+  liters: 'stock.unitLiters',
+  boxes: 'stock.unitBoxes',
+  bags: 'stock.unitBags',
+  bottles: 'stock.unitBottles',
+  packs: 'stock.unitPacks',
+};
 const CATEGORIES = [
   'Beverages',
   'Food Supplies',
@@ -27,7 +36,19 @@ const CATEGORIES = [
   'Meat',
   'Dry Goods',
   'Other',
-];
+] as const;
+const CATEGORY_KEYS: Record<string, string> = {
+  Beverages: 'stockCategory.beverages',
+  'Food Supplies': 'stockCategory.foodSupplies',
+  'Cleaning Supplies': 'stockCategory.cleaningSupplies',
+  Equipment: 'stockCategory.equipment',
+  Packaging: 'stockCategory.packaging',
+  Dairy: 'stockCategory.dairy',
+  Produce: 'stockCategory.produce',
+  Meat: 'stockCategory.meat',
+  'Dry Goods': 'stockCategory.dryGoods',
+  Other: 'stockCategory.other',
+};
 
 export function StockItemModal({ item, onClose }: StockItemModalProps) {
   const { t } = useTranslation('staff');
@@ -139,7 +160,7 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
               >
                 {CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
-                    {cat}
+                    {t(CATEGORY_KEYS[cat])}
                   </option>
                 ))}
               </select>
@@ -155,7 +176,7 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
               >
                 {UNITS.map((unit) => (
                   <option key={unit} value={unit}>
-                    {unit}
+                    {t(UNIT_KEYS[unit])}
                   </option>
                 ))}
               </select>

@@ -2,9 +2,12 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
+import { Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { useUpdateStaff } from '@/hooks';
+import { supabase } from '@/lib/supabase/client';
 
 type StaffRole = 'waiter' | 'admin' | 'kitchen' | 'owner';
 
@@ -28,7 +31,41 @@ export function StaffEditModal({
   const [isActive, setIsActive] = useState(staff.is_active ?? true);
   const [loading, setLoading] = useState(false);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const updateStaff = useUpdateStaff();
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await fetch(`/api/staff?id=${staff.id}`, {
+        method: 'DELETE',
+        headers: {
+          ...(session?.access_token && { Authorization: `Bearer ${session.access_token}` }),
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || t('staffMgmt.failedDelete'));
+        return;
+      }
+
+      toast.success(t('staffMgmt.staffDeleted'));
+      onSuccess();
+    } catch (_error) {
+      toast.error(t('staffMgmt.failedDelete'));
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   // Sync state when staff prop changes
   useEffect(() => {
@@ -141,16 +178,39 @@ export function StaffEditModal({
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={loading}
+              disabled={loading || deleting}
               className="flex-1"
             >
               {t('cancel', { ns: 'common' })}
             </Button>
-            <Button type="submit" disabled={loading} className="flex-1">
+            <Button type="submit" disabled={loading || deleting} className="flex-1">
               {loading ? t('staffMgmt.saving') : t('saveChanges', { ns: 'common' })}
             </Button>
           </div>
+
+          <div className="border-t pt-4">
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={loading || deleting}
+              className="w-full"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {t('staffMgmt.deleteStaff')}
+            </Button>
+          </div>
         </form>
+
+        <ConfirmDialog
+          isOpen={showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(false)}
+          onConfirm={handleDelete}
+          title={t('staffMgmt.deleteStaff')}
+          message={t('staffMgmt.deleteStaffConfirm', { name: staff.full_name })}
+          loading={deleting}
+        />
       </div>
     </div>
   );

@@ -52,6 +52,9 @@ export function DeliveryCartScreen() {
     }
 
     try {
+      const tenantId = settings?.tenant_id;
+      if (!tenantId) throw new Error('Missing tenant context');
+
       const order = await createDeliveryOrder.mutateAsync({
         customerName,
         customerPhone,
@@ -59,10 +62,12 @@ export function DeliveryCartScreen() {
         deliveryNotes,
         deliveryFee,
         orderNotes,
+        tenantId,
       });
 
       await addDeliveryOrderItems.mutateAsync({
         orderId: order.id,
+        tenantId,
         items: items.map((item) => ({
           menu_item_id: item.menuItem.id,
           item_name: item.menuItem.name,

@@ -31,6 +31,29 @@ import { useFormatPrice } from '@/hooks/use-format-price';
 
 type StockItem = Database['public']['Tables']['stock_items']['Row'];
 
+const CATEGORY_KEYS: Record<string, string> = {
+  Beverages: 'stockCategory.beverages',
+  'Food Supplies': 'stockCategory.foodSupplies',
+  'Cleaning Supplies': 'stockCategory.cleaningSupplies',
+  Equipment: 'stockCategory.equipment',
+  Packaging: 'stockCategory.packaging',
+  Dairy: 'stockCategory.dairy',
+  Produce: 'stockCategory.produce',
+  Meat: 'stockCategory.meat',
+  'Dry Goods': 'stockCategory.dryGoods',
+  Other: 'stockCategory.other',
+};
+
+const UNIT_KEYS: Record<string, string> = {
+  pieces: 'stock.unitPieces',
+  kg: 'stock.unitKg',
+  liters: 'stock.unitLiters',
+  boxes: 'stock.unitBoxes',
+  bags: 'stock.unitBags',
+  bottles: 'stock.unitBottles',
+  packs: 'stock.unitPacks',
+};
+
 export default function StockPage() {
   const { t } = useTranslation('staff');
   const { staff } = useAuth();
@@ -175,7 +198,7 @@ export default function StockPage() {
           <option value="">{t('stock.allCategories')}</option>
           {categories.map((cat) => (
             <option key={cat} value={cat}>
-              {cat}
+              {t(CATEGORY_KEYS[cat] || cat)}
             </option>
           ))}
         </select>
@@ -217,20 +240,22 @@ export default function StockPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-sm text-gray-600">{item.category}</span>
+                    <span className="text-sm text-gray-600">
+                      {t(CATEGORY_KEYS[item.category] || item.category)}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getStockLevelColor(item)}`}
                     >
-                      {item.quantity} {item.unit}
+                      {item.quantity} {t(UNIT_KEYS[item.unit] || item.unit)}
                     </span>
                     {item.quantity <= item.minimum_stock_level && (
                       <span className="ml-2 text-xs text-red-500">{t('stock.lowIndicator')}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
-                    {formatPrice(item.cost_price)}/{item.unit}
+                    {formatPrice(item.cost_price)}/{t(UNIT_KEYS[item.unit] || item.unit)}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{item.supplier_name || '-'}</td>
                   <td className="px-4 py-3">
@@ -370,7 +395,7 @@ function StockHistoryModal({ item, onClose }: { item: StockItem; onClose: () => 
                             : t('stock.setToValue', { value: m.quantity_after })}
                       </span>
                       <span className="text-xs text-gray-400">
-                        &rarr; {m.quantity_after} {item.unit}
+                        &rarr; {m.quantity_after} {t(UNIT_KEYS[item.unit] || item.unit)}
                       </span>
                     </div>
                     {m.reason && <p className="text-sm text-gray-600 mt-0.5">{m.reason}</p>}

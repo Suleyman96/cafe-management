@@ -5,7 +5,7 @@
 import { getLocalDateString, QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { invalidateTasks, refetchTasks } from '@/lib/query-helpers';
+import { invalidateTasks } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
@@ -80,9 +80,6 @@ export function useCreateTask() {
       }
       invalidateTasks(queryClient);
     },
-    onSettled: () => {
-      refetchTasks(queryClient);
-    },
   });
 }
 
@@ -98,9 +95,6 @@ export function useUpdateTask() {
       }
       invalidateTasks(queryClient);
     },
-    onSettled: () => {
-      refetchTasks(queryClient);
-    },
   });
 }
 
@@ -111,9 +105,6 @@ export function useDeleteTask() {
     mutationFn: (id: string) => db.tasks.delete(id),
     onSuccess: () => {
       invalidateTasks(queryClient);
-    },
-    onSettled: () => {
-      refetchTasks(queryClient);
     },
   });
 }
@@ -126,9 +117,6 @@ export function useMarkTaskInProgress() {
     onSuccess: () => {
       invalidateTasks(queryClient);
     },
-    onSettled: () => {
-      refetchTasks(queryClient);
-    },
   });
 }
 
@@ -140,9 +128,6 @@ export function useMarkTaskCompleted() {
     onSuccess: () => {
       invalidateTasks(queryClient);
     },
-    onSettled: () => {
-      refetchTasks(queryClient);
-    },
   });
 }
 
@@ -153,9 +138,6 @@ export function useMarkTaskCancelled() {
     mutationFn: (id: string) => db.tasks.markCancelled(id),
     onSuccess: () => {
       invalidateTasks(queryClient);
-    },
-    onSettled: () => {
-      refetchTasks(queryClient);
     },
   });
 }

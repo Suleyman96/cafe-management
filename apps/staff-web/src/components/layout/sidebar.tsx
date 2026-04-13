@@ -80,7 +80,12 @@ const navGroups: NavGroup[] = [
     labelKey: 'managementSection',
     collapsible: true,
     items: [
-      { href: '/feedback', labelKey: 'feedback', icon: <MessageSquare className="h-5 w-5" /> },
+      {
+        href: '/feedback',
+        labelKey: 'feedback',
+        icon: <MessageSquare className="h-5 w-5" />,
+        adminOnly: true,
+      },
       {
         href: '/stock',
         labelKey: 'stock',
@@ -92,6 +97,7 @@ const navGroups: NavGroup[] = [
         href: '/waste',
         labelKey: 'waste',
         icon: <Trash2 className="h-5 w-5" />,
+        adminOnly: true,
         minPlan: 'pro' as PlanName,
       },
       {
@@ -416,7 +422,9 @@ function MyTasksIndicator({ staffId }: { staffId: string }) {
 
   const today = getLocalDateString();
   const activeTasks =
-    myTasks?.filter((t: any) => t.status === 'pending' || t.status === 'in_progress') || [];
+    myTasks?.filter(
+      (t: any) => (t.status === 'pending' || t.status === 'in_progress') && t.due_date === today,
+    ) || [];
 
   if (activeTasks.length === 0) return null;
 

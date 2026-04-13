@@ -127,8 +127,8 @@ export default function MenuPage() {
                   {t('menu.title')}
                 </h1>
                 <p className="text-xs text-gray-400 hidden sm:block">
-                  {filteredItems.length} {t('menu.items')} · {categories.length}{' '}
-                  {t('menu.categories')}
+                  {t('menu.items', { count: filteredItems.length })} ·{' '}
+                  {t('menu.categories', { count: categories.length })}
                 </p>
               </div>
             </div>
@@ -277,7 +277,7 @@ export default function MenuPage() {
                           <span className="text-xl">{category.icon || '📁'}</span>
                           <h2 className="text-base font-semibold text-gray-900">{category.name}</h2>
                           <span className="text-xs text-gray-400">
-                            · {items.length} {t('menu.items')}
+                            · {t('menu.items', { count: items.length })}
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
@@ -339,7 +339,7 @@ export default function MenuPage() {
                         {t('menu.uncategorized')}
                       </h2>
                       <span className="text-xs text-gray-400">
-                        · {uncategorizedItems.length} {t('menu.items')}
+                        · {t('menu.items', { count: uncategorizedItems.length })}
                       </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

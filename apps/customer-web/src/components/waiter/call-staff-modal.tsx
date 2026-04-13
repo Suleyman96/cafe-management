@@ -12,6 +12,7 @@ type CallPriority = 'low' | 'normal' | 'high' | 'urgent';
 
 interface CallStaffModalProps {
   tableId: string;
+  tenantId: string;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -23,7 +24,7 @@ interface CallReason {
   priority: CallPriority;
 }
 
-export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps) {
+export function CallStaffModal({ tableId, tenantId, isOpen, onClose }: CallStaffModalProps) {
   const { t } = useTranslation('customer');
   const [selectedReason, setSelectedReason] = useState<CallReason | null>(null);
   const [additionalNotes, setAdditionalNotes] = useState('');
@@ -58,6 +59,7 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
         reason: selectedReason.label,
         priority: selectedReason.priority,
         notes: additionalNotes || undefined,
+        tenantId,
       });
 
       setShowSuccess(true);

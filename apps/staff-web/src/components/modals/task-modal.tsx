@@ -25,10 +25,21 @@ const PRIORITIES = [
 
 export function TaskModal({ task, onClose }: TaskModalProps) {
   const { t } = useTranslation('staff');
+
+  const WEEKDAY_KEYS = [
+    '',
+    'weekdays.mon',
+    'weekdays.tue',
+    'weekdays.wed',
+    'weekdays.thu',
+    'weekdays.fri',
+    'weekdays.sat',
+    'weekdays.sun',
+  ];
   const isEditing = !!task;
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
-  const { data: staffList = [] } = useStaff();
+  const { data: staffList = [], isLoading: staffLoading } = useStaff();
   const { staff } = useAuth();
   const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
 
@@ -36,9 +47,9 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
     title: task?.title || '',
     description: task?.description || '',
     priority: task?.priority || 'normal',
-    assigned_to: task?.assigned_to || staff?.id || '',
+    assigned_to: task?.assigned_to || '',
     due_date: task?.due_date || (task?.is_recurring ? '' : getLocalDateString()),
-    due_time: task?.due_time || '',
+    due_time: task?.due_time?.slice(0, 5) || '',
     is_recurring: task?.is_recurring || false,
     recurrence_pattern: task?.recurrence_pattern || 'daily',
     recurrence_days: task?.recurrence_days || [],
@@ -67,9 +78,12 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
         description: formData.description || null,
         priority: formData.priority,
         assigned_to: formData.assigned_to || null,
-        created_by: staff?.id || null,
-        status: 'pending',
       };
+
+      if (!isEditing) {
+        data.created_by = staff?.id || null;
+        data.status = 'pending';
+      }
 
       if (formData.is_recurring) {
         data.is_recurring = true;
@@ -155,13 +169,17 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="">{t('tasks.unassigned')}</option>
-              {staffList
-                .filter((s: any) => s.is_active)
-                .map((s: any) => (
-                  <option key={s.id} value={s.id}>
-                    {s.full_name} ({s.role})
-                  </option>
-                ))}
+              {staffLoading ? (
+                <option disabled>{t('loading', { ns: 'common' })}...</option>
+              ) : (
+                staffList
+                  .filter((s: any) => s.is_active !== false)
+                  .map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.full_name} ({s.role})
+                    </option>
+                  ))
+              )}
             </select>
           </div>
 
@@ -285,7 +303,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
                             : 'bg-white text-gray-700 hover:bg-gray-100'
                         }`}
                       >
-                        {day.label}
+                        {t(WEEKDAY_KEYS[day.value])}
                       </button>
                     ))}
                   </div>

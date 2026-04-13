@@ -46,11 +46,13 @@ describe('useCreateDeliveryOrder', () => {
       deliveryNotes: 'Ring the bell',
       deliveryFee: 5,
       orderNotes: 'Extra napkins',
+      tenantId: 'tenant-1',
     });
 
     expect(db.orders.create).toHaveBeenCalledWith(
       expect.objectContaining({
         table_id: null,
+        tenant_id: 'tenant-1',
         order_type: 'delivery',
         source: 'customer',
         status: 'pending_approval',
@@ -76,6 +78,7 @@ describe('useCreateDeliveryOrder', () => {
       deliveryAddress: '123 Main St',
       deliveryNotes: '',
       deliveryFee: 0,
+      tenantId: 'tenant-1',
     });
 
     expect(db.orders.create).toHaveBeenCalledWith(
@@ -96,6 +99,7 @@ describe('useCreateDeliveryOrder', () => {
       deliveryAddress: '123 Main St',
       deliveryNotes: '',
       deliveryFee: 0,
+      tenantId: 'tenant-1',
     });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
@@ -134,6 +138,7 @@ describe('useAddDeliveryOrderItems', () => {
 
     await result.current.mutateAsync({
       orderId: 'order-1',
+      tenantId: 'tenant-1',
       items: [
         { menu_item_id: 'm1', item_name: 'Pizza', item_price: 12, quantity: 1 },
         { menu_item_id: 'm2', item_name: 'Salad', item_price: 8, quantity: 1, notes: 'No onions' },
@@ -143,6 +148,7 @@ describe('useAddDeliveryOrderItems', () => {
     expect(db.orderItems.create).toHaveBeenCalledWith([
       {
         order_id: 'order-1',
+        tenant_id: 'tenant-1',
         menu_item_id: 'm1',
         item_name: 'Pizza',
         item_price: 12,
@@ -152,6 +158,7 @@ describe('useAddDeliveryOrderItems', () => {
       },
       {
         order_id: 'order-1',
+        tenant_id: 'tenant-1',
         menu_item_id: 'm2',
         item_name: 'Salad',
         item_price: 8,
@@ -168,6 +175,7 @@ describe('useAddDeliveryOrderItems', () => {
 
     await result.current.mutateAsync({
       orderId: 'order-1',
+      tenantId: 'tenant-1',
       items: [{ menu_item_id: 'm1', item_name: 'Pizza', item_price: 12, quantity: 1 }],
     });
 

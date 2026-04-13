@@ -30,6 +30,18 @@ import { supabase } from '@/lib/supabase/client';
 
 type TakeoutStatus = 'pending_approval' | 'new' | 'preparing' | 'ready' | 'closed' | 'cancelled';
 
+const ORDER_STATUS_KEYS: Record<string, string> = {
+  pending_approval: 'orders.pendingApproval',
+  new: 'orders.new',
+  preparing: 'orders.preparing',
+  ready: 'orders.ready',
+  served: 'orders.served',
+  out_for_delivery: 'orders.outForDelivery',
+  delivered: 'orders.delivered',
+  closed: 'orders.closed',
+  cancelled: 'orders.cancelled',
+};
+
 export default function TakeoutPage() {
   const { t } = useTranslation('staff');
   const router = useRouter();
@@ -270,8 +282,8 @@ export default function TakeoutPage() {
                       className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}
                     >
                       {order.status === 'ready'
-                        ? t('takeout.readyForPickup').toUpperCase()
-                        : order.status.replace(/_/g, ' ').toUpperCase()}
+                        ? t('takeout.readyForPickup')
+                        : t(ORDER_STATUS_KEYS[order.status] || order.status)}
                     </span>
                     {order.order_number && (
                       <span className="text-xs text-gray-500">#{order.order_number}</span>

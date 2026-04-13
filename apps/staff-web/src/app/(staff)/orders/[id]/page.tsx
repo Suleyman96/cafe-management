@@ -72,6 +72,18 @@ type OrderWithRelations = Database['public']['Tables']['orders']['Row'] & {
   table_transfers?: TableTransfer[];
 };
 
+const ORDER_STATUS_KEYS: Record<string, string> = {
+  pending_approval: 'orders.pendingApproval',
+  new: 'orders.new',
+  preparing: 'orders.preparing',
+  ready: 'orders.ready',
+  served: 'orders.served',
+  out_for_delivery: 'orders.outForDelivery',
+  delivered: 'orders.delivered',
+  closed: 'orders.closed',
+  cancelled: 'orders.cancelled',
+};
+
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -386,7 +398,7 @@ export default function OrderDetailPage() {
           <span
             className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(order.status)}`}
           >
-            {order.status.toUpperCase()}
+            {t(ORDER_STATUS_KEYS[order.status] || order.status)}
           </span>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()}>

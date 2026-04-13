@@ -20,12 +20,20 @@ export function createSettingsWrapper(ctx: WrapperContext) {
     },
 
     update: async (updates: CafeSettingsUpdate): Promise<CafeSettingsRow> => {
-      // RLS scopes to current tenant; update the single settings row
+      // First get the current row's id (RLS scopes to current tenant)
+      const { data: current, error: getError } = await ctx.client
+        .from('cafe_settings')
+        .select('id')
+        .limit(1)
+        .single();
+
+      if (getError) throw handleSupabaseError(getError);
+
       const { data, error } = await ctx.anyClient
         .from('cafe_settings')
         .update(updates)
+        .eq('id', current.id)
         .select('*')
-        .limit(1)
         .single();
 
       if (error) throw handleSupabaseError(error);

@@ -133,7 +133,10 @@ export function NumberInput({
         inputMode={integer ? 'numeric' : 'decimal'}
         value={stringValue}
         onChange={handleChange}
-        onFocus={() => setIsFocused(true)}
+        onFocus={(e) => {
+          setIsFocused(true);
+          e.target.select();
+        }}
         onBlur={handleBlur}
         placeholder={placeholder}
         disabled={disabled}

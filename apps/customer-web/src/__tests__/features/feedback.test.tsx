@@ -6,6 +6,7 @@ import { act, renderWithProviders, screen, waitFor } from '../helpers/test-utils
 describe('FeedbackForm', () => {
   const defaultProps = {
     tableId: 't1',
+    tenantId: 'tenant-1',
     orderId: 'o1',
     onSuccess: vi.fn(),
     onCancel: vi.fn(),

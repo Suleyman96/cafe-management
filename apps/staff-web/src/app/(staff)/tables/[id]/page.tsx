@@ -24,7 +24,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ItemTransferModal } from '@/components/modals/item-transfer-modal';
 import { OrderItemsList } from '@/components/tables/order-items-list';
@@ -57,6 +57,18 @@ type CartItem = {
   quantity: number;
 };
 
+const ORDER_STATUS_KEYS: Record<string, string> = {
+  pending_approval: 'orders.pendingApproval',
+  new: 'orders.new',
+  preparing: 'orders.preparing',
+  ready: 'orders.ready',
+  served: 'orders.served',
+  out_for_delivery: 'orders.outForDelivery',
+  delivered: 'orders.delivered',
+  closed: 'orders.closed',
+  cancelled: 'orders.cancelled',
+};
+
 export default function TableDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -65,7 +77,7 @@ export default function TableDetailPage() {
   const { t } = useTranslation('staff');
 
   const { data: table, isLoading: tableLoading } = useTable(tableId);
-  const { data: orders, refetch: refetchOrders } = useOrders();
+  const { data: orders, refetch: refetchOrders } = useOrders({ table_id: tableId });
   const { data: menuItems, isLoading: menuLoading } = useMenuItems({ isAvailable: true });
   const { data: categories } = useCategories();
 
@@ -92,17 +104,16 @@ export default function TableDetailPage() {
   const [cancelItemQty, setCancelItemQty] = useState(1);
   const [cancellingItem, setCancellingItem] = useState(false);
   const [showItemTransferModal, setShowItemTransferModal] = useState(false);
+  const [showMenu, setShowMenu] = useState(true);
 
   // Get ALL active orders for this table (including pending_approval)
   const activeOrders = useMemo((): OrderWithDetails[] => {
     return (
-      orders?.filter(
-        (order) =>
-          order.table_id === tableId &&
-          ['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status),
+      orders?.filter((order) =>
+        ['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status),
       ) || []
     );
-  }, [orders, tableId]);
+  }, [orders]);
 
   // Get currently selected order
   const activeOrder = activeOrders[selectedOrderIndex] || activeOrders[0];
@@ -174,22 +185,26 @@ export default function TableDetailPage() {
     }
   };
 
+  // Keep refetch in a ref so the realtime channel doesn't re-subscribe on every render
+  const refetchOrdersRef = useRef(refetchOrders);
+  refetchOrdersRef.current = refetchOrders;
+
   // Set up real-time subscription
   useEffect(() => {
     const channel = supabase
       .channel(`table-${tableId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        refetchOrders();
+        refetchOrdersRef.current();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
-        refetchOrders();
+        refetchOrdersRef.current();
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [tableId, refetchOrders]);
+  }, [tableId]);
 
   // Filter menu items by category
   const filteredItems = selectedCategory
@@ -467,7 +482,7 @@ export default function TableDetailPage() {
               <span
                 className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(activeOrder.status)}`}
               >
-                {activeOrder.status.toUpperCase()}
+                {t(ORDER_STATUS_KEYS[activeOrder.status] || activeOrder.status)}
               </span>
             )}
           </div>
@@ -669,65 +684,88 @@ export default function TableDetailPage() {
       </div>
 
       {/* Menu — categories sidebar + items grid */}
-      <div
-        className={`flex gap-3 px-3 sm:px-4 min-h-0 overflow-hidden ${cart.length > 0 ? 'h-[35%] flex-shrink-0' : 'flex-1'}`}
-      >
-        {/* Category Sidebar */}
-        <div className="w-24 sm:w-32 lg:w-44 flex-shrink-0 overflow-y-auto py-2">
-          <div className="space-y-1">
-            {categories?.map((category: Category) => (
-              <button
-                type="button"
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`w-full flex items-center gap-2 px-2 py-2.5 rounded-lg text-sm transition-colors ${
-                  selectedCategory === category.id
-                    ? 'bg-blue-100 text-blue-700 font-medium'
-                    : 'hover:bg-gray-100 text-gray-700'
-                }`}
-              >
-                <span className="text-lg flex-shrink-0">{category.icon || '📋'}</span>
-                <span className="truncate text-xs sm:text-sm">{category.name}</span>
-              </button>
-            ))}
+      {showMenu ? (
+        <div
+          className={`flex flex-col min-h-0 overflow-hidden ${cart.length > 0 ? 'h-[35%] flex-shrink-0' : 'flex-1'}`}
+        >
+          {/* Menu Header with Close Button */}
+          <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-gray-200 flex-shrink-0">
+            <h2 className="text-sm font-semibold text-gray-700">{t('menu', { ns: 'nav' })}</h2>
+            <button
+              type="button"
+              onClick={() => setShowMenu(false)}
+              className="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-        </div>
 
-        {/* Menu Items Grid */}
-        <div className="flex-1 min-w-0 overflow-y-auto py-2">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-            {filteredItems?.map((item: MenuItem) => {
-              const quantity = getCartQuantity(item.id);
-              return (
-                <div
-                  key={item.id}
-                  className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all ${
-                    quantity > 0 ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'
-                  }`}
-                  onClick={() => addToCart(item)}
-                >
-                  <div className="flex justify-between items-start mb-1 sm:mb-2">
-                    <h3 className="font-medium text-xs sm:text-sm line-clamp-2">{item.name}</h3>
-                    {quantity > 0 && (
-                      <span className="bg-blue-500 text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ml-1 flex-shrink-0">
-                        {quantity}
-                      </span>
-                    )}
-                  </div>
-                  {item.description && (
-                    <p className="text-xs text-gray-500 mb-1 sm:mb-2 line-clamp-2 hidden sm:block">
-                      {item.description}
-                    </p>
-                  )}
-                  <p className="font-semibold text-blue-600 text-sm sm:text-base">
-                    {formatPrice(item.price * taxMultiplier)}
-                  </p>
-                </div>
-              );
-            })}
+          <div className="flex gap-3 px-3 sm:px-4 min-h-0 flex-1 overflow-hidden">
+            {/* Category Sidebar */}
+            <div className="w-24 sm:w-32 lg:w-44 flex-shrink-0 overflow-y-auto py-2">
+              <div className="space-y-1">
+                {categories?.map((category: Category) => (
+                  <button
+                    type="button"
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`w-full flex items-center gap-2 px-2 py-2.5 rounded-lg text-sm transition-colors ${
+                      selectedCategory === category.id
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'hover:bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    <span className="text-lg flex-shrink-0">{category.icon || '📋'}</span>
+                    <span className="truncate text-xs sm:text-sm">{category.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Menu Items Grid */}
+            <div className="flex-1 min-w-0 overflow-y-auto py-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                {filteredItems?.map((item: MenuItem) => {
+                  const quantity = getCartQuantity(item.id);
+                  return (
+                    <div
+                      key={item.id}
+                      className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all ${
+                        quantity > 0 ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'
+                      }`}
+                      onClick={() => addToCart(item)}
+                    >
+                      <div className="flex justify-between items-start mb-1 sm:mb-2">
+                        <h3 className="font-medium text-xs sm:text-sm line-clamp-2">{item.name}</h3>
+                        {quantity > 0 && (
+                          <span className="bg-blue-500 text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ml-1 flex-shrink-0">
+                            {quantity}
+                          </span>
+                        )}
+                      </div>
+                      {item.description && (
+                        <p className="text-xs text-gray-500 mb-1 sm:mb-2 line-clamp-2 hidden sm:block">
+                          {item.description}
+                        </p>
+                      )}
+                      <p className="font-semibold text-blue-600 text-sm sm:text-base">
+                        {formatPrice(item.price * taxMultiplier)}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex-shrink-0 px-3 sm:px-4 py-3">
+          <Button variant="outline" size="sm" onClick={() => setShowMenu(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            {t('orders.addItems')}
+          </Button>
+        </div>
+      )}
 
       {/* Cart — bottom half */}
       {cart.length > 0 && (

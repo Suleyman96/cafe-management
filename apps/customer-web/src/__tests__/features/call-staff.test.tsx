@@ -7,12 +7,15 @@ import { renderWithProviders, screen, waitFor } from '../helpers/test-utils';
 describe('CallStaffModal', () => {
   const defaultProps = {
     tableId: 'uuid-123',
+    tenantId: 'tenant-1',
     isOpen: true,
     onClose: vi.fn(),
   };
 
   it('does not render when isOpen is false', () => {
-    renderWithProviders(<CallStaffModal tableId="uuid-123" isOpen={false} onClose={vi.fn()} />);
+    renderWithProviders(
+      <CallStaffModal tableId="uuid-123" tenantId="tenant-1" isOpen={false} onClose={vi.fn()} />,
+    );
 
     expect(screen.queryByText('callStaff.title')).not.toBeInTheDocument();
   });
@@ -42,6 +45,7 @@ describe('CallStaffModal', () => {
     await waitFor(() => {
       expect(db.waiterCalls.create).toHaveBeenCalledWith({
         table_id: 'uuid-123',
+        tenant_id: 'tenant-1',
         call_type: 'assistance',
         reason: 'callStaff.reason.assistance',
         priority: 'normal',
