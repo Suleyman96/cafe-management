@@ -47,10 +47,10 @@ describe('useFormatPrice', () => {
 
   it('uses DEFAULT_SETTINGS immediately via placeholderData', () => {
     // useCafeSettings has placeholderData: DEFAULT_SETTINGS, so settings are always available
-    // DEFAULT_SETTINGS has currency_symbol: '₼', currency_position: 'after'
+    // DEFAULT_SETTINGS has currency_symbol: '¥', currency_position: 'before', decimal_places: 0
     const { result } = renderHookWithProviders(() => useFormatPrice());
 
     const formatted = result.current(10.5);
-    expect(formatted).toBe('10.50₼');
+    expect(formatted).toBe('¥11');
   });
 });
