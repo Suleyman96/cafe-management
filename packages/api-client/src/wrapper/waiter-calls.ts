@@ -9,6 +9,7 @@ export function createWaiterCallsWrapper(ctx: WrapperContext) {
   return {
     create: async (data: {
       table_id: string;
+      tenant_id?: string;
       call_type?: string;
       reason?: string;
       priority?: string;
