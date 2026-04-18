@@ -3,6 +3,7 @@
 import type { PlanName } from '@gustri/core';
 import { getLocalDateString, PLAN_ORDER } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
+import { GustriIcon, GustriLogo } from '@gustri/ui';
 import {
   BarChart3,
   Bell,
@@ -30,7 +31,6 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { GustriIcon, GustriLogo } from '@/components/ui/gustri-logo';
 import { useAuth } from '@/hooks/use-auth';
 import { usePendingApprovalCount } from '@/hooks/use-orders-safe';
 import { useMyScheduleToday } from '@/hooks/use-schedules-safe';

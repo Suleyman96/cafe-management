@@ -1,10 +1,10 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
 import { Check, Loader2, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { useCreateWaiterCall } from '@/hooks/use-waiter-call';
 
 type CallType = 'assistance' | 'bill' | 'question' | 'complaint' | 'emergency';

@@ -3,10 +3,9 @@
 import { getLocalDateString } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { Button, NumberInput } from '@gustri/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { NumberInput } from '@/components/ui/number-input';
 import {
   useAdjustStock,
   useAuth,

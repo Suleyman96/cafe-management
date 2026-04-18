@@ -10,11 +10,11 @@
 import { QUERY_KEYS } from '@gustri/core';
 import { describe, expect, it, vi } from 'vitest';
 import { useApplyDiscount } from '@/hooks/use-discount-safe';
-import { db } from '@/lib/supabase/wrapped-client';
+import { apiRoutes } from '@/lib/api-routes';
 import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useApplyDiscount', () => {
-  it('calls db.orders.applyDiscount with correct params', async () => {
+  it('calls apiRoutes.discounts.apply with correct params', async () => {
     const { result } = renderHookWithProviders(() => useApplyDiscount());
     const params = {
       orderId: 'order-1',
@@ -26,7 +26,7 @@ describe('useApplyDiscount', () => {
 
     await result.current.mutateAsync(params);
 
-    expect(db.orders.applyDiscount).toHaveBeenCalledWith('order-1', {
+    expect(apiRoutes.discounts.apply).toHaveBeenCalledWith('order-1', {
       discount_type: 'percentage',
       discount_value: 10,
       discount_reason: 'loyal customer',
@@ -70,7 +70,7 @@ describe('useApplyDiscount', () => {
       discount_applied_by: 'staff-1',
     });
 
-    expect(db.orders.applyDiscount).toHaveBeenCalledWith('order-1', {
+    expect(apiRoutes.discounts.apply).toHaveBeenCalledWith('order-1', {
       discount_type: 'none',
       discount_value: 0,
       discount_reason: undefined,

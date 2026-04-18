@@ -17,6 +17,7 @@
     "@gustri/database": "workspace:*",
     "@gustri/i18n": "workspace:*",
     "@supabase/supabase-js": "^2.45.0",
+    "@gustri/ui": "workspace:*",
     "@tanstack/react-query": "^5.56.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",

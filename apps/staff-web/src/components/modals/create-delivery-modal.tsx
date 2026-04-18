@@ -2,10 +2,9 @@
 
 import type { MenuItem, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button, NumberInput } from '@gustri/ui';
 import { Map as MapIcon, MapPin, Phone, Search, StickyNote, Truck, User, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { NumberInput } from '@/components/ui/number-input';
 import {
   useAddOrderItems,
   useCafeSettings,

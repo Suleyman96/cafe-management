@@ -18,7 +18,7 @@ import {
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
-import { supabase } from '@/lib/supabase/client';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 export default function TablesPage() {
   const { t } = useTranslation('staff');
@@ -54,28 +54,13 @@ export default function TablesPage() {
     }
   }, [cleanupEmptyOrders]);
 
-  // Set up real-time subscriptions
-  useEffect(() => {
-    const channel = supabase
-      .channel('tables-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tables' }, () => {
-        refetchTables();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        refetchTables();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
-        refetchTables();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'waiter_calls' }, () => {
-        refetchTables();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetchTables]);
+  // Real-time: invalidate queries on DB changes
+  useRealtimeSync('tables-realtime', [
+    { table: 'tables', queryKeys: [['tables']] },
+    { table: 'orders', queryKeys: [['tables'], ['orders'], ['active_orders']] },
+    { table: 'order_items', queryKeys: [['tables'], ['orders']] },
+    { table: 'waiter_calls', queryKeys: [['tables'], ['waiter_calls']] },
+  ]);
 
   // Close menu when clicking outside
   useEffect(() => {

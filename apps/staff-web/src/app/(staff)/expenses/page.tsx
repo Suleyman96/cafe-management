@@ -2,13 +2,12 @@
 
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { LoadingSpinner } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui';
 import { DollarSign, FolderOpen, Pencil, Plus, Settings, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ExpenseCategoryModal } from '@/components/modals/expense-category-modal';
 import { ExpenseModal } from '@/components/modals/expense-modal';
-import { Button } from '@/components/ui/button';
 import {
   useAuth,
   useDeleteExpense,

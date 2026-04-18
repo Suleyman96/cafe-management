@@ -6,6 +6,7 @@
 import { QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRoutes } from '@/lib/api-routes';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type PaymentInsert = Database['public']['Tables']['order_payments']['Insert'];
@@ -39,7 +40,11 @@ export function useCreatePayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payment: PaymentInsert) => db.payments.create(payment),
+    mutationFn: (payment: PaymentInsert) => {
+      const { order_id, ...rest } = payment;
+      // Balance validation is now enforced server-side in the API route
+      return apiRoutes.payments.create(order_id, rest);
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS, variables.order_id] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.order_id] });

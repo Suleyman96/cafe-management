@@ -109,6 +109,7 @@ export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationKey: ['update-order-status'],
     mutationFn: async ({ orderId, status }: { orderId: string; status: Order['status'] }) => {
       return await db.orders.updateStatus(orderId, status);
     },

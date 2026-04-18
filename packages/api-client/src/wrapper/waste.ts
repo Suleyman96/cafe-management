@@ -12,6 +12,8 @@ export function createWasteWrapper(ctx: WrapperContext) {
       endDate?: string;
       reason?: string;
       stockItemId?: string;
+      limit?: number;
+      offset?: number;
     }) => {
       let query = ctx.client
         .from('waste_logs')
@@ -33,6 +35,13 @@ export function createWasteWrapper(ctx: WrapperContext) {
       }
       if (options?.stockItemId) {
         query = query.eq('stock_item_id', options.stockItemId);
+      }
+
+      // Apply pagination with sensible defaults
+      const limit = options?.limit ?? 200;
+      const offset = options?.offset ?? 0;
+      if (limit > 0) {
+        query = query.range(offset, offset + limit - 1);
       }
 
       const { data, error } = await query;

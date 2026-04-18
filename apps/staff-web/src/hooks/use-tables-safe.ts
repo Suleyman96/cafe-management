@@ -41,7 +41,23 @@ export function useUpdateTableStatus() {
   return useMutation({
     mutationFn: ({ tableId, status }: { tableId: string; status: TableStatus }) =>
       db.tables.updateStatus(tableId, status),
-    onSuccess: () => {
+    onMutate: async ({ tableId, status }) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.TABLES] });
+
+      const previousTables = queryClient.getQueryData([QUERY_KEYS.TABLES]);
+
+      queryClient.setQueryData([QUERY_KEYS.TABLES], (old: TableRow[] | undefined) =>
+        old?.map((t) => (t.id === tableId ? { ...t, status } : t)),
+      );
+
+      return { previousTables };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousTables) {
+        queryClient.setQueryData([QUERY_KEYS.TABLES], context.previousTables);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
     },

@@ -1,9 +1,8 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { Badge, LoadingSpinner } from '@gustri/ui';
 import { CheckCircle2, Clock, Hourglass, MapPin, Phone, Truck, User } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { PlatformFooter } from '@/components/ui/platform-footer';
 import { useDeliveryOrder } from '@/hooks/use-delivery';
 import { useFormatPrice } from '@/hooks/use-format-price';

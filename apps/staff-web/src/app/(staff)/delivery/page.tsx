@@ -20,7 +20,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { CreateDeliveryModal } from '@/components/modals/create-delivery-modal';
 import {
@@ -33,7 +33,7 @@ import {
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
-import { supabase } from '@/lib/supabase/client';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 type DeliveryStatus =
   | 'pending_approval'
@@ -76,22 +76,11 @@ export default function DeliveryPage() {
   const [cancelling, setCancelling] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // Real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('delivery-orders-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        refetch();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
-        refetch();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch]);
+  // Real-time: invalidate queries on DB changes
+  useRealtimeSync('delivery-orders-realtime', [
+    { table: 'orders', queryKeys: [['delivery_orders'], ['orders'], ['active_orders']] },
+    { table: 'order_items', queryKeys: [['delivery_orders'], ['orders']] },
+  ]);
 
   const calculateOrderTotal = (order: any) => {
     if (order?.total != null) return order.total;

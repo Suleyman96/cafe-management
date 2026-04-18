@@ -18,7 +18,7 @@ import {
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useCancelOrder, useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
-import { supabase } from '@/lib/supabase/client';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 const ORDER_STATUS_KEYS: Record<string, string> = {
   pending_approval: 'orders.pendingApproval',
@@ -34,7 +34,7 @@ const ORDER_STATUS_KEYS: Record<string, string> = {
 
 export default function KitchenDisplayPage() {
   const { t } = useTranslation('staff');
-  const { data: orders, isLoading: loading, error, refetch } = useOrders();
+  const { data: orders, isLoading: loading, error } = useOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const cancelOrder = useCancelOrder();
@@ -92,22 +92,11 @@ export default function KitchenDisplayPage() {
   const preparingCount = kitchenOrders?.filter((o: any) => o.status === 'preparing').length || 0;
   const readyCount = kitchenOrders?.filter((o: any) => o.status === 'ready').length || 0;
 
-  // Set up real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('kitchen-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        refetch();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
-        refetch();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch]);
+  // Real-time: invalidate queries on DB changes
+  useRealtimeSync('kitchen-realtime', [
+    { table: 'orders', queryKeys: [['orders'], ['active_orders']] },
+    { table: 'order_items', queryKeys: [['orders']] },
+  ]);
 
   // Calculate elapsed time
   const calculateElapsedTime = (createdAt: string) => {

@@ -83,6 +83,7 @@ export function useUpdateWaiterCall() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationKey: ['update-waiter-call'],
     mutationFn: async ({
       callId,
       status,

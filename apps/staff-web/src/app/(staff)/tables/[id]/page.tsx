@@ -24,7 +24,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ItemTransferModal } from '@/components/modals/item-transfer-modal';
 import { OrderItemsList } from '@/components/tables/order-items-list';
@@ -44,8 +44,8 @@ import {
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 import { useActiveCallsForTable, useResolveWaiterCall } from '@/hooks/use-waiter-calls-safe';
-import { supabase } from '@/lib/supabase/client';
 import type { OrderWithDetails } from '@/types';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
@@ -185,26 +185,11 @@ export default function TableDetailPage() {
     }
   };
 
-  // Keep refetch in a ref so the realtime channel doesn't re-subscribe on every render
-  const refetchOrdersRef = useRef(refetchOrders);
-  refetchOrdersRef.current = refetchOrders;
-
-  // Set up real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel(`table-${tableId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        refetchOrdersRef.current();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
-        refetchOrdersRef.current();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [tableId]);
+  // Real-time: invalidate queries on DB changes
+  useRealtimeSync(`table-${tableId}`, [
+    { table: 'orders', queryKeys: [['orders'], ['active_orders']] },
+    { table: 'order_items', queryKeys: [['orders']] },
+  ]);
 
   // Filter menu items by category
   const filteredItems = selectedCategory

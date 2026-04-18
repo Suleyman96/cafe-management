@@ -16,7 +16,7 @@ import {
   useUpdateOrderStatus,
 } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
-import { supabase } from '@/lib/supabase/client';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 type OrderStatus =
   | 'pending_approval'
@@ -59,28 +59,12 @@ export default function OrdersPage() {
     }
   }, []);
 
-  // Set up real-time subscriptions
-  useEffect(() => {
-    console.log('Setting up orders realtime subscription');
-    const channel = supabase
-      .channel('orders-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        refetch();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
-        refetch();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_payments' }, () => {
-        refetch();
-      })
-      .subscribe((status) => {
-        console.log('Orders subscription status:', status);
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch]);
+  // Real-time: invalidate queries on DB changes
+  useRealtimeSync('orders-realtime', [
+    { table: 'orders', queryKeys: [['orders'], ['active_orders']] },
+    { table: 'order_items', queryKeys: [['orders']] },
+    { table: 'order_payments', queryKeys: [['orders'], ['payments']] },
+  ]);
 
   // Handle status update — uses delivery-specific hooks for delivery orders
   const handleStatusUpdate = async (orderId: string, newStatus: OrderStatus) => {

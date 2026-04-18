@@ -3,7 +3,7 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
-import { QUERY_KEYS, REFRESH_INTERVALS } from '@gustri/core';
+import { QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateWaiterCalls } from '@/lib/query-helpers';
@@ -16,7 +16,7 @@ export function useWaiterCalls(status?: WaiterCallStatus) {
   return useQuery({
     queryKey: [QUERY_KEYS.WAITER_CALLS, status],
     queryFn: async (): Promise<WaiterCall[]> => db.waiterCalls.findAll(status),
-    refetchInterval: REFRESH_INTERVALS.WAITER_CALLS,
+    // Polling removed: useRealtimeSync on the calls page handles freshness.
   });
 }
 
@@ -24,7 +24,7 @@ export function usePendingWaiterCallsCount() {
   return useQuery({
     queryKey: [QUERY_KEYS.WAITER_CALLS_COUNT, 'pending'],
     queryFn: async (): Promise<number> => db.waiterCalls.getPendingCount(),
-    refetchInterval: REFRESH_INTERVALS.WAITER_CALLS,
+    // Polling removed: useRealtimeSync on the calls page handles freshness.
   });
 }
 

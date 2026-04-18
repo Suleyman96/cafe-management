@@ -3,12 +3,12 @@
  * Uses the wrapped client for type safety without 'as any'
  */
 
-import { ORDER_STATUS, PLAN_LIMITS, QUERY_KEYS } from '@gustri/core';
+import { ORDER_STATUS, QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRoutes } from '@/lib/api-routes';
 import { invalidateOrders, invalidateOrdersAndTables } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
-import { useAuthStore } from '@/store/auth-store';
 import type { OrderWithDetails } from '@/types';
 
 type OrderStatus = Database['public']['Tables']['orders']['Row']['status'];
@@ -39,7 +39,8 @@ export function useActiveOrders() {
   return useQuery({
     queryKey: [QUERY_KEYS.ACTIVE_ORDERS],
     queryFn: async (): Promise<OrderWithDetails[]> => db.orders.getActiveOrders(),
-    refetchInterval: 10000, // Refresh every 10 seconds
+    // Polling removed: useRealtimeSync on the orders page handles freshness.
+    // A 120s fallback poll is built into useRealtimeSync for silent WS drops.
   });
 }
 
@@ -51,7 +52,31 @@ export function useUpdateOrderStatus() {
       const statusValue = ORDER_STATUS[status] as OrderStatus;
       return db.orders.updateStatus(orderId, statusValue);
     },
-    onSuccess: () => {
+    onMutate: async ({ orderId, status }) => {
+      const statusValue = ORDER_STATUS[status] as OrderStatus;
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+
+      const previousOrders = queryClient.getQueryData([QUERY_KEYS.ORDERS]);
+      const previousActive = queryClient.getQueryData([QUERY_KEYS.ACTIVE_ORDERS]);
+
+      const updateList = (old: OrderWithDetails[] | undefined) =>
+        old?.map((o) => (o.id === orderId ? { ...o, status: statusValue } : o));
+
+      queryClient.setQueryData([QUERY_KEYS.ORDERS], updateList);
+      queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], updateList);
+
+      return { previousOrders, previousActive };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousOrders) {
+        queryClient.setQueryData([QUERY_KEYS.ORDERS], context.previousOrders);
+      }
+      if (context?.previousActive) {
+        queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], context.previousActive);
+      }
+    },
+    onSettled: () => {
       invalidateOrdersAndTables(queryClient);
     },
   });
@@ -62,18 +87,9 @@ export function useCreateOrder() {
 
   return useMutation({
     mutationFn: async (orderData: OrderInsert) => {
-      // Soft pre-check: verify monthly order limit before sending to DB
-      const plan = useAuthStore.getState().tenantPlan ?? 'free';
-      const max = PLAN_LIMITS[plan].maxOrdersPerMonth;
-      if (max !== -1) {
-        const cachedCount = queryClient.getQueryData<number>([QUERY_KEYS.MONTHLY_ORDER_COUNT]);
-        if (cachedCount !== undefined && cachedCount >= max) {
-          throw new Error(
-            `Your ${plan} plan allows up to ${max} orders/month. Upgrade to add more.`,
-          );
-        }
-      }
-      return db.orders.create(orderData);
+      // Plan limit is now enforced server-side in the API route
+      const { order } = await apiRoutes.orders.create(orderData);
+      return order;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
@@ -118,7 +134,35 @@ export function useUpdateOrderItemStatus() {
   return useMutation({
     mutationFn: ({ itemId, status }: { itemId: string; status: OrderItemStatus }) =>
       db.orderItems.updateStatus(itemId, status),
-    onSuccess: () => {
+    onMutate: async ({ itemId, status }) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+
+      const previousOrders = queryClient.getQueryData([QUERY_KEYS.ORDERS]);
+      const previousActive = queryClient.getQueryData([QUERY_KEYS.ACTIVE_ORDERS]);
+
+      const updateList = (old: OrderWithDetails[] | undefined) =>
+        old?.map((order) => ({
+          ...order,
+          order_items: order.order_items?.map((item: any) =>
+            item.id === itemId ? { ...item, status } : item,
+          ),
+        }));
+
+      queryClient.setQueryData([QUERY_KEYS.ORDERS], updateList);
+      queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], updateList);
+
+      return { previousOrders, previousActive };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousOrders) {
+        queryClient.setQueryData([QUERY_KEYS.ORDERS], context.previousOrders);
+      }
+      if (context?.previousActive) {
+        queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], context.previousActive);
+      }
+    },
+    onSettled: () => {
       invalidateOrdersAndTables(queryClient);
     },
   });

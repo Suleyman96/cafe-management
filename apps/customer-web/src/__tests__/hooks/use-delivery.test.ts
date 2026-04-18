@@ -8,14 +8,16 @@ import { db, supabase } from '@/lib/supabase';
 import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useDeliveryOrder', () => {
-  it('calls db.orders.findDeliveryById with orderId', () => {
+  it('calls supabase.rpc with get_delivery_order', () => {
     renderHookWithProviders(() => useDeliveryOrder('order-1'));
-    expect(db.orders.findDeliveryById).toHaveBeenCalledWith('order-1');
+    expect(supabase.rpc).toHaveBeenCalledWith('get_delivery_order', {
+      p_order_id: 'order-1',
+    });
   });
 
   it('is disabled when orderId is empty', () => {
     renderHookWithProviders(() => useDeliveryOrder(''));
-    expect(db.orders.findDeliveryById).not.toHaveBeenCalled();
+    expect(supabase.rpc).not.toHaveBeenCalled();
   });
 
   it('sets up a realtime channel', () => {
@@ -112,7 +114,7 @@ describe('useCreateDeliveryOrder', () => {
 describe('useDeliveryOrder - realtime callback', () => {
   it('orders channel callback invalidates DELIVERY_ORDER query', async () => {
     const mockOrder = { id: 'order-1', status: 'new', items: [] };
-    (db.orders.findDeliveryById as any).mockResolvedValueOnce(mockOrder);
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
 
     const { queryClient } = renderHookWithProviders(() => useDeliveryOrder('order-1'));
 

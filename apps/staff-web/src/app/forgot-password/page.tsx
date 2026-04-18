@@ -1,10 +1,10 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { GustriLogo } from '@gustri/ui';
 import { ArrowLeft, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import { GustriLogo } from '@/components/ui/gustri-logo';
 import { supabase } from '@/lib/supabase/client';
 
 export default function ForgotPasswordPage() {

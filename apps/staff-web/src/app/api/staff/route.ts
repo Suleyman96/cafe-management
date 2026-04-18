@@ -1,10 +1,25 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { validatePassword } from '@/lib/api/password-validation';
+import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
 import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 10 requests per minute per IP
+    const ip = getRateLimitIdentifier(request);
+    const { success, resetAt } = rateLimit(`staff-create:${ip}`, { limit: 10, windowSeconds: 60 });
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)) },
+        },
+      );
+    }
+
     // Verify caller is an authenticated admin
     const adminOrError = await verifyAdmin(request);
     if (adminOrError instanceof NextResponse) return adminOrError;
@@ -20,6 +35,12 @@ export async function POST(request: NextRequest) {
     // Validate role
     if (!['waiter', 'admin', 'kitchen', 'owner'].includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+    }
+
+    // Validate password strength
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.valid) {
+      return NextResponse.json({ error: passwordCheck.errors.join('. ') }, { status: 400 });
     }
 
     // Create auth user using admin API
@@ -67,6 +88,19 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Rate limit: 10 requests per minute per IP
+    const ip = getRateLimitIdentifier(request);
+    const { success, resetAt } = rateLimit(`staff-delete:${ip}`, { limit: 10, windowSeconds: 60 });
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)) },
+        },
+      );
+    }
+
     const adminOrError = await verifyAdmin(request);
     if (adminOrError instanceof NextResponse) return adminOrError;
 

@@ -50,6 +50,19 @@ export type DeliveryCustomerInsert = Tables['delivery_customers']['Insert'];
 export type DeliveryCustomerUpdate = Tables['delivery_customers']['Update'];
 export type TenantRow = Tables['tenants']['Row'];
 
+// Pagination params for list queries
+export interface PaginationParams {
+  limit?: number;
+  offset?: number;
+}
+
+// Paginated result with total count for UI pagination controls
+export interface PaginatedResult<T> {
+  data: T[];
+  count: number;
+  hasMore: boolean;
+}
+
 /**
  * Supabase client that bypasses strict typing.
  * Required for INSERT/UPDATE/DELETE operations (Supabase SDK limitation with

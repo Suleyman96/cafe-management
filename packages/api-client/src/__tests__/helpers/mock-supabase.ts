@@ -20,6 +20,7 @@ function createChainableQuery(response: MockResponse) {
     'eq',
     'neq',
     'in',
+    'is',
     'or',
     'gt',
     'gte',
@@ -27,6 +28,7 @@ function createChainableQuery(response: MockResponse) {
     'lte',
     'order',
     'limit',
+    'range',
     'single',
     'maybeSingle',
   ];

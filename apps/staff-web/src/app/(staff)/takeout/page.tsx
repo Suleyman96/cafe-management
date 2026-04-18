@@ -19,14 +19,14 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import { CreateTakeoutModal } from '@/components/orders/create-takeout-modal';
 import { useCancelOrder, useMenuItems, useTakeoutOrders, useUpdateOrderStatus } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
-import { supabase } from '@/lib/supabase/client';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 type TakeoutStatus = 'pending_approval' | 'new' | 'preparing' | 'ready' | 'closed' | 'cancelled';
 
@@ -62,25 +62,12 @@ export default function TakeoutPage() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
-  // Real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('takeout-orders-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        refetch();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
-        refetch();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_payments' }, () => {
-        refetch();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch]);
+  // Real-time: invalidate queries on DB changes
+  useRealtimeSync('takeout-orders-realtime', [
+    { table: 'orders', queryKeys: [['takeout_orders'], ['orders'], ['active_orders']] },
+    { table: 'order_items', queryKeys: [['takeout_orders'], ['orders']] },
+    { table: 'order_payments', queryKeys: [['takeout_orders'], ['payments']] },
+  ]);
 
   const calculateOrderTotal = (order: any) => {
     if (order?.total != null) return order.total;

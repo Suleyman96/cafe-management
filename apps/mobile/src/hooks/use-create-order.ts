@@ -7,6 +7,7 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationKey: ['create-order'],
     mutationFn: async (orderData: OrdersInsert) => {
       return await db.orders.create(orderData);
     },
@@ -25,6 +26,7 @@ export function useAddOrderItems() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationKey: ['add-order-items'],
     mutationFn: async (items: OrderItemsInsert[]) => {
       return await db.orderItems.create(items);
     },

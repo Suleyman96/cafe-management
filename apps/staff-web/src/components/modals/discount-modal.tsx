@@ -1,11 +1,10 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button, NumberInput } from '@gustri/ui';
 import { Percent, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { NumberInput } from '@/components/ui/number-input';
 import { useApplyDiscount } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';

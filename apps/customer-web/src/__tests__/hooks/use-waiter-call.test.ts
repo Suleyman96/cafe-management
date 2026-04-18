@@ -1,19 +1,22 @@
 import { QUERY_KEYS } from '@gustri/core';
 import { useCallWaiter, useCreateWaiterCall, useWaiterCalls } from '@/hooks/use-waiter-call';
-import { db } from '@/lib/supabase';
+import { db, supabase } from '@/lib/supabase';
 import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useWaiterCalls', () => {
-  it('calls db.waiterCalls.findByTable with tableId and pending status', () => {
+  it('calls supabase.rpc with get_waiter_calls_for_table', () => {
     renderHookWithProviders(() => useWaiterCalls('table-1'));
-    expect(db.waiterCalls.findByTable).toHaveBeenCalledWith('table-1', 'pending');
+    expect(supabase.rpc).toHaveBeenCalledWith('get_waiter_calls_for_table', {
+      p_table_id: 'table-1',
+      p_status: 'pending',
+    });
   });
 
   it('returns fetched waiter calls', async () => {
     const mockCalls = [
       { id: 'wc1', table_id: 'table-1', call_type: 'assistance', status: 'pending' },
     ];
-    (db.waiterCalls.findByTable as any).mockResolvedValueOnce(mockCalls);
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockCalls, error: null });
 
     const { result } = renderHookWithProviders(() => useWaiterCalls('table-1'));
 
@@ -22,7 +25,7 @@ describe('useWaiterCalls', () => {
   });
 
   it('reports error when fetch fails', async () => {
-    (db.waiterCalls.findByTable as any).mockRejectedValueOnce(new Error('DB error'));
+    (supabase.rpc as any).mockResolvedValueOnce({ data: null, error: new Error('DB error') });
 
     const { result } = renderHookWithProviders(() => useWaiterCalls('table-1'));
 

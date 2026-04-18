@@ -13,6 +13,7 @@ import {
   useUpdateOrderNotes,
   useUpdateOrderStatus,
 } from '@/hooks/use-orders-safe';
+import { apiRoutes } from '@/lib/api-routes';
 import { db } from '@/lib/supabase/wrapped-client';
 import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
@@ -94,11 +95,11 @@ describe('useCreateOrder', () => {
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
   });
 
-  it('calls db.orders.create with order data', async () => {
+  it('calls apiRoutes.orders.create with order data', async () => {
     const orderData = { table_id: 't1', status: 'new' } as any;
     const { result } = renderHookWithProviders(() => useCreateOrder());
     await result.current.mutateAsync(orderData);
-    expect(db.orders.create).toHaveBeenCalledWith(orderData);
+    expect(apiRoutes.orders.create).toHaveBeenCalledWith(orderData);
   });
 
   it('invalidates ACTIVE_ORDERS on success', async () => {

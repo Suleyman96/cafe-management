@@ -11,7 +11,15 @@ export function useOrder(tableId: string) {
 
   const query = useQuery({
     queryKey: [QUERY_KEYS.ORDER, tableId],
-    queryFn: async (): Promise<OrderWithItems | null> => db.orders.findActiveByTable(tableId),
+    queryFn: async (): Promise<OrderWithItems | null> => {
+      const { data, error } = await (supabase.rpc as Function)('get_active_order_for_table', {
+        p_table_id: tableId,
+      });
+      if (error) throw error;
+      if (!data) return null;
+      // RPC returns JSONB matching OrderWithItems shape
+      return data as unknown as OrderWithItems;
+    },
     enabled: !!tableId,
     staleTime: 0,
   });

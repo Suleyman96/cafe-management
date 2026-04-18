@@ -1,9 +1,9 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { db } from '@/lib/supabase';
 
 type FeedbackType = 'complaint' | 'praise';

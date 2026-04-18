@@ -11,8 +11,14 @@ export function useDeliveryOrder(orderId: string) {
 
   const query = useQuery({
     queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderId],
-    queryFn: async (): Promise<DeliveryOrderWithDetails | null> =>
-      db.orders.findDeliveryById(orderId) as Promise<DeliveryOrderWithDetails | null>,
+    queryFn: async (): Promise<DeliveryOrderWithDetails | null> => {
+      const { data, error } = await (supabase.rpc as Function)('get_delivery_order', {
+        p_order_id: orderId,
+      });
+      if (error) throw error;
+      if (!data) return null;
+      return data as unknown as DeliveryOrderWithDetails;
+    },
     enabled: !!orderId,
     staleTime: 0,
   });

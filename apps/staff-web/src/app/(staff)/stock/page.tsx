@@ -2,7 +2,7 @@
 
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { LoadingSpinner } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui';
 import {
   AlertTriangle,
   ArrowDownCircle,
@@ -19,7 +19,6 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { StockItemModal } from '@/components/modals/stock-item-modal';
 import { StockMovementModal } from '@/components/modals/stock-movement-modal';
-import { Button } from '@/components/ui/button';
 import {
   useAuth,
   useDeleteStockItem,

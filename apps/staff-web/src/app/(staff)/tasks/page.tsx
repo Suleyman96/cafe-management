@@ -3,7 +3,7 @@
 import { getLocalDateString } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { LoadingSpinner } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -23,7 +23,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { TaskModal } from '@/components/modals/task-modal';
-import { Button } from '@/components/ui/button';
 import {
   useAuth,
   useDeleteTask,

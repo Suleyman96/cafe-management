@@ -48,6 +48,7 @@ export const REFRESH_INTERVALS = {
   KITCHEN: 10000, // 10 seconds
   WAITER_CALLS: 15000, // 15 seconds
   TABLES: 60000, // 1 minute
+  FALLBACK: 120000, // 2 minutes — safety-net poll when realtime WS is disconnected
 } as const;
 
 // Status colors
