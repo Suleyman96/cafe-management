@@ -14,7 +14,13 @@ DROP VIEW IF EXISTS sales_summary_view CASCADE;
 DROP VIEW IF EXISTS order_payment_summary CASCADE;
 
 -- ========================================
--- 2. Upgrade columns still at DECIMAL(10,2)
+-- 2. Drop column-specific trigger that blocks ALTER on discount_value
+-- ========================================
+
+DROP TRIGGER IF EXISTS recalculate_on_discount_change ON public.orders;
+
+-- ========================================
+-- 3. Upgrade columns still at DECIMAL(10,2)
 -- ========================================
 
 ALTER TABLE menu_items ALTER COLUMN price TYPE NUMERIC(14,4);
@@ -266,5 +272,14 @@ GROUP BY o.id, o.order_number, o.total;
 
 GRANT SELECT ON order_payment_summary TO authenticated;
 ALTER VIEW order_payment_summary SET (security_invoker = on);
+
+-- ========================================
+-- 8. Recreate column-specific trigger dropped in step 2
+-- ========================================
+
+CREATE OR REPLACE TRIGGER recalculate_on_discount_change
+  AFTER UPDATE OF discount_type, discount_value ON public.orders
+  FOR EACH ROW
+  EXECUTE FUNCTION public.recalculate_on_discount_change();
 
 COMMIT;
