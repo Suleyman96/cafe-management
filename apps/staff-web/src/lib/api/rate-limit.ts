@@ -1,49 +1,51 @@
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
-const store = new Map<string, RateLimitEntry>();
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
 
-// Clean up expired entries every 60 seconds
-if (typeof globalThis !== 'undefined') {
-  const cleanup = () => {
-    const now = Date.now();
-    for (const [key, entry] of store) {
-      if (now > entry.resetAt) {
-        store.delete(key);
-      }
-    }
-  };
-  setInterval(cleanup, 60_000);
-}
+const limiters = {
+  'order-create': new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(30, '60 s'),
+    prefix: 'rl:order-create',
+  }),
+  payment: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(20, '60 s'),
+    prefix: 'rl:payment',
+  }),
+  discount: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(20, '60 s'),
+    prefix: 'rl:discount',
+  }),
+  staff: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(10, '60 s'),
+    prefix: 'rl:staff',
+  }),
+  'password-reset': new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(5, '300 s'),
+    prefix: 'rl:password-reset',
+  }),
+};
 
-export interface RateLimitConfig {
-  /** Maximum requests per window */
-  limit: number;
-  /** Window duration in seconds */
-  windowSeconds: number;
-}
+export type RateLimitCategory = keyof typeof limiters;
 
-export function rateLimit(
+export async function rateLimit(
+  category: RateLimitCategory,
   identifier: string,
-  config: RateLimitConfig,
-): { success: boolean; remaining: number; resetAt: number } {
-  const now = Date.now();
-  const entry = store.get(identifier);
-
-  if (!entry || now > entry.resetAt) {
-    const resetAt = now + config.windowSeconds * 1000;
-    store.set(identifier, { count: 1, resetAt });
-    return { success: true, remaining: config.limit - 1, resetAt };
-  }
-
-  if (entry.count >= config.limit) {
-    return { success: false, remaining: 0, resetAt: entry.resetAt };
-  }
-
-  entry.count++;
-  return { success: true, remaining: config.limit - entry.count, resetAt: entry.resetAt };
+): Promise<{ success: boolean; remaining: number; resetAt: number }> {
+  const result = await limiters[category].limit(identifier);
+  return {
+    success: result.success,
+    remaining: result.remaining,
+    resetAt: result.reset,
+  };
 }
 
 export function getRateLimitIdentifier(request: Request): string {

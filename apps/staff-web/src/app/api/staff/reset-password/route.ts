@@ -1,4 +1,6 @@
+import * as Sentry from '@sentry/nextjs';
 import { type NextRequest, NextResponse } from 'next/server';
+import { handleRouteError } from '@/lib/api/handle-route-error';
 import { validatePassword } from '@/lib/api/password-validation';
 import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
 import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
@@ -7,12 +9,8 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit: 5 requests per 5 minutes per IP (stricter for password reset)
     const ip = getRateLimitIdentifier(request);
-    const { success, resetAt } = rateLimit(`password-reset:${ip}`, {
-      limit: 5,
-      windowSeconds: 300,
-    });
+    const { success, resetAt } = await rateLimit('password-reset', ip);
     if (!success) {
       return NextResponse.json(
         { error: 'Too many requests' },
@@ -68,12 +66,12 @@ export async function POST(request: NextRequest) {
     );
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 400 });
+      Sentry.captureException(updateError);
+      return NextResponse.json({ error: 'Failed to reset password' }, { status: 400 });
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error resetting password:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return handleRouteError(err);
   }
 }

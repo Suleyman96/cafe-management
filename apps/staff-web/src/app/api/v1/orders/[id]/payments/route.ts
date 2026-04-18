@@ -1,8 +1,9 @@
 import { PaymentMethodSchema, PaymentTypeSchema } from '@gustri/database';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { handleRouteError } from '@/lib/api/handle-route-error';
 import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
-import { jsonError, jsonOk, jsonRateLimited } from '@/lib/api/response';
+import { jsonOk, jsonRateLimited } from '@/lib/api/response';
 import { validateBody } from '@/lib/api/validate';
 import { getSupabaseAdmin } from '@/lib/api/verify-admin';
 import { verifyStaff } from '@/lib/api/verify-staff';
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { id: orderId } = await params;
 
     const ip = getRateLimitIdentifier(request);
-    const { success, resetAt } = rateLimit(`payment:${ip}`, { limit: 20, windowSeconds: 60 });
+    const { success, resetAt } = await rateLimit('payment', ip);
     if (!success) return jsonRateLimited(resetAt);
 
     const staffOrError = await verifyStaff(request);
@@ -42,8 +43,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return jsonOk({ payment }, 201);
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Internal server error';
-    const status = message.includes('exceeds remaining') ? 422 : 400;
-    return jsonError(message, status);
+    return handleRouteError(err);
   }
 }

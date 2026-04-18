@@ -1,4 +1,6 @@
+import * as Sentry from '@sentry/nextjs';
 import { type NextRequest, NextResponse } from 'next/server';
+import { handleRouteError } from '@/lib/api/handle-route-error';
 import { validatePassword } from '@/lib/api/password-validation';
 import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
 import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
@@ -7,9 +9,8 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit: 10 requests per minute per IP
     const ip = getRateLimitIdentifier(request);
-    const { success, resetAt } = rateLimit(`staff-create:${ip}`, { limit: 10, windowSeconds: 60 });
+    const { success, resetAt } = await rateLimit('staff', ip);
     if (!success) {
       return NextResponse.json(
         { error: 'Too many requests' },
@@ -20,7 +21,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify caller is an authenticated admin
     const adminOrError = await verifyAdmin(request);
     if (adminOrError instanceof NextResponse) return adminOrError;
 
@@ -51,7 +51,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 });
+      Sentry.captureException(authError);
+      return NextResponse.json({ error: 'Failed to create user account' }, { status: 400 });
     }
 
     if (!authData.user) {
@@ -74,23 +75,21 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (staffError) {
-      // Rollback: delete the auth user if staff creation fails
+      Sentry.captureException(staffError);
       await getSupabaseAdmin().auth.admin.deleteUser(authData.user.id);
-      return NextResponse.json({ error: staffError.message }, { status: 400 });
+      return NextResponse.json({ error: 'Failed to create staff record' }, { status: 400 });
     }
 
     return NextResponse.json({ staff: staffData }, { status: 201 });
-  } catch (error) {
-    console.error('Error creating staff:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return handleRouteError(err);
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    // Rate limit: 10 requests per minute per IP
     const ip = getRateLimitIdentifier(request);
-    const { success, resetAt } = rateLimit(`staff-delete:${ip}`, { limit: 10, windowSeconds: 60 });
+    const { success, resetAt } = await rateLimit('staff', ip);
     if (!success) {
       return NextResponse.json(
         { error: 'Too many requests' },
@@ -134,7 +133,8 @@ export async function DELETE(request: NextRequest) {
     const { error: deleteError } = await supabaseAdmin.from('staff').delete().eq('id', staffId);
 
     if (deleteError) {
-      return NextResponse.json({ error: deleteError.message }, { status: 400 });
+      Sentry.captureException(deleteError);
+      return NextResponse.json({ error: 'Failed to delete staff member' }, { status: 400 });
     }
 
     // Delete auth user if linked
@@ -143,8 +143,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting staff:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    return handleRouteError(err);
   }
 }
