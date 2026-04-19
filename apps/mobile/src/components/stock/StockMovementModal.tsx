@@ -3,11 +3,12 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Modal, Portal, Text } from 'react-native-paper';
 import { TextInput } from '@/lib/paper-compat';
+import { BRAND_PRIMARY } from '@/theme';
 
 const MOVEMENT_TYPES = [
   { value: 'in', label: '+ Add', color: '#10b981', bg: '#d1fae5' },
   { value: 'out', label: '- Remove', color: '#ef4444', bg: '#fee2e2' },
-  { value: 'adjustment', label: 'Set To', color: '#367B8B', bg: '#dbeafe' },
+  { value: 'adjustment', label: 'Set To', color: BRAND_PRIMARY, bg: '#dbeafe' },
 ] as const;
 
 interface StockMovementModalProps {
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
   currentValue: { fontWeight: '700', color: '#1e293b' },
   previewCard: { backgroundColor: '#eff6ff', marginBottom: 8 },
   previewContent: { alignItems: 'center' },
-  previewLabel: { color: '#367B8B' },
+  previewLabel: { color: BRAND_PRIMARY },
   previewValue: { fontWeight: '700', color: '#1e40af' },
   errorText: { color: '#ef4444', marginBottom: 8, marginTop: -4 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 12 },

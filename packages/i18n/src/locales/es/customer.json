@@ -64,7 +64,7 @@
   "deliveryLanding.labelPhone": "Teléfono *",
   "deliveryLanding.namePlaceholder": "Su nombre completo",
   "deliveryLanding.notesPlaceholder": "Piso, código de puerta, referencias...",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.unavailableSubtext": "El servicio de entrega no está disponible actualmente. Por favor, inténtelo más tarde.",
   "deliveryLanding.unavailableTitle": "Entrega no disponible",
   "deliveryStatus.badgeDelivery": "Entrega",

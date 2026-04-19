@@ -4,6 +4,7 @@ import type { ORDER_STATUS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, NumberInput } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { Check, CheckCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -208,7 +209,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
       });
       onSuccess();
     } catch (error: unknown) {
-      console.error('Failed to process payment:', error);
+      Sentry.captureException(error);
       const message = error instanceof Error ? error.message : t('payment.paymentFailed');
       toast.error(message);
     } finally {
@@ -242,7 +243,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
       });
       onSuccess();
     } catch (error) {
-      console.error('Failed to complete order:', error);
+      Sentry.captureException(error);
     } finally {
       setLoading(false);
     }

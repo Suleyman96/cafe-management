@@ -64,7 +64,7 @@
   "deliveryLanding.labelPhone": "Telefon *",
   "deliveryLanding.namePlaceholder": "Tam adınız",
   "deliveryLanding.notesPlaceholder": "Mərtəbə nömrəsi, qapı kodu, nişan nöqtələri...",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.unavailableSubtext": "Çatdırılma sifarişi hazırda mövcud deyil. Sonra yenidən cəhd edin.",
   "deliveryLanding.unavailableTitle": "Çatdırılma Mövcud Deyil",
   "deliveryStatus.badgeDelivery": "Çatdırılma",

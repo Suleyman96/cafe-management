@@ -4,6 +4,7 @@ import type { ORDER_STATUS } from '@gustri/core';
 import type { Database, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import {
   ArrowLeft,
   ArrowRightLeft,
@@ -178,7 +179,7 @@ export default function TableDetailPage() {
       setOrderNotes('');
       refetchOrders();
     } catch (error) {
-      console.error('Failed to create order:', error);
+      Sentry.captureException(error);
       toast.error(t('orders.failedCreateOrder'));
     } finally {
       setSubmitting(false);
@@ -279,7 +280,7 @@ export default function TableDetailPage() {
       setCart([]);
       refetchOrders();
     } catch (error) {
-      console.error('Failed to add items:', error);
+      Sentry.captureException(error);
       toast.error(t('orders.failedAddItems'));
     } finally {
       setSubmitting(false);
@@ -426,7 +427,7 @@ export default function TableDetailPage() {
         router.push('/tables');
       }
     } catch (error) {
-      console.error('Failed to cancel order:', error);
+      Sentry.captureException(error);
       toast.error(t('orders.failedCancel'));
     } finally {
       setCancelling(false);
@@ -494,7 +495,7 @@ export default function TableDetailPage() {
                   }
                   toast.success(t('calls.resolved'));
                 } catch (error) {
-                  console.error('Failed to resolve call:', error);
+                  Sentry.captureException(error);
                   toast.error(t('calls.failedRespond'));
                 }
               }}

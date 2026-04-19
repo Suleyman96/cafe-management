@@ -64,7 +64,7 @@
   "deliveryLanding.labelPhone": "Телефон *",
   "deliveryLanding.namePlaceholder": "Толық атыңыз",
   "deliveryLanding.notesPlaceholder": "Қабат нөмірі, есік коды, бағдарлар...",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.unavailableSubtext": "Жеткізу қызметі қазір қолжетімсіз. Кейінірек қайта көріңіз.",
   "deliveryLanding.unavailableTitle": "Жеткізу қолжетімсіз",
   "deliveryStatus.badgeDelivery": "Жеткізу",

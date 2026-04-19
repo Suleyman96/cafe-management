@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Modal, Portal, Switch, Text } from 'react-native-paper';
 import { TextInput } from '@/lib/paper-compat';
+import { BRAND_PRIMARY } from '@/theme';
 
 interface CategoryModalProps {
   visible: boolean;
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconBtnSelected: {
-    borderColor: '#367B8B',
+    borderColor: BRAND_PRIMARY,
     backgroundColor: '#eff6ff',
     borderWidth: 2,
   },

@@ -47,6 +47,8 @@
   "optional": "Необов'язково",
   "pending": "В очікуванні",
   "phone": "Телефон",
+  "phonePlaceholder": "+XX XXX XXX XXXX",
+  "whatsappPlaceholder": "https://wa.me/XXXXXXXXXXXX",
   "placingOrder": "Оформлення замовлення...",
   "quantity": "Кількість",
   "refresh": "Оновити",

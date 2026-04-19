@@ -3,6 +3,7 @@
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { Pencil, Search, Trash2, UtensilsCrossed } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -82,7 +83,7 @@ export default function MenuPage() {
       await deleteMenuItem.mutateAsync(id);
       toast.success(t('menu.itemDeleted'));
     } catch (error) {
-      console.error('Failed to delete menu item:', error);
+      Sentry.captureException(error);
       toast.error(t('menu.failedDeleteItem'));
     }
   };
@@ -93,7 +94,7 @@ export default function MenuPage() {
       await deleteCategory.mutateAsync(id);
       toast.success(t('menu.categoryDeleted'));
     } catch (error) {
-      console.error('Failed to delete category:', error);
+      Sentry.captureException(error);
       toast.error(t('menu.failedDeleteCategory'));
     }
   };
@@ -102,7 +103,7 @@ export default function MenuPage() {
     try {
       await toggleAvailability.mutateAsync({ id, currentAvailable });
     } catch (error) {
-      console.error('Failed to toggle availability:', error);
+      Sentry.captureException(error);
       toast.error(t('menu.failedToggleAvailability'));
     }
   };

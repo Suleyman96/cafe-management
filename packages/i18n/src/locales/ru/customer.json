@@ -64,7 +64,7 @@
   "deliveryLanding.labelPhone": "Телефон *",
   "deliveryLanding.namePlaceholder": "Ваше полное имя",
   "deliveryLanding.notesPlaceholder": "Этаж, код двери, ориентиры...",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.unavailableSubtext": "Доставка временно недоступна. Попробуйте позже.",
   "deliveryLanding.unavailableTitle": "Доставка недоступна",
   "deliveryStatus.badgeDelivery": "Доставка",

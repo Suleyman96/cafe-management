@@ -47,6 +47,8 @@
   "optional": "اختياري",
   "pending": "قيد الانتظار",
   "phone": "الهاتف",
+  "phonePlaceholder": "+XX XXX XXX XXXX",
+  "whatsappPlaceholder": "https://wa.me/XXXXXXXXXXXX",
   "placingOrder": "جاري تقديم الطلب...",
   "quantity": "الكمية",
   "refresh": "تحديث",

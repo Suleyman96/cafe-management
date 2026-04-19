@@ -3,6 +3,7 @@
 import { ORDER_STATUS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { Loader2, Search, X, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -120,7 +121,7 @@ export default function OrdersPage() {
       setCancelReason('');
       refetch();
     } catch (error) {
-      console.error('Failed to cancel order:', error);
+      Sentry.captureException(error);
       toast.error(t('orders.failedCancel'));
     } finally {
       setCancelling(false);

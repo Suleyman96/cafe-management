@@ -3,6 +3,7 @@
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, NumberInput } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateMenuItem, useUpdateMenuItem } from '@/hooks';
@@ -120,7 +121,7 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
 
       onClose();
     } catch (error: unknown) {
-      console.error('Error saving menu item:', error);
+      Sentry.captureException(error);
 
       const errorMessage = error instanceof Error ? error.message : t('menu.failedSaveItem');
 

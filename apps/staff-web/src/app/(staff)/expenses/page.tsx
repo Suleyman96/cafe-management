@@ -76,7 +76,7 @@ export default function ExpensesPage() {
 
   // Month selector options — use locale-aware month names
   const months = Array.from({ length: 12 }, (_, i) =>
-    new Date(2024, i).toLocaleString('default', { month: 'long' }),
+    new Date(new Date().getFullYear(), i).toLocaleString('default', { month: 'long' }),
   );
 
   if (isLoading) {

@@ -64,7 +64,7 @@
   "deliveryLanding.labelPhone": "الهاتف *",
   "deliveryLanding.namePlaceholder": "الاسم الكامل",
   "deliveryLanding.notesPlaceholder": "رقم الطابق، رمز الباب، معالم...",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.unavailableSubtext": "خدمة التوصيل غير متاحة حالياً. يرجى المحاولة لاحقاً.",
   "deliveryLanding.unavailableTitle": "التوصيل غير متاح",
   "deliveryStatus.badgeDelivery": "توصيل",

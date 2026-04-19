@@ -2,6 +2,7 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { Badge, Button, LoadingSpinner } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import {
   ArrowLeft,
   Bell,
@@ -73,7 +74,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
       });
       toast.success(t('callStaff.toastSuccess'));
     } catch (error) {
-      console.error('Error calling staff:', error);
+      Sentry.captureException(error);
       toast.error(t('callStaff.toastError'));
     }
   };
@@ -89,7 +90,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
       setShowCancelOrderConfirm(false);
       router.push(`/table/${tableId}/menu`);
     } catch (error) {
-      console.error('Failed to cancel order:', error);
+      Sentry.captureException(error);
     } finally {
       setCancelLoading(false);
     }
@@ -106,7 +107,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
       setCancelItemModal(null);
       setCancelItemQty(1);
     } catch (error) {
-      console.error('Failed to cancel item:', error);
+      Sentry.captureException(error);
     } finally {
       setCancelLoading(false);
     }

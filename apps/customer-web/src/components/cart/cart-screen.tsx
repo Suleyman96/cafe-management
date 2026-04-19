@@ -2,6 +2,7 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { ArrowLeft, ClipboardList } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -85,7 +86,7 @@ export function CartScreen({ tableId }: CartScreenProps) {
       clearCart();
       router.push(`/table/${tableId}/order`);
     } catch (error) {
-      console.error('Error placing order:', error);
+      Sentry.captureException(error);
       toast.error(t('cart.orderError'));
     }
   };

@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import Link from 'next/link';
 import { useEffect } from 'react';
 
@@ -11,7 +12,7 @@ export default function StaffError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Staff route error boundary caught:', error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (
@@ -39,7 +40,7 @@ export default function StaffError({
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={reset}
-            className="rounded-lg bg-[#367B8B] px-5 py-2 text-sm font-medium text-white hover:bg-[#2d6975] transition-colors"
+            className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary/90 transition-colors"
           >
             Try again
           </button>

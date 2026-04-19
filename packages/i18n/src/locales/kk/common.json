@@ -47,6 +47,8 @@
   "optional": "Міндетті емес",
   "pending": "Күтуде",
   "phone": "Телефон",
+  "phonePlaceholder": "+XX XXX XXX XXXX",
+  "whatsappPlaceholder": "https://wa.me/XXXXXXXXXXXX",
   "placingOrder": "Тапсырыс берілуде...",
   "quantity": "Саны",
   "refresh": "Жаңарту",

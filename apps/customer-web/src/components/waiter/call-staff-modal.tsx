@@ -2,6 +2,7 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { Check, Loader2, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -69,7 +70,7 @@ export function CallStaffModal({ tableId, tenantId, isOpen, onClose }: CallStaff
         handleClose();
       }, 1500);
     } catch (error) {
-      console.error('Error calling staff:', error);
+      Sentry.captureException(error);
       toast.error(t('callStaff.toastError'));
     }
   };

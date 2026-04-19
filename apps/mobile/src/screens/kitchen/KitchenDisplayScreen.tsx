@@ -9,7 +9,7 @@ import { KitchenOrderCard } from '@/components/kitchen/KitchenOrderCard';
 import { LoadingScreen } from '@/components/ui';
 import { useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
-import { kitchenDarkTheme } from '@/theme';
+import { BRAND_PRIMARY, kitchenDarkTheme } from '@/theme';
 
 const KITCHEN_STATUSES = [ORDER_STATUS.NEW, ORDER_STATUS.PREPARING, ORDER_STATUS.READY];
 
@@ -184,7 +184,7 @@ export default function KitchenDisplayScreen() {
         <View style={styles.summary}>
           <Chip
             compact
-            style={[styles.summaryChip, { backgroundColor: '#367B8B' }]}
+            style={[styles.summaryChip, { backgroundColor: BRAND_PRIMARY }]}
             textStyle={styles.summaryText}
           >
             {counts.new} {t('kitchen.new')}

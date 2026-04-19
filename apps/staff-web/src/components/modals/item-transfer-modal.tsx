@@ -3,6 +3,7 @@
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { ArrowRight, Loader2, Minus, Plus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -115,7 +116,7 @@ export function ItemTransferModal({
       });
       onSuccess();
     } catch (error: unknown) {
-      console.error('Failed to transfer items:', error);
+      Sentry.captureException(error);
       const message = error instanceof Error ? error.message : t('tables.failedTransfer');
       toast.error(message);
     } finally {

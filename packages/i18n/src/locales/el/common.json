@@ -47,6 +47,8 @@
   "optional": "Προαιρετικό",
   "pending": "Εκκρεμεί",
   "phone": "Τηλέφωνο",
+  "phonePlaceholder": "+XX XXX XXX XXXX",
+  "whatsappPlaceholder": "https://wa.me/XXXXXXXXXXXX",
   "placingOrder": "Υποβολή Παραγγελίας...",
   "quantity": "Ποσότητα",
   "refresh": "Ανανέωση",

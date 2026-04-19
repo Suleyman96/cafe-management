@@ -2,6 +2,7 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { db } from '@/lib/supabase';
@@ -74,7 +75,7 @@ export function FeedbackForm({
         onSuccess?.();
       }, 2000);
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      Sentry.captureException(error);
       toast.error(t('feedback.errorSubmit'));
     } finally {
       setIsSubmitting(false);

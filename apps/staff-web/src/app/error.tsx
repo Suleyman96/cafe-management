@@ -38,7 +38,7 @@ export default function RootError({
         </p>
         <button
           onClick={reset}
-          className="rounded-lg bg-[#367B8B] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#2d6975] transition-colors"
+          className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary/90 transition-colors"
         >
           Try again
         </button>

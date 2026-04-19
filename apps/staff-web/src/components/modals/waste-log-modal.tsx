@@ -6,6 +6,7 @@ import { useTranslation } from '@gustri/i18n';
 import { Button, NumberInput } from '@gustri/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { BaseModal } from '@/components/ui/base-modal';
 import {
   useAdjustStock,
   useAuth,
@@ -155,187 +156,182 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {isEditing ? t('waste.editWasteLog') : t('waste.logWaste')}
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
-            &times;
-          </button>
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title={isEditing ? t('waste.editWasteLog') : t('waste.logWaste')}
+      as="form"
+      onSubmit={handleSubmit}
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            {t('cancel', { ns: 'common' })}
+          </Button>
+          <Button
+            type="submit"
+            className="flex-1"
+            disabled={createWaste.isPending || updateWaste.isPending}
+          >
+            {isEditing ? t('tasks.update') : t('waste.logWaste')}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-6">
+        {/* Stock Item Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('waste.linkToStockItem')}
+          </label>
+          <select
+            value={formData.stock_item_id}
+            onChange={(e) => handleStockItemSelect(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">{t('waste.manualEntry')}</option>
+            {stockItems.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name} ({item.quantity} {item.unit} in stock)
+              </option>
+            ))}
+          </select>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Stock Item Selection */}
+        {/* Item Name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('waste.itemName')} *
+          </label>
+          <input
+            type="text"
+            value={formData.item_name}
+            onChange={(e) => setFormData({ ...formData, item_name: e.target.value })}
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            placeholder={t('waste.whatWasWasted')}
+          />
+        </div>
+
+        {/* Quantity + Unit */}
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('waste.linkToStockItem')}
+              {t('quantity', { ns: 'common' })} *
+            </label>
+            <NumberInput
+              value={formData.quantity}
+              onChange={handleQuantityChange}
+              min={0.01}
+              step={0.01}
+              required
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('stock.unit')}
+            </label>
+            <input
+              type="text"
+              value={formData.unit}
+              onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder={t('waste.unitPlaceholder')}
+            />
+          </div>
+        </div>
+
+        {/* Cost */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('waste.costPerUnit')}
+            </label>
+            <NumberInput
+              value={formData.cost_per_unit}
+              onChange={handleCostChange}
+              min={0}
+              step={0.01}
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('waste.totalCost')}
+            </label>
+            <NumberInput
+              value={formData.total_cost}
+              onChange={(v) => setFormData({ ...formData, total_cost: v })}
+              step={0.01}
+              readOnly
+            />
+          </div>
+        </div>
+
+        {/* Reason + Date */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('waste.wasteReason')} *
             </label>
             <select
-              value={formData.stock_item_id}
-              onChange={(e) => handleStockItemSelect(e.target.value)}
+              value={formData.reason}
+              onChange={(e) =>
+                setFormData({ ...formData, reason: e.target.value as WasteLog['reason'] })
+              }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">{t('waste.manualEntry')}</option>
-              {stockItems.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} ({item.quantity} {item.unit} in stock)
+              {WASTE_REASONS.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {t(r.i18nKey)}
                 </option>
               ))}
             </select>
           </div>
-
-          {/* Item Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('waste.itemName')} *
+              {t('waste.wasteDate')} *
             </label>
             <input
-              type="text"
-              value={formData.item_name}
-              onChange={(e) => setFormData({ ...formData, item_name: e.target.value })}
+              type="date"
+              value={formData.waste_date}
+              onChange={(e) => setFormData({ ...formData, waste_date: e.target.value })}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder={t('waste.whatWasWasted')}
             />
           </div>
+        </div>
 
-          {/* Quantity + Unit */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('quantity', { ns: 'common' })} *
-              </label>
-              <NumberInput
-                value={formData.quantity}
-                onChange={handleQuantityChange}
-                min={0.01}
-                step={0.01}
-                required
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('stock.unit')}
-              </label>
-              <input
-                type="text"
-                value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder={t('waste.unitPlaceholder')}
-              />
-            </div>
-          </div>
-
-          {/* Cost */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('waste.costPerUnit')}
-              </label>
-              <NumberInput
-                value={formData.cost_per_unit}
-                onChange={handleCostChange}
-                min={0}
-                step={0.01}
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('waste.totalCost')}
-              </label>
-              <NumberInput
-                value={formData.total_cost}
-                onChange={(v) => setFormData({ ...formData, total_cost: v })}
-                step={0.01}
-                readOnly
-              />
-            </div>
-          </div>
-
-          {/* Reason + Date */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('waste.wasteReason')} *
-              </label>
-              <select
-                value={formData.reason}
-                onChange={(e) =>
-                  setFormData({ ...formData, reason: e.target.value as WasteLog['reason'] })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                {WASTE_REASONS.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {t(r.i18nKey)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('waste.wasteDate')} *
-              </label>
-              <input
-                type="date"
-                value={formData.waste_date}
-                onChange={(e) => setFormData({ ...formData, waste_date: e.target.value })}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Deduct from stock checkbox */}
-          {!isEditing && formData.stock_item_id && (
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="deduct_stock"
-                checked={formData.deduct_from_stock}
-                onChange={(e) => setFormData({ ...formData, deduct_from_stock: e.target.checked })}
-                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-              />
-              <label htmlFor="deduct_stock" className="text-sm text-gray-700">
-                {t('waste.deductFromStock')}
-              </label>
-            </div>
-          )}
-
-          {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('notes', { ns: 'common' })}
+        {/* Deduct from stock checkbox */}
+        {!isEditing && formData.stock_item_id && (
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="deduct_stock"
+              checked={formData.deduct_from_stock}
+              onChange={(e) => setFormData({ ...formData, deduct_from_stock: e.target.checked })}
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+            />
+            <label htmlFor="deduct_stock" className="text-sm text-gray-700">
+              {t('waste.deductFromStock')}
             </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={2}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder={t('notes', { ns: 'common' })}
-            />
           </div>
+        )}
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
-              {t('cancel', { ns: 'common' })}
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={createWaste.isPending || updateWaste.isPending}
-            >
-              {isEditing ? t('tasks.update') : t('waste.logWaste')}
-            </Button>
-          </div>
-        </form>
+        {/* Notes */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('notes', { ns: 'common' })}
+          </label>
+          <textarea
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            rows={2}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            placeholder={t('notes', { ns: 'common' })}
+          />
+        </div>
       </div>
-    </div>
+    </BaseModal>
   );
 }

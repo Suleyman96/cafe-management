@@ -3,6 +3,7 @@
 import type { MenuItem, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { useState } from 'react';
 import { useAddOrderItems, useCafeSettings, useCreateOrder, useTaxMultiplier } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
@@ -142,7 +143,7 @@ export function CreateTakeoutModal({
       onSuccess?.(newOrder.id);
       onClose();
     } catch (error) {
-      console.error('Error creating takeout order:', error);
+      Sentry.captureException(error);
       alert(t('orders.failedCreateTakeout'));
     } finally {
       setIsSubmitting(false);
@@ -200,7 +201,7 @@ export function CreateTakeoutModal({
                       type="tel"
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
-                      placeholder="+994 XX XXX XX XX"
+                      placeholder={t('phonePlaceholder', { ns: 'common' })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     />

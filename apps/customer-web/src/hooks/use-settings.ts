@@ -6,6 +6,7 @@ import {
   QUERY_KEYS,
 } from '@gustri/core';
 import type { Database } from '@gustri/database';
+import * as Sentry from '@sentry/nextjs';
 import { useQuery } from '@tanstack/react-query';
 import { STALE_TIMES } from '@/lib/query-keys';
 import { db } from '@/lib/supabase';
@@ -70,7 +71,7 @@ export function useCafeSettings() {
       try {
         return await db.settings.get();
       } catch (error) {
-        console.error('Failed to fetch cafe settings:', error);
+        Sentry.captureException(error);
         return DEFAULT_SETTINGS;
       }
     },

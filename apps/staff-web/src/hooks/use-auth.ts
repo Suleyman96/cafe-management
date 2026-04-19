@@ -1,6 +1,7 @@
 'use client';
 
 import type { Database } from '@gustri/database';
+import * as Sentry from '@sentry/nextjs';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef } from 'react';
 import { loadAndSwitchLanguage } from '@/lib/i18n';
@@ -100,7 +101,7 @@ export function useAuth() {
           if (cancelled) return;
 
           if (sessionError) {
-            console.error('Session error:', sessionError);
+            Sentry.captureException(sessionError);
             clearAuth();
             return;
           }
@@ -113,14 +114,14 @@ export function useAuth() {
           try {
             await loadStaffAndSetup(session.user.id, setStaff, setTenantPlan);
           } catch (staffError) {
-            console.error('Staff fetch error:', staffError);
+            Sentry.captureException(staffError);
             if (!cancelled) {
               await supabase.auth.signOut();
               clearAuth();
             }
           }
         } catch (error) {
-          console.error('Auth check error:', error);
+          Sentry.captureException(error);
           if (!cancelled) clearAuth();
         } finally {
           if (!cancelled) setIsLoading(false);
@@ -152,7 +153,7 @@ export function useAuth() {
             await loadStaffAndSetup(session.user.id, setStaff, setTenantPlan);
             setIsLoading(false);
           } catch (err) {
-            console.error('Failed to load staff from auth event:', err);
+            Sentry.captureException(err);
             if (!cancelled) {
               await supabase.auth.signOut();
               clearAuth();

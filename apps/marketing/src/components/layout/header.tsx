@@ -39,7 +39,7 @@ export function Header() {
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <rect width="512" height="512" rx="112" fill="#367B8B" />
+              <rect width="512" height="512" rx="112" className="fill-primary-500" />
               <circle cx="248" cy="172" r="95" stroke="white" strokeWidth="50" fill="none" />
               <line
                 x1="340"

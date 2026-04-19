@@ -20,6 +20,7 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
+import { BRAND_PRIMARY } from '@/theme';
 
 export default function StockListScreen() {
   const staff = useAuthStore((s) => s.staff);
@@ -304,7 +305,7 @@ export default function StockListScreen() {
                         style={{
                           color:
                             m.movement_type === 'adjustment'
-                              ? '#367B8B'
+                              ? BRAND_PRIMARY
                               : m.quantity_change >= 0
                                 ? '#10b981'
                                 : '#ef4444',

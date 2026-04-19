@@ -64,7 +64,7 @@
   "deliveryLanding.labelPhone": "Telefon *",
   "deliveryLanding.namePlaceholder": "Tam adınız",
   "deliveryLanding.notesPlaceholder": "Kat numarası, kapı kodu, yol tarifi...",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.unavailableSubtext": "Teslimat siparişi şu anda mevcut değil. Lütfen daha sonra tekrar deneyin.",
   "deliveryLanding.unavailableTitle": "Teslimat Mevcut Değil",
   "deliveryStatus.badgeDelivery": "Teslimat",

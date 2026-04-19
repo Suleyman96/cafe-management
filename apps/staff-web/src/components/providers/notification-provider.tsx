@@ -2,6 +2,7 @@
 
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import * as Sentry from '@sentry/nextjs';
 import { Bell, BellOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -120,7 +121,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     audio.currentTime = 0;
     audio.play().catch((err) => {
-      console.error('Audio play failed:', err.message);
+      Sentry.addBreadcrumb({
+        category: 'audio',
+        message: 'Audio play failed',
+        level: 'warning',
+        data: { error: err.message },
+      });
     });
   }, []);
 
@@ -138,7 +144,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           toast.success(t('notifications.enabled'));
         })
         .catch((err) => {
-          console.error('Audio play failed:', err.message);
+          Sentry.addBreadcrumb({
+            category: 'audio',
+            message: 'Audio play failed on toggle',
+            level: 'warning',
+            data: { error: err.message },
+          });
           toast.error(t('notifications.enableFailed'));
         });
     } else if (!newState) {

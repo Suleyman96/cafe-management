@@ -3,6 +3,7 @@
 import type { Language } from '@gustri/i18n';
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
 import { LoadingSpinner } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import {
   ArrowRight,
   CheckCircle,
@@ -58,7 +59,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             .catch(console.warn);
         })
         .catch((err: any) => {
-          console.error('Failed to set table context:', err);
+          Sentry.captureException(err);
         });
     }
   }, [token]);
