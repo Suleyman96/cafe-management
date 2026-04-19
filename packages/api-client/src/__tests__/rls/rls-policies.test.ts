@@ -121,7 +121,9 @@ describe('RLS Policies — Authenticated Access', () => {
 
   test('cannot insert into a different tenant', async () => {
     const fakeTenantId = '99999999-9999-9999-9999-999999999999';
-    const { error } = await staffClient.from('tasks').insert({
+    // Intentionally using a cross-tenant insert to test RLS rejection.
+    // The insert data is deliberately minimal — RLS should reject before validation.
+    const { error } = await (staffClient.from('tasks') as any).insert({
       title: 'Cross-tenant test task',
       tenant_id: fakeTenantId,
     });

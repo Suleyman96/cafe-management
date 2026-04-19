@@ -1,3 +1,4 @@
+import { isDeliveryOrder } from '@gustri/core';
 import { ORDER_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { useCallback, useMemo, useState } from 'react';
@@ -55,12 +56,12 @@ export default function KitchenDisplayScreen() {
 
         const items = order.order_items || [];
         let succeeded = 0;
-        const total = items.filter((i: any) => i.status === 'pending').length;
+        const total = items.filter((i) => i.status === 'pending').length;
 
         for (const item of items) {
-          if ((item as any).status === 'pending') {
+          if (item.status === 'pending') {
             await updateItemStatus.mutateAsync({
-              itemId: (item as any).id,
+              itemId: item.id,
               status: 'preparing',
             });
             succeeded++;
@@ -105,13 +106,12 @@ export default function KitchenDisplayScreen() {
         const items = order.order_items || [];
         let succeeded = 0;
         const total = items.filter(
-          (i: any) => i.status === 'pending' || i.status === 'preparing',
+          (i) => i.status === 'pending' || i.status === 'preparing',
         ).length;
 
         for (const item of items) {
-          const s = (item as any).status;
-          if (s === 'pending' || s === 'preparing') {
-            await updateItemStatus.mutateAsync({ itemId: (item as any).id, status: 'ready' });
+          if (item.status === 'pending' || item.status === 'preparing') {
+            await updateItemStatus.mutateAsync({ itemId: item.id, status: 'ready' });
             succeeded++;
           }
         }
@@ -141,14 +141,11 @@ export default function KitchenDisplayScreen() {
 
         const items = order.order_items || [];
         let succeeded = 0;
-        const total = items.filter(
-          (i: any) => i.status !== 'cancelled' && i.status !== 'served',
-        ).length;
+        const total = items.filter((i) => i.status !== 'cancelled' && i.status !== 'served').length;
 
         for (const item of items) {
-          const s = (item as any).status;
-          if (s !== 'cancelled' && s !== 'served') {
-            await updateItemStatus.mutateAsync({ itemId: (item as any).id, status: 'served' });
+          if (item.status !== 'cancelled' && item.status !== 'served') {
+            await updateItemStatus.mutateAsync({ itemId: item.id, status: 'served' });
             succeeded++;
           }
         }
@@ -158,7 +155,7 @@ export default function KitchenDisplayScreen() {
         }
 
         // Don't set delivery orders to "served" — they use out_for_delivery flow
-        if ((order as any).order_type !== 'delivery') {
+        if (!isDeliveryOrder(order)) {
           await updateOrderStatus.mutateAsync({ orderId, status: 'served' });
         }
         showSuccess(t('kitchen.orderServed'));

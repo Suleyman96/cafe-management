@@ -6,6 +6,8 @@
 import type {
   Category,
   CustomerFeedback,
+  DeliveryOrder,
+  DineInOrder,
   Expense,
   ExpenseCategory,
   MenuItem,
@@ -18,6 +20,7 @@ import type {
   StockMovement,
   Table,
   TableTransfer,
+  TakeoutOrder,
   Task,
   WaiterCall,
   WasteLog,
@@ -274,14 +277,17 @@ export function isExpense(value: unknown): value is Expense {
   );
 }
 
-// Order type helpers
-export function isDeliveryOrder(value: unknown): boolean {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'order_type' in value &&
-    (value as Record<string, unknown>).order_type === 'delivery'
-  );
+// Order type discriminated union guards
+export function isDineInOrder<T extends Order>(order: T): order is T & DineInOrder {
+  return order.order_type === 'dine_in';
+}
+
+export function isDeliveryOrder<T extends Order>(order: T): order is T & DeliveryOrder {
+  return order.order_type === 'delivery';
+}
+
+export function isTakeoutOrder<T extends Order>(order: T): order is T & TakeoutOrder {
+  return order.order_type === 'takeout';
 }
 
 // Staff schedule type guards

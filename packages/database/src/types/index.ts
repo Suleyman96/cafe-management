@@ -89,6 +89,25 @@ export type DeliveryCustomer = Database['public']['Tables']['delivery_customers'
 export type DeliveryCustomerInsert = Database['public']['Tables']['delivery_customers']['Insert'];
 export type DeliveryCustomerUpdate = Database['public']['Tables']['delivery_customers']['Update'];
 
+// Discriminated union types for Order based on order_type
+export interface DineInOrder extends Order {
+  order_type: 'dine_in';
+  table_id: string;
+}
+
+export interface DeliveryOrder extends Order {
+  order_type: 'delivery';
+  table_id: null;
+  delivery_address: string;
+}
+
+export interface TakeoutOrder extends Order {
+  order_type: 'takeout';
+  table_id: null;
+}
+
+export type TypedOrder = DineInOrder | DeliveryOrder | TakeoutOrder;
+
 // Extended types with relations
 export interface OrderWithDetails extends Order {
   table: Pick<Table, 'table_number' | 'location'>;
