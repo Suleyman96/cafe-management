@@ -11,6 +11,7 @@ import {
 } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRoutes } from '@/lib/api-routes';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type CafeSettings = Database['public']['Tables']['cafe_settings']['Row'];
@@ -30,7 +31,8 @@ export function useUpdateCafeSettings() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (updates: CafeSettingsUpdate) => db.settings.update(updates),
+    mutationFn: (updates: CafeSettingsUpdate) =>
+      apiRoutes.settings.update(updates as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CAFE_SETTINGS] });
     },

@@ -1,8 +1,8 @@
 import { QUERY_KEYS } from '@gustri/core';
-import type { OrdersInsert } from '@gustri/database';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { apiRoutes } from '@/lib/api-routes';
 import { db, supabase } from '@/lib/supabase';
 import type { Order, OrderItem, OrderWithItems } from '@/types';
 
@@ -87,17 +87,15 @@ export function useCreateOrder() {
       tableId: string;
       notes?: string;
       tenantId: string;
-    }): Promise<Order> =>
-      db.orders.create({
+    }): Promise<Order> => {
+      const { order } = await apiRoutes.customerOrders.create({
         table_id: tableId,
         tenant_id: tenantId,
+        order_type: 'dine_in',
         customer_notes: notes,
-        status: 'pending_approval',
-        source: 'customer',
-        subtotal: 0,
-        tax: 0,
-        total: 0,
-      } as Partial<OrdersInsert> as OrdersInsert),
+      });
+      return order as Order;
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.tableId] });
     },
@@ -152,16 +150,17 @@ export function useAddOrderItems() {
         notes?: string;
       }>;
       tenantId: string;
-    }): Promise<OrderItem[]> =>
-      db.orderItems.create(
+    }): Promise<OrderItem[]> => {
+      const { items: createdItems } = await apiRoutes.customerOrders.addItems(
+        orderId,
         items.map((item) => ({
-          order_id: orderId,
-          tenant_id: tenantId,
           ...item,
           notes: item.notes ?? null,
-          status: 'pending' as const,
+          tenant_id: tenantId,
         })),
-      ),
+      );
+      return createdItems as OrderItem[];
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
     },

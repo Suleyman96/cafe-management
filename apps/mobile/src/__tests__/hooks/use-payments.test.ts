@@ -2,6 +2,7 @@ import { QUERY_KEYS } from '@gustri/core';
 import { waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useCreatePayment, useOrderPayments } from '@/hooks/use-payments';
+import { apiRoutes } from '@/lib/api-routes';
 import { db } from '@/lib/supabase';
 import { renderHookWithProviders } from '../helpers/test-utils';
 
@@ -42,12 +43,13 @@ describe('useOrderPayments - data flow', () => {
 });
 
 describe('useCreatePayment - argument verification', () => {
-  it('calls db.payments.create with payment data', async () => {
+  it('calls apiRoutes.payments.create with payment data', async () => {
     const paymentData = { order_id: 'o1', amount: 50, payment_method: 'cash' as const };
     const { result } = renderHookWithProviders(() => useCreatePayment());
     await result.current.mutateAsync(paymentData);
-    expect(db.payments.create).toHaveBeenCalledWith({
-      ...paymentData,
+    expect(apiRoutes.payments.create).toHaveBeenCalledWith('o1', {
+      amount: 50,
+      payment_method: 'cash',
       received_by: '',
       payment_type: 'full',
       tip_amount: 0,

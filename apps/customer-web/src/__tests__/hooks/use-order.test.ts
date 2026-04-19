@@ -6,6 +6,7 @@ import {
   useCreateOrder,
   useOrder,
 } from '@/hooks/use-order';
+import { apiRoutes } from '@/lib/api-routes';
 import { db, supabase } from '@/lib/supabase';
 import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
@@ -35,21 +36,17 @@ describe('useOrder', () => {
 });
 
 describe('useCreateOrder', () => {
-  it('calls db.orders.create with correct shape', async () => {
+  it('calls apiRoutes.customerOrders.create with correct shape', async () => {
     const { result } = renderHookWithProviders(() => useCreateOrder());
 
     await result.current.mutateAsync({ tableId: 'table-1', notes: 'No ice', tenantId: 'tenant-1' });
 
-    expect(db.orders.create).toHaveBeenCalledWith(
+    expect(apiRoutes.customerOrders.create).toHaveBeenCalledWith(
       expect.objectContaining({
         table_id: 'table-1',
         tenant_id: 'tenant-1',
+        order_type: 'dine_in',
         customer_notes: 'No ice',
-        status: 'pending_approval',
-        source: 'customer',
-        subtotal: 0,
-        tax: 0,
-        total: 0,
       }),
     );
   });
@@ -110,7 +107,7 @@ describe('useCancelOrderItem', () => {
 });
 
 describe('useAddOrderItems', () => {
-  it('maps notes undefined to null and sets status to pending', async () => {
+  it('calls apiRoutes.customerOrders.addItems with mapped items', async () => {
     const { result } = renderHookWithProviders(() => useAddOrderItems());
 
     await result.current.mutateAsync({
@@ -122,26 +119,22 @@ describe('useAddOrderItems', () => {
       ],
     });
 
-    expect(db.orderItems.create).toHaveBeenCalledWith([
+    expect(apiRoutes.customerOrders.addItems).toHaveBeenCalledWith('order-1', [
       {
-        order_id: 'order-1',
-        tenant_id: 'tenant-1',
         menu_item_id: 'm1',
         item_name: 'Coffee',
         item_price: 5,
         quantity: 1,
         notes: null,
-        status: 'pending',
+        tenant_id: 'tenant-1',
       },
       {
-        order_id: 'order-1',
-        tenant_id: 'tenant-1',
         menu_item_id: 'm2',
         item_name: 'Tea',
         item_price: 3,
         quantity: 2,
         notes: 'Hot',
-        status: 'pending',
+        tenant_id: 'tenant-1',
       },
     ]);
   });

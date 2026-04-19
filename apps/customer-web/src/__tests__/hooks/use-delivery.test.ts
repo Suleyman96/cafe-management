@@ -4,7 +4,8 @@ import {
   useCreateDeliveryOrder,
   useDeliveryOrder,
 } from '@/hooks/use-delivery';
-import { db, supabase } from '@/lib/supabase';
+import { apiRoutes } from '@/lib/api-routes';
+import { supabase } from '@/lib/supabase';
 import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useDeliveryOrder', () => {
@@ -38,7 +39,7 @@ describe('useDeliveryOrder', () => {
 });
 
 describe('useCreateDeliveryOrder', () => {
-  it('calls db.orders.create with delivery-specific fields', async () => {
+  it('calls apiRoutes.customerOrders.create with delivery-specific fields', async () => {
     const { result } = renderHookWithProviders(() => useCreateDeliveryOrder());
 
     await result.current.mutateAsync({
@@ -51,27 +52,22 @@ describe('useCreateDeliveryOrder', () => {
       tenantId: 'tenant-1',
     });
 
-    expect(db.orders.create).toHaveBeenCalledWith(
+    expect(apiRoutes.customerOrders.create).toHaveBeenCalledWith(
       expect.objectContaining({
         table_id: null,
         tenant_id: 'tenant-1',
         order_type: 'delivery',
         source: 'customer',
-        status: 'pending_approval',
-        customer_name: 'John',
-        customer_phone: '+994551234567',
         delivery_address: '123 Main St',
-        delivery_notes: 'Ring the bell',
+        delivery_phone: '+994551234567',
+        delivery_customer_name: 'John',
         delivery_fee: 5,
         customer_notes: 'Extra napkins',
-        subtotal: 0,
-        tax: 0,
-        total: 0,
       }),
     );
   });
 
-  it('converts empty deliveryNotes to null (uses || null)', async () => {
+  it('passes undefined orderNotes as undefined', async () => {
     const { result } = renderHookWithProviders(() => useCreateDeliveryOrder());
 
     await result.current.mutateAsync({
@@ -83,10 +79,10 @@ describe('useCreateDeliveryOrder', () => {
       tenantId: 'tenant-1',
     });
 
-    expect(db.orders.create).toHaveBeenCalledWith(
+    expect(apiRoutes.customerOrders.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        delivery_notes: null,
-        customer_notes: null,
+        tenant_id: 'tenant-1',
+        order_type: 'delivery',
       }),
     );
   });
@@ -135,7 +131,7 @@ describe('useDeliveryOrder - realtime callback', () => {
 });
 
 describe('useAddDeliveryOrderItems', () => {
-  it('maps notes undefined to null and sets status to pending', async () => {
+  it('calls apiRoutes.customerOrders.addItems with mapped items', async () => {
     const { result } = renderHookWithProviders(() => useAddDeliveryOrderItems());
 
     await result.current.mutateAsync({
@@ -147,26 +143,22 @@ describe('useAddDeliveryOrderItems', () => {
       ],
     });
 
-    expect(db.orderItems.create).toHaveBeenCalledWith([
+    expect(apiRoutes.customerOrders.addItems).toHaveBeenCalledWith('order-1', [
       {
-        order_id: 'order-1',
-        tenant_id: 'tenant-1',
         menu_item_id: 'm1',
         item_name: 'Pizza',
         item_price: 12,
         quantity: 1,
         notes: null,
-        status: 'pending',
+        tenant_id: 'tenant-1',
       },
       {
-        order_id: 'order-1',
-        tenant_id: 'tenant-1',
         menu_item_id: 'm2',
         item_name: 'Salad',
         item_price: 8,
         quantity: 1,
         notes: 'No onions',
-        status: 'pending',
+        tenant_id: 'tenant-1',
       },
     ]);
   });

@@ -67,4 +67,46 @@ export const apiRoutes = {
         body: JSON.stringify(data),
       }),
   },
+
+  refunds: {
+    create: (
+      orderId: string,
+      data: {
+        amount: number;
+        reason: string;
+        refund_method: string;
+        processed_by: string;
+        order_item_ids?: string[] | null;
+        notes?: string | null;
+      },
+    ) =>
+      apiFetch<{ refund: Record<string, unknown> }>(`/api/v1/orders/${orderId}/refunds`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  },
+
+  stock: {
+    adjust: (
+      stockItemId: string,
+      data: {
+        movement_type: string;
+        quantity_change: number;
+        reason: string;
+        performed_by: string;
+      },
+    ) =>
+      apiFetch<{ stockItem: Record<string, unknown> }>(`/api/v1/stock/${stockItemId}/adjust`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  },
+
+  settings: {
+    update: (data: Record<string, unknown>) =>
+      apiFetch<{ settings: Record<string, unknown> }>('/api/v1/settings', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+  },
 };

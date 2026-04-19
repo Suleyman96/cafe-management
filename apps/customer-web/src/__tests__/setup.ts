@@ -14,6 +14,18 @@ vi.mock('@/lib/supabase', () => ({
   },
 }));
 
+// Mock API routes (prevents real fetch calls to staff-web API)
+vi.mock('@/lib/api-routes', () => ({
+  apiRoutes: {
+    customerOrders: {
+      create: vi
+        .fn()
+        .mockResolvedValue({ order: { id: 'test-order-id', status: 'pending_approval' } }),
+      addItems: vi.fn().mockResolvedValue({ items: [] }),
+    },
+  },
+}));
+
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn().mockReturnValue({

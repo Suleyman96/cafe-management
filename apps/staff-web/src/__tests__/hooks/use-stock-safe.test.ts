@@ -10,6 +10,7 @@ import {
   useStockMovements,
   useUpdateStockItem,
 } from '@/hooks/use-stock-safe';
+import { apiRoutes } from '@/lib/api-routes';
 import { db } from '@/lib/supabase/wrapped-client';
 import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
@@ -125,10 +126,15 @@ describe('useAdjustStock', () => {
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.LOW_STOCK_COUNT]);
   });
 
-  it('calls adjustStock with correct args', async () => {
+  it('calls apiRoutes.stock.adjust with correct args', async () => {
     const { result } = renderHookWithProviders(() => useAdjustStock());
     const data = { id: 'si1', data: { type: 'in' as const, quantity: 10, reason: 'restock' } };
     await result.current.mutateAsync(data);
-    expect(db.stockItems.adjustStock).toHaveBeenCalledWith('si1', data.data);
+    expect(apiRoutes.stock.adjust).toHaveBeenCalledWith('si1', {
+      movement_type: 'in',
+      quantity_change: 10,
+      reason: 'restock',
+      performed_by: '',
+    });
   });
 });

@@ -1,6 +1,7 @@
 import { QUERY_KEYS } from '@gustri/core';
 import type { StockItemInsert, StockItemUpdate } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRoutes } from '@/lib/api-routes';
 import { db } from '@/lib/supabase';
 import type { StockItem, StockMovement } from '@/types';
 
@@ -48,7 +49,13 @@ export function useAdjustStock() {
         reason?: string;
         performedBy?: string;
       };
-    }) => db.stockItems.adjustStock(id, data),
+    }) =>
+      apiRoutes.stock.adjust(id, {
+        movement_type: data.type,
+        quantity_change: data.quantity,
+        reason: data.reason || '',
+        performed_by: data.performedBy || '',
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_MOVEMENTS] });

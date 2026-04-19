@@ -192,6 +192,15 @@ vi.mock('@/lib/api-routes', () => ({
     payments: {
       create: vi.fn().mockResolvedValue({ payment: { id: 'new-payment', amount: 50 } }),
     },
+    refunds: {
+      create: vi.fn().mockResolvedValue({ refund: { id: 'new-refund' } }),
+    },
+    stock: {
+      adjust: vi.fn().mockResolvedValue({ stockItem: { id: 'stock-1', quantity: 10 } }),
+    },
+    settings: {
+      update: vi.fn().mockResolvedValue({ settings: {} }),
+    },
   },
 }));
 

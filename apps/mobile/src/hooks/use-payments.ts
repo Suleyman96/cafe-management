@@ -1,6 +1,7 @@
 import { QUERY_KEYS } from '@gustri/core';
 import type { OrderPayment } from '@gustri/database';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRoutes } from '@/lib/api-routes';
 import { db } from '@/lib/supabase';
 
 export function useOrderPayments(orderId: string) {
@@ -27,14 +28,16 @@ export function useCreatePayment() {
       order_item_ids?: string[] | null;
       notes?: string | null;
     }) => {
-      return await db.payments.create({
-        ...payment,
+      const { payment: created } = await apiRoutes.payments.create(payment.order_id, {
+        amount: payment.amount,
+        payment_method: payment.payment_method,
         received_by: payment.received_by ?? '',
         payment_type: payment.payment_type ?? 'full',
         tip_amount: payment.tip_amount ?? 0,
         order_item_ids: payment.order_item_ids ?? null,
         notes: payment.notes ?? null,
       });
+      return created;
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PAYMENTS, variables.order_id] });
