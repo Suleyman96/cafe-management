@@ -6,6 +6,7 @@ export default defineConfig({
     exclude: [
       '**/e2e/**',
       '**/node_modules/**',
+      '**/rls/**',
       'apps/staff-web/**',
       'apps/mobile/**',
       'apps/customer-web/**',

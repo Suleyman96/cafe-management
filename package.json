@@ -20,6 +20,7 @@
     "test:watch": "vitest",
     "test:mobile": "vitest run --config apps/mobile/vitest.config.ts",
     "test:coverage": "vitest run --coverage",
+    "test:rls": "vitest run --config vitest.rls.config.ts",
     "test:e2e": "turbo run test:e2e",
     "db:push": "turbo run db:push",
     "db:studio": "turbo run db:studio",
