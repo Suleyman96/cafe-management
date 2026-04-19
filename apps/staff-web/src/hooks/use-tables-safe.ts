@@ -1,40 +1,27 @@
 /**
  * Type-Safe Tables Hooks
- * Uses the wrapped client for type safety without 'as any'
+ * Re-exports from @gustri/queries, with local overrides for app-specific logic
  */
 
 import { PLAN_LIMITS, QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
 import { useAuthStore } from '@/store/auth-store';
 
 type TableRow = Database['public']['Tables']['tables']['Row'];
 type TableStatus = TableRow['status'];
 
-export function useTables() {
-  return useQuery({
-    queryKey: [QUERY_KEYS.TABLES],
-    queryFn: async (): Promise<TableRow[]> => db.tables.findAll(),
-  });
-}
+// Re-export shared hooks
+export {
+  useDeleteTable,
+  useTable,
+  useTableByQrCode,
+  useTables,
+  useUpdateTable,
+} from '@gustri/queries';
 
-export function useTable(id: string) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.TABLE, id],
-    queryFn: async (): Promise<TableRow> => db.tables.findById(id),
-    enabled: !!id,
-  });
-}
-
-export function useTableByQrCode(qrCode: string) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.TABLE_QR, qrCode],
-    queryFn: async (): Promise<TableRow> => db.tables.findByQrCode(qrCode),
-    enabled: !!qrCode,
-  });
-}
-
+// Local override: optimistic updates + different param shape ({ tableId } vs { id })
 export function useUpdateTableStatus() {
   const queryClient = useQueryClient();
 
@@ -64,6 +51,7 @@ export function useUpdateTableStatus() {
   });
 }
 
+// Local override: includes plan-limit pre-check via useAuthStore
 export function useCreateTable() {
   const queryClient = useQueryClient();
 
@@ -80,37 +68,6 @@ export function useCreateTable() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
-    },
-  });
-}
-
-export function useUpdateTable() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      id,
-      updates,
-    }: {
-      id: string;
-      updates: Database['public']['Tables']['tables']['Update'];
-    }) => db.tables.update(id, updates),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLE, data.id] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLE_QR] });
-    },
-  });
-}
-
-export function useDeleteTable() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => db.tables.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLE_QR] });
     },
   });
 }

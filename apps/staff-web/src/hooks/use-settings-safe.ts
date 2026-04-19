@@ -1,8 +1,6 @@
 /**
  * Type-Safe Settings Hooks
- * Uses the wrapped client for type safety
  */
-
 import {
   calculateTaxWithSettings,
   calculateTotalWithSettings,
@@ -10,26 +8,17 @@ import {
   QUERY_KEYS,
 } from '@gustri/core';
 import type { Database } from '@gustri/database';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
-import { db } from '@/lib/supabase/wrapped-client';
 
-type CafeSettings = Database['public']['Tables']['cafe_settings']['Row'];
+// Re-export shared hooks
+export { type CafeSettings, useCafeSettings } from '@gustri/queries';
+
 type CafeSettingsUpdate = Database['public']['Tables']['cafe_settings']['Update'];
 
-export type { CafeSettings };
-
-export function useCafeSettings() {
-  return useQuery({
-    queryKey: [QUERY_KEYS.CAFE_SETTINGS],
-    queryFn: async (): Promise<CafeSettings> => db.settings.get(),
-    staleTime: 1000 * 60 * 5, // Consider fresh for 5 minutes
-  });
-}
-
+// Staff-web uses apiRoutes for settings update (server-side validation)
 export function useUpdateCafeSettings() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: (updates: CafeSettingsUpdate) =>
       apiRoutes.settings.update(updates as Record<string, unknown>),
@@ -39,7 +28,7 @@ export function useUpdateCafeSettings() {
   });
 }
 
-// Re-export pricing utilities from core (aliased to match existing consumer imports)
+// Re-export pricing utilities from core
 export const formatPriceWithSettings = formatPriceCore;
 export const calculateTax = calculateTaxWithSettings;
 export const calculateTotal = calculateTotalWithSettings;

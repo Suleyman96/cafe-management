@@ -7,6 +7,10 @@ import { playWaiterCallSound } from '@/lib/sound';
 import { db, supabase } from '@/lib/supabase';
 import type { WaiterCall } from '@/types';
 
+// Shared mutations re-exported for direct use
+export { useAcknowledgeWaiterCall, useResolveWaiterCall } from '@gustri/queries';
+
+// Local hook — has realtime subscription with sound/notification side effects
 export function useWaiterCalls(status?: WaiterCall['status']) {
   const queryClient = useQueryClient();
 
@@ -79,6 +83,7 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
   return query;
 }
 
+// Local composite mutation — kept for backward compatibility with existing consumers
 export function useUpdateWaiterCall() {
   const queryClient = useQueryClient();
 

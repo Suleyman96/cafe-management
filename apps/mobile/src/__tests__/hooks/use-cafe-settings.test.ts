@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { useCafeSettings, useUpdateCafeSettings } from '@/hooks/use-cafe-settings';
-import { db } from '@/lib/supabase';
 import { renderHookWithProviders } from '../helpers/test-utils';
 
 describe('useCafeSettings', () => {
   it('calls db.settings.get', () => {
-    renderHookWithProviders(() => useCafeSettings());
-    expect(db.settings.get).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useCafeSettings());
+    expect(mockDb.settings.get).toHaveBeenCalled();
   });
 });
 

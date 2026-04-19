@@ -1,36 +1,47 @@
 import { QUERY_KEYS } from '@gustri/core';
-import type { StockItemInsert, StockItemUpdate } from '@gustri/database';
+import { useDb } from '@gustri/queries';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
-import { db } from '@/lib/supabase';
-import type { StockItem, StockMovement } from '@/types';
 
-export function useStockItems(options?: { category?: string; lowStockOnly?: boolean }) {
+// Re-export hooks and mutations with matching param shapes
+export {
+  useCreateStockItem,
+  useDeleteStockItem,
+  useLowStockCount,
+  useStockItems,
+} from '@gustri/queries';
+
+// Local useStockMovements — accepts string | undefined (shared requires string)
+export function useStockMovements(stockItemId: string | undefined) {
+  const db = useDb();
   return useQuery({
-    queryKey: [QUERY_KEYS.STOCK_ITEMS, options],
-    queryFn: async (): Promise<StockItem[]> => db.stockItems.findAll(options),
+    queryKey: [QUERY_KEYS.STOCK_MOVEMENTS, stockItemId],
+    queryFn: () => db.stockItems.getMovements(stockItemId!),
+    enabled: !!stockItemId,
   });
 }
 
-export function useLowStockCount() {
-  return useQuery({
-    queryKey: [QUERY_KEYS.LOW_STOCK_COUNT],
-    queryFn: async (): Promise<number> => db.stockItems.getLowStockCount(),
+// Local mutation — mobile consumers use { id, data } instead of { id, updates }
+export function useUpdateStockItem() {
+  const db = useDb();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
+      db.stockItems.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+    },
   });
 }
+
+// Local hooks — not available in shared package
 
 export function useStockTotalValue() {
+  const db = useDb();
   return useQuery({
     queryKey: [QUERY_KEYS.STOCK_ITEMS, 'total-value'],
     queryFn: async (): Promise<number> => db.stockItems.getTotalValue(),
-  });
-}
-
-export function useStockMovements(itemId: string | undefined) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.STOCK_MOVEMENTS, itemId],
-    queryFn: async (): Promise<StockMovement[]> => db.stockItems.getMovements(itemId!),
-    enabled: !!itemId,
   });
 }
 
@@ -62,49 +73,6 @@ export function useAdjustStock() {
     },
     onError: (error: Error) => {
       console.error('Failed to adjust stock:', error.message);
-    },
-  });
-}
-
-export function useCreateStockItem() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: StockItemInsert) => db.stockItems.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-    },
-    onError: (error: Error) => {
-      console.error('Failed to create stock item:', error.message);
-    },
-  });
-}
-
-export function useUpdateStockItem() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: StockItemUpdate }) =>
-      db.stockItems.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-    },
-    onError: (error: Error) => {
-      console.error('Failed to update stock item:', error.message);
-    },
-  });
-}
-
-export function useDeleteStockItem() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => db.stockItems.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-    },
-    onError: (error: Error) => {
-      console.error('Failed to delete stock item:', error.message);
     },
   });
 }

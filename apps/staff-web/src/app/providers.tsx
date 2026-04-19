@@ -1,12 +1,14 @@
 'use client';
 
 import { I18nextProvider, i18n } from '@gustri/i18n';
+import { DbProvider } from '@gustri/queries';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Toaster } from 'sonner';
 import '@/lib/i18n';
+import { db } from '@/lib/supabase/wrapped-client';
 
 /** Cancel in-flight queries when route changes to free browser connections. */
 function RouteChangeHandler() {
@@ -44,10 +46,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
-        <RouteChangeHandler />
-        {children}
-        <Toaster position="bottom-right" />
-        <ReactQueryDevtools initialIsOpen={false} />
+        <DbProvider db={db}>
+          <RouteChangeHandler />
+          {children}
+          <Toaster position="bottom-right" />
+          <ReactQueryDevtools initialIsOpen={false} />
+        </DbProvider>
       </QueryClientProvider>
     </I18nextProvider>
   );

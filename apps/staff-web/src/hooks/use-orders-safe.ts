@@ -1,49 +1,49 @@
 /**
  * Type-Safe Orders Hooks
- * Uses the wrapped client for type safety without 'as any'
+ * Re-exports from @gustri/queries, with local overrides for optimistic updates
+ * and app-specific mutations (apiRoutes).
  */
 
 import { ORDER_STATUS, QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useOrders as useOrdersShared } from '@gustri/queries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
-import { invalidateOrders, invalidateOrdersAndTables } from '@/lib/query-helpers';
+import { invalidateOrdersAndTables } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 import type { OrderWithDetails } from '@/types';
 
 type OrderStatus = Database['public']['Tables']['orders']['Row']['status'];
 type OrderInsert = Database['public']['Tables']['orders']['Insert'];
-type OrderFilters = {
-  status?: OrderStatus;
-  table_id?: string;
-  order_type?: Database['public']['Tables']['orders']['Row']['order_type'];
-};
 
-export function useOrders(filters?: OrderFilters) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.ORDERS, filters],
-    queryFn: async (): Promise<OrderWithDetails[]> => db.orders.findAll(filters),
+// Re-export shared read hooks
+// Re-export shared simple mutations
+export {
+  useActiveOrders,
+  useAddOrderItems,
+  useAssignWaiter,
+  useCancelOrder,
+  useCleanupEmptyOrders,
+  useDeleteOrderItem,
+  useOrder,
+  useOrders,
+  useUpdateOrderNotes,
+} from '@gustri/queries';
+
+// Local override: different param shape ({ itemId } vs shared { id })
+export function useCancelOrderItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ itemId, cancelQty }: { itemId: string; cancelQty?: number }) =>
+      db.orderItems.cancel(itemId, cancelQty),
+    onSuccess: () => {
+      invalidateOrdersAndTables(queryClient);
+    },
   });
 }
 
-export function useOrder(orderId: string) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.ORDER, orderId],
-    queryFn: async (): Promise<OrderWithDetails> =>
-      db.orders.findById(orderId) as Promise<OrderWithDetails>,
-    enabled: !!orderId,
-  });
-}
-
-export function useActiveOrders() {
-  return useQuery({
-    queryKey: [QUERY_KEYS.ACTIVE_ORDERS],
-    queryFn: async (): Promise<OrderWithDetails[]> => db.orders.getActiveOrders(),
-    // Polling removed: useRealtimeSync on the orders page handles freshness.
-    // A 120s fallback poll is built into useRealtimeSync for silent WS drops.
-  });
-}
-
+// Local override: optimistic updates for order status changes
 export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
 
@@ -82,58 +82,16 @@ export function useUpdateOrderStatus() {
   });
 }
 
-export function useCreateOrder() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (orderData: OrderInsert) => {
-      // Plan limit is now enforced server-side in the API route
-      const { order } = await apiRoutes.orders.create(orderData);
-      return order;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MONTHLY_ORDER_COUNT] });
-    },
-  });
-}
-
-export function useAddOrderItems() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (items: Database['public']['Tables']['order_items']['Insert'][]) =>
-      db.orderItems.create(items),
-    onSuccess: (_, variables) => {
-      // Get the order_id from the first item to invalidate that specific order
-      const orderId = variables[0]?.order_id;
-      invalidateOrders(queryClient, orderId || undefined);
-    },
-  });
-}
-
-export function useAssignWaiter() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ orderId, waiterId }: { orderId: string; waiterId: string | null }) =>
-      db.orders.assignWaiter(orderId, waiterId),
-    onSuccess: (_, variables) => {
-      invalidateOrders(queryClient, variables.orderId);
-    },
-  });
-}
-
-type OrderItemStatus = Database['public']['Tables']['order_items']['Row']['status'];
-
+// Local override: optimistic updates for order item status changes
 export function useUpdateOrderItemStatus() {
   const queryClient = useQueryClient();
 
+  type OrderItemStatus = Database['public']['Tables']['order_items']['Row']['status'];
+
   return useMutation({
-    mutationFn: ({ itemId, status }: { itemId: string; status: OrderItemStatus }) =>
-      db.orderItems.updateStatus(itemId, status),
+    mutationFn: ({ itemId, status }: { itemId: string; status: OrderItemStatus }) => {
+      return db.orderItems.updateStatus(itemId, status);
+    },
     onMutate: async ({ itemId, status }) => {
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ORDERS] });
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
@@ -168,80 +126,28 @@ export function useUpdateOrderItemStatus() {
   });
 }
 
-export function useDeleteOrderItem() {
+// Local: uses apiRoutes for server-side plan limit enforcement
+export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (itemId: string) => db.orderItems.delete(itemId),
+    mutationFn: async (orderData: OrderInsert) => {
+      // Plan limit is now enforced server-side in the API route
+      const { order } = await apiRoutes.orders.create(orderData);
+      return order;
+    },
     onSuccess: () => {
-      invalidateOrdersAndTables(queryClient);
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MONTHLY_ORDER_COUNT] });
     },
   });
 }
 
-export function useCancelOrderItem() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ itemId, cancelQty }: { itemId: string; cancelQty?: number }) =>
-      db.orderItems.cancel(itemId, cancelQty),
-    onSuccess: () => {
-      invalidateOrdersAndTables(queryClient);
-    },
-  });
-}
-
-export function useCancelOrder() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      orderId,
-      reason,
-      tableId,
-    }: {
-      orderId: string;
-      reason: string;
-      tableId?: string | null;
-    }) => db.orders.cancelOrder(orderId, reason, tableId),
-    onSuccess: () => {
-      invalidateOrdersAndTables(queryClient);
-    },
-  });
-}
-
-export function useUpdateOrderNotes() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      orderId,
-      notes,
-    }: {
-      orderId: string;
-      notes: { customer_notes?: string | null; internal_notes?: string | null };
-    }) => db.orders.updateNotes(orderId, notes),
-    onSuccess: (_, variables) => {
-      invalidateOrders(queryClient, variables.orderId);
-    },
-  });
-}
-
-export function useCleanupEmptyOrders() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (olderThanMinutes?: number) => db.orders.cleanupEmptyOrders(olderThanMinutes),
-    onSuccess: (cancelledIds) => {
-      if (cancelledIds.length > 0) {
-        invalidateOrdersAndTables(queryClient);
-      }
-    },
-  });
-}
-
+// Composite hook: derives pending approval count from orders
 export function usePendingApprovalCount() {
-  const { data: orders } = useOrders({ status: 'pending_approval' as OrderStatus });
+  const { data: orders } = useOrdersShared({ status: 'pending_approval' as OrderStatus });
   return (orders || []).length;
 }
 

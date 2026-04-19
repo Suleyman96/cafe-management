@@ -2,11 +2,13 @@
 
 import type { Language } from '@gustri/i18n';
 import { I18nextProvider, i18n } from '@gustri/i18n';
+import { DbProvider } from '@gustri/queries';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import '@/lib/i18n';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { loadAndSwitchLanguage } from '@/lib/i18n';
+import { db } from '@/lib/supabase';
 import { useLanguageStore } from '@/store/language-store';
 
 function LanguageSync() {
@@ -56,8 +58,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
-        <LanguageSync />
-        {children}
+        <DbProvider db={db}>
+          <LanguageSync />
+          {children}
+        </DbProvider>
       </QueryClientProvider>
     </I18nextProvider>
   );

@@ -22,6 +22,7 @@ const nextConfig = {
     '@gustri/core',
     '@gustri/database',
     '@gustri/i18n',
+    '@gustri/queries',
     '@gustri/ui',
   ],
   async headers() {

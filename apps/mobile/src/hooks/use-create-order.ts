@@ -1,5 +1,8 @@
+export { useAddOrderItems } from '@gustri/queries';
+
+// useCreateOrder is not available in @gustri/queries — keep local implementation
 import { QUERY_KEYS } from '@gustri/core';
-import type { OrderItemsInsert, OrdersInsert } from '@gustri/database';
+import type { OrdersInsert } from '@gustri/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase';
 
@@ -18,23 +21,6 @@ export function useCreateOrder() {
     },
     onError: (error: Error) => {
       console.error('Failed to create order:', error.message);
-    },
-  });
-}
-
-export function useAddOrderItems() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationKey: ['add-order-items'],
-    mutationFn: async (items: OrderItemsInsert[]) => {
-      return await db.orderItems.create(items);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-    },
-    onError: (error: Error) => {
-      console.error('Failed to add order items:', error.message);
     },
   });
 }

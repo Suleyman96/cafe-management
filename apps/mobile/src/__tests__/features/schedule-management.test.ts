@@ -1,5 +1,5 @@
 import { QUERY_KEYS } from '@gustri/core';
-import { waitFor } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useCreateSchedule,
@@ -8,22 +8,24 @@ import {
   useMarkScheduleInProgress,
   useSchedulesByDateRange,
 } from '@/hooks/use-schedules';
-import { db } from '@/lib/supabase';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders } from '../helpers/test-utils';
 
 describe('Schedule management workflow', () => {
   it('useSchedulesByDateRange passes date strings to db', () => {
-    renderHookWithProviders(() => useSchedulesByDateRange('2024-01-15', '2024-01-21'));
-    expect(db.schedules.findByDateRange).toHaveBeenCalledWith('2024-01-15', '2024-01-21');
+    const { mockDb } = renderHookWithProviders(() =>
+      useSchedulesByDateRange('2024-01-15', '2024-01-21'),
+    );
+    expect(mockDb.schedules.findByDateRange).toHaveBeenCalledWith('2024-01-15', '2024-01-21');
   });
 
   it('useSchedulesByDateRange returns fetched data', async () => {
     const mockSchedules = [{ id: 's1', date: '2024-01-15', staff_id: 'staff-1' }];
-    (db.schedules.findByDateRange as any).mockResolvedValueOnce(mockSchedules);
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.schedules.findByDateRange as any).mockResolvedValueOnce(mockSchedules);
 
-    const { result } = renderHookWithProviders(() =>
-      useSchedulesByDateRange('2024-01-15', '2024-01-21'),
-    );
+    const { result } = renderHook(() => useSchedulesByDateRange('2024-01-15', '2024-01-21'), {
+      wrapper,
+    });
     await waitFor(() => expect(result.current.data).toEqual(mockSchedules));
   });
 
@@ -43,38 +45,38 @@ describe('Schedule management workflow', () => {
   });
 
   it('useMarkScheduleInProgress sends id + actualStart ISO string', async () => {
-    const { result } = renderHookWithProviders(() => useMarkScheduleInProgress());
+    const { result, mockDb } = renderHookWithProviders(() => useMarkScheduleInProgress());
     const actualStart = '2024-01-15T09:05:00.000Z';
 
     await result.current.mutateAsync({ id: 'sched-1', actualStart });
 
-    expect(db.schedules.markInProgress).toHaveBeenCalledWith('sched-1', actualStart);
+    expect(mockDb.schedules.markInProgress).toHaveBeenCalledWith('sched-1', actualStart);
   });
 
   it('useMarkScheduleCompleted sends id + optional actualEnd', async () => {
-    const { result } = renderHookWithProviders(() => useMarkScheduleCompleted());
+    const { result, mockDb } = renderHookWithProviders(() => useMarkScheduleCompleted());
     const actualEnd = '2024-01-15T17:15:00.000Z';
 
     await result.current.mutateAsync({ id: 'sched-1', actualEnd });
 
-    expect(db.schedules.markCompleted).toHaveBeenCalledWith('sched-1', actualEnd);
+    expect(mockDb.schedules.markCompleted).toHaveBeenCalledWith('sched-1', actualEnd);
   });
 
   it('useMarkScheduleCompleted works without actualEnd', async () => {
-    const { result } = renderHookWithProviders(() => useMarkScheduleCompleted());
+    const { result, mockDb } = renderHookWithProviders(() => useMarkScheduleCompleted());
 
     await result.current.mutateAsync({ id: 'sched-1' });
 
-    expect(db.schedules.markCompleted).toHaveBeenCalledWith('sched-1', undefined);
+    expect(mockDb.schedules.markCompleted).toHaveBeenCalledWith('sched-1', undefined);
   });
 
   it('useDeleteSchedule calls db.schedules.delete and invalidates', async () => {
-    const { result, queryClient } = renderHookWithProviders(() => useDeleteSchedule());
+    const { result, queryClient, mockDb } = renderHookWithProviders(() => useDeleteSchedule());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
 
     await result.current.mutateAsync('sched-1');
 
-    expect(db.schedules.delete).toHaveBeenCalledWith('sched-1');
+    expect(mockDb.schedules.delete).toHaveBeenCalledWith('sched-1');
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual([QUERY_KEYS.SCHEDULES]);
   });

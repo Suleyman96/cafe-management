@@ -16,6 +16,7 @@
     "@gustri/core": "workspace:*",
     "@gustri/database": "workspace:*",
     "@gustri/i18n": "workspace:*",
+    "@gustri/queries": "workspace:*",
     "@gustri/ui": "workspace:*",
     "@sentry/nextjs": "^10.49.0",
     "@supabase/supabase-js": "^2.45.0",

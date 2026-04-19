@@ -1,11 +1,45 @@
 import { QUERY_KEYS } from '@gustri/core';
+import type { Order, OrderItem } from '@gustri/database';
+import { useDb } from '@gustri/queries';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { notifyNewOrder } from '@/lib/notifications';
 import { playNewOrderSound } from '@/lib/sound';
-import { db, supabase } from '@/lib/supabase';
-import type { Order, OrderItem, OrderWithDetails } from '@/types';
+import { supabase } from '@/lib/supabase';
+import type { OrderWithDetails } from '@/types';
+
+// Re-export read hooks and mutations with matching param shapes
+export { useCleanupEmptyOrders } from '@gustri/queries';
+
+// Local mutations — mobile consumers use { orderId } / { itemId } instead of { id }
+
+export function useUpdateOrderStatus() {
+  const db = useDb();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, status }: { orderId: string; status: Order['status'] }) =>
+      db.orders.updateStatus(orderId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+    },
+  });
+}
+
+export function useUpdateOrderItemStatus() {
+  const db = useDb();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, status }: { itemId: string; status: OrderItem['status'] }) =>
+      db.orderItems.updateStatus(itemId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+    },
+  });
+}
+
+// Read hooks with realtime subscriptions — kept local
 
 export function useOrders(filters?: {
   status?: Order['status'];
@@ -16,6 +50,7 @@ export function useOrders(filters?: {
   limit?: number;
 }) {
   const queryClient = useQueryClient();
+  const db = useDb();
 
   const query = useQuery({
     queryKey: [QUERY_KEYS.ORDERS, filters],
@@ -97,57 +132,11 @@ export function useOrders(filters?: {
 }
 
 export function useOrder(orderId: string) {
+  const db = useDb();
   return useQuery({
     queryKey: [QUERY_KEYS.ORDER, orderId],
     queryFn: async (): Promise<Order> => {
       return await db.orders.findById(orderId);
-    },
-  });
-}
-
-export function useUpdateOrderStatus() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationKey: ['update-order-status'],
-    mutationFn: async ({ orderId, status }: { orderId: string; status: Order['status'] }) => {
-      return await db.orders.updateStatus(orderId, status);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-    },
-    onError: (error: Error) => {
-      console.error('Failed to update order status:', error.message);
-    },
-  });
-}
-
-export function useUpdateOrderItemStatus() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ itemId, status }: { itemId: string; status: OrderItem['status'] }) => {
-      return await db.orderItems.updateStatus(itemId, status);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-    },
-    onError: (error: Error) => {
-      console.error('Failed to update order item status:', error.message);
-    },
-  });
-}
-
-export function useCleanupEmptyOrders() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (olderThanMinutes?: number) => db.orders.cleanupEmptyOrders(olderThanMinutes),
-    onSuccess: (cancelledIds) => {
-      if (cancelledIds.length > 0) {
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
-      }
     },
   });
 }

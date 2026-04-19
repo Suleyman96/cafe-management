@@ -59,6 +59,9 @@ importers:
       '@gustri/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@gustri/queries':
+        specifier: workspace:*
+        version: link:../../packages/queries
       '@gustri/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -202,6 +205,9 @@ importers:
       '@gustri/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@gustri/queries':
+        specifier: workspace:*
+        version: link:../../packages/queries
       '@react-native-async-storage/async-storage':
         specifier: 2.2.0
         version: 2.2.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))
@@ -335,6 +341,9 @@ importers:
       '@gustri/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@gustri/queries':
+        specifier: workspace:*
+        version: link:../../packages/queries
       '@gustri/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -478,6 +487,28 @@ importers:
       react-i18next:
         specifier: ^15.4.1
         version: 15.7.4(i18next@24.2.3(typescript@5.9.3))(react-dom@19.1.0(react@19.1.0))(react@18.3.1)(typescript@5.9.3)
+
+  packages/queries:
+    dependencies:
+      '@gustri/api-client':
+        specifier: workspace:*
+        version: link:../api-client
+      '@gustri/core':
+        specifier: workspace:*
+        version: link:../core
+      '@gustri/database':
+        specifier: workspace:*
+        version: link:../database
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.95.2(react@18.3.1)
+      react:
+        specifier: ^18.2.0 || ^19.0.0
+        version: 18.3.1
+    devDependencies:
+      '@types/react':
+        specifier: ^18.2.45
+        version: 18.3.28
 
   packages/ui:
     dependencies:

@@ -5,26 +5,25 @@ import {
   useWasteLogs,
   useWasteMonthlySummary,
 } from '@/hooks/use-waste';
-import { db } from '@/lib/supabase';
 import { renderHookWithProviders } from '../helpers/test-utils';
 
 describe('useWasteLogs', () => {
   it('calls db.waste.findAll', () => {
-    renderHookWithProviders(() => useWasteLogs());
-    expect(db.waste.findAll).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useWasteLogs());
+    expect(mockDb.waste.findAll).toHaveBeenCalled();
   });
 
   it('passes options', () => {
     const opts = { reason: 'expired' };
-    renderHookWithProviders(() => useWasteLogs(opts));
-    expect(db.waste.findAll).toHaveBeenCalledWith(opts);
+    const { mockDb } = renderHookWithProviders(() => useWasteLogs(opts));
+    expect(mockDb.waste.findAll).toHaveBeenCalledWith(opts);
   });
 });
 
 describe('useWasteMonthlySummary', () => {
   it('calls getMonthlySummary with year and month', () => {
-    renderHookWithProviders(() => useWasteMonthlySummary(2026, 3));
-    expect(db.waste.getMonthlySummary).toHaveBeenCalledWith(2026, 3);
+    const { mockDb } = renderHookWithProviders(() => useWasteMonthlySummary(2026, 3));
+    expect(mockDb.waste.getMonthlySummary).toHaveBeenCalledWith(2026, 3);
   });
 });
 

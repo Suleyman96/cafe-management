@@ -6,33 +6,32 @@ import {
   useExpenseMonthlySummary,
   useExpenses,
 } from '@/hooks/use-expenses';
-import { db } from '@/lib/supabase';
 import { renderHookWithProviders } from '../helpers/test-utils';
 
 describe('useExpenses', () => {
   it('calls db.expenses.findAll', () => {
-    renderHookWithProviders(() => useExpenses());
-    expect(db.expenses.findAll).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useExpenses());
+    expect(mockDb.expenses.findAll).toHaveBeenCalled();
   });
 
   it('passes options', () => {
     const opts = { categoryId: 'cat-1' };
-    renderHookWithProviders(() => useExpenses(opts));
-    expect(db.expenses.findAll).toHaveBeenCalledWith(opts);
+    const { mockDb } = renderHookWithProviders(() => useExpenses(opts));
+    expect(mockDb.expenses.findAll).toHaveBeenCalledWith(opts);
   });
 });
 
 describe('useExpenseCategories', () => {
   it('calls db.expenseCategories.findAll', () => {
-    renderHookWithProviders(() => useExpenseCategories());
-    expect(db.expenseCategories.findAll).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useExpenseCategories());
+    expect(mockDb.expenseCategories.findAll).toHaveBeenCalled();
   });
 });
 
 describe('useExpenseMonthlySummary', () => {
   it('calls getMonthlySummary with year and month', () => {
-    renderHookWithProviders(() => useExpenseMonthlySummary(2026, 3));
-    expect(db.expenses.getMonthlySummary).toHaveBeenCalledWith(2026, 3);
+    const { mockDb } = renderHookWithProviders(() => useExpenseMonthlySummary(2026, 3));
+    expect(mockDb.expenses.getMonthlySummary).toHaveBeenCalledWith(2026, 3);
   });
 });
 

@@ -5,13 +5,12 @@ import {
   useMarkDelivered,
   useMarkOutForDelivery,
 } from '@/hooks/use-delivery';
-import { db } from '@/lib/supabase';
 import { renderHookWithProviders } from '../helpers/test-utils';
 
 describe('useDeliveryOrders', () => {
   it('calls db.orders.findDeliveryOrders', () => {
-    renderHookWithProviders(() => useDeliveryOrders());
-    expect(db.orders.findDeliveryOrders).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useDeliveryOrders());
+    expect(mockDb.orders.findDeliveryOrders).toHaveBeenCalled();
   });
 });
 

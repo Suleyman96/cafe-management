@@ -12,8 +12,8 @@ describe('Timezone-safe date operations', () => {
 
   it('useMyScheduleToday passes local date (not UTC) to DB', () => {
     const localDate = new Date().toLocaleDateString('en-CA');
-    renderHookWithProviders(() => useMyScheduleToday('staff-1'));
-    expect(db.schedules.findByStaffAndDate).toHaveBeenCalledWith('staff-1', localDate);
+    const { mockDb } = renderHookWithProviders(() => useMyScheduleToday('staff-1'));
+    expect(mockDb.schedules.findByStaffAndDate).toHaveBeenCalledWith('staff-1', localDate);
   });
 
   it('postLoginSideEffects uses local date (not UTC) for schedule lookup', () => {

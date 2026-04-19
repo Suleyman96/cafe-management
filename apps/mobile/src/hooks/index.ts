@@ -84,7 +84,12 @@ export {
   useTodaysTasks,
   useUpdateTask,
 } from './use-tasks';
-export { useUpdateWaiterCall, useWaiterCalls } from './use-waiter-calls';
+export {
+  useAcknowledgeWaiterCall,
+  useResolveWaiterCall,
+  useUpdateWaiterCall,
+  useWaiterCalls,
+} from './use-waiter-calls';
 export {
   useCreateWasteLog,
   useDeleteWasteLog,

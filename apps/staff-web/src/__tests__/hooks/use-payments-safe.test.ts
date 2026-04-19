@@ -1,4 +1,5 @@
 import { QUERY_KEYS } from '@gustri/core';
+import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useCreatePayment,
@@ -7,49 +8,49 @@ import {
   usePaymentsByStaff,
 } from '@/hooks/use-payments-safe';
 import { apiRoutes } from '@/lib/api-routes';
-import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('usePaymentsByStaff', () => {
   it('calls findByReceivedBy with staffId and limit', () => {
-    renderHookWithProviders(() => usePaymentsByStaff('s1', 10));
-    expect(db.payments.findByReceivedBy).toHaveBeenCalledWith('s1', 10);
+    const { mockDb } = renderHookWithProviders(() => usePaymentsByStaff('s1', 10));
+    expect(mockDb.payments.findByReceivedBy).toHaveBeenCalledWith('s1', 10);
   });
 
   it('is disabled when staffId is empty', () => {
-    renderHookWithProviders(() => usePaymentsByStaff(''));
-    expect(db.payments.findByReceivedBy).not.toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => usePaymentsByStaff(''));
+    expect(mockDb.payments.findByReceivedBy).not.toHaveBeenCalled();
   });
 });
 
 describe('useOrderPayments', () => {
   it('calls findByOrderId', () => {
-    renderHookWithProviders(() => useOrderPayments('o1'));
-    expect(db.payments.findByOrderId).toHaveBeenCalledWith('o1');
+    const { mockDb } = renderHookWithProviders(() => useOrderPayments('o1'));
+    expect(mockDb.payments.findByOrderId).toHaveBeenCalledWith('o1');
   });
 
   it('is disabled when orderId is empty', () => {
-    renderHookWithProviders(() => useOrderPayments(''));
-    expect(db.payments.findByOrderId).not.toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useOrderPayments(''));
+    expect(mockDb.payments.findByOrderId).not.toHaveBeenCalled();
   });
 
   it('returns fetched payments', async () => {
     const mockPayments = [{ id: 'p1', order_id: 'o1', amount: 50, payment_method: 'cash' }];
-    (db.payments.findByOrderId as any).mockResolvedValueOnce(mockPayments);
-    const { result } = renderHookWithProviders(() => useOrderPayments('o1'));
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.payments.findByOrderId as any).mockResolvedValueOnce(mockPayments);
+    const { result } = renderHook(() => useOrderPayments('o1'), { wrapper });
     await waitFor(() => expect(result.current.data).toEqual(mockPayments));
   });
 });
 
 describe('useOrderRemainingBalance', () => {
   it('calls getRemainingBalance', () => {
-    renderHookWithProviders(() => useOrderRemainingBalance('o1'));
-    expect(db.rpc.getRemainingBalance).toHaveBeenCalledWith('o1');
+    const { mockDb } = renderHookWithProviders(() => useOrderRemainingBalance('o1'));
+    expect(mockDb.rpc.getRemainingBalance).toHaveBeenCalledWith('o1');
   });
 
   it('is disabled when orderId is empty', () => {
-    renderHookWithProviders(() => useOrderRemainingBalance(''));
-    expect(db.rpc.getRemainingBalance).not.toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useOrderRemainingBalance(''));
+    expect(mockDb.rpc.getRemainingBalance).not.toHaveBeenCalled();
   });
 });
 

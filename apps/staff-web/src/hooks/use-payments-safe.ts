@@ -1,41 +1,24 @@
 /**
  * Type-Safe Payment Hooks
- * Uses the wrapped client for type safety without 'as any'
+ * Re-exports from @gustri/queries, with local overrides for apiRoutes mutations
  */
 
 import { QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useOrderPayments as useOrderPaymentsShared,
+  useOrderRemainingBalance as useOrderRemainingBalanceShared,
+} from '@gustri/queries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
-import { db } from '@/lib/supabase/wrapped-client';
 
 type PaymentInsert = Database['public']['Tables']['order_payments']['Insert'];
 type Payment = Database['public']['Tables']['order_payments']['Row'];
 
-export function usePaymentsByStaff(staffId: string, limit = 5) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.PAYMENTS_BY_STAFF, staffId, limit],
-    queryFn: async (): Promise<Payment[]> => db.payments.findByReceivedBy(staffId, limit),
-    enabled: !!staffId,
-  });
-}
+// Re-export shared read hooks
+export { useOrderPayments, useOrderRemainingBalance, usePaymentsByStaff } from '@gustri/queries';
 
-export function useOrderPayments(orderId: string) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.PAYMENTS, orderId],
-    queryFn: async (): Promise<Payment[]> => db.payments.findByOrderId(orderId),
-    enabled: !!orderId,
-  });
-}
-
-export function useOrderRemainingBalance(orderId: string) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.PAYMENTS, 'remaining_balance', orderId],
-    queryFn: async (): Promise<number> => db.rpc.getRemainingBalance(orderId),
-    enabled: !!orderId,
-  });
-}
-
+// Local: uses apiRoutes for server-side balance validation
 export function useCreatePayment() {
   const queryClient = useQueryClient();
 
@@ -58,10 +41,10 @@ export function useCreatePayment() {
   });
 }
 
-// Payment summary helper
+// Composite hook: payment summary for an order (app-specific)
 export function usePaymentSummary(orderId: string) {
-  const paymentsQuery = useOrderPayments(orderId);
-  const balanceQuery = useOrderRemainingBalance(orderId);
+  const paymentsQuery = useOrderPaymentsShared(orderId);
+  const balanceQuery = useOrderRemainingBalanceShared(orderId);
 
   const payments = paymentsQuery.data;
   const remainingBalance = balanceQuery.data;

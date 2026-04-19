@@ -1,4 +1,5 @@
 import { QUERY_KEYS } from '@gustri/core';
+import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useAdjustStock,
@@ -11,63 +12,64 @@ import {
   useUpdateStockItem,
 } from '@/hooks/use-stock-safe';
 import { apiRoutes } from '@/lib/api-routes';
-import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useStockItems', () => {
   it('calls db.stockItems.findAll', () => {
-    renderHookWithProviders(() => useStockItems());
-    expect(db.stockItems.findAll).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useStockItems());
+    expect(mockDb.stockItems.findAll).toHaveBeenCalled();
   });
 
   it('passes options to findAll', () => {
     const opts = { category: 'food', lowStockOnly: true };
-    renderHookWithProviders(() => useStockItems(opts));
-    expect(db.stockItems.findAll).toHaveBeenCalledWith(opts);
+    const { mockDb } = renderHookWithProviders(() => useStockItems(opts));
+    expect(mockDb.stockItems.findAll).toHaveBeenCalledWith(opts);
   });
 
   it('returns fetched stock items', async () => {
     const mockItems = [{ id: 'si1', name: 'Coffee', quantity: 50 }];
-    (db.stockItems.findAll as any).mockResolvedValueOnce(mockItems);
-    const { result } = renderHookWithProviders(() => useStockItems());
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.stockItems.findAll as any).mockResolvedValueOnce(mockItems);
+    const { result } = renderHook(() => useStockItems(), { wrapper });
     await waitFor(() => expect(result.current.data).toEqual(mockItems));
   });
 
   it('reports error when findAll rejects', async () => {
-    (db.stockItems.findAll as any).mockRejectedValueOnce(new Error('DB error'));
-    const { result } = renderHookWithProviders(() => useStockItems());
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.stockItems.findAll as any).mockRejectedValueOnce(new Error('DB error'));
+    const { result } = renderHook(() => useStockItems(), { wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });
 
 describe('useStockItem', () => {
   it('calls findById', () => {
-    renderHookWithProviders(() => useStockItem('s1'));
-    expect(db.stockItems.findById).toHaveBeenCalledWith('s1');
+    const { mockDb } = renderHookWithProviders(() => useStockItem('s1'));
+    expect(mockDb.stockItems.findById).toHaveBeenCalledWith('s1');
   });
 
   it('is disabled when id is empty', () => {
-    renderHookWithProviders(() => useStockItem(''));
-    expect(db.stockItems.findById).not.toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useStockItem(''));
+    expect(mockDb.stockItems.findById).not.toHaveBeenCalled();
   });
 });
 
 describe('useStockMovements', () => {
   it('calls getMovements with stockItemId', () => {
-    renderHookWithProviders(() => useStockMovements('s1'));
-    expect(db.stockItems.getMovements).toHaveBeenCalledWith('s1');
+    const { mockDb } = renderHookWithProviders(() => useStockMovements('s1'));
+    expect(mockDb.stockItems.getMovements).toHaveBeenCalledWith('s1');
   });
 
   it('is disabled when stockItemId is empty', () => {
-    renderHookWithProviders(() => useStockMovements(''));
-    expect(db.stockItems.getMovements).not.toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useStockMovements(''));
+    expect(mockDb.stockItems.getMovements).not.toHaveBeenCalled();
   });
 });
 
 describe('useLowStockCount', () => {
   it('calls getLowStockCount', () => {
-    renderHookWithProviders(() => useLowStockCount());
-    expect(db.stockItems.getLowStockCount).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useLowStockCount());
+    expect(mockDb.stockItems.getLowStockCount).toHaveBeenCalled();
   });
 });
 

@@ -1,6 +1,7 @@
 import 'react-native-gesture-handler';
 import './src/lib/i18n';
 import { I18nextProvider, i18n } from '@gustri/i18n';
+import { DbProvider } from '@gustri/queries';
 import { NavigationContainer } from '@react-navigation/native';
 import { MutationCache, QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -19,6 +20,7 @@ import {
   shouldPersistQuery,
 } from './src/lib/query-persister';
 import { setupSounds } from './src/lib/sound';
+import { db } from './src/lib/supabase';
 import { configureSyncErrorHandling } from './src/lib/sync-handler';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { useAuthStore } from './src/store/auth-store';
@@ -85,16 +87,18 @@ export default function App() {
             maxAge: OFFLINE_GC_TIME,
           }}
         >
-          <PaperProvider theme={lightTheme}>
-            <SnackbarProvider>
-              <NavigationContainer>
-                <ErrorBoundary>
-                  <RootNavigator />
-                </ErrorBoundary>
-                <StatusBar style="auto" />
-              </NavigationContainer>
-            </SnackbarProvider>
-          </PaperProvider>
+          <DbProvider db={db}>
+            <PaperProvider theme={lightTheme}>
+              <SnackbarProvider>
+                <NavigationContainer>
+                  <ErrorBoundary>
+                    <RootNavigator />
+                  </ErrorBoundary>
+                  <StatusBar style="auto" />
+                </NavigationContainer>
+              </SnackbarProvider>
+            </PaperProvider>
+          </DbProvider>
         </PersistQueryClientProvider>
       </I18nextProvider>
     </SafeAreaProvider>

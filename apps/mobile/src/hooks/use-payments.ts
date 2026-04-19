@@ -1,18 +1,11 @@
+// Shared read hook
+export { useOrderPayments } from '@gustri/queries';
+
+// Local hook — uses apiRoutes for payment creation
 import { QUERY_KEYS } from '@gustri/core';
 import type { OrderPayment } from '@gustri/database';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
-import { db } from '@/lib/supabase';
-
-export function useOrderPayments(orderId: string) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.PAYMENTS, orderId],
-    queryFn: async (): Promise<OrderPayment[]> => {
-      return await db.payments.findByOrderId(orderId);
-    },
-    enabled: !!orderId,
-  });
-}
 
 export function useCreatePayment() {
   const queryClient = useQueryClient();
