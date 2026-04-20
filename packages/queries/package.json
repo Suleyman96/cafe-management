@@ -25,7 +25,7 @@
     "@gustri/database": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "^18.2.45"
+    "@types/react": "^18.3.0"
   },
   "peerDependencies": {
     "react": "^18.2.0 || ^19.0.0",

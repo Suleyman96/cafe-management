@@ -20,28 +20,28 @@ SELECT
   gen_random_uuid(),
   'authenticated',
   'authenticated',
-  'hacilov@gmail.com',
-  crypt('test123456', gen_salt('bf')),
+  'admin@test.com',
+  crypt('test1234', gen_salt('bf')),
   NOW(),
   '{"provider":"email","providers":["email"]}',
   '{}',
   NOW(),
   NOW()
 WHERE NOT EXISTS (
-  SELECT 1 FROM auth.users WHERE email = 'hacilov@gmail.com'
+  SELECT 1 FROM auth.users WHERE email = 'admin@test.com'
 )
 RETURNING id;
 
 -- Step 2: Link to staff table
 INSERT INTO staff (email, full_name, role, auth_user_id, is_active)
 SELECT 
-  'hacilov@gmail.com',
+  'admin@test.com',
   'Test Admin',
   'admin',
   u.id,
   true
 FROM auth.users u
-WHERE u.email = 'hacilov@gmail.com'
+WHERE u.email = 'admin@test.com'
 ON CONFLICT (email) DO UPDATE 
   SET auth_user_id = EXCLUDED.auth_user_id,
       is_active = true;
@@ -55,5 +55,5 @@ SELECT
   s.role
 FROM auth.users u
 LEFT JOIN staff s ON s.auth_user_id = u.id
-WHERE u.email = 'hacilov@gmail.com';
+WHERE u.email = 'admin@test.com';
 

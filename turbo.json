@@ -20,7 +20,7 @@
     "type-check": {
       "dependsOn": ["^build"],
       "outputs": [],
-      "cache": false
+      "cache": true
     },
     "test": {
       "outputs": ["coverage/**"],

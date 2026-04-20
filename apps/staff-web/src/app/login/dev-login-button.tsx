@@ -27,7 +27,7 @@ export function DevLoginButton() {
       const response = await fetch('/api/auth/dev-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'hacilov@gmail.com' }),
+        body: JSON.stringify({ email: 'admin@test.com' }),
         signal: controller.signal,
       });
 
@@ -101,7 +101,7 @@ export function DevLoginButton() {
         disabled={isLoading}
         className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
       >
-        {isLoading ? 'Logging in...' : '🚀 Dev Login (hacilov@gmail.com)'}
+        {isLoading ? 'Logging in...' : '🚀 Dev Login (admin@test.com)'}
       </Button>
       <p className="text-xs text-yellow-700 mt-2">
         Make sure you've run the SQL script to create the user first!

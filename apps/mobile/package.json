@@ -9,7 +9,7 @@
     "web": "expo start --web",
     "lint": "biome check ./src",
     "type-check": "tsc --noEmit",
-    "eas-build-post-install": "cd ../.. && npx turbo run build --filter=@gustri/database --filter=@gustri/core --filter=@gustri/api-client --filter=@gustri/i18n"
+    "eas-build-post-install": "cd ../.. && npx turbo run build --filter='./packages/*'"
   },
   "dependencies": {
     "@gustri/api-client": "workspace:*",

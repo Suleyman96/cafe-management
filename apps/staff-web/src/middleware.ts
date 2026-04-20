@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
 
     // Customer-facing endpoints are intentionally unauthenticated (QR code ordering).
     // Individual route handlers validate tenant/table relationships.
-    const isPublicApi = pathname.startsWith('/api/v1/customer/');
+    const isPublicApi = pathname.startsWith('/api/v1/customer/') || pathname === '/api/health';
     if (isPublicApi) {
       const response = NextResponse.next();
       for (const [key, value] of Object.entries(corsHeaders)) {
