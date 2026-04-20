@@ -36,6 +36,32 @@ jobs:
       - name: Biome check
         run: pnpm check
 
+      - name: Scan for secrets
+        run: |
+          FOUND=0
+          PATTERNS=(
+            'SUPABASE_SERVICE_ROLE_KEY\s*='
+            'SENTRY_AUTH_TOKEN\s*='
+            'UPSTASH_REDIS_REST_TOKEN\s*='
+            'PII_ENCRYPTION_KEY\s*='
+            'sk_live_[a-zA-Z0-9]+'
+            'AKIA[0-9A-Z]{16}'
+          )
+          SKIP='\.env|node_modules|\.secrets\.baseline|\.husky/pre-commit|ARCHITECTURE_REVIEW\.md|ci\.yml'
+          for PATTERN in "${PATTERNS[@]}"; do
+            MATCHES=$(grep -rEn "$PATTERN" --include='*.ts' --include='*.tsx' --include='*.js' --include='*.json' --include='*.yml' --include='*.yaml' . | grep -vE "$SKIP" || true)
+            if [ -n "$MATCHES" ]; then
+              echo "🚨 Potential secret pattern found: $PATTERN"
+              echo "$MATCHES"
+              FOUND=1
+            fi
+          done
+          if [ "$FOUND" -eq 1 ]; then
+            echo "❌ Secret scan failed. Review the matches above."
+            exit 1
+          fi
+          echo "✅ No secrets detected."
+
   test:
     name: Test
     runs-on: ubuntu-latest

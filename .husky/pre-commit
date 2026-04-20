@@ -21,7 +21,7 @@ PATTERNS=(
 )
 
 # Files to always skip
-SKIP_PATTERN='\.secrets\.baseline$|\.husky/pre-commit$|ARCHITECTURE_REVIEW\.md$'
+SKIP_PATTERN='\.secrets\.baseline$|\.husky/pre-commit$|ARCHITECTURE_REVIEW\.md$|\.github/workflows/.*\.yml$'
 
 FOUND=0
 for FILE in $FILES; do

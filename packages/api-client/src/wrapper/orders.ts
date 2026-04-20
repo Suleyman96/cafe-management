@@ -12,6 +12,33 @@ import type {
   WrapperContext,
 } from './types';
 
+/**
+ * The orders_decrypted view adds decrypted_* columns alongside the raw
+ * (encrypted) PII columns. This helper maps them back to the standard names
+ * so the rest of the app doesn't need to know about encryption.
+ */
+function mapDecryptedPii<T extends Record<string, any>>(row: T): T {
+  if (!row) return row;
+  const mapped: Record<string, any> = { ...row };
+  if ('decrypted_customer_name' in mapped) {
+    mapped.customer_name = mapped.decrypted_customer_name;
+    delete mapped.decrypted_customer_name;
+  }
+  if ('decrypted_customer_phone' in mapped) {
+    mapped.customer_phone = mapped.decrypted_customer_phone;
+    delete mapped.decrypted_customer_phone;
+  }
+  if ('decrypted_delivery_address' in mapped) {
+    mapped.delivery_address = mapped.decrypted_delivery_address;
+    delete mapped.decrypted_delivery_address;
+  }
+  return mapped as T;
+}
+
+function mapDecryptedPiiArray<T extends Record<string, any>>(rows: T[]): T[] {
+  return rows.map(mapDecryptedPii);
+}
+
 export function createOrdersWrapper(ctx: WrapperContext) {
   return {
     findAll: async (filters?: {
@@ -25,8 +52,8 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       limit?: number;
       offset?: number;
     }) => {
-      let query = ctx.client
-        .from('orders')
+      let query = ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           table:tables!orders_table_id_fkey(table_number, location),
@@ -70,7 +97,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       const { data, error } = await query;
 
       if (error) throw handleSupabaseError(error);
-      return data || [];
+      return mapDecryptedPiiArray(data || []);
     },
 
     findAllPaginated: async (filters?: {
@@ -84,8 +111,8 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       limit?: number;
       offset?: number;
     }): Promise<PaginatedResult<OrderRow>> => {
-      let query = ctx.client
-        .from('orders')
+      let query = ctx.anyClient
+        .from('orders_decrypted')
         .select(
           `
           *,
@@ -130,15 +157,15 @@ export function createOrdersWrapper(ctx: WrapperContext) {
 
       if (error) throw handleSupabaseError(error);
       return {
-        data: (data || []) as OrderRow[],
+        data: mapDecryptedPiiArray((data || []) as OrderRow[]),
         count: count ?? 0,
         hasMore: (count ?? 0) > offset + limit,
       };
     },
 
     findById: async (id: string) => {
-      const { data, error } = await ctx.client
-        .from('orders')
+      const { data, error } = await ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           table:tables!orders_table_id_fkey(table_number, location),
@@ -164,7 +191,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
 
       if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
-      return data;
+      return mapDecryptedPii(data);
     },
 
     create: async (orderData: OrderInsert) => {
@@ -235,8 +262,8 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     },
 
     findActiveByTable: async (tableId: string) => {
-      const { data, error } = await ctx.client
-        .from('orders')
+      const { data, error } = await ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           table:tables!orders_table_id_fkey(table_number, location),
@@ -249,12 +276,12 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         .maybeSingle();
 
       if (error) throw handleSupabaseError(error);
-      return data;
+      return data ? mapDecryptedPii(data) : null;
     },
 
     getActiveOrders: async () => {
-      const { data, error } = await ctx.client
-        .from('orders')
+      const { data, error } = await ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           table:tables!orders_table_id_fkey(table_number),
@@ -271,7 +298,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         .order('created_at', { ascending: false });
 
       if (error) throw handleSupabaseError(error);
-      return data || [];
+      return mapDecryptedPiiArray(data || []);
     },
 
     assignWaiter: async (orderId: string, waiterId: string | null) => {
@@ -368,8 +395,8 @@ export function createOrdersWrapper(ctx: WrapperContext) {
 
     // Takeout-specific methods
     findTakeoutOrders: async (options?: { limit?: number; offset?: number }) => {
-      let query = ctx.client
-        .from('orders')
+      let query = ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           order_items(
@@ -393,13 +420,13 @@ export function createOrdersWrapper(ctx: WrapperContext) {
 
       const { data, error } = await query;
       if (error) throw handleSupabaseError(error);
-      return data || [];
+      return mapDecryptedPiiArray(data || []);
     },
 
     // Delivery-specific methods
     findDeliveryOrders: async (options?: { limit?: number; offset?: number }) => {
-      let query = ctx.client
-        .from('orders')
+      let query = ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           order_items(
@@ -420,12 +447,12 @@ export function createOrdersWrapper(ctx: WrapperContext) {
 
       const { data, error } = await query;
       if (error) throw handleSupabaseError(error);
-      return data || [];
+      return mapDecryptedPiiArray(data || []);
     },
 
     findDeliveryById: async (id: string) => {
-      const { data, error } = await ctx.client
-        .from('orders')
+      const { data, error } = await ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           order_items(
@@ -444,7 +471,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
 
       if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
-      return data;
+      return mapDecryptedPii(data);
     },
 
     assignDeliveryPerson: async (orderId: string, staffId: string) => {
