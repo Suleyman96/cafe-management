@@ -2,8 +2,9 @@ import type { StaffScheduleInsert, StaffScheduleUpdate } from '@gustri/database'
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invalidateSchedules } from '../invalidation';
 import { useDb } from '../provider';
+import type { MutationCallbacks } from './types';
 
-export function useCreateSchedule() {
+export function useCreateSchedule(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -11,10 +12,11 @@ export function useCreateSchedule() {
     onSuccess: () => {
       invalidateSchedules(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useUpdateSchedule() {
+export function useUpdateSchedule(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -23,10 +25,11 @@ export function useUpdateSchedule() {
     onSuccess: () => {
       invalidateSchedules(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useDeleteSchedule() {
+export function useDeleteSchedule(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -34,10 +37,11 @@ export function useDeleteSchedule() {
     onSuccess: () => {
       invalidateSchedules(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useMarkScheduleInProgress() {
+export function useMarkScheduleInProgress(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -46,10 +50,11 @@ export function useMarkScheduleInProgress() {
     onSuccess: () => {
       invalidateSchedules(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useMarkScheduleCompleted() {
+export function useMarkScheduleCompleted(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -58,5 +63,6 @@ export function useMarkScheduleCompleted() {
     onSuccess: () => {
       invalidateSchedules(queryClient);
     },
+    onError: options?.onError,
   });
 }

@@ -89,6 +89,8 @@ export {
   refetchTasks,
   refetchWaste,
 } from './invalidation';
+// Mutation types
+export type { MutationCallbacks } from './mutations/types';
 export { DbProvider, useDb } from './provider';
 
 // ─── Mutations ──────────────────────────────────────────────────────────────

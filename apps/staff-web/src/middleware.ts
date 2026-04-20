@@ -15,13 +15,11 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
       'Access-Control-Max-Age': '86400',
     };
   }
-  // Mobile apps don't send origin headers — allow requests without origin
+  // Non-browser clients (mobile apps, server-to-server) don't send Origin headers
+  // and are never subject to CORS. Omitting headers is correct — returning '*'
+  // would unnecessarily widen the attack surface.
   if (!origin) {
-    return {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    };
+    return {};
   }
   return {};
 }
@@ -38,10 +36,33 @@ export async function middleware(request: NextRequest) {
 
   // Add CORS headers to API responses
   if (pathname.startsWith('/api/')) {
-    // Customer and mobile API routes don't need auth middleware
-    // (routes handle their own auth via verifyStaff/verifyAdmin)
-    const response = NextResponse.next();
     const corsHeaders = getCorsHeaders(origin);
+
+    // Customer-facing endpoints are intentionally unauthenticated (QR code ordering).
+    // Individual route handlers validate tenant/table relationships.
+    const isPublicApi = pathname.startsWith('/api/v1/customer/');
+    if (isPublicApi) {
+      const response = NextResponse.next();
+      for (const [key, value] of Object.entries(corsHeaders)) {
+        response.headers.set(key, value);
+      }
+      return response;
+    }
+
+    // All other API routes require authentication at the middleware level.
+    // Individual route handlers still enforce role-based access (verifyStaff/verifyAdmin).
+    const { supabase, response } = createMiddlewareClient(request);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
     for (const [key, value] of Object.entries(corsHeaders)) {
       response.headers.set(key, value);
     }

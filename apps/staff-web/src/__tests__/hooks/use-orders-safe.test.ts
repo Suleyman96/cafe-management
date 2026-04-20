@@ -147,7 +147,7 @@ describe('useAssignWaiter', () => {
 });
 
 describe('useCancelOrder', () => {
-  it('invalidates ORDERS, ORDER, ACTIVE_ORDERS, and TABLES on success', async () => {
+  it('invalidates ORDERS, ACTIVE_ORDERS, and TABLES on success', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useCancelOrder());
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -155,7 +155,6 @@ describe('useCancelOrder', () => {
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDER]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
   });
@@ -168,7 +167,7 @@ describe('useCancelOrder', () => {
 });
 
 describe('useUpdateOrderItemStatus', () => {
-  it('invalidates ORDERS, ORDER, and ACTIVE_ORDERS on success', async () => {
+  it('invalidates ORDERS and ACTIVE_ORDERS on success', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useUpdateOrderItemStatus());
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -176,7 +175,6 @@ describe('useUpdateOrderItemStatus', () => {
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDER]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
   });
 });

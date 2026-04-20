@@ -28,7 +28,10 @@ export async function postLoginSideEffects(staffId: string) {
     .catch(console.warn);
 }
 
-// Shared promise so concurrent callers wait for the same check
+// Deduplication: concurrent callers (e.g., React StrictMode double-mount)
+// await the same promise. The `cancelled` flag in useEffect handles cleanup
+// if the component unmounts before the check completes. This is safe because
+// JS is single-threaded — the check-and-assign at the call site is atomic.
 let sessionCheckPromise: Promise<void> | null = null;
 
 async function loadStaffAndSetup(

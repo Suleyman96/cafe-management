@@ -8,6 +8,8 @@ type RealtimeTable = {
   queryKeys: string[][];
 };
 
+const MAX_BACKOFF_MS = 30_000;
+
 /**
  * Subscribes to Supabase Realtime for a set of tables and
  * invalidates the corresponding React Query caches on changes.
@@ -15,9 +17,9 @@ type RealtimeTable = {
  * Uses a single multiplexed channel. Replaces per-page inline
  * useEffect subscriptions to eliminate duplicate connections.
  *
- * Includes a safety-net fallback poll (120s) that activates only
- * when the WebSocket is not in SUBSCRIBED state, catching silent
- * disconnects without adding load during normal operation.
+ * Includes:
+ * - Exponential backoff reconnection on CHANNEL_ERROR / TIMED_OUT
+ * - Safety-net fallback poll (120s) when WebSocket is not SUBSCRIBED
  */
 export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
   const queryClient = useQueryClient();
@@ -25,6 +27,8 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
   const tablesRef = useRef(tables);
   tablesRef.current = tables;
   const subscribedRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const invalidateAll = useCallback(() => {
     for (const { queryKeys } of tablesRef.current) {
@@ -35,22 +39,48 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
   }, [queryClient]);
 
   useEffect(() => {
-    let channel = supabase.channel(channelName);
+    let cancelled = false;
 
-    for (const { table, queryKeys } of tablesRef.current) {
-      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
-        for (const key of queryKeys) {
-          queryClient.invalidateQueries({ queryKey: key });
+    function createChannel() {
+      let channel = supabase.channel(channelName);
+
+      for (const { table, queryKeys } of tablesRef.current) {
+        channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+          for (const key of queryKeys) {
+            queryClient.invalidateQueries({ queryKey: key });
+          }
+        });
+      }
+
+      channel.subscribe((status) => {
+        if (cancelled) return;
+
+        subscribedRef.current = status === 'SUBSCRIBED';
+
+        if (status === 'SUBSCRIBED') {
+          retryCountRef.current = 0;
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          subscribedRef.current = false;
+          supabase.removeChannel(channel);
+
+          // Reconnect with exponential backoff
+          const delay = Math.min(1000 * 2 ** retryCountRef.current, MAX_BACKOFF_MS);
+          retryCountRef.current += 1;
+          retryTimerRef.current = setTimeout(() => {
+            if (!cancelled) createChannel();
+          }, delay);
         }
       });
+
+      return channel;
     }
 
-    channel.subscribe((status) => {
-      subscribedRef.current = status === 'SUBSCRIBED';
-    });
+    const channel = createChannel();
 
     return () => {
+      cancelled = true;
       subscribedRef.current = false;
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       supabase.removeChannel(channel);
     };
   }, [channelName, queryClient]);

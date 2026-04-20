@@ -89,6 +89,7 @@ export const CurrencyPositionSchema = z.enum(['before', 'after']);
 
 export const OrderSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   table_id: z.string().uuid().nullable(),
   assigned_waiter_id: z.string().uuid().nullable(),
   order_number: z.string(),
@@ -110,6 +111,11 @@ export const OrderSchema = z.object({
   closed_at: z.string().nullable(),
   payment_method: z.string().nullable(),
   paid_at: z.string().nullable(),
+  discount_type: DiscountTypeSchema,
+  discount_value: z.number(),
+  discount_amount: z.number(),
+  discount_reason: z.string().nullable(),
+  discount_applied_by: z.string().nullable(),
   delivery_address: z.string().nullable(),
   delivery_fee: z.number(),
   delivery_notes: z.string().nullable(),
@@ -120,6 +126,7 @@ export const OrderSchema = z.object({
 
 export const OrderItemSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   order_id: z.string().uuid(),
   menu_item_id: z.string().uuid(),
   item_name: z.string(),
@@ -133,6 +140,7 @@ export const OrderItemSchema = z.object({
 
 export const TableSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   table_number: z.string(),
   qr_code: z.string(),
   capacity: z.number().int(),
@@ -148,6 +156,7 @@ export const TableSchema = z.object({
 
 export const MenuItemSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   category_id: z.string().uuid().nullable(),
   name: z.string(),
   description: z.string().nullable(),
@@ -169,6 +178,7 @@ export const MenuItemSchema = z.object({
 
 export const StaffSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   email: z.string().email(),
   full_name: z.string(),
   role: UserRoleSchema,
@@ -183,6 +193,7 @@ export const StaffSchema = z.object({
 
 export const WaiterCallSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   table_id: z.string().uuid(),
   reason: z.string(),
   call_type: WaiterCallTypeSchema,
@@ -197,6 +208,7 @@ export const WaiterCallSchema = z.object({
 
 export const CustomerFeedbackSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   table_id: z.string().uuid().nullable(),
   order_id: z.string().uuid().nullable(),
   feedback_type: FeedbackTypeSchema,
@@ -211,6 +223,7 @@ export const CustomerFeedbackSchema = z.object({
 
 export const OrderPaymentSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   order_id: z.string().uuid(),
   received_by: z.string().uuid(),
   payment_type: PaymentTypeSchema,
@@ -224,6 +237,7 @@ export const OrderPaymentSchema = z.object({
 
 export const TableTransferSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   order_id: z.string().uuid(),
   from_table_id: z.string().uuid(),
   to_table_id: z.string().uuid(),
@@ -234,6 +248,7 @@ export const TableTransferSchema = z.object({
 
 export const StaffScheduleSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   staff_id: z.string().uuid(),
   date: z.string(),
   planned_start: z.string(),
@@ -248,6 +263,7 @@ export const StaffScheduleSchema = z.object({
 
 export const StockItemSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   name: z.string(),
   description: z.string().nullable(),
   category: z.string(),
@@ -264,6 +280,7 @@ export const StockItemSchema = z.object({
 
 export const StockMovementSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   stock_item_id: z.string().uuid(),
   movement_type: StockMovementTypeSchema,
   quantity_change: z.number(),
@@ -275,6 +292,7 @@ export const StockMovementSchema = z.object({
 
 export const ExpenseCategorySchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   name: z.string(),
   description: z.string().nullable(),
   icon: z.string().nullable(),
@@ -284,6 +302,7 @@ export const ExpenseCategorySchema = z.object({
 
 export const ExpenseSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   category_id: z.string().uuid().nullable(),
   amount: z.number().positive(),
   description: z.string(),
@@ -298,6 +317,7 @@ export const ExpenseSchema = z.object({
 
 export const WasteLogSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   item_name: z.string(),
   category: z.string(),
   quantity: z.number().positive(),
@@ -314,6 +334,7 @@ export const WasteLogSchema = z.object({
 
 export const TaskCategorySchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   name: z.string(),
   icon: z.string().nullable(),
   color: z.string(),
@@ -323,6 +344,7 @@ export const TaskCategorySchema = z.object({
 
 export const TaskSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   title: z.string(),
   description: z.string().nullable(),
   category_id: z.string().uuid().nullable(),
@@ -344,6 +366,7 @@ export const TaskSchema = z.object({
 
 export const CafeSettingsSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   restaurant_name: z.string(),
   tax_enabled: z.boolean(),
   tax_percentage: z.number(),
@@ -386,6 +409,7 @@ export const CafeSettingsSchema = z.object({
 
 export const RefundSchema = z.object({
   id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   order_id: z.string().uuid(),
   processed_by: z.string().uuid(),
   amount: z.number().positive(),

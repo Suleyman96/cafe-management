@@ -17,6 +17,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: config.name || 'gustri',
     slug: config.slug || 'gustri',
+    scheme: 'gustri',
     extra: {
       ...config.extra,
       EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL || LOCAL_SUPABASE_URL,

@@ -9,27 +9,49 @@ type PostgresChangeCallback = (
   payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
 ) => void;
 
+type SubscribeStatusCallback = (status: string, err?: Error) => void;
+
+function subscribeWithErrorHandler(
+  channel: RealtimeChannel,
+  onError?: SubscribeStatusCallback,
+): RealtimeChannel {
+  return channel.subscribe((status, err) => {
+    if (onError && (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT')) {
+      onError(status, err instanceof Error ? err : undefined);
+    }
+  });
+}
+
 export function createRealtimeWrapper(ctx: WrapperContext) {
   return {
-    subscribeToTables: (callback: PostgresChangeCallback): RealtimeChannel => {
-      return ctx.client
+    subscribeToTables: (
+      callback: PostgresChangeCallback,
+      onError?: SubscribeStatusCallback,
+    ): RealtimeChannel => {
+      const channel = ctx.client
         .channel('tables-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tables' }, callback)
-        .subscribe();
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tables' }, callback);
+      return subscribeWithErrorHandler(channel, onError);
     },
 
-    subscribeToOrders: (callback: PostgresChangeCallback): RealtimeChannel => {
-      return ctx.client
+    subscribeToOrders: (
+      callback: PostgresChangeCallback,
+      onError?: SubscribeStatusCallback,
+    ): RealtimeChannel => {
+      const channel = ctx.client
         .channel('orders-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, callback)
-        .subscribe();
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, callback);
+      return subscribeWithErrorHandler(channel, onError);
     },
 
-    subscribeToWaiterCalls: (callback: PostgresChangeCallback): RealtimeChannel => {
-      return ctx.client
+    subscribeToWaiterCalls: (
+      callback: PostgresChangeCallback,
+      onError?: SubscribeStatusCallback,
+    ): RealtimeChannel => {
+      const channel = ctx.client
         .channel('waiter-calls-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'waiter_calls' }, callback)
-        .subscribe();
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'waiter_calls' }, callback);
+      return subscribeWithErrorHandler(channel, onError);
     },
 
     unsubscribe: (channel: RealtimeChannel) => {

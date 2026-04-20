@@ -1,8 +1,9 @@
 import { QUERY_KEYS } from '@gustri/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDb } from '../provider';
+import type { MutationCallbacks } from './types';
 
-export function useMarkFeedbackRead() {
+export function useMarkFeedbackRead(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -11,5 +12,6 @@ export function useMarkFeedbackRead() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FEEDBACK] });
     },
+    onError: options?.onError,
   });
 }

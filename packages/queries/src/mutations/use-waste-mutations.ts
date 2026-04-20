@@ -2,8 +2,9 @@ import type { WasteLogInsert, WasteLogUpdate } from '@gustri/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invalidateWaste } from '../invalidation';
 import { useDb } from '../provider';
+import type { MutationCallbacks } from './types';
 
-export function useCreateWasteLog() {
+export function useCreateWasteLog(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -11,10 +12,11 @@ export function useCreateWasteLog() {
     onSuccess: () => {
       invalidateWaste(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useUpdateWasteLog() {
+export function useUpdateWasteLog(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -23,10 +25,11 @@ export function useUpdateWasteLog() {
     onSuccess: () => {
       invalidateWaste(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useDeleteWasteLog() {
+export function useDeleteWasteLog(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -34,5 +37,6 @@ export function useDeleteWasteLog() {
     onSuccess: () => {
       invalidateWaste(queryClient);
     },
+    onError: options?.onError,
   });
 }

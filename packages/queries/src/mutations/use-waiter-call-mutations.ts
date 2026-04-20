@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invalidateWaiterCalls } from '../invalidation';
 import { useDb } from '../provider';
+import type { MutationCallbacks } from './types';
 
-export function useAcknowledgeWaiterCall() {
+export function useAcknowledgeWaiterCall(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -11,10 +12,11 @@ export function useAcknowledgeWaiterCall() {
     onSuccess: () => {
       invalidateWaiterCalls(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useResolveWaiterCall() {
+export function useResolveWaiterCall(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -23,5 +25,6 @@ export function useResolveWaiterCall() {
     onSuccess: () => {
       invalidateWaiterCalls(queryClient);
     },
+    onError: options?.onError,
   });
 }

@@ -2,8 +2,9 @@ import type { Order, OrderItem, OrderItemsInsert } from '@gustri/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invalidateOrders, invalidateOrdersAndTables } from '../invalidation';
 import { useDb } from '../provider';
+import type { MutationCallbacks } from './types';
 
-export function useUpdateOrderStatus() {
+export function useUpdateOrderStatus(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -12,10 +13,11 @@ export function useUpdateOrderStatus() {
     onSuccess: () => {
       invalidateOrdersAndTables(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useAssignWaiter() {
+export function useAssignWaiter(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -24,10 +26,11 @@ export function useAssignWaiter() {
     onSuccess: () => {
       invalidateOrders(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useCancelOrder() {
+export function useCancelOrder(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -43,10 +46,11 @@ export function useCancelOrder() {
     onSuccess: () => {
       invalidateOrdersAndTables(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useUpdateOrderNotes() {
+export function useUpdateOrderNotes(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -60,10 +64,11 @@ export function useUpdateOrderNotes() {
     onSuccess: (_, { orderId }) => {
       invalidateOrders(queryClient, orderId);
     },
+    onError: options?.onError,
   });
 }
 
-export function useCleanupEmptyOrders() {
+export function useCleanupEmptyOrders(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -71,10 +76,11 @@ export function useCleanupEmptyOrders() {
     onSuccess: () => {
       invalidateOrdersAndTables(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useAddOrderItems() {
+export function useAddOrderItems(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -82,10 +88,11 @@ export function useAddOrderItems() {
     onSuccess: () => {
       invalidateOrders(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useUpdateOrderItemStatus() {
+export function useUpdateOrderItemStatus(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -94,10 +101,11 @@ export function useUpdateOrderItemStatus() {
     onSuccess: () => {
       invalidateOrders(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useDeleteOrderItem() {
+export function useDeleteOrderItem(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -105,10 +113,11 @@ export function useDeleteOrderItem() {
     onSuccess: () => {
       invalidateOrders(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useCancelOrderItem() {
+export function useCancelOrderItem(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -117,12 +126,13 @@ export function useCancelOrderItem() {
     onSuccess: () => {
       invalidateOrders(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
 // ─── Delivery ───────────────────────────────────────────────────────────────
 
-export function useAssignDeliveryPerson() {
+export function useAssignDeliveryPerson(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -131,10 +141,11 @@ export function useAssignDeliveryPerson() {
     onSuccess: () => {
       invalidateOrders(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useUpdateDeliveryFee() {
+export function useUpdateDeliveryFee(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -143,10 +154,11 @@ export function useUpdateDeliveryFee() {
     onSuccess: () => {
       invalidateOrders(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useMarkOutForDelivery() {
+export function useMarkOutForDelivery(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -155,10 +167,11 @@ export function useMarkOutForDelivery() {
     onSuccess: () => {
       invalidateOrdersAndTables(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useMarkDelivered() {
+export function useMarkDelivered(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -166,5 +179,6 @@ export function useMarkDelivered() {
     onSuccess: () => {
       invalidateOrdersAndTables(queryClient);
     },
+    onError: options?.onError,
   });
 }

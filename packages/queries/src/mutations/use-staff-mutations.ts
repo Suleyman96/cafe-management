@@ -2,8 +2,9 @@ import { QUERY_KEYS } from '@gustri/core';
 import type { StaffInsert, StaffUpdate } from '@gustri/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDb } from '../provider';
+import type { MutationCallbacks } from './types';
 
-export function useCreateStaff() {
+export function useCreateStaff(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -11,10 +12,11 @@ export function useCreateStaff() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STAFF] });
     },
+    onError: options?.onError,
   });
 }
 
-export function useUpdateStaff() {
+export function useUpdateStaff(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -23,10 +25,11 @@ export function useUpdateStaff() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STAFF] });
     },
+    onError: options?.onError,
   });
 }
 
-export function useDeleteStaff() {
+export function useDeleteStaff(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -34,5 +37,6 @@ export function useDeleteStaff() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STAFF] });
     },
+    onError: options?.onError,
   });
 }

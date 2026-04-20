@@ -8,10 +8,11 @@ import type {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invalidateMenuAndCategories } from '../invalidation';
 import { useDb } from '../provider';
+import type { MutationCallbacks } from './types';
 
 // ─── Menu Items ─────────────────────────────────────────────────────────────
 
-export function useCreateMenuItem() {
+export function useCreateMenuItem(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -19,10 +20,11 @@ export function useCreateMenuItem() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
     },
+    onError: options?.onError,
   });
 }
 
-export function useUpdateMenuItem() {
+export function useUpdateMenuItem(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -31,10 +33,11 @@ export function useUpdateMenuItem() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
     },
+    onError: options?.onError,
   });
 }
 
-export function useDeleteMenuItem() {
+export function useDeleteMenuItem(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -42,10 +45,11 @@ export function useDeleteMenuItem() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
     },
+    onError: options?.onError,
   });
 }
 
-export function useToggleMenuItemAvailability() {
+export function useToggleMenuItemAvailability(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -54,12 +58,13 @@ export function useToggleMenuItemAvailability() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
     },
+    onError: options?.onError,
   });
 }
 
 // ─── Categories ─────────────────────────────────────────────────────────────
 
-export function useCreateCategory() {
+export function useCreateCategory(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -67,10 +72,11 @@ export function useCreateCategory() {
     onSuccess: () => {
       invalidateMenuAndCategories(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useUpdateCategory() {
+export function useUpdateCategory(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -79,10 +85,11 @@ export function useUpdateCategory() {
     onSuccess: () => {
       invalidateMenuAndCategories(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useDeleteCategory() {
+export function useDeleteCategory(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -90,5 +97,6 @@ export function useDeleteCategory() {
     onSuccess: () => {
       invalidateMenuAndCategories(queryClient);
     },
+    onError: options?.onError,
   });
 }

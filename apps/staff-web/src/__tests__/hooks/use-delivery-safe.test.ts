@@ -109,6 +109,5 @@ describe('useMarkDelivered', () => {
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.DELIVERY_ORDERS]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDER]);
   });
 });

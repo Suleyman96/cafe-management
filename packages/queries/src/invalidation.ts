@@ -20,9 +20,11 @@ export function invalidateOrders(qc: QueryClient, orderId?: string) {
 }
 
 /** Invalidate orders + tables (for status changes that affect table state). */
-export function invalidateOrdersAndTables(qc: QueryClient) {
+export function invalidateOrdersAndTables(qc: QueryClient, orderId?: string) {
+  if (orderId) {
+    qc.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, orderId] });
+  }
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-  qc.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDERS] });

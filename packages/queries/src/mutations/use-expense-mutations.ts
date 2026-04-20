@@ -2,10 +2,11 @@ import type { ExpenseCategoryInsert, ExpenseInsert, ExpenseUpdate } from '@gustr
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invalidateExpenses } from '../invalidation';
 import { useDb } from '../provider';
+import type { MutationCallbacks } from './types';
 
 // ─── Expenses ───────────────────────────────────────────────────────────────
 
-export function useCreateExpense() {
+export function useCreateExpense(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -13,10 +14,11 @@ export function useCreateExpense() {
     onSuccess: () => {
       invalidateExpenses(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useUpdateExpense() {
+export function useUpdateExpense(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -25,10 +27,11 @@ export function useUpdateExpense() {
     onSuccess: () => {
       invalidateExpenses(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useDeleteExpense() {
+export function useDeleteExpense(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -36,12 +39,13 @@ export function useDeleteExpense() {
     onSuccess: () => {
       invalidateExpenses(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
 // ─── Expense Categories ─────────────────────────────────────────────────────
 
-export function useCreateExpenseCategory() {
+export function useCreateExpenseCategory(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -49,10 +53,11 @@ export function useCreateExpenseCategory() {
     onSuccess: () => {
       invalidateExpenses(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useUpdateExpenseCategory() {
+export function useUpdateExpenseCategory(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -61,10 +66,11 @@ export function useUpdateExpenseCategory() {
     onSuccess: () => {
       invalidateExpenses(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useDeleteExpenseCategory() {
+export function useDeleteExpenseCategory(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -72,5 +78,6 @@ export function useDeleteExpenseCategory() {
     onSuccess: () => {
       invalidateExpenses(queryClient);
     },
+    onError: options?.onError,
   });
 }

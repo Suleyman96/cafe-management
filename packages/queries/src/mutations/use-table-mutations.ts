@@ -2,8 +2,9 @@ import { QUERY_KEYS } from '@gustri/core';
 import type { Table, TablesInsert, TablesUpdate } from '@gustri/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDb } from '../provider';
+import type { MutationCallbacks } from './types';
 
-export function useUpdateTableStatus() {
+export function useUpdateTableStatus(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -12,10 +13,11 @@ export function useUpdateTableStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
     },
+    onError: options?.onError,
   });
 }
 
-export function useCreateTable() {
+export function useCreateTable(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -23,10 +25,11 @@ export function useCreateTable() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
     },
+    onError: options?.onError,
   });
 }
 
-export function useUpdateTable() {
+export function useUpdateTable(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -35,10 +38,11 @@ export function useUpdateTable() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
     },
+    onError: options?.onError,
   });
 }
 
-export function useDeleteTable() {
+export function useDeleteTable(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -46,5 +50,6 @@ export function useDeleteTable() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
     },
+    onError: options?.onError,
   });
 }

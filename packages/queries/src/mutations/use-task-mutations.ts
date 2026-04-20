@@ -2,8 +2,9 @@ import type { TaskInsert, TaskUpdate } from '@gustri/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invalidateTasks } from '../invalidation';
 import { useDb } from '../provider';
+import type { MutationCallbacks } from './types';
 
-export function useCreateTask() {
+export function useCreateTask(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -17,10 +18,11 @@ export function useCreateTask() {
     onSuccess: () => {
       invalidateTasks(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useUpdateTask() {
+export function useUpdateTask(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -34,10 +36,11 @@ export function useUpdateTask() {
     onSuccess: () => {
       invalidateTasks(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useDeleteTask() {
+export function useDeleteTask(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -45,10 +48,11 @@ export function useDeleteTask() {
     onSuccess: () => {
       invalidateTasks(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useMarkTaskInProgress() {
+export function useMarkTaskInProgress(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -56,10 +60,11 @@ export function useMarkTaskInProgress() {
     onSuccess: () => {
       invalidateTasks(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useMarkTaskCompleted() {
+export function useMarkTaskCompleted(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -67,10 +72,11 @@ export function useMarkTaskCompleted() {
     onSuccess: () => {
       invalidateTasks(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useMarkTaskCancelled() {
+export function useMarkTaskCancelled(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -78,10 +84,11 @@ export function useMarkTaskCancelled() {
     onSuccess: () => {
       invalidateTasks(queryClient);
     },
+    onError: options?.onError,
   });
 }
 
-export function useGenerateRecurringTasks() {
+export function useGenerateRecurringTasks(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -89,5 +96,6 @@ export function useGenerateRecurringTasks() {
     onSuccess: () => {
       invalidateTasks(queryClient);
     },
+    onError: options?.onError,
   });
 }

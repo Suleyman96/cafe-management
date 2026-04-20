@@ -1,8 +1,9 @@
 import { QUERY_KEYS } from '@gustri/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDb } from '../provider';
+import type { MutationCallbacks } from './types';
 
-export function useCreateDeliveryCustomer() {
+export function useCreateDeliveryCustomer(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -11,10 +12,11 @@ export function useCreateDeliveryCustomer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_CUSTOMERS] });
     },
+    onError: options?.onError,
   });
 }
 
-export function useUpdateDeliveryCustomer() {
+export function useUpdateDeliveryCustomer(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -28,10 +30,11 @@ export function useUpdateDeliveryCustomer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_CUSTOMERS] });
     },
+    onError: options?.onError,
   });
 }
 
-export function useDeleteDeliveryCustomer() {
+export function useDeleteDeliveryCustomer(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -39,10 +42,11 @@ export function useDeleteDeliveryCustomer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_CUSTOMERS] });
     },
+    onError: options?.onError,
   });
 }
 
-export function useIncrementDeliveryCustomerOrderCount() {
+export function useIncrementDeliveryCustomerOrderCount(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
@@ -50,5 +54,6 @@ export function useIncrementDeliveryCustomerOrderCount() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_CUSTOMERS] });
     },
+    onError: options?.onError,
   });
 }

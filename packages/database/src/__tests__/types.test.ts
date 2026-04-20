@@ -330,6 +330,7 @@ describe('Table Schemas', () => {
   describe('OrderSchema', () => {
     const validOrder = {
       id: uuid1,
+      tenant_id: uuid1,
       table_id: uuid2,
       assigned_waiter_id: null,
       order_number: 'ORD2601010001',
@@ -351,6 +352,11 @@ describe('Table Schemas', () => {
       closed_at: null,
       payment_method: null,
       paid_at: null,
+      discount_type: 'none',
+      discount_value: 0,
+      discount_amount: 0,
+      discount_reason: null,
+      discount_applied_by: null,
       delivery_address: null,
       delivery_fee: 0,
       delivery_notes: null,
@@ -390,6 +396,7 @@ describe('Table Schemas', () => {
   describe('OrderItemSchema', () => {
     const validItem = {
       id: uuid1,
+      tenant_id: uuid1,
       order_id: uuid2,
       menu_item_id: uuid1,
       item_name: 'Pizza',
@@ -421,6 +428,7 @@ describe('Table Schemas', () => {
   describe('TableSchema', () => {
     const validTable = {
       id: uuid1,
+      tenant_id: uuid1,
       table_number: '1',
       qr_code: 'TABLE_001',
       capacity: 4,
@@ -458,6 +466,7 @@ describe('Table Schemas', () => {
   describe('MenuItemSchema', () => {
     const validMenuItem = {
       id: uuid1,
+      tenant_id: uuid1,
       category_id: uuid2,
       name: 'Pizza Margherita',
       description: null,
@@ -501,6 +510,7 @@ describe('Table Schemas', () => {
   describe('StaffSchema', () => {
     const validStaff = {
       id: uuid1,
+      tenant_id: uuid1,
       email: 'test@example.com',
       full_name: 'Test User',
       role: 'waiter',
@@ -533,6 +543,7 @@ describe('Table Schemas', () => {
   describe('WaiterCallSchema', () => {
     const validCall = {
       id: uuid1,
+      tenant_id: uuid1,
       table_id: uuid2,
       reason: 'Need help',
       call_type: 'assistance',
@@ -563,6 +574,7 @@ describe('Table Schemas', () => {
   describe('CustomerFeedbackSchema', () => {
     const validFeedback = {
       id: uuid1,
+      tenant_id: uuid1,
       table_id: uuid2,
       order_id: null,
       feedback_type: 'complaint',
@@ -598,6 +610,7 @@ describe('Table Schemas', () => {
   describe('OrderPaymentSchema', () => {
     const validPayment = {
       id: uuid1,
+      tenant_id: uuid1,
       order_id: uuid2,
       received_by: uuid1,
       payment_type: 'full',
@@ -625,6 +638,7 @@ describe('Table Schemas', () => {
   describe('TableTransferSchema', () => {
     const validTransfer = {
       id: uuid1,
+      tenant_id: uuid1,
       order_id: uuid2,
       from_table_id: uuid1,
       to_table_id: uuid2,
@@ -641,6 +655,7 @@ describe('Table Schemas', () => {
   describe('StaffScheduleSchema', () => {
     const validSchedule = {
       id: uuid1,
+      tenant_id: uuid1,
       staff_id: uuid2,
       date: '2026-03-22',
       planned_start: '09:00',
@@ -667,6 +682,7 @@ describe('Table Schemas', () => {
   describe('StockItemSchema', () => {
     const validStock = {
       id: uuid1,
+      tenant_id: uuid1,
       name: 'Flour',
       description: null,
       category: 'ingredients',
@@ -689,6 +705,7 @@ describe('Table Schemas', () => {
   describe('StockMovementSchema', () => {
     const validMovement = {
       id: uuid1,
+      tenant_id: uuid1,
       stock_item_id: uuid2,
       movement_type: 'in',
       quantity_change: 25,
@@ -706,6 +723,7 @@ describe('Table Schemas', () => {
   describe('ExpenseSchema', () => {
     const validExpense = {
       id: uuid1,
+      tenant_id: uuid1,
       category_id: uuid2,
       amount: 500,
       description: 'Monthly rent',
@@ -730,6 +748,7 @@ describe('Table Schemas', () => {
   describe('WasteLogSchema', () => {
     const validWaste = {
       id: uuid1,
+      tenant_id: uuid1,
       item_name: 'Tomatoes',
       category: 'produce',
       quantity: 5,
@@ -762,6 +781,7 @@ describe('Table Schemas', () => {
   describe('TaskSchema', () => {
     const validTask = {
       id: uuid1,
+      tenant_id: uuid1,
       title: 'Clean kitchen',
       description: null,
       category_id: null,
@@ -811,6 +831,7 @@ describe('Table Schemas', () => {
   describe('CafeSettingsSchema', () => {
     const validSettings = {
       id: '00000000-0000-0000-0000-000000000001',
+      tenant_id: uuid1,
       restaurant_name: 'Test Cafe',
       tax_enabled: true,
       tax_percentage: 18,
@@ -872,6 +893,7 @@ describe('Table Schemas', () => {
   describe('RefundSchema', () => {
     const validRefund = {
       id: uuid1,
+      tenant_id: uuid1,
       order_id: uuid2,
       processed_by: uuid1,
       amount: 25.0,

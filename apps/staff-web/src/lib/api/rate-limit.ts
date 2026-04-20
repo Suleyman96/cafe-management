@@ -49,6 +49,20 @@ export async function rateLimit(
 }
 
 export function getRateLimitIdentifier(request: Request): string {
+  // Prefer x-real-ip (set by Vercel, reliable single IP)
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp) return realIp.trim();
+
+  // Fallback: last IP in x-forwarded-for is the one added by the trusted proxy.
+  // First IP is attacker-controllable via header spoofing.
   const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded?.split(',')[0]?.trim() || 'unknown';
+  if (forwarded) {
+    const ips = forwarded
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return ips[ips.length - 1] || 'unknown';
+  }
+
+  return 'unknown';
 }
