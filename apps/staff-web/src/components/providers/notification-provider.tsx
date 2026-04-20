@@ -7,11 +7,13 @@ import { Bell, BellOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
+import { useAuthStore } from '@/store/auth-store';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation('staff');
+  const tenantId = useAuthStore((s) => s.staff?.tenant_id);
   const [audioEnabled, setAudioEnabled] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('staff-audio-enabled');
@@ -159,12 +161,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Waiter calls subscription
   useEffect(() => {
+    if (!tenantId) return;
     console.log('[Notifications] Setting up waiter_calls subscription');
     const channel = supabase
       .channel('notify-waiter-calls')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'waiter_calls' },
+        { event: '*', schema: 'public', table: 'waiter_calls', filter: `tenant_id=eq.${tenantId}` },
         (payload) => {
           console.log('[Notifications] waiter_calls event:', payload.eventType);
           if (payload.eventType === 'INSERT') {
@@ -183,44 +186,49 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [playSound, t]);
+  }, [playSound, t, tenantId]);
 
   // Orders subscription
   useEffect(() => {
+    if (!tenantId) return;
     console.log('[Notifications] Setting up orders subscription');
     const channel = supabase
       .channel('notify-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-        console.log('[Notifications] orders event:', payload.eventType, payload);
-        if (payload.eventType === 'INSERT') {
-          const newOrder = payload.new as OrderRow;
-          if (newOrder.status === 'pending_approval') {
-            playSound(notificationAudioRef.current);
-            toast.info(t('notifications.newQrOrder'), {
-              description: t('notifications.qrOrderDescription'),
-              duration: 5000,
-            });
-          } else {
-            playSound(orderAudioRef.current);
-            toast.info(t('notifications.newOrder'), {
-              description: t('notifications.newOrderDescription'),
-              duration: 3000,
-            });
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders', filter: `tenant_id=eq.${tenantId}` },
+        (payload) => {
+          console.log('[Notifications] orders event:', payload.eventType, payload);
+          if (payload.eventType === 'INSERT') {
+            const newOrder = payload.new as OrderRow;
+            if (newOrder.status === 'pending_approval') {
+              playSound(notificationAudioRef.current);
+              toast.info(t('notifications.newQrOrder'), {
+                description: t('notifications.qrOrderDescription'),
+                duration: 5000,
+              });
+            } else {
+              playSound(orderAudioRef.current);
+              toast.info(t('notifications.newOrder'), {
+                description: t('notifications.newOrderDescription'),
+                duration: 3000,
+              });
+            }
           }
-        }
-        if (payload.eventType === 'UPDATE') {
-          const newOrder = payload.new as OrderRow;
-          const oldOrder = payload.old as Partial<OrderRow>;
-          if (newOrder.status === 'ready' && oldOrder.status !== 'ready') {
-            console.log('[Notifications] Order ready!');
-            playSound(notificationAudioRef.current);
-            toast.success(t('notifications.orderReady'), {
-              description: t('notifications.orderReadyDescription'),
-              duration: 5000,
-            });
+          if (payload.eventType === 'UPDATE') {
+            const newOrder = payload.new as OrderRow;
+            const oldOrder = payload.old as Partial<OrderRow>;
+            if (newOrder.status === 'ready' && oldOrder.status !== 'ready') {
+              console.log('[Notifications] Order ready!');
+              playSound(notificationAudioRef.current);
+              toast.success(t('notifications.orderReady'), {
+                description: t('notifications.orderReadyDescription'),
+                duration: 5000,
+              });
+            }
           }
-        }
-      })
+        },
+      )
       .subscribe((status) => {
         console.log('[Notifications] orders status:', status);
       });
@@ -228,23 +236,28 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [playSound, t]);
+  }, [playSound, t, tenantId]);
 
   // Order items subscription (for items added to existing orders)
   useEffect(() => {
+    if (!tenantId) return;
     console.log('[Notifications] Setting up order_items subscription');
     const channel = supabase
       .channel('notify-order-items')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, (payload) => {
-        console.log('[Notifications] order_items event:', payload.eventType);
-        if (payload.eventType === 'INSERT') {
-          playSound(orderAudioRef.current);
-          toast.info(t('notifications.newItemsAdded'), {
-            description: t('notifications.itemsAddedDescription'),
-            duration: 3000,
-          });
-        }
-      })
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'order_items', filter: `tenant_id=eq.${tenantId}` },
+        (payload) => {
+          console.log('[Notifications] order_items event:', payload.eventType);
+          if (payload.eventType === 'INSERT') {
+            playSound(orderAudioRef.current);
+            toast.info(t('notifications.newItemsAdded'), {
+              description: t('notifications.itemsAddedDescription'),
+              duration: 3000,
+            });
+          }
+        },
+      )
       .subscribe((status) => {
         console.log('[Notifications] order_items status:', status);
       });
@@ -252,7 +265,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [playSound, t]);
+  }, [playSound, t, tenantId]);
 
   return (
     <>

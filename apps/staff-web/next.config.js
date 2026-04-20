@@ -43,13 +43,13 @@ const nextConfig = {
             value: 'camera=(), microphone=(), geolocation=()',
           },
           {
-            key: 'Content-Security-Policy-Report-Only',
+            key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
               "style-src 'self' 'unsafe-inline'",
               `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL || ''} wss://*.supabase.co https://*.sentry.io`,
-              "img-src 'self' data: blob: *.supabase.co",
+              "img-src 'self' data: blob: https://*.supabase.co",
               "font-src 'self'",
               "frame-ancestors 'none'",
               "base-uri 'self'",

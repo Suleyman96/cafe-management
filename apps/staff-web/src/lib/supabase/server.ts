@@ -1,5 +1,6 @@
 import type { Database } from '@gustri/database';
 import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { type NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -31,4 +32,27 @@ export function createMiddlewareClient(request: NextRequest) {
   );
 
   return { supabase, response };
+}
+
+/**
+ * Create a Supabase client for use in Server Components.
+ * Reads auth cookies from the request via next/headers.
+ */
+export function createServerComponentClient() {
+  const cookieStore = cookies();
+
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll() {
+          // Server Components are read-only — cookie writes are no-ops
+        },
+      },
+    },
+  );
 }

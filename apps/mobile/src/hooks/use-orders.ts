@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { notifyNewOrder } from '@/lib/notifications';
 import { playNewOrderSound } from '@/lib/sound';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/auth-store';
 import type { OrderWithDetails } from '@/types';
 
 // Re-export read hooks and mutations with matching param shapes
@@ -50,6 +51,7 @@ export function useOrders(filters?: {
   limit?: number;
 }) {
   const queryClient = useQueryClient();
+  const tenantId = useAuthStore((s) => s.staff?.tenant_id);
   const db = useDb();
 
   const query = useQuery({
@@ -60,7 +62,10 @@ export function useOrders(filters?: {
 
   // Real-time subscription (needs raw supabase client for channel API)
   useEffect(() => {
+    if (!tenantId) return;
     let channel: RealtimeChannel;
+
+    const tenantFilter = `tenant_id=eq.${tenantId}`;
 
     const setupSubscription = async () => {
       channel = supabase
@@ -71,6 +76,7 @@ export function useOrders(filters?: {
             event: 'INSERT',
             schema: 'public',
             table: 'orders',
+            filter: tenantFilter,
           },
           async (payload) => {
             await playNewOrderSound();
@@ -100,6 +106,7 @@ export function useOrders(filters?: {
             event: 'UPDATE',
             schema: 'public',
             table: 'orders',
+            filter: tenantFilter,
           },
           () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
@@ -111,6 +118,7 @@ export function useOrders(filters?: {
             event: '*',
             schema: 'public',
             table: 'order_items',
+            filter: tenantFilter,
           },
           () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
@@ -126,7 +134,7 @@ export function useOrders(filters?: {
         supabase.removeChannel(channel);
       }
     };
-  }, [queryClient]);
+  }, [queryClient, tenantId]);
 
   return query;
 }

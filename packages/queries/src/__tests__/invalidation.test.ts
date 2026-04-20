@@ -15,7 +15,7 @@ function createMockQueryClient() {
 }
 
 function getInvalidatedKeys(spy: ReturnType<typeof vi.spyOn>) {
-  return spy.mock.calls.map((c) => (c[0] as any).queryKey);
+  return spy.mock.calls.map((c: any) => (c[0] as any).queryKey);
 }
 
 describe('invalidateOrders', () => {

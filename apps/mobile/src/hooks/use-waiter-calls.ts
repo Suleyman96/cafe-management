@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { notifyWaiterCall } from '@/lib/notifications';
 import { playWaiterCallSound } from '@/lib/sound';
 import { db, supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/auth-store';
 import type { WaiterCall } from '@/types';
 
 // Shared mutations re-exported for direct use
@@ -13,6 +14,7 @@ export { useAcknowledgeWaiterCall, useResolveWaiterCall } from '@gustri/queries'
 // Local hook — has realtime subscription with sound/notification side effects
 export function useWaiterCalls(status?: WaiterCall['status']) {
   const queryClient = useQueryClient();
+  const tenantId = useAuthStore((s) => s.staff?.tenant_id);
 
   const query = useQuery({
     queryKey: [QUERY_KEYS.WAITER_CALLS, status],
@@ -23,7 +25,10 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
 
   // Real-time subscription (needs raw supabase client for channel API)
   useEffect(() => {
+    if (!tenantId) return;
     let channel: RealtimeChannel;
+
+    const tenantFilter = `tenant_id=eq.${tenantId}`;
 
     const setupSubscription = async () => {
       channel = supabase
@@ -34,6 +39,7 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
             event: 'INSERT',
             schema: 'public',
             table: 'waiter_calls',
+            filter: tenantFilter,
           },
           async (payload) => {
             await playWaiterCallSound();
@@ -63,6 +69,7 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
             event: 'UPDATE',
             schema: 'public',
             table: 'waiter_calls',
+            filter: tenantFilter,
           },
           () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
@@ -78,7 +85,7 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
         supabase.removeChannel(channel);
       }
     };
-  }, [queryClient]);
+  }, [queryClient, tenantId]);
 
   return query;
 }

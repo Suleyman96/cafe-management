@@ -1,0 +1,45 @@
+#!/usr/bin/env sh
+
+# Scan staged files for potential secrets before committing
+FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -z "$FILES" ]; then
+  exit 0
+fi
+
+# Patterns that indicate leaked secrets
+PATTERNS=(
+  'SUPABASE_SERVICE_ROLE_KEY\s*='
+  'SENTRY_AUTH_TOKEN\s*='
+  'UPSTASH_REDIS_REST_TOKEN\s*='
+  'PII_ENCRYPTION_KEY\s*='
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6'
+  'sk_live_[a-zA-Z0-9]+'
+  'sk_test_[a-zA-Z0-9]+'
+  'AKIA[0-9A-Z]{16}'
+  'password\s*=\s*["\x27][^"\x27]{8,}'
+)
+
+# Files to always skip
+SKIP_PATTERN='\.secrets\.baseline$|\.husky/pre-commit$|ARCHITECTURE_REVIEW\.md$'
+
+FOUND=0
+for FILE in $FILES; do
+  # Skip binary files, lock files, and allowlisted files
+  echo "$FILE" | grep -qE "$SKIP_PATTERN" && continue
+  echo "$FILE" | grep -qE '\.(lock|png|jpg|jpeg|gif|ico|woff|woff2|ttf|mp3)$' && continue
+
+  for PATTERN in "${PATTERNS[@]}"; do
+    if git show ":$FILE" 2>/dev/null | grep -qE "$PATTERN"; then
+      echo "🚨 Potential secret detected in $FILE (pattern: $PATTERN)"
+      FOUND=1
+    fi
+  done
+done
+
+if [ "$FOUND" -eq 1 ]; then
+  echo ""
+  echo "❌ Commit blocked: potential secrets detected in staged files."
+  echo "   If this is a false positive, use: git commit --no-verify"
+  exit 1
+fi

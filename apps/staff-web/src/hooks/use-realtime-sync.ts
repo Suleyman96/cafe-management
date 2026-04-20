@@ -2,10 +2,12 @@ import { REFRESH_INTERVALS } from '@gustri/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { useAuthStore } from '@/store/auth-store';
 
 type RealtimeTable = {
   table: string;
   queryKeys: string[][];
+  filter?: string;
 };
 
 const MAX_BACKOFF_MS = 30_000;
@@ -23,6 +25,7 @@ const MAX_BACKOFF_MS = 30_000;
  */
 export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
   const queryClient = useQueryClient();
+  const tenantId = useAuthStore((s) => s.staff?.tenant_id);
   // Keep tables in a ref so the channel doesn't re-subscribe on every render
   const tablesRef = useRef(tables);
   tablesRef.current = tables;
@@ -39,17 +42,26 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
   }, [queryClient]);
 
   useEffect(() => {
+    // Don't subscribe until we know the tenant
+    if (!tenantId) return;
+
     let cancelled = false;
 
     function createChannel() {
       let channel = supabase.channel(channelName);
 
-      for (const { table, queryKeys } of tablesRef.current) {
-        channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
-          for (const key of queryKeys) {
-            queryClient.invalidateQueries({ queryKey: key });
-          }
-        });
+      for (const { table, queryKeys, filter } of tablesRef.current) {
+        // Use explicit filter if provided, otherwise scope by tenant_id
+        const resolvedFilter = filter ?? `tenant_id=eq.${tenantId}`;
+        channel = channel.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table, filter: resolvedFilter },
+          () => {
+            for (const key of queryKeys) {
+              queryClient.invalidateQueries({ queryKey: key });
+            }
+          },
+        );
       }
 
       channel.subscribe((status) => {
@@ -83,7 +95,7 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       supabase.removeChannel(channel);
     };
-  }, [channelName, queryClient]);
+  }, [channelName, tenantId, queryClient]);
 
   // Safety-net fallback: poll at a long interval when the WS may be down
   useEffect(() => {
