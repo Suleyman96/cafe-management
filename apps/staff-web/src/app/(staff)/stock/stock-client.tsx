@@ -19,12 +19,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { StockItemModal } from '@/components/modals/stock-item-modal';
 import { StockMovementModal } from '@/components/modals/stock-movement-modal';
-import {
-  useDeleteStockItem,
-  useLowStockCount,
-  useStockItems,
-  useStockMovements,
-} from '@/hooks';
+import { useDeleteStockItem, useLowStockCount, useStockItems, useStockMovements } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
 
 type StockItem = Database['public']['Tables']['stock_items']['Row'];

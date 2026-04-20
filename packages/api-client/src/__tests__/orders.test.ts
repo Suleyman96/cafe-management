@@ -286,7 +286,9 @@ describe('OrdersWrapper applyDiscount', () => {
 describe('OrdersWrapper empty data handling', () => {
   it('findAll returns empty array when no orders exist', async () => {
     const emptyResp = { data: [], error: null };
-    const ctx = createMockContext({ responses: { orders: emptyResp, orders_decrypted: emptyResp } });
+    const ctx = createMockContext({
+      responses: { orders: emptyResp, orders_decrypted: emptyResp },
+    });
     const wrapper = createOrdersWrapper(ctx);
     const result = await wrapper.findAll();
     expect(result).toEqual([]);
