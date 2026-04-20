@@ -18,11 +18,12 @@ export function createWrapper() {
   const queryClient = createTestQueryClient();
   const mockDb = createMockDb() as unknown as SupabaseWrapper;
   return {
-    wrapper: ({ children }: { children: ReactNode }) => (
+    // eslint-disable-next-line -- wrapper type mismatch between @testing-library/react and @types/react 18.3
+    wrapper: (({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>
         <DbProvider db={mockDb}>{children}</DbProvider>
       </QueryClientProvider>
-    ),
+    )) as any,
     queryClient,
     mockDb,
   };
