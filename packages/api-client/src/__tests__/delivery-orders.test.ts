@@ -24,9 +24,11 @@ describe('Delivery Orders', () => {
   let orders: ReturnType<typeof createOrdersWrapper>;
 
   beforeEach(() => {
+    const resp = { data: [validDeliveryOrder], error: null };
     ctx = createMockContext({
       responses: {
-        orders: { data: [validDeliveryOrder], error: null },
+        orders: resp,
+        orders_decrypted: resp,
       },
     });
     orders = createOrdersWrapper(ctx);
@@ -36,14 +38,16 @@ describe('Delivery Orders', () => {
     const result = await orders.findDeliveryOrders();
     expect(result).toEqual([validDeliveryOrder]);
     const calls = ctx.getCalls();
-    expect(calls[0].table).toBe('orders');
+    expect(calls[0].table).toBe('orders_decrypted');
     expect(calls[0].method).toBe('select');
   });
 
   it('findDeliveryById returns single delivery order', async () => {
+    const singleResp = { data: validDeliveryOrder, error: null };
     const singleCtx = createMockContext({
       responses: {
-        orders: { data: validDeliveryOrder, error: null },
+        orders: singleResp,
+        orders_decrypted: singleResp,
       },
     });
     const singleOrders = createOrdersWrapper(singleCtx);

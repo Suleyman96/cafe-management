@@ -47,6 +47,8 @@
   "optional": "ไม่จำเป็น",
   "pending": "รอดำเนินการ",
   "phone": "โทรศัพท์",
+  "phonePlaceholder": "+XX XXX XXX XXXX",
+  "whatsappPlaceholder": "https://wa.me/XXXXXXXXXXXX",
   "placingOrder": "กำลังสั่ง...",
   "quantity": "จำนวน",
   "refresh": "รีเฟรช",

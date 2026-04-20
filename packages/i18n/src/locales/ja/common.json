@@ -47,6 +47,8 @@
   "optional": "任意",
   "pending": "保留中",
   "phone": "電話",
+  "phonePlaceholder": "+XX XXX XXX XXXX",
+  "whatsappPlaceholder": "https://wa.me/XXXXXXXXXXXX",
   "placingOrder": "注文中...",
   "quantity": "数量",
   "refresh": "更新",

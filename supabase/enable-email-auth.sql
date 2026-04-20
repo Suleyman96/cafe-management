@@ -13,7 +13,7 @@ SELECT COUNT(*) FROM auth.users;
 -- 2. Verify the user exists
 SELECT id, email, email_confirmed_at, created_at 
 FROM auth.users 
-WHERE email = 'hacilov@gmail.com';
+WHERE email = 'admin@test.com';
 
 -- 3. If email auth is truly disabled, you may need to:
 --    - Restart Supabase: supabase stop && supabase start

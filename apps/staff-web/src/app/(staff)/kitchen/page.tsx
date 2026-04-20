@@ -1,5 +1,7 @@
 'use client';
 
+import { isDeliveryOrder, isDineInOrder, isTakeoutOrder } from '@gustri/core';
+import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { LoadingSpinner } from '@gustri/ui';
 import {
@@ -18,7 +20,7 @@ import {
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useCancelOrder, useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
-import { supabase } from '@/lib/supabase/client';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 const ORDER_STATUS_KEYS: Record<string, string> = {
   pending_approval: 'orders.pendingApproval',
@@ -34,12 +36,12 @@ const ORDER_STATUS_KEYS: Record<string, string> = {
 
 export default function KitchenDisplayPage() {
   const { t } = useTranslation('staff');
-  const { data: orders, isLoading: loading, error, refetch } = useOrders();
+  const { data: orders, isLoading: loading, error } = useOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const cancelOrder = useCancelOrder();
   const [_currentTime, setCurrentTime] = useState(new Date());
-  const [rejectingOrder, setRejectingOrder] = useState<any>(null);
+  const [rejectingOrder, setRejectingOrder] = useState<OrderWithDetails | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
   // Update current time every minute to refresh elapsed times
@@ -51,26 +53,25 @@ export default function KitchenDisplayPage() {
   }, []);
 
   // Check if all non-cancelled items in an order are served
-  const allItemsServed = (order: any) => {
-    const items = order.order_items?.filter((item: any) => item.status !== 'cancelled') || [];
+  const allItemsServed = (order: OrderWithDetails) => {
+    const items = order.order_items?.filter((item) => item.status !== 'cancelled') || [];
     if (items.length === 0) return false;
-    return items.every((item: any) => item.status === 'served');
+    return items.every((item) => item.status === 'served');
   };
 
   // Check if all non-cancelled items in an order are ready (or served)
-  const allItemsReady = (order: any) => {
-    const items = order.order_items?.filter((item: any) => item.status !== 'cancelled') || [];
+  const allItemsReady = (order: OrderWithDetails) => {
+    const items = order.order_items?.filter((item) => item.status !== 'cancelled') || [];
     if (items.length === 0) return false;
-    return items.every((item: any) => item.status === 'ready' || item.status === 'served');
+    return items.every((item) => item.status === 'ready' || item.status === 'served');
   };
 
   // Filter orders for kitchen display (new, preparing, ready) - exclude orders where all items are served
   const kitchenOrders = orders
     ?.filter(
-      (order: any) =>
-        ['new', 'preparing', 'ready'].includes(order.status) && !allItemsServed(order),
+      (order) => ['new', 'preparing', 'ready'].includes(order.status) && !allItemsServed(order),
     )
-    .sort((a: any, b: any) => {
+    .sort((a, b) => {
       // Sort by status priority (new > preparing > ready) then by time
       const statusPriority = { 'new': 0, preparing: 1, ready: 2 };
       const aPriority = statusPriority[a.status as keyof typeof statusPriority];
@@ -82,32 +83,19 @@ export default function KitchenDisplayPage() {
   // Filter pending approval orders (QR orders awaiting staff approval)
   const pendingApprovalOrders =
     orders
-      ?.filter((order: any) => order.status === 'pending_approval')
-      .sort(
-        (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      ) || [];
+      ?.filter((order) => order.status === 'pending_approval')
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) || [];
 
   // Count orders by status
-  const newOrdersCount = kitchenOrders?.filter((o: any) => o.status === 'new').length || 0;
-  const preparingCount = kitchenOrders?.filter((o: any) => o.status === 'preparing').length || 0;
-  const readyCount = kitchenOrders?.filter((o: any) => o.status === 'ready').length || 0;
+  const newOrdersCount = kitchenOrders?.filter((o) => o.status === 'new').length || 0;
+  const preparingCount = kitchenOrders?.filter((o) => o.status === 'preparing').length || 0;
+  const readyCount = kitchenOrders?.filter((o) => o.status === 'ready').length || 0;
 
-  // Set up real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('kitchen-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        refetch();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
-        refetch();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch]);
+  // Real-time: invalidate queries on DB changes
+  useRealtimeSync('kitchen-realtime', [
+    { table: 'orders', queryKeys: [['orders'], ['active_orders']] },
+    { table: 'order_items', queryKeys: [['orders']] },
+  ]);
 
   // Calculate elapsed time
   const calculateElapsedTime = (createdAt: string) => {
@@ -127,7 +115,7 @@ export default function KitchenDisplayPage() {
   };
 
   // Get card color based on status, time, and item statuses
-  const getCardColor = (order: any, minutes: number) => {
+  const getCardColor = (order: OrderWithDetails, minutes: number) => {
     const status = order.status;
     // If all items are ready, show green regardless of order status
     if (allItemsReady(order)) return 'bg-green-50 border-green-400 shadow-green-200';
@@ -180,7 +168,7 @@ export default function KitchenDisplayPage() {
     newStatus: 'PREPARING' | 'READY' | 'SERVED',
   ) => {
     try {
-      const order = kitchenOrders?.find((o: any) => o.id === orderId);
+      const order = kitchenOrders?.find((o) => o.id === orderId);
 
       // Update all item statuses to match the order-level action
       if (order?.order_items) {
@@ -206,12 +194,7 @@ export default function KitchenDisplayPage() {
       }
 
       // Don't set delivery/takeout orders to "served" — they follow a different flow
-      if (
-        !(
-          newStatus === 'SERVED' &&
-          ((order as any)?.order_type === 'delivery' || (order as any)?.order_type === 'takeout')
-        )
-      ) {
+      if (!(newStatus === 'SERVED' && order && (isDeliveryOrder(order) || isTakeoutOrder(order)))) {
         await updateOrderStatus.mutateAsync({
           orderId,
           status: newStatus,
@@ -297,7 +280,11 @@ export default function KitchenDisplayPage() {
   };
 
   // Handle item status update - also auto-update order status if needed
-  const handleItemStatusUpdate = async (itemId: string, newStatus: string, order: any) => {
+  const handleItemStatusUpdate = async (
+    itemId: string,
+    newStatus: string,
+    order: OrderWithDetails,
+  ) => {
     try {
       // If order is still "new", automatically change to "preparing"
       if (order.status === 'new') {
@@ -315,11 +302,10 @@ export default function KitchenDisplayPage() {
       // Check if all items will be ready after this update
       if (newStatus === 'ready' && order.status === 'preparing') {
         const otherItems =
-          order.order_items?.filter(
-            (item: any) => item.id !== itemId && item.status !== 'cancelled',
-          ) || [];
+          order.order_items?.filter((item) => item.id !== itemId && item.status !== 'cancelled') ||
+          [];
         const allOthersReady = otherItems.every(
-          (item: any) => item.status === 'ready' || item.status === 'served',
+          (item) => item.status === 'ready' || item.status === 'served',
         );
 
         // If all other items are ready/served, update order status to ready
@@ -334,14 +320,13 @@ export default function KitchenDisplayPage() {
       // Check if all items will be served after this update
       if (newStatus === 'served' && order.status === 'ready') {
         const otherItems =
-          order.order_items?.filter(
-            (item: any) => item.id !== itemId && item.status !== 'cancelled',
-          ) || [];
-        const allOthersServed = otherItems.every((item: any) => item.status === 'served');
+          order.order_items?.filter((item) => item.id !== itemId && item.status !== 'cancelled') ||
+          [];
+        const allOthersServed = otherItems.every((item) => item.status === 'served');
 
         // If all other items are served, update order status to served
         // Skip for delivery/takeout orders — they follow different flows
-        if (allOthersServed && (order as any).order_type === 'dine_in') {
+        if (allOthersServed && isDineInOrder(order)) {
           await updateOrderStatus.mutateAsync({
             orderId: order.id,
             status: 'SERVED',
@@ -417,10 +402,10 @@ export default function KitchenDisplayPage() {
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-            {pendingApprovalOrders.map((order: any) => {
+            {pendingApprovalOrders.map((order) => {
               const elapsedMinutes = calculateElapsedTime(order.created_at);
               const itemCount =
-                order.order_items?.filter((i: any) => i.status !== 'cancelled').length || 0;
+                order.order_items?.filter((i) => i.status !== 'cancelled').length || 0;
 
               return (
                 <div
@@ -455,8 +440,8 @@ export default function KitchenDisplayPage() {
                   {/* Order Items Preview */}
                   <div className="space-y-1 mb-3 max-h-24 overflow-y-auto">
                     {order.order_items
-                      ?.filter((item: any) => item.status !== 'cancelled')
-                      .map((item: any) => (
+                      ?.filter((item) => item.status !== 'cancelled')
+                      .map((item) => (
                         <div
                           key={item.id}
                           className="flex items-center gap-1.5 text-sm text-gray-300"
@@ -495,7 +480,7 @@ export default function KitchenDisplayPage() {
 
       {/* Orders Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
-        {kitchenOrders?.map((order: any) => {
+        {kitchenOrders?.map((order) => {
           const elapsedMinutes = calculateElapsedTime(order.created_at);
           const timeColor = getTimeColor(elapsedMinutes, order.status);
           const cardColor = getCardColor(order, elapsedMinutes);
@@ -587,8 +572,8 @@ export default function KitchenDisplayPage() {
               {/* Order Items - Background color indicates status */}
               <div className="space-y-1.5 mb-3 max-h-48 overflow-y-auto">
                 {order.order_items
-                  ?.filter((item: any) => item.status !== 'cancelled')
-                  .map((item: any) => {
+                  ?.filter((item) => item.status !== 'cancelled')
+                  .map((item) => {
                     const itemStyle = getItemStatusStyle(item.status);
 
                     return (
@@ -653,7 +638,7 @@ export default function KitchenDisplayPage() {
                     {t('kitchen.allItemsReady')}
                   </button>
                 )}
-                {order.status === 'ready' && (order as any).order_type === 'dine_in' && (
+                {order.status === 'ready' && isDineInOrder(order) && (
                   <button
                     onClick={() => handleStatusUpdate(order.id, 'SERVED')}
                     className="w-full py-2.5 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
@@ -662,7 +647,7 @@ export default function KitchenDisplayPage() {
                     {t('kitchen.allServed')}
                   </button>
                 )}
-                {order.status === 'ready' && (order as any).order_type === 'delivery' && (
+                {order.status === 'ready' && isDeliveryOrder(order) && (
                   <button
                     onClick={async () => {
                       try {
@@ -680,7 +665,7 @@ export default function KitchenDisplayPage() {
                     {t('orders.outForDelivery')}
                   </button>
                 )}
-                {order.status === 'ready' && (order as any).order_type === 'takeout' && (
+                {order.status === 'ready' && isTakeoutOrder(order) && (
                   <div className="w-full py-2.5 bg-orange-100 border-2 border-orange-400 text-orange-700 text-base font-bold rounded-lg flex items-center justify-center gap-2">
                     <Package className="h-5 w-5" />
                     {t('takeout.readyForPickup')}

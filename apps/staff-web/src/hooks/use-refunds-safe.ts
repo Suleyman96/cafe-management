@@ -4,6 +4,7 @@
 
 import { QUERY_KEYS } from '@gustri/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRoutes } from '@/lib/api-routes';
 import { db } from '@/lib/supabase/wrapped-client';
 
 export function useOrderRefunds(orderId: string) {
@@ -25,7 +26,15 @@ export function useCreateRefund() {
       refund_method: 'cash' | 'card' | 'digital';
       order_item_ids?: string[] | null;
       notes?: string | null;
-    }) => db.refunds.create(params),
+    }) =>
+      apiRoutes.refunds.create(params.order_id, {
+        amount: params.amount,
+        reason: params.reason,
+        refund_method: params.refund_method,
+        processed_by: params.processed_by,
+        order_item_ids: params.order_item_ids,
+        notes: params.notes,
+      }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.order_id] });

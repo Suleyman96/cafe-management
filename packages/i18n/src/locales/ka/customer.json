@@ -64,7 +64,7 @@
   "deliveryLanding.labelPhone": "ტელეფონი *",
   "deliveryLanding.namePlaceholder": "თქვენი სრული სახელი",
   "deliveryLanding.notesPlaceholder": "სართული, კარის კოდი, ორიენტირები...",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.unavailableSubtext": "მიტანის სერვისი ამჟამად მიუწვდომელია. სცადეთ მოგვიანებით.",
   "deliveryLanding.unavailableTitle": "მიტანა მიუწვდომელია",
   "deliveryStatus.badgeDelivery": "მიტანა",

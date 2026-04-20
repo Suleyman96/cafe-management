@@ -12,52 +12,51 @@ import {
   useTasks,
   useTodaysTasks,
 } from '@/hooks/use-tasks';
-import { db } from '@/lib/supabase';
 import { renderHookWithProviders } from '../helpers/test-utils';
 
 describe('useTodaysTasks', () => {
   it('calls db.tasks.getTodaysTasks', () => {
-    renderHookWithProviders(() => useTodaysTasks());
-    expect(db.tasks.getTodaysTasks).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useTodaysTasks());
+    expect(mockDb.tasks.getTodaysTasks).toHaveBeenCalled();
   });
 });
 
 describe('useTasks', () => {
   it('calls db.tasks.findAll', () => {
-    renderHookWithProviders(() => useTasks());
-    expect(db.tasks.findAll).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useTasks());
+    expect(mockDb.tasks.findAll).toHaveBeenCalled();
   });
 
   it('passes options to findAll', () => {
     const opts = { status: 'pending', priority: 'high' };
-    renderHookWithProviders(() => useTasks(opts));
-    expect(db.tasks.findAll).toHaveBeenCalledWith(opts);
+    const { mockDb } = renderHookWithProviders(() => useTasks(opts));
+    expect(mockDb.tasks.findAll).toHaveBeenCalledWith(opts);
   });
 });
 
 describe('useMyTasks', () => {
   it('calls findMyTasks with staffId', () => {
-    renderHookWithProviders(() => useMyTasks('staff-1'));
-    expect(db.tasks.findMyTasks).toHaveBeenCalledWith('staff-1');
+    const { mockDb } = renderHookWithProviders(() => useMyTasks('staff-1'));
+    expect(mockDb.tasks.findMyTasks).toHaveBeenCalledWith('staff-1');
   });
 
   it('is disabled when staffId is undefined', () => {
-    renderHookWithProviders(() => useMyTasks(undefined));
-    expect(db.tasks.findMyTasks).not.toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useMyTasks(undefined));
+    expect(mockDb.tasks.findMyTasks).not.toHaveBeenCalled();
   });
 });
 
 describe('useOverdueTasksCount', () => {
   it('calls getOverdueCount', () => {
-    renderHookWithProviders(() => useOverdueTasksCount());
-    expect(db.tasks.getOverdueCount).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useOverdueTasksCount());
+    expect(mockDb.tasks.getOverdueCount).toHaveBeenCalled();
   });
 });
 
 describe('useRecurringTemplates', () => {
   it('calls getRecurringTemplates', () => {
-    renderHookWithProviders(() => useRecurringTemplates());
-    expect(db.tasks.getRecurringTemplates).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useRecurringTemplates());
+    expect(mockDb.tasks.getRecurringTemplates).toHaveBeenCalled();
   });
 });
 

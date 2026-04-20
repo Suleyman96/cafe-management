@@ -1,8 +1,10 @@
 'use client';
 
 import { ORDER_STATUS } from '@gustri/core';
+import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { Loader2, Search, X, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -16,7 +18,7 @@ import {
   useUpdateOrderStatus,
 } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
-import { supabase } from '@/lib/supabase/client';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 type OrderStatus =
   | 'pending_approval'
@@ -39,14 +41,14 @@ export default function OrdersPage() {
   const cancelOrderMutation = useCancelOrder();
   const formatPrice = useFormatPrice();
 
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [sourceFilter, setSourceFilter] = useState<OrderSource | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTableFilter, setSelectedTableFilter] = useState<string>('all');
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelOrderTarget, setCancelOrderTarget] = useState<any>(null);
+  const [cancelOrderTarget, setCancelOrderTarget] = useState<OrderWithDetails | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
 
@@ -59,33 +61,17 @@ export default function OrdersPage() {
     }
   }, []);
 
-  // Set up real-time subscriptions
-  useEffect(() => {
-    console.log('Setting up orders realtime subscription');
-    const channel = supabase
-      .channel('orders-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        refetch();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
-        refetch();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_payments' }, () => {
-        refetch();
-      })
-      .subscribe((status) => {
-        console.log('Orders subscription status:', status);
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch]);
+  // Real-time: invalidate queries on DB changes
+  useRealtimeSync('orders-realtime', [
+    { table: 'orders', queryKeys: [['orders'], ['active_orders']] },
+    { table: 'order_items', queryKeys: [['orders']] },
+    { table: 'order_payments', queryKeys: [['orders'], ['payments']] },
+  ]);
 
   // Handle status update — uses delivery-specific hooks for delivery orders
   const handleStatusUpdate = async (orderId: string, newStatus: OrderStatus) => {
     try {
-      const order = orders?.find((o: any) => o.id === orderId);
+      const order = orders?.find((o) => o.id === orderId);
       const isDelivery = order?.order_type === 'delivery';
 
       if (isDelivery && newStatus === 'out_for_delivery') {
@@ -136,7 +122,7 @@ export default function OrdersPage() {
       setCancelReason('');
       refetch();
     } catch (error) {
-      console.error('Failed to cancel order:', error);
+      Sentry.captureException(error);
       toast.error(t('orders.failedCancel'));
     } finally {
       setCancelling(false);
@@ -144,13 +130,13 @@ export default function OrdersPage() {
   };
 
   // Open cancel modal
-  const openCancelModal = (order: any) => {
+  const openCancelModal = (order: OrderWithDetails) => {
     setCancelOrderTarget(order);
     setShowCancelModal(true);
   };
 
   // Filter orders
-  const filteredOrders = orders?.filter((order: any) => {
+  const filteredOrders = orders?.filter((order) => {
     if (statusFilter !== 'all' && order.status !== statusFilter) return false;
     if (sourceFilter === 'delivery' && order.order_type !== 'delivery') return false;
     if (sourceFilter !== 'all' && sourceFilter !== 'delivery' && order.source !== sourceFilter)
@@ -254,7 +240,7 @@ export default function OrdersPage() {
 
       {/* Orders List */}
       <div className="space-y-3 sm:space-y-4">
-        {filteredOrders?.map((order: any) => (
+        {filteredOrders?.map((order) => (
           <OrderListCard
             key={order.id}
             order={order}

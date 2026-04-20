@@ -45,7 +45,6 @@ export default function TableDetailScreen() {
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
   const { t } = useTranslation('staff');
-  const { t: tCommon } = useTranslation('common');
 
   const { data: table, isLoading, error, refetch } = useTable(tableId);
   const { data: orders } = useOrders();

@@ -9,15 +9,19 @@
     "web": "expo start --web",
     "lint": "biome check ./src",
     "type-check": "tsc --noEmit",
-    "eas-build-post-install": "cd ../.. && npx turbo run build --filter=@gustri/database --filter=@gustri/core --filter=@gustri/api-client --filter=@gustri/i18n"
+    "eas-build-post-install": "cd ../.. && npx turbo run build --filter='./packages/*'"
   },
   "dependencies": {
     "@gustri/api-client": "workspace:*",
     "@gustri/core": "workspace:*",
     "@gustri/database": "workspace:*",
     "@gustri/i18n": "workspace:*",
+    "@gustri/queries": "workspace:*",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/netinfo": "^11.4.1",
+    "@tanstack/query-async-storage-persister": "^5.56.0",
+    "@tanstack/react-query-persist-client": "^5.56.0",
     "@react-navigation/bottom-tabs": "^7.15.6",
     "@react-navigation/drawer": "^7.9.5",
     "@react-navigation/native": "^7.1.34",

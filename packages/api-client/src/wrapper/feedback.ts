@@ -29,7 +29,10 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
       return result as CustomerFeedbackRow;
     },
 
-    findAll: async (status?: CustomerFeedbackRow['status']) => {
+    findAll: async (
+      status?: CustomerFeedbackRow['status'],
+      options?: { limit?: number; offset?: number },
+    ) => {
       let query = ctx.client
         .from('customer_feedback')
         .select(`
@@ -40,6 +43,13 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
 
       if (status) {
         query = query.eq('status', status);
+      }
+
+      // Apply pagination with sensible defaults
+      const limit = options?.limit ?? 200;
+      const offset = options?.offset ?? 0;
+      if (limit > 0) {
+        query = query.range(offset, offset + limit - 1);
       }
 
       const { data, error } = await query;

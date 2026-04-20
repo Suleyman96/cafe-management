@@ -5,8 +5,8 @@
 DO $$
 DECLARE
   user_id UUID;
-  user_email TEXT := 'hacilov@gmail.com';
-  user_password TEXT := 'test123456';
+  user_email TEXT := 'admin@test.com';
+  user_password TEXT := 'test1234';
 BEGIN
   -- Check if user exists
   SELECT id INTO user_id
@@ -78,6 +78,6 @@ SELECT
   s.role
 FROM auth.users u
 LEFT JOIN staff s ON s.auth_user_id = u.id
-WHERE u.email = 'hacilov@gmail.com';
+WHERE u.email = 'admin@test.com';
 
 

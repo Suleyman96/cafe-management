@@ -3,6 +3,7 @@
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { ArrowLeft, Check, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -123,7 +124,7 @@ export default function AddItemsPage() {
       toast.success(t('orders.itemsAddedToOrder'));
       router.push(`/orders/${orderId}`);
     } catch (error) {
-      console.error('Failed to add items:', error);
+      Sentry.captureException(error);
       toast.error(t('orders.failedAddItems'));
     } finally {
       setSubmitting(false);

@@ -1,12 +1,12 @@
 import { QUERY_KEYS } from '@gustri/core';
-import { waitFor } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useCreatePayment, useOrderPayments } from '@/hooks/use-payments';
-import { db } from '@/lib/supabase';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { apiRoutes } from '@/lib/api-routes';
+import { createWrapper, renderHookWithProviders } from '../helpers/test-utils';
 
 describe('Payment processing correctness', () => {
-  it('useCreatePayment calls db.payments.create with correct args', async () => {
+  it('useCreatePayment calls apiRoutes.payments.create with correct args', async () => {
     const payment = {
       order_id: 'order-1',
       amount: 50,
@@ -17,9 +17,9 @@ describe('Payment processing correctness', () => {
     const { result } = renderHookWithProviders(() => useCreatePayment());
     await result.current.mutateAsync(payment);
 
-    expect(db.payments.create).toHaveBeenCalledWith(
+    expect(apiRoutes.payments.create).toHaveBeenCalledWith(
+      'order-1',
       expect.objectContaining({
-        order_id: 'order-1',
         amount: 50,
         payment_method: 'card',
         received_by: 'staff-1',
@@ -44,8 +44,8 @@ describe('Payment processing correctness', () => {
   });
 
   it('useOrderPayments is disabled when orderId is empty', () => {
-    renderHookWithProviders(() => useOrderPayments(''));
-    expect(db.payments.findByOrderId).not.toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useOrderPayments(''));
+    expect(mockDb.payments.findByOrderId).not.toHaveBeenCalled();
   });
 
   it('useOrderPayments returns payment data', async () => {
@@ -53,9 +53,10 @@ describe('Payment processing correctness', () => {
       { id: 'p1', amount: 30, payment_method: 'cash' },
       { id: 'p2', amount: 70, payment_method: 'card' },
     ];
-    (db.payments.findByOrderId as any).mockResolvedValueOnce(mockPayments);
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.payments.findByOrderId as any).mockResolvedValueOnce(mockPayments);
 
-    const { result } = renderHookWithProviders(() => useOrderPayments('order-1'));
+    const { result } = renderHook(() => useOrderPayments('order-1'), { wrapper });
 
     await waitFor(() => expect(result.current.data).toEqual(mockPayments));
   });

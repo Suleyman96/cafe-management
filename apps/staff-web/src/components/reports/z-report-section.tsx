@@ -1,9 +1,9 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { NumberInput } from '@gustri/ui';
 import { Banknote, CreditCard, Receipt, Smartphone, TrendingDown, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
-import { NumberInput } from '@/components/ui/number-input';
 
 interface ZReportData {
   cashTotal: number;

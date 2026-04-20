@@ -8,20 +8,21 @@ import {
   useSchedulesByDateRange,
   useUpdateSchedule,
 } from '@/hooks/use-schedules';
-import { db } from '@/lib/supabase';
 import { renderHookWithProviders } from '../helpers/test-utils';
 
 describe('useSchedulesByDateRange', () => {
   it('calls db.schedules.findByDateRange', () => {
-    renderHookWithProviders(() => useSchedulesByDateRange('2026-03-01', '2026-03-31'));
-    expect(db.schedules.findByDateRange).toHaveBeenCalledWith('2026-03-01', '2026-03-31');
+    const { mockDb } = renderHookWithProviders(() =>
+      useSchedulesByDateRange('2026-03-01', '2026-03-31'),
+    );
+    expect(mockDb.schedules.findByDateRange).toHaveBeenCalledWith('2026-03-01', '2026-03-31');
   });
 });
 
 describe('useSchedulesByDate', () => {
   it('calls db.schedules.findByDate', () => {
-    renderHookWithProviders(() => useSchedulesByDate('2026-03-19'));
-    expect(db.schedules.findByDate).toHaveBeenCalledWith('2026-03-19');
+    const { mockDb } = renderHookWithProviders(() => useSchedulesByDate('2026-03-19'));
+    expect(mockDb.schedules.findByDate).toHaveBeenCalledWith('2026-03-19');
   });
 });
 

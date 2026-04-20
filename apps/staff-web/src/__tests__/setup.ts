@@ -180,6 +180,30 @@ vi.mock('@/lib/supabase/wrapped-client', () => ({
   supabase: {},
 }));
 
+// Mock API routes (used by hooks that now call server-side endpoints)
+vi.mock('@/lib/api-routes', () => ({
+  apiRoutes: {
+    orders: {
+      create: vi.fn().mockResolvedValue({ order: { id: 'new-order', status: 'new' } }),
+    },
+    discounts: {
+      apply: vi.fn().mockResolvedValue({ success: true }),
+    },
+    payments: {
+      create: vi.fn().mockResolvedValue({ payment: { id: 'new-payment', amount: 50 } }),
+    },
+    refunds: {
+      create: vi.fn().mockResolvedValue({ refund: { id: 'new-refund' } }),
+    },
+    stock: {
+      adjust: vi.fn().mockResolvedValue({ stockItem: { id: 'stock-1', quantity: 10 } }),
+    },
+    settings: {
+      update: vi.fn().mockResolvedValue({ settings: {} }),
+    },
+  },
+}));
+
 // Mock raw Supabase client (used by use-auth.ts)
 vi.mock('@/lib/supabase/client', () => ({
   supabase: {

@@ -4,7 +4,7 @@
 
 import { QUERY_KEYS } from '@gustri/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { db } from '@/lib/supabase/wrapped-client';
+import { apiRoutes } from '@/lib/api-routes';
 
 export function useApplyDiscount() {
   const queryClient = useQueryClient();
@@ -16,7 +16,7 @@ export function useApplyDiscount() {
       discount_reason?: string | null;
       discount_applied_by: string;
     }) =>
-      db.orders.applyDiscount(params.orderId, {
+      apiRoutes.discounts.apply(params.orderId, {
         discount_type: params.discount_type,
         discount_value: params.discount_value,
         discount_reason: params.discount_reason,

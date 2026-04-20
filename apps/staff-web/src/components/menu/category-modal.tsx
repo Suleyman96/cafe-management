@@ -2,10 +2,10 @@
 
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { Button, NumberInput } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { NumberInput } from '@/components/ui/number-input';
 import { useCreateCategory, useUpdateCategory } from '@/hooks';
 
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -73,7 +73,7 @@ export function CategoryModal({ category, onClose }: CategoryModalProps) {
 
       onClose();
     } catch (error: unknown) {
-      console.error('Error saving category:', error);
+      Sentry.captureException(error);
 
       // Show user-friendly error message
       const errorMessage = error instanceof Error ? error.message : t('menu.failedSaveCategory');

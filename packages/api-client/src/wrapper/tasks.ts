@@ -13,6 +13,8 @@ export function createTasksWrapper(ctx: WrapperContext) {
       assignedTo?: string;
       dueBefore?: string;
       isTemplate?: boolean;
+      limit?: number;
+      offset?: number;
     }) => {
       let query = ctx.client
         .from('tasks')
@@ -41,6 +43,13 @@ export function createTasksWrapper(ctx: WrapperContext) {
         } else {
           query = query.eq('is_recurring', false);
         }
+      }
+
+      // Apply pagination with sensible defaults
+      const limit = options?.limit ?? 200;
+      const offset = options?.offset ?? 0;
+      if (limit > 0) {
+        query = query.range(offset, offset + limit - 1);
       }
 
       const { data, error } = await query;

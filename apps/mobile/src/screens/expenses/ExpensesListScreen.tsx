@@ -21,6 +21,7 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
+import { BRAND_PRIMARY } from '@/theme';
 import type { Expense } from '@/types';
 
 const PAYMENT_METHODS: Expense['payment_method'][] = ['cash', 'card', 'digital', 'bank_transfer'];
@@ -401,7 +402,7 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
   summaryCard: { flex: 1 },
   totalValue: { fontWeight: '700', color: '#ef4444' },
-  transValue: { fontWeight: '700', color: '#367B8B' },
+  transValue: { fontWeight: '700', color: BRAND_PRIMARY },
   topCatValue: { fontWeight: '700', color: '#8b5cf6' },
   breakdownCard: { marginHorizontal: 16, marginBottom: 8 },
   breakdownRow: { marginBottom: 8 },

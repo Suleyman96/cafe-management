@@ -2,6 +2,7 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -32,7 +33,7 @@ export default function FeedbackPage() {
       await markRead.mutateAsync({ feedbackId, staffId: staff.id });
       toast.success(t('feedback.markedAsRead'));
     } catch (error) {
-      console.error('Error marking feedback as read:', error);
+      Sentry.captureException(error);
       toast.error(t('feedback.failedMarkRead'));
     }
   };

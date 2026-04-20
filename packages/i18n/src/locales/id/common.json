@@ -47,6 +47,8 @@
   "optional": "Opsional",
   "pending": "Menunggu",
   "phone": "Telepon",
+  "phonePlaceholder": "+XX XXX XXX XXXX",
+  "whatsappPlaceholder": "https://wa.me/XXXXXXXXXXXX",
   "placingOrder": "Memproses Pesanan...",
   "quantity": "Jumlah",
   "refresh": "Segarkan",

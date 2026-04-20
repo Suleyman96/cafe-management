@@ -13,10 +13,10 @@ import {
   RefreshCw,
   Zap,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAcknowledgeWaiterCall, useAuth, useResolveWaiterCall, useWaiterCalls } from '@/hooks';
-import { supabase } from '@/lib/supabase/client';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 type FilterStatus = 'all' | 'pending' | 'acknowledged' | 'resolved';
 
@@ -34,19 +34,10 @@ export default function WaiterCallsPage() {
     return call.status === filter;
   });
 
-  // Set up real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('waiter-calls-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'waiter_calls' }, () => {
-        refetch();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch]);
+  // Real-time: invalidate queries on DB changes
+  useRealtimeSync('waiter-calls-realtime', [
+    { table: 'waiter_calls', queryKeys: [['waiter_calls'], ['waiter_calls_count']] },
+  ]);
 
   // Get icon for call type
   const getCallTypeIcon = (type: string) => {

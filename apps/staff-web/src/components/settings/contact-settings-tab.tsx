@@ -25,7 +25,7 @@ export function ContactSettingsTab({ formData, onChange }: SettingsTabProps) {
               type="tel"
               value={formData.contact_phone || ''}
               onChange={(e) => onChange('contact_phone', e.target.value || null)}
-              placeholder="+994 50 123 45 67"
+              placeholder={t('phonePlaceholder', { ns: 'common' })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -61,7 +61,7 @@ export function ContactSettingsTab({ formData, onChange }: SettingsTabProps) {
             label={t('cafeSettings.whatsapp')}
             value={formData.social_whatsapp}
             onChange={(v) => onChange('social_whatsapp', v)}
-            placeholder="https://wa.me/994501234567"
+            placeholder={t('whatsappPlaceholder', { ns: 'common' })}
           />
           <SocialInput
             label="TikTok"

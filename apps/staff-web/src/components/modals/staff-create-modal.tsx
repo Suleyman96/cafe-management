@@ -147,7 +147,7 @@ export function StaffCreateModal({ currentUserRole, onClose, onSuccess }: StaffC
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="+994 XX XXX XX XX"
+              placeholder={t('phonePlaceholder', { ns: 'common' })}
             />
           </div>
 

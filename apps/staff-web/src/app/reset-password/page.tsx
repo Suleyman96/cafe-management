@@ -1,11 +1,11 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { GustriLogo } from '@gustri/ui';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { GustriLogo } from '@/components/ui/gustri-logo';
 import { supabase } from '@/lib/supabase/client';
 
 export default function ResetPasswordPage() {

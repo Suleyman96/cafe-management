@@ -1,0 +1,83 @@
+import type { ExpenseCategoryInsert, ExpenseInsert, ExpenseUpdate } from '@gustri/database';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { invalidateExpenses } from '../invalidation';
+import { useDb } from '../provider';
+import type { MutationCallbacks } from './types';
+
+// ─── Expenses ───────────────────────────────────────────────────────────────
+
+export function useCreateExpense(options?: MutationCallbacks) {
+  const db = useDb();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ExpenseInsert) => db.expenses.create(data),
+    onSuccess: () => {
+      invalidateExpenses(queryClient);
+    },
+    onError: options?.onError,
+  });
+}
+
+export function useUpdateExpense(options?: MutationCallbacks) {
+  const db = useDb();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<ExpenseUpdate> }) =>
+      db.expenses.update(id, updates),
+    onSuccess: () => {
+      invalidateExpenses(queryClient);
+    },
+    onError: options?.onError,
+  });
+}
+
+export function useDeleteExpense(options?: MutationCallbacks) {
+  const db = useDb();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => db.expenses.delete(id),
+    onSuccess: () => {
+      invalidateExpenses(queryClient);
+    },
+    onError: options?.onError,
+  });
+}
+
+// ─── Expense Categories ─────────────────────────────────────────────────────
+
+export function useCreateExpenseCategory(options?: MutationCallbacks) {
+  const db = useDb();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ExpenseCategoryInsert) => db.expenseCategories.create(data),
+    onSuccess: () => {
+      invalidateExpenses(queryClient);
+    },
+    onError: options?.onError,
+  });
+}
+
+export function useUpdateExpenseCategory(options?: MutationCallbacks) {
+  const db = useDb();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<ExpenseCategoryInsert> }) =>
+      db.expenseCategories.update(id, updates),
+    onSuccess: () => {
+      invalidateExpenses(queryClient);
+    },
+    onError: options?.onError,
+  });
+}
+
+export function useDeleteExpenseCategory(options?: MutationCallbacks) {
+  const db = useDb();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => db.expenseCategories.delete(id),
+    onSuccess: () => {
+      invalidateExpenses(queryClient);
+    },
+    onError: options?.onError,
+  });
+}

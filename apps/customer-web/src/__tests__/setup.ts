@@ -10,6 +10,19 @@ vi.mock('@/lib/supabase', () => ({
       subscribe: vi.fn().mockReturnThis(),
     }),
     removeChannel: vi.fn(),
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+  },
+}));
+
+// Mock API routes (prevents real fetch calls to staff-web API)
+vi.mock('@/lib/api-routes', () => ({
+  apiRoutes: {
+    customerOrders: {
+      create: vi
+        .fn()
+        .mockResolvedValue({ order: { id: 'test-order-id', status: 'pending_approval' } }),
+      addItems: vi.fn().mockResolvedValue({ items: [] }),
+    },
   },
 }));
 

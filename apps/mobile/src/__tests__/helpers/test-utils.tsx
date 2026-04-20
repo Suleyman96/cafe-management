@@ -1,6 +1,9 @@
+import type { SupabaseWrapper } from '@gustri/api-client';
+import { DbProvider } from '@gustri/queries';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import { createMockDb } from './mock-db';
 
 export function createTestQueryClient() {
   return new QueryClient({
@@ -13,18 +16,23 @@ export function createTestQueryClient() {
 
 export function createWrapper() {
   const queryClient = createTestQueryClient();
+  const mockDb = createMockDb() as unknown as SupabaseWrapper;
   return {
     wrapper: ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <DbProvider db={mockDb}>{children}</DbProvider>
+      </QueryClientProvider>
     ),
     queryClient,
+    mockDb,
   };
 }
 
 export function renderHookWithProviders<T>(hook: () => T) {
-  const { wrapper, queryClient } = createWrapper();
+  const { wrapper, queryClient, mockDb } = createWrapper();
   return {
     ...renderHook(hook, { wrapper }),
     queryClient,
+    mockDb,
   };
 }

@@ -64,7 +64,7 @@
   "deliveryLanding.labelPhone": "電話番号 *",
   "deliveryLanding.namePlaceholder": "お名前",
   "deliveryLanding.notesPlaceholder": "階数、ドアコード、目印...",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.unavailableSubtext": "現在デリバリー注文はご利用いただけません。後でもう一度お試しください。",
   "deliveryLanding.unavailableTitle": "デリバリーは利用できません",
   "deliveryStatus.badgeDelivery": "デリバリー",

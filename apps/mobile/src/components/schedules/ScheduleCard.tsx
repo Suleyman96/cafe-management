@@ -3,10 +3,11 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, IconButton } from 'react-native-paper';
 import { Text } from '@/lib/paper-compat';
+import { BRAND_PRIMARY } from '@/theme';
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: '#6b7280',
-  in_progress: '#367B8B',
+  in_progress: BRAND_PRIMARY,
   completed: '#10b981',
   missed: '#ef4444',
 };
@@ -123,7 +124,7 @@ export const ScheduleCard = React.memo(function ScheduleCard({
                 compact
                 mode="contained"
                 onPress={() => onMarkInProgress(schedule.id)}
-                style={{ backgroundColor: '#367B8B' }}
+                style={{ backgroundColor: BRAND_PRIMARY }}
                 labelStyle={styles.actionLabel}
               >
                 {t('schedules.startShift')}

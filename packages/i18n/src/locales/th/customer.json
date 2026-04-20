@@ -64,7 +64,7 @@
   "deliveryLanding.labelPhone": "โทรศัพท์ *",
   "deliveryLanding.namePlaceholder": "ชื่อ-นามสกุล",
   "deliveryLanding.notesPlaceholder": "ชั้น รหัสประตู จุดสังเกต...",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.unavailableSubtext": "บริการจัดส่งไม่พร้อมให้บริการในขณะนี้ กรุณาลองใหม่ภายหลัง",
   "deliveryLanding.unavailableTitle": "ไม่สามารถจัดส่งได้",
   "deliveryStatus.badgeDelivery": "จัดส่ง",

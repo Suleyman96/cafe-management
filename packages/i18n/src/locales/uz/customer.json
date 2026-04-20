@@ -64,7 +64,7 @@
   "deliveryLanding.labelPhone": "Telefon *",
   "deliveryLanding.namePlaceholder": "To'liq ismingiz",
   "deliveryLanding.notesPlaceholder": "Qavat raqami, eshik kodi, mo'ljal...",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.unavailableSubtext": "Yetkazib berish xizmati hozirda mavjud emas. Keyinroq qayta urinib ko'ring.",
   "deliveryLanding.unavailableTitle": "Yetkazib berish mavjud emas",
   "deliveryStatus.badgeDelivery": "Yetkazib berish",

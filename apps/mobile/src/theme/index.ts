@@ -1,5 +1,8 @@
 import { MD3DarkTheme, MD3LightTheme } from 'react-native-paper';
 
+/** Brand primary color — single source of truth for the teal accent used across the app. */
+export const BRAND_PRIMARY = '#367B8B';
+
 export const lightTheme = {
   ...MD3LightTheme,
   colors: {
@@ -24,7 +27,7 @@ export const kitchenDarkTheme = {
 
 export const ORDER_STATUS_COLORS: Record<string, string> = {
   pending_approval: '#f97316',
-  new: '#367B8B',
+  new: BRAND_PRIMARY,
   preparing: '#f59e0b',
   ready: '#10b981',
   served: '#06b6d4',
@@ -37,7 +40,7 @@ export const ORDER_STATUS_COLORS: Record<string, string> = {
 export const TABLE_STATUS_COLORS: Record<string, string> = {
   free: '#10b981',
   occupied: '#f59e0b',
-  reserved: '#367B8B',
+  reserved: BRAND_PRIMARY,
   closed: '#6b7280',
 };
 
@@ -45,6 +48,6 @@ export const WAITER_CALL_REASON_COLORS: Record<string, string> = {
   emergency: '#ef4444',
   complaint: '#f97316',
   bill: '#10b981',
-  question: '#367B8B',
+  question: BRAND_PRIMARY,
   assistance: '#6b7280',
 };

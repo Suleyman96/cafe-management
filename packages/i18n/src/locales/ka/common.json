@@ -47,6 +47,8 @@
   "optional": "არასავალდებულო",
   "pending": "მოლოდინში",
   "phone": "ტელეფონი",
+  "phonePlaceholder": "+XX XXX XXX XXXX",
+  "whatsappPlaceholder": "https://wa.me/XXXXXXXXXXXX",
   "placingOrder": "შეკვეთა ფორმდება...",
   "quantity": "რაოდენობა",
   "refresh": "განახლება",

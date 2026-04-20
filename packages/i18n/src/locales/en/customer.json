@@ -154,7 +154,7 @@
   "deliveryLanding.labelName": "Name *",
   "deliveryLanding.namePlaceholder": "Your full name",
   "deliveryLanding.labelPhone": "Phone *",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.labelAddress": "Delivery Address *",
   "deliveryLanding.addressPlaceholder": "Full delivery address",
   "deliveryLanding.labelNotes": "Delivery Notes (optional)",

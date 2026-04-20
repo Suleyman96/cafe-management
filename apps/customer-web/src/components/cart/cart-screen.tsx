@@ -1,11 +1,12 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { ArrowLeft, ClipboardList } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useAddOrderItems, useCreateOrder, useOrder } from '@/hooks/use-order';
 import { useCafeSettings } from '@/hooks/use-settings';
@@ -85,7 +86,7 @@ export function CartScreen({ tableId }: CartScreenProps) {
       clearCart();
       router.push(`/table/${tableId}/order`);
     } catch (error) {
-      console.error('Error placing order:', error);
+      Sentry.captureException(error);
       toast.error(t('cart.orderError'));
     }
   };

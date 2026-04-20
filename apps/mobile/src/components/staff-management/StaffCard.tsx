@@ -3,10 +3,11 @@ import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, Text } from 'react-native-paper';
+import { BRAND_PRIMARY } from '@/theme';
 
 export const ROLE_COLORS: Record<string, string> = {
   owner: '#8b5cf6',
-  admin: '#367B8B',
+  admin: BRAND_PRIMARY,
   waiter: '#10b981',
   kitchen: '#f59e0b',
 };

@@ -1,9 +1,9 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { LoadingSpinner } from '@gustri/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAuth } from '@/hooks/use-auth';
 
 interface ProtectedRouteProps {

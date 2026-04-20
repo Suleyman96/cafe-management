@@ -6,18 +6,21 @@ import {
   useCreateOrder,
   useOrder,
 } from '@/hooks/use-order';
+import { apiRoutes } from '@/lib/api-routes';
 import { db, supabase } from '@/lib/supabase';
 import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useOrder', () => {
-  it('calls db.orders.findActiveByTable with tableId', () => {
+  it('calls supabase.rpc with get_active_order_for_table', () => {
     renderHookWithProviders(() => useOrder('table-1'));
-    expect(db.orders.findActiveByTable).toHaveBeenCalledWith('table-1');
+    expect(supabase.rpc).toHaveBeenCalledWith('get_active_order_for_table', {
+      p_table_id: 'table-1',
+    });
   });
 
   it('is disabled when tableId is empty', () => {
     renderHookWithProviders(() => useOrder(''));
-    expect(db.orders.findActiveByTable).not.toHaveBeenCalled();
+    expect(supabase.rpc).not.toHaveBeenCalled();
   });
 
   it('sets up a realtime channel', () => {
@@ -33,21 +36,17 @@ describe('useOrder', () => {
 });
 
 describe('useCreateOrder', () => {
-  it('calls db.orders.create with correct shape', async () => {
+  it('calls apiRoutes.customerOrders.create with correct shape', async () => {
     const { result } = renderHookWithProviders(() => useCreateOrder());
 
     await result.current.mutateAsync({ tableId: 'table-1', notes: 'No ice', tenantId: 'tenant-1' });
 
-    expect(db.orders.create).toHaveBeenCalledWith(
+    expect(apiRoutes.customerOrders.create).toHaveBeenCalledWith(
       expect.objectContaining({
         table_id: 'table-1',
         tenant_id: 'tenant-1',
+        order_type: 'dine_in',
         customer_notes: 'No ice',
-        status: 'pending_approval',
-        source: 'customer',
-        subtotal: 0,
-        tax: 0,
-        total: 0,
       }),
     );
   });
@@ -108,7 +107,7 @@ describe('useCancelOrderItem', () => {
 });
 
 describe('useAddOrderItems', () => {
-  it('maps notes undefined to null and sets status to pending', async () => {
+  it('calls apiRoutes.customerOrders.addItems with mapped items', async () => {
     const { result } = renderHookWithProviders(() => useAddOrderItems());
 
     await result.current.mutateAsync({
@@ -120,26 +119,22 @@ describe('useAddOrderItems', () => {
       ],
     });
 
-    expect(db.orderItems.create).toHaveBeenCalledWith([
+    expect(apiRoutes.customerOrders.addItems).toHaveBeenCalledWith('order-1', [
       {
-        order_id: 'order-1',
-        tenant_id: 'tenant-1',
         menu_item_id: 'm1',
         item_name: 'Coffee',
         item_price: 5,
         quantity: 1,
         notes: null,
-        status: 'pending',
+        tenant_id: 'tenant-1',
       },
       {
-        order_id: 'order-1',
-        tenant_id: 'tenant-1',
         menu_item_id: 'm2',
         item_name: 'Tea',
         item_price: 3,
         quantity: 2,
         notes: 'Hot',
-        status: 'pending',
+        tenant_id: 'tenant-1',
       },
     ]);
   });
@@ -202,13 +197,13 @@ describe('useCancelOrder - scoped invalidation', () => {
 describe('useOrder - data flow', () => {
   it('returns fetched order data', async () => {
     const mockOrder = { id: 'o1', table_id: 't1', status: 'new', items: [] };
-    (db.orders.findActiveByTable as any).mockResolvedValueOnce(mockOrder);
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
     const { result } = renderHookWithProviders(() => useOrder('t1'));
     await waitFor(() => expect(result.current.data).toEqual(mockOrder));
   });
 
-  it('reports error when findActiveByTable rejects', async () => {
-    (db.orders.findActiveByTable as any).mockRejectedValueOnce(new Error('DB error'));
+  it('reports error when rpc rejects', async () => {
+    (supabase.rpc as any).mockResolvedValueOnce({ data: null, error: new Error('DB error') });
     const { result } = renderHookWithProviders(() => useOrder('t1'));
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
@@ -219,7 +214,7 @@ describe('useOrder - data flow', () => {
 describe('useOrder - realtime lifecycle', () => {
   it('subscribes to order_items when orderId is available', async () => {
     const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
-    (db.orders.findActiveByTable as any).mockResolvedValueOnce(mockOrder);
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
 
     renderHookWithProviders(() => useOrder('table-1'));
 
@@ -240,7 +235,7 @@ describe('useOrder - realtime lifecycle', () => {
   });
 
   it('does not subscribe to order_items when no active order', async () => {
-    (db.orders.findActiveByTable as any).mockResolvedValueOnce(null);
+    (supabase.rpc as any).mockResolvedValueOnce({ data: null, error: null });
 
     const { result } = renderHookWithProviders(() => useOrder('table-1'));
 
@@ -254,7 +249,7 @@ describe('useOrder - realtime lifecycle', () => {
 
   it('tears down old channel when orderId changes', async () => {
     const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
-    (db.orders.findActiveByTable as any).mockResolvedValueOnce(mockOrder);
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
 
     renderHookWithProviders(() => useOrder('table-1'));
 
@@ -269,7 +264,7 @@ describe('useOrder - realtime lifecycle', () => {
 
   it('cleans up channel on unmount even with active order', async () => {
     const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
-    (db.orders.findActiveByTable as any).mockResolvedValueOnce(mockOrder);
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
 
     const { unmount } = renderHookWithProviders(() => useOrder('table-1'));
 
@@ -303,7 +298,7 @@ describe('useOrder - realtime lifecycle', () => {
 
   it('order_items channel callback invokes invalidateQueries', async () => {
     const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
-    (db.orders.findActiveByTable as any).mockResolvedValueOnce(mockOrder);
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
 
     const { queryClient } = renderHookWithProviders(() => useOrder('table-1'));
 

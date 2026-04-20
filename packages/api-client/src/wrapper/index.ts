@@ -31,60 +31,127 @@ import { createWasteWrapper } from './waste';
 export class SupabaseWrapper {
   private ctx: WrapperContext;
 
-  // Domain wrappers
-  tables;
-  orders;
-  orderItems;
-  menuItems;
-  categories;
-  staff;
-  feedback;
-  payments;
-  waiterCalls;
-  settings;
-  stockItems;
-  expenseCategories;
-  expenses;
-  schedules;
-  waste;
-  tasks;
-  refunds;
-  tenants;
-  deliveryCustomers;
-  rpc;
-  views;
-  realtime;
+  // Cached domain wrappers (lazy-initialized)
+  private _tables?: ReturnType<typeof createTablesWrapper>;
+  private _orders?: ReturnType<typeof createOrdersWrapper>;
+  private _orderItems?: ReturnType<typeof createOrderItemsWrapper>;
+  private _menuItems?: ReturnType<typeof createMenuItemsWrapper>;
+  private _categories?: ReturnType<typeof createCategoriesWrapper>;
+  private _staff?: ReturnType<typeof createStaffWrapper>;
+  private _feedback?: ReturnType<typeof createFeedbackWrapper>;
+  private _payments?: ReturnType<typeof createPaymentsWrapper>;
+  private _waiterCalls?: ReturnType<typeof createWaiterCallsWrapper>;
+  private _settings?: ReturnType<typeof createSettingsWrapper>;
+  private _stockItems?: ReturnType<typeof createStockItemsWrapper>;
+  private _expenseCategories?: ReturnType<typeof createExpenseCategoriesWrapper>;
+  private _expenses?: ReturnType<typeof createExpensesWrapper>;
+  private _schedules?: ReturnType<typeof createSchedulesWrapper>;
+  private _waste?: ReturnType<typeof createWasteWrapper>;
+  private _tasks?: ReturnType<typeof createTasksWrapper>;
+  private _refunds?: ReturnType<typeof createRefundsWrapper>;
+  private _tenants?: ReturnType<typeof createTenantsWrapper>;
+  private _deliveryCustomers?: ReturnType<typeof createDeliveryCustomersWrapper>;
+  private _rpc?: ReturnType<typeof createRpcWrapper>;
+  private _views?: ReturnType<typeof createViewsWrapper>;
+  private _realtime?: ReturnType<typeof createRealtimeWrapper>;
 
   constructor(client: SupabaseClient<Database>) {
-    // Create context with both typed and untyped clients
     this.ctx = {
       client,
       anyClient: client as AnySupabaseClient,
     };
+  }
 
-    // Initialize all domain wrappers
-    this.tables = createTablesWrapper(this.ctx);
-    this.orders = createOrdersWrapper(this.ctx);
-    this.orderItems = createOrderItemsWrapper(this.ctx);
-    this.menuItems = createMenuItemsWrapper(this.ctx);
-    this.categories = createCategoriesWrapper(this.ctx);
-    this.staff = createStaffWrapper(this.ctx);
-    this.feedback = createFeedbackWrapper(this.ctx);
-    this.payments = createPaymentsWrapper(this.ctx);
-    this.waiterCalls = createWaiterCallsWrapper(this.ctx);
-    this.settings = createSettingsWrapper(this.ctx);
-    this.stockItems = createStockItemsWrapper(this.ctx);
-    this.expenseCategories = createExpenseCategoriesWrapper(this.ctx);
-    this.expenses = createExpensesWrapper(this.ctx);
-    this.schedules = createSchedulesWrapper(this.ctx);
-    this.waste = createWasteWrapper(this.ctx);
-    this.tasks = createTasksWrapper(this.ctx);
-    this.tenants = createTenantsWrapper(this.ctx);
-    this.refunds = createRefundsWrapper(this.ctx);
-    this.deliveryCustomers = createDeliveryCustomersWrapper(this.ctx);
-    this.rpc = createRpcWrapper(this.ctx);
-    this.views = createViewsWrapper(this.ctx);
-    this.realtime = createRealtimeWrapper(this.ctx);
+  // Domain wrappers — lazy-initialized on first access
+  get tables() {
+    if (!this._tables) this._tables = createTablesWrapper(this.ctx);
+    return this._tables;
+  }
+  get orders() {
+    if (!this._orders) this._orders = createOrdersWrapper(this.ctx);
+    return this._orders;
+  }
+  get orderItems() {
+    if (!this._orderItems) this._orderItems = createOrderItemsWrapper(this.ctx);
+    return this._orderItems;
+  }
+  get menuItems() {
+    if (!this._menuItems) this._menuItems = createMenuItemsWrapper(this.ctx);
+    return this._menuItems;
+  }
+  get categories() {
+    if (!this._categories) this._categories = createCategoriesWrapper(this.ctx);
+    return this._categories;
+  }
+  get staff() {
+    if (!this._staff) this._staff = createStaffWrapper(this.ctx);
+    return this._staff;
+  }
+  get feedback() {
+    if (!this._feedback) this._feedback = createFeedbackWrapper(this.ctx);
+    return this._feedback;
+  }
+  get payments() {
+    if (!this._payments) this._payments = createPaymentsWrapper(this.ctx);
+    return this._payments;
+  }
+  get waiterCalls() {
+    if (!this._waiterCalls) this._waiterCalls = createWaiterCallsWrapper(this.ctx);
+    return this._waiterCalls;
+  }
+  get settings() {
+    if (!this._settings) this._settings = createSettingsWrapper(this.ctx);
+    return this._settings;
+  }
+  get stockItems() {
+    if (!this._stockItems) this._stockItems = createStockItemsWrapper(this.ctx);
+    return this._stockItems;
+  }
+  get expenseCategories() {
+    if (!this._expenseCategories)
+      this._expenseCategories = createExpenseCategoriesWrapper(this.ctx);
+    return this._expenseCategories;
+  }
+  get expenses() {
+    if (!this._expenses) this._expenses = createExpensesWrapper(this.ctx);
+    return this._expenses;
+  }
+  get schedules() {
+    if (!this._schedules) this._schedules = createSchedulesWrapper(this.ctx);
+    return this._schedules;
+  }
+  get waste() {
+    if (!this._waste) this._waste = createWasteWrapper(this.ctx);
+    return this._waste;
+  }
+  get tasks() {
+    if (!this._tasks) this._tasks = createTasksWrapper(this.ctx);
+    return this._tasks;
+  }
+  get refunds() {
+    if (!this._refunds) this._refunds = createRefundsWrapper(this.ctx);
+    return this._refunds;
+  }
+  get tenants() {
+    if (!this._tenants) this._tenants = createTenantsWrapper(this.ctx);
+    return this._tenants;
+  }
+  get deliveryCustomers() {
+    if (!this._deliveryCustomers)
+      this._deliveryCustomers = createDeliveryCustomersWrapper(this.ctx);
+    return this._deliveryCustomers;
+  }
+  get rpc() {
+    if (!this._rpc) this._rpc = createRpcWrapper(this.ctx);
+    return this._rpc;
+  }
+  get views() {
+    if (!this._views) this._views = createViewsWrapper(this.ctx);
+    return this._views;
+  }
+  get realtime() {
+    if (!this._realtime) this._realtime = createRealtimeWrapper(this.ctx);
+    return this._realtime;
   }
 }
 

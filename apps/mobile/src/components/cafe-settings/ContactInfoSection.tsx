@@ -27,7 +27,7 @@ export function ContactInfoSection({ form, updateField }: SettingsSectionProps) 
           mode="outlined"
           keyboardType="phone-pad"
           dense
-          placeholder="+994 50 123 45 67"
+          placeholder={t('phonePlaceholder', { ns: 'common' })}
           style={styles.input}
         />
         <TextInput

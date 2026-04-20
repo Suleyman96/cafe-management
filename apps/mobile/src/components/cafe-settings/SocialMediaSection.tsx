@@ -11,7 +11,7 @@ const SOCIAL_FIELDS = [
     label: 'Instagram',
     placeholder: 'https://instagram.com/yourrestaurant',
   },
-  { key: 'social_whatsapp', label: 'WhatsApp', placeholder: 'https://wa.me/994501234567' },
+  { key: 'social_whatsapp', label: 'WhatsApp', placeholder: 'https://wa.me/XXXXXXXXXXXX' },
   { key: 'social_tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@yourrestaurant' },
   { key: 'social_telegram', label: 'Telegram', placeholder: 'https://t.me/yourrestaurant' },
   { key: 'social_line', label: 'LINE', placeholder: 'https://line.me/R/ti/p/@yourrestaurant' },

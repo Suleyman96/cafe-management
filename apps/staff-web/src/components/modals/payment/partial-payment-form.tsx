@@ -1,6 +1,6 @@
 'use client';
 
-import { NumberInput } from '@/components/ui/number-input';
+import { NumberInput } from '@gustri/ui';
 
 interface PartialPaymentFormProps {
   partialAmount: string;

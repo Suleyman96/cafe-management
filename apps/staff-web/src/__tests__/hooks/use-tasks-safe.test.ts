@@ -15,64 +15,63 @@ import {
   useTodaysTasks,
   useUpdateTask,
 } from '@/hooks/use-tasks-safe';
-import { db } from '@/lib/supabase/wrapped-client';
 import { renderHookWithProviders } from '../helpers/test-utils';
 
 describe('useTasks', () => {
   it('calls db.tasks.findAll', () => {
-    renderHookWithProviders(() => useTasks());
-    expect(db.tasks.findAll).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useTasks());
+    expect(mockDb.tasks.findAll).toHaveBeenCalled();
   });
 
   it('passes options to findAll', () => {
     const opts = { status: 'pending', priority: 'high' };
-    renderHookWithProviders(() => useTasks(opts));
-    expect(db.tasks.findAll).toHaveBeenCalledWith(opts);
+    const { mockDb } = renderHookWithProviders(() => useTasks(opts));
+    expect(mockDb.tasks.findAll).toHaveBeenCalledWith(opts);
   });
 });
 
 describe('useTask', () => {
   it('calls findById', () => {
-    renderHookWithProviders(() => useTask('task-1'));
-    expect(db.tasks.findById).toHaveBeenCalledWith('task-1');
+    const { mockDb } = renderHookWithProviders(() => useTask('task-1'));
+    expect(mockDb.tasks.findById).toHaveBeenCalledWith('task-1');
   });
 
   it('is disabled when id is empty', () => {
-    renderHookWithProviders(() => useTask(''));
-    expect(db.tasks.findById).not.toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useTask(''));
+    expect(mockDb.tasks.findById).not.toHaveBeenCalled();
   });
 });
 
 describe('useMyTasks', () => {
   it('calls findMyTasks with staffId', () => {
-    renderHookWithProviders(() => useMyTasks('staff-1'));
-    expect(db.tasks.findMyTasks).toHaveBeenCalledWith('staff-1');
+    const { mockDb } = renderHookWithProviders(() => useMyTasks('staff-1'));
+    expect(mockDb.tasks.findMyTasks).toHaveBeenCalledWith('staff-1');
   });
 
   it('is disabled when staffId is empty', () => {
-    renderHookWithProviders(() => useMyTasks(''));
-    expect(db.tasks.findMyTasks).not.toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useMyTasks(''));
+    expect(mockDb.tasks.findMyTasks).not.toHaveBeenCalled();
   });
 });
 
 describe('useTodaysTasks', () => {
   it('calls getTodaysTasks', () => {
-    renderHookWithProviders(() => useTodaysTasks());
-    expect(db.tasks.getTodaysTasks).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useTodaysTasks());
+    expect(mockDb.tasks.getTodaysTasks).toHaveBeenCalled();
   });
 });
 
 describe('useOverdueTasksCount', () => {
   it('calls getOverdueCount', () => {
-    renderHookWithProviders(() => useOverdueTasksCount());
-    expect(db.tasks.getOverdueCount).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useOverdueTasksCount());
+    expect(mockDb.tasks.getOverdueCount).toHaveBeenCalled();
   });
 });
 
 describe('useRecurringTemplates', () => {
   it('calls getRecurringTemplates', () => {
-    renderHookWithProviders(() => useRecurringTemplates());
-    expect(db.tasks.getRecurringTemplates).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useRecurringTemplates());
+    expect(mockDb.tasks.getRecurringTemplates).toHaveBeenCalled();
   });
 });
 

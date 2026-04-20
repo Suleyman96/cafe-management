@@ -2,6 +2,11 @@
 -- NOTE: Admin user (admin@test.com / test1234) is created via Supabase Admin API
 -- Run: npm run db:seed-user (or see scripts/create-admin-user.sh)
 
+-- Insert default tenant (required before any other data)
+INSERT INTO tenants (id, name, slug, plan) VALUES
+('00000000-0000-0000-0000-000000000001', 'Default Restaurant', 'default', 'pro')
+ON CONFLICT (id) DO NOTHING;
+
 -- Insert staff members (auth_user_id will be updated after user is created)
 INSERT INTO staff (id, tenant_id, email, full_name, role, auth_user_id, is_active) VALUES
 ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'admin@test.com', 'Admin User', 'admin', null, true),

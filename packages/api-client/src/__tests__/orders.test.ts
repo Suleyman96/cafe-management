@@ -29,6 +29,7 @@ describe('OrdersWrapper', () => {
     ctx = createMockContext({
       responses: {
         orders: { data: [validOrder], error: null },
+        orders_decrypted: { data: [validOrder], error: null },
       },
     });
     orders = createOrdersWrapper(ctx);
@@ -42,7 +43,7 @@ describe('OrdersWrapper', () => {
   it('findAll applies status filter', async () => {
     await orders.findAll({ status: 'new' });
     const calls = ctx.getCalls();
-    expect(calls[0].table).toBe('orders');
+    expect(calls[0].table).toBe('orders_decrypted');
     expect(calls[0].method).toBe('select');
   });
 
@@ -50,6 +51,7 @@ describe('OrdersWrapper', () => {
     const singleCtx = createMockContext({
       responses: {
         orders: { data: validOrder, error: null },
+        orders_decrypted: { data: validOrder, error: null },
       },
     });
     const singleOrders = createOrdersWrapper(singleCtx);
@@ -112,6 +114,7 @@ describe('OrdersWrapper', () => {
     const activeCtx = createMockContext({
       responses: {
         orders: { data: validOrder, error: null },
+        orders_decrypted: { data: validOrder, error: null },
       },
     });
     const activeOrders = createOrdersWrapper(activeCtx);
@@ -123,6 +126,7 @@ describe('OrdersWrapper', () => {
     const errorCtx = createMockContext({
       responses: {
         orders: { data: null, error: { code: '23505', message: 'duplicate' } },
+        orders_decrypted: { data: null, error: { code: '23505', message: 'duplicate' } },
       },
     });
     const errorOrders = createOrdersWrapper(errorCtx);
@@ -163,26 +167,27 @@ describe('OrderItemsWrapper', () => {
 
 describe('OrdersWrapper error type verification', () => {
   it('throws ConflictError for duplicate key violation', async () => {
+    const errResp = { data: null, error: { code: '23505', message: 'duplicate' } };
     const ctx = createMockContext({
-      responses: { orders: { data: null, error: { code: '23505', message: 'duplicate' } } },
+      responses: { orders: errResp, orders_decrypted: errResp },
     });
     const wrapper = createOrdersWrapper(ctx);
     await expect(wrapper.findAll()).rejects.toThrow(ConflictError);
   });
 
   it('throws AuthenticationError for PGRST301 code', async () => {
+    const errResp = { data: null, error: { code: 'PGRST301', message: 'JWT expired' } };
     const ctx = createMockContext({
-      responses: { orders: { data: null, error: { code: 'PGRST301', message: 'JWT expired' } } },
+      responses: { orders: errResp, orders_decrypted: errResp },
     });
     const wrapper = createOrdersWrapper(ctx);
     await expect(wrapper.findAll()).rejects.toThrow(AuthenticationError);
   });
 
   it('throws ValidationError for foreign key violation', async () => {
+    const errResp = { data: null, error: { code: '23503', message: 'foreign key violation' } };
     const ctx = createMockContext({
-      responses: {
-        orders: { data: null, error: { code: '23503', message: 'foreign key violation' } },
-      },
+      responses: { orders: errResp, orders_decrypted: errResp },
     });
     const wrapper = createOrdersWrapper(ctx);
     await expect(wrapper.findAll()).rejects.toThrow(ValidationError);
@@ -280,14 +285,18 @@ describe('OrdersWrapper applyDiscount', () => {
 
 describe('OrdersWrapper empty data handling', () => {
   it('findAll returns empty array when no orders exist', async () => {
-    const ctx = createMockContext({ responses: { orders: { data: [], error: null } } });
+    const emptyResp = { data: [], error: null };
+    const ctx = createMockContext({
+      responses: { orders: emptyResp, orders_decrypted: emptyResp },
+    });
     const wrapper = createOrdersWrapper(ctx);
     const result = await wrapper.findAll();
     expect(result).toEqual([]);
   });
 
   it('findAll returns empty array when data is null', async () => {
-    const ctx = createMockContext({ responses: { orders: { data: null, error: null } } });
+    const nullResp = { data: null, error: null };
+    const ctx = createMockContext({ responses: { orders: nullResp, orders_decrypted: nullResp } });
     const wrapper = createOrdersWrapper(ctx);
     const result = await wrapper.findAll();
     expect(result).toEqual([]);

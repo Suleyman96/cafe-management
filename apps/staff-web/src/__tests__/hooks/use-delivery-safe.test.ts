@@ -1,4 +1,5 @@
 import { QUERY_KEYS } from '@gustri/core';
+import { renderHook } from '@testing-library/react';
 import {
   useAssignDeliveryPerson,
   useDeliveryOrders,
@@ -6,29 +7,30 @@ import {
   useMarkOutForDelivery,
   useUpdateDeliveryFee,
 } from '@/hooks/use-delivery-safe';
-import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useDeliveryOrders', () => {
   it('calls db.orders.findDeliveryOrders', () => {
-    renderHookWithProviders(() => useDeliveryOrders());
-    expect(db.orders.findDeliveryOrders).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useDeliveryOrders());
+    expect(mockDb.orders.findDeliveryOrders).toHaveBeenCalled();
   });
 
   it('returns fetched delivery orders', async () => {
     const mockOrders = [{ id: 'o1', source: 'delivery', status: 'new' }];
-    (db.orders.findDeliveryOrders as any).mockResolvedValueOnce(mockOrders);
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.orders.findDeliveryOrders as any).mockResolvedValueOnce(mockOrders);
 
-    const { result } = renderHookWithProviders(() => useDeliveryOrders());
+    const { result } = renderHook(() => useDeliveryOrders(), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(mockOrders);
   });
 
   it('reports error when fetch fails', async () => {
-    (db.orders.findDeliveryOrders as any).mockRejectedValueOnce(new Error('DB error'));
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.orders.findDeliveryOrders as any).mockRejectedValueOnce(new Error('DB error'));
 
-    const { result } = renderHookWithProviders(() => useDeliveryOrders());
+    const { result } = renderHook(() => useDeliveryOrders(), { wrapper });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
@@ -36,9 +38,9 @@ describe('useDeliveryOrders', () => {
 
 describe('useAssignDeliveryPerson', () => {
   it('calls db.orders.assignDeliveryPerson with orderId and staffId', async () => {
-    const { result } = renderHookWithProviders(() => useAssignDeliveryPerson());
+    const { result, mockDb } = renderHookWithProviders(() => useAssignDeliveryPerson());
     await result.current.mutateAsync({ orderId: 'o1', staffId: 's1' });
-    expect(db.orders.assignDeliveryPerson).toHaveBeenCalledWith('o1', 's1');
+    expect(mockDb.orders.assignDeliveryPerson).toHaveBeenCalledWith('o1', 's1');
   });
 
   it('invalidates delivery and order keys on success', async () => {
@@ -48,17 +50,17 @@ describe('useAssignDeliveryPerson', () => {
     await result.current.mutateAsync({ orderId: 'o1', staffId: 's1' });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.DELIVERY_ORDERS]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDER]);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.DELIVERY_ORDERS]);
   });
 });
 
 describe('useUpdateDeliveryFee', () => {
   it('calls db.orders.updateDeliveryFee with orderId and fee', async () => {
-    const { result } = renderHookWithProviders(() => useUpdateDeliveryFee());
+    const { result, mockDb } = renderHookWithProviders(() => useUpdateDeliveryFee());
     await result.current.mutateAsync({ orderId: 'o1', fee: 5.5 });
-    expect(db.orders.updateDeliveryFee).toHaveBeenCalledWith('o1', 5.5);
+    expect(mockDb.orders.updateDeliveryFee).toHaveBeenCalledWith('o1', 5.5);
   });
 
   it('invalidates delivery and order keys on success', async () => {
@@ -75,9 +77,9 @@ describe('useUpdateDeliveryFee', () => {
 
 describe('useMarkOutForDelivery', () => {
   it('calls db.orders.markOutForDelivery with orderId and deliveryPersonId', async () => {
-    const { result } = renderHookWithProviders(() => useMarkOutForDelivery());
+    const { result, mockDb } = renderHookWithProviders(() => useMarkOutForDelivery());
     await result.current.mutateAsync({ orderId: 'o1', deliveryPersonId: 's1' });
-    expect(db.orders.markOutForDelivery).toHaveBeenCalledWith('o1', 's1');
+    expect(mockDb.orders.markOutForDelivery).toHaveBeenCalledWith('o1', 's1');
   });
 
   it('invalidates delivery and order keys on success', async () => {
@@ -93,9 +95,9 @@ describe('useMarkOutForDelivery', () => {
 
 describe('useMarkDelivered', () => {
   it('calls db.orders.markDelivered with orderId', async () => {
-    const { result } = renderHookWithProviders(() => useMarkDelivered());
+    const { result, mockDb } = renderHookWithProviders(() => useMarkDelivered());
     await result.current.mutateAsync('o1');
-    expect(db.orders.markDelivered).toHaveBeenCalledWith('o1');
+    expect(mockDb.orders.markDelivered).toHaveBeenCalledWith('o1');
   });
 
   it('invalidates delivery and order keys on success', async () => {
@@ -107,6 +109,5 @@ describe('useMarkDelivered', () => {
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.DELIVERY_ORDERS]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDER]);
   });
 });

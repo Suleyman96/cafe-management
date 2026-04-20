@@ -1,6 +1,8 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { Badge, Button, LoadingSpinner } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import {
   ArrowLeft,
   Bell,
@@ -19,9 +21,6 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { FeedbackForm } from '@/components/feedback/feedback-form';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { PlatformFooter } from '@/components/ui/platform-footer';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useCancelOrder, useCancelOrderItem, useOrder } from '@/hooks/use-order';
@@ -75,7 +74,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
       });
       toast.success(t('callStaff.toastSuccess'));
     } catch (error) {
-      console.error('Error calling staff:', error);
+      Sentry.captureException(error);
       toast.error(t('callStaff.toastError'));
     }
   };
@@ -91,7 +90,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
       setShowCancelOrderConfirm(false);
       router.push(`/table/${tableId}/menu`);
     } catch (error) {
-      console.error('Failed to cancel order:', error);
+      Sentry.captureException(error);
     } finally {
       setCancelLoading(false);
     }
@@ -108,7 +107,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
       setCancelItemModal(null);
       setCancelItemQty(1);
     } catch (error) {
-      console.error('Failed to cancel item:', error);
+      Sentry.captureException(error);
     } finally {
       setCancelLoading(false);
     }

@@ -1,36 +1,22 @@
 /**
  * Type-Safe Waiter Calls Hooks
- * Uses the wrapped client for type safety without 'as any'
+ * Re-exports from @gustri/queries, with local composite hooks and helpers
  */
 
-import { QUERY_KEYS, REFRESH_INTERVALS } from '@gustri/core';
-import type { Database } from '@gustri/database';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { invalidateWaiterCalls } from '@/lib/query-helpers';
-import { db } from '@/lib/supabase/wrapped-client';
+import {
+  invalidateWaiterCalls,
+  useDb,
+  useWaiterCalls as useWaiterCallsShared,
+} from '@gustri/queries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-type WaiterCall = Database['public']['Tables']['waiter_calls']['Row'];
-type WaiterCallStatus = WaiterCall['status'];
+// Re-export shared read hooks
+export { usePendingWaiterCallsCount, useWaiterCalls } from '@gustri/queries';
 
-export function useWaiterCalls(status?: WaiterCallStatus) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.WAITER_CALLS, status],
-    queryFn: async (): Promise<WaiterCall[]> => db.waiterCalls.findAll(status),
-    refetchInterval: REFRESH_INTERVALS.WAITER_CALLS,
-  });
-}
-
-export function usePendingWaiterCallsCount() {
-  return useQuery({
-    queryKey: [QUERY_KEYS.WAITER_CALLS_COUNT, 'pending'],
-    queryFn: async (): Promise<number> => db.waiterCalls.getPendingCount(),
-    refetchInterval: REFRESH_INTERVALS.WAITER_CALLS,
-  });
-}
-
+// Local mutations — staff-web consumers use { callId } param shape
 export function useAcknowledgeWaiterCall() {
+  const db = useDb();
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ callId, staffId }: { callId: string; staffId: string }) =>
       db.waiterCalls.acknowledge(callId, staffId),
@@ -41,23 +27,22 @@ export function useAcknowledgeWaiterCall() {
 }
 
 export function useResolveWaiterCall() {
+  const db = useDb();
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ callId, notes }: { callId: string; notes?: string }) =>
       db.waiterCalls.resolve(callId, notes),
     onSuccess: () => {
       invalidateWaiterCalls(queryClient);
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
     },
   });
 }
 
-// Helper to get active calls for a specific table
+// Composite hook: filters active calls for a specific table (app-specific)
 export function useActiveCallsForTable(tableId: string) {
-  const { data: allCalls, ...rest } = useWaiterCalls('pending');
+  const { data: allCalls, ...rest } = useWaiterCallsShared('pending');
 
-  const tableCalls = allCalls?.filter((call) => call.table_id === tableId) || [];
+  const tableCalls = allCalls?.filter((call: any) => call.table_id === tableId) || [];
 
   return {
     ...rest,

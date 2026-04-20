@@ -47,6 +47,8 @@
   "optional": "İstəyə bağlı",
   "pending": "Gözləmədə",
   "phone": "Telefon",
+  "phonePlaceholder": "+XX XXX XXX XXXX",
+  "whatsappPlaceholder": "https://wa.me/XXXXXXXXXXXX",
   "placingOrder": "Sifariş verilir...",
   "quantity": "Miqdar",
   "refresh": "Yenilə",

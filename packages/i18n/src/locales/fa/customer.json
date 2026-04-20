@@ -64,7 +64,7 @@
   "deliveryLanding.labelPhone": "تلفن *",
   "deliveryLanding.namePlaceholder": "نام کامل شما",
   "deliveryLanding.notesPlaceholder": "شماره طبقه، کد درب، نشانه‌ها...",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.unavailableSubtext": "سرویس ارسال در حال حاضر در دسترس نیست. لطفاً بعداً تلاش کنید.",
   "deliveryLanding.unavailableTitle": "ارسال در دسترس نیست",
   "deliveryStatus.badgeDelivery": "ارسال",

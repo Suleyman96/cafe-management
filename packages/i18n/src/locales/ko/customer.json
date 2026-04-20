@@ -64,7 +64,7 @@
   "deliveryLanding.labelPhone": "전화번호 *",
   "deliveryLanding.namePlaceholder": "성명",
   "deliveryLanding.notesPlaceholder": "층수, 비밀번호, 목표물...",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.unavailableSubtext": "현재 배달 주문을 이용할 수 없습니다. 나중에 다시 시도해 주세요.",
   "deliveryLanding.unavailableTitle": "배달 불가",
   "deliveryStatus.badgeDelivery": "배달",

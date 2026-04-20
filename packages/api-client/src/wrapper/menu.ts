@@ -24,7 +24,8 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
           *,
           category:categories(*)
         `)
-        .order('display_order');
+        .order('display_order')
+        .limit(500);
 
       if (options?.categoryId) {
         query = query.eq('category_id', options.categoryId);

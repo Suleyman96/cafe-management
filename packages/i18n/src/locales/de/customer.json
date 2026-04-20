@@ -64,7 +64,7 @@
   "deliveryLanding.labelPhone": "Telefon *",
   "deliveryLanding.namePlaceholder": "Ihr vollständiger Name",
   "deliveryLanding.notesPlaceholder": "Stockwerk, Türcode, Orientierungspunkte...",
-  "deliveryLanding.phonePlaceholder": "+994 XX XXX XX XX",
+  "deliveryLanding.phonePlaceholder": "+XX XXX XXX XXXX",
   "deliveryLanding.unavailableSubtext": "Der Lieferservice ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.",
   "deliveryLanding.unavailableTitle": "Lieferung nicht verfügbar",
   "deliveryStatus.badgeDelivery": "Lieferung",

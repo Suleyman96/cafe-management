@@ -3,7 +3,41 @@
  */
 
 import { handleSupabaseError, isOrder, isOrderItem, isOrderItemArray } from '@gustri/core';
-import type { OrderInsert, OrderItemInsert, OrderItemRow, OrderRow, WrapperContext } from './types';
+import type {
+  OrderInsert,
+  OrderItemInsert,
+  OrderItemRow,
+  OrderRow,
+  PaginatedResult,
+  WrapperContext,
+} from './types';
+
+/**
+ * The orders_decrypted view adds decrypted_* columns alongside the raw
+ * (encrypted) PII columns. This helper maps them back to the standard names
+ * so the rest of the app doesn't need to know about encryption.
+ */
+function mapDecryptedPii<T extends Record<string, any>>(row: T): T {
+  if (!row) return row;
+  const mapped: Record<string, any> = { ...row };
+  if ('decrypted_customer_name' in mapped) {
+    mapped.customer_name = mapped.decrypted_customer_name;
+    delete mapped.decrypted_customer_name;
+  }
+  if ('decrypted_customer_phone' in mapped) {
+    mapped.customer_phone = mapped.decrypted_customer_phone;
+    delete mapped.decrypted_customer_phone;
+  }
+  if ('decrypted_delivery_address' in mapped) {
+    mapped.delivery_address = mapped.decrypted_delivery_address;
+    delete mapped.decrypted_delivery_address;
+  }
+  return mapped as T;
+}
+
+function mapDecryptedPiiArray<T extends Record<string, any>>(rows: T[]): T[] {
+  return rows.map(mapDecryptedPii);
+}
 
 export function createOrdersWrapper(ctx: WrapperContext) {
   return {
@@ -16,9 +50,10 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       created_after?: string;
       created_before?: string;
       limit?: number;
+      offset?: number;
     }) => {
-      let query = ctx.client
-        .from('orders')
+      let query = ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           table:tables!orders_table_id_fkey(table_number, location),
@@ -51,19 +86,86 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       if (filters?.created_before) {
         query = query.lt('created_at', filters.created_before);
       }
-      if (filters?.limit) {
-        query = query.limit(filters.limit);
+
+      // Apply pagination with sensible defaults
+      const limit = filters?.limit ?? 200;
+      const offset = filters?.offset ?? 0;
+      if (limit > 0) {
+        query = query.range(offset, offset + limit - 1);
       }
 
       const { data, error } = await query;
 
       if (error) throw handleSupabaseError(error);
-      return data || [];
+      return mapDecryptedPiiArray(data || []);
+    },
+
+    findAllPaginated: async (filters?: {
+      status?: OrderRow['status'];
+      statuses?: OrderRow['status'][];
+      table_id?: string;
+      order_type?: OrderRow['order_type'];
+      assigned_waiter_id?: string;
+      created_after?: string;
+      created_before?: string;
+      limit?: number;
+      offset?: number;
+    }): Promise<PaginatedResult<OrderRow>> => {
+      let query = ctx.anyClient
+        .from('orders_decrypted')
+        .select(
+          `
+          *,
+          table:tables!orders_table_id_fkey(table_number, location),
+          order_items(
+            *,
+            menu_item:menu_items(*)
+          ),
+          assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name),
+          delivery_person:staff!orders_delivery_person_id_fkey(full_name)
+        `,
+          { count: 'exact' },
+        )
+        .order('created_at', { ascending: false });
+
+      if (filters?.statuses && filters.statuses.length > 0) {
+        query = query.in('status', filters.statuses);
+      } else if (filters?.status) {
+        query = query.eq('status', filters.status);
+      }
+      if (filters?.table_id) {
+        query = query.eq('table_id', filters.table_id);
+      }
+      if (filters?.order_type) {
+        query = query.eq('order_type', filters.order_type);
+      }
+      if (filters?.assigned_waiter_id) {
+        query = query.eq('assigned_waiter_id', filters.assigned_waiter_id);
+      }
+      if (filters?.created_after) {
+        query = query.gte('created_at', filters.created_after);
+      }
+      if (filters?.created_before) {
+        query = query.lt('created_at', filters.created_before);
+      }
+
+      const limit = filters?.limit ?? 50;
+      const offset = filters?.offset ?? 0;
+      query = query.range(offset, offset + limit - 1);
+
+      const { data, error, count } = await query;
+
+      if (error) throw handleSupabaseError(error);
+      return {
+        data: mapDecryptedPiiArray((data || []) as OrderRow[]),
+        count: count ?? 0,
+        hasMore: (count ?? 0) > offset + limit,
+      };
     },
 
     findById: async (id: string) => {
-      const { data, error } = await ctx.client
-        .from('orders')
+      const { data, error } = await ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           table:tables!orders_table_id_fkey(table_number, location),
@@ -89,7 +191,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
 
       if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
-      return data;
+      return mapDecryptedPii(data);
     },
 
     create: async (orderData: OrderInsert) => {
@@ -160,8 +262,8 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     },
 
     findActiveByTable: async (tableId: string) => {
-      const { data, error } = await ctx.client
-        .from('orders')
+      const { data, error } = await ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           table:tables!orders_table_id_fkey(table_number, location),
@@ -174,12 +276,12 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         .maybeSingle();
 
       if (error) throw handleSupabaseError(error);
-      return data;
+      return data ? mapDecryptedPii(data) : null;
     },
 
     getActiveOrders: async () => {
-      const { data, error } = await ctx.client
-        .from('orders')
+      const { data, error } = await ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           table:tables!orders_table_id_fkey(table_number),
@@ -196,7 +298,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         .order('created_at', { ascending: false });
 
       if (error) throw handleSupabaseError(error);
-      return data || [];
+      return mapDecryptedPiiArray(data || []);
     },
 
     assignWaiter: async (orderId: string, waiterId: string | null) => {
@@ -292,9 +394,9 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     },
 
     // Takeout-specific methods
-    findTakeoutOrders: async () => {
-      const { data, error } = await ctx.client
-        .from('orders')
+    findTakeoutOrders: async (options?: { limit?: number; offset?: number }) => {
+      let query = ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           order_items(
@@ -310,14 +412,21 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         .eq('order_type', 'takeout')
         .order('created_at', { ascending: false });
 
+      const limit = options?.limit ?? 200;
+      const offset = options?.offset ?? 0;
+      if (limit > 0) {
+        query = query.range(offset, offset + limit - 1);
+      }
+
+      const { data, error } = await query;
       if (error) throw handleSupabaseError(error);
-      return data || [];
+      return mapDecryptedPiiArray(data || []);
     },
 
     // Delivery-specific methods
-    findDeliveryOrders: async () => {
-      const { data, error } = await ctx.client
-        .from('orders')
+    findDeliveryOrders: async (options?: { limit?: number; offset?: number }) => {
+      let query = ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           order_items(
@@ -330,13 +439,20 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         .eq('order_type', 'delivery')
         .order('created_at', { ascending: false });
 
+      const limit = options?.limit ?? 200;
+      const offset = options?.offset ?? 0;
+      if (limit > 0) {
+        query = query.range(offset, offset + limit - 1);
+      }
+
+      const { data, error } = await query;
       if (error) throw handleSupabaseError(error);
-      return data || [];
+      return mapDecryptedPiiArray(data || []);
     },
 
     findDeliveryById: async (id: string) => {
-      const { data, error } = await ctx.client
-        .from('orders')
+      const { data, error } = await ctx.anyClient
+        .from('orders_decrypted')
         .select(`
           *,
           order_items(
@@ -355,7 +471,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
 
       if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
-      return data;
+      return mapDecryptedPii(data);
     },
 
     assignDeliveryPerson: async (orderId: string, staffId: string) => {

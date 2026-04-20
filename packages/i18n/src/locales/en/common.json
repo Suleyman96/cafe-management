@@ -47,6 +47,8 @@
   "optional": "Optional",
   "pending": "Pending",
   "phone": "Phone",
+  "phonePlaceholder": "+XX XXX XXX XXXX",
+  "whatsappPlaceholder": "https://wa.me/XXXXXXXXXXXX",
   "placingOrder": "Placing Order...",
   "quantity": "Quantity",
   "refresh": "Refresh",

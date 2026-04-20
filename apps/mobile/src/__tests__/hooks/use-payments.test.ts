@@ -1,14 +1,14 @@
 import { QUERY_KEYS } from '@gustri/core';
-import { waitFor } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useCreatePayment, useOrderPayments } from '@/hooks/use-payments';
-import { db } from '@/lib/supabase';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { apiRoutes } from '@/lib/api-routes';
+import { createWrapper, renderHookWithProviders } from '../helpers/test-utils';
 
 describe('useOrderPayments', () => {
   it('calls db.payments.findByOrderId', () => {
-    renderHookWithProviders(() => useOrderPayments('o1'));
-    expect(db.payments.findByOrderId).toHaveBeenCalledWith('o1');
+    const { mockDb } = renderHookWithProviders(() => useOrderPayments('o1'));
+    expect(mockDb.payments.findByOrderId).toHaveBeenCalledWith('o1');
   });
 });
 
@@ -35,19 +35,21 @@ describe('useCreatePayment', () => {
 describe('useOrderPayments - data flow', () => {
   it('returns fetched payments', async () => {
     const mockPayments = [{ id: 'p1', order_id: 'o1', amount: 50 }];
-    (db.payments.findByOrderId as any).mockResolvedValueOnce(mockPayments);
-    const { result } = renderHookWithProviders(() => useOrderPayments('o1'));
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.payments.findByOrderId as any).mockResolvedValueOnce(mockPayments);
+    const { result } = renderHook(() => useOrderPayments('o1'), { wrapper });
     await waitFor(() => expect(result.current.data).toEqual(mockPayments));
   });
 });
 
 describe('useCreatePayment - argument verification', () => {
-  it('calls db.payments.create with payment data', async () => {
+  it('calls apiRoutes.payments.create with payment data', async () => {
     const paymentData = { order_id: 'o1', amount: 50, payment_method: 'cash' as const };
     const { result } = renderHookWithProviders(() => useCreatePayment());
     await result.current.mutateAsync(paymentData);
-    expect(db.payments.create).toHaveBeenCalledWith({
-      ...paymentData,
+    expect(apiRoutes.payments.create).toHaveBeenCalledWith('o1', {
+      amount: 50,
+      payment_method: 'cash',
       received_by: '',
       payment_type: 'full',
       tip_amount: 0,

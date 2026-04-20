@@ -1,8 +1,8 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
 import { Edit3, Minus, Plus, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface CartItemCardProps {
   item: {

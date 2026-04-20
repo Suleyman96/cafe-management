@@ -1,6 +1,7 @@
 'use client';
 
 import { ORDER_STATUS } from '@gustri/core';
+import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import {
@@ -19,14 +20,15 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import { CreateTakeoutModal } from '@/components/orders/create-takeout-modal';
 import { useCancelOrder, useMenuItems, useTakeoutOrders, useUpdateOrderStatus } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
-import { supabase } from '@/lib/supabase/client';
+import { useOrderFilters } from '@/hooks/use-order-filters';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 type TakeoutStatus = 'pending_approval' | 'new' | 'preparing' | 'ready' | 'closed' | 'cancelled';
 
@@ -52,47 +54,44 @@ export default function TakeoutPage() {
   const cancelOrderMutation = useCancelOrder();
   const formatPrice = useFormatPrice();
 
-  const [statusFilter, setStatusFilter] = useState<TakeoutStatus | 'all'>('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const takeoutSearchFields = useCallback(
+    (order: OrderWithDetails, q: string) => !!order.customer_phone?.includes(q),
+    [],
+  );
+  const { filteredOrders, statusFilter, setStatusFilter, searchTerm, setSearchTerm, activeCount } =
+    useOrderFilters<TakeoutStatus>({
+      orders,
+      searchFields: takeoutSearchFields,
+      activeStatuses: ['pending_approval', 'new', 'preparing', 'ready'],
+    });
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelOrderTarget, setCancelOrderTarget] = useState<any>(null);
+  const [cancelOrderTarget, setCancelOrderTarget] = useState<OrderWithDetails | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
-  // Real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('takeout-orders-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        refetch();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
-        refetch();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_payments' }, () => {
-        refetch();
-      })
-      .subscribe();
+  // Real-time: invalidate queries on DB changes
+  useRealtimeSync('takeout-orders-realtime', [
+    { table: 'orders', queryKeys: [['takeout_orders'], ['orders'], ['active_orders']] },
+    { table: 'order_items', queryKeys: [['takeout_orders'], ['orders']] },
+    { table: 'order_payments', queryKeys: [['takeout_orders'], ['payments']] },
+  ]);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch]);
-
-  const calculateOrderTotal = (order: any) => {
+  const calculateOrderTotal = (order: OrderWithDetails) => {
     if (order?.total != null) return order.total;
     if (!order?.order_items) return 0;
     return order.order_items
-      .filter((item: any) => item.status !== 'cancelled')
-      .reduce((sum: number, item: any) => sum + item.quantity * item.item_price, 0);
+      .filter((item) => item.status !== 'cancelled')
+      .reduce((sum, item) => sum + item.quantity * item.item_price, 0);
   };
 
-  const calculatePaidAmount = (order: any) => {
-    if (!order?.order_payments) return 0;
-    return order.order_payments.reduce((sum: number, payment: any) => sum + payment.amount, 0);
+  const calculatePaidAmount = (order: OrderWithDetails) => {
+    const payments = (order as OrderWithDetails & { order_payments?: { amount: number }[] })
+      .order_payments;
+    if (!payments) return 0;
+    return payments.reduce((sum, payment) => sum + payment.amount, 0);
   };
 
   const formatTime = (timestamp: string) => {
@@ -102,7 +101,7 @@ export default function TakeoutPage() {
     });
   };
 
-  const getStatusColor = (status: TakeoutStatus) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending_approval':
         return 'bg-amber-100 text-amber-800 border border-amber-300';
@@ -160,23 +159,6 @@ export default function TakeoutPage() {
       setCancelling(false);
     }
   };
-
-  const filteredOrders = orders?.filter((order: any) => {
-    if (statusFilter !== 'all' && order.status !== statusFilter) return false;
-    if (
-      searchTerm &&
-      !order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !order.customer_phone?.includes(searchTerm) &&
-      !order.id.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-      return false;
-    return true;
-  });
-
-  // Count active takeout orders
-  const activeCount =
-    orders?.filter((o: any) => ['pending_approval', 'new', 'preparing', 'ready'].includes(o.status))
-      .length || 0;
 
   if (loading) {
     return (
@@ -261,7 +243,7 @@ export default function TakeoutPage() {
 
       {/* Orders List */}
       <div className="space-y-3 sm:space-y-4">
-        {filteredOrders?.map((order: any) => {
+        {filteredOrders?.map((order) => {
           const grandTotal = calculateOrderTotal(order);
           const paid = calculatePaidAmount(order);
           const remaining = grandTotal - paid;
@@ -328,7 +310,7 @@ export default function TakeoutPage() {
 
               {/* Order Items Preview */}
               <div className="mb-3 text-sm text-gray-600">
-                {order.order_items?.slice(0, 3).map((item: any) => (
+                {order.order_items?.slice(0, 3).map((item) => (
                   <div key={item.id}>
                     {item.quantity}x {item.menu_item?.name || item.item_name}
                     {item.notes && <span className="text-xs text-gray-500"> ({item.notes})</span>}

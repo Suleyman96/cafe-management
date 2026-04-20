@@ -2,6 +2,8 @@
 
 import type { Language } from '@gustri/i18n';
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
+import { LoadingSpinner } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import {
   ArrowRight,
   CheckCircle,
@@ -19,7 +21,6 @@ import {
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useOrder } from '@/hooks/use-order';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
@@ -58,7 +59,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             .catch(console.warn);
         })
         .catch((err: any) => {
-          console.error('Failed to set table context:', err);
+          Sentry.captureException(err);
         });
     }
   }, [token]);

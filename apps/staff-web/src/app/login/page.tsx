@@ -2,10 +2,11 @@
 
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { GustriLogo } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { GustriLogo } from '@/components/ui/gustri-logo';
 import { postLoginSideEffects } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/wrapped-client';
@@ -72,7 +73,7 @@ export default function LoginPage() {
 
       router.push('/');
     } catch (err) {
-      console.error('Login error:', err);
+      Sentry.captureException(err);
       setError(t('unexpectedError'));
     } finally {
       setLoading(false);

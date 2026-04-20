@@ -1,8 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@/components/ui/button';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Button, LoadingSpinner } from '@gustri/ui';
 
 interface CartPriceSummaryProps {
   total: number;

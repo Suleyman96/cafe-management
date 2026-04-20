@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 
 export function ServiceWorkerRegistration() {
@@ -19,7 +20,12 @@ export function ServiceWorkerRegistration() {
           ); // Check every hour
         })
         .catch((error) => {
-          console.error('Service Worker registration failed:', error);
+          Sentry.addBreadcrumb({
+            category: 'sw',
+            message: 'Service Worker registration failed',
+            level: 'warning',
+            data: { error: String(error) },
+          });
         });
     }
   }, []);

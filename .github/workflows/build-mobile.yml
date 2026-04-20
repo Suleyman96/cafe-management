@@ -1,0 +1,164 @@
+name: Build Mobile
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/core/**'
+      - 'packages/database/**'
+      - 'packages/api-client/**'
+      - 'packages/queries/**'
+      - 'packages/i18n/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/core/**'
+      - 'packages/database/**'
+      - 'packages/api-client/**'
+      - 'packages/queries/**'
+      - 'packages/i18n/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build --filter='./packages/*'
+
+      - name: Lint
+        run: pnpm lint --filter=@gustri/mobile
+
+      - name: Type check
+        run: pnpm type-check --filter=@gustri/mobile
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build --filter='./packages/*'
+
+      - name: Run tests
+        run: pnpm vitest run --config apps/mobile/vitest.config.ts
+
+  build-preview:
+    name: EAS Build (Preview)
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, test]
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build preview APK
+        id: eas-build
+        working-directory: apps/mobile
+        run: |
+          BUILD_OUTPUT=$(eas build --profile preview --platform android --non-interactive --no-wait --json 2>&1 || true)
+          echo "$BUILD_OUTPUT"
+          BUILD_URL=$(echo "$BUILD_OUTPUT" | jq -r '.[0].buildDetailsPage // empty')
+          echo "build_url=$BUILD_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Comment build URL on PR
+        if: steps.eas-build.outputs.build_url != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `📱 **EAS Preview Build started**\n\n[View build details](${process.env.BUILD_URL})\n\nProfile: \`preview\` | Platform: Android (APK)`
+            })
+        env:
+          BUILD_URL: ${{ steps.eas-build.outputs.build_url }}
+
+  build-production:
+    name: EAS Build (Production)
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build production
+        working-directory: apps/mobile
+        run: eas build --profile production --platform android --non-interactive --no-wait --auto-submit

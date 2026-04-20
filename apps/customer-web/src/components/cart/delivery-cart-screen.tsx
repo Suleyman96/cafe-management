@@ -1,11 +1,12 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { ArrowLeft, Edit3, MapPin, Phone, Truck, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { useAddDeliveryOrderItems, useCreateDeliveryOrder } from '@/hooks/use-delivery';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useCafeSettings } from '@/hooks/use-settings';
@@ -82,7 +83,7 @@ export function DeliveryCartScreen() {
       clearCart();
       router.push(`/delivery/order/${order.id}`);
     } catch (error) {
-      console.error('Error placing delivery order:', error);
+      Sentry.captureException(error);
       toast.error(t('deliveryCart.orderError'));
     }
   };

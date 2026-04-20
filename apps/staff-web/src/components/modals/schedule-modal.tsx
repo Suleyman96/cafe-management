@@ -4,9 +4,9 @@ import { DAYS_OF_WEEK, getLocalDateString, TIME_OPTIONS } from '@gustri/core';
 import type { StaffScheduleInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
-import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { BaseModal } from '@/components/ui/base-modal';
 import { useCreateSchedule, useDeleteSchedule, useStaff, useUpdateSchedule } from '@/hooks';
 
 interface ScheduleModalProps {
@@ -175,238 +175,233 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
   const activeStaff = staffList?.filter((s: any) => s.is_active) || [];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">
-            {isEdit ? t('schedules.editSchedule') : t('schedules.addSchedule')}
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600" type="button">
-            <X className="h-5 w-5" />
-          </button>
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title={isEdit ? t('schedules.editSchedule') : t('schedules.addSchedule')}
+      as="form"
+      onSubmit={handleSubmit}
+      footer={
+        <>
+          {isEdit && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isBusy}
+              size="sm"
+            >
+              {t('delete', { ns: 'common' })}
+            </Button>
+          )}
+          <div className="flex-1" />
+          <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>
+            {t('cancel', { ns: 'common' })}
+          </Button>
+          <Button type="submit" disabled={isBusy}>
+            {isBusy ? t('saving', { ns: 'common' }) : t('save', { ns: 'common' })}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Staff Select */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('schedules.staffMember')}
+          </label>
+          <select
+            value={staffId}
+            onChange={(e) => setStaffId(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          >
+            <option value="">{t('schedules.selectStaff')}</option>
+            {activeStaff.map((s: any) => (
+              <option key={s.id} value={s.id}>
+                {s.full_name} ({s.role})
+              </option>
+            ))}
+          </select>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
+        {/* Date */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('date', { ns: 'common' })}
+          </label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
 
-          {/* Staff Select */}
+        {/* Planned Times */}
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('schedules.staffMember')}
+              {t('schedules.plannedStart')}
             </label>
             <select
-              value={staffId}
-              onChange={(e) => setStaffId(e.target.value)}
+              value={plannedStart}
+              onChange={(e) => setPlannedStart(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
-              <option value="">{t('schedules.selectStaff')}</option>
-              {activeStaff.map((s: any) => (
-                <option key={s.id} value={s.id}>
-                  {s.full_name} ({s.role})
+              {TIME_OPTIONS.map((time) => (
+                <option key={time} value={time}>
+                  {time}
                 </option>
               ))}
             </select>
           </div>
-
-          {/* Date */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('date', { ns: 'common' })}
+              {t('schedules.plannedEnd')}
             </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+            <select
+              value={plannedEnd}
+              onChange={(e) => setPlannedEnd(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
-            />
+            >
+              {TIME_OPTIONS.map((time) => (
+                <option key={time} value={time}>
+                  {time}
+                </option>
+              ))}
+            </select>
           </div>
+        </div>
 
-          {/* Planned Times */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('schedules.plannedStart')}
-              </label>
-              <select
-                value={plannedStart}
-                onChange={(e) => setPlannedStart(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                {TIME_OPTIONS.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('schedules.plannedEnd')}
-              </label>
-              <select
-                value={plannedEnd}
-                onChange={(e) => setPlannedEnd(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                {TIME_OPTIONS.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Edit-only fields */}
-          {isEdit && (
-            <>
-              {/* Actual Times */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('schedules.actualStart')}
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={actualStart}
-                    onChange={(e) => setActualStart(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('schedules.actualEnd')}
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={actualEnd}
-                    onChange={(e) => setActualEnd(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Status */}
+        {/* Edit-only fields */}
+        {isEdit && (
+          <>
+            {/* Actual Times */}
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('status', { ns: 'common' })}
+                  {t('schedules.actualStart')}
                 </label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="scheduled">{t('schedules.scheduled')}</option>
-                  <option value="in_progress">{t('schedules.inProgress')}</option>
-                  <option value="completed">{t('schedules.completed')}</option>
-                  <option value="missed">{t('schedules.missed')}</option>
-                </select>
-              </div>
-            </>
-          )}
-
-          {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('notes', { ns: 'common' })}
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows={2}
-              placeholder={t('schedules.optionalNotes')}
-            />
-          </div>
-
-          {/* Bulk create (create mode only) */}
-          {!isEdit && (
-            <div className="border-t pt-4">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                 <input
-                  type="checkbox"
-                  checked={repeatEnabled}
-                  onChange={(e) => setRepeatEnabled(e.target.checked)}
-                  className="rounded border-gray-300"
+                  type="datetime-local"
+                  value={actualStart}
+                  onChange={(e) => setActualStart(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                {t('schedules.repeatMultipleDays')}
-              </label>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('schedules.actualEnd')}
+                </label>
+                <input
+                  type="datetime-local"
+                  value={actualEnd}
+                  onChange={(e) => setActualEnd(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
 
-              {repeatEnabled && (
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">
-                      {t('schedules.daysOfWeek')}
-                    </label>
-                    <div className="flex gap-1">
-                      {DAYS_OF_WEEK.map((day) => (
-                        <button
-                          key={day.value}
-                          type="button"
-                          onClick={() => toggleRepeatDay(day.value)}
-                          className={`px-2.5 py-1.5 text-xs rounded-lg font-medium transition-colors ${
-                            repeatDays.includes(day.value)
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                        >
-                          {day.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">
-                      {t('schedules.numberOfWeeks')}
-                    </label>
-                    <select
-                      value={repeatWeeks}
-                      onChange={(e) => setRepeatWeeks(Number(e.target.value))}
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {[1, 2, 3, 4].map((n) => (
-                        <option key={n} value={n}>
-                          {n} {n > 1 ? t('schedules.weeks') : t('schedules.week')}
-                        </option>
-                      ))}
-                    </select>
+            {/* Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('status', { ns: 'common' })}
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="scheduled">{t('schedules.scheduled')}</option>
+                <option value="in_progress">{t('schedules.inProgress')}</option>
+                <option value="completed">{t('schedules.completed')}</option>
+                <option value="missed">{t('schedules.missed')}</option>
+              </select>
+            </div>
+          </>
+        )}
+
+        {/* Notes */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('notes', { ns: 'common' })}
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            rows={2}
+            placeholder={t('schedules.optionalNotes')}
+          />
+        </div>
+
+        {/* Bulk create (create mode only) */}
+        {!isEdit && (
+          <div className="border-t pt-4">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={repeatEnabled}
+                onChange={(e) => setRepeatEnabled(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              {t('schedules.repeatMultipleDays')}
+            </label>
+
+            {repeatEnabled && (
+              <div className="mt-3 space-y-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    {t('schedules.daysOfWeek')}
+                  </label>
+                  <div className="flex gap-1">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => toggleRepeatDay(day.value)}
+                        className={`px-2.5 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                          repeatDays.includes(day.value)
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            {isEdit && (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={isBusy}
-                size="sm"
-              >
-                {t('delete', { ns: 'common' })}
-              </Button>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    {t('schedules.numberOfWeeks')}
+                  </label>
+                  <select
+                    value={repeatWeeks}
+                    onChange={(e) => setRepeatWeeks(Number(e.target.value))}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {[1, 2, 3, 4].map((n) => (
+                      <option key={n} value={n}>
+                        {n} {n > 1 ? t('schedules.weeks') : t('schedules.week')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             )}
-            <div className="flex-1" />
-            <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>
-              {t('cancel', { ns: 'common' })}
-            </Button>
-            <Button type="submit" disabled={isBusy}>
-              {isBusy ? t('saving', { ns: 'common' }) : t('save', { ns: 'common' })}
-            </Button>
           </div>
-        </form>
+        )}
       </div>
-    </div>
+    </BaseModal>
   );
 }

@@ -47,6 +47,8 @@
   "optional": "Ixtiyoriy",
   "pending": "Kutilmoqda",
   "phone": "Telefon",
+  "phonePlaceholder": "+XX XXX XXX XXXX",
+  "whatsappPlaceholder": "https://wa.me/XXXXXXXXXXXX",
   "placingOrder": "Buyurtma berilmoqda...",
   "quantity": "Miqdor",
   "refresh": "Yangilash",

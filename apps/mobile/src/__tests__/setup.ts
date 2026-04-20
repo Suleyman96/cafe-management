@@ -25,6 +25,30 @@ vi.mock('@/lib/supabase', () => ({
   },
 }));
 
+// Mock API routes (prevents real fetch calls and expo-constants import)
+vi.mock('@/lib/api-routes', () => ({
+  apiRoutes: {
+    orders: {
+      create: vi.fn().mockResolvedValue({ order: { id: 'test-order-id' } }),
+    },
+    payments: {
+      create: vi.fn().mockResolvedValue({ payment: { id: 'test-payment-id' } }),
+    },
+    discounts: {
+      apply: vi.fn().mockResolvedValue({ success: true }),
+    },
+    refunds: {
+      create: vi.fn().mockResolvedValue({ refund: { id: 'test-refund-id' } }),
+    },
+    stock: {
+      adjust: vi.fn().mockResolvedValue({ stockItem: { id: 'test-stock-id' } }),
+    },
+    settings: {
+      update: vi.fn().mockResolvedValue({ settings: {} }),
+    },
+  },
+}));
+
 // Clear all mock call counts between tests
 beforeEach(() => {
   vi.clearAllMocks();

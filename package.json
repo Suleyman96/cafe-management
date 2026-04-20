@@ -20,11 +20,13 @@
     "test:watch": "vitest",
     "test:mobile": "vitest run --config apps/mobile/vitest.config.ts",
     "test:coverage": "vitest run --coverage",
+    "test:rls": "vitest run --config vitest.rls.config.ts",
     "test:e2e": "turbo run test:e2e",
     "db:push": "turbo run db:push",
     "db:studio": "turbo run db:studio",
     "db:reset": "supabase db reset && ./scripts/create-admin-user.sh",
-    "db:seed-user": "./scripts/create-admin-user.sh"
+    "db:seed-user": "./scripts/create-admin-user.sh",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.4",
@@ -34,6 +36,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^4.0.18",
+    "husky": "^9.1.7",
     "jsdom": "^28.1.0",
     "tsup": "^8.0.1",
     "turbo": "^2.8.20",

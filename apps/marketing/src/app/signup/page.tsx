@@ -3,10 +3,18 @@
 import { ArrowLeft, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { Suspense, useState } from 'react';
+import { getSupabase } from '@/lib/supabase';
 
 export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+function SignupForm() {
   const searchParams = useSearchParams();
   const plan = searchParams.get('plan') || 'free';
 
@@ -38,7 +46,7 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await getSupabase().auth.signUp({
         email,
         password,
         options: {

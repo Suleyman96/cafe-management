@@ -1,5 +1,6 @@
 'use client';
 
+import type { Table } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import { Plus, RefreshCw } from 'lucide-react';
@@ -18,7 +19,7 @@ import {
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
-import { supabase } from '@/lib/supabase/client';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 export default function TablesPage() {
   const { t } = useTranslation('staff');
@@ -33,12 +34,12 @@ export default function TablesPage() {
   const { data: waiterCalls } = useWaiterCalls();
   const deleteTable = useDeleteTable();
 
-  const [selectedTable, setSelectedTable] = useState<any>(null);
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
-  const [editingTable, setEditingTable] = useState<any>(null);
+  const [editingTable, setEditingTable] = useState<Table | null>(null);
   const [tableMenuOpen, setTableMenuOpen] = useState<string | null>(null);
-  const [deleteConfirmTable, setDeleteConfirmTable] = useState<any>(null);
+  const [deleteConfirmTable, setDeleteConfirmTable] = useState<Table | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const cleanupEmptyOrders = useCleanupEmptyOrders();
@@ -54,28 +55,13 @@ export default function TablesPage() {
     }
   }, [cleanupEmptyOrders]);
 
-  // Set up real-time subscriptions
-  useEffect(() => {
-    const channel = supabase
-      .channel('tables-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tables' }, () => {
-        refetchTables();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        refetchTables();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
-        refetchTables();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'waiter_calls' }, () => {
-        refetchTables();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetchTables]);
+  // Real-time: invalidate queries on DB changes
+  useRealtimeSync('tables-realtime', [
+    { table: 'tables', queryKeys: [['tables']] },
+    { table: 'orders', queryKeys: [['tables'], ['orders'], ['active_orders']] },
+    { table: 'order_items', queryKeys: [['tables'], ['orders']] },
+    { table: 'waiter_calls', queryKeys: [['tables'], ['waiter_calls']] },
+  ]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -93,7 +79,7 @@ export default function TablesPage() {
   const getActiveOrdersForTable = (tableId: string) => {
     return (
       orders?.filter(
-        (order: any) =>
+        (order) =>
           order.table_id === tableId &&
           ['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status),
       ) || []
@@ -103,13 +89,12 @@ export default function TablesPage() {
   // Get active waiter calls for a table
   const getActiveCallsForTable = (tableId: string) => {
     return (
-      waiterCalls?.filter((call: any) => call.table_id === tableId && call.status === 'pending') ||
-      []
+      waiterCalls?.filter((call) => call.table_id === tableId && call.status === 'pending') || []
     );
   };
 
   // Handle delete table — open confirmation modal
-  const handleDeleteTable = (table: any) => {
+  const handleDeleteTable = (table: Table) => {
     const activeOrders = getActiveOrdersForTable(table.id);
     if (activeOrders.length > 0) {
       toast.error(t('tables.cannotDeleteActiveOrder'));
@@ -183,7 +168,7 @@ export default function TablesPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-        {tables?.map((table: any) => {
+        {tables?.map((table) => {
           const activeOrders = getActiveOrdersForTable(table.id);
           const activeCalls = getActiveCallsForTable(table.id);
 

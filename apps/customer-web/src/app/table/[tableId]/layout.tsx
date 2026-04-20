@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import * as Sentry from '@sentry/nextjs';
 import { ConciergeBell, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTable } from '@/hooks/use-table';
@@ -31,7 +32,7 @@ export default function TableLayout({
       });
       toast.success(t('callStaff.toastSuccess'));
     } catch (error) {
-      console.error('Error calling staff:', error);
+      Sentry.captureException(error);
       toast.error(t('callStaff.toastError'));
     }
   };

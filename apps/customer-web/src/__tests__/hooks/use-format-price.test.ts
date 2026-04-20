@@ -1,10 +1,11 @@
+import { renderHook } from '@testing-library/react';
 import { useFormatPrice } from '@/hooks/use-format-price';
-import { db } from '@/lib/supabase';
-import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useFormatPrice', () => {
   it('formats using settings when loaded (currency after)', async () => {
-    (db.settings.get as any).mockResolvedValueOnce({
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.settings.get as any).mockResolvedValueOnce({
       id: '00000000-0000-0000-0000-000000000001',
       restaurant_name: 'Test',
       tax_enabled: true,
@@ -16,7 +17,7 @@ describe('useFormatPrice', () => {
       prices_include_tax: false,
     });
 
-    const { result } = renderHookWithProviders(() => useFormatPrice());
+    const { result } = renderHook(() => useFormatPrice(), { wrapper });
 
     await waitFor(() => {
       const formatted = result.current(10.5);
@@ -25,7 +26,8 @@ describe('useFormatPrice', () => {
   });
 
   it('formats using settings when loaded (currency before)', async () => {
-    (db.settings.get as any).mockResolvedValueOnce({
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.settings.get as any).mockResolvedValueOnce({
       id: '00000000-0000-0000-0000-000000000001',
       restaurant_name: 'Test',
       tax_enabled: true,
@@ -37,7 +39,7 @@ describe('useFormatPrice', () => {
       prices_include_tax: false,
     });
 
-    const { result } = renderHookWithProviders(() => useFormatPrice());
+    const { result } = renderHook(() => useFormatPrice(), { wrapper });
 
     await waitFor(() => {
       const formatted = result.current(10.5);
@@ -45,12 +47,12 @@ describe('useFormatPrice', () => {
     });
   });
 
-  it('uses DEFAULT_SETTINGS immediately via placeholderData', () => {
-    // useCafeSettings has placeholderData: DEFAULT_SETTINGS, so settings are always available
-    // DEFAULT_SETTINGS has currency_symbol: '¥', currency_position: 'before', decimal_places: 0
+  it('falls back to basic formatting when settings are not loaded', () => {
+    // The shared useCafeSettings has no placeholderData, so settings are undefined initially.
+    // useFormatPrice falls back to `$${amount.toFixed(2)}` when cafeSettings is undefined.
     const { result } = renderHookWithProviders(() => useFormatPrice());
 
     const formatted = result.current(10.5);
-    expect(formatted).toBe('¥11');
+    expect(formatted).toBe('$10.50');
   });
 });

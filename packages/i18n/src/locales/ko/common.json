@@ -47,6 +47,8 @@
   "optional": "선택",
   "pending": "대기 중",
   "phone": "전화",
+  "phonePlaceholder": "+XX XXX XXX XXXX",
+  "whatsappPlaceholder": "https://wa.me/XXXXXXXXXXXX",
   "placingOrder": "주문 중...",
   "quantity": "수량",
   "refresh": "새로고침",

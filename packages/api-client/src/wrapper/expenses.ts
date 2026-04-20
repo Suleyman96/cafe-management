@@ -68,6 +68,8 @@ export function createExpensesWrapper(ctx: WrapperContext) {
       startDate?: string;
       endDate?: string;
       paymentMethod?: string;
+      limit?: number;
+      offset?: number;
     }) => {
       let query = ctx.client
         .from('expenses')
@@ -89,6 +91,13 @@ export function createExpensesWrapper(ctx: WrapperContext) {
       }
       if (options?.paymentMethod) {
         query = query.eq('payment_method', options.paymentMethod);
+      }
+
+      // Apply pagination with sensible defaults
+      const limit = options?.limit ?? 200;
+      const offset = options?.offset ?? 0;
+      if (limit > 0) {
+        query = query.range(offset, offset + limit - 1);
       }
 
       const { data, error } = await query;

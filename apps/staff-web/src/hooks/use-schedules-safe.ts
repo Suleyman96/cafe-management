@@ -1,80 +1,28 @@
 /**
  * Type-Safe Schedules Hooks
- * Uses the wrapped client for type safety
+ * Re-exports from @gustri/queries, with local mutations for param shape compatibility
  */
 
-import { QUERY_KEYS } from '@gustri/core';
-import type { Database } from '@gustri/database';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { invalidateSchedules } from '@/lib/query-helpers';
-import { db } from '@/lib/supabase/wrapped-client';
+import type { StaffScheduleUpdate } from '@gustri/database';
+import { invalidateSchedules, useDb } from '@gustri/queries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-type StaffSchedule = Database['public']['Tables']['staff_schedules']['Row'];
-type StaffScheduleInsert = Database['public']['Tables']['staff_schedules']['Insert'];
-type StaffScheduleUpdate = Database['public']['Tables']['staff_schedules']['Update'];
+export {
+  useCreateSchedule,
+  useDeleteSchedule,
+  useMySchedule,
+  useMyScheduleToday,
+  useSchedulesByDate,
+  useSchedulesByDateRange,
+} from '@gustri/queries';
 
-export function useSchedulesByDate(date: string) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.SCHEDULES, date],
-    queryFn: async (): Promise<StaffSchedule[]> => db.schedules.findByDate(date),
-    enabled: !!date,
-  });
-}
-
-export function useSchedulesByDateRange(startDate: string, endDate: string) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.SCHEDULES, startDate, endDate],
-    queryFn: async (): Promise<StaffSchedule[]> => db.schedules.findByDateRange(startDate, endDate),
-    enabled: !!startDate && !!endDate,
-  });
-}
-
-export function useMySchedule(staffId: string, startDate: string, endDate: string) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.MY_SCHEDULE, staffId, startDate, endDate],
-    queryFn: async (): Promise<StaffSchedule[]> =>
-      db.schedules.findByStaffRange(staffId, startDate, endDate),
-    enabled: !!staffId && !!startDate && !!endDate,
-  });
-}
-
-export function useMyScheduleToday(staffId: string) {
-  const today = new Date().toLocaleDateString('en-CA');
-  return useQuery({
-    queryKey: [QUERY_KEYS.MY_SCHEDULE, staffId, today],
-    queryFn: async (): Promise<StaffSchedule[]> => db.schedules.findByStaffAndDate(staffId, today),
-    enabled: !!staffId,
-  });
-}
-
-export function useCreateSchedule() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: StaffScheduleInsert) => db.schedules.create(data),
-    onSuccess: () => {
-      invalidateSchedules(queryClient);
-    },
-  });
-}
-
+// Local mutation — staff-web consumers use { id, data } param shape
 export function useUpdateSchedule() {
+  const db = useDb();
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: StaffScheduleUpdate }) =>
       db.schedules.update(id, data),
-    onSuccess: () => {
-      invalidateSchedules(queryClient);
-    },
-  });
-}
-
-export function useDeleteSchedule() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => db.schedules.delete(id),
     onSuccess: () => {
       invalidateSchedules(queryClient);
     },

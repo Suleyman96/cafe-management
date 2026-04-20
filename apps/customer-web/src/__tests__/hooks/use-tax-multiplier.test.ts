@@ -1,21 +1,23 @@
+import { renderHook } from '@testing-library/react';
 import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
-import { db } from '@/lib/supabase';
-import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
+import { createWrapper, waitFor } from '../helpers/test-utils';
 
 describe('useTaxMultiplier', () => {
   it('returns 1 when settings have tax disabled', async () => {
-    (db.settings.get as any).mockResolvedValueOnce({
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.settings.get as any).mockResolvedValueOnce({
       tax_enabled: false,
       tax_percentage: 18,
     });
 
-    const { result } = renderHookWithProviders(() => useTaxMultiplier());
+    const { result } = renderHook(() => useTaxMultiplier(), { wrapper });
 
     await waitFor(() => expect(result.current).toBe(1));
   });
 
   it('returns tax multiplier when tax is enabled', async () => {
-    (db.settings.get as any).mockResolvedValueOnce({
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.settings.get as any).mockResolvedValueOnce({
       id: '00000000-0000-0000-0000-000000000001',
       tax_enabled: true,
       tax_percentage: 18,
@@ -27,18 +29,19 @@ describe('useTaxMultiplier', () => {
       restaurant_name: 'Test',
     });
 
-    const { result } = renderHookWithProviders(() => useTaxMultiplier());
+    const { result } = renderHook(() => useTaxMultiplier(), { wrapper });
 
     await waitFor(() => expect(result.current).toBe(1.18));
   });
 
   it('returns 1 when tax_percentage is 0', async () => {
-    (db.settings.get as any).mockResolvedValueOnce({
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.settings.get as any).mockResolvedValueOnce({
       tax_enabled: true,
       tax_percentage: 0,
     });
 
-    const { result } = renderHookWithProviders(() => useTaxMultiplier());
+    const { result } = renderHook(() => useTaxMultiplier(), { wrapper });
 
     await waitFor(() => expect(result.current).toBe(1));
   });

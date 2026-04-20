@@ -1,8 +1,8 @@
 'use client';
 
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
+import { NumberInput } from '@gustri/ui';
 import { ClipboardList, DollarSign, Receipt, Store, Truck } from 'lucide-react';
-import { NumberInput } from '@/components/ui/number-input';
 import type { SettingsTabProps } from './settings-types';
 
 export function GeneralSettingsTab({ formData, onChange }: SettingsTabProps) {

@@ -2,13 +2,14 @@ import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, Text } from 'react-native-paper';
+import { BRAND_PRIMARY } from '@/theme';
 
 const REASON_COLORS: Record<string, string> = {
   expired: '#ef4444',
   spoiled: '#dc2626',
   overcooked: '#f59e0b',
   dropped: '#8b5cf6',
-  returned_by_customer: '#367B8B',
+  returned_by_customer: BRAND_PRIMARY,
   preparation_waste: '#6b7280',
   other: '#9ca3af',
 };

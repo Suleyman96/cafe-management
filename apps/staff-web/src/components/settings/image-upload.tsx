@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import { ImageIcon, Loader2, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useRef, useState } from 'react';
@@ -66,7 +67,7 @@ export function ImageUpload({
         });
 
         if (uploadError) {
-          console.error('Upload error:', uploadError);
+          Sentry.captureException(uploadError);
           toast.error('Failed to upload image');
           return;
         }
@@ -77,7 +78,7 @@ export function ImageUpload({
         onChange(urlData.publicUrl);
         toast.success('Image uploaded successfully');
       } catch (err) {
-        console.error('Upload error:', err);
+        Sentry.captureException(err);
         toast.error('Failed to upload image');
       } finally {
         setIsUploading(false);
@@ -134,7 +135,7 @@ export function ImageUpload({
       onChange(null);
       toast.success('Image removed');
     } catch (err) {
-      console.error('Remove error:', err);
+      Sentry.captureException(err);
       // Still clear the value even if deletion fails
       onChange(null);
     }

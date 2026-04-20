@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event';
 import { toast } from 'sonner';
 import { CartScreen } from '@/components/cart/cart-screen';
+import { apiRoutes } from '@/lib/api-routes';
 import { db } from '@/lib/supabase';
 import { useCartStore } from '@/store/cart-store';
 import { renderWithProviders, screen, waitFor } from '../helpers/test-utils';
@@ -118,11 +119,13 @@ describe('CartScreen — checkout flow', () => {
     // Mock settings
     (db.settings.get as any).mockResolvedValueOnce(defaultSettings);
 
-    // Mock order creation
-    (db.orders.create as any).mockResolvedValueOnce({ id: 'order-1' });
+    // Mock order creation via API route
+    (apiRoutes.customerOrders.create as any).mockResolvedValueOnce({
+      order: { id: 'order-1', status: 'pending_approval' },
+    });
 
-    // Mock order items creation
-    (db.orderItems.create as any).mockResolvedValueOnce([]);
+    // Mock order items creation via API route
+    (apiRoutes.customerOrders.addItems as any).mockResolvedValueOnce({ items: [] });
 
     renderWithProviders(<CartScreen tableId="T01" />);
 
@@ -137,27 +140,26 @@ describe('CartScreen — checkout flow', () => {
     });
     await user.click(placeOrderButton);
 
-    // Assert db.orders.create was called with the correct table_id and status
+    // Assert apiRoutes.customerOrders.create was called with the correct table_id
     await waitFor(() => {
-      expect(db.orders.create).toHaveBeenCalledWith(
+      expect(apiRoutes.customerOrders.create).toHaveBeenCalledWith(
         expect.objectContaining({
           table_id: 'uuid-t1',
-          status: 'pending_approval',
+          order_type: 'dine_in',
         }),
       );
     });
 
-    // Assert db.orderItems.create was called with the array of items
+    // Assert apiRoutes.customerOrders.addItems was called with the items
     await waitFor(() => {
-      expect(db.orderItems.create).toHaveBeenCalledWith(
+      expect(apiRoutes.customerOrders.addItems).toHaveBeenCalledWith(
+        'order-1',
         expect.arrayContaining([
           expect.objectContaining({
-            order_id: 'order-1',
             menu_item_id: 'm1',
             quantity: 2,
           }),
           expect.objectContaining({
-            order_id: 'order-1',
             menu_item_id: 'm2',
             quantity: 1,
           }),
@@ -203,8 +205,8 @@ describe('CartScreen — checkout flow', () => {
     });
     await user.click(placeOrderButton);
 
-    // Assert db.orders.create was NOT called
-    expect(db.orders.create).not.toHaveBeenCalled();
+    // Assert apiRoutes.customerOrders.create was NOT called
+    expect(apiRoutes.customerOrders.create).not.toHaveBeenCalled();
   });
 
   it('cart clears after successful order', async () => {
@@ -229,8 +231,10 @@ describe('CartScreen — checkout flow', () => {
     (db.settings.get as any).mockResolvedValueOnce(defaultSettings);
 
     // Mock successful order creation
-    (db.orders.create as any).mockResolvedValueOnce({ id: 'order-1' });
-    (db.orderItems.create as any).mockResolvedValueOnce([]);
+    (apiRoutes.customerOrders.create as any).mockResolvedValueOnce({
+      order: { id: 'order-1', status: 'pending_approval' },
+    });
+    (apiRoutes.customerOrders.addItems as any).mockResolvedValueOnce({ items: [] });
 
     renderWithProviders(<CartScreen tableId="T01" />);
 

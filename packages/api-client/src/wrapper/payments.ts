@@ -12,7 +12,8 @@ export function createPaymentsWrapper(ctx: WrapperContext) {
         .from('order_payments')
         .insert(paymentData)
         .select(`
-          *,
+          id, tenant_id, order_id, received_by, payment_type,
+          amount, tip_amount, payment_method, order_item_ids, notes, created_at,
           received_by_staff:staff!order_payments_received_by_fkey(full_name, role)
         `)
         .single();
@@ -26,7 +27,8 @@ export function createPaymentsWrapper(ctx: WrapperContext) {
       const { data, error } = await ctx.client
         .from('order_payments')
         .select(`
-          *,
+          id, tenant_id, order_id, received_by, payment_type,
+          amount, tip_amount, payment_method, order_item_ids, notes, created_at,
           received_by_staff:staff!order_payments_received_by_fkey(full_name, role)
         `)
         .eq('order_id', orderId)
@@ -40,7 +42,8 @@ export function createPaymentsWrapper(ctx: WrapperContext) {
       const { data, error } = await ctx.client
         .from('order_payments')
         .select(`
-          *,
+          id, tenant_id, order_id, received_by, payment_type,
+          amount, tip_amount, payment_method, order_item_ids, notes, created_at,
           received_by_staff:staff!order_payments_received_by_fkey(full_name, role)
         `)
         .gte('created_at', startDate)
@@ -54,7 +57,10 @@ export function createPaymentsWrapper(ctx: WrapperContext) {
     findByReceivedBy: async (staffId: string, limit = 10) => {
       const { data, error } = await ctx.client
         .from('order_payments')
-        .select('*')
+        .select(`
+          id, tenant_id, order_id, received_by, payment_type,
+          amount, tip_amount, payment_method, order_item_ids, notes, created_at
+        `)
         .eq('received_by', staffId)
         .order('created_at', { ascending: false })
         .limit(limit);

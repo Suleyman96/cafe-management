@@ -8,7 +8,7 @@ import type { StaffInsert, StaffUpdate, WrapperContext } from './types';
 export function createStaffWrapper(ctx: WrapperContext) {
   return {
     findAll: async (role?: string) => {
-      let query = ctx.client.from('staff').select('*').order('full_name');
+      let query = ctx.client.from('staff').select('*').order('full_name').limit(200);
 
       if (role) {
         query = query.eq('role', role);
@@ -88,7 +88,8 @@ export function createStaffWrapper(ctx: WrapperContext) {
         .select('*')
         .eq('role', 'waiter')
         .eq('is_active', true)
-        .order('full_name');
+        .order('full_name')
+        .limit(100);
 
       if (error) throw handleSupabaseError(error);
       const waiters = data || [];

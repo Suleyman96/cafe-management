@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import * as Sentry from '@sentry/nextjs';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -85,7 +86,7 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
       onOrderPlaced?.();
       router.push(`/table/${tableId}/order`);
     } catch (error) {
-      console.error('Error placing order:', error);
+      Sentry.captureException(error);
       toast.error(t('cart.orderError'));
     }
   };

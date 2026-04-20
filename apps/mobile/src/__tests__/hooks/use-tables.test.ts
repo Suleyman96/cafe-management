@@ -1,21 +1,20 @@
 import { QUERY_KEYS } from '@gustri/core';
-import { waitFor } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useTable, useTables, useUpdateTableStatus } from '@/hooks/use-tables';
-import { db } from '@/lib/supabase';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders } from '../helpers/test-utils';
 
 describe('useTables', () => {
   it('calls db.tables.findAll', () => {
-    renderHookWithProviders(() => useTables());
-    expect(db.tables.findAll).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useTables());
+    expect(mockDb.tables.findAll).toHaveBeenCalled();
   });
 });
 
 describe('useTable', () => {
   it('calls db.tables.findById', () => {
-    renderHookWithProviders(() => useTable('t1'));
-    expect(db.tables.findById).toHaveBeenCalledWith('t1');
+    const { mockDb } = renderHookWithProviders(() => useTable('t1'));
+    expect(mockDb.tables.findById).toHaveBeenCalledWith('t1');
   });
 });
 
@@ -36,17 +35,18 @@ describe('useUpdateTableStatus', () => {
 describe('useTables - data flow', () => {
   it('returns fetched tables data', async () => {
     const mockTables = [{ id: 't1', table_number: 'T01', status: 'free' }];
-    (db.tables.findAll as any).mockResolvedValueOnce(mockTables);
-    const { result } = renderHookWithProviders(() => useTables());
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.tables.findAll as any).mockResolvedValueOnce(mockTables);
+    const { result } = renderHook(() => useTables(), { wrapper });
     await waitFor(() => expect(result.current.data).toEqual(mockTables));
   });
 });
 
 describe('useUpdateTableStatus - argument verification', () => {
   it('calls updateStatus with correct args', async () => {
-    const { result } = renderHookWithProviders(() => useUpdateTableStatus());
+    const { result, mockDb } = renderHookWithProviders(() => useUpdateTableStatus());
     await result.current.mutateAsync({ tableId: 't1', status: 'occupied' });
-    expect(db.tables.updateStatus).toHaveBeenCalledWith('t1', 'occupied');
+    expect(mockDb.tables.updateStatus).toHaveBeenCalledWith('t1', 'occupied');
   });
 });
 

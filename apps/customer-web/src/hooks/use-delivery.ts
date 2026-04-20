@@ -1,9 +1,9 @@
 import { QUERY_KEYS } from '@gustri/core';
-import type { OrdersInsert } from '@gustri/database';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { db, supabase } from '@/lib/supabase';
+import { apiRoutes } from '@/lib/api-routes';
+import { supabase } from '@/lib/supabase';
 import type { DeliveryOrderWithDetails, Order, OrderItem } from '@/types';
 
 export function useDeliveryOrder(orderId: string) {
@@ -11,10 +11,16 @@ export function useDeliveryOrder(orderId: string) {
 
   const query = useQuery({
     queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderId],
-    queryFn: async (): Promise<DeliveryOrderWithDetails | null> =>
-      db.orders.findDeliveryById(orderId) as Promise<DeliveryOrderWithDetails | null>,
+    queryFn: async (): Promise<DeliveryOrderWithDetails | null> => {
+      const { data, error } = await (supabase.rpc as Function)('get_delivery_order', {
+        p_order_id: orderId,
+      });
+      if (error) throw error;
+      if (!data) return null;
+      return data as unknown as DeliveryOrderWithDetails;
+    },
     enabled: !!orderId,
-    staleTime: 0,
+    staleTime: 10 * 1000, // 10s — realtime subscription handles freshness
   });
 
   // Real-time subscription by order ID
@@ -77,23 +83,20 @@ export function useCreateDeliveryOrder() {
       deliveryFee: number;
       orderNotes?: string;
       tenantId: string;
-    }): Promise<Order> =>
-      db.orders.create({
+    }): Promise<Order> => {
+      const { order } = await apiRoutes.customerOrders.create({
         table_id: null,
         tenant_id: data.tenantId,
         order_type: 'delivery',
         source: 'customer',
-        status: 'pending_approval',
-        customer_name: data.customerName,
-        customer_phone: data.customerPhone,
+        customer_notes: data.orderNotes,
         delivery_address: data.deliveryAddress,
-        delivery_notes: data.deliveryNotes || null,
+        delivery_phone: data.customerPhone,
+        delivery_customer_name: data.customerName,
         delivery_fee: data.deliveryFee,
-        customer_notes: data.orderNotes || null,
-        subtotal: 0,
-        tax: 0,
-        total: 0,
-      } as Partial<OrdersInsert> as OrdersInsert),
+      });
+      return order as Order;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER] });
     },
@@ -118,16 +121,17 @@ export function useAddDeliveryOrderItems() {
         notes?: string;
       }>;
       tenantId: string;
-    }): Promise<OrderItem[]> =>
-      db.orderItems.create(
+    }): Promise<OrderItem[]> => {
+      const { items: createdItems } = await apiRoutes.customerOrders.addItems(
+        orderId,
         items.map((item) => ({
-          order_id: orderId,
-          tenant_id: tenantId,
           ...item,
           notes: item.notes ?? null,
-          status: 'pending' as const,
+          tenant_id: tenantId,
         })),
-      ),
+      );
+      return createdItems as OrderItem[];
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER] });
     },

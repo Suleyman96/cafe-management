@@ -3,10 +3,11 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, IconButton } from 'react-native-paper';
 import { Text } from '@/lib/paper-compat';
+import { BRAND_PRIMARY } from '@/theme';
 
 const METHOD_COLORS: Record<string, string> = {
   cash: '#10b981',
-  card: '#367B8B',
+  card: BRAND_PRIMARY,
   digital: '#8b5cf6',
   bank_transfer: '#f59e0b',
 };

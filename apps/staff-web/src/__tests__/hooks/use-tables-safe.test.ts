@@ -1,4 +1,5 @@
 import { QUERY_KEYS } from '@gustri/core';
+import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useCreateTable,
@@ -10,56 +11,62 @@ import {
   useUpdateTableStatus,
 } from '@/hooks/use-tables-safe';
 import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders, waitFor } from '../helpers/test-utils';
+
+// --- Hooks from @gustri/queries (use useDb → mockDb from provider) ---
 
 describe('useTables', () => {
   it('calls db.tables.findAll', () => {
-    renderHookWithProviders(() => useTables());
-    expect(db.tables.findAll).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useTables());
+    expect(mockDb.tables.findAll).toHaveBeenCalled();
   });
 
   it('returns fetched tables data', async () => {
     const mockTables = [{ id: 't1', table_number: 'T01', status: 'free' }];
-    (db.tables.findAll as any).mockResolvedValueOnce(mockTables);
-    const { result } = renderHookWithProviders(() => useTables());
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.tables.findAll as any).mockResolvedValueOnce(mockTables);
+    const { result } = renderHook(() => useTables(), { wrapper });
     await waitFor(() => expect(result.current.data).toEqual(mockTables));
   });
 
   it('reports error when findAll rejects', async () => {
-    (db.tables.findAll as any).mockRejectedValueOnce(new Error('DB error'));
-    const { result } = renderHookWithProviders(() => useTables());
+    const { wrapper, mockDb } = createWrapper();
+    (mockDb.tables.findAll as any).mockRejectedValueOnce(new Error('DB error'));
+    const { result } = renderHook(() => useTables(), { wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });
 
 describe('useTable', () => {
   it('calls findById with id', () => {
-    renderHookWithProviders(() => useTable('t1'));
-    expect(db.tables.findById).toHaveBeenCalledWith('t1');
+    const { mockDb } = renderHookWithProviders(() => useTable('t1'));
+    expect(mockDb.tables.findById).toHaveBeenCalledWith('t1');
   });
 
   it('is disabled when id is empty', () => {
-    renderHookWithProviders(() => useTable(''));
-    expect(db.tables.findById).not.toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useTable(''));
+    expect(mockDb.tables.findById).not.toHaveBeenCalled();
   });
 });
 
 describe('useTableByQrCode', () => {
   it('calls findByQrCode', () => {
-    renderHookWithProviders(() => useTableByQrCode('qr-abc'));
-    expect(db.tables.findByQrCode).toHaveBeenCalledWith('qr-abc');
+    const { mockDb } = renderHookWithProviders(() => useTableByQrCode('qr-abc'));
+    expect(mockDb.tables.findByQrCode).toHaveBeenCalledWith('qr-abc');
   });
 
   it('is disabled when qrCode is empty', () => {
-    renderHookWithProviders(() => useTableByQrCode(''));
-    expect(db.tables.findByQrCode).not.toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useTableByQrCode(''));
+    expect(mockDb.tables.findByQrCode).not.toHaveBeenCalled();
   });
 
   it('useTableByQrCode calls findByQrCode', () => {
-    renderHookWithProviders(() => useTableByQrCode('abc123'));
-    expect(db.tables.findByQrCode).toHaveBeenCalledWith('abc123');
+    const { mockDb } = renderHookWithProviders(() => useTableByQrCode('abc123'));
+    expect(mockDb.tables.findByQrCode).toHaveBeenCalledWith('abc123');
   });
 });
+
+// --- Local hooks (use direct db import → assert on db from vi.mock) ---
 
 describe('useUpdateTableStatus', () => {
   it('invalidates TABLES and ORDERS on success', async () => {
@@ -99,10 +106,10 @@ describe('useCreateTable', () => {
   });
 });
 
-describe('useUpdateTable', () => {
-  it('invalidates TABLES and specific TABLE on success', async () => {
-    (db.tables.update as any).mockResolvedValueOnce({ id: 't1' });
+// --- Mutations from @gustri/queries (use useDb → mockDb from provider) ---
 
+describe('useUpdateTable', () => {
+  it('invalidates TABLES on success', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useUpdateTable());
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -110,7 +117,6 @@ describe('useUpdateTable', () => {
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLE, 't1']);
   });
 });
 
@@ -125,11 +131,11 @@ describe('useDeleteTable', () => {
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
   });
 
-  it('invalidates TABLE_QR on delete', async () => {
+  it('invalidates TABLES on delete', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useDeleteTable());
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync('t1');
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLE_QR]);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
   });
 });

@@ -1,6 +1,7 @@
 import type React from 'react';
 import { createContext, useCallback, useMemo, useState } from 'react';
 import { Snackbar } from 'react-native-paper';
+import { BRAND_PRIMARY } from '@/theme';
 
 type SnackbarType = 'success' | 'error' | 'info';
 
@@ -15,7 +16,7 @@ export const SnackbarContext = createContext<SnackbarContextValue>({
 const TYPE_COLORS: Record<SnackbarType, string> = {
   success: '#10b981',
   error: '#ef4444',
-  info: '#367B8B',
+  info: BRAND_PRIMARY,
 };
 
 export function SnackbarProvider({ children }: { children: React.ReactNode }) {

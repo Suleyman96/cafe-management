@@ -1,11 +1,10 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button, NumberInput } from '@gustri/ui';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { NumberInput } from '@/components/ui/number-input';
 import { useCreateTable, useUpdateTable } from '@/hooks';
 
 interface TableModalProps {

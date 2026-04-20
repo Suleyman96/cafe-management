@@ -2,10 +2,11 @@
 
 import type { OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { Button } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { UtensilsCrossed, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { useCreateOrder } from '@/hooks';
 
 interface CreateTableOrderModalProps {
@@ -44,7 +45,7 @@ export function CreateTableOrderModal({
       // Reset form
       setNotes('');
     } catch (error) {
-      console.error('Failed to create table order:', error);
+      Sentry.captureException(error);
       toast.error(t('orders.failedCreateOrder'));
     } finally {
       setLoading(false);

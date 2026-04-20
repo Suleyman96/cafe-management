@@ -509,8 +509,12 @@ export default function SchedulesPage() {
           {/* Calendar header */}
           <div className="grid grid-cols-7 border-b">
             {Array.from({ length: 7 }, (_, i) => {
-              // Jan 1, 2024 is a Monday — generate locale-aware day names
-              const d = new Date(2024, 0, 1 + i);
+              // Find a Monday in the current week to generate locale-aware day names
+              const now = new Date();
+              const monday = new Date(now);
+              monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+              const d = new Date(monday);
+              d.setDate(monday.getDate() + i);
               return d.toLocaleDateString('default', { weekday: 'short' });
             }).map((day) => (
               <div

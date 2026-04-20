@@ -2,6 +2,7 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { AlertTriangle, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -89,7 +90,7 @@ export function TableTransferModal({
       }
       onSuccess();
     } catch (error) {
-      console.error('Failed to transfer table:', error);
+      Sentry.captureException(error);
       if (succeeded > 0) {
         toast.error(
           t('tables.partialTransferError', {

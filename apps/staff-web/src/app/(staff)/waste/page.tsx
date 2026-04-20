@@ -2,12 +2,11 @@
 
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { LoadingSpinner } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui';
 import { DollarSign, Pencil, Plus, Trash2, TrendingDown } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { WasteLogModal } from '@/components/modals/waste-log-modal';
-import { Button } from '@/components/ui/button';
 import { useCafeSettings, useDeleteWasteLog, useWasteLogs, useWasteMonthlySummary } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
 

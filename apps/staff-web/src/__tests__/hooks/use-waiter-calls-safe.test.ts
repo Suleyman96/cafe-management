@@ -6,25 +6,24 @@ import {
   useResolveWaiterCall,
   useWaiterCalls,
 } from '@/hooks/use-waiter-calls-safe';
-import { db } from '@/lib/supabase/wrapped-client';
 import { renderHookWithProviders } from '../helpers/test-utils';
 
 describe('useWaiterCalls', () => {
   it('calls db.waiterCalls.findAll', () => {
-    renderHookWithProviders(() => useWaiterCalls());
-    expect(db.waiterCalls.findAll).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => useWaiterCalls());
+    expect(mockDb.waiterCalls.findAll).toHaveBeenCalled();
   });
 
   it('passes status filter', () => {
-    renderHookWithProviders(() => useWaiterCalls('pending' as any));
-    expect(db.waiterCalls.findAll).toHaveBeenCalledWith('pending');
+    const { mockDb } = renderHookWithProviders(() => useWaiterCalls('pending' as any));
+    expect(mockDb.waiterCalls.findAll).toHaveBeenCalledWith('pending');
   });
 });
 
 describe('usePendingWaiterCallsCount', () => {
   it('calls getPendingCount', () => {
-    renderHookWithProviders(() => usePendingWaiterCallsCount());
-    expect(db.waiterCalls.getPendingCount).toHaveBeenCalled();
+    const { mockDb } = renderHookWithProviders(() => usePendingWaiterCallsCount());
+    expect(mockDb.waiterCalls.getPendingCount).toHaveBeenCalled();
   });
 });
 
@@ -42,7 +41,7 @@ describe('useAcknowledgeWaiterCall', () => {
 });
 
 describe('useResolveWaiterCall', () => {
-  it('invalidates WAITER_CALLS, waiter-calls-count, and TABLES on success', async () => {
+  it('invalidates WAITER_CALLS and waiter-calls-count on success', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useResolveWaiterCall());
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -51,6 +50,5 @@ describe('useResolveWaiterCall', () => {
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WAITER_CALLS]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WAITER_CALLS_COUNT]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
   });
 });

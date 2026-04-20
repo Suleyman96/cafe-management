@@ -1,11 +1,10 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { Button, LoadingSpinner } from '@gustri/ui';
 import { MapPin, Phone, Truck, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useDeliveryStore } from '@/store/delivery-store';
 

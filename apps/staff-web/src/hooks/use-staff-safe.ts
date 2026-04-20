@@ -1,85 +1,24 @@
 /**
  * Type-Safe Staff Hooks
- * Uses the wrapped client for type safety without 'as any'
+ * Re-exports from @gustri/queries, with local composite hooks
  */
 
-import { QUERY_KEYS, USER_ROLE } from '@gustri/core';
-import type { Database } from '@gustri/database';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { db } from '@/lib/supabase/wrapped-client';
+import { useStaff as useStaffShared } from '@gustri/queries';
 
-type Staff = Database['public']['Tables']['staff']['Row'];
-type StaffInsert = Database['public']['Tables']['staff']['Insert'];
-type StaffUpdate = Database['public']['Tables']['staff']['Update'];
+// Re-export shared hooks
+export {
+  useActiveWaiters,
+  useCreateStaff,
+  useDeleteStaff,
+  useStaff,
+  useStaffByEmail,
+  useStaffMember,
+  useUpdateStaff,
+} from '@gustri/queries';
 
-export function useStaff(role?: keyof typeof USER_ROLE) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.STAFF, role],
-    queryFn: async (): Promise<Staff[]> => db.staff.findAll(role ? USER_ROLE[role] : undefined),
-  });
-}
-
-export function useActiveWaiters() {
-  return useQuery({
-    queryKey: [QUERY_KEYS.STAFF, 'waiters'],
-    queryFn: async (): Promise<Staff[]> => db.staff.getActiveWaiters(),
-  });
-}
-
-export function useStaffMember(id: string) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.STAFF, id],
-    queryFn: async (): Promise<Staff> => db.staff.findById(id),
-    enabled: !!id,
-  });
-}
-
-export function useStaffByEmail(email: string) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.STAFF, 'email', email],
-    queryFn: async (): Promise<Staff> => db.staff.findByEmail(email),
-    enabled: !!email,
-  });
-}
-
-export function useCreateStaff() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (staff: StaffInsert) => db.staff.create(staff),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STAFF] });
-    },
-  });
-}
-
-export function useUpdateStaff() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: StaffUpdate }) =>
-      db.staff.update(id, updates),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STAFF] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STAFF, data.id] });
-    },
-  });
-}
-
-export function useDeleteStaff() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => db.staff.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STAFF] });
-    },
-  });
-}
-
-// Helper function to get staff by role
+// Composite hook: groups staff by role (app-specific)
 export function useStaffByRole() {
-  const { data: staff, ...rest } = useStaff();
+  const { data: staff, ...rest } = useStaffShared();
 
   const staffByRole = staff?.reduce(
     (acc, member) => {
