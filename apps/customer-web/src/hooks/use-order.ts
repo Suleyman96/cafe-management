@@ -21,7 +21,7 @@ export function useOrder(tableId: string) {
       return data as unknown as OrderWithItems;
     },
     enabled: !!tableId,
-    staleTime: 0,
+    staleTime: 10 * 1000, // 10s — realtime subscription handles freshness
   });
 
   const orderId = query.data?.id;

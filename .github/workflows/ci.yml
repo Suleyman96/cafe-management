@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint & Format
+  setup:
+    name: Install & Build Packages
     runs-on: ubuntu-latest
 
     steps:
@@ -32,6 +32,48 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build --filter='./packages/*'
+
+      - name: Cache workspace
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            node_modules
+            packages/*/dist
+            packages/*/node_modules
+            apps/*/node_modules
+          key: workspace-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    needs: [setup]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Restore workspace
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            packages/*/dist
+            packages/*/node_modules
+            apps/*/node_modules
+          key: workspace-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
 
       - name: Biome check
         run: pnpm check
@@ -62,9 +104,13 @@ jobs:
           fi
           echo "✅ No secrets detected."
 
+      - name: Audit dependencies
+        run: pnpm audit --prod || true
+
   test:
     name: Test
     runs-on: ubuntu-latest
+    needs: [setup]
 
     steps:
       - name: Checkout
@@ -79,13 +125,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build packages
-        run: pnpm build --filter=@gustri/database --filter=@gustri/core --filter=@gustri/api-client --filter=@gustri/i18n --filter=@gustri/ui
+      - name: Restore workspace
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            packages/*/dist
+            packages/*/node_modules
+            apps/*/node_modules
+          key: workspace-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
 
       - name: Run tests
         run: pnpm test
@@ -108,22 +157,28 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build packages
-        run: pnpm build --filter=@gustri/database --filter=@gustri/core --filter=@gustri/api-client --filter=@gustri/i18n --filter=@gustri/ui
+      - name: Restore workspace
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            packages/*/dist
+            packages/*/node_modules
+            apps/*/node_modules
+          key: workspace-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
 
       - name: Type check
-        run: pnpm type-check --filter=@gustri/staff-web --filter=@gustri/customer-web
+        run: pnpm type-check --filter='./apps/*'
 
       - name: Build apps
         run: pnpm build --filter=@gustri/staff-web --filter=@gustri/customer-web
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
   e2e:
     name: E2E Tests
@@ -143,13 +198,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build packages
-        run: pnpm build --filter=@gustri/database --filter=@gustri/core --filter=@gustri/api-client --filter=@gustri/i18n --filter=@gustri/ui
+      - name: Restore workspace
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            packages/*/dist
+            packages/*/node_modules
+            apps/*/node_modules
+          key: workspace-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
 
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
@@ -177,6 +235,11 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
           NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
           ENVEOF
+
+      - name: Verify env files
+        run: |
+          grep -q '^NEXT_PUBLIC_SUPABASE_URL=' apps/staff-web/.env.local || (echo "FAIL: staff-web env vars have leading whitespace" && exit 1)
+          grep -q '^NEXT_PUBLIC_SUPABASE_URL=' apps/customer-web/.env.local || (echo "FAIL: customer-web env vars have leading whitespace" && exit 1)
 
       - name: Run RLS policy tests
         run: pnpm test:rls

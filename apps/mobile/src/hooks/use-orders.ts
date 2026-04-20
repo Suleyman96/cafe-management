@@ -57,7 +57,7 @@ export function useOrders(filters?: {
   const query = useQuery({
     queryKey: [QUERY_KEYS.ORDERS, filters],
     queryFn: async (): Promise<OrderWithDetails[]> => db.orders.findAll(filters || undefined),
-    staleTime: 0,
+    staleTime: 10 * 1000, // 10s — realtime subscription handles freshness
   });
 
   // Real-time subscription (needs raw supabase client for channel API)

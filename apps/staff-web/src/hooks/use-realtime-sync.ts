@@ -11,6 +11,7 @@ type RealtimeTable = {
 };
 
 const MAX_BACKOFF_MS = 30_000;
+const MAX_RETRIES = 10;
 
 /**
  * Subscribes to Supabase Realtime for a set of tables and
@@ -41,11 +42,13 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
     }
   }, [queryClient]);
 
+  const cancelledRef = useRef(false);
+
   useEffect(() => {
     // Don't subscribe until we know the tenant
     if (!tenantId) return;
 
-    let cancelled = false;
+    cancelledRef.current = false;
 
     function createChannel() {
       let channel = supabase.channel(channelName);
@@ -57,6 +60,8 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
           'postgres_changes',
           { event: '*', schema: 'public', table, filter: resolvedFilter },
           () => {
+            // Guard: skip invalidation if component has unmounted
+            if (cancelledRef.current) return;
             for (const key of queryKeys) {
               queryClient.invalidateQueries({ queryKey: key });
             }
@@ -65,7 +70,7 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
       }
 
       channel.subscribe((status) => {
-        if (cancelled) return;
+        if (cancelledRef.current) return;
 
         subscribedRef.current = status === 'SUBSCRIBED';
 
@@ -75,11 +80,14 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
           subscribedRef.current = false;
           supabase.removeChannel(channel);
 
+          // Give up after too many retries — fallback polling will keep data fresh
+          if (retryCountRef.current >= MAX_RETRIES) return;
+
           // Reconnect with exponential backoff
           const delay = Math.min(1000 * 2 ** retryCountRef.current, MAX_BACKOFF_MS);
           retryCountRef.current += 1;
           retryTimerRef.current = setTimeout(() => {
-            if (!cancelled) createChannel();
+            if (!cancelledRef.current) createChannel();
           }, delay);
         }
       });
@@ -90,7 +98,7 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
     const channel = createChannel();
 
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
       subscribedRef.current = false;
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       supabase.removeChannel(channel);

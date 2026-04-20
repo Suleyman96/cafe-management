@@ -94,17 +94,26 @@ export const useCartStore = create<CartStore>()(
 );
 
 // Sync cart across browser tabs via storage events
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'cart-storage' && e.newValue) {
-      try {
-        const parsed = JSON.parse(e.newValue);
-        if (parsed.state?.items) {
-          useCartStore.setState({ items: parsed.state.items });
-        }
-      } catch {
-        // Ignore malformed storage data
+function handleCartStorageSync(e: StorageEvent) {
+  if (e.key === 'cart-storage' && e.newValue) {
+    try {
+      const parsed = JSON.parse(e.newValue);
+      if (parsed.state?.items) {
+        useCartStore.setState({ items: parsed.state.items });
       }
+    } catch {
+      // Ignore malformed storage data
     }
-  });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', handleCartStorageSync);
+}
+
+/** Remove the storage sync listener (useful for tests). */
+export function cleanupCartStoreSync() {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('storage', handleCartStorageSync);
+  }
 }

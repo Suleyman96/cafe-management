@@ -81,11 +81,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       // After all unlocked, play any pending sound
       Promise.all(unlockPromises).then(() => {
         audioUnlockedRef.current = true;
-        console.log('[Notifications] Audio unlocked via user interaction');
 
         // Play the queued sound if there is one
         if (pendingSoundRef.current && audioEnabledRef.current) {
-          console.log('[Notifications] Playing queued notification sound');
           pendingSoundRef.current.volume = 1;
           pendingSoundRef.current.currentTime = 0;
           pendingSoundRef.current.play().catch(() => {});
@@ -116,7 +114,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     if (!audioUnlockedRef.current) {
       // Audio not unlocked yet - queue it for when user interacts
-      console.log('[Notifications] Audio locked, queuing sound');
       pendingSoundRef.current = audio;
       return;
     }
@@ -162,14 +159,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Waiter calls subscription
   useEffect(() => {
     if (!tenantId) return;
-    console.log('[Notifications] Setting up waiter_calls subscription');
+    Sentry.addBreadcrumb({ category: 'realtime', message: 'Setting up waiter_calls subscription' });
     const channel = supabase
       .channel('notify-waiter-calls')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'waiter_calls', filter: `tenant_id=eq.${tenantId}` },
         (payload) => {
-          console.log('[Notifications] waiter_calls event:', payload.eventType);
+          Sentry.addBreadcrumb({
+            category: 'realtime',
+            message: `waiter_calls ${payload.eventType}`,
+          });
           if (payload.eventType === 'INSERT') {
             playSound(waiterCallAudioRef.current);
             toast.info(t('notifications.newStaffCall'), {
@@ -180,7 +180,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         },
       )
       .subscribe((status) => {
-        console.log('[Notifications] waiter_calls status:', status);
+        Sentry.addBreadcrumb({ category: 'realtime', message: `waiter_calls channel: ${status}` });
       });
 
     return () => {
@@ -191,14 +191,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Orders subscription
   useEffect(() => {
     if (!tenantId) return;
-    console.log('[Notifications] Setting up orders subscription');
+    Sentry.addBreadcrumb({ category: 'realtime', message: 'Setting up orders subscription' });
     const channel = supabase
       .channel('notify-orders')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders', filter: `tenant_id=eq.${tenantId}` },
         (payload) => {
-          console.log('[Notifications] orders event:', payload.eventType, payload);
+          Sentry.addBreadcrumb({ category: 'realtime', message: `orders ${payload.eventType}` });
           if (payload.eventType === 'INSERT') {
             const newOrder = payload.new as OrderRow;
             if (newOrder.status === 'pending_approval') {
@@ -219,7 +219,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             const newOrder = payload.new as OrderRow;
             const oldOrder = payload.old as Partial<OrderRow>;
             if (newOrder.status === 'ready' && oldOrder.status !== 'ready') {
-              console.log('[Notifications] Order ready!');
+              Sentry.addBreadcrumb({ category: 'realtime', message: 'Order ready notification' });
               playSound(notificationAudioRef.current);
               toast.success(t('notifications.orderReady'), {
                 description: t('notifications.orderReadyDescription'),
@@ -230,7 +230,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         },
       )
       .subscribe((status) => {
-        console.log('[Notifications] orders status:', status);
+        Sentry.addBreadcrumb({ category: 'realtime', message: `orders channel: ${status}` });
       });
 
     return () => {
@@ -241,14 +241,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Order items subscription (for items added to existing orders)
   useEffect(() => {
     if (!tenantId) return;
-    console.log('[Notifications] Setting up order_items subscription');
+    Sentry.addBreadcrumb({ category: 'realtime', message: 'Setting up order_items subscription' });
     const channel = supabase
       .channel('notify-order-items')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'order_items', filter: `tenant_id=eq.${tenantId}` },
         (payload) => {
-          console.log('[Notifications] order_items event:', payload.eventType);
+          Sentry.addBreadcrumb({
+            category: 'realtime',
+            message: `order_items ${payload.eventType}`,
+          });
           if (payload.eventType === 'INSERT') {
             playSound(orderAudioRef.current);
             toast.info(t('notifications.newItemsAdded'), {
@@ -259,7 +262,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         },
       )
       .subscribe((status) => {
-        console.log('[Notifications] order_items status:', status);
+        Sentry.addBreadcrumb({ category: 'realtime', message: `order_items channel: ${status}` });
       });
 
     return () => {

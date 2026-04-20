@@ -16,9 +16,6 @@ export async function GET() {
       db: error ? 'unreachable' : 'connected',
     });
   } catch {
-    return NextResponse.json(
-      { status: 'error', timestamp, db: 'unreachable' },
-      { status: 503 },
-    );
+    return NextResponse.json({ status: 'error', timestamp, db: 'unreachable' }, { status: 503 });
   }
 }

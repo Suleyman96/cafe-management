@@ -1,5 +1,6 @@
 'use client';
 
+import type { Table } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import { Plus, RefreshCw } from 'lucide-react';
@@ -33,12 +34,12 @@ export default function TablesPage() {
   const { data: waiterCalls } = useWaiterCalls();
   const deleteTable = useDeleteTable();
 
-  const [selectedTable, setSelectedTable] = useState<any>(null);
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
-  const [editingTable, setEditingTable] = useState<any>(null);
+  const [editingTable, setEditingTable] = useState<Table | null>(null);
   const [tableMenuOpen, setTableMenuOpen] = useState<string | null>(null);
-  const [deleteConfirmTable, setDeleteConfirmTable] = useState<any>(null);
+  const [deleteConfirmTable, setDeleteConfirmTable] = useState<Table | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const cleanupEmptyOrders = useCleanupEmptyOrders();
@@ -78,7 +79,7 @@ export default function TablesPage() {
   const getActiveOrdersForTable = (tableId: string) => {
     return (
       orders?.filter(
-        (order: any) =>
+        (order) =>
           order.table_id === tableId &&
           ['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status),
       ) || []
@@ -88,13 +89,12 @@ export default function TablesPage() {
   // Get active waiter calls for a table
   const getActiveCallsForTable = (tableId: string) => {
     return (
-      waiterCalls?.filter((call: any) => call.table_id === tableId && call.status === 'pending') ||
-      []
+      waiterCalls?.filter((call) => call.table_id === tableId && call.status === 'pending') || []
     );
   };
 
   // Handle delete table — open confirmation modal
-  const handleDeleteTable = (table: any) => {
+  const handleDeleteTable = (table: Table) => {
     const activeOrders = getActiveOrdersForTable(table.id);
     if (activeOrders.length > 0) {
       toast.error(t('tables.cannotDeleteActiveOrder'));
@@ -168,7 +168,7 @@ export default function TablesPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-        {tables?.map((table: any) => {
+        {tables?.map((table) => {
           const activeOrders = getActiveOrdersForTable(table.id);
           const activeCalls = getActiveCallsForTable(table.id);
 

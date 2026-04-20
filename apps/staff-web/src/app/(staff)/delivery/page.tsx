@@ -1,6 +1,7 @@
 'use client';
 
 import { ORDER_STATUS } from '@gustri/core';
+import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import {
@@ -20,7 +21,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateDeliveryModal } from '@/components/modals/create-delivery-modal';
 import {
@@ -33,6 +34,7 @@ import {
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { useOrderFilters } from '@/hooks/use-order-filters';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 type DeliveryStatus =
@@ -68,10 +70,19 @@ export default function DeliveryPage() {
   const cancelOrderMutation = useCancelOrder();
   const formatPrice = useFormatPrice();
 
-  const [statusFilter, setStatusFilter] = useState<DeliveryStatus | 'all'>('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const deliverySearchFields = useCallback(
+    (order: OrderWithDetails, q: string) =>
+      !!order.delivery_address?.toLowerCase().includes(q) || !!order.customer_phone?.includes(q),
+    [],
+  );
+  const { filteredOrders, statusFilter, setStatusFilter, searchTerm, setSearchTerm, activeCount } =
+    useOrderFilters<DeliveryStatus>({
+      orders,
+      searchFields: deliverySearchFields,
+      activeStatuses: ['pending_approval', 'new', 'preparing', 'ready', 'out_for_delivery'],
+    });
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelOrderTarget, setCancelOrderTarget] = useState<any>(null);
+  const [cancelOrderTarget, setCancelOrderTarget] = useState<OrderWithDetails | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -82,12 +93,12 @@ export default function DeliveryPage() {
     { table: 'order_items', queryKeys: [['delivery_orders'], ['orders']] },
   ]);
 
-  const calculateOrderTotal = (order: any) => {
+  const calculateOrderTotal = (order: OrderWithDetails) => {
     if (order?.total != null) return order.total;
     if (!order?.order_items) return 0;
     return order.order_items
-      .filter((item: any) => item.status !== 'cancelled')
-      .reduce((sum: number, item: any) => sum + item.quantity * item.item_price, 0);
+      .filter((item) => item.status !== 'cancelled')
+      .reduce((sum, item) => sum + item.quantity * item.item_price, 0);
   };
 
   const formatTime = (timestamp: string) => {
@@ -97,7 +108,7 @@ export default function DeliveryPage() {
     });
   };
 
-  const getStatusColor = (status: DeliveryStatus) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending_approval':
         return 'bg-amber-100 text-amber-800 border border-amber-300';
@@ -179,25 +190,6 @@ export default function DeliveryPage() {
       setCancelling(false);
     }
   };
-
-  const filteredOrders = orders?.filter((order: any) => {
-    if (statusFilter !== 'all' && order.status !== statusFilter) return false;
-    if (
-      searchTerm &&
-      !order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !order.delivery_address?.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !order.customer_phone?.includes(searchTerm) &&
-      !order.id.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-      return false;
-    return true;
-  });
-
-  // Count active delivery orders
-  const activeCount =
-    orders?.filter((o: any) =>
-      ['pending_approval', 'new', 'preparing', 'ready', 'out_for_delivery'].includes(o.status),
-    ).length || 0;
 
   if (loading) {
     return (
@@ -283,7 +275,7 @@ export default function DeliveryPage() {
 
       {/* Orders List */}
       <div className="space-y-3 sm:space-y-4">
-        {filteredOrders?.map((order: any) => {
+        {filteredOrders?.map((order) => {
           const grandTotal = calculateOrderTotal(order); // already includes delivery_fee from DB
           const deliveryFee = order.delivery_fee ?? 0;
 
@@ -370,7 +362,7 @@ export default function DeliveryPage() {
 
               {/* Order Items Preview */}
               <div className="mb-3 text-sm text-gray-600">
-                {order.order_items?.slice(0, 3).map((item: any) => (
+                {order.order_items?.slice(0, 3).map((item) => (
                   <div key={item.id}>
                     {item.quantity}x {item.menu_item?.name || item.item_name}
                     {item.notes && <span className="text-xs text-gray-500"> ({item.notes})</span>}

@@ -47,17 +47,26 @@ export const useDeliveryStore = create<DeliveryStore>()(
 );
 
 // Sync delivery info across browser tabs via storage events
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'delivery-storage' && e.newValue) {
-      try {
-        const parsed = JSON.parse(e.newValue);
-        if (parsed.state) {
-          useDeliveryStore.setState(parsed.state);
-        }
-      } catch {
-        // Ignore malformed storage data
+function handleDeliveryStorageSync(e: StorageEvent) {
+  if (e.key === 'delivery-storage' && e.newValue) {
+    try {
+      const parsed = JSON.parse(e.newValue);
+      if (parsed.state) {
+        useDeliveryStore.setState(parsed.state);
       }
+    } catch {
+      // Ignore malformed storage data
     }
-  });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', handleDeliveryStorageSync);
+}
+
+/** Remove the storage sync listener (useful for tests). */
+export function cleanupDeliveryStoreSync() {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('storage', handleDeliveryStorageSync);
+  }
 }

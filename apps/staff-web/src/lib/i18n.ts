@@ -21,12 +21,14 @@ initI18n({
   },
 });
 
+type TranslationBundle = Record<string, unknown>;
+
 type NamespaceBundles = {
-  common: any;
-  nav: any;
-  auth: any;
-  staff: any;
-  roles: any;
+  common: TranslationBundle;
+  nav: TranslationBundle;
+  auth: TranslationBundle;
+  staff: TranslationBundle;
+  roles: TranslationBundle;
 };
 
 // Static import map — webpack can resolve each path at build time

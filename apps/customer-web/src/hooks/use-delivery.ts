@@ -20,7 +20,7 @@ export function useDeliveryOrder(orderId: string) {
       return data as unknown as DeliveryOrderWithDetails;
     },
     enabled: !!orderId,
-    staleTime: 0,
+    staleTime: 10 * 1000, // 10s — realtime subscription handles freshness
   });
 
   // Real-time subscription by order ID
