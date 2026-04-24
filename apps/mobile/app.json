@@ -38,7 +38,8 @@
         }
       ],
       "expo-localization",
-      "expo-secure-store"
+      "expo-secure-store",
+      "@sentry/react-native/expo"
     ],
     "scheme": "gustri",
     "extra": {

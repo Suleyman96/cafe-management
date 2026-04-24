@@ -1,22 +1,15 @@
-'use client';
+import { createServerSupabase } from '@/lib/supabase-server';
+import { DeliveryMenuContent } from './delivery-menu-content';
 
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { MenuScreen } from '@/components/menu/menu-screen';
-import { useDeliveryStore } from '@/store/delivery-store';
+export default async function DeliveryMenuPage() {
+  const supabase = createServerSupabase();
 
-export default function DeliveryMenuPage() {
-  const router = useRouter();
-  const { customerName, deliveryAddress } = useDeliveryStore();
+  const [{ data: categories }, { data: menuItems }] = await Promise.all([
+    supabase.from('categories').select('*').eq('is_active', true).order('display_order'),
+    supabase.from('menu_items').select('*').eq('is_available', true).order('display_order'),
+  ]);
 
-  // Redirect to delivery landing if customer info not filled
-  useEffect(() => {
-    if (!customerName || !deliveryAddress) {
-      router.replace('/delivery');
-    }
-  }, [customerName, deliveryAddress, router]);
-
-  if (!customerName || !deliveryAddress) return null;
-
-  return <MenuScreen tableId="__delivery__" />;
+  return (
+    <DeliveryMenuContent initialCategories={categories ?? []} initialMenuItems={menuItems ?? []} />
+  );
 }

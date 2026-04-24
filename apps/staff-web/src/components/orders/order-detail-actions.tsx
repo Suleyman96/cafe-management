@@ -25,6 +25,7 @@ interface OrderDetailActionsProps {
   };
   isFullyPaid: boolean;
   hasItems?: boolean;
+  canMutate?: boolean;
   onStatusUpdate: (status: keyof typeof ORDER_STATUS) => void;
   onOpenPayment: () => void;
   onOpenDiscount?: () => void;
@@ -37,6 +38,7 @@ export function OrderDetailActions({
   order,
   isFullyPaid,
   hasItems = true,
+  canMutate = true,
   onStatusUpdate,
   onOpenPayment,
   onOpenDiscount,
@@ -45,7 +47,7 @@ export function OrderDetailActions({
   canRefund = false,
 }: OrderDetailActionsProps) {
   const { t } = useTranslation('staff');
-  const canAdvance = hasItems;
+  const canAdvance = hasItems && canMutate;
 
   return (
     <div className="flex flex-wrap gap-2 sm:gap-3">
@@ -62,6 +64,7 @@ export function OrderDetailActions({
             size="sm"
             className="bg-green-600 hover:bg-green-700 flex items-center gap-1 sm:gap-2"
             onClick={() => onStatusUpdate('NEW')}
+            disabled={!canMutate}
           >
             <ThumbsUp className="h-4 w-4" />
             {t('approve', { ns: 'common' })}
@@ -133,7 +136,13 @@ export function OrderDetailActions({
       )}
       {['served', 'ready', 'out_for_delivery', 'delivered'].includes(order.status) &&
         !isFullyPaid && (
-          <Button size="sm" onClick={onOpenPayment} className="flex items-center gap-1 sm:gap-2">
+          <Button
+            data-testid="payment-btn"
+            size="sm"
+            onClick={onOpenPayment}
+            disabled={!canMutate}
+            className="flex items-center gap-1 sm:gap-2"
+          >
             <CreditCard className="h-4 w-4" />
             {t('orders.payment')}
           </Button>
@@ -142,6 +151,7 @@ export function OrderDetailActions({
         <Button
           size="sm"
           onClick={() => onStatusUpdate('CLOSED')}
+          disabled={!canMutate}
           className="flex items-center gap-1 sm:gap-2"
         >
           <CheckCircle className="h-4 w-4" />

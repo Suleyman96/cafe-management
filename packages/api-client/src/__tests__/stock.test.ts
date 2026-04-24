@@ -1,9 +1,16 @@
 import { ConflictError } from '@gustri/core';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createStockItemsWrapper } from '../wrapper/stock';
+import type { StockItemRow, StockMovementRow } from '../wrapper/types';
+import {
+  buildStockItem,
+  buildStockItemInsert,
+  buildStockItemUpdate,
+  resetFactoryCounter,
+} from './helpers/factories';
 import { createMockContext } from './helpers/mock-supabase';
 
-const validItem = {
+const validItem = buildStockItem({
   id: '123e4567-e89b-12d3-a456-426614174000',
   name: 'Coffee Beans',
   description: 'Arabica blend',
@@ -15,11 +22,13 @@ const validItem = {
   supplier_name: 'Bean Co',
   notes: null,
   is_active: true,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
+});
 
 describe('StockItemsWrapper', () => {
+  beforeEach(() => {
+    resetFactoryCounter();
+  });
+
   it('findAll returns stock items', async () => {
     const ctx = createMockContext({
       responses: {
@@ -40,7 +49,7 @@ describe('StockItemsWrapper', () => {
       },
     });
     const stock = createStockItemsWrapper(ctx);
-    const result = (await stock.findAll({ lowStockOnly: true })) as any[];
+    const result: StockItemRow[] = await stock.findAll({ lowStockOnly: true });
     expect(result).toHaveLength(1);
     expect(result[0].quantity).toBe(5);
   });
@@ -63,14 +72,16 @@ describe('StockItemsWrapper', () => {
       },
     });
     const stock = createStockItemsWrapper(ctx);
-    const result = await stock.create({
-      name: 'Coffee Beans',
-      category: 'Beverages',
-      quantity: 50,
-      unit: 'kg',
-      cost_price: 12.5,
-      minimum_stock_level: 10,
-    } as any);
+    const result = await stock.create(
+      buildStockItemInsert({
+        name: 'Coffee Beans',
+        category: 'Beverages',
+        quantity: 50,
+        unit: 'kg',
+        cost_price: 12.5,
+        minimum_stock_level: 10,
+      }),
+    );
     expect(result).toEqual(validItem);
     expect(ctx.getCalls()[0].method).toBe('insert');
   });
@@ -83,7 +94,10 @@ describe('StockItemsWrapper', () => {
       },
     });
     const stock = createStockItemsWrapper(ctx);
-    const result = await stock.update(validItem.id, { name: 'Premium Coffee' } as any);
+    const result = await stock.update(
+      validItem.id,
+      buildStockItemUpdate({ name: 'Premium Coffee' }),
+    );
     expect(result.name).toBe('Premium Coffee');
   });
 
@@ -147,7 +161,7 @@ describe('StockItemsWrapper', () => {
       },
     });
     const stock = createStockItemsWrapper(ctx);
-    const result = (await stock.getMovements(validItem.id)) as any[];
+    const result: StockMovementRow[] = await stock.getMovements(validItem.id);
     expect(result).toHaveLength(1);
     expect(result[0].movement_type).toBe('in');
   });
@@ -198,14 +212,16 @@ describe('StockItemsWrapper', () => {
     });
     const stock = createStockItemsWrapper(ctx);
     await expect(
-      stock.create({
-        name: 'Test',
-        category: 'Test',
-        quantity: 1,
-        unit: 'kg',
-        cost_price: 1,
-        minimum_stock_level: 1,
-      } as any),
+      stock.create(
+        buildStockItemInsert({
+          name: 'Test',
+          category: 'Test',
+          quantity: 1,
+          unit: 'kg',
+          cost_price: 1,
+          minimum_stock_level: 1,
+        }),
+      ),
     ).rejects.toThrow('Invalid stock item data');
   });
 
@@ -216,7 +232,7 @@ describe('StockItemsWrapper', () => {
       },
     });
     const stock = createStockItemsWrapper(ctx);
-    await expect(stock.update('1', { name: 'Updated' } as any)).rejects.toThrow(
+    await expect(stock.update('1', buildStockItemUpdate({ name: 'Updated' }))).rejects.toThrow(
       'Invalid stock item data',
     );
   });
@@ -240,14 +256,16 @@ describe('StockItemsWrapper', () => {
     });
     const stock = createStockItemsWrapper(ctx);
     await expect(
-      stock.create({
-        name: 'Duplicate',
-        category: 'Test',
-        quantity: 1,
-        unit: 'kg',
-        cost_price: 1,
-        minimum_stock_level: 1,
-      } as any),
+      stock.create(
+        buildStockItemInsert({
+          name: 'Duplicate',
+          category: 'Test',
+          quantity: 1,
+          unit: 'kg',
+          cost_price: 1,
+          minimum_stock_level: 1,
+        }),
+      ),
     ).rejects.toThrow(ConflictError);
   });
 });

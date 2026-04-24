@@ -1,28 +1,36 @@
 import { ConflictError, NotFoundError, ValidationError } from '@gustri/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createCategoriesWrapper, createMenuItemsWrapper } from '../wrapper/menu';
+import {
+  buildCategory,
+  buildCategoryInsert,
+  buildMenuItem,
+  buildMenuItemInsert,
+  resetFactoryCounter,
+} from './helpers/factories';
 import { createMockContext } from './helpers/mock-supabase';
 
-const validMenuItem = {
+const validMenuItem = buildMenuItem({
   id: '123e4567-e89b-12d3-a456-426614174000',
   name: 'Pizza Margherita',
   price: 15.99,
   category_id: '123e4567-e89b-12d3-a456-426614174001',
   is_available: true,
-};
+});
 
-const validCategory = {
+const validCategory = buildCategory({
   id: '123e4567-e89b-12d3-a456-426614174001',
   name: 'Main Dishes',
   display_order: 1,
   is_active: true,
-};
+});
 
 describe('MenuItemsWrapper', () => {
   let ctx: ReturnType<typeof createMockContext>;
   let menuItems: ReturnType<typeof createMenuItemsWrapper>;
 
   beforeEach(() => {
+    resetFactoryCounter();
     ctx = createMockContext({
       responses: {
         menu_items: { data: [validMenuItem], error: null },
@@ -72,11 +80,13 @@ describe('MenuItemsWrapper', () => {
       },
     });
     const items = createMenuItemsWrapper(createCtx);
-    const result = await items.create({
-      name: 'Pizza',
-      price: 15.99,
-      category_id: validCategory.id,
-    } as any);
+    const result = await items.create(
+      buildMenuItemInsert({
+        name: 'Pizza',
+        price: 15.99,
+        category_id: validCategory.id,
+      }),
+    );
     expect(result).toEqual(validMenuItem);
     expect(createCtx.getCalls()[0].method).toBe('insert');
   });
@@ -166,7 +176,7 @@ describe('MenuItemsWrapper', () => {
     });
     const wrapper = createMenuItemsWrapper(ctx);
     await expect(
-      wrapper.create({ name: 'Pizza', price: 10, category_id: 'cat-1' } as any),
+      wrapper.create(buildMenuItemInsert({ name: 'Pizza', price: 10, category_id: 'cat-1' })),
     ).rejects.toThrow(ConflictError);
   });
 
@@ -176,7 +186,7 @@ describe('MenuItemsWrapper', () => {
     });
     const wrapper = createMenuItemsWrapper(ctx);
     await expect(
-      wrapper.create({ name: 'Pizza', price: 10, category_id: 'cat-1' } as any),
+      wrapper.create(buildMenuItemInsert({ name: 'Pizza', price: 10, category_id: 'cat-1' })),
     ).rejects.toThrow('Invalid menu item data');
   });
 
@@ -194,6 +204,7 @@ describe('CategoriesWrapper', () => {
   let categories: ReturnType<typeof createCategoriesWrapper>;
 
   beforeEach(() => {
+    resetFactoryCounter();
     ctx = createMockContext({
       responses: {
         categories: { data: [validCategory], error: null },
@@ -220,7 +231,7 @@ describe('CategoriesWrapper', () => {
       },
     });
     const cats = createCategoriesWrapper(createCtx);
-    const result = await cats.create({ name: 'Main Dishes' } as any);
+    const result = await cats.create(buildCategoryInsert({ name: 'Main Dishes' }));
     expect(result).toEqual(validCategory);
     expect(createCtx.getCalls()[0].method).toBe('insert');
   });
@@ -271,7 +282,9 @@ describe('CategoriesWrapper', () => {
       responses: { categories: { data: null, error: { code: '23505', message: 'duplicate' } } },
     });
     const cats = createCategoriesWrapper(ctx);
-    await expect(cats.create({ name: 'Drinks' } as any)).rejects.toThrow(ConflictError);
+    await expect(cats.create(buildCategoryInsert({ name: 'Drinks' }))).rejects.toThrow(
+      ConflictError,
+    );
   });
 
   it('throws NotFoundError for 404 status on findAll', async () => {
@@ -287,7 +300,9 @@ describe('CategoriesWrapper', () => {
       responses: { categories: { data: { id: '1', no_name: true }, error: null } },
     });
     const cats = createCategoriesWrapper(ctx);
-    await expect(cats.create({ name: 'Drinks' } as any)).rejects.toThrow('Invalid category data');
+    await expect(cats.create(buildCategoryInsert({ name: 'Drinks' }))).rejects.toThrow(
+      'Invalid category data',
+    );
   });
 
   it('update throws when data fails isCategory guard', async () => {

@@ -81,7 +81,7 @@ export function DeliveryCartScreen() {
       setLastOrderId(order.id);
       toast.success(t('deliveryCart.orderSuccess'));
       clearCart();
-      router.push(`/delivery/order/${order.id}`);
+      router.push(`/delivery/order/${order.id}?token=${order.delivery_access_token}`);
     } catch (error) {
       Sentry.captureException(error);
       toast.error(t('deliveryCart.orderError'));

@@ -16,6 +16,8 @@ import { MenuItemCard } from './menu-item-card';
 
 interface MenuScreenProps {
   tableId: string;
+  initialCategories?: import('@gustri/database').Category[];
+  initialMenuItems?: import('@gustri/database').MenuItemWithCategory[];
 }
 
 type DietaryFilter = 'vegetarian' | 'vegan' | 'gluten_free' | 'spicy';
@@ -41,7 +43,7 @@ function SkeletonCard() {
 
 // ─── Main Menu Screen ───────────────────────────────────────────────────────
 
-export function MenuScreen({ tableId }: MenuScreenProps) {
+export function MenuScreen({ tableId, initialCategories, initialMenuItems }: MenuScreenProps) {
   const router = useRouter();
   const { t } = useTranslation('customer');
   const { language } = useLanguageStore();
@@ -50,8 +52,13 @@ export function MenuScreen({ tableId }: MenuScreenProps) {
   const [dietaryFilters, setDietaryFilters] = useState<DietaryFilter[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data: categories, isLoading: categoriesLoading } = useCategories();
-  const { data: menuItems, isLoading: itemsLoading } = useMenuItems(selectedCategory);
+  const { data: categories, isLoading: categoriesLoading } = useCategories(
+    initialCategories ? { initialData: initialCategories } : undefined,
+  );
+  const { data: menuItems, isLoading: itemsLoading } = useMenuItems(
+    selectedCategory,
+    initialMenuItems && !selectedCategory ? { initialData: initialMenuItems } : undefined,
+  );
   const { data: settings } = useCafeSettings();
 
   const storeItemCount = useCartStore((state) => state.getItemCount());

@@ -10,19 +10,25 @@ import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useDeliveryOrder', () => {
   it('calls supabase.rpc with get_delivery_order', () => {
-    renderHookWithProviders(() => useDeliveryOrder('order-1'));
+    renderHookWithProviders(() => useDeliveryOrder('order-1', 'test-token'));
     expect(supabase.rpc).toHaveBeenCalledWith('get_delivery_order', {
       p_order_id: 'order-1',
+      p_access_token: 'test-token',
     });
   });
 
   it('is disabled when orderId is empty', () => {
-    renderHookWithProviders(() => useDeliveryOrder(''));
+    renderHookWithProviders(() => useDeliveryOrder('', 'test-token'));
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it('is disabled when accessToken is missing', () => {
+    renderHookWithProviders(() => useDeliveryOrder('order-1'));
     expect(supabase.rpc).not.toHaveBeenCalled();
   });
 
   it('sets up a realtime channel', () => {
-    renderHookWithProviders(() => useDeliveryOrder('order-1'));
+    renderHookWithProviders(() => useDeliveryOrder('order-1', 'test-token'));
     expect(supabase.channel).toHaveBeenCalledWith('delivery_order:order-1');
   });
 

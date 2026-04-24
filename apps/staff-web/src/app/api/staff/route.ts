@@ -50,13 +50,30 @@ export async function POST(request: NextRequest) {
       email_confirm: true, // Auto-confirm email for staff accounts
     });
 
-    if (authError) {
-      Sentry.captureException(authError);
-      return NextResponse.json({ error: 'Failed to create user account' }, { status: 400 });
-    }
+    let authUserId: string;
+    let createdNewAuthUser = true;
 
-    if (!authData.user) {
+    if (authError) {
+      // If the auth user already exists (e.g., same person at another tenant), reuse it
+      if (authError.message?.includes('already been registered') || authError.status === 422) {
+        const { data: listData } = await getSupabaseAdmin().auth.admin.listUsers({
+          perPage: 1000,
+        });
+        const found = listData?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+        if (!found) {
+          Sentry.captureException(authError);
+          return NextResponse.json({ error: 'Failed to create user account' }, { status: 400 });
+        }
+        authUserId = found.id;
+        createdNewAuthUser = false;
+      } else {
+        Sentry.captureException(authError);
+        return NextResponse.json({ error: 'Failed to create user account' }, { status: 400 });
+      }
+    } else if (!authData.user) {
       return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+    } else {
+      authUserId = authData.user.id;
     }
 
     // Create staff record
@@ -68,7 +85,7 @@ export async function POST(request: NextRequest) {
         role,
         phone: phone || null,
         is_active: true,
-        auth_user_id: authData.user.id,
+        auth_user_id: authUserId,
         tenant_id: adminOrError.tenant_id,
       })
       .select()
@@ -76,7 +93,10 @@ export async function POST(request: NextRequest) {
 
     if (staffError) {
       Sentry.captureException(staffError);
-      await getSupabaseAdmin().auth.admin.deleteUser(authData.user.id);
+      // Only delete the auth user if we created it (not if it already existed)
+      if (createdNewAuthUser && authData?.user) {
+        await getSupabaseAdmin().auth.admin.deleteUser(authData.user.id);
+      }
       return NextResponse.json({ error: 'Failed to create staff record' }, { status: 400 });
     }
 
@@ -137,9 +157,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to delete staff member' }, { status: 400 });
     }
 
-    // Delete auth user if linked
+    // Only delete the auth user if no other staff records reference it
     if (staffData.auth_user_id) {
-      await supabaseAdmin.auth.admin.deleteUser(staffData.auth_user_id);
+      const { count } = await supabaseAdmin
+        .from('staff')
+        .select('id', { count: 'exact', head: true })
+        .eq('auth_user_id', staffData.auth_user_id);
+
+      if (!count || count === 0) {
+        await supabaseAdmin.auth.admin.deleteUser(staffData.auth_user_id);
+      }
     }
 
     return NextResponse.json({ success: true });

@@ -1,6 +1,6 @@
 'use client';
 
-import { calculateProfitMetrics, type ExpenseEntry, getLocalDateString } from '@gustri/core';
+import { getLocalDateString } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import {
@@ -21,10 +21,17 @@ import { useMemo, useState } from 'react';
 import { StaffPerformanceSection } from '@/components/reports/staff-performance-section';
 import { WasteSection } from '@/components/reports/waste-section';
 import { ZReportSection } from '@/components/reports/z-report-section';
-import { useAuth, useExpenses, useOrders, useStaff, useWasteLogs, useZReport } from '@/hooks';
+import {
+  useAuth,
+  useExpenseSummary,
+  useRevenueSummary,
+  useStaffPerformance,
+  useTopSoldItems,
+  useWasteSummary,
+  useZReport,
+} from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { exportReportToPDF } from '@/lib/report-pdf-export';
-import type { OrderWithDetails } from '@/types';
 
 type DateRangeType = 'today' | 'week' | 'month' | 'year' | 'custom';
 type CustomMode = 'day' | 'month' | 'year';
@@ -32,8 +39,7 @@ type CustomMode = 'day' | 'month' | 'year';
 export default function ReportsPage() {
   const { t } = useTranslation('staff');
   const { staff: currentUser } = useAuth();
-  const { data: orders, isLoading: loading, error } = useOrders();
-  const { data: staff, isLoading: staffLoading } = useStaff();
+  const tenantId = currentUser?.tenant_id;
   const formatPrice = useFormatPrice();
   const [dateRange, setDateRange] = useState<DateRangeType>('today');
 
@@ -93,7 +99,14 @@ export default function ReportsPage() {
     }
   }, [dateRange, customMode, selectedDate]);
 
-  // Convert date range to 'YYYY-MM-DD' strings for expenses API
+  // Convert date range to ISO strings for the report hooks
+  const dateStrings = useMemo(() => {
+    const from = getDateRange.start.toISOString();
+    const to = getDateRange.end.toISOString();
+    return { from, to };
+  }, [getDateRange]);
+
+  // Convert date range to 'YYYY-MM-DD' strings for expenses/waste date filters
   const expenseDateRange = useMemo(() => {
     const fmt = (d: Date): string => {
       const y = d.getFullYear();
@@ -104,14 +117,32 @@ export default function ReportsPage() {
     return { startDate: fmt(getDateRange.start), endDate: fmt(getDateRange.end) };
   }, [getDateRange]);
 
-  const { data: expenses = [], isLoading: expensesLoading } = useExpenses({
-    startDate: expenseDateRange.startDate,
-    endDate: expenseDateRange.endDate,
-  });
-  const { data: wasteLogs = [], isLoading: wasteLoading } = useWasteLogs({
-    startDate: expenseDateRange.startDate,
-    endDate: expenseDateRange.endDate,
-  });
+  // Server-side aggregated data
+  const { data: revenueRows, isLoading: revenueLoading } = useRevenueSummary(
+    tenantId,
+    dateStrings.from,
+    dateStrings.to,
+  );
+  const { data: topSoldItems, isLoading: itemsLoading } = useTopSoldItems(
+    tenantId,
+    dateStrings.from,
+    dateStrings.to,
+  );
+  const { data: expenseSummary, isLoading: expensesLoading } = useExpenseSummary(
+    tenantId,
+    dateStrings.from,
+    dateStrings.to,
+  );
+  const { data: wasteSummaryRows, isLoading: wasteLoading } = useWasteSummary(
+    tenantId,
+    dateStrings.from,
+    dateStrings.to,
+  );
+  const { data: staffPerformanceRows, isLoading: staffLoading } = useStaffPerformance(
+    tenantId,
+    dateStrings.from,
+    dateStrings.to,
+  );
   const { data: zReportPaymentsRaw } = useZReport(
     `${expenseDateRange.startDate}T00:00:00`,
     `${expenseDateRange.endDate}T00:00:00`,
@@ -121,6 +152,133 @@ export default function ReportsPage() {
     tip_amount: number;
     payment_method: string;
   }>;
+
+  // Aggregate revenue rows (summing across days)
+  const metrics = useMemo(() => {
+    const rows = revenueRows || [];
+    const totalRevenue = rows.reduce((sum, r) => sum + Number(r.total_revenue), 0);
+    const totalOrders = rows.reduce((sum, r) => sum + r.order_count, 0);
+    const completedOrders = rows.reduce((sum, r) => sum + r.completed_count, 0);
+    const cancelledOrders = rows.reduce((sum, r) => sum + r.cancelled_count, 0);
+    const dineInOrders = rows.reduce((sum, r) => sum + r.dine_in_count, 0);
+    const takeoutOrders = rows.reduce((sum, r) => sum + r.takeout_count, 0);
+    const deliveryOrders = rows.reduce((sum, r) => sum + r.delivery_count, 0);
+    const totalItems = rows.reduce((sum, r) => sum + r.total_items, 0);
+    const totalDiscounts = rows.reduce((sum, r) => sum + Number(r.total_discounts), 0);
+
+    const soldItems = (topSoldItems || []).map((item) => ({
+      name: item.item_name,
+      count: item.total_quantity,
+      revenue: Number(item.total_revenue),
+    }));
+
+    return {
+      totalRevenue,
+      totalOrders,
+      completedOrders,
+      cancelledOrders,
+      averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+      dineInOrders,
+      takeoutOrders,
+      deliveryOrders,
+      totalItems,
+      soldItems,
+      totalDiscounts,
+    };
+  }, [revenueRows, topSoldItems]);
+
+  // Build profit metrics from expense summary
+  const profitMetrics = useMemo(() => {
+    const cats = (expenseSummary || []).map((e) => ({
+      name: e.category_name,
+      count: e.entry_count,
+      total: Number(e.total_amount),
+    }));
+    const totalExpenses = cats.reduce((sum, c) => sum + c.total, 0);
+    const netProfit = metrics.totalRevenue - totalExpenses;
+    const profitMargin = metrics.totalRevenue > 0 ? (netProfit / metrics.totalRevenue) * 100 : 0;
+
+    return { totalExpenses, netProfit, profitMargin, byCategory: cats };
+  }, [expenseSummary, metrics.totalRevenue]);
+
+  // Build waste metrics from waste summary
+  const wasteMetrics = useMemo(() => {
+    const rows = wasteSummaryRows || [];
+    const totalCost = rows.reduce((sum, r) => sum + Number(r.total_cost), 0);
+    const totalItems = rows.reduce((sum, r) => sum + r.entry_count, 0);
+
+    const reasonMap = new Map<string, { count: number; cost: number }>();
+    rows.forEach((r) => {
+      const current = reasonMap.get(r.waste_reason) || { count: 0, cost: 0 };
+      reasonMap.set(r.waste_reason, {
+        count: current.count + r.entry_count,
+        cost: current.cost + Number(r.total_cost),
+      });
+    });
+    const byReason = Array.from(reasonMap.entries())
+      .map(([reason, data]) => ({ reason, ...data }))
+      .sort((a, b) => b.cost - a.cost);
+
+    const itemMap = new Map<
+      string,
+      { name: string; quantity: number; unit: string; cost: number }
+    >();
+    rows.forEach((r) => {
+      const current = itemMap.get(r.item_name) || {
+        name: r.item_name,
+        quantity: 0,
+        unit: 'pieces',
+        cost: 0,
+      };
+      itemMap.set(r.item_name, {
+        ...current,
+        quantity: current.quantity + Number(r.total_quantity),
+        cost: current.cost + Number(r.total_cost),
+      });
+    });
+    const topItems = Array.from(itemMap.values())
+      .sort((a, b) => b.cost - a.cost)
+      .slice(0, 5);
+
+    return { totalCost, totalItems, byReason, topItems };
+  }, [wasteSummaryRows]);
+
+  // Map staff performance rows to the shape expected by StaffPerformanceSection
+  const staffPerformance = useMemo(
+    () =>
+      (staffPerformanceRows || []).map((r) => ({
+        id: r.staff_id,
+        name: r.staff_name,
+        role: r.staff_role,
+        ordersHandled: r.orders_handled,
+        revenue: Number(r.revenue),
+        itemsSold: r.items_sold,
+        completedOrders: r.completed_orders,
+        cancelledOrders: r.cancelled_orders,
+      })),
+    [staffPerformanceRows],
+  );
+
+  // Calculate Z-Report metrics from payments
+  const zReportData = useMemo(() => {
+    const data = {
+      cashTotal: 0,
+      cardTotal: 0,
+      digitalTotal: 0,
+      tipsCollected: 0,
+      paymentCount: zReportPayments.length,
+      totalDiscounts: metrics.totalDiscounts,
+    };
+    for (const p of zReportPayments) {
+      const amount = p.amount || 0;
+      const tip = p.tip_amount || 0;
+      if (p.payment_method === 'cash') data.cashTotal += amount;
+      else if (p.payment_method === 'card') data.cardTotal += amount;
+      else if (p.payment_method === 'digital') data.digitalTotal += amount;
+      data.tipsCollected += tip;
+    }
+    return data;
+  }, [zReportPayments, metrics.totalDiscounts]);
 
   // Check if we can navigate to next (prevent future dates)
   const canNavigateNext = useMemo(() => {
@@ -240,203 +398,6 @@ export default function ReportsPage() {
     }
   };
 
-  // Filter orders by date
-  const filteredOrders = useMemo(
-    () =>
-      (orders || []).filter((order: OrderWithDetails) => {
-        const orderDate = new Date(order.created_at);
-        return orderDate >= getDateRange.start && orderDate < getDateRange.end;
-      }),
-    [orders, getDateRange],
-  );
-
-  // Calculate metrics (revenue computed once, averageOrderValue derived)
-  const metrics = useMemo(() => {
-    const totalRevenue = filteredOrders.reduce((sum, order) => {
-      const orderTotal =
-        order.order_items?.reduce(
-          (itemSum, item) => itemSum + item.quantity * item.item_price,
-          0,
-        ) || 0;
-      return sum + orderTotal;
-    }, 0);
-
-    const totalOrders = filteredOrders.length;
-    const completedOrders = filteredOrders.filter((order) => order.status === 'closed').length;
-    const cancelledOrders = filteredOrders.filter((order) => order.status === 'cancelled').length;
-
-    const totalItems = filteredOrders.reduce(
-      (sum, order) =>
-        sum + (order.order_items?.reduce((itemSum, item) => itemSum + item.quantity, 0) || 0),
-      0,
-    );
-
-    const itemCounts = new Map<string, { name: string; count: number; revenue: number }>();
-    filteredOrders.forEach((order) => {
-      order.order_items?.forEach((item) => {
-        const key = item.menu_item_id;
-        const current = itemCounts.get(key) || {
-          name: item.menu_item?.name || 'Unknown',
-          count: 0,
-          revenue: 0,
-        };
-        itemCounts.set(key, {
-          name: current.name,
-          count: current.count + item.quantity,
-          revenue: current.revenue + item.quantity * item.item_price,
-        });
-      });
-    });
-    const soldItems = Array.from(itemCounts.values()).sort((a, b) => b.count - a.count);
-
-    return {
-      totalRevenue,
-      totalOrders,
-      completedOrders,
-      cancelledOrders,
-      averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
-      dineInOrders: filteredOrders.filter((order) => order.order_type === 'dine_in').length,
-      takeoutOrders: filteredOrders.filter((order) => order.order_type === 'takeout').length,
-      deliveryOrders: filteredOrders.filter((order) => order.order_type === 'delivery').length,
-      totalItems,
-      soldItems,
-    };
-  }, [filteredOrders]);
-
-  // Calculate discount metrics
-  const totalDiscounts = useMemo(
-    () => filteredOrders.reduce((sum, order) => sum + (order.discount_amount ?? 0), 0),
-    [filteredOrders],
-  );
-
-  // Calculate Z-Report metrics from payments
-  const zReportData = useMemo(() => {
-    const data = {
-      cashTotal: 0,
-      cardTotal: 0,
-      digitalTotal: 0,
-      tipsCollected: 0,
-      paymentCount: zReportPayments.length,
-      totalDiscounts,
-    };
-    for (const p of zReportPayments) {
-      const amount = p.amount || 0;
-      const tip = p.tip_amount || 0;
-      if (p.payment_method === 'cash') data.cashTotal += amount;
-      else if (p.payment_method === 'card') data.cardTotal += amount;
-      else if (p.payment_method === 'digital') data.digitalTotal += amount;
-      data.tipsCollected += tip;
-    }
-    return data;
-  }, [zReportPayments, totalDiscounts]);
-
-  // Calculate profit/loss metrics
-  const profitMetrics = useMemo(
-    () => calculateProfitMetrics(metrics.totalRevenue, expenses as ExpenseEntry[]),
-    [expenses, metrics.totalRevenue],
-  );
-
-  // Calculate waste metrics
-  const wasteMetrics = useMemo(() => {
-    const totalCost = wasteLogs.reduce((sum, log) => sum + (log.total_cost || 0), 0);
-    const totalItems = wasteLogs.length;
-
-    const reasonMap = new Map<string, { count: number; cost: number }>();
-    wasteLogs.forEach((log) => {
-      const reason = log.reason || 'other';
-      const current = reasonMap.get(reason) || { count: 0, cost: 0 };
-      reasonMap.set(reason, {
-        count: current.count + 1,
-        cost: current.cost + (log.total_cost || 0),
-      });
-    });
-    const byReason = Array.from(reasonMap.entries())
-      .map(([reason, data]) => ({ reason, ...data }))
-      .sort((a, b) => b.cost - a.cost);
-
-    const itemMap = new Map<
-      string,
-      { name: string; quantity: number; unit: string; cost: number }
-    >();
-    wasteLogs.forEach((log) => {
-      const key = log.item_name;
-      const current = itemMap.get(key) || {
-        name: log.item_name,
-        quantity: 0,
-        unit: log.unit,
-        cost: 0,
-      };
-      itemMap.set(key, {
-        ...current,
-        quantity: current.quantity + (log.quantity || 0),
-        cost: current.cost + (log.total_cost || 0),
-      });
-    });
-    const topItems = Array.from(itemMap.values())
-      .sort((a, b) => b.cost - a.cost)
-      .slice(0, 5);
-
-    return { totalCost, totalItems, byReason, topItems };
-  }, [wasteLogs]);
-
-  // Calculate staff performance metrics
-  const staffPerformance = useMemo(() => {
-    const performanceMap = new Map<
-      string,
-      {
-        id: string;
-        name: string;
-        role: string;
-        ordersHandled: number;
-        revenue: number;
-        itemsSold: number;
-        completedOrders: number;
-        cancelledOrders: number;
-      }
-    >();
-
-    // Initialize with all staff members
-    staff?.forEach((member) => {
-      performanceMap.set(member.id, {
-        id: member.id,
-        name: member.full_name,
-        role: member.role || 'staff',
-        ordersHandled: 0,
-        revenue: 0,
-        itemsSold: 0,
-        completedOrders: 0,
-        cancelledOrders: 0,
-      });
-    });
-
-    // Calculate metrics from orders
-    filteredOrders.forEach((order) => {
-      const waiterId = order.assigned_waiter_id;
-      if (!waiterId) return;
-
-      const current = performanceMap.get(waiterId);
-      if (!current) return;
-
-      const orderTotal =
-        order.order_items?.reduce((sum, item) => sum + item.quantity * item.item_price, 0) || 0;
-
-      const itemCount = order.order_items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-
-      performanceMap.set(waiterId, {
-        ...current,
-        ordersHandled: current.ordersHandled + 1,
-        revenue: current.revenue + orderTotal,
-        itemsSold: current.itemsSold + itemCount,
-        completedOrders: current.completedOrders + (order.status === 'closed' ? 1 : 0),
-        cancelledOrders: current.cancelledOrders + (order.status === 'cancelled' ? 1 : 0),
-      });
-    });
-
-    return Array.from(performanceMap.values())
-      .filter((p) => p.ordersHandled > 0)
-      .sort((a, b) => b.revenue - a.revenue);
-  }, [filteredOrders, staff]);
-
   // Export to PDF function
   const exportToPDF = () => {
     exportReportToPDF({
@@ -452,7 +413,9 @@ export default function ReportsPage() {
     });
   };
 
-  if (loading || staffLoading || expensesLoading || wasteLoading) {
+  const loading = revenueLoading || itemsLoading || expensesLoading || wasteLoading || staffLoading;
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <LoadingSpinner />
@@ -464,14 +427,6 @@ export default function ReportsPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-gray-500">{t('reports.ownerAccessRequired')}</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-red-500">{t('reports.errorLoading')}</p>
       </div>
     );
   }
@@ -678,7 +633,7 @@ export default function ReportsPage() {
               <Receipt className="h-4 w-4 text-orange-600" />
             </div>
             <p className="text-lg sm:text-2xl font-bold text-orange-700">
-              {formatPrice(totalDiscounts)}
+              {formatPrice(metrics.totalDiscounts)}
             </p>
           </div>
 
@@ -756,7 +711,7 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {profitMetrics.byCategory.length === 0 && expenses.length === 0 && (
+        {profitMetrics.byCategory.length === 0 && (
           <p className="text-gray-500 text-center py-4 text-sm">{t('reports.noExpenses')}</p>
         )}
       </div>

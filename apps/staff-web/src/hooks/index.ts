@@ -1,6 +1,7 @@
 // Export all hooks from a single entry point
 
 export * from './use-auth';
+export * from './use-can-mutate';
 export * from './use-delivery-customers-safe';
 export * from './use-delivery-safe';
 export * from './use-discount-safe';
@@ -10,6 +11,7 @@ export * from './use-menu-safe';
 export * from './use-orders-safe';
 export * from './use-payments-safe';
 export * from './use-refunds-safe';
+export * from './use-reports-safe';
 export * from './use-schedules-safe';
 export * from './use-settings-safe';
 export * from './use-staff-safe';

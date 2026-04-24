@@ -14,18 +14,24 @@ type StaffSchedule = Database['public']['Tables']['staff_schedules']['Row'];
 
 /** Fire-and-forget post-login side effects */
 export async function postLoginSideEffects(staffId: string) {
-  db.staff.updateLastLogin(staffId).catch(console.warn);
+  db.staff.updateLastLogin(staffId).catch((err) => {
+    Sentry.captureException(err, { tags: { context: 'post-login-update-last-login' } });
+  });
 
   const today = new Date().toLocaleDateString('en-CA');
   (db.schedules.findByStaffAndDate(staffId, today) as Promise<StaffSchedule[]>)
     .then((schedules) => {
       for (const schedule of schedules) {
         if (schedule.status === 'scheduled') {
-          db.schedules.markInProgress(schedule.id, new Date().toISOString()).catch(console.warn);
+          db.schedules.markInProgress(schedule.id, new Date().toISOString()).catch((err) => {
+            Sentry.captureException(err, { tags: { context: 'post-login-mark-schedule' } });
+          });
         }
       }
     })
-    .catch(console.warn);
+    .catch((err) => {
+      Sentry.captureException(err, { tags: { context: 'post-login-find-schedules' } });
+    });
 }
 
 // Deduplication: concurrent callers (e.g., React StrictMode double-mount)
@@ -50,7 +56,9 @@ async function loadStaffAndSetup(
   db.tenants
     .getCurrent()
     .then((tenant) => setTenantPlan(tenant.plan as any))
-    .catch(console.warn);
+    .catch((err) => {
+      Sentry.captureException(err, { tags: { context: 'post-login-tenant-plan' } });
+    });
 }
 
 export function useAuth() {

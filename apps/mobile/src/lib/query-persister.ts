@@ -43,5 +43,7 @@ export function shouldPersistQuery(query: { queryKey: readonly unknown[] }): boo
   return typeof firstKey === 'string' && PERSISTED_QUERY_KEYS.has(firstKey);
 }
 
-/** 24 hours in milliseconds — how long cached data is retained for offline use. */
-export const OFFLINE_GC_TIME = 24 * 60 * 60 * 1000;
+/** 4 hours in milliseconds — how long cached data is retained for offline use.
+ * Reduced from 24h to prevent AsyncStorage overflow on Android (~6MB limit)
+ * while still covering a typical shift. */
+export const OFFLINE_GC_TIME = 4 * 60 * 60 * 1000;

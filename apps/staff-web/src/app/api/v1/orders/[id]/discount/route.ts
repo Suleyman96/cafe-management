@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { data, error } = await validateBody(request, ApplyDiscountSchema);
     if (error) return error;
 
-    await applyDiscount(getSupabaseAdmin(), {
+    const updatedOrder = await applyDiscount(getSupabaseAdmin(), {
       orderId,
       discountType: data.discount_type,
       discountValue: data.discount_value,
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       tenantId: staffOrError.tenant_id,
     });
 
-    return jsonOk({ success: true });
+    return jsonOk({ success: true, order: updatedOrder });
   } catch (err) {
     return handleRouteError(err);
   }

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getStaffClaims } from './jwt-claims';
 
 export function getSupabaseAdmin() {
   return createClient(
@@ -36,16 +37,14 @@ export async function verifyAdmin(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: staffData, error: staffError } = await supabaseAdmin
-    .from('staff')
-    .select('id, role, tenant_id')
-    .eq('auth_user_id', user.id)
-    .eq('is_active', true)
-    .single();
-
-  if (staffError || !staffData || !['admin', 'owner'].includes(staffData.role)) {
+  const claims = getStaffClaims(token);
+  if (!claims || !['admin', 'owner'].includes(claims.user_role)) {
     return NextResponse.json({ error: 'Forbidden: admin access required' }, { status: 403 });
   }
 
-  return staffData;
+  return {
+    id: claims.staff_id,
+    role: claims.user_role,
+    tenant_id: claims.tenant_id,
+  };
 }

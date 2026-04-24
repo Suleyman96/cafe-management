@@ -6,6 +6,7 @@ export {
   useCreateDeliveryCustomer,
   useDeleteDeliveryCustomer,
   useDeliveryCustomers,
+  useDeliveryCustomersPaginated,
   useIncrementDeliveryCustomerOrderCount,
   useSearchDeliveryCustomers,
   useUpdateDeliveryCustomer,

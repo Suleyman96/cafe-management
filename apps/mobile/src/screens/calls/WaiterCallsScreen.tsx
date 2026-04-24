@@ -1,6 +1,7 @@
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { SegmentedButtons } from 'react-native-paper';
 import { WaiterCallCard } from '@/components/calls/WaiterCallCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
@@ -58,7 +59,7 @@ export default function WaiterCallsScreen() {
         style={styles.tabs}
       />
 
-      <FlatList
+      <FlashList
         data={calls || []}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}

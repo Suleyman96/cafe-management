@@ -1,6 +1,7 @@
 'use client';
 
 import * as Sentry from '@sentry/nextjs';
+import imageCompression from 'browser-image-compression';
 import { ImageIcon, Loader2, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useRef, useState } from 'react';
@@ -56,15 +57,25 @@ export function ImageUpload({
       setIsUploading(true);
 
       try {
-        // Generate unique filename
-        const ext = file.name.split('.').pop();
-        const filename = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-
-        // Upload to Supabase Storage
-        const { error: uploadError } = await supabase.storage.from(bucket).upload(filename, file, {
-          cacheControl: '3600',
-          upsert: false,
+        // Compress and convert to WebP before upload
+        const compressed = await imageCompression(file, {
+          maxSizeMB: 0.5,
+          maxWidthOrHeight: 1200,
+          useWebWorker: true,
+          fileType: 'image/webp',
         });
+
+        // Generate filename with .webp extension
+        const filename = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
+
+        // Upload compressed file to Supabase Storage
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(filename, compressed, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: 'image/webp',
+          });
 
         if (uploadError) {
           Sentry.captureException(uploadError);

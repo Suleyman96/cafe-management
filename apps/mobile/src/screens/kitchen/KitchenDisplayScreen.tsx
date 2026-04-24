@@ -1,8 +1,9 @@
 import { isDeliveryOrder } from '@gustri/core';
 import { ORDER_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Chip, Provider as PaperProvider, Text } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KitchenOrderCard } from '@/components/kitchen/KitchenOrderCard';
@@ -205,7 +206,7 @@ export default function KitchenDisplayScreen() {
           </Chip>
         </View>
 
-        <FlatList
+        <FlashList
           data={kitchenOrders}
           keyExtractor={(item) => item.id}
           refreshControl={

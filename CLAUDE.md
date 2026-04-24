@@ -135,6 +135,14 @@ WASTE_REASON: expired, spoiled, overcooked, dropped, returned_by_customer, prepa
 STOCK_MOVEMENT: in, out, adjustment
 ```
 
+## React Version Policy
+
+- Web apps (staff-web, customer-web): React 18.x
+- Mobile app: React 19.x (required by React Native 0.81+)
+- Shared packages: Must support both via peer deps (`^18.2.0 || ^19.0.0`)
+- Do NOT add React 19-only APIs (`use()`, `useFormStatus`, `useOptimistic`) to shared packages
+- Web apps will upgrade to React 19 when Next.js 15 migration is done
+
 ## Real-time
 
 Supabase Realtime is used for live updates on orders, tables, and waiter calls. Sound notifications play via `.mp3` files in `public/`.

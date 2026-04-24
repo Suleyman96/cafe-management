@@ -11,11 +11,12 @@ import { getStatusColor, timeAgo } from '@/lib/utils';
 
 interface DeliveryOrderStatusProps {
   orderId: string;
+  accessToken: string;
 }
 
-export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
+export function DeliveryOrderStatus({ orderId, accessToken }: DeliveryOrderStatusProps) {
   const { t } = useTranslation('customer');
-  const { data: order, isLoading } = useDeliveryOrder(orderId);
+  const { data: order, isLoading } = useDeliveryOrder(orderId, accessToken);
   const { data: settings } = useCafeSettings();
   const formatPrice = useFormatPrice();
 

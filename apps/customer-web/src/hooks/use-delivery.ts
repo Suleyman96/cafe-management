@@ -6,7 +6,7 @@ import { apiRoutes } from '@/lib/api-routes';
 import { supabase } from '@/lib/supabase';
 import type { DeliveryOrderWithDetails, Order, OrderItem } from '@/types';
 
-export function useDeliveryOrder(orderId: string) {
+export function useDeliveryOrder(orderId: string, accessToken?: string) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
@@ -14,12 +14,13 @@ export function useDeliveryOrder(orderId: string) {
     queryFn: async (): Promise<DeliveryOrderWithDetails | null> => {
       const { data, error } = await (supabase.rpc as Function)('get_delivery_order', {
         p_order_id: orderId,
+        p_access_token: accessToken ?? null,
       });
       if (error) throw error;
       if (!data) return null;
       return data as unknown as DeliveryOrderWithDetails;
     },
-    enabled: !!orderId,
+    enabled: !!orderId && !!accessToken,
     staleTime: 10 * 1000, // 10s — realtime subscription handles freshness
   });
 

@@ -8,12 +8,29 @@ export async function GET() {
 
   try {
     const supabase = getSupabaseAdmin();
-    const { error } = await supabase.from('cafe_settings').select('id').limit(1);
+
+    const { error: dbError } = await supabase.from('cafe_settings').select('id').limit(1);
+
+    if (dbError) {
+      return NextResponse.json({
+        status: 'degraded',
+        timestamp,
+        db: 'unreachable',
+      });
+    }
+
+    const { data: connStats } = await supabase.rpc('get_connection_stats');
+
+    const activeConnections = (connStats || []).reduce(
+      (sum: number, row: { connection_count: number }) => sum + Number(row.connection_count),
+      0,
+    );
 
     return NextResponse.json({
-      status: error ? 'degraded' : 'ok',
+      status: 'ok',
       timestamp,
-      db: error ? 'unreachable' : 'connected',
+      db: 'connected',
+      connections: activeConnections,
     });
   } catch {
     return NextResponse.json({ status: 'error', timestamp, db: 'unreachable' }, { status: 503 });

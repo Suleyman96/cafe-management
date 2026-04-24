@@ -1,12 +1,19 @@
 'use client';
 
+import { isAppError } from '@gustri/core';
 import { I18nextProvider, i18n } from '@gustri/i18n';
 import { DbProvider } from '@gustri/queries';
-import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import * as Sentry from '@sentry/nextjs';
+import {
+  MutationCache,
+  QueryClient,
+  QueryClientProvider,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import '@/lib/i18n';
 import { db } from '@/lib/supabase/wrapped-client';
 
@@ -30,6 +37,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
+        mutationCache: new MutationCache({
+          onError: (error, _variables, _context, mutation) => {
+            if (!mutation.options.onError) {
+              Sentry.captureException(error);
+              toast.error(isAppError(error) ? error.message : 'An unexpected error occurred');
+            }
+          },
+        }),
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000,

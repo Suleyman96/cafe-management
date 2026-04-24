@@ -4,28 +4,14 @@ import { ORDER_STATUS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
-import {
-  CheckCircle,
-  ChefHat,
-  Clock,
-  Loader2,
-  Map as MapIcon,
-  MapPin,
-  Phone,
-  Plus,
-  Search,
-  ThumbsUp,
-  Truck,
-  User,
-  X,
-  XCircle,
-} from 'lucide-react';
+import { Plus, Search, Truck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
+import { DeliveryOrderCard } from '@/components/delivery/delivery-order-card';
+import { CancelOrderModal } from '@/components/modals/cancel-order-modal';
 import { CreateDeliveryModal } from '@/components/modals/create-delivery-modal';
 import {
-  useCancelOrder,
   useDeliveryOrders,
   useMarkDelivered,
   useMarkOutForDelivery,
@@ -46,18 +32,6 @@ type DeliveryStatus =
   | 'delivered'
   | 'cancelled';
 
-const ORDER_STATUS_KEYS: Record<string, string> = {
-  pending_approval: 'orders.pendingApproval',
-  new: 'orders.new',
-  preparing: 'orders.preparing',
-  ready: 'orders.ready',
-  served: 'orders.served',
-  out_for_delivery: 'orders.outForDelivery',
-  delivered: 'orders.delivered',
-  closed: 'orders.closed',
-  cancelled: 'orders.cancelled',
-};
-
 export default function DeliveryPage() {
   const { t } = useTranslation('staff');
   const router = useRouter();
@@ -67,7 +41,6 @@ export default function DeliveryPage() {
   const updateOrderStatus = useUpdateOrderStatus();
   const markOutForDelivery = useMarkOutForDelivery();
   const markDelivered = useMarkDelivered();
-  const cancelOrderMutation = useCancelOrder();
   const formatPrice = useFormatPrice();
 
   const deliverySearchFields = useCallback(
@@ -81,10 +54,7 @@ export default function DeliveryPage() {
       searchFields: deliverySearchFields,
       activeStatuses: ['pending_approval', 'new', 'preparing', 'ready', 'out_for_delivery'],
     });
-  const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelOrderTarget, setCancelOrderTarget] = useState<OrderWithDetails | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
-  const [cancelling, setCancelling] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Real-time: invalidate queries on DB changes
@@ -92,42 +62,6 @@ export default function DeliveryPage() {
     { table: 'orders', queryKeys: [['delivery_orders'], ['orders'], ['active_orders']] },
     { table: 'order_items', queryKeys: [['delivery_orders'], ['orders']] },
   ]);
-
-  const calculateOrderTotal = (order: OrderWithDetails) => {
-    if (order?.total != null) return order.total;
-    if (!order?.order_items) return 0;
-    return order.order_items
-      .filter((item) => item.status !== 'cancelled')
-      .reduce((sum, item) => sum + item.quantity * item.item_price, 0);
-  };
-
-  const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending_approval':
-        return 'bg-amber-100 text-amber-800 border border-amber-300';
-      case 'new':
-        return 'bg-blue-100 text-blue-800';
-      case 'preparing':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'ready':
-        return 'bg-green-100 text-green-800';
-      case 'out_for_delivery':
-        return 'bg-violet-100 text-violet-800';
-      case 'delivered':
-        return 'bg-emerald-100 text-emerald-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const handleStatusUpdate = async (orderId: string, newStatus: DeliveryStatus) => {
     try {
@@ -144,7 +78,7 @@ export default function DeliveryPage() {
     }
   };
 
-  const handleMarkOutForDelivery = async (orderId: string, deliveryPersonId?: string) => {
+  const handleMarkOutForDelivery = async (orderId: string, deliveryPersonId?: string | null) => {
     if (!deliveryPersonId) {
       toast.error(t('delivery.failedUpdate'));
       return;
@@ -163,31 +97,6 @@ export default function DeliveryPage() {
       toast.success(t('delivery.markDelivered'));
     } catch (_error) {
       toast.error(t('delivery.failedUpdate'));
-    }
-  };
-
-  const handleCancelOrder = async () => {
-    if (!cancelOrderTarget || !cancelReason.trim()) {
-      toast.error(t('orders.reasonRequired'));
-      return;
-    }
-
-    setCancelling(true);
-    try {
-      await cancelOrderMutation.mutateAsync({
-        orderId: cancelOrderTarget.id,
-        reason: cancelReason.trim(),
-        tableId: null,
-      });
-      toast.success(t('orders.orderCancelled'));
-      setShowCancelModal(false);
-      setCancelOrderTarget(null);
-      setCancelReason('');
-      refetch();
-    } catch (_error) {
-      toast.error(t('orders.failedCancel'));
-    } finally {
-      setCancelling(false);
     }
   };
 
@@ -275,259 +184,31 @@ export default function DeliveryPage() {
 
       {/* Orders List */}
       <div className="space-y-3 sm:space-y-4">
-        {filteredOrders?.map((order) => {
-          const grandTotal = calculateOrderTotal(order); // already includes delivery_fee from DB
-          const deliveryFee = order.delivery_fee ?? 0;
-
-          return (
-            <div
-              key={order.id}
-              className="border border-purple-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow cursor-pointer bg-white"
-              onClick={() => router.push(`/orders/${order.id}`)}
-            >
-              {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0 mb-3">
-                <div>
-                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                    <Truck className="h-4 sm:h-5 w-4 sm:w-5 text-purple-600" />
-                    <span
-                      className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}
-                    >
-                      {t(ORDER_STATUS_KEYS[order.status] || order.status)}
-                    </span>
-                    {order.order_number && (
-                      <span className="text-xs text-gray-500">#{order.order_number}</span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs sm:text-sm text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatTime(order.created_at)}
-                    </span>
-                    {order.customer_name && (
-                      <span className="flex items-center gap-1 font-medium">
-                        <User className="h-3 w-3" />
-                        {order.customer_name}
-                      </span>
-                    )}
-                    {order.customer_phone && (
-                      <span className="flex items-center gap-1">
-                        <Phone className="h-3 w-3" />
-                        {order.customer_phone}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="text-left sm:text-right">
-                  <div className="text-base sm:text-lg font-semibold">
-                    {formatPrice(grandTotal)}
-                  </div>
-                  {deliveryFee > 0 && (
-                    <div className="text-xs text-gray-500">
-                      {t('orders.inclDelivery')} {formatPrice(deliveryFee)}{' '}
-                      {t('deliveryFee', { ns: 'common' }).toLowerCase()}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Delivery Address */}
-              {order.delivery_address && (
-                <div className="mb-3 text-sm text-purple-700 bg-purple-50 rounded px-3 py-2 flex items-start gap-2">
-                  <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                  <span className="line-clamp-2 flex-1">{order.delivery_address}</span>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.delivery_address)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex-shrink-0 text-purple-500 hover:text-purple-800 transition-colors"
-                    title={t('delivery.openInMaps')}
-                  >
-                    <MapIcon className="h-3.5 w-3.5" />
-                  </a>
-                </div>
-              )}
-
-              {/* Delivery Person */}
-              {order.delivery_person?.full_name && (
-                <div className="mb-3 text-sm text-gray-600 flex items-center gap-2">
-                  <Truck className="h-3.5 w-3.5" />
-                  <span>
-                    {t('delivery.driver')} {order.delivery_person.full_name}
-                  </span>
-                </div>
-              )}
-
-              {/* Order Items Preview */}
-              <div className="mb-3 text-sm text-gray-600">
-                {order.order_items?.slice(0, 3).map((item) => (
-                  <div key={item.id}>
-                    {item.quantity}x {item.menu_item?.name || item.item_name}
-                    {item.notes && <span className="text-xs text-gray-500"> ({item.notes})</span>}
-                  </div>
-                ))}
-                {order.order_items?.length > 3 && (
-                  <div className="text-gray-400">
-                    {t('orders.moreItems', { count: order.order_items.length - 3 })}
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
-                {order.status === 'pending_approval' && (
-                  <Button
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={() => handleStatusUpdate(order.id, 'new')}
-                  >
-                    <ThumbsUp className="h-4 w-4 mr-1" />
-                    {t('approve', { ns: 'common' })}
-                  </Button>
-                )}
-                {order.status === 'new' && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleStatusUpdate(order.id, 'preparing')}
-                  >
-                    <ChefHat className="h-4 w-4 mr-1" />
-                    {t('orders.startPreparing')}
-                  </Button>
-                )}
-                {order.status === 'preparing' && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleStatusUpdate(order.id, 'ready')}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    {t('orders.ready')}
-                  </Button>
-                )}
-                {order.status === 'ready' && (
-                  <Button
-                    size="sm"
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
-                    onClick={() => handleMarkOutForDelivery(order.id, order.delivery_person_id)}
-                  >
-                    <Truck className="h-4 w-4 mr-1" />
-                    {t('delivery.outForDelivery')}
-                  </Button>
-                )}
-                {order.status === 'out_for_delivery' && (
-                  <Button
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                    onClick={() => handleMarkDelivered(order.id)}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    {t('delivery.markDelivered')}
-                  </Button>
-                )}
-                {['pending_approval', 'new', 'preparing', 'ready', 'out_for_delivery'].includes(
-                  order.status,
-                ) && (
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => {
-                      setCancelOrderTarget(order);
-                      setShowCancelModal(true);
-                    }}
-                  >
-                    <XCircle className="h-4 w-4 mr-1" />
-                    {order.status === 'pending_approval'
-                      ? t('reject', { ns: 'common' })
-                      : t('cancel', { ns: 'common' })}
-                  </Button>
-                )}
-              </div>
-            </div>
-          );
-        })}
+        {filteredOrders?.map((order) => (
+          <DeliveryOrderCard
+            key={order.id}
+            order={order}
+            formatPrice={formatPrice}
+            onStatusUpdate={handleStatusUpdate}
+            onMarkOutForDelivery={handleMarkOutForDelivery}
+            onMarkDelivered={handleMarkDelivered}
+            onOpenCancel={setCancelOrderTarget}
+          />
+        ))}
       </div>
 
       {/* Cancel Order Modal */}
-      {showCancelModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-red-600">
-                {t('delivery.cancelDeliveryOrder')}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowCancelModal(false);
-                  setCancelOrderTarget(null);
-                  setCancelReason('');
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {cancelOrderTarget && (
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium">
-                  {cancelOrderTarget.customer_name || t('delivery.title')}
-                </p>
-                <p className="text-sm text-gray-500">#{cancelOrderTarget.id.slice(0, 8)}</p>
-              </div>
-            )}
-
-            <p className="text-gray-600 mb-4">{t('orders.reasonRequired')}</p>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('orders.cancellationReason')} <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder={t('orders.reasonPlaceholder')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setShowCancelModal(false);
-                  setCancelOrderTarget(null);
-                  setCancelReason('');
-                }}
-                disabled={cancelling}
-              >
-                {t('orders.keepOrder')}
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={handleCancelOrder}
-                disabled={cancelling || !cancelReason.trim()}
-              >
-                {cancelling ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {t('orders.cancelling')}
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="h-4 w-4 mr-2" />
-                    {t('orders.cancelOrder')}
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
+      {cancelOrderTarget && (
+        <CancelOrderModal
+          order={cancelOrderTarget}
+          orderLabel={cancelOrderTarget.customer_name || t('delivery.title')}
+          title={t('delivery.cancelDeliveryOrder')}
+          onSuccess={() => {
+            setCancelOrderTarget(null);
+            refetch();
+          }}
+          onClose={() => setCancelOrderTarget(null)}
+        />
       )}
 
       <CreateDeliveryModal

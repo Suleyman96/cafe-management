@@ -204,7 +204,7 @@ describe('ExpensesWrapper', () => {
       },
     });
     const expenses = createExpensesWrapper(ctx);
-    const result = await expenses.update(validExpense.id, { amount: 200 } as any);
+    const result = await expenses.update(validExpense.id, { amount: 200 });
     expect(result.amount).toBe(200);
   });
 
@@ -287,9 +287,7 @@ describe('ExpensesWrapper', () => {
       },
     });
     const expenses = createExpensesWrapper(ctx);
-    await expect(expenses.update('1', { amount: 200 } as any)).rejects.toThrow(
-      'Invalid expense data',
-    );
+    await expect(expenses.update('1', { amount: 200 })).rejects.toThrow('Invalid expense data');
   });
 
   it('findAll returns empty array when data is null', async () => {

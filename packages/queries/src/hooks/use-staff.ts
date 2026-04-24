@@ -8,6 +8,7 @@ export function useStaff(role?: string) {
   return useQuery({
     queryKey: [QUERY_KEYS.STAFF, role],
     queryFn: () => db.staff.findAll(role) as Promise<Staff[]>,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

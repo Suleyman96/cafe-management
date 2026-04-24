@@ -127,7 +127,11 @@ export function TableCart({
               </p>
             )}
           </div>
-          <Button onClick={onSubmit} disabled={submitting || cart.length === 0}>
+          <Button
+            data-testid="submit-order"
+            onClick={onSubmit}
+            disabled={submitting || cart.length === 0}
+          >
             {submitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

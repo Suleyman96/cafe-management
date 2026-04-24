@@ -3,7 +3,7 @@
  */
 
 import { handleSupabaseError } from '@gustri/core';
-import type { WrapperContext } from './types';
+import type { DeliveryCustomerRow, PaginatedResult, WrapperContext } from './types';
 
 export function createDeliveryCustomersWrapper(ctx: WrapperContext) {
   return {
@@ -16,6 +16,37 @@ export function createDeliveryCustomersWrapper(ctx: WrapperContext) {
 
       if (error) throw handleSupabaseError(error);
       return data || [];
+    },
+
+    findAllPaginated: async (options?: {
+      page?: number;
+      pageSize?: number;
+      search?: string;
+    }): Promise<PaginatedResult<DeliveryCustomerRow>> => {
+      const page = options?.page ?? 1;
+      const pageSize = options?.pageSize ?? 50;
+      const offset = (page - 1) * pageSize;
+
+      let query = ctx.anyClient
+        .from('delivery_customers')
+        .select('*', { count: 'exact' })
+        .order('order_count', { ascending: false })
+        .order('name', { ascending: true });
+
+      if (options?.search) {
+        query = query.or(`name.ilike.%${options.search}%,phone.ilike.%${options.search}%`);
+      }
+
+      query = query.range(offset, offset + pageSize - 1);
+
+      const { data, error, count } = await query;
+
+      if (error) throw handleSupabaseError(error);
+      return {
+        data: (data || []) as DeliveryCustomerRow[],
+        count: count ?? 0,
+        hasMore: (count ?? 0) > offset + pageSize,
+      };
     },
 
     search: async (query: string) => {

@@ -91,6 +91,7 @@ export function MenuItemCard({ item, accentColor, priority = false }: MenuItemCa
 
           {/* Quick Add FAB */}
           <button
+            data-testid="quick-add"
             onClick={handleQuickAdd}
             className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full shadow-lg transition-all active:scale-90 hover:shadow-xl"
             style={{

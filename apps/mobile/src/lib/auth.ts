@@ -24,6 +24,13 @@ export async function login({ email, password }: LoginCredentials) {
 }
 
 export async function logout() {
+  // Remove all Realtime channels before signing out to prevent
+  // ghost subscriptions with stale tenant context
+  const channels = supabase.getChannels();
+  for (const channel of channels) {
+    supabase.removeChannel(channel);
+  }
+
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
@@ -53,6 +60,11 @@ export function onAuthStateChange(callback: (staff: Staff | null) => void) {
         callback(null);
       }
     } else {
+      // Session expired or user signed out — clean up Realtime channels
+      const channels = supabase.getChannels();
+      for (const channel of channels) {
+        supabase.removeChannel(channel);
+      }
       callback(null);
     }
   });

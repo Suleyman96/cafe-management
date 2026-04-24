@@ -7,7 +7,9 @@ import type {
   CategoryInsert,
   CategoryUpdate,
   MenuItemInsert,
+  MenuItemRow,
   MenuItemUpdate,
+  PaginatedResult,
   WrapperContext,
 } from './types';
 
@@ -100,6 +102,40 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
       const { error } = await ctx.anyClient.from('menu_items').delete().eq('id', id);
 
       if (error) throw handleSupabaseError(error);
+    },
+
+    findAllPaginated: async (options?: {
+      page?: number;
+      pageSize?: number;
+      categoryId?: string;
+      isAvailable?: boolean;
+    }): Promise<PaginatedResult<MenuItemRow>> => {
+      const page = options?.page ?? 1;
+      const pageSize = options?.pageSize ?? 100;
+      const offset = (page - 1) * pageSize;
+
+      let query = ctx.client
+        .from('menu_items')
+        .select('*, category:categories(*)', { count: 'exact' })
+        .order('display_order');
+
+      if (options?.categoryId) {
+        query = query.eq('category_id', options.categoryId);
+      }
+      if (options?.isAvailable !== undefined) {
+        query = query.eq('is_available', options.isAvailable);
+      }
+
+      query = query.range(offset, offset + pageSize - 1);
+
+      const { data, error, count } = await query;
+
+      if (error) throw handleSupabaseError(error);
+      return {
+        data: (data || []) as MenuItemRow[],
+        count: count ?? 0,
+        hasMore: (count ?? 0) > offset + pageSize,
+      };
     },
   };
 }

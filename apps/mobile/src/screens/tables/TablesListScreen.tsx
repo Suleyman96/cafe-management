@@ -1,8 +1,9 @@
 import { useTranslation } from '@gustri/i18n';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { FlashList } from '@shopify/flash-list';
 import { useEffect, useMemo, useRef } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TableCard } from '@/components/tables/TableCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
@@ -61,7 +62,7 @@ export default function TablesListScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <FlashList
         data={tableData}
         numColumns={2}
         keyExtractor={(item) => item.table.id}

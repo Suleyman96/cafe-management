@@ -186,6 +186,7 @@ export const QUERY_KEYS = {
   OVERDUE_TASKS_COUNT: 'overdue_tasks_count',
   OPEN_TASKS_COUNT: 'open_tasks_count',
   PAYMENTS: 'payments',
+  REPORTS: 'reports',
   FEEDBACK: 'feedback',
   STAFF_MEMBER: 'staff_member',
   PAYMENTS_BY_STAFF: 'payments_by_staff',

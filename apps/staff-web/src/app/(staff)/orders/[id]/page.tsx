@@ -43,6 +43,7 @@ import {
   useUpdateOrderStatus,
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
+import { useCanMutate } from '@/hooks/use-can-mutate';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { supabase } from '@/lib/supabase/client';
 
@@ -109,6 +110,7 @@ export default function OrderDetailPage() {
   const { staff: currentStaff } = useAuth();
   const canDiscount = currentStaff?.role === 'admin' || currentStaff?.role === 'owner';
   const canRefund = currentStaff?.role === 'admin' || currentStaff?.role === 'owner';
+  const canMutate = useCanMutate();
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
@@ -284,7 +286,6 @@ export default function OrderDetailPage() {
     },
   ];
 
-  // Handle item status update — also syncs order-level status based on collective item states
   const handleItemStatusUpdate = async (itemId: string, newStatus: string) => {
     try {
       await updateItemStatus.mutateAsync({
@@ -292,40 +293,7 @@ export default function OrderDetailPage() {
         status: newStatus as 'pending' | 'preparing' | 'ready' | 'served',
       });
       setOpenItemMenu(null);
-
-      // Sync order status based on updated item states
-      if (order?.order_items) {
-        const updatedItems = order.order_items.map((item: OrderItem) =>
-          item.id === itemId ? { ...item, status: newStatus } : item,
-        );
-        type ItemWithStatus = { status: string };
-        const nonCancelled = updatedItems.filter((i: ItemWithStatus) => i.status !== 'cancelled');
-
-        if (nonCancelled.length > 0) {
-          const allServed = nonCancelled.every((i: ItemWithStatus) => i.status === 'served');
-          const allReadyOrServed = nonCancelled.every(
-            (i: ItemWithStatus) => i.status === 'ready' || i.status === 'served',
-          );
-          const anyPreparing = nonCancelled.some((i: ItemWithStatus) => i.status === 'preparing');
-
-          let targetStatus: keyof typeof ORDER_STATUS | null = null;
-          if (allServed && order.status !== 'served') {
-            targetStatus = 'SERVED';
-          } else if (allReadyOrServed && !allServed && order.status !== 'ready') {
-            targetStatus = 'READY';
-          } else if (anyPreparing && order.status === 'new') {
-            targetStatus = 'PREPARING';
-          }
-
-          if (targetStatus) {
-            await updateOrderStatus.mutateAsync({
-              orderId,
-              status: targetStatus,
-            });
-          }
-        }
-      }
-
+      // Order status is now synced by database trigger (trg_sync_order_status_from_items).
       toast.success(t('orders.itemStatusUpdated', { status: newStatus }));
     } catch (_error) {
       toast.error(t('orders.failedUpdateItemStatus'));
@@ -712,6 +680,7 @@ export default function OrderDetailPage() {
         hasItems={
           (order.order_items?.filter((i: OrderItem) => i.status !== 'cancelled').length ?? 0) > 0
         }
+        canMutate={canMutate}
         onStatusUpdate={handleStatusUpdate}
         onOpenPayment={() => setIsPaymentModalOpen(true)}
         onOpenDiscount={() => setIsDiscountModalOpen(true)}

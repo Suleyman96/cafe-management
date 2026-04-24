@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Chip, Dialog, FAB, Portal, Searchbar } from 'react-native-paper';
 import { CreateDeliveryModal } from '@/components/delivery/CreateDeliveryModal';
 import { DeliveryOrderCard } from '@/components/delivery/DeliveryOrderCard';
@@ -194,7 +195,7 @@ export default function DeliveryListScreen() {
         ))}
       </View>
 
-      <FlatList
+      <FlashList
         data={filtered}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}

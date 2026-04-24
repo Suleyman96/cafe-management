@@ -1,9 +1,15 @@
 import { ConflictError } from '@gustri/core';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createSchedulesWrapper } from '../wrapper/schedules';
+import {
+  buildSchedule,
+  buildScheduleInsert,
+  buildScheduleUpdate,
+  resetFactoryCounter,
+} from './helpers/factories';
 import { createMockContext } from './helpers/mock-supabase';
 
-const validSchedule = {
+const validSchedule = buildSchedule({
   id: '123e4567-e89b-12d3-a456-426614174000',
   staff_id: '123e4567-e89b-12d3-a456-426614174001',
   date: '2025-02-23',
@@ -13,39 +19,51 @@ const validSchedule = {
   actual_end: null,
   status: 'scheduled',
   notes: null,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
+});
+
+// Enriched version with staff join data (as returned by the wrapper)
+const validScheduleWithStaff = {
+  ...validSchedule,
   staff: { id: '123e4567-e89b-12d3-a456-426614174001', full_name: 'John Doe', role: 'waiter' },
 };
 
 describe('SchedulesWrapper', () => {
+  beforeEach(() => {
+    resetFactoryCounter();
+  });
+
   it('create inserts schedule data', async () => {
     const ctx = createMockContext({
       responses: {
-        staff_schedules: { data: validSchedule, error: null },
+        staff_schedules: { data: validScheduleWithStaff, error: null },
       },
     });
     const schedules = createSchedulesWrapper(ctx);
-    const result = await schedules.create({
-      staff_id: validSchedule.staff_id,
-      date: validSchedule.date,
-      planned_start: '09:00',
-      planned_end: '17:00',
-      status: 'scheduled',
-    } as any);
-    expect(result).toEqual(validSchedule);
+    const result = await schedules.create(
+      buildScheduleInsert({
+        staff_id: validSchedule.staff_id,
+        date: validSchedule.date,
+        planned_start: '09:00',
+        planned_end: '17:00',
+        status: 'scheduled',
+      }),
+    );
+    expect(result).toEqual(validScheduleWithStaff);
     expect(ctx.getCalls()[0].method).toBe('insert');
   });
 
   it('update modifies schedule fields', async () => {
-    const updated = { ...validSchedule, planned_start: '10:00:00' };
+    const updated = { ...validScheduleWithStaff, planned_start: '10:00:00' };
     const ctx = createMockContext({
       responses: {
         staff_schedules: { data: updated, error: null },
       },
     });
     const schedules = createSchedulesWrapper(ctx);
-    const result = await schedules.update(validSchedule.id, { planned_start: '10:00' } as any);
+    const result = await schedules.update(
+      validSchedule.id,
+      buildScheduleUpdate({ planned_start: '10:00' }),
+    );
     expect(result).toEqual(updated);
     expect(ctx.getCalls()[0].method).toBe('update');
   });
@@ -64,29 +82,29 @@ describe('SchedulesWrapper', () => {
   it('findByDate returns schedules for a date', async () => {
     const ctx = createMockContext({
       responses: {
-        staff_schedules: { data: [validSchedule], error: null },
+        staff_schedules: { data: [validScheduleWithStaff], error: null },
       },
     });
     const schedules = createSchedulesWrapper(ctx);
     const result = await schedules.findByDate('2025-02-23');
-    expect(result).toEqual([validSchedule]);
+    expect(result).toEqual([validScheduleWithStaff]);
   });
 
   it('findByStaffAndDate returns staff schedules', async () => {
     const ctx = createMockContext({
       responses: {
-        staff_schedules: { data: [validSchedule], error: null },
+        staff_schedules: { data: [validScheduleWithStaff], error: null },
       },
     });
     const schedules = createSchedulesWrapper(ctx);
     const result = await schedules.findByStaffAndDate(validSchedule.staff_id, '2025-02-23');
-    expect(result).toEqual([validSchedule]);
+    expect(result).toEqual([validScheduleWithStaff]);
   });
 
   it('findByStaffRange returns schedules in range', async () => {
     const ctx = createMockContext({
       responses: {
-        staff_schedules: { data: [validSchedule], error: null },
+        staff_schedules: { data: [validScheduleWithStaff], error: null },
       },
     });
     const schedules = createSchedulesWrapper(ctx);
@@ -95,23 +113,23 @@ describe('SchedulesWrapper', () => {
       '2025-02-20',
       '2025-02-28',
     );
-    expect(result).toEqual([validSchedule]);
+    expect(result).toEqual([validScheduleWithStaff]);
   });
 
   it('findByDateRange returns all schedules in range', async () => {
     const ctx = createMockContext({
       responses: {
-        staff_schedules: { data: [validSchedule], error: null },
+        staff_schedules: { data: [validScheduleWithStaff], error: null },
       },
     });
     const schedules = createSchedulesWrapper(ctx);
     const result = await schedules.findByDateRange('2025-02-20', '2025-02-28');
-    expect(result).toEqual([validSchedule]);
+    expect(result).toEqual([validScheduleWithStaff]);
   });
 
   it('markInProgress updates status and actual_start', async () => {
     const inProgress = {
-      ...validSchedule,
+      ...validScheduleWithStaff,
       status: 'in_progress',
       actual_start: '2025-02-23T09:15:00Z',
     };
@@ -128,7 +146,7 @@ describe('SchedulesWrapper', () => {
 
   it('markCompleted updates status', async () => {
     const completed = {
-      ...validSchedule,
+      ...validScheduleWithStaff,
       status: 'completed',
       actual_end: '2025-02-23T17:30:00Z',
     };
@@ -143,7 +161,7 @@ describe('SchedulesWrapper', () => {
   });
 
   it('markMissed updates status to missed', async () => {
-    const missed = { ...validSchedule, status: 'missed' };
+    const missed = { ...validScheduleWithStaff, status: 'missed' };
     const ctx = createMockContext({
       responses: {
         staff_schedules: { data: missed, error: null },
@@ -162,13 +180,15 @@ describe('SchedulesWrapper', () => {
     });
     const schedules = createSchedulesWrapper(ctx);
     await expect(
-      schedules.create({
-        staff_id: 'test',
-        date: '2025-02-23',
-        planned_start: '09:00',
-        planned_end: '17:00',
-        status: 'scheduled',
-      } as any),
+      schedules.create(
+        buildScheduleInsert({
+          staff_id: 'test',
+          date: '2025-02-23',
+          planned_start: '09:00',
+          planned_end: '17:00',
+          status: 'scheduled',
+        }),
+      ),
     ).rejects.toThrow();
   });
 
@@ -191,18 +211,20 @@ describe('SchedulesWrapper', () => {
     });
     const schedules = createSchedulesWrapper(ctx);
     await expect(
-      schedules.create({
-        staff_id: 'test',
-        date: '2025-02-23',
-        planned_start: '09:00',
-        planned_end: '17:00',
-        status: 'scheduled',
-      } as any),
+      schedules.create(
+        buildScheduleInsert({
+          staff_id: 'test',
+          date: '2025-02-23',
+          planned_start: '09:00',
+          planned_end: '17:00',
+          status: 'scheduled',
+        }),
+      ),
     ).rejects.toThrow(ConflictError);
   });
 
   it('markCompleted without actualEnd only sets status to completed', async () => {
-    const completed = { ...validSchedule, status: 'completed', actual_end: null };
+    const completed = { ...validScheduleWithStaff, status: 'completed', actual_end: null };
     const ctx = createMockContext({
       responses: {
         staff_schedules: { data: completed, error: null },

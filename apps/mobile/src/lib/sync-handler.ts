@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react-native';
 import type { MutationCache } from '@tanstack/react-query';
 
 type SyncErrorHandler = (error: Error, context: string) => void;
@@ -22,7 +23,10 @@ export function configureSyncErrorHandling(mutationCache: MutationCache) {
     if (event.type === 'updated' && event.action.type === 'error') {
       const error = event.action.error;
       const message = error instanceof Error ? error.message : String(error);
-      console.warn('[Sync] Mutation failed after reconnect:', message);
+
+      Sentry.captureException(error instanceof Error ? error : new Error(message), {
+        tags: { context: 'offline-sync' },
+      });
 
       syncErrorHandler(
         error instanceof Error ? error : new Error(message),

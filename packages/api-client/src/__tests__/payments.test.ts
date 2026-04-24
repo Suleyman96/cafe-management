@@ -1,6 +1,7 @@
 import { AuthenticationError, ConflictError, ValidationError } from '@gustri/core';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createPaymentsWrapper } from '../wrapper/payments';
+import { buildPaymentInsert, resetFactoryCounter } from './helpers/factories';
 import { createMockContext } from './helpers/mock-supabase';
 
 const validPayment = {
@@ -13,6 +14,10 @@ const validPayment = {
 };
 
 describe('PaymentsWrapper', () => {
+  beforeEach(() => {
+    resetFactoryCounter();
+  });
+
   it('create inserts payment data', async () => {
     const ctx = createMockContext({
       responses: {
@@ -20,11 +25,13 @@ describe('PaymentsWrapper', () => {
       },
     });
     const payments = createPaymentsWrapper(ctx);
-    const result = await payments.create({
-      order_id: validPayment.order_id,
-      amount: 50.0,
-      payment_method: 'cash',
-    } as any);
+    const result = await payments.create(
+      buildPaymentInsert({
+        order_id: validPayment.order_id,
+        amount: 50.0,
+        payment_method: 'cash',
+      }),
+    );
     expect(result).toEqual(validPayment);
     expect(ctx.getCalls()[0].method).toBe('insert');
   });
@@ -59,7 +66,7 @@ describe('PaymentsWrapper', () => {
     });
     const payments = createPaymentsWrapper(ctx);
     await expect(
-      payments.create({ order_id: 'bad', amount: 10, payment_method: 'cash' } as any),
+      payments.create(buildPaymentInsert({ order_id: 'bad', amount: 10, payment_method: 'cash' })),
     ).rejects.toThrow();
   });
 
@@ -103,7 +110,9 @@ describe('PaymentsWrapper', () => {
     });
     const payments = createPaymentsWrapper(ctx);
     await expect(
-      payments.create({ order_id: 'ord-1', amount: 50, payment_method: 'cash' } as any),
+      payments.create(
+        buildPaymentInsert({ order_id: 'ord-1', amount: 50, payment_method: 'cash' }),
+      ),
     ).rejects.toThrow('Invalid payment data');
   });
 
@@ -115,7 +124,9 @@ describe('PaymentsWrapper', () => {
     });
     const payments = createPaymentsWrapper(ctx);
     await expect(
-      payments.create({ order_id: 'ord-1', amount: 50, payment_method: 'cash' } as any),
+      payments.create(
+        buildPaymentInsert({ order_id: 'ord-1', amount: 50, payment_method: 'cash' }),
+      ),
     ).rejects.toThrow(ConflictError);
   });
 
@@ -127,7 +138,9 @@ describe('PaymentsWrapper', () => {
     });
     const payments = createPaymentsWrapper(ctx);
     await expect(
-      payments.create({ order_id: 'bad-id', amount: 50, payment_method: 'cash' } as any),
+      payments.create(
+        buildPaymentInsert({ order_id: 'bad-id', amount: 50, payment_method: 'cash' }),
+      ),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -139,7 +152,9 @@ describe('PaymentsWrapper', () => {
     });
     const payments = createPaymentsWrapper(ctx);
     await expect(
-      payments.create({ order_id: 'ord-1', amount: 50, payment_method: 'cash' } as any),
+      payments.create(
+        buildPaymentInsert({ order_id: 'ord-1', amount: 50, payment_method: 'cash' }),
+      ),
     ).rejects.toThrow(AuthenticationError);
   });
 
@@ -172,11 +187,13 @@ describe('PaymentsWrapper', () => {
       },
     });
     const payments = createPaymentsWrapper(ctx);
-    await payments.create({
-      order_id: validPayment.order_id,
-      amount: 50.0,
-      payment_method: 'cash',
-    } as any);
+    await payments.create(
+      buildPaymentInsert({
+        order_id: validPayment.order_id,
+        amount: 50.0,
+        payment_method: 'cash',
+      }),
+    );
     const calls = ctx.getCalls();
     expect(calls[0].method).toBe('insert');
     expect(calls[0].table).toBe('order_payments');

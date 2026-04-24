@@ -9,6 +9,31 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
+/**
+ * Custom fetch wrapper that throttles Supabase REST API calls.
+ * Limits to 20 requests per 10 seconds to prevent client-side abuse
+ * (e.g. rapid page navigation, automated scraping via the anon key).
+ */
+const supabaseFetchTimestamps: number[] = [];
+
+const throttledFetch: typeof fetch = (input, init) => {
+  const now = Date.now();
+  const windowMs = 10_000;
+  const maxRequests = 20;
+
+  // Remove timestamps outside the window
+  while (supabaseFetchTimestamps.length > 0 && now - supabaseFetchTimestamps[0] > windowMs) {
+    supabaseFetchTimestamps.shift();
+  }
+
+  if (supabaseFetchTimestamps.length >= maxRequests) {
+    return Promise.reject(new Error('Too many requests. Please wait a moment.'));
+  }
+
+  supabaseFetchTimestamps.push(now);
+  return fetch(input, init);
+};
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: false, // Customers don't need persistent auth
@@ -17,6 +42,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     params: {
       eventsPerSecond: 10,
     },
+  },
+  global: {
+    fetch: throttledFetch,
   },
 });
 

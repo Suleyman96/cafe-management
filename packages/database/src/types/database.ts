@@ -141,6 +141,7 @@ export interface Database {
           estimated_delivery_time: string | null;
           delivered_at: string | null;
           delivery_person_id: string | null;
+          delivery_access_token: string | null;
         };
         Insert: Omit<
           Database['public']['Tables']['orders']['Row'],
@@ -154,6 +155,7 @@ export interface Database {
           | 'discount_amount'
           | 'discount_reason'
           | 'discount_applied_by'
+          | 'delivery_access_token'
         > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['orders']['Insert']>;
       };
@@ -215,6 +217,7 @@ export interface Database {
           last_login_at: string | null;
           auth_user_id: string | null;
           preferred_language: string;
+          push_token: string | null;
         };
         Insert: Omit<
           Database['public']['Tables']['staff']['Row'],

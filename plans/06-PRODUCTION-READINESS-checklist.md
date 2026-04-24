@@ -47,6 +47,17 @@
 - [ ] **Edge function regions** — Verify Vercel deployments are in a region close to your
   Supabase instance to minimize latency. Check Vercel > Project > Settings > Functions > Region.
 
+- [ ] **Supabase REST API rate limiting** — Customer-web makes direct Supabase REST calls
+  using the anon key (reads via RLS). Client-side throttling is in place (`supabase.ts`
+  limits to 20 req/10s, `api-routes.ts` limits to 5 POST/30s), but these are bypassable.
+  Configure server-side limits in Supabase Dashboard:
+  - Dashboard > Settings > API > Rate Limiting
+  - Set per-IP request limits for the REST API (recommended: 100 req/min)
+  - Set per-IP connection limits for Realtime WebSockets (recommended: 10 concurrent)
+  - Set global connection pool limits appropriate for your plan tier
+  - Test that normal customer ordering flows (menu browse, place order, track status)
+    stay well under the limits — a typical session is ~20-30 requests
+
 ---
 
 ## 2. Testing Gaps

@@ -1,8 +1,9 @@
 import { useTranslation } from '@gustri/i18n';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Chip, Searchbar } from 'react-native-paper';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
@@ -108,7 +109,7 @@ export default function OrdersListScreen() {
         ))}
       </ScrollView>
 
-      <FlatList
+      <FlashList
         data={filteredOrders}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}

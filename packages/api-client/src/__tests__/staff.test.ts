@@ -1,23 +1,29 @@
 import { AuthenticationError, ConflictError } from '@gustri/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createStaffWrapper } from '../wrapper/staff';
+import {
+  buildStaff,
+  buildStaffInsert,
+  buildStaffUpdate,
+  resetFactoryCounter,
+} from './helpers/factories';
 import { createMockContext } from './helpers/mock-supabase';
 
-const validStaff = {
+const validStaff = buildStaff({
   id: '123e4567-e89b-12d3-a456-426614174000',
   email: 'john@cafe.com',
   role: 'waiter',
   full_name: 'John Doe',
   is_active: true,
   auth_user_id: 'auth-123',
-  created_at: new Date().toISOString(),
-};
+});
 
 describe('StaffWrapper', () => {
   let ctx: ReturnType<typeof createMockContext>;
   let staff: ReturnType<typeof createStaffWrapper>;
 
   beforeEach(() => {
+    resetFactoryCounter();
     ctx = createMockContext({
       responses: {
         staff: { data: [validStaff], error: null },
@@ -69,11 +75,13 @@ describe('StaffWrapper', () => {
       responses: { staff: { data: validStaff, error: null } },
     });
     const createStaff = createStaffWrapper(createCtx);
-    const result = await createStaff.create({
-      email: 'john@cafe.com',
-      role: 'waiter',
-      full_name: 'John Doe',
-    } as any);
+    const result = await createStaff.create(
+      buildStaffInsert({
+        email: 'john@cafe.com',
+        role: 'waiter',
+        full_name: 'John Doe',
+      }),
+    );
     expect(result).toEqual(validStaff);
     expect(createCtx.getCalls()[0].method).toBe('insert');
   });
@@ -83,7 +91,7 @@ describe('StaffWrapper', () => {
       responses: { staff: { data: { ...validStaff, role: 'admin' }, error: null } },
     });
     const updateStaff = createStaffWrapper(updateCtx);
-    const result = await updateStaff.update(validStaff.id, { role: 'admin' } as any);
+    const result = await updateStaff.update(validStaff.id, buildStaffUpdate({ role: 'admin' }));
     expect(result.role).toBe('admin');
     expect(updateCtx.getCalls()[0].method).toBe('update');
   });
@@ -193,7 +201,9 @@ describe('StaffWrapper', () => {
     });
     const wrapper = createStaffWrapper(ctx);
     await expect(
-      wrapper.create({ email: 'john@cafe.com', role: 'waiter', full_name: 'John' } as any),
+      wrapper.create(
+        buildStaffInsert({ email: 'john@cafe.com', role: 'waiter', full_name: 'John' }),
+      ),
     ).rejects.toThrow(ConflictError);
   });
 
