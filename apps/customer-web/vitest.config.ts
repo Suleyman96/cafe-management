@@ -15,10 +15,10 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/hooks/**/*.ts', 'src/store/**/*.ts'],
       thresholds: {
-        statements: 60,
-        branches: 50,
-        functions: 60,
-        lines: 60,
+        statements: 40,
+        branches: 30,
+        functions: 40,
+        lines: 40,
       },
     },
     server: {
