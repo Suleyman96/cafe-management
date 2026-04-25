@@ -1,3 +1,4 @@
+import type { Category, MenuItem, MenuItemsInsert, MenuItemsUpdate } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -6,8 +7,7 @@ import { CategoryModal } from '@/components/menu-management/CategoryModal';
 import { MenuItemManageCard } from '@/components/menu-management/MenuItemManageCard';
 import { MenuItemModal } from '@/components/menu-management/MenuItemModal';
 import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useCategories, useMenuItems } from '@/hooks';
-import { useCafeSettings } from '@/hooks/use-cafe-settings';
+import { useCategories, useCurrencySymbol, useMenuItems } from '@/hooks';
 import {
   useCreateCategory,
   useCreateMenuItem,
@@ -27,17 +27,16 @@ export default function MenuManagementScreen() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | undefined>();
   const [showItemModal, setShowItemModal] = useState(false);
-  const [editItem, setEditItem] = useState<any>(null);
+  const [editItem, setEditItem] = useState<MenuItem | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
 
   // Category modal state
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [editCategory, setEditCategory] = useState<any>(null);
+  const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
 
   const { data: items, isLoading, error, refetch } = useMenuItems({ categoryId: categoryFilter });
   const { data: categories } = useCategories();
-  const { data: settings } = useCafeSettings();
 
   // Item mutations
   const createItem = useCreateMenuItem();
@@ -50,7 +49,7 @@ export default function MenuManagementScreen() {
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
 
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
 
   // Search filter (name + description, like staff-web)
   const filtered = useMemo(() => {
@@ -84,13 +83,15 @@ export default function MenuManagementScreen() {
     }
   };
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (
+    data: Record<string, string | number | boolean | string[] | null>,
+  ) => {
     try {
       if (editItem) {
-        await updateItem.mutateAsync({ id: editItem.id, data });
+        await updateItem.mutateAsync({ id: editItem.id, data: data as MenuItemsUpdate });
         showSuccess(t('menu.itemUpdated'));
       } else {
-        await createItem.mutateAsync(data);
+        await createItem.mutateAsync(data as MenuItemsInsert);
         showSuccess(t('menu.itemCreated'));
       }
       setShowItemModal(false);
@@ -112,7 +113,13 @@ export default function MenuManagementScreen() {
   };
 
   // Category handlers
-  const handleCategorySubmit = async (data: any) => {
+  const handleCategorySubmit = async (data: {
+    name: string;
+    description: string;
+    icon: string;
+    display_order: number;
+    is_active: boolean;
+  }) => {
     try {
       if (editCategory) {
         await updateCategory.mutateAsync({ id: editCategory.id, data });
@@ -190,7 +197,7 @@ export default function MenuManagementScreen() {
         <Chip compact selected={!categoryFilter} onPress={() => setCategoryFilter(undefined)}>
           {tCommon('all')} ({(items || []).length})
         </Chip>
-        {(categories || []).map((c: any) => (
+        {(categories || []).map((c) => (
           <Chip
             key={c.id}
             compact
@@ -206,7 +213,7 @@ export default function MenuManagementScreen() {
       {categoryFilter && (
         <View style={styles.categoryHeader}>
           {(() => {
-            const cat = (categories || []).find((c: any) => c.id === categoryFilter);
+            const cat = (categories || []).find((c) => c.id === categoryFilter);
             if (!cat) return null;
             return (
               <>

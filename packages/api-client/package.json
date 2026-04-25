@@ -1,6 +1,7 @@
 {
   "name": "@gustri/api-client",
   "version": "0.1.0",
+  "sideEffects": false,
   "private": true,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

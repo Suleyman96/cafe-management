@@ -44,6 +44,35 @@ export const TABLE_STATUS_COLORS: Record<string, string> = {
   closed: '#6b7280',
 };
 
+export const COLORS = {
+  // Backgrounds
+  background: '#f8fafc',
+  card: '#ffffff',
+
+  // Text
+  textPrimary: '#1e293b',
+  textSecondary: '#64748b',
+  textMuted: '#6b7280',
+  textLight: '#9ca3af',
+
+  // Semantic
+  danger: '#ef4444',
+  success: '#10b981',
+  warning: '#f59e0b',
+  info: '#3b82f6',
+
+  // Borders
+  border: '#e2e8f0',
+  borderLight: '#f1f5f9',
+} as const;
+
+export const ROLE_COLORS: Record<string, string> = {
+  owner: '#8b5cf6',
+  admin: '#7c3aed',
+  waiter: '#10b981',
+  kitchen: '#f59e0b',
+};
+
 export const WAITER_CALL_REASON_COLORS: Record<string, string> = {
   emergency: '#ef4444',
   complaint: '#f97316',

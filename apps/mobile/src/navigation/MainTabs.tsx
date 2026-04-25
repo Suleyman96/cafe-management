@@ -3,10 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useTheme } from 'react-native-paper';
 import { useAuthStore } from '@/store/auth-store';
 import type { MainTabParamList } from '@/types';
-import { CallsStack } from './CallsStack';
-import { KitchenStack } from './KitchenStack';
 import { OrdersStack } from './OrdersStack';
-import { ProfileStack } from './ProfileStack';
+import { CallsStack, KitchenStack, ProfileStack } from './stacks';
 import { TablesStack } from './TablesStack';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();

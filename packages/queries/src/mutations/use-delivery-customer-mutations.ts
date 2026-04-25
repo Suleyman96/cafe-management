@@ -7,7 +7,7 @@ export function useCreateDeliveryCustomer(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; phone: string; address: string; notes?: string | null }) =>
+    mutationFn: (data: { name: string; phone: string; address: string; notes: string | null }) =>
       db.deliveryCustomers.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_CUSTOMERS] });

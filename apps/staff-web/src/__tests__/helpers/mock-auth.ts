@@ -9,6 +9,7 @@ export const mockAdminStaff = {
   phone: null,
   last_login_at: null,
   preferred_language: 'en',
+  push_token: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
@@ -22,7 +23,7 @@ export const mockWaiterStaff = {
   auth_user_id: 'auth-user-2',
 };
 
-export function mockUseAuth(overrides: Record<string, any> = {}) {
+export function mockUseAuth(overrides: Record<string, unknown> = {}) {
   return {
     staff: mockAdminStaff,
     isLoading: false,

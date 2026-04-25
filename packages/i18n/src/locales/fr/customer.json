@@ -56,6 +56,7 @@
   "deliveryLanding.errorAddress": "Veuillez entrer votre adresse de livraison",
   "deliveryLanding.errorName": "Veuillez entrer votre nom",
   "deliveryLanding.errorPhone": "Veuillez entrer votre numéro de téléphone",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.heroSubtext": "Remplissez vos informations et parcourez notre menu",
   "deliveryLanding.heroTitle": "Commander en livraison",
   "deliveryLanding.labelAddress": "Adresse de livraison *",

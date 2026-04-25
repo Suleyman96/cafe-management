@@ -11,8 +11,10 @@ import { supabase } from '@/lib/supabase/client';
 
 type StaffRole = 'waiter' | 'admin' | 'kitchen' | 'owner';
 
+import type { Staff } from '@/types';
+
 interface StaffEditModalProps {
-  staff: any;
+  staff: Staff;
   currentUserRole?: string;
   onClose: () => void;
   onSuccess: () => void;

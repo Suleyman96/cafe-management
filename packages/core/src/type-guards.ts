@@ -6,6 +6,7 @@
 import type {
   Category,
   CustomerFeedback,
+  DeliveryCustomer,
   DeliveryOrder,
   DineInOrder,
   Expense,
@@ -14,6 +15,7 @@ import type {
   Order,
   OrderItem,
   OrderPayment,
+  Refund,
   Staff,
   StaffSchedule,
   StockItem,
@@ -22,6 +24,8 @@ import type {
   TableTransfer,
   TakeoutOrder,
   Task,
+  TaskCategory,
+  Tenant,
   WaiterCall,
   WasteLog,
 } from '@gustri/database';
@@ -183,16 +187,8 @@ export function assertType<T>(
 }
 
 // Array type guards
-export function isOrderArray(value: unknown): value is Order[] {
-  return Array.isArray(value) && value.every(isOrder);
-}
-
 export function isTableArray(value: unknown): value is Table[] {
   return Array.isArray(value) && value.every(isTable);
-}
-
-export function isMenuItemArray(value: unknown): value is MenuItem[] {
-  return Array.isArray(value) && value.every(isMenuItem);
 }
 
 export function isCategoryArray(value: unknown): value is Category[] {
@@ -201,18 +197,6 @@ export function isCategoryArray(value: unknown): value is Category[] {
 
 export function isStaffArray(value: unknown): value is Staff[] {
   return Array.isArray(value) && value.every(isStaff);
-}
-
-export function isWaiterCallArray(value: unknown): value is WaiterCall[] {
-  return Array.isArray(value) && value.every(isWaiterCall);
-}
-
-export function isCustomerFeedbackArray(value: unknown): value is CustomerFeedback[] {
-  return Array.isArray(value) && value.every(isCustomerFeedback);
-}
-
-export function isOrderPaymentArray(value: unknown): value is OrderPayment[] {
-  return Array.isArray(value) && value.every(isOrderPayment);
 }
 
 // OrderItem type guard
@@ -304,10 +288,6 @@ export function isStaffSchedule(value: unknown): value is StaffSchedule {
   );
 }
 
-export function isStaffScheduleArray(value: unknown): value is StaffSchedule[] {
-  return Array.isArray(value) && value.every(isStaffSchedule);
-}
-
 // Waste log type guards
 export function isWasteLog(value: unknown): value is WasteLog {
   return (
@@ -318,10 +298,6 @@ export function isWasteLog(value: unknown): value is WasteLog {
     'quantity' in value &&
     'reason' in value
   );
-}
-
-export function isWasteLogArray(value: unknown): value is WasteLog[] {
-  return Array.isArray(value) && value.every(isWasteLog);
 }
 
 // Task type guards
@@ -336,6 +312,48 @@ export function isTask(value: unknown): value is Task {
   );
 }
 
-export function isTaskArray(value: unknown): value is Task[] {
-  return Array.isArray(value) && value.every(isTask);
+// Delivery customer type guards
+export function isDeliveryCustomer(value: unknown): value is DeliveryCustomer {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'phone' in value &&
+    'address' in value &&
+    'order_count' in value
+  );
+}
+
+// Refund type guards
+export function isRefund(value: unknown): value is Refund {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'order_id' in value &&
+    'amount' in value &&
+    'refund_method' in value
+  );
+}
+
+// Tenant type guards
+export function isTenant(value: unknown): value is Tenant {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value &&
+    'plan' in value
+  );
+}
+
+// Task category type guards
+export function isTaskCategory(value: unknown): value is TaskCategory {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value &&
+    'tenant_id' in value
+  );
 }

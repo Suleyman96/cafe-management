@@ -1,6 +1,12 @@
 'use client';
 
-import type { ORDER_STATUS } from '@gustri/core';
+import {
+  formatTime,
+  getOrderStatusColor,
+  type ORDER_STATUS,
+  ORDER_STATUS_KEYS,
+  QUERY_KEYS,
+} from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
@@ -21,7 +27,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { DiscountModal } from '@/components/modals/discount-modal';
 import { RefundModal } from '@/components/modals/refund-modal';
@@ -45,7 +51,7 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { useCanMutate } from '@/hooks/use-can-mutate';
 import { useFormatPrice } from '@/hooks/use-format-price';
-import { supabase } from '@/lib/supabase/client';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
   menu_item?: Database['public']['Tables']['menu_items']['Row'];
@@ -71,18 +77,6 @@ type OrderWithRelations = Database['public']['Tables']['orders']['Row'] & {
   assigned_waiter?: Database['public']['Tables']['staff']['Row'];
   order_payments?: Payment[];
   table_transfers?: TableTransfer[];
-};
-
-const ORDER_STATUS_KEYS: Record<string, string> = {
-  pending_approval: 'orders.pendingApproval',
-  new: 'orders.new',
-  preparing: 'orders.preparing',
-  ready: 'orders.ready',
-  served: 'orders.served',
-  out_for_delivery: 'orders.outForDelivery',
-  delivered: 'orders.delivered',
-  closed: 'orders.closed',
-  cancelled: 'orders.cancelled',
 };
 
 export default function OrderDetailPage() {
@@ -117,52 +111,23 @@ export default function OrderDetailPage() {
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
   const [openItemMenu, setOpenItemMenu] = useState<string | null>(null);
 
-  // Set up real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel(`order-${orderId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
-          filter: `id=eq.${orderId}`,
-        },
-        () => {
-          refetch();
-        },
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'order_items',
-          filter: `order_id=eq.${orderId}`,
-        },
-        () => {
-          refetch();
-        },
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'order_payments',
-          filter: `order_id=eq.${orderId}`,
-        },
-        () => {
-          refetch();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [orderId, refetch]);
+  // Real-time subscription via shared hook
+  useRealtimeSync(`order-detail-${orderId}`, [
+    { table: 'orders', filter: `id=eq.${orderId}`, queryKeys: [[QUERY_KEYS.ORDER, orderId]] },
+    {
+      table: 'order_items',
+      filter: `order_id=eq.${orderId}`,
+      queryKeys: [[QUERY_KEYS.ORDER, orderId]],
+    },
+    {
+      table: 'order_payments',
+      filter: `order_id=eq.${orderId}`,
+      queryKeys: [
+        [QUERY_KEYS.ORDER, orderId],
+        [QUERY_KEYS.PAYMENTS, orderId],
+      ],
+    },
+  ]);
 
   // Calculate subtotal from non-cancelled items (before tax)
   const calculateSubtotal = () => {
@@ -189,14 +154,6 @@ export default function OrderDetailPage() {
     return payments.reduce((sum: number, payment: Payment) => sum + payment.amount, 0);
   };
 
-  // Format timestamp
-  const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   const formatDate = (timestamp: string) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
       month: 'short',
@@ -204,32 +161,6 @@ export default function OrderDetailPage() {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
-
-  // Get status color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending_approval':
-        return 'bg-amber-100 text-amber-800 border border-amber-300';
-      case 'new':
-        return 'bg-blue-100 text-blue-800';
-      case 'preparing':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'ready':
-        return 'bg-green-100 text-green-800';
-      case 'served':
-        return 'bg-purple-100 text-purple-800';
-      case 'out_for_delivery':
-        return 'bg-violet-100 text-violet-800';
-      case 'delivered':
-        return 'bg-emerald-100 text-emerald-800';
-      case 'paid':
-        return 'bg-gray-100 text-gray-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
   };
 
   // Get item status badge
@@ -364,7 +295,7 @@ export default function OrderDetailPage() {
                 : t('orders.takeout')}
           </h1>
           <span
-            className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(order.status)}`}
+            className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getOrderStatusColor(order.status)}`}
           >
             {t(ORDER_STATUS_KEYS[order.status] || order.status)}
           </span>
@@ -716,7 +647,7 @@ export default function OrderDetailPage() {
         orderId={order.id}
         totalPaid={paid}
         totalRefunded={
-          (refundsData as any[])?.reduce((sum: number, r: any) => sum + r.amount, 0) || 0
+          (refundsData as Array<{ amount: number }>)?.reduce((sum, r) => sum + r.amount, 0) || 0
         }
         onSuccess={() => refetch()}
       />

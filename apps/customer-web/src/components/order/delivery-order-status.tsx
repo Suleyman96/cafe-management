@@ -3,6 +3,7 @@
 import { useTranslation } from '@gustri/i18n';
 import { Badge, LoadingSpinner } from '@gustri/ui';
 import { CheckCircle2, Clock, Hourglass, MapPin, Phone, Truck, User } from 'lucide-react';
+import { OrderTimeline } from '@/components/order/order-timeline';
 import { PlatformFooter } from '@/components/ui/platform-footer';
 import { useDeliveryOrder } from '@/hooks/use-delivery';
 import { useFormatPrice } from '@/hooks/use-format-price';
@@ -11,7 +12,7 @@ import { getStatusColor, timeAgo } from '@/lib/utils';
 
 interface DeliveryOrderStatusProps {
   orderId: string;
-  accessToken: string;
+  accessToken?: string;
 }
 
 export function DeliveryOrderStatus({ orderId, accessToken }: DeliveryOrderStatusProps) {
@@ -22,6 +23,17 @@ export function DeliveryOrderStatus({ orderId, accessToken }: DeliveryOrderStatu
 
   if (isLoading) {
     return <LoadingSpinner fullScreen />;
+  }
+
+  if (!accessToken) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-2">{t('deliveryStatus.notFoundTitle')}</h1>
+          <p className="text-muted-foreground">{t('deliveryStatus.missingAccessToken')}</p>
+        </div>
+      </div>
+    );
   }
 
   if (!order) {
@@ -44,8 +56,6 @@ export function DeliveryOrderStatus({ orderId, accessToken }: DeliveryOrderStatu
     { key: 'delivered', label: t('deliveryStatus.step.delivered'), icon: CheckCircle2 },
   ];
 
-  const currentStepIndex = statusSteps.findIndex((step) => step.key === order.status);
-
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="p-4 space-y-6">
@@ -66,7 +76,7 @@ export function DeliveryOrderStatus({ orderId, accessToken }: DeliveryOrderStatu
           </div>
           <div className="flex items-center justify-between mt-2">
             <span className="text-sm text-muted-foreground">{t('deliveryStatus.labelPlaced')}</span>
-            <span className="font-medium">{timeAgo(order.created_at)}</span>
+            <span className="font-medium">{timeAgo(order.created_at, t)}</span>
           </div>
         </div>
 
@@ -108,38 +118,11 @@ export function DeliveryOrderStatus({ orderId, accessToken }: DeliveryOrderStatu
         {/* Status Timeline */}
         <div className="bg-card rounded-lg p-6 border">
           <h2 className="font-semibold mb-4">{t('deliveryStatus.progressTitle')}</h2>
-          <div className="space-y-4">
-            {statusSteps.map((step, index) => {
-              const isActive = index === currentStepIndex;
-              const isCompleted = index < currentStepIndex;
-              const Icon = step.icon;
-
-              return (
-                <div key={step.key} className="flex items-center gap-4">
-                  <div
-                    className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : isCompleted
-                          ? 'bg-green-500 text-white'
-                          : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <p className={`font-medium ${isActive ? 'text-primary' : ''}`}>{step.label}</p>
-                    {isActive && (
-                      <p className="text-sm text-muted-foreground">
-                        {t('deliveryStatus.inProgress')}
-                      </p>
-                    )}
-                  </div>
-                  {isCompleted && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-                </div>
-              );
-            })}
-          </div>
+          <OrderTimeline
+            steps={statusSteps}
+            currentStatus={order.status}
+            inProgressLabel={t('deliveryStatus.inProgress')}
+          />
 
           {order.status === 'pending_approval' && (
             <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">

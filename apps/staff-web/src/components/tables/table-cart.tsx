@@ -1,10 +1,12 @@
 'use client';
 
+import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import { Check, Loader2, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { useCafeSettings, useTaxMultiplier } from '@/hooks';
+import type { OrderWithDetails } from '@/types';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 
@@ -15,7 +17,7 @@ type CartItem = {
 
 interface TableCartProps {
   cart: CartItem[];
-  activeOrder: any;
+  activeOrder: OrderWithDetails | undefined;
   selectedOrderIndex: number;
   submitting: boolean;
   orderNotes: string;
@@ -123,7 +125,9 @@ export function TableCart({
             <span className="font-semibold text-lg">{formatPrice(cartTotal * taxMultiplier)}</span>
             {taxMultiplier !== 1 && (
               <p className="text-xs text-gray-400">
-                {t('orders.inclTax', { percent: String(cafeSettings?.tax_percentage ?? 18) })}
+                {t('orders.inclTax', {
+                  percent: String(cafeSettings?.tax_percentage ?? DEFAULT_TAX_PERCENTAGE),
+                })}
               </p>
             )}
           </div>

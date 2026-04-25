@@ -5,13 +5,18 @@ import { useRoute } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Modal, Portal, Text } from 'react-native-paper';
-import { ROLE_COLORS } from '@/components/staff-management/StaffCard';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useOrders, usePaymentsByStaff, useStaffMember, useUpdateStaff } from '@/hooks';
-import { useCafeSettings } from '@/hooks/use-cafe-settings';
+import {
+  useCurrencySymbol,
+  useOrders,
+  usePaymentsByStaff,
+  useStaffMember,
+  useUpdateStaff,
+} from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
+import { ROLE_COLORS } from '@/theme';
 import type { Staff, StaffManagementStackParamList } from '@/types';
 
 type Route = RouteProp<StaffManagementStackParamList, 'StaffDetail'>;
@@ -32,10 +37,9 @@ export default function StaffDetailScreen() {
     assigned_waiter_id: staffId,
     limit: 10,
   });
-  const { data: settings } = useCafeSettings();
   const updateStaff = useUpdateStaff();
 
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<{

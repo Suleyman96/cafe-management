@@ -1,9 +1,36 @@
 import * as Sentry from '@sentry/nextjs';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
 import { validatePassword } from '@/lib/api/password-validation';
 import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
 import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
+
+const CreateStaffSchema = z.object({
+  email: z.string().email('Invalid email format').max(255),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(128),
+  full_name: z.string().min(1, 'Name is required').max(100),
+  role: z.enum(['waiter', 'admin', 'kitchen', 'owner']),
+  phone: z
+    .string()
+    .regex(/^[+\d\s\-()]{7,20}$/, 'Invalid phone format')
+    .optional()
+    .nullable(),
+});
+
+async function findAuthUserByEmail(supabaseAdmin: SupabaseClient, email: string) {
+  let page = 1;
+  const perPage = 100;
+  while (true) {
+    const { data } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+    if (!data?.users?.length) return null;
+    const found = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+    if (found) return found;
+    if (data.users.length < perPage) return null;
+    page++;
+  }
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -24,18 +51,17 @@ export async function POST(request: NextRequest) {
     const adminOrError = await verifyAdmin(request);
     if (adminOrError instanceof NextResponse) return adminOrError;
 
+    const supabaseAdmin = getSupabaseAdmin();
     const body = await request.json();
-    const { email, password, full_name, role, phone } = body;
 
-    // Validate required fields
-    if (!email || !password || !full_name || !role) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const parseResult = CreateStaffSchema.safeParse(body);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: parseResult.error.issues },
+        { status: 400 },
+      );
     }
-
-    // Validate role
-    if (!['waiter', 'admin', 'kitchen', 'owner'].includes(role)) {
-      return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
-    }
+    const { email, password, full_name, role, phone } = parseResult.data;
 
     // Validate password strength
     const passwordCheck = validatePassword(password);
@@ -44,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create auth user using admin API
-    const { data: authData, error: authError } = await getSupabaseAdmin().auth.admin.createUser({
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true, // Auto-confirm email for staff accounts
@@ -56,10 +82,7 @@ export async function POST(request: NextRequest) {
     if (authError) {
       // If the auth user already exists (e.g., same person at another tenant), reuse it
       if (authError.message?.includes('already been registered') || authError.status === 422) {
-        const { data: listData } = await getSupabaseAdmin().auth.admin.listUsers({
-          perPage: 1000,
-        });
-        const found = listData?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+        const found = await findAuthUserByEmail(supabaseAdmin, email);
         if (!found) {
           Sentry.captureException(authError);
           return NextResponse.json({ error: 'Failed to create user account' }, { status: 400 });
@@ -77,7 +100,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create staff record
-    const { data: staffData, error: staffError } = await getSupabaseAdmin()
+    const { data: staffData, error: staffError } = await supabaseAdmin
       .from('staff')
       .insert({
         email,
@@ -95,7 +118,7 @@ export async function POST(request: NextRequest) {
       Sentry.captureException(staffError);
       // Only delete the auth user if we created it (not if it already existed)
       if (createdNewAuthUser && authData?.user) {
-        await getSupabaseAdmin().auth.admin.deleteUser(authData.user.id);
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       }
       return NextResponse.json({ error: 'Failed to create staff record' }, { status: 400 });
     }

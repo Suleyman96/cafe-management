@@ -2,8 +2,14 @@
  * Delivery Customers wrapper module
  */
 
-import { handleSupabaseError } from '@gustri/core';
-import type { DeliveryCustomerRow, PaginatedResult, WrapperContext } from './types';
+import { handleSupabaseError, isDeliveryCustomer } from '@gustri/core';
+import type {
+  DeliveryCustomerInsert,
+  DeliveryCustomerRow,
+  DeliveryCustomerUpdate,
+  PaginatedResult,
+  WrapperContext,
+} from './types';
 
 export function createDeliveryCustomersWrapper(ctx: WrapperContext) {
   return {
@@ -72,12 +78,9 @@ export function createDeliveryCustomersWrapper(ctx: WrapperContext) {
       return data;
     },
 
-    create: async (customerData: {
-      name: string;
-      phone: string;
-      address: string;
-      notes?: string | null;
-    }) => {
+    create: async (
+      customerData: Omit<DeliveryCustomerInsert, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>,
+    ) => {
       const { data, error } = await ctx.anyClient
         .from('delivery_customers')
         .insert(customerData)
@@ -85,26 +88,20 @@ export function createDeliveryCustomersWrapper(ctx: WrapperContext) {
         .single();
 
       if (error) throw handleSupabaseError(error);
+      if (!isDeliveryCustomer(data)) throw new Error('Invalid delivery customer data');
       return data;
     },
 
-    update: async (
-      id: string,
-      updates: {
-        name?: string;
-        phone?: string;
-        address?: string;
-        notes?: string | null;
-      },
-    ) => {
+    update: async (id: string, updates: Partial<DeliveryCustomerUpdate>) => {
       const { data, error } = await ctx.anyClient
         .from('delivery_customers')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update(updates)
         .eq('id', id)
         .select('*')
         .single();
 
       if (error) throw handleSupabaseError(error);
+      if (!isDeliveryCustomer(data)) throw new Error('Invalid delivery customer data');
       return data;
     },
 
@@ -129,6 +126,7 @@ export function createDeliveryCustomersWrapper(ctx: WrapperContext) {
         .single();
 
       if (error) throw handleSupabaseError(error);
+      if (!isDeliveryCustomer(data)) throw new Error('Invalid delivery customer data');
       return data;
     },
 

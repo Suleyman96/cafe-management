@@ -84,16 +84,13 @@ export function useOrders(filters?: {
             const newRecord = payload.new as Record<string, unknown>;
 
             if (newRecord.table_id) {
-              const { data } = await supabase
-                .from('tables')
-                .select('table_number')
-                .eq('id', newRecord.table_id as string)
-                .single();
-
-              const tableData = data as { table_number: string } | null;
-
-              if (tableData) {
+              try {
+                const tableData = (await db.tables.findById(newRecord.table_id as string)) as {
+                  table_number: string;
+                };
                 await notifyNewOrder(newRecord.order_number as string, tableData.table_number);
+              } catch {
+                // Table lookup failed — still invalidate queries below
               }
             }
 
@@ -134,7 +131,7 @@ export function useOrders(filters?: {
         supabase.removeChannel(channel);
       }
     };
-  }, [queryClient, tenantId]);
+  }, [queryClient, tenantId, db]);
 
   return query;
 }

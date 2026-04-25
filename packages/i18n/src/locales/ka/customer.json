@@ -56,6 +56,7 @@
   "deliveryLanding.errorAddress": "შეიყვანეთ მიტანის მისამართი",
   "deliveryLanding.errorName": "შეიყვანეთ თქვენი სახელი",
   "deliveryLanding.errorPhone": "შეიყვანეთ ტელეფონის ნომერი",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.heroSubtext": "შეავსეთ მონაცემები და გაეცანით ჩვენს მენიუს",
   "deliveryLanding.heroTitle": "შეკვეთა მიტანით",
   "deliveryLanding.labelAddress": "მიტანის მისამართი *",

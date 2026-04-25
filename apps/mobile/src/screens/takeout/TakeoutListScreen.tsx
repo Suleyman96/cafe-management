@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { ACTIVE_TAKEOUT_STATUSES, ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
@@ -6,8 +7,7 @@ import { Button, Chip, Dialog, FAB, Portal, Searchbar } from 'react-native-paper
 import { CreateTakeoutModal } from '@/components/takeout/CreateTakeoutModal';
 import { TakeoutOrderCard } from '@/components/takeout/TakeoutOrderCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useCancelOrder, useTakeoutOrders, useUpdateOrderStatus } from '@/hooks';
-import { useCafeSettings } from '@/hooks/use-cafe-settings';
+import { useCancelOrder, useCurrencySymbol, useTakeoutOrders, useUpdateOrderStatus } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text, TextInput } from '@/lib/paper-compat';
 
@@ -20,17 +20,6 @@ const STATUS_FILTERS = [
   'closed',
   'cancelled',
 ];
-
-const STATUS_LABEL_KEYS: Record<string, string> = {
-  pending_approval: 'orders.pendingApproval',
-  new: 'orders.new',
-  preparing: 'orders.preparing',
-  ready: 'orders.ready',
-  closed: 'orders.closed',
-  cancelled: 'orders.cancelled',
-};
-
-const ACTIVE_STATUSES = ['pending_approval', 'new', 'preparing', 'ready'];
 
 export default function TakeoutListScreen() {
   const { showSuccess, showError } = useSnackbar();
@@ -49,15 +38,16 @@ export default function TakeoutListScreen() {
   const [cancelling, setCancelling] = useState(false);
 
   const { data: orders, isLoading, error, refetch } = useTakeoutOrders();
-  const { data: settings } = useCafeSettings();
   const updateOrderStatus = useUpdateOrderStatus();
   const cancelOrder = useCancelOrder();
 
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
 
   const activeCount = useMemo(() => {
     if (!orders) return 0;
-    return orders.filter((o: { status: string }) => ACTIVE_STATUSES.includes(o.status)).length;
+    return orders.filter((o: { status: string }) =>
+      (ACTIVE_TAKEOUT_STATUSES as readonly string[]).includes(o.status),
+    ).length;
   }, [orders]);
 
   const filtered = useMemo(() => {
@@ -71,7 +61,7 @@ export default function TakeoutListScreen() {
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
-        (o: any) =>
+        (o: { id: string; customer_name?: string | null; customer_phone?: string | null }) =>
           o.customer_name?.toLowerCase().includes(term) ||
           o.customer_phone?.includes(term) ||
           o.id.toLowerCase().includes(term),
@@ -109,7 +99,7 @@ export default function TakeoutListScreen() {
   };
 
   const handleOpenCancel = (orderId: string) => {
-    const order = orders?.find((o: any) => o.id === orderId);
+    const order = orders?.find((o) => o.id === orderId);
     setCancelTarget({ id: orderId, customer_name: order?.customer_name });
     setCancelReason('');
   };
@@ -158,7 +148,7 @@ export default function TakeoutListScreen() {
       <View style={styles.filterRow}>
         {STATUS_FILTERS.map((s) => (
           <Chip key={s} compact selected={statusFilter === s} onPress={() => setStatusFilter(s)}>
-            {s === 'all' ? tCommon('all') : t(STATUS_LABEL_KEYS[s] || s)}
+            {s === 'all' ? tCommon('all') : t(ORDER_STATUS_KEYS[s] || s)}
           </Chip>
         ))}
       </View>

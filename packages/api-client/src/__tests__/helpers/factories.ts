@@ -148,6 +148,7 @@ export function buildStaff(overrides?: Partial<StaffRow>): StaffRow {
     last_login_at: null,
     auth_user_id: null,
     preferred_language: 'en',
+    push_token: null,
     ...overrides,
   };
 }
@@ -375,6 +376,7 @@ export function buildStaffInsert(overrides?: Partial<StaffInsert>): StaffInsert 
     last_login_at: null,
     auth_user_id: null,
     preferred_language: 'en',
+    push_token: null,
     ...overrides,
   };
 }

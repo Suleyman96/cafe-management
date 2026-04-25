@@ -6,8 +6,8 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Divider, RadioButton, Text } from 'react-native-paper';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
-  useCafeSettings,
   useCreatePayment,
+  useCurrencySymbol,
   useOrder,
   useOrderPayments,
   useUpdateOrderStatus,
@@ -42,14 +42,12 @@ export default function OrderPaymentScreen() {
   const { data: payments } = useOrderPayments(orderId);
   const createPayment = useCreatePayment();
   const updateOrderStatus = useUpdateOrderStatus();
-  const { data: settings } = useCafeSettings();
-
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
   const [method, setMethod] = useState<string>('cash');
   const [amount, setAmount] = useState('');
 
   const totalPaid = useMemo(
-    () => payments?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || 0,
+    () => payments?.reduce((sum: number, p: { amount: number }) => sum + (p.amount || 0), 0) || 0,
     [payments],
   );
 
@@ -190,22 +188,24 @@ export default function OrderPaymentScreen() {
             <Text variant="titleMedium" style={styles.bold}>
               {t('orders.paymentHistory')}
             </Text>
-            {payments.map((p: any) => (
-              <View key={p.id} style={styles.paymentItem}>
-                <View>
-                  <Text variant="bodyMedium" style={{ textTransform: 'capitalize' }}>
-                    {p.payment_method}
-                  </Text>
-                  <Text variant="bodySmall" style={styles.muted}>
-                    {new Date(p.created_at).toLocaleString()}
+            {payments.map(
+              (p: { id: string; payment_method: string; amount: number; created_at: string }) => (
+                <View key={p.id} style={styles.paymentItem}>
+                  <View>
+                    <Text variant="bodyMedium" style={{ textTransform: 'capitalize' }}>
+                      {p.payment_method}
+                    </Text>
+                    <Text variant="bodySmall" style={styles.muted}>
+                      {new Date(p.created_at).toLocaleString()}
+                    </Text>
+                  </View>
+                  <Text variant="titleSmall" style={{ color: '#10b981', fontWeight: '600' }}>
+                    {currencySymbol}
+                    {p.amount.toFixed(2)}
                   </Text>
                 </View>
-                <Text variant="titleSmall" style={{ color: '#10b981', fontWeight: '600' }}>
-                  {currencySymbol}
-                  {p.amount.toFixed(2)}
-                </Text>
-              </View>
-            ))}
+              ),
+            )}
           </Card.Content>
         </Card>
       )}

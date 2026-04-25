@@ -183,7 +183,6 @@ export async function loadAndSwitchLanguage(lang: string) {
 
   const loader = languageLoaders[lang];
   if (!loader) {
-    console.warn(`No translations available for language: ${lang}`);
     return;
   }
 

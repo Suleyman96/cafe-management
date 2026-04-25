@@ -1,7 +1,7 @@
 'use client';
 
 import { DAYS_OF_WEEK, getLocalDateString, TIME_OPTIONS } from '@gustri/core';
-import type { StaffScheduleInsert } from '@gustri/database';
+import type { StaffSchedule, StaffScheduleInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import { useEffect, useState } from 'react';
@@ -10,7 +10,7 @@ import { BaseModal } from '@/components/ui/base-modal';
 import { useCreateSchedule, useDeleteSchedule, useStaff, useUpdateSchedule } from '@/hooks';
 
 interface ScheduleModalProps {
-  schedule?: any; // Existing schedule for edit mode
+  schedule?: StaffSchedule; // Existing schedule for edit mode
   defaultDate?: string; // Pre-fill date for create mode
   onClose: () => void;
   onSuccess: () => void;
@@ -76,28 +76,23 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
       }
 
       if (isEdit) {
-        const updateData: any = {
+        const updateData: Partial<StaffScheduleInsert> = {
           staff_id: staffId,
           date,
           planned_start: plannedStart,
           planned_end: plannedEnd,
           status,
           notes: notes || null,
+          ...(actualStart ? { actual_start: new Date(actualStart).toISOString() } : {}),
+          ...(actualEnd ? { actual_end: new Date(actualEnd).toISOString() } : {}),
         };
-
-        if (actualStart) {
-          updateData.actual_start = new Date(actualStart).toISOString();
-        }
-        if (actualEnd) {
-          updateData.actual_end = new Date(actualEnd).toISOString();
-        }
 
         await updateSchedule.mutateAsync({ id: schedule.id, data: updateData });
         toast.success(t('schedules.scheduleUpdated'));
       } else if (repeatEnabled && repeatDays.length > 0) {
         // Bulk create for multiple days
         const baseDate = new Date(date);
-        const promises: Promise<any>[] = [];
+        const promises: Promise<unknown>[] = [];
 
         for (let week = 0; week < repeatWeeks; week++) {
           for (const dayOfWeek of repeatDays) {
@@ -172,7 +167,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
     setRepeatDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
   };
 
-  const activeStaff = staffList?.filter((s: any) => s.is_active) || [];
+  const activeStaff = staffList?.filter((s) => s.is_active) || [];
 
   return (
     <BaseModal
@@ -223,7 +218,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
             required
           >
             <option value="">{t('schedules.selectStaff')}</option>
-            {activeStaff.map((s: any) => (
+            {activeStaff.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.full_name} ({s.role})
               </option>
@@ -319,7 +314,9 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
               </label>
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                onChange={(e) =>
+                  setStatus(e.target.value as 'scheduled' | 'in_progress' | 'completed' | 'missed')
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="scheduled">{t('schedules.scheduled')}</option>

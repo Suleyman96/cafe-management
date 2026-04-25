@@ -4,9 +4,9 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Card, Chip, Text } from 'react-native-paper';
 import { MetricCard } from '@/components/reports/MetricCard';
 import { LoadingScreen } from '@/components/ui';
-import { useExpenses, useOrders, useStaff, useWasteLogs } from '@/hooks';
-import { useCafeSettings } from '@/hooks/use-cafe-settings';
+import { useCurrencySymbol, useExpenses, useOrders, useStaff, useWasteLogs } from '@/hooks';
 import { getLocalDateString } from '@/lib/date-utils';
+import { COLORS } from '@/theme';
 import type { OrderItemWithMenuItem, OrderWithDetails } from '@/types';
 
 function getDateRange(preset: number): { startDate: string; endDate: string } {
@@ -31,12 +31,15 @@ export default function ReportsScreen() {
   const { t } = useTranslation('staff');
   const [presetIdx, setPresetIdx] = useState(2); // 30 Days
 
-  const PRESETS = [
-    { label: t('reports.today'), days: 0 },
-    { label: t('reports.7days'), days: 7 },
-    { label: t('reports.30days'), days: 30 },
-    { label: t('reports.thisMonth'), days: -1 },
-  ];
+  const PRESETS = useMemo(
+    () => [
+      { label: t('reports.today'), days: 0 },
+      { label: t('reports.7days'), days: 7 },
+      { label: t('reports.30days'), days: 30 },
+      { label: t('reports.thisMonth'), days: -1 },
+    ],
+    [t],
+  );
 
   const range = getDateRange(PRESETS[presetIdx].days);
 
@@ -47,9 +50,7 @@ export default function ReportsScreen() {
   const { data: staffList } = useStaff();
   const { data: expenses } = useExpenses({ startDate: range.startDate, endDate: range.endDate });
   const { data: wasteLogs } = useWasteLogs({ startDate: range.startDate, endDate: range.endDate });
-  const { data: settings } = useCafeSettings();
-
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
 
   const filteredOrders = (orders || []) as OrderWithDetails[];
 
@@ -142,7 +143,7 @@ export default function ReportsScreen() {
         <MetricCard
           label={t('reports.revenue')}
           value={`${currencySymbol}${metrics.revenue.toFixed(0)}`}
-          color="#10b981"
+          color={COLORS.success}
         />
         <MetricCard label={t('reports.ordersHandled')} value={metrics.orderCount} />
         <MetricCard
@@ -152,7 +153,7 @@ export default function ReportsScreen() {
         <MetricCard
           label={t('reports.completion')}
           value={`${metrics.completionRate.toFixed(0)}%`}
-          color={metrics.completionRate > 80 ? '#10b981' : '#f59e0b'}
+          color={metrics.completionRate > 80 ? COLORS.success : COLORS.warning}
         />
       </View>
 
@@ -245,13 +246,13 @@ export default function ReportsScreen() {
         <MetricCard
           label={t('reports.expenses')}
           value={`${currencySymbol}${expenseTotal.toFixed(0)}`}
-          color="#ef4444"
+          color={COLORS.danger}
           subtitle={`${expenses?.length || 0} ${t('reports.transactions')}`}
         />
         <MetricCard
           label={t('reports.wasteSummary')}
           value={`${currencySymbol}${wasteTotal.toFixed(0)}`}
-          color="#f59e0b"
+          color={COLORS.warning}
           subtitle={`${wasteLogs?.length || 0} ${t('reports.entries')}`}
         />
       </View>
@@ -267,7 +268,7 @@ export default function ReportsScreen() {
               variant="titleLarge"
               style={{
                 fontWeight: '700',
-                color: metrics.revenue - expenseTotal >= 0 ? '#10b981' : '#ef4444',
+                color: metrics.revenue - expenseTotal >= 0 ? COLORS.success : COLORS.danger,
               }}
             >
               {currencySymbol}
@@ -281,10 +282,10 @@ export default function ReportsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   content: { padding: 16, gap: 8 },
   presetRow: { flexDirection: 'row', gap: 6, marginBottom: 8 },
-  sectionTitle: { fontWeight: '700', color: '#1e293b', marginTop: 8 },
+  sectionTitle: { fontWeight: '700', color: COLORS.textPrimary, marginTop: 8 },
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   card: {},
   typeRow: {
@@ -298,7 +299,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: COLORS.borderLight,
   },
-  muted: { color: '#6b7280' },
+  muted: { color: COLORS.textMuted },
 });

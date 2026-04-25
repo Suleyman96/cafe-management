@@ -1,3 +1,4 @@
+import type { CafeSettings } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -25,7 +26,7 @@ export default function CafeSettingsScreen() {
   const { data: settings, isLoading, error, refetch } = useCafeSettings();
   const updateSettings = useUpdateCafeSettings();
 
-  const [form, setForm] = useState<Record<string, any>>({});
+  const [form, setForm] = useState<Partial<CafeSettings>>({});
   const [hasChanges, setHasChanges] = useState(false);
   const [activeTab, setActiveTab] = useState<TabView>('general');
 
@@ -35,7 +36,7 @@ export default function CafeSettingsScreen() {
     }
   }, [settings, hasChanges]);
 
-  const updateField = (key: string, value: any) => {
+  const updateField = (key: string, value: boolean | string | number | null) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setHasChanges(true);
   };

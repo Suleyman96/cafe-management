@@ -17,8 +17,8 @@ export async function login({ email, password }: LoginCredentials) {
   // Fetch staff profile via wrapper
   const staff = (await db.staff.findByAuthId(data.user.id)) as Staff;
 
-  // Update last login
-  await db.staff.updateLastLogin(staff.id);
+  // Fire-and-forget — don't block login for a non-critical timestamp update
+  db.staff.updateLastLogin(staff.id).catch(() => {});
 
   return { user: data.user, staff };
 }

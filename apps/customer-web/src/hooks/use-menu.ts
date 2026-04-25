@@ -1,9 +1,9 @@
-import type { Category, MenuItemWithCategory } from '@gustri/database';
 import {
   useCategories as useSharedCategories,
   useMenuItem as useSharedMenuItem,
   useMenuItems as useSharedMenuItems,
 } from '@gustri/queries';
+import type { Category, MenuItemWithCategory } from '@/types';
 
 /**
  * Customer-web always fetches only active categories.

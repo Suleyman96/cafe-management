@@ -1,3 +1,4 @@
+import { ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -7,8 +8,7 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Chip, Searchbar } from 'react-native-paper';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useOrders } from '@/hooks';
-import { useCafeSettings } from '@/hooks/use-cafe-settings';
+import { useCurrencySymbol, useOrders } from '@/hooks';
 import { ORDER_STATUS_COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, OrdersStackParamList } from '@/types';
 
@@ -34,25 +34,12 @@ const STATUS_FILTERS = [
   'cancelled',
 ] as const;
 
-const STATUS_LABEL_KEYS: Record<string, string> = {
-  pending_approval: 'orders.pendingApproval',
-  new: 'orders.new',
-  preparing: 'orders.preparing',
-  ready: 'orders.ready',
-  served: 'orders.served',
-  out_for_delivery: 'orders.outForDelivery',
-  delivered: 'orders.delivered',
-  closed: 'orders.closed',
-  cancelled: 'orders.cancelled',
-};
-
 export default function OrdersListScreen() {
   const navigation = useNavigation<Nav>();
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
   const { data: orders, isLoading, error, refetch } = useOrders();
-  const { data: settings } = useCafeSettings();
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
 
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -104,13 +91,14 @@ export default function OrdersListScreen() {
             textStyle={selectedStatus === s ? { color: '#fff' } : undefined}
             compact
           >
-            {s === 'all' ? tCommon('all') : t(STATUS_LABEL_KEYS[s] || s)}
+            {s === 'all' ? tCommon('all') : t(ORDER_STATUS_KEYS[s] || s)}
           </Chip>
         ))}
       </ScrollView>
 
       <FlashList
         data={filteredOrders}
+        estimatedItemSize={100}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         renderItem={({ item }) => (
@@ -131,7 +119,7 @@ export default function OrdersListScreen() {
                     status:
                       selectedStatus === 'all'
                         ? ''
-                        : t(STATUS_LABEL_KEYS[selectedStatus] || selectedStatus),
+                        : t(ORDER_STATUS_KEYS[selectedStatus] || selectedStatus),
                   })
             }
           />

@@ -1,10 +1,10 @@
 'use client';
 
-import type { Category, MenuItemWithCategory } from '@gustri/database';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { MenuScreen } from '@/components/menu/menu-screen';
 import { useDeliveryStore } from '@/store/delivery-store';
+import type { Category, MenuItemWithCategory } from '@/types';
 
 interface DeliveryMenuContentProps {
   initialCategories: Category[];

@@ -21,7 +21,7 @@ interface OrderDetailActionsProps {
     status: string;
     order_type?: string | null;
     source?: string | null;
-    table?: any;
+    table?: { table_number: string } | null;
   };
   isFullyPaid: boolean;
   hasItems?: boolean;

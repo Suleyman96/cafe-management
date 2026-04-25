@@ -18,12 +18,13 @@ export const useLanguageStore = create<LanguageStore>()(
     {
       name: 'language-storage',
       version: 1,
-      migrate: (persisted: any, version: number) => {
+      migrate: (persisted: unknown, version: number) => {
+        const state = persisted as Partial<LanguageStore> | undefined;
         if (version === 0) {
           // Add the new flag — let the admin's default language take effect
-          return { ...persisted, hasUserChosenLanguage: false };
+          return { ...state, hasUserChosenLanguage: false };
         }
-        return persisted as LanguageStore;
+        return state as LanguageStore;
       },
     },
   ),

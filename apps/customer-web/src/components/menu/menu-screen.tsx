@@ -7,17 +7,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { useCategories, useMenuItems } from '@/hooks/use-menu';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { GLASS } from '@/lib/styles';
-import { cn } from '@/lib/utils';
+import { cn, getLocalizedField } from '@/lib/utils';
 import { useCartStore } from '@/store/cart-store';
 import { useLanguageStore } from '@/store/language-store';
-import { getLocalizedField } from '@/types';
+import type { Category, MenuItemWithCategory } from '@/types';
 import { MenuCartSidebar } from './menu-cart-sidebar';
 import { MenuItemCard } from './menu-item-card';
 
 interface MenuScreenProps {
   tableId: string;
-  initialCategories?: import('@gustri/database').Category[];
-  initialMenuItems?: import('@gustri/database').MenuItemWithCategory[];
+  initialCategories?: Category[];
+  initialMenuItems?: MenuItemWithCategory[];
 }
 
 type DietaryFilter = 'vegetarian' | 'vegan' | 'gluten_free' | 'spicy';

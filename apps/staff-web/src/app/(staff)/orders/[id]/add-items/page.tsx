@@ -1,5 +1,6 @@
 'use client';
 
+import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
@@ -17,14 +18,10 @@ import {
   useUpdateOrderNotes,
 } from '@/hooks';
 import { useFormatPriceWithSettings } from '@/hooks/use-format-price';
+import { useStaffCart } from '@/hooks/use-staff-cart';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
-
-type CartItem = {
-  menuItem: MenuItem;
-  quantity: number;
-};
 
 export default function AddItemsPage() {
   const params = useParams();
@@ -40,7 +37,7 @@ export default function AddItemsPage() {
   const { formatPrice, cafeSettings } = useFormatPriceWithSettings();
   const taxMultiplier = useTaxMultiplier();
 
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const { cart, addToCart, removeFromCart, getCartQuantity } = useStaffCart();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [customerNotes, setCustomerNotes] = useState('');
@@ -56,37 +53,6 @@ export default function AddItemsPage() {
   const filteredItems = selectedCategory
     ? menuItems?.filter((item: MenuItem) => item.category_id === selectedCategory)
     : menuItems;
-
-  // Add item to cart
-  const addToCart = (menuItem: MenuItem) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.menuItem.id === menuItem.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.menuItem.id === menuItem.id ? { ...item, quantity: item.quantity + 1 } : item,
-        );
-      }
-      return [...prev, { menuItem, quantity: 1 }];
-    });
-  };
-
-  // Remove item from cart
-  const removeFromCart = (menuItemId: string) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.menuItem.id === menuItemId);
-      if (existing && existing.quantity > 1) {
-        return prev.map((item) =>
-          item.menuItem.id === menuItemId ? { ...item, quantity: item.quantity - 1 } : item,
-        );
-      }
-      return prev.filter((item) => item.menuItem.id !== menuItemId);
-    });
-  };
-
-  // Get cart quantity for an item
-  const getCartQuantity = (menuItemId: string) => {
-    return cart.find((item) => item.menuItem.id === menuItemId)?.quantity || 0;
-  };
 
   const cartSubtotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
   const cartTotal = cartSubtotal * taxMultiplier;
@@ -304,7 +270,7 @@ export default function AddItemsPage() {
                     {taxMultiplier !== 1 && (
                       <p className="text-[10px] sm:text-xs text-gray-400 text-right">
                         {t('orders.inclTax', {
-                          percent: String(cafeSettings?.tax_percentage ?? 18),
+                          percent: String(cafeSettings?.tax_percentage ?? DEFAULT_TAX_PERCENTAGE),
                         })}
                       </p>
                     )}

@@ -246,6 +246,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
       onSuccess();
     } catch (error) {
       Sentry.captureException(error);
+      toast.error(t('payment.completeFailed'));
     } finally {
       setLoading(false);
     }

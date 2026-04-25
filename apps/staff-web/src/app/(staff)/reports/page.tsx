@@ -413,20 +413,20 @@ export default function ReportsPage() {
     });
   };
 
+  if (currentUser?.role !== 'owner') {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">{t('reports.ownerAccessRequired')}</p>
+      </div>
+    );
+  }
+
   const loading = revenueLoading || itemsLoading || expensesLoading || wasteLoading || staffLoading;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <LoadingSpinner />
-      </div>
-    );
-  }
-
-  if (currentUser?.role !== 'owner') {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">{t('reports.ownerAccessRequired')}</p>
       </div>
     );
   }

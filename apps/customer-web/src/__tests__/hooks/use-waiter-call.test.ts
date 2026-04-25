@@ -1,37 +1,7 @@
 import { QUERY_KEYS } from '@gustri/core';
-import { useCallWaiter, useCreateWaiterCall, useWaiterCalls } from '@/hooks/use-waiter-call';
-import { db, supabase } from '@/lib/supabase';
-import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
-
-describe('useWaiterCalls', () => {
-  it('calls supabase.rpc with get_waiter_calls_for_table', () => {
-    renderHookWithProviders(() => useWaiterCalls('table-1'));
-    expect(supabase.rpc).toHaveBeenCalledWith('get_waiter_calls_for_table', {
-      p_table_id: 'table-1',
-      p_status: 'pending',
-    });
-  });
-
-  it('returns fetched waiter calls', async () => {
-    const mockCalls = [
-      { id: 'wc1', table_id: 'table-1', call_type: 'assistance', status: 'pending' },
-    ];
-    (supabase.rpc as any).mockResolvedValueOnce({ data: mockCalls, error: null });
-
-    const { result } = renderHookWithProviders(() => useWaiterCalls('table-1'));
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(mockCalls);
-  });
-
-  it('reports error when fetch fails', async () => {
-    (supabase.rpc as any).mockResolvedValueOnce({ data: null, error: new Error('DB error') });
-
-    const { result } = renderHookWithProviders(() => useWaiterCalls('table-1'));
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-  });
-});
+import { useCreateWaiterCall } from '@/hooks/use-waiter-call';
+import { db } from '@/lib/supabase';
+import { renderHookWithProviders } from '../helpers/test-utils';
 
 describe('useCreateWaiterCall', () => {
   it('calls db.waiterCalls.create with correct fields', async () => {
@@ -129,11 +99,5 @@ describe('useCreateWaiterCall - error handling', () => {
         tenantId: 'tenant-1',
       }),
     ).rejects.toThrow('Create failed');
-  });
-});
-
-describe('useCallWaiter', () => {
-  it('is an alias for useCreateWaiterCall', () => {
-    expect(useCallWaiter).toBe(useCreateWaiterCall);
   });
 });

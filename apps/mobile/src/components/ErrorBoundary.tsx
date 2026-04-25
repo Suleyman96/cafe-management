@@ -1,3 +1,4 @@
+import { i18n } from '@gustri/i18n';
 import * as Sentry from '@sentry/react-native';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -35,13 +36,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
       return (
         <View style={styles.container}>
           <Text variant="headlineSmall" style={styles.title}>
-            Something went wrong
+            {i18n.t('common:error.title')}
           </Text>
           <Text variant="bodyMedium" style={styles.message}>
-            An unexpected error occurred. Please restart the app.
+            {i18n.t('common:error.message')}
           </Text>
           <Button mode="contained" onPress={this.handleReset} style={styles.button}>
-            Try again
+            {i18n.t('common:error.tryAgain')}
           </Button>
         </View>
       );

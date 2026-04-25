@@ -66,7 +66,11 @@ export async function registerForPushNotifications() {
   }
 }
 
-export async function showLocalNotification(title: string, body: string, data?: any) {
+export async function showLocalNotification(
+  title: string,
+  body: string,
+  data?: Record<string, string>,
+) {
   await Notifications.scheduleNotificationAsync({
     content: {
       title,

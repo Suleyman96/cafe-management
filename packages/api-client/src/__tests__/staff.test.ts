@@ -38,7 +38,7 @@ describe('StaffWrapper', () => {
   });
 
   it('findAll filters by role', async () => {
-    await staff.findAll('waiter');
+    await staff.findAll({ role: 'waiter' });
     const calls = ctx.getCalls();
     expect(calls[0].table).toBe('staff');
   });

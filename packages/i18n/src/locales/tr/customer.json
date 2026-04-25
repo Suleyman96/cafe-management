@@ -56,6 +56,7 @@
   "deliveryLanding.errorAddress": "Lütfen teslimat adresinizi girin",
   "deliveryLanding.errorName": "Lütfen adınızı girin",
   "deliveryLanding.errorPhone": "Lütfen telefon numaranızı girin",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.heroSubtext": "Bilgilerinizi girin ve menümüze göz atın",
   "deliveryLanding.heroTitle": "Teslimat Siparişi",
   "deliveryLanding.labelAddress": "Teslimat Adresi *",

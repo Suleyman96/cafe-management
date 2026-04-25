@@ -1,6 +1,7 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
-// Local development fallback only — safe demo credentials for local Supabase
+// Local development fallback only — see .env.example for required env vars.
+// Production builds enforce env vars via the isProduction guard below.
 const LOCAL_SUPABASE_URL = 'http://192.168.40.106:54321';
 const LOCAL_API_BASE_URL = 'http://192.168.40.106:3001';
 const LOCAL_SUPABASE_ANON_KEY =

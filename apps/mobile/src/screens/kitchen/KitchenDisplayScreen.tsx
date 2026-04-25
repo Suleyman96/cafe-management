@@ -10,7 +10,7 @@ import { KitchenOrderCard } from '@/components/kitchen/KitchenOrderCard';
 import { LoadingScreen } from '@/components/ui';
 import { useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
-import { BRAND_PRIMARY, kitchenDarkTheme } from '@/theme';
+import { BRAND_PRIMARY, COLORS, kitchenDarkTheme } from '@/theme';
 
 const KITCHEN_STATUSES = [ORDER_STATUS.NEW, ORDER_STATUS.PREPARING, ORDER_STATUS.READY];
 
@@ -56,18 +56,18 @@ export default function KitchenDisplayScreen() {
         if (!order) return;
 
         const items = order.order_items || [];
-        let succeeded = 0;
-        const total = items.filter((i) => i.status === 'pending').length;
+        const pendingItems = items.filter((i) => i.status === 'pending');
+        const total = pendingItems.length;
 
-        for (const item of items) {
-          if (item.status === 'pending') {
-            await updateItemStatus.mutateAsync({
-              itemId: item.id,
-              status: 'preparing',
-            });
-            succeeded++;
-          }
-        }
+        const results = await Promise.all(
+          pendingItems.map((item) =>
+            updateItemStatus
+              .mutateAsync({ itemId: item.id, status: 'preparing' })
+              .then(() => true)
+              .catch(() => false),
+          ),
+        );
+        const succeeded = results.filter(Boolean).length;
 
         if (succeeded < total && succeeded > 0) {
           showError(t('kitchen.partialItemError', { succeeded, total }));
@@ -105,17 +105,20 @@ export default function KitchenDisplayScreen() {
         if (!order) return;
 
         const items = order.order_items || [];
-        let succeeded = 0;
-        const total = items.filter(
+        const qualifyingItems = items.filter(
           (i) => i.status === 'pending' || i.status === 'preparing',
-        ).length;
+        );
+        const total = qualifyingItems.length;
 
-        for (const item of items) {
-          if (item.status === 'pending' || item.status === 'preparing') {
-            await updateItemStatus.mutateAsync({ itemId: item.id, status: 'ready' });
-            succeeded++;
-          }
-        }
+        const results = await Promise.all(
+          qualifyingItems.map((item) =>
+            updateItemStatus
+              .mutateAsync({ itemId: item.id, status: 'ready' })
+              .then(() => true)
+              .catch(() => false),
+          ),
+        );
+        const succeeded = results.filter(Boolean).length;
 
         if (succeeded < total && succeeded > 0) {
           showError(t('kitchen.partialItemError', { succeeded, total }));
@@ -141,15 +144,20 @@ export default function KitchenDisplayScreen() {
         if (!order) return;
 
         const items = order.order_items || [];
-        let succeeded = 0;
-        const total = items.filter((i) => i.status !== 'cancelled' && i.status !== 'served').length;
+        const qualifyingItems = items.filter(
+          (i) => i.status !== 'cancelled' && i.status !== 'served',
+        );
+        const total = qualifyingItems.length;
 
-        for (const item of items) {
-          if (item.status !== 'cancelled' && item.status !== 'served') {
-            await updateItemStatus.mutateAsync({ itemId: item.id, status: 'served' });
-            succeeded++;
-          }
-        }
+        const results = await Promise.all(
+          qualifyingItems.map((item) =>
+            updateItemStatus
+              .mutateAsync({ itemId: item.id, status: 'served' })
+              .then(() => true)
+              .catch(() => false),
+          ),
+        );
+        const succeeded = results.filter(Boolean).length;
 
         if (succeeded < total && succeeded > 0) {
           showError(t('kitchen.partialItemError', { succeeded, total }));
@@ -192,14 +200,14 @@ export default function KitchenDisplayScreen() {
           </Chip>
           <Chip
             compact
-            style={[styles.summaryChip, { backgroundColor: '#f59e0b' }]}
+            style={[styles.summaryChip, { backgroundColor: COLORS.warning }]}
             textStyle={styles.summaryText}
           >
             {counts.preparing} {t('kitchen.preparing')}
           </Chip>
           <Chip
             compact
-            style={[styles.summaryChip, { backgroundColor: '#10b981' }]}
+            style={[styles.summaryChip, { backgroundColor: COLORS.success }]}
             textStyle={styles.summaryText}
           >
             {counts.ready} {t('kitchen.ready')}
@@ -208,6 +216,7 @@ export default function KitchenDisplayScreen() {
 
         <FlashList
           data={kitchenOrders}
+          estimatedItemSize={220}
           keyExtractor={(item) => item.id}
           refreshControl={
             <RefreshControl refreshing={false} onRefresh={refetch} tintColor="#fff" />
@@ -265,7 +274,7 @@ const styles = StyleSheet.create({
     paddingTop: 100,
   },
   emptyText: {
-    color: '#6b7280',
+    color: COLORS.textMuted,
   },
   emptySubtext: {
     color: '#4b5563',

@@ -1,5 +1,6 @@
 'use client';
 
+import type { PlanName } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import * as Sentry from '@sentry/nextjs';
 import { useRouter } from 'next/navigation';
@@ -43,19 +44,21 @@ let sessionCheckPromise: Promise<void> | null = null;
 async function loadStaffAndSetup(
   userId: string,
   setStaff: (s: Staff) => void,
-  setTenantPlan: (p: any) => void,
+  setTenantPlan: (p: PlanName) => void,
 ) {
   const staffData = (await db.staff.findByAuthId(userId)) as Staff;
   setStaff(staffData);
   postLoginSideEffects(staffData.id);
 
   if (staffData.preferred_language && staffData.preferred_language !== 'en') {
-    loadAndSwitchLanguage(staffData.preferred_language).catch(console.warn);
+    loadAndSwitchLanguage(staffData.preferred_language).catch((err) => {
+      Sentry.captureException(err);
+    });
   }
 
   db.tenants
     .getCurrent()
-    .then((tenant) => setTenantPlan(tenant.plan as any))
+    .then((tenant) => setTenantPlan(tenant.plan as PlanName))
     .catch((err) => {
       Sentry.captureException(err, { tags: { context: 'post-login-tenant-plan' } });
     });

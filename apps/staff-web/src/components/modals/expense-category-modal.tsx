@@ -88,7 +88,12 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
     }
   };
 
-  const startEdit = (cat: any) => {
+  const startEdit = (cat: {
+    id: string;
+    name: string;
+    description: string | null;
+    icon: string | null;
+  }) => {
     setEditingId(cat.id);
     setFormData({ name: cat.name, description: cat.description || '', icon: cat.icon || '' });
     setShowAddForm(false);
@@ -110,7 +115,7 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
             <p className="text-gray-500 text-center py-4">{t('loading', { ns: 'common' })}...</p>
           ) : (
             <div className="space-y-2">
-              {categories.map((cat: any) => (
+              {categories.map((cat) => (
                 <div
                   key={cat.id}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"

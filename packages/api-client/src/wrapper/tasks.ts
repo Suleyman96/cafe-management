@@ -237,7 +237,7 @@ export function createTasksWrapper(ctx: WrapperContext) {
       if (!templates || templates.length === 0) return [];
 
       // Check which templates already have instances for this date
-      const templateIds = templates.map((t: any) => t.id);
+      const templateIds = (templates as TaskRow[]).map((t) => t.id);
       const { data: existing, error: existError } = await ctx.client
         .from('tasks')
         .select('parent_task_id')
@@ -246,7 +246,9 @@ export function createTasksWrapper(ctx: WrapperContext) {
 
       if (existError) throw handleSupabaseError(existError);
 
-      const existingParentIds = new Set((existing || []).map((e: any) => e.parent_task_id));
+      const existingParentIds = new Set(
+        ((existing || []) as Pick<TaskRow, 'parent_task_id'>[]).map((e) => e.parent_task_id),
+      );
 
       // Parse date string directly to avoid UTC vs local timezone issues.
       // new Date("YYYY-MM-DD") parses as UTC midnight, then getDate()/getDay()

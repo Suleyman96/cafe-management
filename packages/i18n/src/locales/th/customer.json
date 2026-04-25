@@ -56,6 +56,7 @@
   "deliveryLanding.errorAddress": "กรุณาใส่ที่อยู่จัดส่ง",
   "deliveryLanding.errorName": "กรุณาใส่ชื่อของคุณ",
   "deliveryLanding.errorPhone": "กรุณาใส่เบอร์โทรศัพท์",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.heroSubtext": "กรอกข้อมูลของคุณและเลือกชมเมนู",
   "deliveryLanding.heroTitle": "สั่งจัดส่ง",
   "deliveryLanding.labelAddress": "ที่อยู่จัดส่ง *",

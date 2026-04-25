@@ -10,17 +10,6 @@ import type { WrapperContext } from './types';
 
 export function createViewsWrapper(ctx: WrapperContext) {
   return {
-    getActiveOrders: async () => {
-      const { data, error } = await ctx.anyClient
-        .from('active_orders_view')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(200);
-
-      if (error) throw handleSupabaseError(error);
-      return data || [];
-    },
-
     getSalesSummary: async (startDate?: string, endDate?: string) => {
       let query = ctx.anyClient
         .from('sales_summary_view')

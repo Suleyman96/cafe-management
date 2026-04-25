@@ -1,12 +1,14 @@
+import { createSupabaseWrapper } from '@gustri/api-client';
+import { DeliveryMenuContent } from '@/components/menu/delivery-menu-content';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { DeliveryMenuContent } from './delivery-menu-content';
 
 export default async function DeliveryMenuPage() {
   const supabase = createServerSupabase();
+  const db = createSupabaseWrapper(supabase);
 
-  const [{ data: categories }, { data: menuItems }] = await Promise.all([
-    supabase.from('categories').select('*').eq('is_active', true).order('display_order'),
-    supabase.from('menu_items').select('*').eq('is_available', true).order('display_order'),
+  const [categories, menuItems] = await Promise.all([
+    db.categories.findAll({ isActive: true }),
+    db.menuItems.findAll({ isAvailable: true }),
   ]);
 
   return (

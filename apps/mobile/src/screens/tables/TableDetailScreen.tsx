@@ -1,3 +1,4 @@
+import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -13,16 +14,16 @@ import {
   TimeElapsed,
 } from '@/components/ui';
 import {
+  useCurrencySymbol,
   useOrders,
   useTable,
   useUpdateTableStatus,
   useUpdateWaiterCall,
   useWaiterCalls,
 } from '@/hooks';
-import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
-import { TABLE_STATUS_COLORS, WAITER_CALL_REASON_COLORS } from '@/theme';
+import { COLORS, TABLE_STATUS_COLORS, WAITER_CALL_REASON_COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, Table, TablesStackParamList } from '@/types';
 
 type Route = RouteProp<TablesStackParamList, 'TableDetail'>;
@@ -35,7 +36,6 @@ type OrderWithJoins = Order & {
   assigned_waiter?: { full_name: string } | null;
 };
 
-const ACTIVE_STATUSES = ['pending_approval', 'new', 'preparing', 'ready', 'served'];
 const TABLE_STATUSES = ['free', 'occupied', 'reserved', 'closed'] as const;
 
 export default function TableDetailScreen() {
@@ -49,18 +49,17 @@ export default function TableDetailScreen() {
   const { data: table, isLoading, error, refetch } = useTable(tableId);
   const { data: orders } = useOrders();
   const { data: waiterCalls } = useWaiterCalls('pending');
-  const { data: settings } = useCafeSettings();
+  const currencySymbol = useCurrencySymbol();
   const updateTableStatus = useUpdateTableStatus();
   const updateWaiterCall = useUpdateWaiterCall();
-
-  const currencySymbol = settings?.currency_symbol || '$';
 
   const [statusConfirm, setStatusConfirm] = useState<Table['status'] | null>(null);
 
   const activeOrders = useMemo(
     () =>
       (orders as OrderWithJoins[] | undefined)?.filter(
-        (o) => o.table_id === tableId && ACTIVE_STATUSES.includes(o.status),
+        (o) =>
+          o.table_id === tableId && (ACTIVE_ORDER_STATUSES as readonly string[]).includes(o.status),
       ) || [],
     [orders, tableId],
   );
@@ -170,7 +169,7 @@ export default function TableDetailScreen() {
                       created_at: string;
                     }) => {
                       const callType = call.call_type ?? 'assistance';
-                      const chipColor = WAITER_CALL_REASON_COLORS[callType] || '#6b7280';
+                      const chipColor = WAITER_CALL_REASON_COLORS[callType] || COLORS.textMuted;
                       return (
                         <View key={call.id} style={styles.callItem}>
                           <View style={styles.callInfo}>
@@ -267,13 +266,13 @@ export default function TableDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   headerSection: { gap: 12 },
   card: { marginHorizontal: 16, marginTop: 12 },
-  callCard: { borderLeftWidth: 4, borderLeftColor: '#ef4444' },
+  callCard: { borderLeftWidth: 4, borderLeftColor: COLORS.danger },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  bold: { fontWeight: '700', color: '#1e293b' },
-  muted: { color: '#6b7280', marginTop: 2 },
+  bold: { fontWeight: '700', color: COLORS.textPrimary },
+  muted: { color: COLORS.textMuted, marginTop: 2 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   statusChip: {},
   callItem: {
@@ -284,7 +283,12 @@ const styles = StyleSheet.create({
   },
   callInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   reasonChip: {},
-  sectionTitle: { fontWeight: '600', color: '#1e293b', marginHorizontal: 16, marginTop: 16 },
+  sectionTitle: {
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
   orderCard: { marginHorizontal: 16, marginTop: 8 },
   emptyOrders: { alignItems: 'center', paddingVertical: 32 },
   listContent: { paddingBottom: 100 },

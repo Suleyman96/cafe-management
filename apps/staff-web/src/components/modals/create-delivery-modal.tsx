@@ -1,5 +1,6 @@
 'use client';
 
+import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
 import type { MenuItem, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
@@ -241,7 +242,7 @@ export function CreateDeliveryModal({
                 <div className="flex justify-between">
                   <span className="text-gray-600">
                     {t('orders.taxPercent', {
-                      percent: String(settings?.tax_percentage ?? 18),
+                      percent: String(settings?.tax_percentage ?? DEFAULT_TAX_PERCENTAGE),
                     })}
                     :
                   </span>

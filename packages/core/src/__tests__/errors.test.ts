@@ -140,6 +140,30 @@ describe('handleSupabaseError', () => {
     expect(error).toBeInstanceOf(ValidationError);
   });
 
+  it('maps PGRST116 to NotFoundError', () => {
+    const error = handleSupabaseError({
+      code: 'PGRST116',
+      message: 'JSON object requested, multiple (or no) rows returned',
+    });
+    expect(error).toBeInstanceOf(NotFoundError);
+  });
+
+  it('maps 42501 to AuthorizationError', () => {
+    const error = handleSupabaseError({
+      code: '42501',
+      message: 'permission denied for table orders',
+    });
+    expect(error).toBeInstanceOf(AuthorizationError);
+  });
+
+  it('maps 23514 to ValidationError', () => {
+    const error = handleSupabaseError({
+      code: '23514',
+      message: 'new row violates check constraint',
+    });
+    expect(error).toBeInstanceOf(ValidationError);
+  });
+
   it('maps status 404 to NotFoundError', () => {
     const error = handleSupabaseError({ status: 404 });
     expect(error).toBeInstanceOf(NotFoundError);

@@ -1,4 +1,5 @@
 import { createSupabaseWrapper } from '@gustri/api-client';
+import { handleSupabaseError } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { createClient } from '@supabase/supabase-js';
 
@@ -58,5 +59,8 @@ export const db = createSupabaseWrapper(supabase);
 export async function setTableContext(qrToken: string) {
   // Set session variable for RLS
   // Supabase client can't resolve RPC arg types — typed in Database['public']['Functions']
-  await (supabase.rpc as Function)('set_table_context', { qr_token: qrToken });
+  const { error } = await (supabase.rpc as Function)('set_table_context', { qr_token: qrToken });
+  if (error) {
+    throw handleSupabaseError(error);
+  }
 }

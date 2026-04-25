@@ -13,7 +13,7 @@ interface OrderCardProps {
     created_at: string;
     order_type?: string | null;
     table_id?: string | null;
-    order_items?: any[];
+    order_items?: { id: string }[];
     table?: { table_number: string; location?: string | null } | null;
   };
   currencySymbol: string;

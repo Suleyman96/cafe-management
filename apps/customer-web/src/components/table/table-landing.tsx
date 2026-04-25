@@ -53,12 +53,14 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
         .then(() => {
           // After context is set, check tenant plan for QR ordering gate
           (supabase.rpc as Function)('get_tenant_plan_from_context')
-            .then((res: any) => {
+            .then((res: { data: string | null }) => {
               if (res.data) setTenantPlan(res.data);
             })
-            .catch(console.warn);
+            .catch((err: unknown) => {
+              Sentry.captureException(err);
+            });
         })
-        .catch((err: any) => {
+        .catch((err: unknown) => {
           Sentry.captureException(err);
         });
     }
@@ -322,7 +324,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                               })
                                 .split('•')
                                 .pop()
-                                ?.trim() || 'items'}
+                                ?.trim() || t('tableLanding.items')}
                             </p>
                           </div>
                         </>
@@ -352,7 +354,9 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
           </button>
 
           {/* Browse Menu CTA */}
-          {tenantPlan === 'free' ? (
+          {tenantPlan === null ? (
+            <div className="h-12" />
+          ) : tenantPlan === 'free' ? (
             <div
               className="w-full rounded-2xl py-4 px-6 text-center backdrop-blur-xl"
               style={{
@@ -361,8 +365,10 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                 border: '1px solid rgba(255,255,255,0.08)',
               }}
             >
-              <p className="text-sm font-medium text-white/70">QR ordering is not available.</p>
-              <p className="text-xs text-white/40 mt-1">Please order at the counter.</p>
+              <p className="text-sm font-medium text-white/70">
+                {t('tableLanding.qrNotAvailable')}
+              </p>
+              <p className="text-xs text-white/40 mt-1">{t('tableLanding.orderAtCounter')}</p>
             </div>
           ) : (
             <button
@@ -508,7 +514,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
           {/* Footer — pushed to bottom */}
           <div className="mt-auto text-center py-4 pt-8">
             <p className="text-xs text-white/20 font-light">
-              Powered by{' '}
+              {t('tableLanding.poweredBy')}{' '}
               <span className="font-medium" style={{ color: `${accentColor}80` }}>
                 gustri
               </span>

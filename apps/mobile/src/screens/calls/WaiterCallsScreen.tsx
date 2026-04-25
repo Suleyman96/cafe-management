@@ -33,8 +33,8 @@ export default function WaiterCallsScreen() {
     try {
       await updateCall.mutateAsync({ callId, status: 'acknowledged', staffId: staff?.id });
       showSuccess(t('calls.callAcknowledged'));
-    } catch (err: any) {
-      showError(err?.message || t('calls.failedAcknowledge'));
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : t('calls.failedAcknowledge'));
     }
   };
 
@@ -42,8 +42,8 @@ export default function WaiterCallsScreen() {
     try {
       await updateCall.mutateAsync({ callId, status: 'resolved' });
       showSuccess(t('calls.callResolved'));
-    } catch (err: any) {
-      showError(err?.message || t('calls.failedResolve'));
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : t('calls.failedResolve'));
     }
   };
 
@@ -61,6 +61,7 @@ export default function WaiterCallsScreen() {
 
       <FlashList
         data={calls || []}
+        estimatedItemSize={80}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         renderItem={({ item }) => (

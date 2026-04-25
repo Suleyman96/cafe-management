@@ -1,7 +1,7 @@
 'use client';
 
 import type { PlanName } from '@gustri/core';
-import { getLocalDateString, PLAN_ORDER } from '@gustri/core';
+import { getLocalDateString, getRoleBadgeColor, PLAN_ORDER } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { GustriIcon, GustriLogo } from '@gustri/ui';
 import {
@@ -206,21 +206,6 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'owner':
-        return 'bg-emerald-100 text-emerald-800';
-      case 'admin':
-        return 'bg-purple-100 text-purple-800';
-      case 'waiter':
-        return 'bg-blue-100 text-blue-800';
-      case 'kitchen':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const handleNavClick = () => {
     if (isMobile && onMobileClose) {
       onMobileClose();
@@ -423,17 +408,18 @@ function MyTasksIndicator({ staffId }: { staffId: string }) {
   const today = getLocalDateString();
   const activeTasks =
     myTasks?.filter(
-      (t: any) => (t.status === 'pending' || t.status === 'in_progress') && t.due_date === today,
+      (task) =>
+        (task.status === 'pending' || task.status === 'in_progress') && task.due_date === today,
     ) || [];
 
   if (activeTasks.length === 0) return null;
 
   const priorityOrder: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
   const displayTasks = [...activeTasks]
-    .sort((a: any, b: any) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3))
+    .sort((a, b) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3))
     .slice(0, 3);
 
-  const isOverdue = (task: any) => task.due_date && task.due_date < today;
+  const isOverdue = (task: { due_date: string | null }) => task.due_date && task.due_date < today;
 
   const priorityDot: Record<string, string> = {
     urgent: 'bg-red-500',
@@ -453,7 +439,7 @@ function MyTasksIndicator({ staffId }: { staffId: string }) {
           <span className="text-amber-600">{activeTasks.length}</span>
         </div>
         <div className="mt-1.5 space-y-1">
-          {displayTasks.map((task: any) => (
+          {displayTasks.map((task) => (
             <div key={task.id} className="flex items-center gap-1.5 text-gray-700">
               <span
                 className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isOverdue(task) ? 'bg-red-500' : priorityDot[task.priority] || priorityDot.normal}`}

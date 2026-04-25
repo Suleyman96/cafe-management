@@ -9,7 +9,11 @@ export function ServiceWorkerRegistration() {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
-          console.log('Service Worker registered:', registration.scope);
+          Sentry.addBreadcrumb({
+            category: 'pwa',
+            message: `Service Worker registered: ${registration.scope}`,
+            level: 'info',
+          });
 
           // Check for updates periodically
           setInterval(

@@ -3,12 +3,24 @@ import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useEffect, useMemo, useState } from 'react';
-import { Dimensions, FlatList, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { Button, IconButton } from 'react-native-paper';
 import { MenuItemCard } from '@/components/orders/MenuItemCard';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useAddOrderItems, useCategories, useCreateOrder, useMenuItems } from '@/hooks';
-import { useCafeSettings } from '@/hooks/use-cafe-settings';
+import {
+  useAddOrderItems,
+  useCategories,
+  useCreateOrder,
+  useCurrencySymbol,
+  useMenuItems,
+} from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
@@ -36,8 +48,16 @@ export default function AddItemsScreen() {
   const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
   const { t } = useTranslation('staff');
-  const { data: settings } = useCafeSettings();
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
+
+  const { height: screenHeight } = useWindowDimensions();
+
+  const dynamicStyles = useMemo(
+    () => ({
+      menuSectionHalf: { height: screenHeight * 0.45, flex: 0 as const },
+    }),
+    [screenHeight],
+  );
 
   const {
     data: menuItems,
@@ -62,7 +82,7 @@ export default function AddItemsScreen() {
   const filteredItems = useMemo(() => {
     if (!menuItems) return [];
     if (!selectedCategory) return menuItems;
-    return menuItems.filter((item: any) => item.category_id === selectedCategory);
+    return menuItems.filter((item) => item.category_id === selectedCategory);
   }, [menuItems, selectedCategory]);
 
   const cartSummary = useMemo(() => {
@@ -76,7 +96,7 @@ export default function AddItemsScreen() {
   const cartItems = Object.values(cart);
   const hasCartItems = cartItems.length > 0;
 
-  const handleAdd = (item: any) => {
+  const handleAdd = (item: { id: string; price: number; name: string }) => {
     setCart((prev) => {
       const existing = prev[item.id];
       return {
@@ -171,7 +191,7 @@ export default function AddItemsScreen() {
   return (
     <View style={styles.container}>
       {/* Menu — top section (categories sidebar + items) */}
-      <View style={[styles.menuSection, hasCartItems && styles.menuSectionHalf]}>
+      <View style={[styles.menuSection, hasCartItems && dynamicStyles.menuSectionHalf]}>
         <View style={styles.content}>
           {/* Category Sidebar */}
           <ScrollView
@@ -179,7 +199,7 @@ export default function AddItemsScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.categorySidebarContent}
           >
-            {categories?.map((cat: any) => (
+            {categories?.map((cat) => (
               <TouchableOpacity
                 key={cat.id}
                 onPress={() => setSelectedCategory(cat.id)}
@@ -299,12 +319,9 @@ export default function AddItemsScreen() {
   );
 }
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   menuSection: { flex: 1 },
-  menuSectionHalf: { height: SCREEN_HEIGHT * 0.45, flex: 0 },
   content: { flex: 1, flexDirection: 'row' },
   categorySidebar: {
     width: 88,

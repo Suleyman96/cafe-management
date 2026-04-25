@@ -5,8 +5,8 @@ import { Button, Card, Chip, FAB, Modal, Portal, Text } from 'react-native-paper
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { WasteLogCard } from '@/components/waste/WasteLogCard';
 import {
-  useCafeSettings,
   useCreateWasteLog,
+  useCurrencySymbol,
   useDeleteWasteLog,
   useWasteLogs,
   useWasteMonthlySummary,
@@ -15,6 +15,7 @@ import { useSnackbar } from '@/hooks/use-snackbar';
 import { getLocalDateString } from '@/lib/date-utils';
 import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
+import { COLORS } from '@/theme';
 import type { WasteLog } from '@/types';
 
 const REASONS: WasteLog['reason'][] = [
@@ -58,11 +59,10 @@ export default function WasteListScreen() {
     refetch,
   } = useWasteLogs({ startDate, endDate, reason: reasonFilter });
   const { data: summary } = useWasteMonthlySummary(year, month);
-  const { data: settings } = useCafeSettings();
   const createWaste = useCreateWasteLog();
   const deleteWaste = useDeleteWasteLog();
 
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
 
   // Create modal state
   const [newItem, setNewItem] = useState<{
@@ -162,7 +162,7 @@ export default function WasteListScreen() {
               <Text variant="bodySmall" style={styles.muted}>
                 {t('waste.totalCost')}
               </Text>
-              <Text variant="titleMedium" style={{ fontWeight: '700', color: '#ef4444' }}>
+              <Text variant="titleMedium" style={{ fontWeight: '700', color: COLORS.danger }}>
                 {currencySymbol}
                 {(summary.totalCost || 0).toFixed(2)}
               </Text>
@@ -293,7 +293,7 @@ export default function WasteListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   monthNav: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -314,9 +314,9 @@ const styles = StyleSheet.create({
   filterChip: {},
   list: { paddingTop: 4, paddingBottom: 80 },
   fab: { position: 'absolute', right: 16, bottom: 16 },
-  modal: { backgroundColor: '#fff', margin: 20, padding: 20, borderRadius: 12 },
+  modal: { backgroundColor: COLORS.card, margin: 20, padding: 20, borderRadius: 12 },
   input: { marginBottom: 8 },
   reasonPicker: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
-  muted: { color: '#6b7280' },
+  muted: { color: COLORS.textMuted },
 });

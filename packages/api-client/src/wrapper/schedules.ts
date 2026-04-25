@@ -2,7 +2,7 @@
  * Staff schedules wrapper module
  */
 
-import { handleSupabaseError } from '@gustri/core';
+import { handleSupabaseError, isStaffSchedule } from '@gustri/core';
 import type { StaffScheduleInsert, StaffScheduleUpdate, WrapperContext } from './types';
 
 const STAFF_JOIN = `
@@ -20,6 +20,7 @@ export function createSchedulesWrapper(ctx: WrapperContext) {
         .single();
 
       if (error) throw handleSupabaseError(error);
+      if (!isStaffSchedule(result)) throw new Error('Invalid schedule data');
       return result;
     },
 
@@ -32,6 +33,7 @@ export function createSchedulesWrapper(ctx: WrapperContext) {
         .single();
 
       if (error) throw handleSupabaseError(error);
+      if (!isStaffSchedule(result)) throw new Error('Invalid schedule data');
       return result;
     },
 
@@ -100,6 +102,7 @@ export function createSchedulesWrapper(ctx: WrapperContext) {
         .single();
 
       if (error) throw handleSupabaseError(error);
+      if (!isStaffSchedule(data)) throw new Error('Invalid schedule data');
       return data;
     },
 
@@ -115,6 +118,7 @@ export function createSchedulesWrapper(ctx: WrapperContext) {
         .single();
 
       if (error) throw handleSupabaseError(error);
+      if (!isStaffSchedule(data)) throw new Error('Invalid schedule data');
       return data;
     },
 
@@ -127,6 +131,7 @@ export function createSchedulesWrapper(ctx: WrapperContext) {
         .single();
 
       if (error) throw handleSupabaseError(error);
+      if (!isStaffSchedule(data)) throw new Error('Invalid schedule data');
       return data;
     },
   };

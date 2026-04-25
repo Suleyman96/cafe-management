@@ -44,11 +44,3 @@ export function useStaffByRole() {
     },
   };
 }
-
-// Helper function to format staff name and role
-export function formatStaffInfo(staff: { full_name: string; role?: string | null }): string {
-  const roleLabel = staff.role
-    ? ` (${staff.role.charAt(0).toUpperCase() + staff.role.slice(1)})`
-    : '';
-  return `${staff.full_name}${roleLabel}`;
-}

@@ -6,7 +6,7 @@ import { Button, Chip, Modal, Portal, Switch } from 'react-native-paper';
 import { useStaff } from '@/hooks';
 import { getLocalDateString } from '@/lib/date-utils';
 import { Text, TextInput } from '@/lib/paper-compat';
-import type { Task } from '@/types';
+import type { Staff, Task } from '@/types';
 
 // Generate time options in HH:MM format (30-min intervals)
 const TIME_SLOTS = TIME_OPTIONS;
@@ -15,7 +15,7 @@ interface TaskModalProps {
   task: Task | null;
   staffId?: string;
   isAdmin: boolean;
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: Record<string, unknown>) => Promise<void>;
   isSaving: boolean;
   onClose: () => void;
 }
@@ -53,9 +53,9 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
     { value: 'monthly' as const, label: t('tasks.monthly') },
   ];
 
-  const activeStaff = (staffList as any[]).filter((s: any) => s.is_active);
+  const activeStaff = (staffList as Staff[]).filter((s) => s.is_active);
   const selectedStaffName =
-    activeStaff.find((s: any) => s.id === assignedTo)?.full_name || t('tasks.unassigned');
+    activeStaff.find((s) => s.id === assignedTo)?.full_name || t('tasks.unassigned');
 
   const toggleWeekday = (day: number) => {
     setRecurrenceDays((prev) =>
@@ -149,7 +149,7 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
               >
                 {t('tasks.unassigned')}
               </Chip>
-              {activeStaff.map((s: any) => (
+              {activeStaff.map((s) => (
                 <Chip
                   key={s.id}
                   selected={assignedTo === s.id}

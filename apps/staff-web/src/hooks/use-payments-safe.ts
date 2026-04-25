@@ -77,13 +77,3 @@ export function usePaymentSummary(orderId: string) {
     },
   };
 }
-
-// Helper for formatting payment methods
-export function formatPaymentMethod(method: string): string {
-  const methods: Record<string, string> = {
-    cash: 'Cash',
-    card: 'Credit/Debit Card',
-    digital: 'Digital Payment',
-  };
-  return methods[method] || method;
-}

@@ -69,7 +69,7 @@ describe('useCafeSettings', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     // Should not throw — returns default settings
     expect(result.current.data?.restaurant_name).toBe('Restaurant');
-    expect(result.current.data?.currency_symbol).toBe('¥');
+    expect(result.current.data?.currency_symbol).toBe('$');
   });
 
   it('returns fetched settings on success', async () => {

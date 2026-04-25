@@ -1,5 +1,11 @@
 'use client';
 
+import {
+  calculateOrderTotal,
+  formatTime,
+  getOrderStatusColor,
+  ORDER_STATUS_KEYS,
+} from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
@@ -15,52 +21,6 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-
-const ORDER_STATUS_KEYS: Record<string, string> = {
-  pending_approval: 'orders.pendingApproval',
-  new: 'orders.new',
-  preparing: 'orders.preparing',
-  ready: 'orders.ready',
-  served: 'orders.served',
-  out_for_delivery: 'orders.outForDelivery',
-  delivered: 'orders.delivered',
-  closed: 'orders.closed',
-  cancelled: 'orders.cancelled',
-};
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'pending_approval':
-      return 'bg-amber-100 text-amber-800 border border-amber-300';
-    case 'new':
-      return 'bg-blue-100 text-blue-800';
-    case 'preparing':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'ready':
-      return 'bg-green-100 text-green-800';
-    case 'closed':
-      return 'bg-gray-100 text-gray-800';
-    case 'cancelled':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
-
-const formatTime = (timestamp: string) => {
-  return new Date(timestamp).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
-const calculateOrderTotal = (order: OrderWithDetails) => {
-  if (order?.total != null) return order.total;
-  if (!order?.order_items) return 0;
-  return order.order_items
-    .filter((item) => item.status !== 'cancelled')
-    .reduce((sum, item) => sum + item.quantity * item.item_price, 0);
-};
 
 const calculatePaidAmount = (order: OrderWithDetails) => {
   const payments = (order as OrderWithDetails & { order_payments?: { amount: number }[] })
@@ -105,7 +65,7 @@ export function TakeoutOrderCard({
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <Package className="h-4 sm:h-5 w-4 sm:w-5 text-orange-600" />
             <span
-              className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}
+              className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getOrderStatusColor(order.status)}`}
             >
               {order.status === 'ready'
                 ? t('takeout.readyForPickup')

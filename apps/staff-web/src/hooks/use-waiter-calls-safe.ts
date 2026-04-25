@@ -42,35 +42,10 @@ export function useResolveWaiterCall() {
 export function useActiveCallsForTable(tableId: string) {
   const { data: allCalls, ...rest } = useWaiterCallsShared('pending');
 
-  const tableCalls = allCalls?.filter((call: any) => call.table_id === tableId) || [];
+  const tableCalls = allCalls?.filter((call) => call.table_id === tableId) || [];
 
   return {
     ...rest,
     data: tableCalls,
   };
-}
-
-// Helper function to get call type info
-export function getCallTypeInfo(type: string): { icon: string; label: string; color: string } {
-  const types: Record<string, { icon: string; label: string; color: string }> = {
-    assistance: { icon: '💬', label: 'General Help', color: 'blue' },
-    bill: { icon: '🧾', label: 'Request Bill', color: 'green' },
-    complaint: { icon: '⚠️', label: 'Complaint', color: 'red' },
-    question: { icon: '❓', label: 'Question', color: 'yellow' },
-    emergency: { icon: '🚨', label: 'Emergency', color: 'red' },
-  };
-
-  return types[type] || { icon: '📢', label: 'Call', color: 'gray' };
-}
-
-// Helper function to get priority info
-export function getPriorityInfo(priority: string): { label: string; color: string } {
-  const priorities: Record<string, { label: string; color: string }> = {
-    low: { label: 'Low', color: 'gray' },
-    normal: { label: 'Normal', color: 'blue' },
-    high: { label: 'High', color: 'orange' },
-    urgent: { label: 'Urgent', color: 'red' },
-  };
-
-  return priorities[priority] || { label: 'Unknown', color: 'gray' };
 }

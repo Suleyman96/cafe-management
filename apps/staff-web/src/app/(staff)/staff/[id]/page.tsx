@@ -1,6 +1,6 @@
 'use client';
 
-import { getLocalDateString } from '@gustri/core';
+import { getLocalDateString, getRoleBadgeColor } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import {
@@ -29,7 +29,9 @@ import { useMySchedule, useOrders, usePaymentsByStaff, useStaffMember } from '@/
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
 
-function calculateHoursWorked(schedules: any[] | undefined) {
+import type { StaffSchedule } from '@/types';
+
+function calculateHoursWorked(schedules: StaffSchedule[] | undefined) {
   if (!schedules) return 0;
   let total = 0;
   for (const sched of schedules) {
@@ -108,7 +110,7 @@ export default function StaffDetailPage() {
   const { stats, recentOrders } = useMemo(() => {
     if (!allOrders) return { stats: null, recentOrders: [] };
 
-    const staffOrders = allOrders.filter((order: any) => order.assigned_waiter_id === staffId);
+    const staffOrders = allOrders.filter((order) => order.assigned_waiter_id === staffId);
 
     let totalRevenue = 0;
     let totalItemsSold = 0;
@@ -116,13 +118,9 @@ export default function StaffDetailPage() {
 
     for (const order of staffOrders) {
       const orderTotal =
-        order.order_items?.reduce(
-          (sum: number, item: any) => sum + item.quantity * item.item_price,
-          0,
-        ) || 0;
+        order.order_items?.reduce((sum, item) => sum + item.quantity * item.item_price, 0) || 0;
 
-      const itemCount =
-        order.order_items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
+      const itemCount = order.order_items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
       totalRevenue += orderTotal;
       totalItemsSold += itemCount;
@@ -182,17 +180,6 @@ export default function StaffDetailPage() {
         return <ChefHat className="h-5 w-5" />;
       default:
         return <User className="h-5 w-5" />;
-    }
-  };
-
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-purple-100 text-purple-800';
-      case 'kitchen':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-blue-100 text-blue-800';
     }
   };
 
@@ -373,15 +360,14 @@ export default function StaffDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {recentOrders.map((order: any) => {
+                {recentOrders.map((order) => {
                   const orderTotal =
                     order.order_items?.reduce(
-                      (sum: number, item: any) => sum + item.quantity * item.item_price,
+                      (sum, item) => sum + item.quantity * item.item_price,
                       0,
                     ) || 0;
                   const itemCount =
-                    order.order_items?.reduce((sum: number, item: any) => sum + item.quantity, 0) ||
-                    0;
+                    order.order_items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
                   return (
                     <tr key={order.id} className="hover:bg-gray-50">
@@ -447,7 +433,7 @@ export default function StaffDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {recentPayments.map((payment: any) => (
+                {recentPayments.map((payment) => (
                   <tr key={payment.id} className="hover:bg-gray-50">
                     <td className="px-4 py-2 text-sm text-gray-900">
                       #{payment.order_id?.slice(0, 6) || '-'}
@@ -526,7 +512,7 @@ export default function StaffDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {upcomingSchedules.map((sched: any) => {
+                {upcomingSchedules.map((sched) => {
                   const schedStatusColors: Record<string, string> = {
                     scheduled: 'bg-gray-100 text-gray-700',
                     in_progress: 'bg-blue-100 text-blue-700',

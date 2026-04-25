@@ -18,7 +18,7 @@ export function useDeliveryOrder(orderId: string, accessToken?: string) {
       });
       if (error) throw error;
       if (!data) return null;
-      return data as unknown as DeliveryOrderWithDetails;
+      return data as DeliveryOrderWithDetails;
     },
     enabled: !!orderId && !!accessToken,
     staleTime: 10 * 1000, // 10s — realtime subscription handles freshness

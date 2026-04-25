@@ -2,7 +2,7 @@
  * Refunds wrapper module
  */
 
-import { handleSupabaseError } from '@gustri/core';
+import { handleSupabaseError, isRefund } from '@gustri/core';
 import type { WrapperContext } from './types';
 
 export function createRefundsWrapper(ctx: WrapperContext) {
@@ -26,6 +26,7 @@ export function createRefundsWrapper(ctx: WrapperContext) {
         .single();
 
       if (error) throw handleSupabaseError(error);
+      if (!isRefund(data)) throw new Error('Invalid refund data');
       return data;
     },
 

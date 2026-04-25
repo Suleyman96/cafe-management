@@ -77,5 +77,13 @@
   "update": "更新",
   "updated": "更新日",
   "view": "表示",
-  "yes": "はい"
+  "yes": "はい",
+
+  "offline.message": "オフラインです — 接続時に変更が同期されます",
+
+  "error.title": "エラーが発生しました",
+  "error.message": "予期しないエラーが発生しました。アプリを再起動してください。",
+  "error.tryAgain": "再試行",
+
+  "sync.pending": "{{count}}件の保留中"
 }

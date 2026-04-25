@@ -1,7 +1,9 @@
 'use client';
 
+import { getRoleBadgeColor, QUERY_KEYS } from '@gustri/core';
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Eye, EyeOff, Globe, Key, Mail, Shield, User } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -13,29 +15,32 @@ import { db } from '@/lib/supabase/wrapped-client';
 export default function SettingsPage() {
   const { staff, isLoading } = useAuth();
   const { t, i18n } = useTranslation('staff');
+  const queryClient = useQueryClient();
 
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [_currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [_showCurrentPassword, _setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [languageLoading, setLanguageLoading] = useState(false);
 
-  const handleChangeLanguage = async (lang: string) => {
-    setLanguageLoading(true);
-    try {
+  const updateLanguageMutation = useMutation({
+    mutationFn: async (lang: string) => {
       await loadAndSwitchLanguage(lang);
       if (staff?.id) {
         await db.staff.update(staff.id, { preferred_language: lang });
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STAFF] });
       toast.success(t('settings.languageChanged'));
-    } catch {
+    },
+    onError: () => {
       toast.error(t('error', { ns: 'common' }));
-    } finally {
-      setLanguageLoading(false);
-    }
+    },
+  });
+
+  const handleChangeLanguage = (lang: string) => {
+    updateLanguageMutation.mutate(lang);
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -64,7 +69,6 @@ export default function SettingsPage() {
 
       toast.success(t('settings.passwordChanged'));
       setIsChangingPassword(false);
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: unknown) {
@@ -72,19 +76,6 @@ export default function SettingsPage() {
       toast.error(message);
     } finally {
       setPasswordLoading(false);
-    }
-  };
-
-  const getRoleBadgeColor = (role: string | null | undefined) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-purple-100 text-purple-800';
-      case 'waiter':
-        return 'bg-blue-100 text-blue-800';
-      case 'kitchen':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -222,7 +213,6 @@ export default function SettingsPage() {
                     variant="outline"
                     onClick={() => {
                       setIsChangingPassword(false);
-                      setCurrentPassword('');
                       setNewPassword('');
                       setConfirmPassword('');
                     }}
@@ -261,12 +251,12 @@ export default function SettingsPage() {
                 <button
                   key={lang.code}
                   onClick={() => handleChangeLanguage(lang.code)}
-                  disabled={languageLoading}
+                  disabled={updateLanguageMutation.isPending}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
                     i18n.language === lang.code
                       ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium'
                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  } ${languageLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  } ${updateLanguageMutation.isPending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   <span className="text-lg">{lang.flag}</span>
                   <span className="truncate">{lang.nativeName}</span>

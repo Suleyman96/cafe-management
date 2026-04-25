@@ -15,13 +15,30 @@ const STATUS_COLORS: Record<string, string> = {
   missed: '#ef4444',
 };
 
+interface ScheduleSubmitPayload {
+  id?: string;
+  data?: Record<string, string | number | boolean | null>;
+  entries?: Record<string, string | number | boolean | null>[];
+  mode: 'edit' | 'create' | 'bulk';
+}
+
 interface ScheduleModalProps {
   visible: boolean;
   onDismiss: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: ScheduleSubmitPayload) => void;
   onDelete?: (id: string) => void;
   loading?: boolean;
-  initialData?: any;
+  initialData?: {
+    id: string;
+    staff_id?: string;
+    date?: string;
+    planned_start?: string;
+    planned_end?: string;
+    actual_start?: string | null;
+    actual_end?: string | null;
+    status?: string;
+    notes?: string | null;
+  } | null;
   staffList: { id: string; full_name: string; role?: string; is_active?: boolean }[];
   defaultDate?: string;
 }
@@ -107,7 +124,7 @@ export function ScheduleModal({
     if (!staffId) return;
 
     if (isEdit) {
-      const updateData: any = {
+      const updateData: Record<string, string | number | boolean | null> = {
         staff_id: staffId,
         date,
         planned_start: plannedStart,
@@ -125,7 +142,7 @@ export function ScheduleModal({
     } else if (repeatEnabled && repeatDays.length > 0) {
       // Bulk create
       const baseDate = new Date(date);
-      const entries: any[] = [];
+      const entries: Record<string, string | number | boolean | null>[] = [];
       for (let week = 0; week < repeatWeeks; week++) {
         for (const dayOfWeek of repeatDays) {
           const targetDate = new Date(baseDate);

@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { ACTIVE_DELIVERY_STATUSES, ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
@@ -9,12 +10,12 @@ import { DeliveryOrderCard } from '@/components/delivery/DeliveryOrderCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
   useCancelOrder,
+  useCurrencySymbol,
   useDeliveryOrders,
   useMarkDelivered,
   useMarkOutForDelivery,
   useUpdateOrderStatus,
 } from '@/hooks';
-import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text, TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
@@ -29,18 +30,6 @@ const STATUS_FILTERS = [
   'delivered',
   'cancelled',
 ];
-
-const ACTIVE_STATUSES = ['pending_approval', 'new', 'preparing', 'ready', 'out_for_delivery'];
-
-const STATUS_LABEL_KEYS: Record<string, string> = {
-  pending_approval: 'orders.pendingApproval',
-  new: 'orders.new',
-  preparing: 'orders.preparing',
-  ready: 'orders.ready',
-  out_for_delivery: 'orders.outForDelivery',
-  delivered: 'orders.delivered',
-  cancelled: 'orders.cancelled',
-};
 
 export default function DeliveryListScreen() {
   const staff = useAuthStore((s) => s.staff);
@@ -60,17 +49,18 @@ export default function DeliveryListScreen() {
   const [cancelling, setCancelling] = useState(false);
 
   const { data: orders, isLoading, error, refetch } = useDeliveryOrders();
-  const { data: settings } = useCafeSettings();
   const updateOrderStatus = useUpdateOrderStatus();
   const markOutForDelivery = useMarkOutForDelivery();
   const markDelivered = useMarkDelivered();
   const cancelOrder = useCancelOrder();
 
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
 
   const activeCount = useMemo(() => {
     if (!orders) return 0;
-    return orders.filter((o: { status: string }) => ACTIVE_STATUSES.includes(o.status)).length;
+    return orders.filter((o: { status: string }) =>
+      (ACTIVE_DELIVERY_STATUSES as readonly string[]).includes(o.status),
+    ).length;
   }, [orders]);
 
   const filtered = useMemo(() => {
@@ -84,7 +74,12 @@ export default function DeliveryListScreen() {
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
-        (o: any) =>
+        (o: {
+          id: string;
+          customer_name?: string | null;
+          delivery_address?: string | null;
+          customer_phone?: string | null;
+        }) =>
           o.customer_name?.toLowerCase().includes(term) ||
           o.delivery_address?.toLowerCase().includes(term) ||
           o.customer_phone?.includes(term) ||
@@ -141,7 +136,7 @@ export default function DeliveryListScreen() {
   };
 
   const handleOpenCancel = (orderId: string) => {
-    const order = orders?.find((o: any) => o.id === orderId);
+    const order = orders?.find((o) => o.id === orderId);
     setCancelTarget({ id: orderId, customer_name: order?.customer_name });
     setCancelReason('');
   };
@@ -190,13 +185,14 @@ export default function DeliveryListScreen() {
       <View style={styles.filterRow}>
         {STATUS_FILTERS.map((s) => (
           <Chip key={s} compact selected={statusFilter === s} onPress={() => setStatusFilter(s)}>
-            {s === 'all' ? tCommon('all') : t(STATUS_LABEL_KEYS[s] || s)}
+            {s === 'all' ? tCommon('all') : t(ORDER_STATUS_KEYS[s] || s)}
           </Chip>
         ))}
       </View>
 
       <FlashList
         data={filtered}
+        estimatedItemSize={120}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         renderItem={({ item }) => (

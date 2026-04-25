@@ -14,13 +14,13 @@ interface ExpenseModalProps {
   onSubmit: (data: {
     description: string;
     amount: number;
-    payment_method: string;
+    payment_method: Expense['payment_method'];
     category_id: string | null;
     expense_date: string;
     notes: string | null;
   }) => void;
   loading?: boolean;
-  initialData?: any;
+  initialData?: Expense | null;
   categories: { id: string; name: string }[];
   currencySymbol?: string;
 }
@@ -39,7 +39,7 @@ export function ExpenseModal({
   const [form, setForm] = useState({
     description: '',
     amount: '',
-    payment_method: 'cash' as string,
+    payment_method: 'cash' as Expense['payment_method'],
     category_id: '',
     expense_date: getLocalDateString(),
     notes: '',

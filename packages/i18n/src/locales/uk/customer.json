@@ -56,6 +56,7 @@
   "deliveryLanding.errorAddress": "Введіть адресу доставки",
   "deliveryLanding.errorName": "Введіть ваше ім'я",
   "deliveryLanding.errorPhone": "Введіть номер телефону",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.heroSubtext": "Заповніть дані та ознайомтесь з меню",
   "deliveryLanding.heroTitle": "Замовлення на доставку",
   "deliveryLanding.labelAddress": "Адреса доставки *",

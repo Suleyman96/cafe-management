@@ -8,9 +8,21 @@ import { BRAND_PRIMARY } from '@/theme';
 interface CategoryModalProps {
   visible: boolean;
   onDismiss: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: {
+    name: string;
+    description: string;
+    icon: string;
+    display_order: number;
+    is_active: boolean;
+  }) => void;
   loading?: boolean;
-  initialData?: any;
+  initialData?: {
+    name?: string;
+    description?: string | null;
+    icon?: string | null;
+    display_order?: number;
+    is_active?: boolean;
+  } | null;
 }
 
 const COMMON_ICONS = [

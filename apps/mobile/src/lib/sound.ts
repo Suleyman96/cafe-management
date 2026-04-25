@@ -44,10 +44,24 @@ export async function playWaiterCallSound() {
 }
 
 export async function cleanupSounds() {
-  if (newOrderSound) {
-    await newOrderSound.unloadAsync();
+  try {
+    if (newOrderSound) {
+      await newOrderSound.unloadAsync();
+    }
+  } catch {
+    // Sound may already be unloaded
   }
-  if (waiterCallSound) {
-    await waiterCallSound.unloadAsync();
+
+  // Only unload waiterCallSound if it's a different object than newOrderSound
+  if (waiterCallSound && waiterCallSound !== newOrderSound) {
+    try {
+      await waiterCallSound.unloadAsync();
+    } catch {
+      // Sound may already be unloaded
+    }
   }
+
+  newOrderSound = null;
+  waiterCallSound = null;
+  soundsAvailable = false;
 }

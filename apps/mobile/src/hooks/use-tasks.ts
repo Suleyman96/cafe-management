@@ -32,6 +32,5 @@ export function useMyTasks(staffId: string | undefined) {
 // Local composite hook — derives from local useMyTasks
 export function useMyOpenTasksCount(staffId: string | undefined) {
   const { data: myTasks } = useMyTasks(staffId);
-  return (myTasks || []).filter((t: any) => t.status === 'pending' || t.status === 'in_progress')
-    .length;
+  return (myTasks || []).filter((t) => t.status === 'pending' || t.status === 'in_progress').length;
 }

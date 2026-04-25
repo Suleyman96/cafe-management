@@ -304,6 +304,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     const pollInterval = setInterval(async () => {
       try {
+        // Raw queries intentional — narrow select('id') + created_at filter for polling performance
         const { data: newCalls } = await supabase
           .from('waiter_calls')
           .select('id')

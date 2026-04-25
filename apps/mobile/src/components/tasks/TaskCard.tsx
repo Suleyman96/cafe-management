@@ -15,7 +15,10 @@ const PRIORITY_COLORS: Record<string, { bg: string; text: string }> = {
   urgent: { bg: '#fee2e2', text: '#dc2626' },
 };
 
-const STATUS_CONFIG: Record<string, { icon: string; color: string }> = {
+const STATUS_CONFIG: Record<
+  string,
+  { icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; color: string }
+> = {
   pending: { icon: 'circle-outline', color: '#9ca3af' },
   in_progress: { icon: 'play-circle', color: BRAND_PRIMARY },
   completed: { icon: 'check-circle', color: '#10b981' },
@@ -81,7 +84,7 @@ export const TaskCard = React.memo(function TaskCard({
         {/* Top: status icon + title + actions */}
         <View style={styles.topRow}>
           <MaterialCommunityIcons
-            name={statusConfig.icon as any}
+            name={statusConfig.icon}
             size={20}
             color={statusConfig.color}
             style={styles.statusIcon}

@@ -21,6 +21,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { FeedbackForm } from '@/components/feedback/feedback-form';
+import { OrderTimeline } from '@/components/order/order-timeline';
 import { PlatformFooter } from '@/components/ui/platform-footer';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useCancelOrder, useCancelOrderItem, useOrder } from '@/hooks/use-order';
@@ -91,6 +92,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
       router.push(`/table/${tableId}/menu`);
     } catch (error) {
       Sentry.captureException(error);
+      toast.error(t('common.error'));
     } finally {
       setCancelLoading(false);
     }
@@ -108,6 +110,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
       setCancelItemQty(1);
     } catch (error) {
       Sentry.captureException(error);
+      toast.error(t('common.error'));
     } finally {
       setCancelLoading(false);
     }
@@ -139,7 +142,6 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
     { key: 'served', label: t('orderStatus.step.served'), icon: CheckCircle2 },
   ];
 
-  const currentStepIndex = statusSteps.findIndex((step) => step.key === order.status);
   // "served" is a final state — all steps are completed
   const isOrderCompleted = order.status === 'served';
 
@@ -205,43 +207,19 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
           </div>
           <div className="flex items-center justify-between mt-2">
             <span className="text-sm text-muted-foreground">{t('orderStatus.labelPlaced')}</span>
-            <span className="font-medium">{timeAgo(order.created_at)}</span>
+            <span className="font-medium">{timeAgo(order.created_at, t)}</span>
           </div>
         </div>
 
         {/* Status Timeline */}
         <div className="bg-card rounded-lg p-6 border">
           <h2 className="font-semibold mb-4">{t('orderStatus.progressTitle')}</h2>
-          <div className="space-y-4">
-            {statusSteps.map((step, index) => {
-              const isActive = !isOrderCompleted && index === currentStepIndex;
-              const isCompleted = isOrderCompleted || index < currentStepIndex;
-              const Icon = step.icon;
-
-              return (
-                <div key={step.key} className="flex items-center gap-4">
-                  <div
-                    className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : isCompleted
-                          ? 'bg-green-500 text-white'
-                          : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <p className={`font-medium ${isActive ? 'text-primary' : ''}`}>{step.label}</p>
-                    {isActive && (
-                      <p className="text-sm text-muted-foreground">{t('orderStatus.inProgress')}</p>
-                    )}
-                  </div>
-                  {isCompleted && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-                </div>
-              );
-            })}
-          </div>
+          <OrderTimeline
+            steps={statusSteps}
+            currentStatus={order.status}
+            inProgressLabel={t('orderStatus.inProgress')}
+            isOrderCompleted={isOrderCompleted}
+          />
 
           {order.status === 'pending_approval' && (
             <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">

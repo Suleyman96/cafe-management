@@ -26,12 +26,12 @@ type NativeTextInputCompat = Pick<
 type NativeTextCompat = Pick<RNTextProps, 'numberOfLines' | 'ellipsizeMode'>;
 
 export const TextInput = PaperTextInput as unknown as React.ForwardRefExoticComponent<
-  (TextInputProps & NativeTextInputCompat) & React.RefAttributes<any>
+  (TextInputProps & NativeTextInputCompat) & React.RefAttributes<React.Component>
 > & {
   Icon: typeof PaperTextInput.Icon;
   Affix: typeof PaperTextInput.Affix;
 };
 
 export const Text = PaperText as unknown as React.ForwardRefExoticComponent<
-  (React.ComponentProps<typeof PaperText> & NativeTextCompat) & React.RefAttributes<any>
+  (React.ComponentProps<typeof PaperText> & NativeTextCompat) & React.RefAttributes<React.Component>
 >;

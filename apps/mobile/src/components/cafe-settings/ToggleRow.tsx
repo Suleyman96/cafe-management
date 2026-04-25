@@ -1,9 +1,10 @@
+import type { CafeSettings } from '@gustri/database';
 import { StyleSheet, View } from 'react-native';
 import { Switch, Text } from 'react-native-paper';
 
 export interface SettingsSectionProps {
-  form: Record<string, any>;
-  updateField: (key: string, value: any) => void;
+  form: Partial<CafeSettings> & Record<string, unknown>;
+  updateField: (key: string, value: boolean | string | number | null) => void;
 }
 
 interface ToggleRowProps {

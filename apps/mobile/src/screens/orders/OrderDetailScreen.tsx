@@ -9,14 +9,15 @@ import { OrderItemRow } from '@/components/orders/OrderItemRow';
 import { StatusActions } from '@/components/orders/StatusActions';
 import { ErrorScreen, LoadingScreen, StatusBadge, TimeElapsed } from '@/components/ui';
 import {
+  useCurrencySymbol,
   useOrder,
   useOrderPayments,
   useUpdateOrderItemStatus,
   useUpdateOrderStatus,
 } from '@/hooks';
-import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
+import { COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, OrderPayment, OrdersStackParamList } from '@/types';
 
 type Route = RouteProp<OrdersStackParamList, 'OrderDetail'>;
@@ -40,11 +41,10 @@ export default function OrderDetailScreen() {
 
   const { data: order, isLoading, error, refetch } = useOrder(orderId);
   const { data: payments } = useOrderPayments(orderId);
-  const { data: settings } = useCafeSettings();
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
 
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
 
   // Cast order to include join fields (wrapper's select includes table, order_items, assigned_waiter)
   const details = order as OrderWithJoins | undefined;
@@ -153,7 +153,7 @@ export default function OrderDetailScreen() {
                     <Text variant="bodyMedium" style={styles.muted}>
                       {t('orders.paid')}
                     </Text>
-                    <Text variant="bodyMedium" style={{ color: '#10b981', fontWeight: '600' }}>
+                    <Text variant="bodyMedium" style={{ color: COLORS.success, fontWeight: '600' }}>
                       {currencySymbol}
                       {totalPaid.toFixed(2)}
                     </Text>
@@ -163,7 +163,10 @@ export default function OrderDetailScreen() {
                       <Text variant="bodyMedium" style={styles.muted}>
                         {t('orders.remaining')}
                       </Text>
-                      <Text variant="bodyMedium" style={{ color: '#ef4444', fontWeight: '600' }}>
+                      <Text
+                        variant="bodyMedium"
+                        style={{ color: COLORS.danger, fontWeight: '600' }}
+                      >
                         {currencySymbol}
                         {remaining.toFixed(2)}
                       </Text>
@@ -185,7 +188,7 @@ export default function OrderDetailScreen() {
                         : `${currencySymbol}${(order.discount_value ?? 0).toFixed(2)}`}
                       )
                     </Text>
-                    <Text variant="bodyMedium" style={{ color: '#ef4444', fontWeight: '600' }}>
+                    <Text variant="bodyMedium" style={{ color: COLORS.danger, fontWeight: '600' }}>
                       -{currencySymbol}
                       {(order.discount_amount ?? 0).toFixed(2)}
                     </Text>
@@ -238,16 +241,16 @@ export default function OrderDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   card: { marginHorizontal: 16, marginTop: 12 },
   cardContent: { gap: 4 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  bold: { fontWeight: '700', color: '#1e293b' },
-  muted: { color: '#6b7280' },
+  bold: { fontWeight: '700', color: COLORS.textPrimary },
+  muted: { color: COLORS.textMuted },
   paymentRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   sectionTitle: {
     fontWeight: '600',
-    color: '#1e293b',
+    color: COLORS.textPrimary,
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 4,

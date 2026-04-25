@@ -1,4 +1,11 @@
+import type { StaffSchedule, StaffScheduleInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+
+// The schedules hook joins staff data via Supabase select
+type ScheduleWithStaff = StaffSchedule & {
+  staff?: { full_name: string; role?: string } | null;
+};
+
 import { useMemo, useState } from 'react';
 import {
   FlatList,
@@ -23,7 +30,7 @@ import {
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
-import { BRAND_PRIMARY } from '@/theme';
+import { BRAND_PRIMARY, COLORS } from '@/theme';
 
 function getWeekDates(referenceDate: Date) {
   const d = new Date(referenceDate);
@@ -49,10 +56,10 @@ function formatTime(time: string) {
 }
 
 const STATUS_DOT_COLOR: Record<string, string> = {
-  scheduled: '#9ca3af',
+  scheduled: COLORS.textLight,
   in_progress: BRAND_PRIMARY,
-  completed: '#10b981',
-  missed: '#ef4444',
+  completed: COLORS.success,
+  missed: COLORS.danger,
 };
 
 export default function SchedulesScreen() {
@@ -66,7 +73,17 @@ export default function SchedulesScreen() {
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
-  const [editSchedule, setEditSchedule] = useState<any>(null);
+  const [editSchedule, setEditSchedule] = useState<{
+    id: string;
+    staff_id?: string;
+    date?: string;
+    planned_start?: string;
+    planned_end?: string;
+    actual_start?: string | null;
+    actual_end?: string | null;
+    status?: string;
+    notes?: string | null;
+  } | null>(null);
   const [deleteScheduleId, setDeleteScheduleId] = useState<string | null>(null);
 
   const weekDates = useMemo(() => {
@@ -79,11 +96,13 @@ export default function SchedulesScreen() {
   const endDate = formatDate(weekDates[6]);
 
   const {
-    data: schedules,
+    data: rawSchedules,
     isLoading,
     error,
     refetch,
   } = useSchedulesByDateRange(startDate, endDate);
+  // The hook joins staff data via Supabase select but the return type doesn't reflect it
+  const schedules = rawSchedules as ScheduleWithStaff[] | undefined;
   const { data: staffList } = useStaff();
 
   const createSchedule = useCreateSchedule();
@@ -95,14 +114,14 @@ export default function SchedulesScreen() {
   // Daily view: schedules for selected date
   const dailySchedules = useMemo(() => {
     if (!schedules) return [];
-    return (schedules as any[]).filter((s) => s.date === selectedDate);
+    return schedules.filter((s) => s.date === selectedDate);
   }, [schedules, selectedDate]);
 
   // Weekly view: group schedules by date
   const weeklyByDate = useMemo(() => {
     if (!schedules) return {};
-    const map: Record<string, any[]> = {};
-    for (const sched of schedules as any[]) {
+    const map: Record<string, ScheduleWithStaff[]> = {};
+    for (const sched of schedules) {
       if (!map[sched.date]) map[sched.date] = [];
       map[sched.date].push(sched);
     }
@@ -112,7 +131,7 @@ export default function SchedulesScreen() {
   // Summary counts for the week
   const weekSummary = useMemo(() => {
     if (!schedules) return { total: 0, completed: 0, inProgress: 0 };
-    const arr = schedules as any[];
+    const arr = schedules;
     return {
       total: arr.length,
       completed: arr.filter((s) => s.status === 'completed').length,
@@ -139,21 +158,28 @@ export default function SchedulesScreen() {
   };
 
   const handleEdit = (id: string) => {
-    const sched = (schedules as any[])?.find((s) => s.id === id);
+    const sched = schedules?.find((s) => s.id === id);
     if (sched) {
       setEditSchedule(sched);
       setShowModal(true);
     }
   };
 
-  const handleModalSubmit = async (payload: any) => {
+  const handleModalSubmit = async (payload: {
+    id?: string;
+    data?: Record<string, string | number | boolean | null>;
+    entries?: Record<string, string | number | boolean | null>[];
+    mode: 'edit' | 'create' | 'bulk';
+  }) => {
     try {
       if (payload.mode === 'edit') {
-        await updateSchedule.mutateAsync({ id: payload.id, data: payload.data });
+        await updateSchedule.mutateAsync({ id: payload.id!, data: payload.data! });
         showSuccess(t('schedules.scheduleUpdated'));
       } else if (payload.mode === 'bulk') {
         const results = await Promise.allSettled(
-          payload.entries.map((entry: any) => createSchedule.mutateAsync(entry)),
+          (payload.entries || []).map((entry) =>
+            createSchedule.mutateAsync(entry as unknown as StaffScheduleInsert),
+          ),
         );
         const successCount = results.filter((r) => r.status === 'fulfilled').length;
         const failCount = results.length - successCount;
@@ -163,7 +189,7 @@ export default function SchedulesScreen() {
           showSuccess(t('schedules.bulkCreateSuccess', { count: successCount }));
         }
       } else {
-        await createSchedule.mutateAsync(payload.data);
+        await createSchedule.mutateAsync(payload.data as unknown as StaffScheduleInsert);
         showSuccess(t('schedules.scheduleCreated'));
       }
       setShowModal(false);
@@ -209,7 +235,7 @@ export default function SchedulesScreen() {
       {/* Week Navigation */}
       <View style={styles.weekNav}>
         <Button compact onPress={() => setWeekOffset((p) => p - 1)}>
-          {t('expenses.prev')}
+          {t('schedules.prev')}
         </Button>
         <View style={styles.weekCenter}>
           <Text variant="titleSmall" style={styles.weekLabel}>
@@ -227,7 +253,7 @@ export default function SchedulesScreen() {
           )}
         </View>
         <Button compact onPress={() => setWeekOffset((p) => p + 1)}>
-          {t('expenses.next')}
+          {t('schedules.next')}
         </Button>
       </View>
 
@@ -307,7 +333,7 @@ export default function SchedulesScreen() {
 
           {/* Daily count */}
           <Text variant="bodySmall" style={styles.countText}>
-            {dailySchedules.length} schedule{dailySchedules.length !== 1 ? 's' : ''} ·{' '}
+            {t('schedules.scheduleCount', { count: dailySchedules.length })} ·{' '}
             {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('default', {
               weekday: 'long',
               month: 'long',
@@ -371,7 +397,7 @@ export default function SchedulesScreen() {
                     {t('schedules.noShifts')}
                   </Text>
                 ) : (
-                  daySchedules.map((sched: any) => (
+                  daySchedules.map((sched) => (
                     <TouchableOpacity
                       key={sched.id}
                       onPress={() => handleEdit(sched.id)}
@@ -380,7 +406,7 @@ export default function SchedulesScreen() {
                       <View
                         style={[
                           styles.weeklyDot,
-                          { backgroundColor: STATUS_DOT_COLOR[sched.status] || '#9ca3af' },
+                          { backgroundColor: STATUS_DOT_COLOR[sched.status] || COLORS.textLight },
                         ]}
                       />
                       <View style={styles.weeklyBlockInfo}>
@@ -395,7 +421,7 @@ export default function SchedulesScreen() {
                         variant="bodySmall"
                         style={[
                           styles.weeklyStatus,
-                          { color: STATUS_DOT_COLOR[sched.status] || '#9ca3af' },
+                          { color: STATUS_DOT_COLOR[sched.status] || COLORS.textLight },
                         ]}
                       >
                         {t(`schedules.${sched.status}`)}
@@ -446,7 +472,7 @@ export default function SchedulesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   header: { paddingHorizontal: 16, paddingTop: 8 },
   segmented: { marginBottom: 4 },
   weekNav: {
@@ -460,10 +486,10 @@ const styles = StyleSheet.create({
   weekLabel: { fontWeight: '600' },
   summaryRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
   summaryCard: { flex: 1 },
-  summaryTotal: { fontWeight: '700', color: '#1e293b' },
+  summaryTotal: { fontWeight: '700', color: COLORS.textPrimary },
   summaryInProgress: { fontWeight: '700', color: BRAND_PRIMARY },
-  summaryCompleted: { fontWeight: '700', color: '#10b981' },
-  muted: { color: '#6b7280' },
+  summaryCompleted: { fontWeight: '700', color: COLORS.success },
+  muted: { color: COLORS.textMuted },
   // Day picker
   dayPicker: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 },
   dayBtn: {
@@ -478,12 +504,12 @@ const styles = StyleSheet.create({
   },
   dayBtnSelected: { backgroundColor: BRAND_PRIMARY, borderColor: BRAND_PRIMARY },
   dayBtnToday: { borderColor: '#93c5fd', backgroundColor: '#eff6ff' },
-  dayWeekday: { fontSize: 11, color: '#6b7280', fontWeight: '500' },
-  dayNumber: { fontWeight: '700', color: '#1e293b' },
+  dayWeekday: { fontSize: 11, color: COLORS.textMuted, fontWeight: '500' },
+  dayNumber: { fontWeight: '700', color: COLORS.textPrimary },
   dayTextSelected: { color: '#fff' },
   dayDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: BRAND_PRIMARY, marginTop: 3 },
   dayDotSelected: { backgroundColor: '#fff' },
-  countText: { color: '#9ca3af', paddingHorizontal: 16, marginBottom: 4 },
+  countText: { color: COLORS.textLight, paddingHorizontal: 16, marginBottom: 4 },
   list: { paddingTop: 4, paddingBottom: 80 },
   // Weekly view
   weeklyContent: { paddingHorizontal: 16, paddingBottom: 80 },
@@ -505,7 +531,7 @@ const styles = StyleSheet.create({
   weeklyDayLabel: { fontWeight: '600', color: '#374151' },
   weeklyDayLabelToday: { color: BRAND_PRIMARY },
   countChip: { backgroundColor: '#f3f4f6' },
-  countChipText: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
+  countChipText: { fontSize: 11, fontWeight: '600', color: COLORS.textMuted },
   noShifts: { color: '#d1d5db', fontStyle: 'italic' },
   weeklyBlock: {
     flexDirection: 'row',
@@ -517,8 +543,8 @@ const styles = StyleSheet.create({
   },
   weeklyDot: { width: 8, height: 8, borderRadius: 4 },
   weeklyBlockInfo: { flex: 1 },
-  weeklyStaff: { fontWeight: '600', color: '#1e293b', fontSize: 13 },
-  weeklyTime: { color: '#6b7280', fontSize: 12 },
+  weeklyStaff: { fontWeight: '600', color: COLORS.textPrimary, fontSize: 13 },
+  weeklyTime: { color: COLORS.textMuted, fontSize: 12 },
   weeklyStatus: { fontSize: 10, fontWeight: '600', textTransform: 'capitalize' },
   fab: { position: 'absolute', right: 16, bottom: 16 },
 });

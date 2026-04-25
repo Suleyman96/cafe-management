@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { calculateOrderTotal } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -19,7 +20,7 @@ interface TakeoutOrderCardProps {
     order_items?: Array<{
       id: string;
       quantity: number;
-      item_price?: number;
+      item_price: number;
       status?: string;
       notes?: string | null;
       menu_item?: { name_en?: string | null; name?: string | null } | null;
@@ -32,16 +33,6 @@ interface TakeoutOrderCardProps {
   onCancel?: (orderId: string) => void;
 }
 
-const calculateOrderTotal = (order: TakeoutOrderCardProps['order']) => {
-  if (order?.total != null) return order.total;
-  if (order?.total_amount != null) return order.total_amount;
-  if (!order?.order_items) return 0;
-  return order.order_items.reduce(
-    (sum, item) => sum + (item.quantity || 0) * (item.item_price || 0),
-    0,
-  );
-};
-
 export const TakeoutOrderCard = React.memo(function TakeoutOrderCard({
   order,
   currencySymbol = '$',
@@ -53,7 +44,7 @@ export const TakeoutOrderCard = React.memo(function TakeoutOrderCard({
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
 
-  const grandTotal = calculateOrderTotal(order);
+  const grandTotal = calculateOrderTotal({ ...order, total: order.total ?? order.total_amount });
   const hasItems = order.order_items?.some((i) => i.status !== 'cancelled') ?? false;
 
   return (

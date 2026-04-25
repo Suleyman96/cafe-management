@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@gustri/ui';
+import * as Sentry from '@sentry/nextjs';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
@@ -74,7 +75,7 @@ export function DevLoginButton() {
       // If no tokens, show error
       throw new Error(data.error || 'No access token received');
     } catch (err: unknown) {
-      console.error('Dev login error:', err);
+      Sentry.captureException(err);
       if (err instanceof Error && err.name === 'AbortError') {
         setError('Request timed out. Is Supabase running?');
       } else {

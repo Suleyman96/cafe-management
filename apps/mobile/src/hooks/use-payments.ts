@@ -4,6 +4,7 @@ export { useOrderPayments } from '@gustri/queries';
 // Local hook — uses apiRoutes for payment creation
 import { QUERY_KEYS } from '@gustri/core';
 import type { OrderPayment } from '@gustri/database';
+import * as Sentry from '@sentry/react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
 
@@ -38,7 +39,7 @@ export function useCreatePayment() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.order_id] });
     },
     onError: (error: Error) => {
-      console.error('Failed to create payment:', error.message);
+      Sentry.captureException(error, { extra: { context: 'createPayment' } });
     },
   });
 }

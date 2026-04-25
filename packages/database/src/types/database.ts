@@ -594,6 +594,13 @@ export interface Database {
           payments: Json | null;
         };
       };
+      orders_decrypted: {
+        Row: Database['public']['Tables']['orders']['Row'] & {
+          decrypted_customer_name: string | null;
+          decrypted_customer_phone: string | null;
+          decrypted_delivery_address: string | null;
+        };
+      };
     };
     Functions: {
       set_table_context: {
@@ -629,6 +636,71 @@ export interface Database {
       get_tenant_plan_from_context: {
         Args: Record<string, never>;
         Returns: string;
+      };
+      get_active_order_for_table: {
+        Args: { p_table_id: string };
+        Returns: Json;
+      };
+      get_delivery_order: {
+        Args: { p_order_id: string; p_access_token?: string | null };
+        Returns: Json;
+      };
+      get_waiter_calls_for_table: {
+        Args: { p_table_id: string; p_status?: string };
+        Returns: Json;
+      };
+      transfer_order_items: {
+        Args: {
+          p_source_order_id: string;
+          p_destination_table_id: string;
+          p_items: Json;
+          p_staff_id: string;
+          p_reason?: string | null;
+        };
+        Returns: string;
+      };
+      // Reports RPCs
+      get_revenue_summary: {
+        Args: { p_tenant_id: string; p_from: string; p_to: string };
+        Returns: Json;
+      };
+      get_top_sold_items: {
+        Args: { p_tenant_id: string; p_from: string; p_to: string; p_limit?: number };
+        Returns: Json;
+      };
+      get_expense_summary: {
+        Args: { p_tenant_id: string; p_from: string; p_to: string };
+        Returns: Json;
+      };
+      get_waste_summary: {
+        Args: { p_tenant_id: string; p_from: string; p_to: string };
+        Returns: Json;
+      };
+      get_staff_performance: {
+        Args: { p_tenant_id: string; p_from: string; p_to: string };
+        Returns: Json;
+      };
+      // Orders RPC
+      cleanup_empty_orders: {
+        Args: { p_older_than_minutes: number };
+        Returns: Json;
+      };
+      // Admin RPCs
+      get_connection_stats: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      get_slow_queries: {
+        Args: { p_limit?: number };
+        Returns: Json;
+      };
+      get_table_stats: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      run_data_retention: {
+        Args: Record<string, never>;
+        Returns: Json;
       };
     };
   };

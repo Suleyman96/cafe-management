@@ -52,6 +52,11 @@ export default function DeliveryPage() {
       setError(t('deliveryLanding.errorPhone'));
       return;
     }
+    const phoneRegex = /^[+\d\s\-()]{7,20}$/;
+    if (!phoneRegex.test(phone.trim())) {
+      setError(t('deliveryLanding.errorPhoneFormat'));
+      return;
+    }
     if (!address.trim()) {
       setError(t('deliveryLanding.errorAddress'));
       return;
@@ -116,6 +121,7 @@ export default function DeliveryPage() {
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                maxLength={20}
                 placeholder={t('deliveryLanding.phonePlaceholder')}
                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary"
               />

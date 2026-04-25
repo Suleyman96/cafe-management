@@ -6,12 +6,13 @@ import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateTable, useUpdateTable } from '@/hooks';
+import type { Tables } from '@/types';
 
 interface TableModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  table?: any; // If provided, we're editing; otherwise creating
+  table?: Tables; // If provided, we're editing; otherwise creating
 }
 
 export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProps) {

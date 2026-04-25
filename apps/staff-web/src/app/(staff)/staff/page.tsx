@@ -1,5 +1,6 @@
 'use client';
 
+import { getRoleBadgeColor } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import { ChefHat, Edit2, Plus, Search, Shield, User, UserCheck, UserX } from 'lucide-react';
@@ -9,6 +10,7 @@ import { StaffCreateModal } from '@/components/modals/staff-create-modal';
 import { StaffEditModal } from '@/components/modals/staff-edit-modal';
 import { useStaff } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
+import type { Staff } from '@/types';
 
 export default function StaffPage() {
   const { t } = useTranslation('staff');
@@ -20,7 +22,7 @@ export default function StaffPage() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedStaff, setSelectedStaff] = useState<any>(null);
+  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
 
   // Only admins can access this page
   if (currentUser?.role !== 'admin' && currentUser?.role !== 'owner') {
@@ -44,21 +46,8 @@ export default function StaffPage() {
     }
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'owner':
-        return 'bg-emerald-100 text-emerald-800';
-      case 'admin':
-        return 'bg-purple-100 text-purple-800';
-      case 'kitchen':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-blue-100 text-blue-800';
-    }
-  };
-
   // Filter staff
-  const filteredStaff = staffList?.filter((staff: any) => {
+  const filteredStaff = staffList?.filter((staff) => {
     const matchesSearch =
       staff.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       staff.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -136,7 +125,7 @@ export default function StaffPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredStaff?.map((staff: any) => (
+            {filteredStaff?.map((staff) => (
               <tr key={staff.id} className="hover:bg-gray-50">
                 <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -214,7 +203,7 @@ export default function StaffPage() {
 
       {/* Staff List - Mobile Cards */}
       <div className="sm:hidden space-y-3">
-        {filteredStaff?.map((staff: any) => (
+        {filteredStaff?.map((staff) => (
           <div key={staff.id} className="bg-white rounded-lg shadow p-3 border">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2 flex-1 min-w-0">

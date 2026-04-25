@@ -56,6 +56,7 @@
   "deliveryLanding.errorAddress": "يرجى إدخال عنوان التوصيل",
   "deliveryLanding.errorName": "يرجى إدخال اسمك",
   "deliveryLanding.errorPhone": "يرجى إدخال رقم هاتفك",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.heroSubtext": "أدخل بياناتك وتصفح قائمتنا",
   "deliveryLanding.heroTitle": "اطلب للتوصيل",
   "deliveryLanding.labelAddress": "عنوان التوصيل *",

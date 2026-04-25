@@ -349,47 +349,53 @@ function StockHistoryModal({ item, onClose }: { item: StockItem; onClose: () => 
             <p className="text-gray-500 text-center py-8">{t('stock.noMovements')}</p>
           ) : (
             <div className="space-y-3">
-              {movements.map((m: any) => (
-                <div key={m.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div
-                    className={`p-1.5 rounded-full ${
-                      m.movement_type === 'in'
-                        ? 'bg-green-100'
-                        : m.movement_type === 'out'
-                          ? 'bg-red-100'
-                          : 'bg-blue-100'
-                    }`}
-                  >
-                    {m.movement_type === 'in' ? (
-                      <ArrowUpCircle className="h-4 w-4 text-green-600" />
-                    ) : m.movement_type === 'out' ? (
-                      <ArrowDownCircle className="h-4 w-4 text-red-600" />
-                    ) : (
-                      <History className="h-4 w-4 text-blue-600" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">
-                        {m.movement_type === 'in'
-                          ? `+${m.quantity_change}`
+              {movements.map(
+                (
+                  m: (typeof movements)[number] & {
+                    performed_by_staff?: { full_name: string } | null;
+                  },
+                ) => (
+                  <div key={m.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div
+                      className={`p-1.5 rounded-full ${
+                        m.movement_type === 'in'
+                          ? 'bg-green-100'
                           : m.movement_type === 'out'
-                            ? m.quantity_change
-                            : t('stock.setToValue', { value: m.quantity_after })}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        &rarr; {m.quantity_after} {t(UNIT_KEYS[item.unit] || item.unit)}
-                      </span>
+                            ? 'bg-red-100'
+                            : 'bg-blue-100'
+                      }`}
+                    >
+                      {m.movement_type === 'in' ? (
+                        <ArrowUpCircle className="h-4 w-4 text-green-600" />
+                      ) : m.movement_type === 'out' ? (
+                        <ArrowDownCircle className="h-4 w-4 text-red-600" />
+                      ) : (
+                        <History className="h-4 w-4 text-blue-600" />
+                      )}
                     </div>
-                    {m.reason && <p className="text-sm text-gray-600 mt-0.5">{m.reason}</p>}
-                    <p className="text-xs text-gray-400 mt-1">
-                      {new Date(m.created_at).toLocaleString()}
-                      {m.performed_by_staff &&
-                        ` ${t('stock.performedBy', { name: m.performed_by_staff.full_name })}`}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">
+                          {m.movement_type === 'in'
+                            ? `+${m.quantity_change}`
+                            : m.movement_type === 'out'
+                              ? m.quantity_change
+                              : t('stock.setToValue', { value: m.quantity_after })}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          &rarr; {m.quantity_after} {t(UNIT_KEYS[item.unit] || item.unit)}
+                        </span>
+                      </div>
+                      {m.reason && <p className="text-sm text-gray-600 mt-0.5">{m.reason}</p>}
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(m.created_at).toLocaleString()}
+                        {m.performed_by_staff &&
+                          ` ${t('stock.performedBy', { name: m.performed_by_staff.full_name })}`}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           )}
         </div>

@@ -7,13 +7,7 @@ import { useSnackbar } from '@/hooks/use-snackbar';
 import { logout } from '@/lib/auth';
 import { cleanupSounds } from '@/lib/sound';
 import { useAuthStore } from '@/store/auth-store';
-
-const ROLE_COLORS: Record<string, string> = {
-  admin: '#7c3aed',
-  owner: '#dc2626',
-  waiter: '#2563eb',
-  kitchen: '#d97706',
-};
+import { ROLE_COLORS } from '@/theme';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -40,8 +34,8 @@ export default function ProfileScreen() {
       await cleanupSounds();
       await logout();
       clearAuth();
-    } catch (err: any) {
-      showError(err?.message || t('profile.failedSignOut'));
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : t('profile.failedSignOut'));
     } finally {
       setLoggingOut(false);
     }

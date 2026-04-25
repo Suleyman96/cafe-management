@@ -128,7 +128,7 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
               {t('kitchen.allReady')}
             </Button>
           )}
-          {order.status === ORDER_STATUS.READY && (order as any).order_type !== 'delivery' && (
+          {order.status === ORDER_STATUS.READY && order.order_type !== 'delivery' && (
             <Button
               mode="contained"
               onPress={() => onMarkAllServed(order.id)}

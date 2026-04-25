@@ -1,6 +1,6 @@
 'use client';
 
-import { ORDER_STATUS } from '@gustri/core';
+import { ACTIVE_DELIVERY_STATUSES, ORDER_STATUS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
@@ -52,7 +52,7 @@ export default function DeliveryPage() {
     useOrderFilters<DeliveryStatus>({
       orders,
       searchFields: deliverySearchFields,
-      activeStatuses: ['pending_approval', 'new', 'preparing', 'ready', 'out_for_delivery'],
+      activeStatuses: [...ACTIVE_DELIVERY_STATUSES],
     });
   const [cancelOrderTarget, setCancelOrderTarget] = useState<OrderWithDetails | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

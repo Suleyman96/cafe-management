@@ -10,5 +10,5 @@ interface PageProps {
 }
 
 export default function DeliveryOrderPage({ params, searchParams }: PageProps) {
-  return <DeliveryOrderStatus orderId={params.orderId} accessToken={searchParams.token ?? ''} />;
+  return <DeliveryOrderStatus orderId={params.orderId} accessToken={searchParams.token} />;
 }

@@ -10,10 +10,10 @@ export function createWaiterCallsWrapper(ctx: WrapperContext) {
     create: async (data: {
       table_id: string;
       tenant_id?: string;
-      call_type?: string;
+      call_type?: 'assistance' | 'bill' | 'complaint' | 'question' | 'emergency';
       reason?: string;
-      priority?: string;
-      status?: string;
+      priority?: 'low' | 'normal' | 'high' | 'urgent';
+      status?: 'pending' | 'acknowledged' | 'resolved';
     }) => {
       const { data: result, error } = await ctx.anyClient
         .from('waiter_calls')
@@ -46,10 +46,11 @@ export function createWaiterCallsWrapper(ctx: WrapperContext) {
       return data || [];
     },
 
-    findAll: async (
-      status?: WaiterCallRow['status'],
-      options?: { limit?: number; offset?: number },
-    ) => {
+    findAll: async (options?: {
+      status?: WaiterCallRow['status'];
+      limit?: number;
+      offset?: number;
+    }) => {
       let query = ctx.client
         .from('waiter_calls')
         .select(`
@@ -58,8 +59,8 @@ export function createWaiterCallsWrapper(ctx: WrapperContext) {
         `)
         .order('created_at', { ascending: false });
 
-      if (status) {
-        query = query.eq('status', status);
+      if (options?.status) {
+        query = query.eq('status', options.status);
       }
 
       // Apply pagination with sensible defaults

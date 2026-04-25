@@ -17,9 +17,9 @@ import type {
  * (encrypted) PII columns. This helper maps them back to the standard names
  * so the rest of the app doesn't need to know about encryption.
  */
-function mapDecryptedPii<T extends Record<string, any>>(row: T): T {
+function mapDecryptedPii<T extends Record<string, unknown>>(row: T): T {
   if (!row) return row;
-  const mapped: Record<string, any> = { ...row };
+  const mapped = { ...row } as Record<string, unknown>;
   if ('decrypted_customer_name' in mapped) {
     mapped.customer_name = mapped.decrypted_customer_name;
     delete mapped.decrypted_customer_name;
@@ -35,7 +35,7 @@ function mapDecryptedPii<T extends Record<string, any>>(row: T): T {
   return mapped as T;
 }
 
-function mapDecryptedPiiArray<T extends Record<string, any>>(rows: T[]): T[] {
+function mapDecryptedPiiArray<T extends Record<string, unknown>>(rows: T[]): T[] {
   return rows.map(mapDecryptedPii);
 }
 
@@ -209,17 +209,19 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     updateStatus: async (id: string, status: OrderRow['status']) => {
       // Prevent "served" status on delivery and takeout orders
       if (status === 'served') {
-        const { data: order } = (await ctx.client
+        const { data: order, error: fetchError } = await ctx.anyClient
           .from('orders')
-          .select('*')
+          .select('order_type')
           .eq('id', id)
-          .single()) as { data: any; error: any };
-        if (order?.order_type === 'delivery') {
+          .single();
+        if (fetchError) throw handleSupabaseError(fetchError);
+        const orderType = (order as { order_type: string } | null)?.order_type;
+        if (orderType === 'delivery') {
           throw new Error(
             'Delivery orders cannot be set to "served". Use "out_for_delivery" instead.',
           );
         }
-        if (order?.order_type === 'takeout') {
+        if (orderType === 'takeout') {
           throw new Error(
             'Takeout orders cannot be set to "served". Use "ready" and then close after payment.',
           );

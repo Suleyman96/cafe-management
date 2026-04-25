@@ -1,5 +1,6 @@
 'use client';
 
+import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import type { Table } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
@@ -81,7 +82,7 @@ export default function TablesPage() {
       orders?.filter(
         (order) =>
           order.table_id === tableId &&
-          ['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status),
+          (ACTIVE_ORDER_STATUSES as readonly string[]).includes(order.status),
       ) || []
     );
   };
@@ -208,7 +209,7 @@ export default function TablesPage() {
           setIsTableModalOpen(false);
           setEditingTable(null);
         }}
-        table={editingTable}
+        table={editingTable ?? undefined}
         onSuccess={() => {
           setIsTableModalOpen(false);
           setEditingTable(null);

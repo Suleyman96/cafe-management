@@ -1,5 +1,6 @@
 'use client';
 
+import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
@@ -7,11 +8,12 @@ import { AlertTriangle, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useAuth, useOrders, useTables, useTransferTable } from '@/hooks';
+import type { Tables } from '@/types';
 
 interface TableTransferModalProps {
   isOpen: boolean;
   onClose: () => void;
-  sourceTable: any;
+  sourceTable: Tables;
   onSuccess: () => void;
 }
 
@@ -36,9 +38,9 @@ export function TableTransferModal({
   const activeOrders = useMemo(() => {
     return (
       orders?.filter(
-        (order: any) =>
+        (order) =>
           order.table_id === sourceTable?.id &&
-          ['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status),
+          (ACTIVE_ORDER_STATUSES as readonly string[]).includes(order.status),
       ) || []
     );
   }, [orders, sourceTable?.id]);
@@ -47,8 +49,8 @@ export function TableTransferModal({
   const availableTables = useMemo(() => {
     if (!tables) return [];
     return tables
-      .filter((table: any) => table.id !== sourceTable?.id)
-      .sort((a: any, b: any) => {
+      .filter((table) => table.id !== sourceTable?.id)
+      .sort((a, b) => {
         // Free tables first, then reserved, then occupied
         const statusOrder: Record<string, number> = { free: 0, reserved: 1, occupied: 2 };
         return (statusOrder[a.status] || 3) - (statusOrder[b.status] || 3);
@@ -57,14 +59,14 @@ export function TableTransferModal({
 
   // Check if selected table is occupied
   const selectedTable = useMemo(() => {
-    return availableTables.find((t: any) => t.id === selectedTableId);
+    return availableTables.find((tbl) => tbl.id === selectedTableId);
   }, [availableTables, selectedTableId]);
 
   const isSelectedTableOccupied = selectedTable?.status === 'occupied';
 
   const handleTableSelect = (tableId: string) => {
     setSelectedTableId(tableId);
-    const table = availableTables.find((t: any) => t.id === tableId);
+    const table = availableTables.find((tbl) => tbl.id === tableId);
     if (table?.status === 'occupied') {
       setShowOccupiedWarning(true);
     } else {
@@ -164,7 +166,7 @@ export function TableTransferModal({
               onChange={(e) => handleTableSelect(e.target.value)}
             >
               <option value="">{t('tables.selectTable')}</option>
-              {availableTables?.map((table: any) => (
+              {availableTables?.map((table) => (
                 <option key={table.id} value={table.id}>
                   {table.table_number} - {table.location || t('tables.mainArea')} ({table.status})
                 </option>

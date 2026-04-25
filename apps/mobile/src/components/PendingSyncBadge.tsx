@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { useMutationState } from '@tanstack/react-query';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -7,6 +8,7 @@ import { StyleSheet, Text, View } from 'react-native';
  * Visible when mutations are paused (offline).
  */
 export function PendingSyncBadge() {
+  const { t } = useTranslation('common');
   const pendingMutations = useMutationState({
     filters: { status: 'pending' },
   });
@@ -15,7 +17,7 @@ export function PendingSyncBadge() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>{pendingMutations.length} pending</Text>
+      <Text style={styles.text}>{t('sync.pending', { count: pendingMutations.length })}</Text>
     </View>
   );
 }

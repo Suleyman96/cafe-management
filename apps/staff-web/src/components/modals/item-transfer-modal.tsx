@@ -10,13 +10,14 @@ import { toast } from 'sonner';
 import { useTables, useTransferOrderItems } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import type { OrderWithDetails } from '@/types';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'];
 
 interface ItemTransferModalProps {
   isOpen: boolean;
   onClose: () => void;
-  order: any;
+  order: OrderWithDetails;
   sourceTableId: string;
   onSuccess: () => void;
 }
@@ -49,8 +50,8 @@ export function ItemTransferModal({
   const availableTables = useMemo(() => {
     if (!tables) return [];
     return tables
-      .filter((table: any) => table.id !== sourceTableId && table.status !== 'closed')
-      .sort((a: any, b: any) => {
+      .filter((table) => table.id !== sourceTableId && table.status !== 'closed')
+      .sort((a, b) => {
         const statusOrder: Record<string, number> = { free: 0, reserved: 1, occupied: 2 };
         return (statusOrder[a.status] || 3) - (statusOrder[b.status] || 3);
       });
@@ -228,7 +229,7 @@ export function ItemTransferModal({
               onChange={(e) => setSelectedTableId(e.target.value)}
             >
               <option value="">{t('tables.selectTable')}</option>
-              {availableTables?.map((table: any) => (
+              {availableTables?.map((table) => (
                 <option key={table.id} value={table.id}>
                   {table.table_number} - {table.location || t('tables.mainArea')} ({table.status})
                 </option>
@@ -237,7 +238,7 @@ export function ItemTransferModal({
             {selectedTableId && (
               <div className="mt-2 flex items-center gap-2">
                 {getStatusBadge(
-                  availableTables.find((t: any) => t.id === selectedTableId)?.status || '',
+                  availableTables.find((tbl) => tbl.id === selectedTableId)?.status || '',
                 )}
               </div>
             )}

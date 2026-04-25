@@ -9,7 +9,7 @@ interface PartialPaymentFormProps {
   orderTotal: number;
   currencySymbol: string;
   formatPrice: (amount: number) => string;
-  t: (key: string, opts?: any) => string;
+  t: (key: string, opts?: Record<string, string | number>) => string;
 }
 
 export function PartialPaymentForm({

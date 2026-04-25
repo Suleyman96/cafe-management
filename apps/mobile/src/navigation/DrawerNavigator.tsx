@@ -1,26 +1,28 @@
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { CustomDrawerContent } from '@/components/navigation/CustomDrawerContent';
 import type { DrawerParamList } from '@/types';
-import { CafeSettingsStack } from './CafeSettingsStack';
-import { DeliveryStack } from './DeliveryStack';
-import { ExpensesStack } from './ExpensesStack';
-import { FeedbackStack } from './FeedbackStack';
 import { MainTabs } from './MainTabs';
-import { MenuManagementStack } from './MenuManagementStack';
-import { ReportsStack } from './ReportsStack';
-import { SchedulesStack } from './SchedulesStack';
 import { StaffManagementStack } from './StaffManagementStack';
-import { StockStack } from './StockStack';
-import { TakeoutStack } from './TakeoutStack';
-import { TasksStack } from './TasksStack';
-import { WasteStack } from './WasteStack';
+import {
+  CafeSettingsStack,
+  DeliveryStack,
+  ExpensesStack,
+  FeedbackStack,
+  MenuManagementStack,
+  ReportsStack,
+  SchedulesStack,
+  StockStack,
+  TakeoutStack,
+  TasksStack,
+  WasteStack,
+} from './stacks';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
 export function DrawerNavigator() {
   return (
     <Drawer.Navigator
-      drawerContent={(props: any) => <CustomDrawerContent {...props} />}
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
         drawerType: 'front',

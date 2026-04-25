@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * UI Components Package
  * Shared React components for all platforms

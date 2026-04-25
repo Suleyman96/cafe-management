@@ -1,6 +1,6 @@
 import { QUERY_KEYS } from '@gustri/core';
 import { useQuery } from '@tanstack/react-query';
-import { STALE_TIMES } from '@/lib/query-keys';
+import { STALE_TIMES } from '@/lib/stale-times';
 import { db } from '@/lib/supabase';
 import type { Table } from '@/types';
 

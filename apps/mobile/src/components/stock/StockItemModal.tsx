@@ -21,9 +21,30 @@ const CATEGORIES = [
 interface StockItemModalProps {
   visible: boolean;
   onDismiss: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: {
+    name: string;
+    description: string | null;
+    category: string;
+    quantity: number;
+    unit: string;
+    cost_price: number;
+    minimum_stock_level: number;
+    supplier_name: string | null;
+    notes: string | null;
+    is_active: boolean;
+  }) => void;
   loading?: boolean;
-  initialData?: any;
+  initialData?: {
+    name?: string;
+    description?: string | null;
+    category?: string;
+    quantity?: number;
+    unit?: string;
+    cost_price?: number;
+    minimum_stock_level?: number;
+    supplier_name?: string | null;
+    notes?: string | null;
+  } | null;
   currencySymbol?: string;
 }
 

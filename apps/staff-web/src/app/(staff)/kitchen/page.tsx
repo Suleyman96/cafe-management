@@ -1,6 +1,6 @@
 'use client';
 
-import { isDeliveryOrder, isDineInOrder, isTakeoutOrder } from '@gustri/core';
+import { isDeliveryOrder, isDineInOrder, isTakeoutOrder, ORDER_STATUS_KEYS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { LoadingSpinner } from '@gustri/ui';
@@ -17,22 +17,10 @@ import {
   UtensilsCrossed,
   XCircle,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { toast } from 'sonner';
 import { useCancelOrder, useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
-
-const ORDER_STATUS_KEYS: Record<string, string> = {
-  pending_approval: 'orders.pendingApproval',
-  new: 'orders.new',
-  preparing: 'orders.preparing',
-  ready: 'orders.ready',
-  served: 'orders.served',
-  out_for_delivery: 'orders.outForDelivery',
-  delivered: 'orders.delivered',
-  closed: 'orders.closed',
-  cancelled: 'orders.cancelled',
-};
 
 export default function KitchenDisplayPage() {
   const { t } = useTranslation('staff');
@@ -40,15 +28,13 @@ export default function KitchenDisplayPage() {
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const cancelOrder = useCancelOrder();
-  const [_currentTime, setCurrentTime] = useState(new Date());
+  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
   const [rejectingOrder, setRejectingOrder] = useState<OrderWithDetails | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
-  // Update current time every minute to refresh elapsed times
+  // Force re-render every minute to refresh elapsed times
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
+    const interval = setInterval(forceUpdate, 60000);
     return () => clearInterval(interval);
   }, []);
 

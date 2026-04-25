@@ -1,3 +1,4 @@
+import type { StockItem, StockItemInsert, StockItemUpdate } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -8,8 +9,8 @@ import { StockMovementModal } from '@/components/stock/StockMovementModal';
 import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
   useAdjustStock,
-  useCafeSettings,
   useCreateStockItem,
+  useCurrencySymbol,
   useDeleteStockItem,
   useLowStockCount,
   useStockItems,
@@ -20,7 +21,7 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
-import { BRAND_PRIMARY } from '@/theme';
+import { BRAND_PRIMARY, COLORS } from '@/theme';
 
 export default function StockListScreen() {
   const staff = useAuthStore((s) => s.staff);
@@ -32,34 +33,33 @@ export default function StockListScreen() {
 
   // Modal state
   const [showItemModal, setShowItemModal] = useState(false);
-  const [editItem, setEditItem] = useState<any>(null);
+  const [editItem, setEditItem] = useState<StockItem | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
-  const [movementItem, setMovementItem] = useState<any>(null);
+  const [movementItem, setMovementItem] = useState<StockItem | null>(null);
   const [movementType, setMovementType] = useState<'in' | 'out'>('in');
   const [historyItemId, setHistoryItemId] = useState<string | undefined>();
 
   const { data: items, isLoading, error, refetch } = useStockItems();
   const { data: lowCount } = useLowStockCount();
   const { data: totalValue } = useStockTotalValue();
-  const { data: settings } = useCafeSettings();
   const { data: movements } = useStockMovements(historyItemId);
   const adjustStock = useAdjustStock();
   const createItem = useCreateStockItem();
   const updateItem = useUpdateStockItem();
   const deleteItem = useDeleteStockItem();
 
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
 
   // Filter by search + category
   const filtered = useMemo(() => {
     let result = items || [];
     if (categoryFilter) {
-      result = result.filter((i: any) => i.category === categoryFilter);
+      result = result.filter((i) => i.category === categoryFilter);
     }
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
-        (i: any) =>
+        (i) =>
           i.name?.toLowerCase().includes(q) ||
           i.description?.toLowerCase().includes(q) ||
           i.supplier_name?.toLowerCase().includes(q),
@@ -72,18 +72,18 @@ export default function StockListScreen() {
   const usedCategories = useMemo(() => {
     const cats = new Set<string>();
     for (const item of items || []) {
-      if ((item as any).category) cats.add((item as any).category);
+      if (item.category) cats.add(item.category);
     }
     return Array.from(cats).sort();
   }, [items]);
 
-  const handleItemSubmit = async (data: any) => {
+  const handleItemSubmit = async (data: Record<string, string | number | boolean | null>) => {
     try {
       if (editItem) {
-        await updateItem.mutateAsync({ id: editItem.id, data });
+        await updateItem.mutateAsync({ id: editItem.id, data: data as unknown as StockItemUpdate });
         showSuccess(t('stock.itemUpdated'));
       } else {
-        await createItem.mutateAsync(data);
+        await createItem.mutateAsync(data as unknown as StockItemInsert);
         showSuccess(t('stock.itemCreated'));
       }
       setShowItemModal(false);
@@ -94,7 +94,7 @@ export default function StockListScreen() {
   };
 
   const handleEdit = (id: string) => {
-    const item = items?.find((i: any) => i.id === id);
+    const item = items?.find((i) => i.id === id);
     if (item) {
       setEditItem(item);
       setShowItemModal(true);
@@ -113,7 +113,7 @@ export default function StockListScreen() {
   };
 
   const handleOpenMovement = (id: string, type: 'in' | 'out') => {
-    const item = items?.find((i: any) => i.id === id);
+    const item = items?.find((i) => i.id === id);
     if (item) {
       setMovementType(type);
       setMovementItem(item);
@@ -271,7 +271,7 @@ export default function StockListScreen() {
         onSubmit={handleMovementSubmit}
         loading={adjustStock.isPending}
         initialType={movementType}
-        item={movementItem}
+        item={movementItem ?? undefined}
       />
 
       {/* History Modal */}
@@ -307,8 +307,8 @@ export default function StockListScreen() {
                             m.movement_type === 'adjustment'
                               ? BRAND_PRIMARY
                               : m.quantity_change >= 0
-                                ? '#10b981'
-                                : '#ef4444',
+                                ? COLORS.success
+                                : COLORS.danger,
                           fontWeight: '600',
                         }}
                       >
@@ -352,31 +352,37 @@ export default function StockListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   summaryRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginVertical: 8 },
   summaryCard: { flex: 1 },
-  itemsValue: { fontWeight: '700', color: '#1e293b' },
-  lowValue: { fontWeight: '700', color: '#ef4444' },
-  valueValue: { fontWeight: '700', color: '#10b981' },
+  itemsValue: { fontWeight: '700', color: COLORS.textPrimary },
+  lowValue: { fontWeight: '700', color: COLORS.danger },
+  valueValue: { fontWeight: '700', color: COLORS.success },
   search: { marginHorizontal: 16, marginBottom: 8 },
   filterChips: { paddingHorizontal: 16, gap: 6, paddingBottom: 8 },
-  countText: { color: '#9ca3af', paddingHorizontal: 16, marginBottom: 4 },
+  countText: { color: COLORS.textLight, paddingHorizontal: 16, marginBottom: 4 },
   list: { paddingTop: 4, paddingBottom: 80 },
   fab: { position: 'absolute', right: 16, bottom: 16 },
-  modal: { backgroundColor: '#fff', margin: 20, padding: 20, borderRadius: 12, maxHeight: '80%' },
+  modal: {
+    backgroundColor: COLORS.card,
+    margin: 20,
+    padding: 20,
+    borderRadius: 12,
+    maxHeight: '80%',
+  },
   modalTitle: { fontWeight: '700', marginBottom: 12 },
-  muted: { color: '#6b7280' },
+  muted: { color: COLORS.textMuted },
   historyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: COLORS.borderLight,
   },
   historyInfo: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  historyType: { color: '#9ca3af', fontSize: 11, textTransform: 'capitalize' },
+  historyType: { color: COLORS.textLight, fontSize: 11, textTransform: 'capitalize' },
   historyMeta: { alignItems: 'flex-end', gap: 2, flex: 1, marginLeft: 12 },
-  historyDate: { color: '#9ca3af', fontSize: 11 },
+  historyDate: { color: COLORS.textLight, fontSize: 11 },
   closeBtn: { marginTop: 12 },
 });

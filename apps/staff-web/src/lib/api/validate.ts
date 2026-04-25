@@ -16,7 +16,6 @@ export async function validateBody<T>(request: NextRequest, schema: ZodSchema<T>
 
   const result = schema.safeParse(body);
   if (!result.success) {
-    console.warn('[Validation]', JSON.stringify(result.error.issues));
     return { data: null, error: jsonError('Validation failed') };
   }
 

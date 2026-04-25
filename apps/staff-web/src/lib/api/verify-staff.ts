@@ -26,7 +26,7 @@ export async function verifyStaff(request: NextRequest) {
     return jsonError('Unauthorized', 401);
   }
 
-  const claims = getStaffClaims(token);
+  const claims = getStaffClaims(user, token);
   if (!claims) {
     return jsonError('Forbidden: active staff required', 403);
   }

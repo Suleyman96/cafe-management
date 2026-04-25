@@ -61,8 +61,20 @@ export function getRateLimitIdentifier(request: Request): string {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
-    return ips[ips.length - 1] || 'unknown';
+    if (ips.length > 0) return ips[ips.length - 1];
   }
 
+  // Fallback: use Authorization header hash to isolate per-session.
+  // Prevents one anonymous client from exhausting the limit for all.
+  const auth = request.headers.get('authorization');
+  if (auth) {
+    let hash = 0;
+    for (let i = 0; i < auth.length; i++) {
+      hash = ((hash << 5) - hash + auth.charCodeAt(i)) | 0;
+    }
+    return `session:${hash}`;
+  }
+
+  // Vercel always sets x-real-ip. This fallback is for local dev / non-Vercel hosting.
   return 'unknown';
 }

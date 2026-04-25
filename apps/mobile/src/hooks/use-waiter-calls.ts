@@ -1,4 +1,5 @@
 import { QUERY_KEYS } from '@gustri/core';
+import * as Sentry from '@sentry/react-native';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
@@ -19,7 +20,7 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
   const query = useQuery({
     queryKey: [QUERY_KEYS.WAITER_CALLS, status],
     queryFn: async (): Promise<WaiterCall[]> => {
-      return await db.waiterCalls.findAll(status);
+      return await db.waiterCalls.findAll(status ? { status } : undefined);
     },
   });
 
@@ -45,19 +46,16 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
             await playWaiterCallSound();
 
             const newRecord = payload.new as Record<string, unknown>;
-            const { data } = await supabase
-              .from('tables')
-              .select('table_number')
-              .eq('id', newRecord.table_id as string)
-              .single();
-
-            const tableData = data as { table_number: string } | null;
-
-            if (tableData) {
+            try {
+              const tableData = (await db.tables.findById(newRecord.table_id as string)) as {
+                table_number: string;
+              };
               await notifyWaiterCall(
                 tableData.table_number,
                 (newRecord.call_type as string) ?? 'assistance',
               );
+            } catch {
+              // Table lookup failed — still invalidate queries below
             }
 
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
@@ -117,7 +115,7 @@ export function useUpdateWaiterCall() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
     },
     onError: (error: Error) => {
-      console.error('Failed to update waiter call:', error.message);
+      Sentry.captureException(error, { extra: { context: 'updateWaiterCall' } });
     },
   });
 }
