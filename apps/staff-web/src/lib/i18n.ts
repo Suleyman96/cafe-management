@@ -40,6 +40,13 @@ const languageLoaders: Record<string, () => Promise<NamespaceBundles>> = {
     staff: (await import('@gustri/i18n/locales/en/staff.json')).default,
     roles: (await import('@gustri/i18n/locales/en/roles.json')).default,
   }),
+  ja: async () => ({
+    common: (await import('@gustri/i18n/locales/ja/common.json')).default,
+    nav: (await import('@gustri/i18n/locales/ja/nav.json')).default,
+    auth: (await import('@gustri/i18n/locales/ja/auth.json')).default,
+    staff: (await import('@gustri/i18n/locales/ja/staff.json')).default,
+    roles: (await import('@gustri/i18n/locales/ja/roles.json')).default,
+  }),
   az: async () => ({
     common: (await import('@gustri/i18n/locales/az/common.json')).default,
     nav: (await import('@gustri/i18n/locales/az/nav.json')).default,
@@ -170,11 +177,6 @@ const languageLoaders: Record<string, () => Promise<NamespaceBundles>> = {
 
 // Dynamically load and switch language (only loads the requested language on demand)
 export async function loadAndSwitchLanguage(lang: string) {
-  if (lang === 'ja') {
-    i18n.changeLanguage('ja');
-    return;
-  }
-
   // Skip if already loaded
   if (i18n.hasResourceBundle(lang, 'common')) {
     i18n.changeLanguage(lang);

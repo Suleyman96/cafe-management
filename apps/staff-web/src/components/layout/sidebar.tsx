@@ -3,7 +3,9 @@
 import type { PlanName } from '@gustri/core';
 import { getLocalDateString, getRoleBadgeColor, PLAN_ORDER } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
+import { invalidateSchedules } from '@gustri/queries';
 import { GustriIcon, GustriLogo } from '@gustri/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   BarChart3,
   Bell,
@@ -16,6 +18,7 @@ import {
   ClipboardList,
   Clock,
   ListTodo,
+  LogIn,
   LogOut,
   Menu,
   MessageSquare,
@@ -31,12 +34,14 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
 import { usePendingApprovalCount } from '@/hooks/use-orders-safe';
 import { useMyScheduleToday } from '@/hooks/use-schedules-safe';
 import { useCafeSettings } from '@/hooks/use-settings-safe';
 import { useMyTasks, useOverdueTasksCount } from '@/hooks/use-tasks-safe';
 import { useTenantPlan } from '@/hooks/use-tenant-plan';
+import { supabase } from '@/lib/supabase/client';
 
 type NavItem = {
   href: string;
@@ -460,31 +465,101 @@ function MyTasksIndicator({ staffId }: { staffId: string }) {
   );
 }
 
+const SHIFT_STATUS_COLORS: Record<string, string> = {
+  scheduled: 'bg-gray-50 border-gray-200 text-gray-600',
+  in_progress: 'bg-blue-50 border-blue-200 text-blue-700',
+  completed: 'bg-green-50 border-green-200 text-green-700',
+  missed: 'bg-red-50 border-red-200 text-red-700',
+};
+
+const SHIFT_STATUS_LABELS: Record<string, string> = {
+  scheduled: 'scheduled',
+  in_progress: 'onShift',
+  completed: 'shiftCompleted',
+  missed: 'shiftMissed',
+};
+
 function TodayShiftIndicator({ staffId }: { staffId: string }) {
-  const { data: todaySchedules } = useMyScheduleToday(staffId);
+  const { data: todaySchedules, refetch } = useMyScheduleToday(staffId);
   const { t } = useTranslation('nav');
+  const queryClient = useQueryClient();
+  const [clockingOut, setClockingOut] = useState<string | null>(null);
 
   if (!todaySchedules || todaySchedules.length === 0) return null;
 
-  const shift = todaySchedules[0];
-  const statusColors: Record<string, string> = {
-    scheduled: 'bg-gray-50 border-gray-200 text-gray-600',
-    in_progress: 'bg-blue-50 border-blue-200 text-blue-700',
-    completed: 'bg-green-50 border-green-200 text-green-700',
-    missed: 'bg-red-50 border-red-200 text-red-700',
+  const handleClockOut = async (scheduleId: string) => {
+    setClockingOut(scheduleId);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      const res = await fetch('/api/schedules/clock', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ scheduleId, action: 'clock_out' }),
+      });
+
+      if (res.ok) {
+        toast.success(t('clockedOut'));
+        invalidateSchedules(queryClient);
+        refetch();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || t('clockOutFailed'));
+      }
+    } catch {
+      toast.error(t('clockOutFailed'));
+    } finally {
+      setClockingOut(null);
+    }
   };
 
+  // Sort: in_progress first, then scheduled, then completed/missed
+  const sortOrder: Record<string, number> = {
+    in_progress: 0,
+    scheduled: 1,
+    completed: 2,
+    missed: 3,
+  };
+  const sorted = [...todaySchedules].sort(
+    (a, b) => (sortOrder[a.status] ?? 9) - (sortOrder[b.status] ?? 9),
+  );
+
   return (
-    <div
-      className={`mx-2 mb-2 px-3 py-2 rounded-lg border text-xs ${statusColors[shift.status] || statusColors.scheduled}`}
-    >
-      <div className="flex items-center gap-1.5 font-medium">
-        <Clock className="h-3 w-3" />
-        {shift.status === 'in_progress' ? t('onShift') : t('offShift')}
-      </div>
-      <div className="mt-0.5">
-        {shift.planned_start?.slice(0, 5)} - {shift.planned_end?.slice(0, 5)}
-      </div>
+    <div className="mx-2 mb-2 space-y-1.5">
+      {sorted.map((shift) => (
+        <div
+          key={shift.id}
+          className={`px-3 py-2 rounded-lg border text-xs ${SHIFT_STATUS_COLORS[shift.status] || SHIFT_STATUS_COLORS.scheduled}`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 font-medium">
+              <Clock className="h-3 w-3" />
+              {t(SHIFT_STATUS_LABELS[shift.status] || 'offShift')}
+            </div>
+            {shift.status === 'in_progress' && (
+              <button
+                type="button"
+                onClick={() => handleClockOut(shift.id)}
+                disabled={clockingOut === shift.id}
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 hover:bg-blue-200 text-blue-800 transition-colors disabled:opacity-50"
+                title={t('clockOut')}
+              >
+                <LogIn className="h-2.5 w-2.5" />
+                {clockingOut === shift.id ? '...' : t('clockOut')}
+              </button>
+            )}
+          </div>
+          <div className="mt-0.5">
+            {shift.planned_start?.slice(0, 5)} - {shift.planned_end?.slice(0, 5)}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
