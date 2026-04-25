@@ -347,7 +347,6 @@ export function CreateTakeoutModal({
                         {t('orders.taxPercent', {
                           percent: String(cafeSettings?.tax_percentage ?? DEFAULT_TAX_PERCENTAGE),
                         })}
-                        :
                       </span>
                       <span className="font-medium">{formatPrice(tax)}</span>
                     </div>

@@ -1,22 +1,22 @@
 'use client';
 
 import { i18n, initI18n } from '@gustri/i18n';
-import authJa from '@gustri/i18n/locales/ja/auth.json';
-import commonJa from '@gustri/i18n/locales/ja/common.json';
-import navJa from '@gustri/i18n/locales/ja/nav.json';
-import rolesJa from '@gustri/i18n/locales/ja/roles.json';
-import staffJa from '@gustri/i18n/locales/ja/staff.json';
+import authEn from '@gustri/i18n/locales/en/auth.json';
+import commonEn from '@gustri/i18n/locales/en/common.json';
+import navEn from '@gustri/i18n/locales/en/nav.json';
+import rolesEn from '@gustri/i18n/locales/en/roles.json';
+import staffEn from '@gustri/i18n/locales/en/staff.json';
 
 initI18n({
-  lng: 'ja',
+  lng: 'en',
   namespaces: ['common', 'nav', 'auth', 'staff', 'roles'],
   resources: {
-    ja: {
-      common: commonJa,
-      nav: navJa,
-      auth: authJa,
-      staff: staffJa,
-      roles: rolesJa,
+    en: {
+      common: commonEn,
+      nav: navEn,
+      auth: authEn,
+      staff: staffEn,
+      roles: rolesEn,
     },
   },
 });

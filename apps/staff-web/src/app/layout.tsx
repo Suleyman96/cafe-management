@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ServiceWorkerRegistration } from '@/components/pwa/service-worker-registration';
-import { HtmlLangSetter } from '@/components/ui/html-lang-setter';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
@@ -28,17 +27,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body>
-        <Providers>
-          <HtmlLangSetter />
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
         <ServiceWorkerRegistration />
       </body>
     </html>

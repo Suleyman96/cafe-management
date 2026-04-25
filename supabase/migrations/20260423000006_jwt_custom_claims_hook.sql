@@ -7,19 +7,27 @@
 
 CREATE OR REPLACE FUNCTION public.custom_access_token_hook(event JSONB)
 RETURNS JSONB
-LANGUAGE plpgsql STABLE
+LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
   v_staff RECORD;
   claims JSONB;
+  v_user_id UUID;
 BEGIN
   claims := event->'claims';
+
+  -- Try user_id from event, fall back to sub from claims
+  v_user_id := COALESCE(
+    (event->>'user_id')::UUID,
+    (claims->>'sub')::UUID
+  );
 
   SELECT id, tenant_id, role, is_active
   INTO v_staff
   FROM public.staff
-  WHERE auth_user_id = (event->>'user_id')::UUID
+  WHERE auth_user_id = v_user_id
     AND is_active = true
   LIMIT 1;
 
@@ -37,6 +45,9 @@ BEGIN
 END;
 $$;
 
+-- SECURITY DEFINER runs as the function owner (postgres), bypassing RLS on
+-- the staff table. Restrict execute to supabase_auth_admin only.
 GRANT USAGE ON SCHEMA public TO supabase_auth_admin;
+REVOKE EXECUTE ON FUNCTION public.custom_access_token_hook(JSONB) FROM public;
 GRANT EXECUTE ON FUNCTION public.custom_access_token_hook(JSONB) TO supabase_auth_admin;
 GRANT SELECT ON public.staff TO supabase_auth_admin;

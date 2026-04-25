@@ -16,13 +16,18 @@ const CreateOrderSchema = z.object({
   order_type: OrderTypeSchema,
   order_source: OrderSourceSchema.optional(),
   assigned_waiter_id: z.string().uuid().optional().nullable(),
+  customer_name: z.string().optional().nullable(),
+  customer_phone: z.string().optional().nullable(),
   customer_notes: z.string().optional().nullable(),
   internal_notes: z.string().optional().nullable(),
   delivery_address: z.string().optional().nullable(),
-  delivery_phone: z.string().optional().nullable(),
-  delivery_customer_name: z.string().optional().nullable(),
-  delivery_customer_id: z.string().uuid().optional().nullable(),
+  delivery_notes: z.string().optional().nullable(),
   delivery_fee: z.number().optional().nullable(),
+  delivery_customer_id: z.string().uuid().optional().nullable(),
+  subtotal: z.number().optional().nullable(),
+  tax: z.number().optional().nullable(),
+  total: z.number().optional().nullable(),
+  status: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {

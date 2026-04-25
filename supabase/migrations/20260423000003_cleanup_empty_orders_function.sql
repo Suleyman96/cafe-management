@@ -15,7 +15,7 @@ BEGIN
   -- Derive tenant from the authenticated user's staff record
   SELECT s.tenant_id INTO v_tenant_id
   FROM public.staff s
-  WHERE s.auth_id = auth.uid();
+  WHERE s.auth_user_id = auth.uid();
 
   IF v_tenant_id IS NULL THEN
     RETURN;

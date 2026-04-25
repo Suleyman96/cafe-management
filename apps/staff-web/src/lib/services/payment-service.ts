@@ -51,6 +51,7 @@ export async function createPayment(supabaseAdmin: SupabaseClient, params: Creat
     .insert({
       ...paymentData,
       order_id: orderId,
+      tenant_id: tenantId,
       amount,
     })
     .select(

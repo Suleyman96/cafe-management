@@ -7,6 +7,7 @@ import { Button } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
 import { Truck } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { BaseModal } from '@/components/ui/base-modal';
 import {
   useAddOrderItems,
@@ -111,7 +112,7 @@ export function CreateDeliveryModal({
   const handleSubmit = async () => {
     if (!customer.name.trim() || !customer.phone.trim() || !customer.address.trim()) return;
     if (selectedItems.length === 0) {
-      alert(t('orders.addAtLeastOneItem'));
+      toast.error(t('orders.addAtLeastOneItem'));
       return;
     }
 
@@ -173,7 +174,7 @@ export function CreateDeliveryModal({
       onClose();
     } catch (error) {
       Sentry.captureException(error);
-      alert(t('orders.failedCreateOrder'));
+      toast.error(t('orders.failedCreateOrder'));
     } finally {
       setIsSubmitting(false);
     }
@@ -244,7 +245,6 @@ export function CreateDeliveryModal({
                     {t('orders.taxPercent', {
                       percent: String(settings?.tax_percentage ?? DEFAULT_TAX_PERCENTAGE),
                     })}
-                    :
                   </span>
                   <span className="font-medium">{formatPrice(tax)}</span>
                 </div>

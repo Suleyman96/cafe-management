@@ -123,7 +123,9 @@ export function NumberInput({
       } ${disabled ? 'bg-gray-100 opacity-60' : readOnly ? 'bg-gray-50' : 'bg-white'} ${className}`}
     >
       {/* Prefix */}
-      {prefix && <span className="text-gray-500 text-sm pl-3 shrink-0 select-none">{prefix}</span>}
+      {prefix && (
+        <span className="text-gray-500 text-sm pl-3 pr-1 shrink-0 select-none">{prefix}</span>
+      )}
 
       {/* Input */}
       <input
@@ -143,7 +145,7 @@ export function NumberInput({
         readOnly={readOnly}
         required={required}
         className={`w-full py-2 bg-transparent outline-none text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-          prefix ? 'pl-2' : 'pl-3'
+          prefix ? 'pl-1' : 'pl-3'
         } ${suffix ? 'pr-2' : 'pr-3'}`}
       />
 

@@ -74,6 +74,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+
   const { supabase, response } = createMiddlewareClient(request);
 
   const {
@@ -99,9 +100,6 @@ export async function middleware(request: NextRequest) {
 
   let isActiveStaff = false;
   try {
-    // Safe: token was verified by supabase.auth.getUser() at line 80 above.
-    // Claims are injected by custom_access_token_hook into the JWT payload
-    // (not in app_metadata), so we must decode the verified token directly.
     const payload = JSON.parse(
       Buffer.from(session.access_token.split('.')[1], 'base64').toString(),
     );

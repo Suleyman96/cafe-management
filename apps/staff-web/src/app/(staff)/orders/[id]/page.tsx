@@ -13,12 +13,12 @@ import { Button, LoadingSpinner } from '@gustri/ui';
 import {
   AlertCircle,
   ArrowLeft,
-  ArrowRight,
   CheckCircle,
   ChefHat,
   ChevronDown,
   Clock,
   FileText,
+  Home,
   Package,
   RefreshCw,
   Truck,
@@ -283,9 +283,23 @@ export default function OrderDetailPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
         <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{t('back', { ns: 'common' })}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              order.status === 'closed' || order.status === 'cancelled'
+                ? router.push('/')
+                : router.back()
+            }
+          >
+            {order.status === 'closed' || order.status === 'cancelled' ? (
+              <Home className="h-4 w-4" />
+            ) : (
+              <>
+                <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('back', { ns: 'common' })}</span>
+              </>
+            )}
           </Button>
           <h1 className="text-lg sm:text-2xl font-bold">
             {order.order_type === 'delivery'
