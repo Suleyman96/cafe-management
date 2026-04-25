@@ -15,6 +15,7 @@ type Category = Database['public']['Tables']['categories']['Row'];
 interface MenuItemModalProps {
   item?: MenuItem;
   categories: Category[];
+  menuItems?: MenuItem[];
   onClose: () => void;
 }
 
@@ -29,11 +30,19 @@ const COMMON_ALLERGENS = [
   { value: 'Sesame', labelKey: 'menu.allergenSesame' },
 ];
 
-export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps) {
+export function MenuItemModal({ item, categories, menuItems = [], onClose }: MenuItemModalProps) {
   const { t } = useTranslation('staff');
   const isEditing = !!item;
   const createItem = useCreateMenuItem();
   const updateItem = useUpdateMenuItem();
+
+  const nextDisplayOrder = isEditing
+    ? item.display_order?.toString() || '0'
+    : String(
+        menuItems.length > 0
+          ? Math.max(...menuItems.map((m) => m.display_order ?? 0)) + 1
+          : 1,
+      );
 
   const [formData, setFormData] = useState({
     category_id: item?.category_id || '',
@@ -49,7 +58,7 @@ export function MenuItemModal({ item, categories, onClose }: MenuItemModalProps)
     allergens: item?.allergens || [],
     is_available: item?.is_available !== false,
     is_daily_special: item?.is_daily_special || false,
-    display_order: item?.display_order?.toString() || '0',
+    display_order: nextDisplayOrder,
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);

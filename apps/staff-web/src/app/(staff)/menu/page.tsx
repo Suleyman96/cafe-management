@@ -402,6 +402,7 @@ export default function MenuPage() {
         <MenuItemModal
           item={editingItem || undefined}
           categories={categories}
+          menuItems={menuItems}
           onClose={() => {
             setShowItemModal(false);
             setEditingItem(null);
@@ -412,6 +413,7 @@ export default function MenuPage() {
       {showCategoryModal && (
         <CategoryModal
           category={editingCategory || undefined}
+          categories={categories}
           onClose={() => {
             setShowCategoryModal(false);
             setEditingCategory(null);

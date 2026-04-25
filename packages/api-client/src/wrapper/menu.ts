@@ -26,7 +26,8 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
           *,
           category:categories(*)
         `)
-        .order('display_order')
+        .order('display_order', { ascending: true })
+        .order('name', { ascending: true })
         .limit(500);
 
       if (options?.categoryId) {
@@ -117,7 +118,8 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
       let query = ctx.client
         .from('menu_items')
         .select('*, category:categories(*)', { count: 'exact' })
-        .order('display_order');
+        .order('display_order', { ascending: true })
+        .order('name', { ascending: true });
 
       if (options?.categoryId) {
         query = query.eq('category_id', options.categoryId);
@@ -143,7 +145,7 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
 export function createCategoriesWrapper(ctx: WrapperContext) {
   return {
     findAll: async (options?: { isActive?: boolean }) => {
-      let query = ctx.client.from('categories').select('*').order('display_order');
+      let query = ctx.client.from('categories').select('*').order('display_order', { ascending: true }).order('name', { ascending: true });
 
       if (options?.isActive !== undefined) {
         query = query.eq('is_active', options.isActive);
