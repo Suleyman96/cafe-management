@@ -3,14 +3,13 @@ import { ORDER_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { FlashList } from '@shopify/flash-list';
 import { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, StyleSheet, View } from 'react-native';
-import { Chip, Provider as PaperProvider, Text } from 'react-native-paper';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KitchenOrderCard } from '@/components/kitchen/KitchenOrderCard';
 import { LoadingScreen } from '@/components/ui';
 import { useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
-import { BRAND_PRIMARY, COLORS, kitchenDarkTheme } from '@/theme';
+import { BRAND_PRIMARY, COLORS } from '@/theme';
 
 const KITCHEN_STATUSES = [ORDER_STATUS.NEW, ORDER_STATUS.PREPARING, ORDER_STATUS.READY];
 
@@ -163,7 +162,6 @@ export default function KitchenDisplayScreen() {
           showError(t('kitchen.partialItemError', { succeeded, total }));
         }
 
-        // Don't set delivery orders to "served" — they use out_for_delivery flow
         if (!isDeliveryOrder(order)) {
           await updateOrderStatus.mutateAsync({ orderId, status: 'served' });
         }
@@ -187,63 +185,49 @@ export default function KitchenDisplayScreen() {
   }
 
   return (
-    <PaperProvider theme={kitchenDarkTheme}>
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        {/* Status summary */}
-        <View style={styles.summary}>
-          <Chip
-            compact
-            style={[styles.summaryChip, { backgroundColor: BRAND_PRIMARY }]}
-            textStyle={styles.summaryText}
-          >
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Status summary pills */}
+      <View style={styles.summary}>
+        <View style={[styles.summaryPill, { backgroundColor: BRAND_PRIMARY }]}>
+          <Text style={styles.summaryText}>
             {counts.new} {t('kitchen.new')}
-          </Chip>
-          <Chip
-            compact
-            style={[styles.summaryChip, { backgroundColor: COLORS.warning }]}
-            textStyle={styles.summaryText}
-          >
-            {counts.preparing} {t('kitchen.preparing')}
-          </Chip>
-          <Chip
-            compact
-            style={[styles.summaryChip, { backgroundColor: COLORS.success }]}
-            textStyle={styles.summaryText}
-          >
-            {counts.ready} {t('kitchen.ready')}
-          </Chip>
+          </Text>
         </View>
-
-        <FlashList
-          data={kitchenOrders}
-          keyExtractor={(item) => item.id}
-          refreshControl={
-            <RefreshControl refreshing={false} onRefresh={refetch} tintColor="#fff" />
-          }
-          renderItem={({ item }) => (
-            <KitchenOrderCard
-              order={item}
-              onStartPreparing={handleStartPreparing}
-              onMarkItemReady={handleMarkItemReady}
-              onMarkAllReady={handleMarkAllReady}
-              onMarkAllServed={handleMarkAllServed}
-              isProcessing={processingOrderId === item.id}
-            />
-          )}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text variant="headlineSmall" style={styles.emptyText}>
-                {t('kitchen.noActiveOrders')}
-              </Text>
-              <Text variant="bodyMedium" style={styles.emptySubtext}>
-                {t('kitchen.newOrdersAppearHere')}
-              </Text>
-            </View>
-          }
-          contentContainerStyle={styles.list}
-        />
+        <View style={[styles.summaryPill, { backgroundColor: COLORS.warning }]}>
+          <Text style={styles.summaryText}>
+            {counts.preparing} {t('kitchen.preparing')}
+          </Text>
+        </View>
+        <View style={[styles.summaryPill, { backgroundColor: COLORS.success }]}>
+          <Text style={styles.summaryText}>
+            {counts.ready} {t('kitchen.ready')}
+          </Text>
+        </View>
       </View>
-    </PaperProvider>
+
+      <FlashList
+        data={kitchenOrders}
+        keyExtractor={(item) => item.id}
+        refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor="#fff" />}
+        renderItem={({ item }) => (
+          <KitchenOrderCard
+            order={item}
+            onStartPreparing={handleStartPreparing}
+            onMarkItemReady={handleMarkItemReady}
+            onMarkAllReady={handleMarkAllReady}
+            onMarkAllServed={handleMarkAllServed}
+            isProcessing={processingOrderId === item.id}
+          />
+        )}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>{t('kitchen.noActiveOrders')}</Text>
+            <Text style={styles.emptySubtext}>{t('kitchen.newOrdersAppearHere')}</Text>
+          </View>
+        }
+        contentContainerStyle={styles.list}
+      />
+    </View>
   );
 }
 
@@ -259,7 +243,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
-  summaryChip: {},
+  summaryPill: {
+    borderRadius: 9999,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
   summaryText: {
     color: '#fff',
     fontWeight: '700',
@@ -274,9 +262,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: COLORS.textMuted,
+    fontSize: 18,
+    fontWeight: '600',
   },
   emptySubtext: {
     color: '#4b5563',
     marginTop: 4,
+    fontSize: 14,
   },
 });

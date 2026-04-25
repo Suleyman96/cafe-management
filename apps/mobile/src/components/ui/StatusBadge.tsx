@@ -1,6 +1,6 @@
 import { useTranslation } from '@gustri/i18n';
 import React from 'react';
-import { Chip } from 'react-native-paper';
+import { StyleSheet, Text, View } from 'react-native';
 import { ORDER_STATUS_COLORS, TABLE_STATUS_COLORS, WAITER_CALL_REASON_COLORS } from '@/theme';
 
 interface StatusBadgeProps {
@@ -69,12 +69,22 @@ export const StatusBadge = React.memo(function StatusBadge({
   const label = labelKey ? t(labelKey) : formatLabel(status);
 
   return (
-    <Chip
-      compact
-      textStyle={{ color: '#fff', fontSize: 11, fontWeight: '600' }}
-      style={{ backgroundColor, alignSelf: 'flex-start' }}
-    >
-      {label}
-    </Chip>
+    <View style={[styles.badge, { backgroundColor }]}>
+      <Text style={styles.label}>{label}</Text>
+    </View>
   );
+});
+
+const styles = StyleSheet.create({
+  badge: {
+    alignSelf: 'flex-start',
+    borderRadius: 9999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  label: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
 });

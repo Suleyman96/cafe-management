@@ -4,17 +4,23 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { Chip, Searchbar } from 'react-native-paper';
+import {
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useCurrencySymbol, useOrders } from '@/hooks';
-import { ORDER_STATUS_COLORS } from '@/theme';
+import { Text } from '@/lib/paper-compat';
+import { BRAND_PRIMARY, COLORS, ORDER_STATUS_COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, OrdersStackParamList } from '@/types';
 
 type Nav = StackNavigationProp<OrdersStackParamList, 'OrdersList'>;
 
-// The wrapper's findAll returns joined data beyond the base Order type
 type OrderWithJoins = Order & {
   table?: { table_number: string; location: string | null };
   order_items?: OrderItemWithMenuItem[];
@@ -69,31 +75,44 @@ export default function OrdersListScreen() {
 
   return (
     <View style={styles.container}>
-      <Searchbar
-        placeholder={t('orders.searchByOrderNumber')}
-        value={search}
-        onChangeText={setSearch}
-        style={styles.searchbar}
-      />
+      {/* Search */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          placeholder={t('orders.searchByOrderNumber')}
+          value={search}
+          onChangeText={setSearch}
+          style={styles.searchInput}
+          placeholderTextColor={COLORS.textLight}
+        />
+      </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
-        {STATUS_FILTERS.map((s) => (
-          <Chip
-            key={s}
-            selected={selectedStatus === s}
-            onPress={() => setSelectedStatus(s)}
-            style={[
-              styles.filterChip,
-              selectedStatus === s && {
-                backgroundColor: s === 'all' ? '#2563eb' : ORDER_STATUS_COLORS[s] || '#2563eb',
-              },
-            ]}
-            textStyle={selectedStatus === s ? { color: '#fff' } : undefined}
-            compact
-          >
-            {s === 'all' ? tCommon('all') : t(ORDER_STATUS_KEYS[s] || s)}
-          </Chip>
-        ))}
+      {/* Status filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterRow}
+        contentContainerStyle={styles.filterRowContent}
+      >
+        {STATUS_FILTERS.map((s) => {
+          const isSelected = selectedStatus === s;
+          const chipColor = s === 'all' ? BRAND_PRIMARY : ORDER_STATUS_COLORS[s] || BRAND_PRIMARY;
+
+          return (
+            <TouchableOpacity
+              key={s}
+              onPress={() => setSelectedStatus(s)}
+              style={[styles.filterChip, isSelected && { backgroundColor: chipColor }]}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}
+                numberOfLines={1}
+              >
+                {s === 'all' ? tCommon('all') : t(ORDER_STATUS_KEYS[s] || s)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       <FlashList
@@ -132,19 +151,43 @@ export default function OrdersListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background,
   },
-  searchbar: {
+  searchContainer: {
     marginHorizontal: 16,
     marginTop: 8,
   },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    backgroundColor: COLORS.card,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: COLORS.textPrimary,
+  },
   filterRow: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
     maxHeight: 52,
   },
+  filterRowContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+  },
   filterChip: {
-    marginHorizontal: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 9999,
+    backgroundColor: COLORS.borderLight,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  filterChipTextActive: {
+    color: '#fff',
   },
   list: {
     paddingTop: 4,

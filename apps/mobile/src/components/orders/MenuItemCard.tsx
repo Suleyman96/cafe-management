@@ -1,18 +1,19 @@
 import { useTranslation } from '@gustri/i18n';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Card, IconButton } from 'react-native-paper';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from '@/lib/paper-compat';
+import { BRAND_PRIMARY, COLORS } from '@/theme';
 
 interface MenuItemCardProps {
   menuItem: {
     id: string;
-    name_en?: string | null;
-    description_en?: string | null;
+    name?: string | null;
+    description?: string | null;
     price: number;
     is_available?: boolean | null;
   };
   quantity: number;
+  currencySymbol: string;
   onAdd: () => void;
   onRemove: () => void;
 }
@@ -20,73 +21,71 @@ interface MenuItemCardProps {
 export const MenuItemCard = React.memo(function MenuItemCard({
   menuItem,
   quantity,
+  currencySymbol,
   onAdd,
   onRemove,
 }: MenuItemCardProps) {
   const { t } = useTranslation('staff');
-
   const unavailable = menuItem.is_available === false;
 
   return (
-    <Card style={[styles.card, unavailable && styles.unavailable]}>
-      <Card.Content style={styles.content}>
-        <View style={styles.info}>
-          <Text variant="bodyLarge" style={styles.name}>
-            {menuItem.name_en || t('orders.unnamed')}
-          </Text>
-          {menuItem.description_en && (
-            <Text variant="bodySmall" style={styles.description} numberOfLines={2}>
-              {menuItem.description_en}
-            </Text>
-          )}
-          <Text variant="titleSmall" style={styles.price}>
-            ${menuItem.price.toFixed(2)}
-          </Text>
-        </View>
+    <View style={[styles.card, unavailable && styles.unavailable]}>
+      <View style={styles.info}>
+        <Text variant="bodyMedium" style={styles.name} numberOfLines={2}>
+          {menuItem.name || t('orders.unnamed')}
+        </Text>
+        <Text variant="bodySmall" style={styles.price}>
+          {currencySymbol}
+          {menuItem.price.toFixed(2)}
+        </Text>
+      </View>
 
-        <View style={styles.quantityControl}>
-          <IconButton
-            icon="minus"
-            mode="contained-tonal"
-            size={18}
-            onPress={onRemove}
-            disabled={quantity === 0 || unavailable}
-          />
-          <Text variant="titleMedium" style={styles.quantity}>
-            {quantity}
-          </Text>
-          <IconButton
-            icon="plus"
-            mode="contained"
-            size={18}
-            onPress={onAdd}
-            disabled={unavailable}
-          />
+      {unavailable ? (
+        <View style={styles.unavailableBadge}>
+          <Text style={styles.unavailableText}>{t('orders.unavailable')}</Text>
         </View>
-      </Card.Content>
-      {unavailable && (
-        <View style={styles.unavailableOverlay}>
-          <Text variant="labelMedium" style={styles.unavailableText}>
-            {t('orders.unavailable')}
-          </Text>
+      ) : (
+        <View style={styles.quantityControl}>
+          {quantity > 0 ? (
+            <>
+              <TouchableOpacity style={styles.qtyBtn} onPress={onRemove}>
+                <Text style={styles.qtyBtnText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.quantity}>{quantity}</Text>
+            </>
+          ) : null}
+          <TouchableOpacity
+            style={[styles.qtyBtn, styles.qtyBtnAdd, quantity > 0 && styles.qtyBtnAddActive]}
+            onPress={onAdd}
+          >
+            <Text
+              style={[
+                styles.qtyBtnText,
+                quantity > 0 ? styles.qtyBtnAddActiveText : styles.qtyBtnAddText,
+              ]}
+            >
+              +
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
-    </Card>
+    </View>
   );
 });
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 16,
-    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+    backgroundColor: COLORS.card,
   },
   unavailable: {
-    opacity: 0.5,
-  },
-  content: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    opacity: 0.4,
   },
   info: {
     flex: 1,
@@ -95,37 +94,61 @@ const styles = StyleSheet.create({
   },
   name: {
     fontWeight: '600',
-    color: '#1e293b',
-  },
-  description: {
-    color: '#6b7280',
+    color: COLORS.textPrimary,
+    fontSize: 14,
   },
   price: {
     fontWeight: '700',
-    color: '#2563eb',
-    marginTop: 4,
+    color: BRAND_PRIMARY,
+    fontSize: 13,
   },
   quantityControl: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+  },
+  qtyBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.borderLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyBtnText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
+  qtyBtnAdd: {
+    backgroundColor: COLORS.brandLight,
+  },
+  qtyBtnAddActive: {
+    backgroundColor: BRAND_PRIMARY,
+  },
+  qtyBtnAddText: {
+    color: BRAND_PRIMARY,
+  },
+  qtyBtnAddActiveText: {
+    color: '#fff',
   },
   quantity: {
-    minWidth: 24,
+    minWidth: 20,
     textAlign: 'center',
     fontWeight: '700',
+    fontSize: 15,
+    color: COLORS.textPrimary,
   },
-  unavailableOverlay: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: '#ef4444',
+  unavailableBadge: {
+    backgroundColor: '#fef2f2',
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   unavailableText: {
-    color: '#fff',
+    color: COLORS.danger,
     fontSize: 10,
+    fontWeight: '600',
   },
 });

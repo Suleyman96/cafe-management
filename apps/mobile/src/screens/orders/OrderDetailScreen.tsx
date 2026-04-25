@@ -4,7 +4,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useMemo } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { Card, Divider, Text } from 'react-native-paper';
 import { OrderItemRow } from '@/components/orders/OrderItemRow';
 import { StatusActions } from '@/components/orders/StatusActions';
 import { ErrorScreen, LoadingScreen, StatusBadge, TimeElapsed } from '@/components/ui';
@@ -16,6 +15,7 @@ import {
   useUpdateOrderStatus,
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 import { COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, OrderPayment, OrdersStackParamList } from '@/types';
@@ -23,7 +23,6 @@ import type { Order, OrderItemWithMenuItem, OrderPayment, OrdersStackParamList }
 type Route = RouteProp<OrdersStackParamList, 'OrderDetail'>;
 type Nav = StackNavigationProp<OrdersStackParamList, 'OrderDetail'>;
 
-// The wrapper's findById returns joined data beyond the base Order type
 type OrderWithJoins = Order & {
   table?: { table_number: string; location: string | null };
   order_items?: OrderItemWithMenuItem[];
@@ -46,7 +45,6 @@ export default function OrderDetailScreen() {
 
   const currencySymbol = useCurrencySymbol();
 
-  // Cast order to include join fields (wrapper's select includes table, order_items, assigned_waiter)
   const details = order as OrderWithJoins | undefined;
 
   const totalPaid = useMemo(
@@ -99,107 +97,96 @@ export default function OrderDetailScreen() {
         ListHeaderComponent={
           <View>
             {/* Order Info */}
-            <Card style={styles.card}>
-              <Card.Content style={styles.cardContent}>
-                <View style={styles.row}>
-                  <Text variant="headlineSmall" style={styles.bold}>
-                    #{order.order_number || '—'}
-                  </Text>
-                  <StatusBadge status={order.status} type="order" />
-                </View>
-                <Text variant="bodyMedium" style={styles.muted}>
-                  {tableLabel}
+            <View style={styles.section}>
+              <View style={styles.row}>
+                <Text variant="headlineSmall" style={styles.bold}>
+                  #{order.order_number || '—'}
                 </Text>
-                {details?.assigned_waiter?.full_name && (
-                  <Text variant="bodySmall" style={styles.muted}>
-                    {t('orders.waiterLabel', { name: details.assigned_waiter.full_name })}
-                  </Text>
-                )}
-                <TimeElapsed createdAt={order.created_at} />
-              </Card.Content>
-            </Card>
+                <StatusBadge status={order.status} type="order" />
+              </View>
+              <Text variant="bodyMedium" style={styles.muted}>
+                {tableLabel}
+              </Text>
+              {details?.assigned_waiter?.full_name && (
+                <Text variant="bodySmall" style={styles.muted}>
+                  {t('orders.waiterLabel', { name: details.assigned_waiter.full_name })}
+                </Text>
+              )}
+              <TimeElapsed createdAt={order.created_at} />
+            </View>
 
             {/* Status Actions */}
-            <Card style={styles.card}>
-              <Card.Content>
-                <StatusActions
-                  status={order.status}
-                  hasItems={items.filter((i) => i.status !== 'cancelled').length > 0}
-                  onUpdateStatus={handleUpdateStatus}
-                  onNavigatePayment={() => navigation.navigate('OrderPayment', { orderId })}
-                  onNavigateAddItems={() => navigation.navigate('AddItems', { orderId })}
-                  isLoading={updateOrderStatus.isPending}
-                />
-              </Card.Content>
-            </Card>
+            <View style={styles.section}>
+              <StatusActions
+                status={order.status}
+                hasItems={items.filter((i) => i.status !== 'cancelled').length > 0}
+                onUpdateStatus={handleUpdateStatus}
+                onNavigatePayment={() => navigation.navigate('OrderPayment', { orderId })}
+                onNavigateAddItems={() => navigation.navigate('AddItems', { orderId })}
+                isLoading={updateOrderStatus.isPending}
+              />
+            </View>
 
             {/* Payment Summary */}
             {totalPaid > 0 && (
-              <Card style={styles.card}>
-                <Card.Content>
-                  <Text variant="titleMedium" style={styles.bold}>
-                    {t('orders.payment')}
+              <View style={styles.section}>
+                <Text variant="titleMedium" style={styles.bold}>
+                  {t('orders.payment')}
+                </Text>
+                <View style={styles.paymentRow}>
+                  <Text variant="bodyMedium" style={styles.muted}>
+                    {tCommon('total')}
                   </Text>
+                  <Text variant="bodyMedium" style={styles.bold}>
+                    {currencySymbol}
+                    {(order.total ?? 0).toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.paymentRow}>
+                  <Text variant="bodyMedium" style={styles.muted}>
+                    {t('orders.paid')}
+                  </Text>
+                  <Text variant="bodyMedium" style={{ color: COLORS.success, fontWeight: '600' }}>
+                    {currencySymbol}
+                    {totalPaid.toFixed(2)}
+                  </Text>
+                </View>
+                {remaining > 0 && (
                   <View style={styles.paymentRow}>
                     <Text variant="bodyMedium" style={styles.muted}>
-                      {tCommon('total')}
+                      {t('orders.remaining')}
                     </Text>
-                    <Text variant="bodyMedium" style={styles.bold}>
+                    <Text variant="bodyMedium" style={{ color: COLORS.danger, fontWeight: '600' }}>
                       {currencySymbol}
-                      {(order.total ?? 0).toFixed(2)}
+                      {remaining.toFixed(2)}
                     </Text>
                   </View>
-                  <View style={styles.paymentRow}>
-                    <Text variant="bodyMedium" style={styles.muted}>
-                      {t('orders.paid')}
-                    </Text>
-                    <Text variant="bodyMedium" style={{ color: COLORS.success, fontWeight: '600' }}>
-                      {currencySymbol}
-                      {totalPaid.toFixed(2)}
-                    </Text>
-                  </View>
-                  {remaining > 0 && (
-                    <View style={styles.paymentRow}>
-                      <Text variant="bodyMedium" style={styles.muted}>
-                        {t('orders.remaining')}
-                      </Text>
-                      <Text
-                        variant="bodyMedium"
-                        style={{ color: COLORS.danger, fontWeight: '600' }}
-                      >
-                        {currencySymbol}
-                        {remaining.toFixed(2)}
-                      </Text>
-                    </View>
-                  )}
-                </Card.Content>
-              </Card>
+                )}
+              </View>
             )}
 
             {/* Discount Info */}
             {(order.discount_amount ?? 0) > 0 && (
-              <Card style={styles.card}>
-                <Card.Content>
-                  <View style={styles.paymentRow}>
-                    <Text variant="bodyMedium" style={styles.muted}>
-                      {t('orders.discount')} (
-                      {order.discount_type === 'percentage'
-                        ? `${order.discount_value}%`
-                        : `${currencySymbol}${(order.discount_value ?? 0).toFixed(2)}`}
-                      )
-                    </Text>
-                    <Text variant="bodyMedium" style={{ color: COLORS.danger, fontWeight: '600' }}>
-                      -{currencySymbol}
-                      {(order.discount_amount ?? 0).toFixed(2)}
-                    </Text>
-                  </View>
-                  {order.discount_reason ? (
-                    <Text variant="bodySmall" style={styles.muted}>
-                      {order.discount_reason}
-                    </Text>
-                  ) : null}
-                </Card.Content>
-              </Card>
+              <View style={styles.section}>
+                <View style={styles.paymentRow}>
+                  <Text variant="bodyMedium" style={styles.muted}>
+                    {t('orders.discount')} (
+                    {order.discount_type === 'percentage'
+                      ? `${order.discount_value}%`
+                      : `${currencySymbol}${(order.discount_value ?? 0).toFixed(2)}`}
+                    )
+                  </Text>
+                  <Text variant="bodyMedium" style={{ color: COLORS.danger, fontWeight: '600' }}>
+                    -{currencySymbol}
+                    {(order.discount_amount ?? 0).toFixed(2)}
+                  </Text>
+                </View>
+                {order.discount_reason ? (
+                  <Text variant="bodySmall" style={styles.muted}>
+                    {order.discount_reason}
+                  </Text>
+                ) : null}
+              </View>
             )}
 
             {/* Items header */}
@@ -222,7 +209,7 @@ export default function OrderDetailScreen() {
         )}
         ListFooterComponent={
           <View style={styles.footer}>
-            <Divider style={styles.divider} />
+            <View style={styles.divider} />
             <View style={styles.totalRow}>
               <Text variant="titleMedium" style={styles.bold}>
                 {tCommon('total')}
@@ -242,8 +229,21 @@ export default function OrderDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  card: { marginHorizontal: 16, marginTop: 12 },
-  cardContent: { gap: 4 },
+  section: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    padding: 16,
+    gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   bold: { fontWeight: '700', color: COLORS.textPrimary },
   muted: { color: COLORS.textMuted },
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   },
   itemWrapper: { marginHorizontal: 16 },
   footer: { marginHorizontal: 16, marginTop: 8, marginBottom: 24 },
-  divider: { marginVertical: 8 },
+  divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 8 },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   listContent: { paddingBottom: 32 },
 });

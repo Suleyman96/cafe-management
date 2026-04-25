@@ -1,8 +1,9 @@
 import { useTranslation } from '@gustri/i18n';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { StatusBadge } from '@/components/ui';
+import { Text } from '@/lib/paper-compat';
+import { COLORS } from '@/theme';
 
 interface OrderItemRowProps {
   item: {
@@ -15,7 +16,6 @@ interface OrderItemRowProps {
     notes?: string | null;
     menu_item?: {
       name?: string | null;
-      name_en?: string | null;
     } | null;
   };
   currencySymbol: string;
@@ -31,7 +31,7 @@ export const OrderItemRow = React.memo(function OrderItemRow({
 }: OrderItemRowProps) {
   const { t } = useTranslation('staff');
 
-  const name = item.menu_item?.name || item.menu_item?.name_en || 'Unknown Item';
+  const name = item.menu_item?.name || 'Unknown Item';
 
   return (
     <View style={styles.container}>
@@ -58,14 +58,13 @@ export const OrderItemRow = React.memo(function OrderItemRow({
       </View>
 
       {showActions && onMarkReady && (item.status === 'pending' || item.status === 'preparing') && (
-        <Button
-          compact
-          mode="contained-tonal"
-          onPress={() => onMarkReady(item.id)}
+        <TouchableOpacity
           style={styles.actionButton}
+          onPress={() => onMarkReady(item.id)}
+          activeOpacity={0.7}
         >
-          {t('orders.markReady')}
-        </Button>
+          <Text style={styles.actionButtonText}>{t('orders.markReady')}</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -75,7 +74,7 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: COLORS.borderLight,
   },
   mainRow: {
     flexDirection: 'row',
@@ -92,19 +91,28 @@ const styles = StyleSheet.create({
   },
   name: {
     fontWeight: '500',
-    color: '#1e293b',
+    color: COLORS.textPrimary,
   },
   notes: {
-    color: '#f59e0b',
+    color: COLORS.warning,
     fontStyle: 'italic',
     marginTop: 2,
   },
   price: {
     fontWeight: '600',
-    color: '#1e293b',
+    color: COLORS.textPrimary,
   },
   actionButton: {
     alignSelf: 'flex-end',
     marginTop: 6,
+    backgroundColor: COLORS.success,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

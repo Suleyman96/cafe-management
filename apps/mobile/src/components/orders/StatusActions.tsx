@@ -1,7 +1,8 @@
 import { useTranslation } from '@gustri/i18n';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Text } from '@/lib/paper-compat';
+import { BRAND_PRIMARY, COLORS } from '@/theme';
 
 interface StatusActionsProps {
   status: string;
@@ -10,6 +11,43 @@ interface StatusActionsProps {
   onNavigatePayment: () => void;
   onNavigateAddItems: () => void;
   isLoading?: boolean;
+}
+
+function ActionButton({
+  label,
+  color,
+  onPress,
+  loading,
+  disabled,
+  outlined,
+}: {
+  label: string;
+  color: string;
+  onPress: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  outlined?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.btn,
+        outlined
+          ? { borderWidth: 1.5, borderColor: color, backgroundColor: 'transparent' }
+          : { backgroundColor: color },
+        disabled && styles.btnDisabled,
+      ]}
+      onPress={onPress}
+      disabled={disabled || loading}
+      activeOpacity={0.7}
+    >
+      {loading ? (
+        <ActivityIndicator size="small" color={outlined ? color : '#fff'} />
+      ) : (
+        <Text style={[styles.btnText, outlined && { color }]}>{label}</Text>
+      )}
+    </TouchableOpacity>
+  );
 }
 
 export const StatusActions = React.memo(function StatusActions({
@@ -33,19 +71,19 @@ export const StatusActions = React.memo(function StatusActions({
               {t('orders.addItemsBefore')}
             </Text>
           )}
-          <Button
-            mode="contained"
+          <ActionButton
+            label={t('orders.startPreparing')}
+            color={BRAND_PRIMARY}
             onPress={() => onUpdateStatus('preparing')}
             loading={isLoading}
             disabled={isLoading || !canAdvance}
-            icon="chef-hat"
-            style={styles.primaryButton}
-          >
-            {t('orders.startPreparing')}
-          </Button>
-          <Button mode="outlined" onPress={onNavigateAddItems} icon="plus">
-            {t('orders.addItems')}
-          </Button>
+          />
+          <ActionButton
+            label={t('orders.addItems')}
+            color={BRAND_PRIMARY}
+            onPress={onNavigateAddItems}
+            outlined
+          />
         </>
       )}
 
@@ -56,56 +94,47 @@ export const StatusActions = React.memo(function StatusActions({
               {t('orders.addItemsBefore')}
             </Text>
           )}
-          <Button
-            mode="contained"
+          <ActionButton
+            label={t('orders.markReady')}
+            color={COLORS.success}
             onPress={() => onUpdateStatus('ready')}
             loading={isLoading}
             disabled={isLoading || !canAdvance}
-            icon="check-circle"
-            style={[styles.primaryButton, { backgroundColor: '#10b981' }]}
-          >
-            {t('orders.markReady')}
-          </Button>
-          <Button mode="outlined" onPress={onNavigateAddItems} icon="plus">
-            {t('orders.addItems')}
-          </Button>
+          />
+          <ActionButton
+            label={t('orders.addItems')}
+            color={BRAND_PRIMARY}
+            onPress={onNavigateAddItems}
+            outlined
+          />
         </>
       )}
 
       {status === 'ready' && (
-        <Button
-          mode="contained"
+        <ActionButton
+          label={t('orders.markServed')}
+          color="#06b6d4"
           onPress={() => onUpdateStatus('served')}
           loading={isLoading}
           disabled={isLoading || !canAdvance}
-          icon="silverware-fork-knife"
-          style={[styles.primaryButton, { backgroundColor: '#06b6d4' }]}
-        >
-          {t('orders.markServed')}
-        </Button>
+        />
       )}
 
       {status === 'served' && (
-        <Button
-          mode="contained"
+        <ActionButton
+          label={t('orders.processPayment')}
+          color="#7c3aed"
           onPress={onNavigatePayment}
-          icon="credit-card"
-          style={[styles.primaryButton, { backgroundColor: '#7c3aed' }]}
-        >
-          {t('orders.processPayment')}
-        </Button>
+        />
       )}
 
       {['new', 'pending_approval', 'preparing'].includes(status) && (
-        <Button
-          mode="outlined"
+        <ActionButton
+          label={t('orders.cancelOrder')}
+          color={COLORS.danger}
           onPress={() => onUpdateStatus('cancelled')}
-          textColor="#ef4444"
-          style={styles.cancelButton}
-          icon="close-circle"
-        >
-          {t('orders.cancelOrder')}
-        </Button>
+          outlined
+        />
       )}
     </View>
   );
@@ -116,9 +145,19 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 8,
   },
-  primaryButton: {},
-  cancelButton: {
-    borderColor: '#fecaca',
+  btn: {
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  btnDisabled: {
+    opacity: 0.5,
   },
   warning: {
     color: '#d97706',

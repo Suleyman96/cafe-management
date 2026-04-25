@@ -4,14 +4,14 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from 'react-native';
-import { Button, IconButton } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MenuItemCard } from '@/components/orders/MenuItemCard';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
@@ -24,6 +24,7 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
+import { BRAND_PRIMARY, COLORS } from '@/theme';
 import type { OrdersStackParamList } from '@/types';
 
 type Route = RouteProp<OrdersStackParamList, 'AddItems'>;
@@ -36,8 +37,6 @@ interface CartItem {
   name: string;
 }
 
-const FOOTER_HEIGHT = 64;
-
 export default function AddItemsScreen() {
   const route = useRoute<Route>();
   const navigation = useNavigation<Nav>();
@@ -49,15 +48,7 @@ export default function AddItemsScreen() {
   const { showSuccess, showError } = useSnackbar();
   const { t } = useTranslation('staff');
   const currencySymbol = useCurrencySymbol();
-
-  const { height: screenHeight } = useWindowDimensions();
-
-  const dynamicStyles = useMemo(
-    () => ({
-      menuSectionHalf: { height: screenHeight * 0.45, flex: 0 as const },
-    }),
-    [screenHeight],
-  );
+  const insets = useSafeAreaInsets();
 
   const {
     data: menuItems,
@@ -72,7 +63,6 @@ export default function AddItemsScreen() {
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Auto-select first category (no "All" option)
   useEffect(() => {
     if (categories?.length && selectedCategory === null) {
       setSelectedCategory(categories[0].id);
@@ -187,132 +177,119 @@ export default function AddItemsScreen() {
   if (menuError) return <ErrorScreen error={menuError} />;
 
   const isLoading = submitting || addOrderItems.isPending;
+  const footerHeight = 64 + insets.bottom;
 
   return (
     <View style={styles.container}>
-      {/* Menu — top section (categories sidebar + items) */}
-      <View style={[styles.menuSection, hasCartItems && dynamicStyles.menuSectionHalf]}>
-        <View style={styles.content}>
-          {/* Category Sidebar */}
-          <ScrollView
-            style={styles.categorySidebar}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.categorySidebarContent}
-          >
-            {categories?.map((cat) => (
-              <TouchableOpacity
-                key={cat.id}
-                onPress={() => setSelectedCategory(cat.id)}
+      {/* Category tabs — horizontal scroll */}
+      <View style={styles.categoryBar}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryBarContent}
+        >
+          {categories?.map((cat) => (
+            <TouchableOpacity
+              key={cat.id}
+              onPress={() => setSelectedCategory(cat.id)}
+              style={[
+                styles.categoryChip,
+                selectedCategory === cat.id && styles.categoryChipActive,
+              ]}
+            >
+              <Text style={styles.categoryIcon}>{cat.icon || '📋'}</Text>
+              <Text
                 style={[
-                  styles.categoryItem,
-                  selectedCategory === cat.id && styles.categoryItemActive,
+                  styles.categoryLabel,
+                  selectedCategory === cat.id && styles.categoryLabelActive,
                 ]}
+                numberOfLines={1}
               >
-                <Text style={styles.categoryIcon}>{cat.icon || '📋'}</Text>
-                <Text style={styles.categoryLabel} numberOfLines={1}>
-                  {cat.name || 'Category'}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Menu Items */}
-          <FlatList
-            data={filteredItems}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <MenuItemCard
-                menuItem={item}
-                quantity={cart[item.id]?.quantity || 0}
-                onAdd={() => handleAdd(item)}
-                onRemove={() => handleRemove(item.id)}
-              />
-            )}
-            style={styles.menuList}
-            contentContainerStyle={styles.menuListContent}
-          />
-        </View>
+                {cat.name || 'Category'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
-      {/* Cart — bottom section */}
-      {hasCartItems && (
-        <View style={styles.cartSection}>
-          {/* Cart header */}
-          <View style={styles.cartHeader}>
-            <IconButton icon="cart" size={18} iconColor="#2563eb" style={styles.cartHeaderIcon} />
-            <Text variant="titleSmall" style={styles.cartHeaderTitle}>
-              {isNewOrder ? t('orders.newOrder') : t('orders.addItems')}
-            </Text>
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{cartSummary.count}</Text>
-            </View>
-          </View>
+      {/* Menu items list */}
+      <FlatList
+        data={filteredItems}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <MenuItemCard
+            menuItem={item}
+            quantity={cart[item.id]?.quantity || 0}
+            currencySymbol={currencySymbol}
+            onAdd={() => handleAdd(item)}
+            onRemove={() => handleRemove(item.id)}
+          />
+        )}
+        contentContainerStyle={{ paddingBottom: hasCartItems ? footerHeight + 8 : 16 }}
+      />
 
-          {/* Cart items — scrollable */}
+      {/* Fixed footer — cart summary + submit */}
+      {hasCartItems && (
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+          {/* Cart items mini-list */}
           <ScrollView
-            style={styles.cartScroll}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.cartScrollContent}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.footerCartScroll}
+            contentContainerStyle={styles.footerCartScrollContent}
           >
             {cartItems.map((item) => (
-              <View key={item.menuItemId} style={styles.cartItem}>
-                <View style={styles.cartItemInfo}>
-                  <Text variant="bodyMedium" style={styles.cartItemName}>
-                    {item.name}
-                  </Text>
-                  <Text variant="bodySmall" style={styles.cartItemPrice}>
-                    {currencySymbol}
-                    {item.price.toFixed(2)} x {item.quantity}
-                  </Text>
-                </View>
-                <View style={styles.cartItemControls}>
-                  <IconButton
-                    icon="minus"
-                    mode="contained-tonal"
-                    size={16}
+              <View key={item.menuItemId} style={styles.footerCartItem}>
+                <Text style={styles.footerCartItemName} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <View style={styles.footerCartItemControls}>
+                  <TouchableOpacity
+                    style={styles.footerQtyBtn}
                     onPress={() => handleRemove(item.menuItemId)}
-                  />
-                  <Text style={styles.cartItemQty}>{item.quantity}</Text>
-                  <IconButton
-                    icon="plus"
-                    mode="contained"
-                    size={16}
+                  >
+                    <Text style={styles.footerQtyBtnText}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.footerCartItemQty}>{item.quantity}</Text>
+                  <TouchableOpacity
+                    style={styles.footerQtyBtn}
                     onPress={() =>
-                      handleAdd({
-                        id: item.menuItemId,
-                        price: item.price,
-                        name: item.name,
-                      })
+                      handleAdd({ id: item.menuItemId, price: item.price, name: item.name })
                     }
-                  />
+                  >
+                    <Text style={styles.footerQtyBtnText}>+</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             ))}
           </ScrollView>
-        </View>
-      )}
 
-      {/* Fixed footer — total + submit */}
-      {hasCartItems && (
-        <View style={styles.footer}>
-          <View style={styles.footerInfo}>
-            <View style={styles.footerBadge}>
-              <Text style={styles.footerBadgeText}>{cartSummary.count}</Text>
+          {/* Total + submit row */}
+          <View style={styles.footerSubmitRow}>
+            <View style={styles.footerInfo}>
+              <View style={styles.footerBadge}>
+                <Text style={styles.footerBadgeText}>{cartSummary.count}</Text>
+              </View>
+              <Text variant="titleSmall" style={styles.footerTotal}>
+                {currencySymbol}
+                {cartSummary.total.toFixed(2)}
+              </Text>
             </View>
-            <Text variant="titleSmall" style={styles.footerTotal}>
-              {currencySymbol}
-              {cartSummary.total.toFixed(2)}
-            </Text>
+            <TouchableOpacity
+              style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
+              onPress={handleSubmit}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.submitBtnText}>
+                  {isNewOrder ? t('orders.createOrder') : t('orders.addItems')}
+                </Text>
+              )}
+            </TouchableOpacity>
           </View>
-          <Button
-            mode="contained"
-            onPress={handleSubmit}
-            loading={isLoading}
-            disabled={isLoading}
-            compact
-          >
-            {isNewOrder ? t('orders.createOrder') : t('orders.addItems')}
-          </Button>
         </View>
       )}
     </View>
@@ -320,135 +297,117 @@ export default function AddItemsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  menuSection: { flex: 1 },
-  content: { flex: 1, flexDirection: 'row' },
-  categorySidebar: {
-    width: 88,
-    backgroundColor: '#fff',
-    borderRightWidth: 1,
-    borderRightColor: '#e5e7eb',
+  container: { flex: 1, backgroundColor: COLORS.background },
+
+  // Category bar
+  categoryBar: {
+    backgroundColor: COLORS.card,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  categorySidebarContent: {
+  categoryBarContent: {
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    paddingHorizontal: 6,
+    gap: 8,
   },
-  categoryItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 6,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  categoryItemActive: {
-    backgroundColor: '#dbeafe',
-  },
-  categoryIcon: {
-    fontSize: 20,
-  },
-  categoryLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#4b5563',
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  menuList: {
-    flex: 1,
-  },
-  menuListContent: {
-    paddingTop: 4,
-    paddingBottom: 8,
-  },
-  cartSection: {
-    flex: 1,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    backgroundColor: '#fff',
-  },
-  cartHeader: {
+  categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-    backgroundColor: '#f9fafb',
-  },
-  cartHeaderIcon: {
-    margin: 0,
-  },
-  cartHeaderTitle: {
-    fontWeight: '600',
-    color: '#1e293b',
-    flex: 1,
-  },
-  cartBadge: {
-    backgroundColor: '#dbeafe',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  cartBadgeText: {
-    color: '#2563eb',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  cartScroll: {
-    flex: 1,
-  },
-  cartScrollContent: {
-    paddingHorizontal: 16,
     paddingVertical: 8,
-    paddingBottom: FOOTER_HEIGHT + 8,
+    borderRadius: 20,
+    backgroundColor: '#f1f5f9',
+    gap: 6,
   },
-  cartItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+  categoryChipActive: {
+    backgroundColor: BRAND_PRIMARY,
   },
-  cartItemInfo: {
-    flex: 1,
-    marginRight: 8,
+  categoryIcon: {
+    fontSize: 16,
   },
-  cartItemName: {
+  categoryLabel: {
+    fontSize: 13,
     fontWeight: '600',
-    color: '#1e293b',
+    color: '#4b5563',
   },
-  cartItemPrice: {
-    color: '#6b7280',
+  categoryLabelActive: {
+    color: '#fff',
   },
-  cartItemControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cartItemQty: {
-    minWidth: 24,
-    textAlign: 'center',
-    fontWeight: '700',
-  },
+
+  // Footer
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: FOOTER_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  footerCartScroll: {
+    maxHeight: 56,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  footerCartScrollContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  footerCartItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  footerCartItemName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1e293b',
+    maxWidth: 80,
+  },
+  footerCartItemControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  footerQtyBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerQtyBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#475569',
+    lineHeight: 16,
+  },
+  footerCartItemQty: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1e293b',
+    minWidth: 16,
+    textAlign: 'center',
+  },
+  footerSubmitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   footerInfo: {
     flexDirection: 'row',
@@ -456,18 +415,35 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   footerBadge: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: COLORS.brandLight,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 12,
   },
   footerBadgeText: {
-    color: '#2563eb',
+    color: BRAND_PRIMARY,
     fontSize: 12,
     fontWeight: '700',
   },
   footerTotal: {
     fontWeight: '700',
-    color: '#1e293b',
+    color: COLORS.textPrimary,
+    fontSize: 16,
+  },
+  submitBtn: {
+    backgroundColor: BRAND_PRIMARY,
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitBtnDisabled: {
+    opacity: 0.6,
+  },
+  submitBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

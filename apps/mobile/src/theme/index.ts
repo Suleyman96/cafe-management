@@ -61,6 +61,9 @@ export const COLORS = {
   warning: '#f59e0b',
   info: '#3b82f6',
 
+  // Brand
+  brandLight: '#e6f3f5',
+
   // Borders
   border: '#e2e8f0',
   borderLight: '#f1f5f9',
