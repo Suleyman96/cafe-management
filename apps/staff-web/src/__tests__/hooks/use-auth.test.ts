@@ -35,15 +35,36 @@ describe('postLoginSideEffects', () => {
     expect(db.staff.updateLastLogin).toHaveBeenCalledWith('staff-1');
   });
 
-  it('finds today schedules and marks scheduled ones as in-progress', async () => {
+  it('finds today schedules and clocks in the current shift via API', async () => {
     const today = new Date().toLocaleDateString('en-CA');
-    const scheduledEntry = { id: 'sched-1', status: 'scheduled' };
-    const completedEntry = { id: 'sched-2', status: 'completed' };
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+
+    // A scheduled shift whose window covers "now"
+    const scheduledEntry = {
+      id: 'sched-1',
+      status: 'scheduled',
+      planned_start: `${h}:00`,
+      planned_end: '23:59',
+    };
+    const completedEntry = {
+      id: 'sched-2',
+      status: 'completed',
+      planned_start: '00:00',
+      planned_end: '08:00',
+    };
 
     (db.schedules.findByStaffAndDate as any).mockResolvedValueOnce([
       scheduledEntry,
       completedEntry,
     ]);
+
+    // clockViaApi needs a session with access_token
+    (supabase.auth.getSession as any).mockResolvedValueOnce({
+      data: { session: { access_token: 'test-token' } },
+    });
+
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce(new Response('{}'));
 
     await postLoginSideEffects('staff-1');
 
@@ -52,10 +73,16 @@ describe('postLoginSideEffects', () => {
     });
 
     await vi.waitFor(() => {
-      expect(db.schedules.markInProgress).toHaveBeenCalledWith('sched-1', expect.any(String));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/api/schedules/clock',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ scheduleId: 'sched-1', action: 'clock_in' }),
+        }),
+      );
     });
 
-    expect(db.schedules.markInProgress).not.toHaveBeenCalledWith('sched-2', expect.any(String));
+    fetchSpy.mockRestore();
   });
 
   it('does not crash when updateLastLogin fails', async () => {
@@ -69,17 +96,9 @@ describe('postLoginSideEffects', () => {
     await expect(postLoginSideEffects('staff-1')).resolves.not.toThrow();
   });
 
-  it('handles empty schedules array without calling markInProgress', async () => {
+  it('handles empty schedules array without calling clock API', async () => {
     (db.schedules.findByStaffAndDate as any).mockResolvedValueOnce([]);
-    await postLoginSideEffects('staff-1');
-    expect(db.schedules.markInProgress).not.toHaveBeenCalled();
-  });
-
-  it('skips in_progress and cancelled schedules', async () => {
-    (db.schedules.findByStaffAndDate as any).mockResolvedValueOnce([
-      { id: 's1', status: 'in_progress' },
-      { id: 's2', status: 'cancelled' },
-    ]);
+    const fetchSpy = vi.spyOn(global, 'fetch');
 
     await postLoginSideEffects('staff-1');
 
@@ -87,7 +106,33 @@ describe('postLoginSideEffects', () => {
       expect(db.schedules.findByStaffAndDate).toHaveBeenCalled();
     });
 
-    expect(db.schedules.markInProgress).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it('skips non-scheduled shifts for clock-in', async () => {
+    (db.schedules.findByStaffAndDate as any).mockResolvedValueOnce([
+      { id: 's1', status: 'in_progress', planned_start: '00:00', planned_end: '23:59' },
+      { id: 's2', status: 'cancelled', planned_start: '00:00', planned_end: '23:59' },
+    ]);
+
+    const fetchSpy = vi.spyOn(global, 'fetch');
+
+    await postLoginSideEffects('staff-1');
+
+    await vi.waitFor(() => {
+      expect(db.schedules.findByStaffAndDate).toHaveBeenCalled();
+    });
+
+    // No clock_in fetch — findCurrentOrNextShift only considers 'scheduled' status
+    expect(fetchSpy).not.toHaveBeenCalledWith(
+      '/api/schedules/clock',
+      expect.objectContaining({
+        body: expect.stringContaining('clock_in'),
+      }),
+    );
+
+    fetchSpy.mockRestore();
   });
 });
 
