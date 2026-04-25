@@ -8,7 +8,7 @@ import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 
 const ResetPasswordSchema = z.object({
   staffId: z.string().uuid('Invalid staff ID format'),
-  newPassword: z.string().min(6, 'Password must be at least 6 characters').max(128),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters').max(128),
 });
 
 export const dynamic = 'force-dynamic';

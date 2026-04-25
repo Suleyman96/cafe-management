@@ -9,7 +9,7 @@ import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 
 const CreateStaffSchema = z.object({
   email: z.string().email('Invalid email format').max(255),
-  password: z.string().min(6, 'Password must be at least 6 characters').max(128),
+  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
   full_name: z.string().min(1, 'Name is required').max(100),
   role: z.enum(['waiter', 'admin', 'kitchen', 'owner']),
   phone: z
