@@ -61,7 +61,6 @@ export default function WaiterCallsScreen() {
 
       <FlashList
         data={calls || []}
-        estimatedItemSize={80}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         renderItem={({ item }) => (

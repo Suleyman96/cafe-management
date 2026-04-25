@@ -72,7 +72,6 @@ export default function TablesListScreen() {
     <View style={styles.container}>
       <FlashList
         data={tableData}
-        estimatedItemSize={120}
         numColumns={2}
         keyExtractor={(item) => item.table.id}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 16 }]}

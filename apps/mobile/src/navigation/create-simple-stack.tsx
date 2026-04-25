@@ -17,7 +17,8 @@ export function createSimpleStack({ name, component, title }: SimpleStackConfig)
       <Stack.Navigator>
         <Stack.Screen
           name={name}
-          component={component}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- React 18/19 type incompatibility workaround
+          component={component as any}
           options={{ title, headerLeft: () => <DrawerMenuButton /> }}
         />
       </Stack.Navigator>

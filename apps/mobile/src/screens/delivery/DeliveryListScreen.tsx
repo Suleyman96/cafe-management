@@ -192,7 +192,6 @@ export default function DeliveryListScreen() {
 
       <FlashList
         data={filtered}
-        estimatedItemSize={120}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         renderItem={({ item }) => (

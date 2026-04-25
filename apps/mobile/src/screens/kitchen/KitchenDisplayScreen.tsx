@@ -216,7 +216,6 @@ export default function KitchenDisplayScreen() {
 
         <FlashList
           data={kitchenOrders}
-          estimatedItemSize={220}
           keyExtractor={(item) => item.id}
           refreshControl={
             <RefreshControl refreshing={false} onRefresh={refetch} tintColor="#fff" />

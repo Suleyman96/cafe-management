@@ -98,7 +98,6 @@ export default function OrdersListScreen() {
 
       <FlashList
         data={filteredOrders}
-        estimatedItemSize={100}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         renderItem={({ item }) => (
