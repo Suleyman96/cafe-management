@@ -421,7 +421,12 @@ export default function ReportsPage() {
   }
 
   const loading =
-    revenueLoading || itemsLoading || expensesLoading || wasteLoading || staffLoading || zReportLoading;
+    revenueLoading ||
+    itemsLoading ||
+    expensesLoading ||
+    wasteLoading ||
+    staffLoading ||
+    zReportLoading;
 
   if (loading) {
     return (
