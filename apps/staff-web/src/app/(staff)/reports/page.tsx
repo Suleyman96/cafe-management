@@ -91,7 +91,6 @@ export default function ReportsPage() {
       case 'year': {
         const yearStart = new Date(today);
         yearStart.setFullYear(today.getFullYear() - 1);
-        yearStart.setDate(yearStart.getDate() + 1);
         return { start: yearStart, end: tomorrow };
       }
       default:
@@ -130,20 +129,20 @@ export default function ReportsPage() {
   );
   const { data: expenseSummary, isLoading: expensesLoading } = useExpenseSummary(
     tenantId,
-    dateStrings.from,
-    dateStrings.to,
+    expenseDateRange.startDate,
+    expenseDateRange.endDate,
   );
   const { data: wasteSummaryRows, isLoading: wasteLoading } = useWasteSummary(
     tenantId,
-    dateStrings.from,
-    dateStrings.to,
+    expenseDateRange.startDate,
+    expenseDateRange.endDate,
   );
   const { data: staffPerformanceRows, isLoading: staffLoading } = useStaffPerformance(
     tenantId,
     dateStrings.from,
     dateStrings.to,
   );
-  const { data: zReportPaymentsRaw } = useZReport(
+  const { data: zReportPaymentsRaw, isLoading: zReportLoading } = useZReport(
     `${expenseDateRange.startDate}T00:00:00`,
     `${expenseDateRange.endDate}T00:00:00`,
   );
@@ -421,7 +420,8 @@ export default function ReportsPage() {
     );
   }
 
-  const loading = revenueLoading || itemsLoading || expensesLoading || wasteLoading || staffLoading;
+  const loading =
+    revenueLoading || itemsLoading || expensesLoading || wasteLoading || staffLoading || zReportLoading;
 
   if (loading) {
     return (

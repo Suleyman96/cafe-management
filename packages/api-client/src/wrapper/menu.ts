@@ -145,7 +145,11 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
 export function createCategoriesWrapper(ctx: WrapperContext) {
   return {
     findAll: async (options?: { isActive?: boolean }) => {
-      let query = ctx.client.from('categories').select('*').order('display_order', { ascending: true }).order('name', { ascending: true });
+      let query = ctx.client
+        .from('categories')
+        .select('*')
+        .order('display_order', { ascending: true })
+        .order('name', { ascending: true });
 
       if (options?.isActive !== undefined) {
         query = query.eq('is_active', options.isActive);

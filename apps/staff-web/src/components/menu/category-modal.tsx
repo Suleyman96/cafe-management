@@ -43,9 +43,7 @@ export function CategoryModal({ category, categories = [], onClose }: CategoryMo
   const nextDisplayOrder = isEditing
     ? category.display_order?.toString() || '0'
     : String(
-        categories.length > 0
-          ? Math.max(...categories.map((c) => c.display_order ?? 0)) + 1
-          : 1,
+        categories.length > 0 ? Math.max(...categories.map((c) => c.display_order ?? 0)) + 1 : 1,
       );
 
   const [formData, setFormData] = useState({

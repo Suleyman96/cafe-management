@@ -39,9 +39,7 @@ export function MenuItemModal({ item, categories, menuItems = [], onClose }: Men
   const nextDisplayOrder = isEditing
     ? item.display_order?.toString() || '0'
     : String(
-        menuItems.length > 0
-          ? Math.max(...menuItems.map((m) => m.display_order ?? 0)) + 1
-          : 1,
+        menuItems.length > 0 ? Math.max(...menuItems.map((m) => m.display_order ?? 0)) + 1 : 1,
       );
 
   const [formData, setFormData] = useState({
