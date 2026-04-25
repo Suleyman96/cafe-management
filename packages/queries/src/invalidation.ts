@@ -71,6 +71,7 @@ export function refetchStock(qc: QueryClient, includeMovements = false) {
 
 export function invalidateExpenses(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
+  qc.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSE_CATEGORIES] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
 }
 

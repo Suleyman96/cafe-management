@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { StockItemModal } from '@/components/modals/stock-item-modal';
 import { StockMovementModal } from '@/components/modals/stock-movement-modal';
 import { useDeleteStockItem, useLowStockCount, useStockItems, useStockMovements } from '@/hooks';
@@ -58,6 +59,7 @@ export default function StockClient() {
     type: 'in' | 'out';
   } | null>(null);
   const [historyItem, setHistoryItem] = useState<StockItem | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: stockItems = [], isLoading } = useStockItems();
   const { data: lowStockCount = 0 } = useLowStockCount();
@@ -91,14 +93,16 @@ export default function StockClient() {
     return 'text-green-600 bg-green-50';
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t('stock.confirmDelete'))) return;
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return;
     try {
-      await deleteStockItem.mutateAsync(id);
+      await deleteStockItem.mutateAsync(deletingId);
       toast.success(t('stock.stockItemDeleted'));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t('delete', { ns: 'common' });
       toast.error(message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -275,7 +279,7 @@ export default function StockClient() {
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => setDeletingId(item.id)}
                         className="p-1.5 text-gray-400 hover:text-red-600 rounded"
                         title={t('delete', { ns: 'common' })}
                       >
@@ -319,6 +323,15 @@ export default function StockClient() {
 
       {/* History Modal */}
       {historyItem && <StockHistoryModal item={historyItem} onClose={() => setHistoryItem(null)} />}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deletingId}
+        onClose={() => setDeletingId(null)}
+        onConfirm={handleConfirmDelete}
+        title={t('delete', { ns: 'common' })}
+        message={t('stock.confirmDelete')}
+      />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { BaseModal } from '@/components/ui/base-modal';
 import { useCreateSchedule, useDeleteSchedule, useStaff, useUpdateSchedule } from '@/hooks';
 
@@ -33,6 +34,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
   const [status, setStatus] = useState(schedule?.status || 'scheduled');
   const [notes, setNotes] = useState(schedule?.notes || '');
   const [error, setError] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const isBusy = createSchedule.isPending || updateSchedule.isPending || deleteSchedule.isPending;
 
   // Bulk create state
@@ -149,10 +151,8 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
     }
   };
 
-  const handleDelete = async () => {
+  const handleConfirmDelete = async () => {
     if (!schedule?.id) return;
-    if (!confirm(t('schedules.deleteConfirm'))) return;
-
     try {
       await deleteSchedule.mutateAsync(schedule.id);
       toast.success(t('schedules.scheduleDeleted'));
@@ -160,6 +160,8 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('schedules.failedDelete');
       setError(message);
+    } finally {
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -182,7 +184,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
             <Button
               type="button"
               variant="destructive"
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={isBusy}
               size="sm"
             >
@@ -399,6 +401,15 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title={t('delete', { ns: 'common' })}
+        message={t('schedules.deleteConfirm')}
+      />
     </BaseModal>
   );
 }

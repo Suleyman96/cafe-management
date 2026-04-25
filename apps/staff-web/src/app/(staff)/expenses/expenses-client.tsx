@@ -6,6 +6,7 @@ import { Button, LoadingSpinner } from '@gustri/ui';
 import { DollarSign, FolderOpen, Pencil, Plus, Settings, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { ExpenseCategoryModal } from '@/components/modals/expense-category-modal';
 import { ExpenseModal } from '@/components/modals/expense-modal';
 import {
@@ -28,6 +29,7 @@ export default function ExpensesClient() {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const PAYMENT_METHOD_LABELS: Record<string, string> = {
     cash: t('cash', { ns: 'common' }),
@@ -52,14 +54,16 @@ export default function ExpensesClient() {
   const formatPrice = useFormatPrice();
   const deleteExpense = useDeleteExpense();
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return;
     try {
-      await deleteExpense.mutateAsync(id);
+      await deleteExpense.mutateAsync(deletingId);
       toast.success(t('expenses.expenseDeleted'));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t('delete', { ns: 'common' });
       toast.error(message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -291,7 +295,7 @@ export default function ExpensesClient() {
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(expense.id)}
+                          onClick={() => setDeletingId(expense.id)}
                           className="p-1.5 text-gray-400 hover:text-red-600 rounded"
                           title={t('delete', { ns: 'common' })}
                         >
@@ -327,6 +331,15 @@ export default function ExpensesClient() {
 
       {/* Category Management Modal */}
       {showCategoryModal && <ExpenseCategoryModal onClose={() => setShowCategoryModal(false)} />}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deletingId}
+        onClose={() => setDeletingId(null)}
+        onConfirm={handleConfirmDelete}
+        title={t('delete', { ns: 'common' })}
+        message={t('expenses.confirmDeleteExpense')}
+      />
     </div>
   );
 }

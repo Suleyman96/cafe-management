@@ -6,6 +6,7 @@ import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useAddOrderItems, useCafeSettings, useCreateOrder, useTaxMultiplier } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
 
@@ -93,12 +94,12 @@ export function CreateTakeoutModal({
 
   const handleSubmit = async () => {
     if (!customerName.trim() || !customerPhone.trim()) {
-      alert(t('orders.enterNameAndPhone'));
+      toast.error(t('orders.enterNameAndPhone'));
       return;
     }
 
     if (selectedItems.length === 0) {
-      alert(t('orders.addAtLeastOneItem'));
+      toast.error(t('orders.addAtLeastOneItem'));
       return;
     }
 
@@ -145,7 +146,7 @@ export function CreateTakeoutModal({
       onClose();
     } catch (error) {
       Sentry.captureException(error);
-      alert(t('orders.failedCreateTakeout'));
+      toast.error(t('orders.failedCreateTakeout'));
     } finally {
       setIsSubmitting(false);
     }

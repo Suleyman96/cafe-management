@@ -6,6 +6,7 @@ import { Button, LoadingSpinner } from '@gustri/ui';
 import { DollarSign, Pencil, Plus, Trash2, TrendingDown } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { WasteLogModal } from '@/components/modals/waste-log-modal';
 import { useCafeSettings, useDeleteWasteLog, useWasteLogs, useWasteMonthlySummary } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
@@ -20,6 +21,7 @@ export default function WastePage() {
   const [reasonFilter, setReasonFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingLog, setEditingLog] = useState<WasteLog | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const REASON_LABELS: Record<string, string> = {
     expired: t('waste.expired'),
@@ -56,14 +58,16 @@ export default function WastePage() {
   const { data: cafeSettings } = useCafeSettings();
   const deleteWaste = useDeleteWasteLog();
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this waste log?')) return;
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return;
     try {
-      await deleteWaste.mutateAsync(id);
+      await deleteWaste.mutateAsync(deletingId);
       toast.success(t('waste.wasteLogDeleted'));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t('delete', { ns: 'common' });
       toast.error(message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -304,7 +308,7 @@ export default function WastePage() {
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(log.id)}
+                          onClick={() => setDeletingId(log.id)}
                           className="p-1.5 text-gray-400 hover:text-red-600 rounded"
                           title={t('delete', { ns: 'common' })}
                         >
@@ -337,6 +341,15 @@ export default function WastePage() {
           }}
         />
       )}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deletingId}
+        onClose={() => setDeletingId(null)}
+        onConfirm={handleConfirmDelete}
+        title={t('delete', { ns: 'common' })}
+        message={t('waste.confirmDeleteWasteLog')}
+      />
     </div>
   );
 }

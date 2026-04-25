@@ -24,7 +24,7 @@ vi.mock('next/navigation', () => ({
 beforeEach(() => {
   useAuthStore.setState({
     staff: null,
-    
+
     isLoading: true,
   });
 });
