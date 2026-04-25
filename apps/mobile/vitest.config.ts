@@ -31,7 +31,9 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, './src'),
       '@gustri/queries': resolve(__dirname, '../../packages/queries/src/index.ts'),
+      '@sentry/react-native': resolve(__dirname, './src/__tests__/helpers/mock-sentry.ts'),
       '@tanstack/react-query': resolve(__dirname, './node_modules/@tanstack/react-query'),
+      'react-native': resolve(__dirname, './src/__tests__/helpers/mock-react-native.ts'),
       react: resolve(__dirname, './node_modules/react'),
       'react-dom': resolve(__dirname, './node_modules/react-dom'),
       'react/jsx-runtime': resolve(__dirname, './node_modules/react/jsx-runtime'),

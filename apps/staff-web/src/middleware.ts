@@ -74,7 +74,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-
   const { supabase, response } = createMiddlewareClient(request);
 
   const {
