@@ -23,7 +23,7 @@ interface TakeoutOrderCardProps {
       item_price: number;
       status?: string;
       notes?: string | null;
-      menu_item?: { name_en?: string | null; name?: string | null } | null;
+      menu_item?: { name?: string | null } | null;
     }>;
   };
   currencySymbol?: string;
@@ -96,7 +96,7 @@ export const TakeoutOrderCard = React.memo(function TakeoutOrderCard({
             {order.order_items.slice(0, 3).map((item) => (
               <View key={item.id} style={styles.itemRow}>
                 <Text variant="bodySmall" style={styles.itemText}>
-                  {item.quantity}x {item.menu_item?.name_en || item.menu_item?.name || 'Item'}
+                  {item.quantity}x {item.menu_item?.name || 'Item'}
                 </Text>
                 {item.notes && (
                   <Text variant="bodySmall" style={styles.itemNotes}>

@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler';
 import './src/lib/i18n';
+import type { PlanName } from '@gustri/core';
 import { I18nextProvider, i18n } from '@gustri/i18n';
 import { DbProvider } from '@gustri/queries';
 import { NavigationContainer } from '@react-navigation/native';
@@ -59,14 +60,40 @@ function App() {
 
   useEffect(() => {
     // Initialize auth
-    getCurrentUser().then((staff) => {
-      setStaff(staff);
-      setIsLoading(false);
-    });
+    getCurrentUser()
+      .then((staff) => {
+        setStaff(staff);
+        // Bug 4: Fetch tenant plan so pro features are visible
+        if (staff) {
+          db.tenants
+            .getCurrent()
+            .then((tenant) => {
+              useAuthStore.getState().setTenantPlan(tenant.plan as PlanName);
+            })
+            .catch((err) => {
+              Sentry.captureException(err, { tags: { context: 'mobile-tenant-plan' } });
+            });
+        }
+      })
+      .catch((err) => {
+        Sentry.captureException(err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
 
     // Listen for auth changes
     const { data } = onAuthStateChange((staff) => {
       setStaff(staff);
+      // Also fetch tenant plan on auth state change
+      if (staff) {
+        db.tenants
+          .getCurrent()
+          .then((tenant) => {
+            useAuthStore.getState().setTenantPlan(tenant.plan as PlanName);
+          })
+          .catch(() => {});
+      }
     });
 
     return () => {

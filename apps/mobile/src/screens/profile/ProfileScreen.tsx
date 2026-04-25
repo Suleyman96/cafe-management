@@ -1,17 +1,21 @@
 import { useTranslation } from '@gustri/i18n';
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Avatar, Button, Card, Chip, Divider, List, Text } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { logout } from '@/lib/auth';
+import { asyncStoragePersister } from '@/lib/query-persister';
 import { cleanupSounds } from '@/lib/sound';
+import { db } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth-store';
 import { ROLE_COLORS } from '@/theme';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { staff, clearAuth } = useAuthStore();
+  const queryClient = useQueryClient();
   const { showError } = useSnackbar();
   const [loggingOut, setLoggingOut] = useState(false);
   const { t: tCommon } = useTranslation('common');
@@ -32,7 +36,14 @@ export default function ProfileScreen() {
     setLoggingOut(true);
     try {
       await cleanupSounds();
+      // Bug 5: Clear push token before logout so previous user stops receiving notifications
+      if (staff?.id) {
+        await db.staff.updatePushToken(staff.id, null).catch(() => {});
+      }
       await logout();
+      // Bug 2: Clear query cache so the next user doesn't see stale data
+      queryClient.clear();
+      await asyncStoragePersister.removeClient();
       clearAuth();
     } catch (err: unknown) {
       showError(err instanceof Error ? err.message : t('profile.failedSignOut'));

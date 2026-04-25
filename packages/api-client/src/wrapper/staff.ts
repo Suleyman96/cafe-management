@@ -97,7 +97,7 @@ export function createStaffWrapper(ctx: WrapperContext) {
       return waiters;
     },
 
-    updatePushToken: async (staffId: string, pushToken: string) => {
+    updatePushToken: async (staffId: string, pushToken: string | null) => {
       const { error } = await ctx.anyClient
         .from('staff')
         .update({ push_token: pushToken })
