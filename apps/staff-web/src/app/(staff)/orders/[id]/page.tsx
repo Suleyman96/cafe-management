@@ -13,6 +13,7 @@ import { Button, LoadingSpinner } from '@gustri/ui';
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowRight,
   CheckCircle,
   ChefHat,
   ChevronDown,

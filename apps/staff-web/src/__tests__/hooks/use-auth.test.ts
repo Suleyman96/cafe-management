@@ -24,7 +24,7 @@ vi.mock('next/navigation', () => ({
 beforeEach(() => {
   useAuthStore.setState({
     staff: null,
-    user: null,
+    
     isLoading: true,
   });
 });
@@ -158,7 +158,7 @@ describe('useAuth', () => {
     });
 
     it('verifies session when staff is already set', async () => {
-      useAuthStore.setState({ staff: mockAdminStaff, user: mockAdminStaff, isLoading: false });
+      useAuthStore.setState({ staff: mockAdminStaff, isLoading: false });
 
       (supabase.auth.getSession as any).mockResolvedValueOnce({
         data: { session: { user: { id: 'auth-user-1' } } },
@@ -178,7 +178,7 @@ describe('useAuth', () => {
 
   describe('return values', () => {
     it('returns isAuthenticated true when staff is set', () => {
-      useAuthStore.setState({ staff: mockAdminStaff, user: mockAdminStaff, isLoading: false });
+      useAuthStore.setState({ staff: mockAdminStaff, isLoading: false });
       // Mock valid session so re-render doesn't clear auth
       (supabase.auth.getSession as any).mockResolvedValueOnce({
         data: { session: { user: { id: 'auth-user-1' } } },
@@ -193,7 +193,7 @@ describe('useAuth', () => {
     });
 
     it('returns isAuthenticated false when staff is null', () => {
-      useAuthStore.setState({ staff: null, user: null, isLoading: false });
+      useAuthStore.setState({ staff: null, isLoading: false });
 
       const { result } = renderHook(() => useAuth());
 
@@ -203,7 +203,7 @@ describe('useAuth', () => {
 
   describe('logout', () => {
     it('signs out, clears auth, and navigates to /login', async () => {
-      useAuthStore.setState({ staff: mockAdminStaff, user: mockAdminStaff, isLoading: false });
+      useAuthStore.setState({ staff: mockAdminStaff, isLoading: false });
       // Only mock once — after logout clears staff, re-render should see no session
       (supabase.auth.getSession as any).mockResolvedValueOnce({
         data: { session: { user: { id: 'auth-user-1' } } },
@@ -222,7 +222,7 @@ describe('useAuth', () => {
     });
 
     it('does not crash when called while already logged out', async () => {
-      useAuthStore.setState({ staff: null, user: null, isLoading: false });
+      useAuthStore.setState({ staff: null, isLoading: false });
 
       const { result } = renderHook(() => useAuth());
 
@@ -309,7 +309,7 @@ describe('useAuth', () => {
       unmount();
 
       // Reset store for second mount
-      useAuthStore.setState({ staff: null, user: null, isLoading: true });
+      useAuthStore.setState({ staff: null, isLoading: true });
 
       // Second mount should be able to run session check
       (supabase.auth.getSession as any).mockResolvedValueOnce({
