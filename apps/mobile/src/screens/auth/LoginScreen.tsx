@@ -1,6 +1,13 @@
 import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { Button } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSnackbar } from '@/hooks/use-snackbar';
@@ -27,10 +34,17 @@ export default function LoginScreen() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      showError(t('invalidEmailFormat'));
+      return;
+    }
+
     setLoading(true);
 
     try {
       const { staff } = await login({ email: email.trim(), password });
+      Keyboard.dismiss();
       setStaff(staff);
 
       // Fire-and-forget: fill actual_start for today's schedule

@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
@@ -16,8 +17,8 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
-import { ROLE_COLORS } from '@/theme';
-import type { Staff, StaffManagementStackParamList } from '@/types';
+import { COLORS, ROLE_COLORS } from '@/theme';
+import type { Order, OrderPayment, Staff, StaffManagementStackParamList } from '@/types';
 
 type Route = RouteProp<StaffManagementStackParamList, 'StaffDetail'>;
 
@@ -26,6 +27,7 @@ const ROLES_NO_OWNER: Staff['role'][] = ['waiter', 'kitchen', 'admin'];
 
 export default function StaffDetailScreen() {
   const { t } = useTranslation('staff');
+  const { t: tCommon } = useTranslation('common');
   const route = useRoute<Route>();
   const { staffId } = route.params;
   const currentUser = useAuthStore((s) => s.staff);
@@ -49,7 +51,12 @@ export default function StaffDetailScreen() {
   }>({ full_name: '', phone: '', role: 'waiter' });
 
   const totalRevenue = useMemo(() => {
-    return payments?.reduce((sum: number, p: { amount: number }) => sum + (p.amount || 0), 0) || 0;
+    return (
+      payments?.reduce(
+        (sum: number, p: Pick<OrderPayment, 'amount'>) => sum + (p.amount || 0),
+        0,
+      ) || 0
+    );
   }, [payments]);
 
   const openEdit = () => {
@@ -78,7 +85,7 @@ export default function StaffDetailScreen() {
   if (error || !member)
     return <ErrorScreen error={error || t('staffMgmt.staffNotFound')} onRetry={refetch} />;
 
-  const roleColor = ROLE_COLORS[member.role] || '#6b7280';
+  const roleColor = ROLE_COLORS[member.role] || COLORS.textMuted;
   const editableRoles = currentUser?.role === 'owner' ? ROLES_ALL : ROLES_NO_OWNER;
 
   return (
@@ -93,7 +100,7 @@ export default function StaffDetailScreen() {
           <Chip
             compact
             style={[styles.roleChip, { backgroundColor: roleColor }]}
-            textStyle={{ color: '#fff', fontWeight: '600' }}
+            textStyle={{ color: COLORS.card, fontWeight: '600' }}
           >
             {t(`staffMgmt.role.${member.role}`)}
           </Chip>
@@ -157,11 +164,11 @@ export default function StaffDetailScreen() {
             <Text variant="titleMedium" style={styles.sectionTitle}>
               {t('staffMgmt.recentOrders')}
             </Text>
-            {staffOrders?.map((o: { id: string; order_number: string | null; status: string }) => (
+            {staffOrders?.map((o: Pick<Order, 'id' | 'order_number' | 'status'>) => (
               <View key={o.id} style={styles.listItem}>
                 <Text variant="bodyMedium">#{o.order_number || '--'}</Text>
                 <Text variant="bodySmall" style={styles.muted}>
-                  {o.status}
+                  {t(ORDER_STATUS_KEYS[o.status] || o.status)}
                 </Text>
               </View>
             ))}
@@ -177,10 +184,10 @@ export default function StaffDetailScreen() {
               {t('staffMgmt.recentPayments')}
             </Text>
             {payments?.map(
-              (p: { id: string; payment_method: string; amount: number; created_at: string }) => (
+              (p: Pick<OrderPayment, 'id' | 'payment_method' | 'amount' | 'created_at'>) => (
                 <View key={p.id} style={styles.listItem}>
                   <Text variant="bodyMedium">
-                    {p.payment_method} — {currencySymbol}
+                    {tCommon(p.payment_method)} — {currencySymbol}
                     {p.amount?.toFixed(2)}
                   </Text>
                   <Text variant="bodySmall" style={styles.muted}>
@@ -253,28 +260,28 @@ export default function StaffDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   content: { padding: 16, gap: 12, paddingBottom: 32 },
   card: {},
   profileContent: { alignItems: 'center', gap: 4 },
-  name: { fontWeight: '700', color: '#1e293b', marginTop: 8 },
+  name: { fontWeight: '700', color: COLORS.textPrimary, marginTop: 8 },
   roleChip: {},
   editBtn: { marginTop: 8 },
-  sectionTitle: { fontWeight: '700', color: '#1e293b', marginBottom: 8 },
+  sectionTitle: { fontWeight: '700', color: COLORS.textPrimary, marginBottom: 8 },
   statsRow: { flexDirection: 'row', justifyContent: 'space-around' },
   stat: { alignItems: 'center' },
-  statValue: { fontWeight: '700', color: '#1e293b' },
+  statValue: { fontWeight: '700', color: COLORS.textPrimary },
   listItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: COLORS.borderLight,
   },
-  modal: { backgroundColor: '#fff', margin: 20, padding: 20, borderRadius: 12 },
+  modal: { backgroundColor: COLORS.card, margin: 20, padding: 20, borderRadius: 12 },
   input: { marginBottom: 8 },
   chipRow: { flexDirection: 'row', gap: 6, marginBottom: 12 },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
-  muted: { color: '#6b7280' },
+  muted: { color: COLORS.textMuted },
 });

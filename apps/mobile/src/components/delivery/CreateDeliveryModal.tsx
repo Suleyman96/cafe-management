@@ -8,6 +8,7 @@ import { useCreateOrder } from '@/hooks';
 import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text, TextInput } from '@/lib/paper-compat';
+import { COLORS } from '@/theme';
 
 interface CreateDeliveryModalProps {
   visible: boolean;
@@ -37,7 +38,9 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
     setDeliveryFee(settings?.delivery_fee_default?.toString() || '0');
   }, [settings?.delivery_fee_default]);
 
-  const isValid = customerName.trim() && customerPhone.trim() && deliveryAddress.trim();
+  const phoneRegex = /^\+?[\d\s\-()]{7,}$/;
+  const isPhoneValid = phoneRegex.test(customerPhone.trim());
+  const isValid = customerName.trim() && isPhoneValid && deliveryAddress.trim();
 
   const resetForm = () => {
     setCustomerName('');
@@ -61,11 +64,11 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
         delivery_notes: deliveryNotes.trim() || null,
         delivery_fee: Number.parseFloat(deliveryFee) || 0,
       } as Partial<OrdersInsert> as OrdersInsert);
-      showSuccess('Delivery order created');
+      showSuccess(t('delivery.orderCreated'));
       resetForm();
       onSuccess();
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : 'Failed to create delivery order');
+      showError(err instanceof Error ? err.message : t('delivery.failedCreateOrder'));
     } finally {
       setLoading(false);
     }
@@ -88,7 +91,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
       <Dialog visible={visible} onDismiss={handleDismiss} style={styles.dialog}>
         <Dialog.Title style={styles.title}>
           <View style={styles.titleRow}>
-            <MaterialCommunityIcons name="truck-delivery" size={20} color="#7c3aed" />
+            <MaterialCommunityIcons name="truck-delivery" size={20} color={COLORS.purple} />
             <Text variant="titleMedium" style={styles.titleText}>
               {t('delivery.newDeliveryOrder')}
             </Text>
@@ -111,6 +114,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
                 mode="outlined"
                 keyboardType="phone-pad"
                 left={<TextInput.Icon icon="phone" />}
+                error={!!customerPhone.trim() && !isPhoneValid}
               />
               <View>
                 <TextInput
@@ -124,7 +128,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
                 />
                 {deliveryAddress.trim() && (
                   <TouchableOpacity onPress={openInMaps} style={styles.mapsLink}>
-                    <MaterialCommunityIcons name="google-maps" size={14} color="#7c3aed" />
+                    <MaterialCommunityIcons name="google-maps" size={14} color={COLORS.purple} />
                     <Text variant="bodySmall" style={styles.mapsText}>
                       {t('delivery.viewOnMaps')}
                     </Text>
@@ -155,7 +159,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
                 </Text>
               ) : null}
               <View style={styles.hint}>
-                <MaterialCommunityIcons name="information" size={16} color="#7c3aed" />
+                <MaterialCommunityIcons name="information" size={16} color={COLORS.purple} />
                 <Text variant="bodySmall" style={styles.hintText}>
                   {t('delivery.orderWithoutItems')}
                 </Text>
@@ -186,7 +190,7 @@ const styles = StyleSheet.create({
   dialog: { maxHeight: '85%' },
   title: { paddingBottom: 0 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  titleText: { fontWeight: '700', color: '#1e293b' },
+  titleText: { fontWeight: '700', color: COLORS.textPrimary },
   scrollArea: { paddingHorizontal: 0 },
   form: { gap: 12, paddingHorizontal: 24, paddingVertical: 12 },
   mapsLink: {
@@ -196,8 +200,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
     alignSelf: 'flex-end',
   },
-  mapsText: { color: '#7c3aed', fontSize: 11 },
-  defaultFee: { color: '#9ca3af', marginTop: -8 },
+  mapsText: { color: COLORS.purple, fontSize: 11 },
+  defaultFee: { color: COLORS.textLight, marginTop: -8 },
   hint: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -209,5 +213,5 @@ const styles = StyleSheet.create({
     borderColor: '#c4b5fd',
   },
   hintText: { color: '#6d28d9', flex: 1, fontSize: 12 },
-  createBtn: { backgroundColor: '#7c3aed' },
+  createBtn: { backgroundColor: COLORS.purple },
 });

@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, Modal, Portal, Text } from 'react-native-paper';
 import { getLocalDateString } from '@/lib/date-utils';
 import { TextInput } from '@/lib/paper-compat';
+import { COLORS } from '@/theme';
 import type { Expense } from '@/types';
 
 const PAYMENT_METHODS: Expense['payment_method'][] = ['cash', 'card', 'digital', 'bank_transfer'];
@@ -50,7 +51,7 @@ export function ExpenseModal({
     if (initialData) {
       setForm({
         description: initialData.description || '',
-        amount: String(initialData.amount || ''),
+        amount: String(initialData.amount ?? ''),
         payment_method: initialData.payment_method || 'cash',
         category_id: initialData.category_id || '',
         expense_date: initialData.expense_date || getLocalDateString(),
@@ -188,10 +189,16 @@ export function ExpenseModal({
 }
 
 const styles = StyleSheet.create({
-  modal: { backgroundColor: '#fff', margin: 16, padding: 20, borderRadius: 12, maxHeight: '90%' },
+  modal: {
+    backgroundColor: COLORS.card,
+    margin: 16,
+    padding: 20,
+    borderRadius: 12,
+    maxHeight: '90%',
+  },
   title: { fontWeight: '700', marginBottom: 12 },
   input: { marginBottom: 8 },
-  label: { color: '#6b7280', marginBottom: 4, marginTop: 4 },
+  label: { color: COLORS.textMuted, marginBottom: 4, marginTop: 4 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 12 },
 });

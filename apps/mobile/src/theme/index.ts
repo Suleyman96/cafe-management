@@ -67,6 +67,12 @@ export const COLORS = {
   // Borders
   border: '#e2e8f0',
   borderLight: '#f1f5f9',
+
+  // Accents
+  purple: '#7c3aed',
+  purpleLight: '#8b5cf6',
+  indigo: '#6366f1',
+  orange: '#ea580c',
 } as const;
 
 export const ROLE_COLORS: Record<string, string> = {

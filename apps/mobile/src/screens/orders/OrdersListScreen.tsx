@@ -4,18 +4,10 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import {
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { OrderCard } from '@/components/orders/OrderCard';
-import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
+import { EmptyState, ErrorScreen, FilterChipBar, LoadingScreen } from '@/components/ui';
 import { useCurrencySymbol, useOrders } from '@/hooks';
-import { Text } from '@/lib/paper-compat';
 import { BRAND_PRIMARY, COLORS, ORDER_STATUS_COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, OrdersStackParamList } from '@/types';
 
@@ -50,6 +42,16 @@ export default function OrdersListScreen() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [search, setSearch] = useState('');
 
+  const filterOptions = useMemo(
+    () =>
+      STATUS_FILTERS.map((s) => ({
+        key: s,
+        label: s === 'all' ? tCommon('all') : t(ORDER_STATUS_KEYS[s] || s),
+        color: s === 'all' ? BRAND_PRIMARY : ORDER_STATUS_COLORS[s] || BRAND_PRIMARY,
+      })),
+    [t, tCommon],
+  );
+
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
 
@@ -83,37 +85,16 @@ export default function OrdersListScreen() {
           onChangeText={setSearch}
           style={styles.searchInput}
           placeholderTextColor={COLORS.textLight}
+          accessibilityLabel={t('orders.searchByOrderNumber')}
         />
       </View>
 
       {/* Status filter chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterRow}
-        contentContainerStyle={styles.filterRowContent}
-      >
-        {STATUS_FILTERS.map((s) => {
-          const isSelected = selectedStatus === s;
-          const chipColor = s === 'all' ? BRAND_PRIMARY : ORDER_STATUS_COLORS[s] || BRAND_PRIMARY;
-
-          return (
-            <TouchableOpacity
-              key={s}
-              onPress={() => setSelectedStatus(s)}
-              style={[styles.filterChip, isSelected && { backgroundColor: chipColor }]}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}
-                numberOfLines={1}
-              >
-                {s === 'all' ? tCommon('all') : t(ORDER_STATUS_KEYS[s] || s)}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <FilterChipBar
+        options={filterOptions}
+        selected={selectedStatus}
+        onSelect={setSelectedStatus}
+      />
 
       <FlashList
         data={filteredOrders}
@@ -166,28 +147,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
     color: COLORS.textPrimary,
-  },
-  filterRow: {
-    maxHeight: 52,
-  },
-  filterRowContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 6,
-  },
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 9999,
-    backgroundColor: COLORS.borderLight,
-  },
-  filterChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  filterChipTextActive: {
-    color: '#fff',
   },
   list: {
     paddingTop: 4,

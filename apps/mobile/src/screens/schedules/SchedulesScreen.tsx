@@ -6,6 +6,7 @@ type ScheduleWithStaff = StaffSchedule & {
   staff?: { full_name: string; role?: string } | null;
 };
 
+import { getLocalDateString } from '@gustri/core';
 import { useMemo, useState } from 'react';
 import {
   FlatList,
@@ -48,7 +49,7 @@ function getWeekDates(referenceDate: Date) {
 }
 
 function formatDate(d: Date) {
-  return d.toLocaleDateString('en-CA');
+  return getLocalDateString(d);
 }
 
 function formatTime(time: string) {
@@ -497,29 +498,29 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: COLORS.border,
     minWidth: 52,
   },
   dayBtnSelected: { backgroundColor: BRAND_PRIMARY, borderColor: BRAND_PRIMARY },
   dayBtnToday: { borderColor: '#93c5fd', backgroundColor: '#eff6ff' },
   dayWeekday: { fontSize: 11, color: COLORS.textMuted, fontWeight: '500' },
   dayNumber: { fontWeight: '700', color: COLORS.textPrimary },
-  dayTextSelected: { color: '#fff' },
+  dayTextSelected: { color: COLORS.card },
   dayDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: BRAND_PRIMARY, marginTop: 3 },
-  dayDotSelected: { backgroundColor: '#fff' },
+  dayDotSelected: { backgroundColor: COLORS.card },
   countText: { color: COLORS.textLight, paddingHorizontal: 16, marginBottom: 4 },
   list: { paddingTop: 4, paddingBottom: 80 },
   // Weekly view
   weeklyContent: { paddingHorizontal: 16, paddingBottom: 80 },
   weeklyDay: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     borderRadius: 10,
     marginBottom: 8,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: COLORS.border,
   },
   weeklyDayToday: { borderColor: '#93c5fd', backgroundColor: '#fafbff' },
   weeklyDayHeader: {
@@ -528,18 +529,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  weeklyDayLabel: { fontWeight: '600', color: '#374151' },
+  weeklyDayLabel: { fontWeight: '600', color: COLORS.textPrimary },
   weeklyDayLabelToday: { color: BRAND_PRIMARY },
-  countChip: { backgroundColor: '#f3f4f6' },
+  countChip: { backgroundColor: COLORS.borderLight },
   countChipText: { fontSize: 11, fontWeight: '600', color: COLORS.textMuted },
-  noShifts: { color: '#d1d5db', fontStyle: 'italic' },
+  noShifts: { color: COLORS.border, fontStyle: 'italic' },
   weeklyBlock: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: COLORS.borderLight,
   },
   weeklyDot: { width: 8, height: 8, borderRadius: 4 },
   weeklyBlockInfo: { flex: 1 },

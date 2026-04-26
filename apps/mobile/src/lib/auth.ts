@@ -17,6 +17,11 @@ export async function login({ email, password }: LoginCredentials) {
   // Fetch staff profile via wrapper
   const staff = (await db.staff.findByAuthId(data.user.id)) as Staff;
 
+  if (!staff?.is_active) {
+    await supabase.auth.signOut();
+    throw new Error('Account is deactivated');
+  }
+
   // Fire-and-forget — don't block login for a non-critical timestamp update
   db.staff.updateLastLogin(staff.id).catch(() => {});
 
@@ -44,7 +49,12 @@ export async function getCurrentUser(): Promise<Staff | null> {
   if (error || !user) return null;
 
   try {
-    return (await db.staff.findByAuthId(user.id)) as Staff;
+    const staff = (await db.staff.findByAuthId(user.id)) as Staff;
+    if (!staff?.is_active) {
+      await supabase.auth.signOut();
+      return null;
+    }
+    return staff;
   } catch {
     return null;
   }

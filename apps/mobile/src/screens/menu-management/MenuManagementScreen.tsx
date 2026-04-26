@@ -19,6 +19,7 @@ import {
 } from '@/hooks/use-menu-management';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
+import { COLORS } from '@/theme';
 
 export default function MenuManagementScreen() {
   const { t } = useTranslation('staff');
@@ -238,7 +239,7 @@ export default function MenuManagementScreen() {
                   <IconButton
                     icon="delete"
                     size={16}
-                    iconColor="#ef4444"
+                    iconColor={COLORS.danger}
                     onPress={() => setDeleteCategoryId(cat.id)}
                   />
                 </View>
@@ -327,7 +328,7 @@ export default function MenuManagementScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   countsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -335,11 +336,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
   },
-  countText: { color: '#9ca3af' },
-  addCategoryBtn: { borderColor: '#d1d5db' },
+  countText: { color: COLORS.textLight },
+  addCategoryBtn: { borderColor: COLORS.border },
   addCategoryLabel: { fontSize: 12 },
   search: { marginHorizontal: 16, marginTop: 8 },
-  searchCount: { color: '#6b7280', paddingHorizontal: 16, paddingTop: 4 },
+  searchCount: { color: COLORS.textMuted, paddingHorizontal: 16, paddingTop: 4 },
   categoryScroll: { maxHeight: 48, marginVertical: 8 },
   categoryContent: { paddingHorizontal: 16, gap: 6 },
   categoryHeader: {
@@ -351,8 +352,8 @@ const styles = StyleSheet.create({
   },
   categoryHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   categoryIcon: { fontSize: 20 },
-  categoryName: { fontWeight: '600', color: '#1e293b' },
-  categoryItemCount: { color: '#9ca3af' },
+  categoryName: { fontWeight: '600', color: COLORS.textPrimary },
+  categoryItemCount: { color: COLORS.textLight },
   categoryActions: { flexDirection: 'row' },
   list: { paddingTop: 4, paddingBottom: 80 },
   fab: { position: 'absolute', right: 16, bottom: 16 },

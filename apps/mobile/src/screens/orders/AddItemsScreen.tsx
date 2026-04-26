@@ -54,6 +54,7 @@ export default function AddItemsScreen() {
     data: menuItems,
     isLoading: menuLoading,
     error: menuError,
+    refetch: refetchMenu,
   } = useMenuItems({ isAvailable: true });
   const { data: categories } = useCategories();
   const addOrderItems = useAddOrderItems();
@@ -174,7 +175,7 @@ export default function AddItemsScreen() {
   };
 
   if (menuLoading) return <LoadingScreen message={t('orders.loadingMenu')} />;
-  if (menuError) return <ErrorScreen error={menuError} />;
+  if (menuError) return <ErrorScreen error={menuError} onRetry={refetchMenu} />;
 
   const isLoading = submitting || addOrderItems.isPending;
   const footerHeight = 64 + insets.bottom;

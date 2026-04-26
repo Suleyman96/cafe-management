@@ -26,7 +26,7 @@ interface TakeoutOrderCardProps {
       menu_item?: { name?: string | null } | null;
     }>;
   };
-  currencySymbol?: string;
+  currencySymbol: string;
   onApprove?: (orderId: string) => void;
   onStartPreparing?: (orderId: string) => void;
   onMarkReady?: (orderId: string) => void;
@@ -35,7 +35,7 @@ interface TakeoutOrderCardProps {
 
 export const TakeoutOrderCard = React.memo(function TakeoutOrderCard({
   order,
-  currencySymbol = '$',
+  currencySymbol,
   onApprove,
   onStartPreparing,
   onMarkReady,

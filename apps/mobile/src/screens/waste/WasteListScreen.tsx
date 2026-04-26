@@ -82,11 +82,15 @@ export default function WasteListScreen() {
   });
 
   const handleCreate = async () => {
+    if (!newItem.item_name.trim()) {
+      showError(`${t('waste.itemName')} — ${tCommon('required')}`);
+      return;
+    }
     try {
       const qty = parseFloat(newItem.quantity) || 0;
       const costPerUnit = parseFloat(newItem.cost) || 0;
       await createWaste.mutateAsync({
-        item_name: newItem.item_name || 'Unknown',
+        item_name: newItem.item_name.trim(),
         category: '',
         quantity: qty,
         unit: newItem.unit,
@@ -231,6 +235,14 @@ export default function WasteListScreen() {
           <Text variant="titleMedium" style={{ fontWeight: '700', marginBottom: 12 }}>
             {t('waste.addWasteLog')}
           </Text>
+          <TextInput
+            label={t('waste.itemName')}
+            value={newItem.item_name}
+            onChangeText={(v: string) => setNewItem({ ...newItem, item_name: v })}
+            mode="outlined"
+            dense
+            style={styles.input}
+          />
           <TextInput
             label={tCommon('quantity')}
             value={newItem.quantity}

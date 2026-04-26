@@ -29,7 +29,7 @@ interface DeliveryOrderCardProps {
     }>;
     delivery_person?: { full_name: string } | null;
   };
-  currencySymbol?: string;
+  currencySymbol: string;
   onApprove?: (orderId: string) => void;
   onStartPreparing?: (orderId: string) => void;
   onMarkReady?: (orderId: string) => void;
@@ -45,7 +45,7 @@ const openInMaps = (address: string) => {
 
 export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
   order,
-  currencySymbol = '$',
+  currencySymbol,
   onApprove,
   onStartPreparing,
   onMarkReady,

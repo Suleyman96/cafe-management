@@ -20,14 +20,15 @@ const TYPE_COLORS: Record<SnackbarType, string> = {
 };
 
 export function SnackbarProvider({ children }: { children: React.ReactNode }) {
-  const [visible, setVisible] = useState(false);
-  const [message, setMessage] = useState('');
-  const [type, setType] = useState<SnackbarType>('info');
+  const [queue, setQueue] = useState<Array<{ message: string; type: SnackbarType }>>([]);
+  const current = queue[0];
 
   const showSnackbar = useCallback((msg: string, t: SnackbarType = 'info') => {
-    setMessage(msg);
-    setType(t);
-    setVisible(true);
+    setQueue((prev) => [...prev, { message: msg, type: t }]);
+  }, []);
+
+  const handleDismiss = useCallback(() => {
+    setQueue((prev) => prev.slice(1));
   }, []);
 
   const value = useMemo(() => ({ showSnackbar }), [showSnackbar]);
@@ -36,13 +37,13 @@ export function SnackbarProvider({ children }: { children: React.ReactNode }) {
     <SnackbarContext.Provider value={value}>
       {children}
       <Snackbar
-        visible={visible}
-        onDismiss={() => setVisible(false)}
+        visible={!!current}
+        onDismiss={handleDismiss}
         duration={3000}
-        style={{ backgroundColor: TYPE_COLORS[type] }}
-        action={{ label: 'OK', onPress: () => setVisible(false), textColor: '#fff' }}
+        style={{ backgroundColor: current ? TYPE_COLORS[current.type] : TYPE_COLORS.info }}
+        action={{ label: 'OK', onPress: handleDismiss, textColor: '#fff' }}
       >
-        {message}
+        {current?.message ?? ''}
       </Snackbar>
     </SnackbarContext.Provider>
   );

@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   summaryCard: { flex: 1 },
   totalValue: { fontWeight: '700', color: COLORS.danger },
   transValue: { fontWeight: '700', color: BRAND_PRIMARY },
-  topCatValue: { fontWeight: '700', color: '#8b5cf6' },
+  topCatValue: { fontWeight: '700', color: COLORS.purpleLight },
   breakdownCard: { marginHorizontal: 16, marginBottom: 8 },
   breakdownRow: { marginBottom: 8 },
   breakdownLabel: {
@@ -421,13 +421,13 @@ const styles = StyleSheet.create({
   breakdownName: { fontWeight: '600', color: COLORS.textPrimary, flex: 1, marginRight: 8 },
   progressBarBg: {
     height: 6,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: COLORS.border,
     borderRadius: 3,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: 6,
-    backgroundColor: '#6366f1',
+    backgroundColor: COLORS.indigo,
     borderRadius: 3,
   },
   filterSection: { paddingHorizontal: 16, marginBottom: 8 },
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
-  manageCatBtn: { borderColor: '#d1d5db' },
+  manageCatBtn: { borderColor: COLORS.border },
   manageCatLabel: { fontSize: 11 },
   filterChips: { gap: 6, paddingBottom: 6 },
   countText: { color: COLORS.textLight, paddingHorizontal: 16, marginBottom: 4 },

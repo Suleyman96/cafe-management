@@ -4,10 +4,10 @@ import { useTranslation } from '@gustri/i18n';
 import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
-import { Button, Chip, Dialog, FAB, Portal, Searchbar } from 'react-native-paper';
+import { Button, Dialog, FAB, Portal, Searchbar } from 'react-native-paper';
 import { CreateDeliveryModal } from '@/components/delivery/CreateDeliveryModal';
 import { DeliveryOrderCard } from '@/components/delivery/DeliveryOrderCard';
-import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
+import { EmptyState, ErrorScreen, FilterChipBar, LoadingScreen } from '@/components/ui';
 import {
   useCancelOrder,
   useCurrencySymbol,
@@ -19,6 +19,7 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text, TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
+import { COLORS } from '@/theme';
 
 const STATUS_FILTERS = [
   'all',
@@ -55,6 +56,15 @@ export default function DeliveryListScreen() {
   const cancelOrder = useCancelOrder();
 
   const currencySymbol = useCurrencySymbol();
+
+  const filterOptions = useMemo(
+    () =>
+      STATUS_FILTERS.map((s) => ({
+        key: s,
+        label: s === 'all' ? tCommon('all') : t(ORDER_STATUS_KEYS[s] || s),
+      })),
+    [t, tCommon],
+  );
 
   const activeCount = useMemo(() => {
     if (!orders) return 0;
@@ -165,7 +175,7 @@ export default function DeliveryListScreen() {
       {/* Active count badge */}
       {activeCount > 0 && (
         <View style={styles.activeCountRow}>
-          <MaterialCommunityIcons name="truck-delivery" size={16} color="#7c3aed" />
+          <MaterialCommunityIcons name="truck-delivery" size={16} color={COLORS.purple} />
           <Text variant="bodySmall" style={styles.activeCountText}>
             {activeCount} {t('delivery.activeCount')}
           </Text>
@@ -182,13 +192,12 @@ export default function DeliveryListScreen() {
       />
 
       {/* Status filter chips */}
-      <View style={styles.filterRow}>
-        {STATUS_FILTERS.map((s) => (
-          <Chip key={s} compact selected={statusFilter === s} onPress={() => setStatusFilter(s)}>
-            {s === 'all' ? tCommon('all') : t(ORDER_STATUS_KEYS[s] || s)}
-          </Chip>
-        ))}
-      </View>
+      <FilterChipBar
+        options={filterOptions}
+        selected={statusFilter}
+        onSelect={setStatusFilter}
+        defaultColor={COLORS.purple}
+      />
 
       <FlashList
         data={filtered}
@@ -301,7 +310,7 @@ export default function DeliveryListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   activeCountRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -310,7 +319,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   activeCountText: {
-    color: '#7c3aed',
+    color: COLORS.purple,
     fontWeight: '600',
     fontSize: 13,
   },
@@ -321,30 +330,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   searchInput: { fontSize: 14 },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 6,
-  },
   list: { paddingTop: 4, paddingBottom: 80 },
   fab: {
     position: 'absolute',
     right: 16,
     bottom: 24,
-    backgroundColor: '#7c3aed',
+    backgroundColor: COLORS.purple,
   },
-  cancelTitle: { color: '#ef4444' },
+  cancelTitle: { color: COLORS.danger },
   cancelOrderInfo: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background,
     borderRadius: 8,
     padding: 10,
     marginBottom: 12,
   },
   cancelOrderName: { fontWeight: '600' },
-  cancelOrderId: { color: '#9ca3af', marginTop: 2 },
-  cancelHint: { color: '#6b7280', marginBottom: 8 },
+  cancelOrderId: { color: COLORS.textLight, marginTop: 2 },
+  cancelHint: { color: COLORS.textMuted, marginBottom: 8 },
   cancelInput: { marginTop: 4 },
-  cancelBtn: { backgroundColor: '#ef4444' },
+  cancelBtn: { backgroundColor: COLORS.danger },
 });

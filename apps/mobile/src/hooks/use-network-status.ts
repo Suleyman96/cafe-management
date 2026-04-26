@@ -23,9 +23,17 @@ export function useNetworkStatus() {
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
-    return NetInfo.addEventListener((state: NetInfoState) => {
+    // Get initial state immediately
+    NetInfo.fetch().then((state) => {
       setIsOnline(!!state.isConnected);
     });
+
+    // Listen for changes
+    const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
+      setIsOnline(!!state.isConnected);
+    });
+
+    return unsubscribe;
   }, []);
 
   return { isOnline };

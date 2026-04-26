@@ -24,7 +24,13 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
 import { COLORS, TABLE_STATUS_COLORS, WAITER_CALL_REASON_COLORS } from '@/theme';
-import type { Order, OrderItemWithMenuItem, Table, TablesStackParamList } from '@/types';
+import type {
+  Order,
+  OrderItemWithMenuItem,
+  Table,
+  TablesStackParamList,
+  WaiterCall,
+} from '@/types';
 
 type Route = RouteProp<TablesStackParamList, 'TableDetail'>;
 type Nav = StackNavigationProp<TablesStackParamList, 'TableDetail'>;
@@ -65,7 +71,7 @@ export default function TableDetailScreen() {
   );
 
   const pendingCalls = useMemo(
-    () => waiterCalls?.filter((c: { table_id: string }) => c.table_id === tableId) || [],
+    () => waiterCalls?.filter((c: Pick<WaiterCall, 'table_id'>) => c.table_id === tableId) || [],
     [waiterCalls, tableId],
   );
 
@@ -146,7 +152,7 @@ export default function TableDetailScreen() {
                         styles.statusChip,
                         table.status === s && { backgroundColor: TABLE_STATUS_COLORS[s] },
                       ]}
-                      textStyle={table.status === s ? { color: '#fff' } : undefined}
+                      textStyle={table.status === s ? { color: COLORS.card } : undefined}
                     >
                       {t(`tables.${s}`)}
                     </Chip>
@@ -162,12 +168,7 @@ export default function TableDetailScreen() {
                     {t('calls.title')}
                   </Text>
                   {pendingCalls.map(
-                    (call: {
-                      id: string;
-                      call_type: string;
-                      reason: string;
-                      created_at: string;
-                    }) => {
+                    (call: Pick<WaiterCall, 'id' | 'call_type' | 'reason' | 'created_at'>) => {
                       const callType = call.call_type ?? 'assistance';
                       const chipColor = WAITER_CALL_REASON_COLORS[callType] || COLORS.textMuted;
                       return (

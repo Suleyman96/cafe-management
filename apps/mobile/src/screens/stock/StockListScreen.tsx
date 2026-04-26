@@ -316,7 +316,11 @@ export default function StockListScreen() {
                         {m.quantity_change}
                       </Text>
                       <Text variant="bodySmall" style={styles.historyType}>
-                        {m.movement_type}
+                        {m.movement_type === 'in'
+                          ? t('stock.addStockLabel')
+                          : m.movement_type === 'out'
+                            ? t('stock.removeStockLabel')
+                            : t('stock.adjustment')}
                       </Text>
                     </View>
                     <View style={styles.historyMeta}>
