@@ -4,7 +4,7 @@ import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import type { Table } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
-import { Plus, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw, UtensilsCrossed } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/modals/confirm-dialog';
@@ -168,39 +168,49 @@ export default function TablesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-        {tables?.map((table) => {
-          const activeOrders = getActiveOrdersForTable(table.id);
-          const activeCalls = getActiveCallsForTable(table.id);
+      {tables?.length === 0 ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <UtensilsCrossed className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <p className="text-lg font-medium text-gray-500 mb-1">{t('tables.noTables')}</p>
+            <p className="text-sm text-gray-400">{t('tables.noTablesDescription')}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+          {tables?.map((table) => {
+            const activeOrders = getActiveOrdersForTable(table.id);
+            const activeCalls = getActiveCallsForTable(table.id);
 
-          return (
-            <TableCard
-              key={table.id}
-              table={table}
-              activeOrders={activeOrders}
-              activeCalls={activeCalls}
-              isAdmin={isAdmin}
-              creatingOrderForTable={null}
-              tableMenuOpen={tableMenuOpen}
-              onTableMenuToggle={setTableMenuOpen}
-              onEditTable={(t) => {
-                setEditingTable(t);
-                setIsTableModalOpen(true);
-                setTableMenuOpen(null);
-              }}
-              onDeleteTable={(t) => {
-                handleDeleteTable(t);
-                setTableMenuOpen(null);
-              }}
-              onTransferTable={(t) => {
-                setSelectedTable(t);
-                setIsTransferModalOpen(true);
-              }}
-              formatPrice={formatPrice}
-            />
-          );
-        })}
-      </div>
+            return (
+              <TableCard
+                key={table.id}
+                table={table}
+                activeOrders={activeOrders}
+                activeCalls={activeCalls}
+                isAdmin={isAdmin}
+                creatingOrderForTable={null}
+                tableMenuOpen={tableMenuOpen}
+                onTableMenuToggle={setTableMenuOpen}
+                onEditTable={(t) => {
+                  setEditingTable(t);
+                  setIsTableModalOpen(true);
+                  setTableMenuOpen(null);
+                }}
+                onDeleteTable={(t) => {
+                  handleDeleteTable(t);
+                  setTableMenuOpen(null);
+                }}
+                onTransferTable={(t) => {
+                  setSelectedTable(t);
+                  setIsTransferModalOpen(true);
+                }}
+                formatPrice={formatPrice}
+              />
+            );
+          })}
+        </div>
+      )}
 
       {/* Table Modal (Add/Edit) */}
       <TableModal

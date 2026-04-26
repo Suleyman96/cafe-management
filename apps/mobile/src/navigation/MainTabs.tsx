@@ -15,14 +15,22 @@ const TAB_CONFIG: Record<
   keyof MainTabParamList,
   { label: string; icon: IconName; roles: string[] }
 > = {
-  TablesTab: { label: 'Tables', icon: 'table-furniture', roles: ['waiter', 'admin', 'owner'] },
+  TablesTab: {
+    label: 'Tables',
+    icon: 'table-furniture',
+    roles: ['waiter', 'admin', 'owner', 'kitchen'],
+  },
   OrdersTab: {
     label: 'Orders',
     icon: 'clipboard-list',
     roles: ['waiter', 'admin', 'owner', 'kitchen'],
   },
-  KitchenTab: { label: 'Kitchen', icon: 'chef-hat', roles: ['kitchen', 'admin', 'owner'] },
-  CallsTab: { label: 'Calls', icon: 'bell-ring', roles: ['waiter', 'admin', 'owner'] },
+  KitchenTab: {
+    label: 'Kitchen',
+    icon: 'chef-hat',
+    roles: ['waiter', 'kitchen', 'admin', 'owner'],
+  },
+  CallsTab: { label: 'Calls', icon: 'bell-ring', roles: ['waiter', 'admin', 'owner', 'kitchen'] },
   ProfileTab: { label: 'Profile', icon: 'account', roles: ['waiter', 'admin', 'owner', 'kitchen'] },
 };
 

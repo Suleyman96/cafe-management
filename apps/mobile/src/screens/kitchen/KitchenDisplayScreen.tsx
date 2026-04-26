@@ -9,7 +9,7 @@ import { KitchenOrderCard } from '@/components/kitchen/KitchenOrderCard';
 import { LoadingScreen } from '@/components/ui';
 import { useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
-import { BRAND_PRIMARY, COLORS } from '@/theme';
+import { BRAND_PRIMARY, COLORS, TYPOGRAPHY } from '@/theme';
 
 const KITCHEN_STATUSES = [ORDER_STATUS.NEW, ORDER_STATUS.PREPARING, ORDER_STATUS.READY];
 
@@ -222,7 +222,7 @@ export default function KitchenDisplayScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>{t('kitchen.noActiveOrders')}</Text>
-            <Text style={styles.emptySubtext}>{t('kitchen.newOrdersAppearHere')}</Text>
+            <Text style={styles.emptySubtext}>{t('kitchen.waitingForOrders')}</Text>
           </View>
         }
         contentContainerStyle={styles.list}
@@ -261,13 +261,12 @@ const styles = StyleSheet.create({
     paddingTop: 100,
   },
   emptyText: {
+    ...TYPOGRAPHY.sectionHeader,
     color: COLORS.textMuted,
-    fontSize: 18,
-    fontWeight: '600',
   },
   emptySubtext: {
+    ...TYPOGRAPHY.body,
     color: '#4b5563',
     marginTop: 4,
-    fontSize: 14,
   },
 });

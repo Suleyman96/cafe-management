@@ -3,7 +3,7 @@ import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StatusBadge, TimeElapsed } from '@/components/ui';
-import { BRAND_PRIMARY, COLORS, ORDER_STATUS_COLORS } from '@/theme';
+import { BRAND_PRIMARY, CARD_PADDING, CARD_RADIUS, COLORS, ORDER_STATUS_COLORS } from '@/theme';
 
 interface KitchenOrderCardProps {
   order: {
@@ -155,8 +155,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: '#262626',
     borderWidth: 3,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: CARD_RADIUS,
+    padding: CARD_PADDING,
   },
   header: {
     flexDirection: 'row',

@@ -304,6 +304,7 @@ export default function WaiterCallsPage() {
           <div className="text-center py-8 sm:py-12 text-gray-500">
             <Bell className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 text-gray-300" />
             <p className="text-sm sm:text-base">{t('calls.noCalls')}</p>
+            <p className="text-xs sm:text-sm text-gray-400 mt-1">{t('calls.noCallsDescription')}</p>
           </div>
         )}
       </div>

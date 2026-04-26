@@ -4,7 +4,7 @@ import { ORDER_STATUS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
-import { Search } from 'lucide-react';
+import { ClipboardList, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { CancelOrderModal } from '@/components/modals/cancel-order-modal';
@@ -194,19 +194,33 @@ export default function OrdersPage() {
 
       {/* Orders List */}
       <div className="space-y-3 sm:space-y-4">
-        {filteredOrders?.map((order) => (
-          <OrderListCard
-            key={order.id}
-            order={order}
-            formatPrice={formatPrice}
-            onStatusUpdate={handleStatusUpdate}
-            onOpenPayment={(o) => {
-              setSelectedOrder(o);
-              setIsPaymentModalOpen(true);
-            }}
-            onOpenCancel={setCancelOrderTarget}
-          />
-        ))}
+        {filteredOrders?.length === 0 ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <ClipboardList className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p className="text-lg font-medium text-gray-500 mb-1">{t('orders.noOrders')}</p>
+              <p className="text-sm text-gray-400">
+                {statusFilter !== 'all'
+                  ? t('orders.noOrdersWithStatus', { status: statusFilter })
+                  : t('orders.noOrdersYet')}
+              </p>
+            </div>
+          </div>
+        ) : (
+          filteredOrders?.map((order) => (
+            <OrderListCard
+              key={order.id}
+              order={order}
+              formatPrice={formatPrice}
+              onStatusUpdate={handleStatusUpdate}
+              onOpenPayment={(o) => {
+                setSelectedOrder(o);
+                setIsPaymentModalOpen(true);
+              }}
+              onOpenCancel={setCancelOrderTarget}
+            />
+          ))
+        )}
       </div>
 
       {selectedOrder && (

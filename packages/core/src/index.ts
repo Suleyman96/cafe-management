@@ -2,6 +2,7 @@
  * Core utilities and business logic
  */
 
+export * from './colors';
 export * from './constants';
 export * from './errors';
 export * from './profit-metrics';

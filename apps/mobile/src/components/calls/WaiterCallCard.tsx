@@ -3,7 +3,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Text } from 'react-native-paper';
 import { TimeElapsed } from '@/components/ui';
-import { WAITER_CALL_REASON_COLORS } from '@/theme';
+import { CARD_RADIUS, TYPOGRAPHY, WAITER_CALL_REASON_COLORS } from '@/theme';
 
 interface WaiterCallCardProps {
   call: {
@@ -39,11 +39,11 @@ export const WaiterCallCard = React.memo(function WaiterCallCard({
   const { t } = useTranslation('staff');
 
   return (
-    <Card style={[styles.card, { borderLeftColor: reasonColor }]}>
+    <Card style={[styles.card, { borderLeftColor: reasonColor, borderRadius: CARD_RADIUS }]}>
       <Card.Content style={styles.content}>
         <View style={styles.topRow}>
           <View style={styles.tableInfo}>
-            <Text variant="titleLarge" style={styles.tableNumber}>
+            <Text style={styles.tableNumber}>
               {t('tables.table')} #{call.table?.table_number || '—'}
             </Text>
             {call.table?.location && (
@@ -117,6 +117,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   tableNumber: {
+    ...TYPOGRAPHY.cardTitle,
     fontWeight: '700',
     color: '#1e293b',
   },

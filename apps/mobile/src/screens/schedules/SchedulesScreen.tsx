@@ -31,7 +31,7 @@ import {
 } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
-import { BRAND_PRIMARY, COLORS } from '@/theme';
+import { BRAND_PRIMARY, CARD_RADIUS, COLORS } from '@/theme';
 
 function getWeekDates(referenceDate: Date) {
   const d = new Date(referenceDate);
@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
   weeklyContent: { paddingHorizontal: 16, paddingBottom: 80 },
   weeklyDay: {
     backgroundColor: COLORS.card,
-    borderRadius: 10,
+    borderRadius: CARD_RADIUS,
     marginBottom: 8,
     padding: 12,
     borderWidth: 1,

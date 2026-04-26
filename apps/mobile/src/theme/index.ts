@@ -1,3 +1,9 @@
+import {
+  ORDER_STATUS_HEX,
+  ROLE_BADGE_HEX,
+  TABLE_STATUS_HEX,
+  WAITER_CALL_REASON_HEX,
+} from '@gustri/core';
 import { MD3DarkTheme, MD3LightTheme } from 'react-native-paper';
 
 /** Brand primary color — single source of truth for the teal accent used across the app. */
@@ -7,10 +13,10 @@ export const lightTheme = {
   ...MD3LightTheme,
   colors: {
     ...MD3LightTheme.colors,
-    primary: '#2563eb',
-    primaryContainer: '#dbeafe',
-    secondary: '#7c3aed',
-    secondaryContainer: '#ede9fe',
+    primary: BRAND_PRIMARY,
+    primaryContainer: '#d4eff4',
+    secondary: '#64748b',
+    secondaryContainer: '#f1f5f9',
   },
 };
 
@@ -25,25 +31,28 @@ export const kitchenDarkTheme = {
   },
 };
 
-export type ColorPair = { bg: string; text: string };
+export type { StatusColorPair as ColorPair } from '@gustri/core';
 
-export const ORDER_STATUS_COLORS: Record<string, ColorPair> = {
-  pending_approval: { bg: '#fef3c7', text: '#92400e' }, // amber-100 / amber-800
-  new: { bg: '#d4eff4', text: '#274856' }, // custom blue-100 / blue-800
-  preparing: { bg: '#fef9c3', text: '#854d0e' }, // yellow-100 / yellow-800
-  ready: { bg: '#dcfce7', text: '#166534' }, // green-100 / green-800
-  served: { bg: '#ede9fe', text: '#6b21a8' }, // purple-100 / purple-800
-  out_for_delivery: { bg: '#ede9fe', text: '#5b21b6' }, // violet-100 / violet-800
-  delivered: { bg: '#d1fae5', text: '#065f46' }, // emerald-100 / emerald-800
-  cancelled: { bg: '#fee2e2', text: '#991b1b' }, // red-100 / red-800
-  closed: { bg: '#f3f4f6', text: '#1f2937' }, // gray-100 / gray-800
-};
+// Status colors — single source of truth in @gustri/core
+export const ORDER_STATUS_COLORS = ORDER_STATUS_HEX;
+export const TABLE_STATUS_COLORS = TABLE_STATUS_HEX;
+export const ROLE_COLORS = ROLE_BADGE_HEX;
+export const WAITER_CALL_REASON_COLORS = WAITER_CALL_REASON_HEX;
 
-export const TABLE_STATUS_COLORS: Record<string, ColorPair> = {
-  free: { bg: '#f3f4f6', text: '#4b5563' }, // gray-100 / gray-600
-  occupied: { bg: '#ffedd5', text: '#9a3412' }, // orange-100 / orange-800
-  reserved: { bg: '#d4eff4', text: '#274856' }, // custom blue-100 / blue-800
-  closed: { bg: '#e5e7eb', text: '#4b5563' }, // gray-200 / gray-600
+/** Shared card container border-radius — matches staff-web `rounded-lg` (8px). */
+export const CARD_RADIUS = 8;
+
+/** Shared card container padding — matches staff-web `p-3` (12px) on mobile. */
+export const CARD_PADDING = 12;
+
+/** Typography scale aligned with staff-web Tailwind classes. */
+export const TYPOGRAPHY = {
+  screenTitle: { fontSize: 22, fontWeight: '700' as const },
+  sectionHeader: { fontSize: 18, fontWeight: '600' as const },
+  cardTitle: { fontSize: 15, fontWeight: '600' as const },
+  body: { fontSize: 14, fontWeight: '400' as const },
+  meta: { fontSize: 12, fontWeight: '400' as const },
+  badge: { fontSize: 11, fontWeight: '600' as const },
 };
 
 export const COLORS = {
@@ -76,18 +85,3 @@ export const COLORS = {
   indigo: '#6366f1',
   orange: '#ea580c',
 } as const;
-
-export const ROLE_COLORS: Record<string, ColorPair> = {
-  owner: { bg: '#d1fae5', text: '#065f46' }, // emerald-100 / emerald-800
-  admin: { bg: '#ede9fe', text: '#6b21a8' }, // purple-100 / purple-800
-  kitchen: { bg: '#ffedd5', text: '#9a3412' }, // orange-100 / orange-800
-  waiter: { bg: '#d4eff4', text: '#274856' }, // custom blue-100 / blue-800
-};
-
-export const WAITER_CALL_REASON_COLORS: Record<string, string> = {
-  emergency: '#ef4444',
-  complaint: '#f97316',
-  bill: '#10b981',
-  question: BRAND_PRIMARY,
-  assistance: '#6b7280',
-};

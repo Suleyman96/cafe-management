@@ -230,6 +230,13 @@ export const ORDER_STATUS_KEYS: Record<string, string> = {
   cancelled: 'orders.cancelled',
 };
 
+// Time-elapsed color thresholds (minutes) — shared across web & mobile kitchen displays
+export const TIME_ELAPSED_THRESHOLDS = {
+  WARNING: 10, // yellow/amber
+  ELEVATED: 15, // orange
+  CRITICAL: 20, // red
+} as const;
+
 // UI constants
 export const UI = {
   MIN_TOUCH_TARGET: 44, // 44x44px minimum

@@ -1,3 +1,4 @@
+import { TIME_ELAPSED_THRESHOLDS } from '@gustri/core';
 import { differenceInMinutes, differenceInSeconds } from 'date-fns';
 import React, { useEffect, useRef, useState } from 'react';
 import { Text } from 'react-native-paper';
@@ -9,9 +10,9 @@ interface TimeElapsedProps {
 }
 
 function getTimeColor(minutes: number): string {
-  if (minutes >= 20) return COLORS.danger;
-  if (minutes >= 15) return '#f97316';
-  if (minutes >= 10) return COLORS.warning;
+  if (minutes >= TIME_ELAPSED_THRESHOLDS.CRITICAL) return COLORS.danger;
+  if (minutes >= TIME_ELAPSED_THRESHOLDS.ELEVATED) return '#f97316';
+  if (minutes >= TIME_ELAPSED_THRESHOLDS.WARNING) return COLORS.warning;
   return COLORS.textMuted;
 }
 
@@ -61,7 +62,13 @@ export const TimeElapsed = React.memo(function TimeElapsed({
   const color = showColor ? getTimeColor(elapsed.minutes) : COLORS.textMuted;
 
   return (
-    <Text variant="bodySmall" style={{ color, fontWeight: elapsed.minutes >= 10 ? '700' : '400' }}>
+    <Text
+      variant="bodySmall"
+      style={{
+        color,
+        fontWeight: elapsed.minutes >= TIME_ELAPSED_THRESHOLDS.WARNING ? '700' : '400',
+      }}
+    >
       {elapsed.text}
     </Text>
   );

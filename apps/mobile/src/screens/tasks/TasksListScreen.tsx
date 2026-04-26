@@ -323,10 +323,8 @@ export default function TasksListScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="checkbox-blank-outline"
-            title={tab === 'templates' ? t('tasks.noRecurringTemplates') : t('tasks.noTasks')}
-            description={
-              tab === 'templates' ? t('tasks.createRecurringHint') : t('tasks.allCaughtUp')
-            }
+            title={tab === 'templates' ? t('tasks.noTemplates') : t('tasks.noTasks')}
+            description={tab !== 'templates' ? t('tasks.allCaughtUp') : undefined}
           />
         }
         contentContainerStyle={styles.list}

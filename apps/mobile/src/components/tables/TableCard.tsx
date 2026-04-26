@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { StatusBadge } from '@/components/ui';
 import { Text } from '@/lib/paper-compat';
-import { COLORS, TABLE_STATUS_COLORS } from '@/theme';
+import { CARD_PADDING, CARD_RADIUS, COLORS, TABLE_STATUS_COLORS, TYPOGRAPHY } from '@/theme';
 
 interface TableCardProps {
   table: {
@@ -28,18 +28,17 @@ export const TableCard = React.memo(function TableCard({
   onPress,
 }: TableCardProps) {
   const statusColors = TABLE_STATUS_COLORS[table.status];
-  const borderColor = statusColors?.text || '#6b7280';
+  const backgroundColor = statusColors?.bg || COLORS.card;
+  const borderColor = statusColors?.text || COLORS.border;
 
   return (
     <TouchableOpacity
-      style={[styles.card, { borderColor }, hasWaiterCall && styles.cardWithCall]}
+      style={[styles.card, { backgroundColor, borderColor }, hasWaiterCall && styles.cardWithCall]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       <View style={styles.header}>
-        <Text variant="headlineSmall" style={styles.tableNumber}>
-          #{table.table_number}
-        </Text>
+        <Text style={styles.tableNumber}>#{table.table_number}</Text>
         {hasWaiterCall && <View style={styles.callDot} />}
       </View>
 
@@ -70,9 +69,9 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     margin: 4,
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 14,
+    borderWidth: 1.5,
+    borderRadius: CARD_RADIUS,
+    padding: CARD_PADDING,
     backgroundColor: COLORS.card,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -93,7 +92,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   tableNumber: {
-    fontWeight: '700',
+    ...TYPOGRAPHY.screenTitle,
     color: COLORS.textPrimary,
   },
   callDot: {

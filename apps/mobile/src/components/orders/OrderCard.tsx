@@ -3,7 +3,7 @@ import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { StatusBadge, TimeElapsed } from '@/components/ui';
 import { Text } from '@/lib/paper-compat';
-import { COLORS } from '@/theme';
+import { CARD_PADDING, CARD_RADIUS, COLORS, TYPOGRAPHY } from '@/theme';
 
 interface OrderCardProps {
   order: {
@@ -61,9 +61,7 @@ export const OrderCard = React.memo(function OrderCard({
     >
       <View style={styles.topRow}>
         <View style={styles.leftInfo}>
-          <Text variant="titleMedium" style={styles.orderNumber}>
-            #{order.order_number || '—'}
-          </Text>
+          <Text style={styles.orderNumber}>#{order.order_number || '—'}</Text>
           <Text variant="bodySmall" style={styles.muted}>
             {tableLabel}
           </Text>
@@ -92,10 +90,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 8,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: CARD_RADIUS,
     borderColor: COLORS.border,
     backgroundColor: COLORS.card,
-    padding: 14,
+    padding: CARD_PADDING,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -111,6 +109,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   orderNumber: {
+    ...TYPOGRAPHY.cardTitle,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },

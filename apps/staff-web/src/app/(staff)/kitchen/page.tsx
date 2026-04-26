@@ -1,6 +1,12 @@
 'use client';
 
-import { isDeliveryOrder, isDineInOrder, isTakeoutOrder, ORDER_STATUS_KEYS } from '@gustri/core';
+import {
+  isDeliveryOrder,
+  isDineInOrder,
+  isTakeoutOrder,
+  ORDER_STATUS_KEYS,
+  TIME_ELAPSED_THRESHOLDS,
+} from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { LoadingSpinner } from '@gustri/ui';
@@ -94,9 +100,9 @@ export default function KitchenDisplayPage() {
   // Get time color based on elapsed time
   const getTimeColor = (minutes: number, status: string) => {
     if (status === 'ready') return 'text-green-600';
-    if (minutes > 20) return 'text-red-600';
-    if (minutes > 15) return 'text-orange-600';
-    if (minutes > 10) return 'text-yellow-600';
+    if (minutes >= TIME_ELAPSED_THRESHOLDS.CRITICAL) return 'text-red-600';
+    if (minutes >= TIME_ELAPSED_THRESHOLDS.ELEVATED) return 'text-orange-600';
+    if (minutes >= TIME_ELAPSED_THRESHOLDS.WARNING) return 'text-yellow-600';
     return 'text-gray-600';
   };
 
@@ -108,8 +114,10 @@ export default function KitchenDisplayPage() {
     if (status === 'ready') return 'bg-green-50 border-green-400 shadow-green-200';
     if (status === 'new')
       return 'bg-blue-100 border-blue-400 ring-4 ring-blue-500/50 shadow-blue-200';
-    if (minutes > 20) return 'bg-red-100 border-red-400 shadow-red-200';
-    if (minutes > 15) return 'bg-orange-100 border-orange-400 shadow-orange-200';
+    if (minutes >= TIME_ELAPSED_THRESHOLDS.CRITICAL)
+      return 'bg-red-100 border-red-400 shadow-red-200';
+    if (minutes >= TIME_ELAPSED_THRESHOLDS.ELEVATED)
+      return 'bg-orange-100 border-orange-400 shadow-orange-200';
     return 'bg-yellow-50 border-yellow-400 shadow-yellow-200';
   };
 
@@ -512,11 +520,11 @@ export default function KitchenDisplayPage() {
               {/* Timer - Compact */}
               <div
                 className={`flex items-center gap-1 sm:gap-2 mb-2 sm:mb-3 px-2 py-1 sm:py-1.5 rounded-lg ${
-                  elapsedMinutes > 20
+                  elapsedMinutes > TIME_ELAPSED_THRESHOLDS.CRITICAL
                     ? 'bg-red-200'
-                    : elapsedMinutes > 15
+                    : elapsedMinutes > TIME_ELAPSED_THRESHOLDS.ELEVATED
                       ? 'bg-orange-200'
-                      : elapsedMinutes > 10
+                      : elapsedMinutes > TIME_ELAPSED_THRESHOLDS.WARNING
                         ? 'bg-yellow-200'
                         : 'bg-white/60'
                 }`}
@@ -526,7 +534,7 @@ export default function KitchenDisplayPage() {
                   {elapsedMinutes}
                 </span>
                 <span className={`text-xs sm:text-sm ${timeColor}`}>{t('kitchen.min')}</span>
-                {elapsedMinutes > 15 && (
+                {elapsedMinutes > TIME_ELAPSED_THRESHOLDS.ELEVATED && (
                   <span className="ml-auto text-red-600 text-xs sm:text-sm font-bold animate-pulse">
                     {t('kitchen.urgent')}
                   </span>

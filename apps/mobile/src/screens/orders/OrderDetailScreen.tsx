@@ -17,7 +17,7 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
-import { COLORS } from '@/theme';
+import { CARD_RADIUS, COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, OrderPayment, OrdersStackParamList } from '@/types';
 
 type Route = RouteProp<OrdersStackParamList, 'OrderDetail'>;
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 12,
+    borderRadius: CARD_RADIUS,
     padding: 16,
     gap: 4,
     shadowColor: '#000',
