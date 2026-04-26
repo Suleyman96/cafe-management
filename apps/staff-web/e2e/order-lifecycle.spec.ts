@@ -29,8 +29,8 @@ test.describe('Order Lifecycle', () => {
     await page.goto('/tables');
     await page.waitForLoadState('networkidle');
 
-    // Find a free table (T10 is likely free)
-    const table = page.getByText('T10').first();
+    // Find a free table (T08 is a private room, likely free)
+    const table = page.getByText('T08').first();
     await expect(table).toBeVisible({ timeout: 10000 });
     await table.click();
     await page.waitForLoadState('networkidle');
