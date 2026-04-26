@@ -47,7 +47,7 @@ export default function OrdersListScreen() {
       STATUS_FILTERS.map((s) => ({
         key: s,
         label: s === 'all' ? tCommon('all') : t(ORDER_STATUS_KEYS[s] || s),
-        color: s === 'all' ? BRAND_PRIMARY : ORDER_STATUS_COLORS[s] || BRAND_PRIMARY,
+        color: s === 'all' ? BRAND_PRIMARY : ORDER_STATUS_COLORS[s]?.text || BRAND_PRIMARY,
       })),
     [t, tCommon],
   );

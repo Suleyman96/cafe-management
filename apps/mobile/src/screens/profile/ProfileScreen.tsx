@@ -62,8 +62,13 @@ export default function ProfileScreen() {
         </Text>
         <Chip
           compact
-          style={{ backgroundColor: ROLE_COLORS[staff.role] || '#6b7280' }}
-          textStyle={{ color: '#fff', fontWeight: '600' }}
+          style={{
+            backgroundColor: (ROLE_COLORS[staff.role] || { bg: '#f3f4f6' }).bg,
+          }}
+          textStyle={{
+            color: (ROLE_COLORS[staff.role] || { text: '#374151' }).text,
+            fontWeight: '600',
+          }}
         >
           {tRoles(staff.role)}
         </Chip>

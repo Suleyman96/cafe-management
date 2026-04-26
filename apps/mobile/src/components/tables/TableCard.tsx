@@ -27,7 +27,8 @@ export const TableCard = React.memo(function TableCard({
   currencySymbol,
   onPress,
 }: TableCardProps) {
-  const borderColor = TABLE_STATUS_COLORS[table.status] || '#6b7280';
+  const statusColors = TABLE_STATUS_COLORS[table.status];
+  const borderColor = statusColors?.text || '#6b7280';
 
   return (
     <TouchableOpacity

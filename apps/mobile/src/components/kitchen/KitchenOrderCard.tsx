@@ -43,7 +43,7 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
 
   const allItemsReady = activeItems.length > 0 && activeItems.every((i) => i.status === 'ready');
 
-  const borderColor = ORDER_STATUS_COLORS[order.status] || BRAND_PRIMARY;
+  const borderColor = ORDER_STATUS_COLORS[order.status]?.text || BRAND_PRIMARY;
 
   const tableLabel = order.table
     ? t('kitchen.tableNumber', { number: order.table.table_number })

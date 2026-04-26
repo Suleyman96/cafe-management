@@ -19,13 +19,13 @@ interface StaffCardProps {
 
 export const StaffCard = React.memo(function StaffCard({ staff, onPress }: StaffCardProps) {
   const { t } = useTranslation('staff');
-  const roleColor = ROLE_COLORS[staff.role] || '#6b7280';
+  const roleColors = ROLE_COLORS[staff.role] || { bg: '#f3f4f6', text: '#374151' };
 
   return (
     <Card style={styles.card} onPress={() => onPress(staff.id)}>
       <Card.Content style={styles.content}>
         <View style={styles.row}>
-          <MaterialCommunityIcons name="account-circle" size={40} color={roleColor} />
+          <MaterialCommunityIcons name="account-circle" size={40} color={roleColors.text} />
           <View style={styles.info}>
             <Text variant="titleSmall" style={styles.name}>
               {staff.full_name}
@@ -39,8 +39,8 @@ export const StaffCard = React.memo(function StaffCard({ staff, onPress }: Staff
           <View style={styles.badges}>
             <Chip
               compact
-              style={[styles.roleChip, { backgroundColor: roleColor }]}
-              textStyle={{ color: '#fff', fontSize: 10, fontWeight: '600' }}
+              style={[styles.roleChip, { backgroundColor: roleColors.bg }]}
+              textStyle={{ color: roleColors.text, fontSize: 10, fontWeight: '600' }}
             >
               {t(`staffMgmt.role.${staff.role}`, { defaultValue: staff.role })}
             </Chip>

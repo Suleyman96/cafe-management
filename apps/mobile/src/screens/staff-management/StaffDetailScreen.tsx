@@ -85,7 +85,7 @@ export default function StaffDetailScreen() {
   if (error || !member)
     return <ErrorScreen error={error || t('staffMgmt.staffNotFound')} onRetry={refetch} />;
 
-  const roleColor = ROLE_COLORS[member.role] || COLORS.textMuted;
+  const roleColors = ROLE_COLORS[member.role] || { bg: '#f3f4f6', text: '#374151' };
   const editableRoles = currentUser?.role === 'owner' ? ROLES_ALL : ROLES_NO_OWNER;
 
   return (
@@ -93,14 +93,14 @@ export default function StaffDetailScreen() {
       {/* Profile Card */}
       <Card style={styles.card}>
         <Card.Content style={styles.profileContent}>
-          <MaterialCommunityIcons name="account-circle" size={64} color={roleColor} />
+          <MaterialCommunityIcons name="account-circle" size={64} color={roleColors.text} />
           <Text variant="headlineSmall" style={styles.name}>
             {member.full_name}
           </Text>
           <Chip
             compact
-            style={[styles.roleChip, { backgroundColor: roleColor }]}
-            textStyle={{ color: COLORS.card, fontWeight: '600' }}
+            style={[styles.roleChip, { backgroundColor: roleColors.bg }]}
+            textStyle={{ color: roleColors.text, fontWeight: '600' }}
           >
             {t(`staffMgmt.role.${member.role}`)}
           </Chip>

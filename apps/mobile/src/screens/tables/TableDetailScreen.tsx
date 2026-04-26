@@ -140,23 +140,28 @@ export default function TableDetailScreen() {
                   </Text>
                 )}
                 <View style={styles.chipRow}>
-                  {TABLE_STATUSES.map((s) => (
-                    <Chip
-                      key={s}
-                      selected={table.status === s}
-                      onPress={() => {
-                        if (table.status !== s) setStatusConfirm(s);
-                      }}
-                      compact
-                      style={[
-                        styles.statusChip,
-                        table.status === s && { backgroundColor: TABLE_STATUS_COLORS[s] },
-                      ]}
-                      textStyle={table.status === s ? { color: COLORS.card } : undefined}
-                    >
-                      {t(`tables.${s}`)}
-                    </Chip>
-                  ))}
+                  {TABLE_STATUSES.map((s) => {
+                    const chipColors = TABLE_STATUS_COLORS[s];
+                    return (
+                      <Chip
+                        key={s}
+                        selected={table.status === s}
+                        onPress={() => {
+                          if (table.status !== s) setStatusConfirm(s);
+                        }}
+                        compact
+                        style={[
+                          styles.statusChip,
+                          table.status === s && chipColors && { backgroundColor: chipColors.bg },
+                        ]}
+                        textStyle={
+                          table.status === s && chipColors ? { color: chipColors.text } : undefined
+                        }
+                      >
+                        {t(`tables.${s}`)}
+                      </Chip>
+                    );
+                  })}
                 </View>
               </Card.Content>
             </Card>
