@@ -1,10 +1,12 @@
 import { createStackNavigator } from '@react-navigation/stack';
 import { DrawerMenuButton } from '@/components/navigation/DrawerMenuButton';
-import StaffDetailScreen from '@/screens/staff-management/StaffDetailScreen';
-import StaffListScreen from '@/screens/staff-management/StaffListScreen';
 import type { StaffManagementStackParamList } from '@/types';
+import { lazyScreen } from './lazy-screen';
 
 const Stack = createStackNavigator<StaffManagementStackParamList>();
+
+const StaffListScreen = lazyScreen(() => import('@/screens/staff-management/StaffListScreen'));
+const StaffDetailScreen = lazyScreen(() => import('@/screens/staff-management/StaffDetailScreen'));
 
 export function StaffManagementStack() {
   return (

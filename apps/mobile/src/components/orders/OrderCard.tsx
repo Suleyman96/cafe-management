@@ -18,7 +18,7 @@ interface OrderCardProps {
     table?: { table_number: string; location?: string | null } | null;
   };
   currencySymbol: string;
-  onPress: () => void;
+  onPress: (orderId: string) => void;
 }
 
 const TYPE_STYLES: Record<string, { borderColor: string; backgroundColor: string; label: string }> =
@@ -54,7 +54,7 @@ export const OrderCard = React.memo(function OrderCard({
           backgroundColor: typeStyle.backgroundColor,
         },
       ]}
-      onPress={onPress}
+      onPress={() => onPress(order.id)}
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={`${t('orders.orderHash', { number: order.order_number || '—' })}, ${order.status}`}

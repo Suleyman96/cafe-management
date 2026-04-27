@@ -3,7 +3,7 @@ import { useTranslation } from '@gustri/i18n';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { FlashList } from '@shopify/flash-list';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { EmptyState, ErrorScreen, FilterChipBar, LoadingScreen } from '@/components/ui';
@@ -36,8 +36,13 @@ export default function OrdersListScreen() {
   const navigation = useNavigation<Nav>();
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
-  const { data: orders, isLoading, error, refetch } = useOrders();
+  const { data: orders, isLoading, isRefetching, error, refetch } = useOrders();
   const currencySymbol = useCurrencySymbol();
+
+  const handleOrderPress = useCallback(
+    (orderId: string) => navigation.navigate('OrderDetail', { orderId }),
+    [navigation],
+  );
 
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -99,13 +104,9 @@ export default function OrdersListScreen() {
       <FlashList
         data={filteredOrders}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
         renderItem={({ item }) => (
-          <OrderCard
-            order={item}
-            currencySymbol={currencySymbol}
-            onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}
-          />
+          <OrderCard order={item} currencySymbol={currencySymbol} onPress={handleOrderPress} />
         )}
         ListEmptyComponent={
           <EmptyState

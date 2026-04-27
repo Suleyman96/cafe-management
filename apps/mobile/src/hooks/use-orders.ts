@@ -3,6 +3,7 @@ import type { Order, OrderItem } from '@gustri/database';
 import { useDb } from '@gustri/queries';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef } from 'react';
+import { hapticEvent } from '@/lib/haptics';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { notifyNewOrder } from '@/lib/notifications';
 import { playNewOrderSound } from '@/lib/sound';
@@ -69,6 +70,7 @@ export function useOrders(filters?: {
         event: 'INSERT' as const,
         queryKeys: [[QUERY_KEYS.ORDERS]],
         onPayload: async (newRecord: Record<string, unknown>) => {
+          hapticEvent();
           await playNewOrderSound();
 
           if (newRecord.table_id) {
@@ -125,6 +127,7 @@ export function useOrders(filters?: {
     const newOrders = query.data.filter((o) => !previous.has(o.id));
     if (newOrders.length === 0) return;
 
+    hapticEvent();
     void playNewOrderSound();
     for (const order of newOrders) {
       if (!order.table_id) continue;

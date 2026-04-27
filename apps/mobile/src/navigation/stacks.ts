@@ -1,47 +1,17 @@
 import WaiterCallsScreen from '@/screens/calls/WaiterCallsScreen';
-import DeliveryListScreen from '@/screens/delivery/DeliveryListScreen';
-import ExpensesListScreen from '@/screens/expenses/ExpensesListScreen';
-import FeedbackListScreen from '@/screens/feedback/FeedbackListScreen';
 import KitchenDisplayScreen from '@/screens/kitchen/KitchenDisplayScreen';
-import MenuManagementScreen from '@/screens/menu-management/MenuManagementScreen';
 import ProfileScreen from '@/screens/profile/ProfileScreen';
-import ReportsScreen from '@/screens/reports/ReportsScreen';
-import SchedulesScreen from '@/screens/schedules/SchedulesScreen';
-import CafeSettingsScreen from '@/screens/settings/CafeSettingsScreen';
-import StockListScreen from '@/screens/stock/StockListScreen';
-import TakeoutListScreen from '@/screens/takeout/TakeoutListScreen';
-import TasksListScreen from '@/screens/tasks/TasksListScreen';
-import WasteListScreen from '@/screens/waste/WasteListScreen';
 import { createSimpleStack } from './create-simple-stack';
+import { lazyScreen } from './lazy-screen';
 
-export const CafeSettingsStack = createSimpleStack({
-  name: 'CafeSettings',
-  component: CafeSettingsScreen,
-  title: 'Cafe Settings',
-});
+// Tab-root stacks: eagerly imported because they're mounted on initial app
+// load (Kitchen for kitchen role, Calls and Profile for everyone else).
+// Suspense fallbacks here would flicker on first paint.
 
 export const CallsStack = createSimpleStack({
   name: 'WaiterCallsList',
   component: WaiterCallsScreen,
   title: 'Waiter Calls',
-});
-
-export const DeliveryStack = createSimpleStack({
-  name: 'DeliveryList',
-  component: DeliveryListScreen,
-  title: 'Delivery',
-});
-
-export const ExpensesStack = createSimpleStack({
-  name: 'ExpensessList',
-  component: ExpensesListScreen,
-  title: 'Expenses',
-});
-
-export const FeedbackStack = createSimpleStack({
-  name: 'FeedbackList',
-  component: FeedbackListScreen,
-  title: 'Feedback',
 });
 
 export const KitchenStack = createSimpleStack({
@@ -50,50 +20,78 @@ export const KitchenStack = createSimpleStack({
   title: 'Kitchen',
 });
 
-export const MenuManagementStack = createSimpleStack({
-  name: 'MenuManagement',
-  component: MenuManagementScreen,
-  title: 'Menu Management',
-});
-
 export const ProfileStack = createSimpleStack({
   name: 'Profile',
   component: ProfileScreen,
   title: 'Profile',
 });
 
+// Drawer-only stacks: lazy-loaded. Each screen's JS is parsed on first open,
+// not at app startup — meaningful win on budget Android where a waiter never
+// opens MenuManagement/Reports/etc. but pays the parse cost otherwise.
+
+export const CafeSettingsStack = createSimpleStack({
+  name: 'CafeSettings',
+  component: lazyScreen(() => import('@/screens/settings/CafeSettingsScreen')),
+  title: 'Cafe Settings',
+});
+
+export const DeliveryStack = createSimpleStack({
+  name: 'DeliveryList',
+  component: lazyScreen(() => import('@/screens/delivery/DeliveryListScreen')),
+  title: 'Delivery',
+});
+
+export const ExpensesStack = createSimpleStack({
+  name: 'ExpensessList',
+  component: lazyScreen(() => import('@/screens/expenses/ExpensesListScreen')),
+  title: 'Expenses',
+});
+
+export const FeedbackStack = createSimpleStack({
+  name: 'FeedbackList',
+  component: lazyScreen(() => import('@/screens/feedback/FeedbackListScreen')),
+  title: 'Feedback',
+});
+
+export const MenuManagementStack = createSimpleStack({
+  name: 'MenuManagement',
+  component: lazyScreen(() => import('@/screens/menu-management/MenuManagementScreen')),
+  title: 'Menu Management',
+});
+
 export const ReportsStack = createSimpleStack({
   name: 'Reports',
-  component: ReportsScreen,
+  component: lazyScreen(() => import('@/screens/reports/ReportsScreen')),
   title: 'Reports',
 });
 
 export const SchedulesStack = createSimpleStack({
   name: 'Schedules',
-  component: SchedulesScreen,
+  component: lazyScreen(() => import('@/screens/schedules/SchedulesScreen')),
   title: 'Schedules',
 });
 
 export const StockStack = createSimpleStack({
   name: 'StockList',
-  component: StockListScreen,
+  component: lazyScreen(() => import('@/screens/stock/StockListScreen')),
   title: 'Stock',
 });
 
 export const TakeoutStack = createSimpleStack({
   name: 'TakeoutList',
-  component: TakeoutListScreen,
+  component: lazyScreen(() => import('@/screens/takeout/TakeoutListScreen')),
   title: 'Takeout',
 });
 
 export const TasksStack = createSimpleStack({
   name: 'TasksList',
-  component: TasksListScreen,
+  component: lazyScreen(() => import('@/screens/tasks/TasksListScreen')),
   title: 'Tasks',
 });
 
 export const WasteStack = createSimpleStack({
   name: 'WasteList',
-  component: WasteListScreen,
+  component: lazyScreen(() => import('@/screens/waste/WasteListScreen')),
   title: 'Waste',
 });

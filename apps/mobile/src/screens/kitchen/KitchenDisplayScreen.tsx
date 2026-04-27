@@ -6,7 +6,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KitchenOrderCard } from '@/components/kitchen/KitchenOrderCard';
-import { LoadingScreen } from '@/components/ui';
+import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { BRAND_PRIMARY, COLORS, TYPOGRAPHY } from '@/theme';
@@ -16,7 +16,13 @@ const KITCHEN_STATUSES = [ORDER_STATUS.NEW, ORDER_STATUS.PREPARING, ORDER_STATUS
 export default function KitchenDisplayScreen() {
   const { t } = useTranslation('staff');
   const insets = useSafeAreaInsets();
-  const { data: orders, isLoading, refetch } = useOrders({ statuses: KITCHEN_STATUSES });
+  const {
+    data: orders,
+    isLoading,
+    isRefetching,
+    error,
+    refetch,
+  } = useOrders({ statuses: KITCHEN_STATUSES });
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const { showSuccess, showError } = useSnackbar();
@@ -188,6 +194,14 @@ export default function KitchenDisplayScreen() {
     );
   }
 
+  if (error) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <ErrorScreen error={error} onRetry={refetch} />
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Status summary pills */}
@@ -212,7 +226,9 @@ export default function KitchenDisplayScreen() {
       <FlashList
         data={kitchenOrders}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor="#fff" />}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#fff" />
+        }
         renderItem={({ item }) => (
           <KitchenOrderCard
             order={item}

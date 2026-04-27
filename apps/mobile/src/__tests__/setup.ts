@@ -1,5 +1,12 @@
 import { createMockDb } from './helpers/mock-db';
 
+// Mock haptics module so hooks importing @/lib/haptics don't pull in
+// expo-modules-core (which needs `__DEV__` and a native runtime).
+vi.mock('@/lib/haptics', () => ({
+  hapticEvent: vi.fn(),
+  hapticSuccess: vi.fn(),
+}));
+
 // Mock Supabase module (prevents real client initialization)
 vi.mock('@/lib/supabase', () => ({
   db: createMockDb(),

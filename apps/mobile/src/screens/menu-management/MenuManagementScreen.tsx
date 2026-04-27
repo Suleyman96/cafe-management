@@ -37,7 +37,13 @@ export default function MenuManagementScreen() {
   const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
 
-  const { data: items, isLoading, error, refetch } = useMenuItems({ categoryId: categoryFilter });
+  const {
+    data: items,
+    isLoading,
+    isRefetching,
+    error,
+    refetch,
+  } = useMenuItems({ categoryId: categoryFilter });
   const { data: categories } = useCategories();
 
   // Item mutations
@@ -253,7 +259,7 @@ export default function MenuManagementScreen() {
       <FlashList
         data={filtered}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
         renderItem={({ item }) => (
           <MenuItemManageCard
             item={item}

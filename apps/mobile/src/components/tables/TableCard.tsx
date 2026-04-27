@@ -16,7 +16,7 @@ interface TableCardProps {
   orderTotal: number;
   hasWaiterCall: boolean;
   currencySymbol: string;
-  onPress: () => void;
+  onPress: (tableId: string) => void;
 }
 
 export const TableCard = React.memo(function TableCard({
@@ -34,8 +34,14 @@ export const TableCard = React.memo(function TableCard({
   return (
     <TouchableOpacity
       style={[styles.card, { backgroundColor, borderColor }, hasWaiterCall && styles.cardWithCall]}
-      onPress={onPress}
+      onPress={() => onPress(table.id)}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`Table ${table.table_number}, ${table.status}${
+        activeOrderCount > 0
+          ? `, ${activeOrderCount} active order${activeOrderCount > 1 ? 's' : ''}`
+          : ''
+      }${hasWaiterCall ? ', waiter call pending' : ''}`}
     >
       <View style={styles.header}>
         <Text style={styles.tableNumber}>#{table.table_number}</Text>

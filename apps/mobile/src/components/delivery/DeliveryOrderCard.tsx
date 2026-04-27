@@ -124,6 +124,8 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
             <TouchableOpacity
               onPress={() => openInMaps(order.delivery_address!)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel={t('delivery.openInMaps')}
             >
               <MaterialCommunityIcons name="google-maps" size={16} color="#7c3aed" />
             </TouchableOpacity>
