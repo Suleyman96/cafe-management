@@ -3,21 +3,26 @@ import { useMutationState } from '@tanstack/react-query';
 import { StyleSheet, Text, View } from 'react-native';
 
 /**
- * Badge showing the count of pending (queued) mutations
- * that haven't been sent to the server yet.
- * Visible when mutations are paused (offline).
+ * Badge showing the count of paused (offline-queued) mutations
+ * waiting to replay when connectivity returns.
+ *
+ * Filters on `mutation.state.isPaused` rather than `status: 'pending'` —
+ * `'pending'` matches in-flight mutations (currently executing), which would
+ * cause the badge to flicker on every quick online mutation. Paused mutations
+ * are the ones the user actually owes the server.
  */
 export function PendingSyncBadge() {
   const { t } = useTranslation('common');
-  const pendingMutations = useMutationState({
-    filters: { status: 'pending' },
-  });
+  const pausedCount = useMutationState({
+    filters: { predicate: (m) => m.state.isPaused === true },
+    select: (m) => m.mutationId,
+  }).length;
 
-  if (pendingMutations.length === 0) return null;
+  if (pausedCount === 0) return null;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>{t('sync.pending', { count: pendingMutations.length })}</Text>
+      <Text style={styles.text}>{t('sync.pending', { count: pausedCount })}</Text>
     </View>
   );
 }

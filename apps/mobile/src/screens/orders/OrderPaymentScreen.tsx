@@ -4,6 +4,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Divider, RadioButton, Text } from 'react-native-paper';
+import { OfflineGuardButton } from '@/components/OfflineGuardButton';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
   useCreatePayment,
@@ -175,16 +176,17 @@ export default function OrderPaymentScreen() {
             </Card.Content>
           </Card>
 
-          <Button
+          <OfflineGuardButton
             mode="contained"
             onPress={handleSubmit}
             loading={createPayment.isPending}
             disabled={createPayment.isPending || !amount}
             style={styles.submitButton}
             contentStyle={styles.submitButtonContent}
+            offlineLabel={t('payment.offlineUnavailable')}
           >
             {t('payment.processPaymentBtn')}
-          </Button>
+          </OfflineGuardButton>
         </>
       )}
 

@@ -2,6 +2,7 @@ import { QUERY_KEYS } from '@gustri/core';
 import type { Table } from '@gustri/database';
 import { useDb } from '@gustri/queries';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { useTenantId } from '@/store/auth-store';
 
 // Re-export single-table read hook (already has its own enabled guard)
@@ -31,6 +32,7 @@ export function useUpdateTableStatus() {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: MUTATION_KEYS.UPDATE_TABLE_STATUS,
     mutationFn: ({ tableId, status }: { tableId: string; status: Table['status'] }) =>
       db.tables.updateStatus(tableId, status),
     onSuccess: () => {

@@ -14,6 +14,7 @@ import {
   SocialMediaSection,
   TaxSettingsSection,
 } from '@/components/cafe-settings';
+import { OfflineGuardButton } from '@/components/OfflineGuardButton';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useCafeSettings, useUpdateCafeSettings } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
@@ -125,9 +126,14 @@ export default function CafeSettingsScreen() {
           <Button mode="outlined" onPress={handleReset}>
             {tCommon('reset')}
           </Button>
-          <Button mode="contained" onPress={handleSave} loading={updateSettings.isPending}>
+          <OfflineGuardButton
+            mode="contained"
+            onPress={handleSave}
+            loading={updateSettings.isPending}
+            offlineLabel={t('cafeSettings.offlineUnavailable')}
+          >
             {tCommon('saveChanges')}
-          </Button>
+          </OfflineGuardButton>
         </View>
       )}
     </View>

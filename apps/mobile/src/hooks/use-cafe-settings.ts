@@ -12,6 +12,11 @@ export function useUpdateCafeSettings() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // Settings are tenant-wide and admin-only — queueing a stale tax/currency
+    // change for replay later can corrupt receipts written between now and
+    // the replay. Fail fast and require online connectivity.
+    networkMode: 'always',
+    retry: 0,
     mutationFn: (data: unknown) => {
       const validated = validateOrThrow(
         CafeSettingsUpdateInputSchema,

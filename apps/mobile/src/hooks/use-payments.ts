@@ -12,6 +12,13 @@ export function useCreatePayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // Payments must NEVER queue offline — a payment recorded "now" but
+    // executed 20 minutes later when connectivity returns can collide with
+    // another card or diverge from the customer-facing receipt. UI guards
+    // (OfflineGuardButton) prevent the action while offline; if the user
+    // bypasses that, fail loudly here rather than silently queueing.
+    networkMode: 'always',
+    retry: 0,
     mutationFn: async (input: OrderPaymentCreateInput) => {
       const payment = validateOrThrow(
         OrderPaymentCreateInputSchema,

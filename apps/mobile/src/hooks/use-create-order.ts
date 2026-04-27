@@ -6,13 +6,14 @@ import { OrderCreateInputSchema, type OrdersInsert } from '@gustri/database';
 import { useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { MUTATION_KEYS } from '@/lib/mutation-keys';
 
 export function useCreateOrder() {
   const db = useDb();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationKey: ['create-order'],
+    mutationKey: MUTATION_KEYS.CREATE_ORDER,
     mutationFn: async (orderData: OrdersInsert) => {
       const validated = validateOrThrow(OrderCreateInputSchema, orderData, 'Invalid order');
       return await db.orders.create(validated as OrdersInsert);

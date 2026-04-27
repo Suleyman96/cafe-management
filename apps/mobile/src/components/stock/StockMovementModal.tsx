@@ -2,6 +2,7 @@ import { useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Modal, Portal, Text } from 'react-native-paper';
+import { OfflineGuardButton } from '@/components/OfflineGuardButton';
 import { TextInput } from '@/lib/paper-compat';
 import { BRAND_PRIMARY, COLORS } from '@/theme';
 
@@ -154,14 +155,15 @@ export function StockMovementModal({
 
         <View style={styles.actions}>
           <Button onPress={handleDismiss}>{tCommon('cancel')}</Button>
-          <Button
+          <OfflineGuardButton
             mode="contained"
             onPress={handleSubmit}
             loading={loading}
             disabled={qty <= 0 || isInvalid}
+            offlineLabel={t('stock.offlineUnavailable')}
           >
             {tCommon('confirm')}
-          </Button>
+          </OfflineGuardButton>
         </View>
       </Modal>
     </Portal>

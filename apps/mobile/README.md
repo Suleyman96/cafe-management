@@ -11,7 +11,7 @@ React Native mobile application for staff management (Waiter, Admin, Kitchen).
 - **UI Library**: React Native Paper
 - **Real-time**: Supabase Realtime
 - **Notifications**: Expo Notifications
-- **Sound**: Expo AV
+- **Sound**: Expo Audio
 
 ## Features
 
@@ -164,7 +164,33 @@ src/
 - Order status updates
 - Live kitchen display updates
 
-## Push Notifications
+## Notifications & Sound
+
+The app delivers new-order / waiter-call alerts through two distinct paths
+depending on whether the app is in the foreground:
+
+- **Foreground** (`useRealtimeSync` callback in `lib/sound.ts`): a Supabase
+  Realtime INSERT triggers `playNewOrderSound()` / `playWaiterCallSound()`
+  (an in-app `expo-audio` player) plus a local notification banner via
+  `expo-notifications`. When realtime is degraded (≥ `MAX_RETRIES`
+  consecutive failures), the 2-min fallback poll diffs the order list and
+  plays the sound for newly-arrived rows so the kitchen still gets audible
+  alerts.
+- **Background / killed**: in-app sounds intentionally do NOT fire
+  (`shouldPlayInBackground: false` in `setupSounds()`). The OS plays a
+  notification sound via the configured Android `default` channel
+  (`importance: MAX`, `vibrationPattern: [0, 250, 250, 250]`) — but ONLY
+  if the server delivered a push notification. The push token is stored on
+  the `staff` row by `usePushTokenSync`, but the server-side sender that
+  fires on `orders` INSERT is tracked separately under
+  `plans/prompts/remaining-03-push-webhooks.md`. Until that pipeline ships,
+  a backgrounded device will not hear about new orders.
+
+If you change the foreground/background split (e.g. enable
+`shouldPlayInBackground: true`), update `lib/sound.ts` AND this section, and
+verify the server-side push pipeline still owns the background path.
+
+### Push notifications
 
 Requires physical device for testing:
 

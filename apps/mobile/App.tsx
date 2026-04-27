@@ -5,28 +5,31 @@ import { I18nextProvider, i18n } from '@gustri/i18n';
 import { DbProvider } from '@gustri/queries';
 import { NavigationContainer } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
+import { focusManager } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { AppState } from 'react-native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { SnackbarProvider } from './src/components/providers/SnackbarProvider';
 import { useInactivityLock } from './src/hooks/use-inactivity-lock';
 import { setupOnlineManager } from './src/hooks/use-network-status';
+import { usePushTokenSync } from './src/hooks/use-push-token-sync';
 import { getCurrentUser, onAuthStateChange } from './src/lib/auth';
 import { handleNotificationNavigation, navigationRef } from './src/lib/navigation-ref';
-import { registerForPushNotifications } from './src/lib/notifications';
-import { mutationCache, queryClient } from './src/lib/query-client';
+import { queryClient } from './src/lib/query-client';
 import {
   asyncStoragePersister,
-  OFFLINE_GC_TIME,
+  CACHE_BUSTER,
+  PERSISTED_MAX_AGE,
   shouldPersistQuery,
 } from './src/lib/query-persister';
+import { registerMutationDefaults } from './src/lib/register-mutation-defaults';
 import { cleanupSounds, setupSounds } from './src/lib/sound';
 import { db } from './src/lib/supabase';
-import { configureSyncErrorHandling } from './src/lib/sync-handler';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { useAuthStore } from './src/store/auth-store';
 import { lightTheme } from './src/theme';
@@ -65,8 +68,24 @@ Sentry.init({
   },
 });
 
+// Register mutationFn defaults BEFORE the persister hydrates so any paused
+// mutations restored from disk have a function to resume with. Without this,
+// rehydrated mutations are orphans that error the moment they try to run.
+registerMutationDefaults(queryClient);
+
 // Wire NetInfo to React Query's online manager
 setupOnlineManager();
+
+// Wire AppState to React Query's focus manager so stale queries refetch when
+// the app returns to the foreground. Without this, a backgrounded app shows
+// stale data on resume until the next user-triggered render or the 2-min
+// realtime fallback poll fires — too slow for an in-service waiter.
+focusManager.setEventListener((handleFocus) => {
+  const sub = AppState.addEventListener('change', (state) => {
+    handleFocus(state === 'active');
+  });
+  return () => sub.remove();
+});
 
 // Dev-only: surface unhandled promise rejections in the console so silent
 // fire-and-forget regressions are caught during development. No-op in prod.
@@ -86,11 +105,10 @@ if (__DEV__) {
   }
 }
 
-configureSyncErrorHandling(mutationCache);
-
 function App() {
   const { setStaff, setIsLoading } = useAuthStore();
   useInactivityLock();
+  usePushTokenSync();
 
   useEffect(() => {
     // Initialize auth
@@ -135,23 +153,6 @@ function App() {
     };
   }, [setIsLoading, setStaff]);
 
-  // Store push token when staff is available
-  const staff = useAuthStore((s) => s.staff);
-
-  useEffect(() => {
-    if (!staff?.id) return;
-
-    registerForPushNotifications().then(async (token) => {
-      if (token) {
-        try {
-          await db.staff.updatePushToken(staff.id, token);
-        } catch {
-          // Non-critical — local notifications still work
-        }
-      }
-    });
-  }, [staff?.id]);
-
   useEffect(() => {
     setupSounds();
 
@@ -194,10 +195,25 @@ function App() {
           client={queryClient}
           persistOptions={{
             persister: asyncStoragePersister,
+            buster: CACHE_BUSTER,
             dehydrateOptions: {
               shouldDehydrateQuery: shouldPersistQuery,
+              // Persist only paused mutations whose key has a registered
+              // default in register-mutation-defaults.ts. The key gate is a
+              // belt-and-braces check: re-exported queries-package mutations
+              // (no mobile mutationKey) won't accidentally hydrate as orphans.
+              shouldDehydrateMutation: (m) =>
+                m.state.isPaused === true && m.options.mutationKey !== undefined,
             },
-            maxAge: OFFLINE_GC_TIME,
+            maxAge: PERSISTED_MAX_AGE,
+          }}
+          onSuccess={() => {
+            // Hydration complete — resume any paused mutations carried over
+            // from the previous session so queued offline writes replay now
+            // that the queryClient is ready.
+            queryClient.resumePausedMutations().catch((err) => {
+              Sentry.captureException(err, { tags: { area: 'resume-paused-mutations' } });
+            });
           }}
         >
           <DbProvider db={db}>

@@ -4,6 +4,7 @@ import { useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
+import { MUTATION_KEYS } from '@/lib/mutation-keys';
 
 // Re-export hooks and mutations with matching param shapes
 export {
@@ -28,6 +29,7 @@ export function useUpdateStockItem() {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: MUTATION_KEYS.UPDATE_STOCK_ITEM,
     mutationFn: ({ id, data }: { id: string; data: StockItemUpdate }) =>
       db.stockItems.update(id, data),
     onSuccess: () => {
@@ -51,6 +53,11 @@ export function useAdjustStock() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // Stock adjustments are inventory-of-record writes. Queueing them creates
+    // ordering ambiguity (out-of-stock checks may use the wrong number) and
+    // amplifies retry conflicts. Fail loudly online, refuse offline.
+    networkMode: 'always',
+    retry: 0,
     mutationFn: ({
       id,
       data,

@@ -168,7 +168,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                 fill
                 className="object-cover"
                 priority
-                unoptimized
+                sizes="100vw"
               />
               <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-[#0C0C0E]" />
             </>
@@ -207,7 +207,6 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                     width={72}
                     height={72}
                     className="rounded-xl object-contain"
-                    unoptimized
                   />
                 </div>
               </div>
