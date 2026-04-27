@@ -90,7 +90,7 @@ export default function StockListScreen() {
       setShowItemModal(false);
       setEditItem(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('stock.failedSave'));
+      showError(err instanceof Error ? err : t('stock.failedSave'));
     }
   };
 
@@ -109,7 +109,7 @@ export default function StockListScreen() {
       showSuccess(t('stock.itemDeleted'));
       setDeleteItemId(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('stock.failedDelete'));
+      showError(err instanceof Error ? err : t('stock.failedDelete'));
     }
   };
 
@@ -139,7 +139,7 @@ export default function StockListScreen() {
       showSuccess(t('stock.stockAdjusted'));
       setMovementItem(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('stock.failedAdjust'));
+      showError(err instanceof Error ? err : t('stock.failedAdjust'));
     }
   };
 

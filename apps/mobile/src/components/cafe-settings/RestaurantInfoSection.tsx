@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from '@gustri/i18n';
 import { StyleSheet, View } from 'react-native';
-import { Card, Chip, Text } from 'react-native-paper';
+import { Card, Chip, HelperText, Text } from 'react-native-paper';
 import { TextInput } from '@/lib/paper-compat';
 import type { SettingsSectionProps } from './ToggleRow';
 
@@ -12,7 +12,7 @@ const LANGUAGE_OPTIONS = [
   { code: 'ru', label: 'Russian' },
 ];
 
-export function RestaurantInfoSection({ form, updateField }: SettingsSectionProps) {
+export function RestaurantInfoSection({ form, updateField, fieldErrors }: SettingsSectionProps) {
   const { t } = useTranslation('staff');
 
   return (
@@ -30,8 +30,14 @@ export function RestaurantInfoSection({ form, updateField }: SettingsSectionProp
           onChangeText={(v: string) => updateField('restaurant_name', v)}
           mode="outlined"
           dense
+          error={!!fieldErrors?.restaurant_name}
           style={styles.input}
         />
+        {fieldErrors?.restaurant_name && (
+          <HelperText type="error" visible>
+            {fieldErrors.restaurant_name}
+          </HelperText>
+        )}
         <TextInput
           label={t('cafeSettings.restaurantAddress')}
           value={form.restaurant_address || ''}
@@ -39,8 +45,14 @@ export function RestaurantInfoSection({ form, updateField }: SettingsSectionProp
           mode="outlined"
           dense
           placeholder="123 Main Street, City, Country"
+          error={!!fieldErrors?.restaurant_address}
           style={styles.input}
         />
+        {fieldErrors?.restaurant_address && (
+          <HelperText type="error" visible>
+            {fieldErrors.restaurant_address}
+          </HelperText>
+        )}
         <Text variant="labelMedium" style={styles.fieldLabel}>
           {t('cafeSettings.defaultMenuLanguage')}
         </Text>

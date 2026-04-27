@@ -95,7 +95,7 @@ export default function OrderPaymentScreen() {
 
       navigation.goBack();
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('payment.paymentFailed'));
+      showError(err instanceof Error ? err : t('payment.paymentFailed'));
     }
   };
 

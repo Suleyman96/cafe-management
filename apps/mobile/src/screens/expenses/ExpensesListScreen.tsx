@@ -126,7 +126,7 @@ export default function ExpensesListScreen() {
       setShowExpenseModal(false);
       setEditExpense(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('expenses.failedSave'));
+      showError(err instanceof Error ? err : t('expenses.failedSave'));
     }
   };
 
@@ -137,7 +137,7 @@ export default function ExpensesListScreen() {
       showSuccess(t('expenses.expenseDeleted'));
       setDeleteExpenseId(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('expenses.failedDelete'));
+      showError(err instanceof Error ? err : t('expenses.failedDelete'));
     }
   };
 
@@ -159,7 +159,7 @@ export default function ExpensesListScreen() {
       });
       showSuccess(t('expenses.categoryCreated'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('expenses.failedCreateCategory'));
+      showError(err instanceof Error ? err : t('expenses.failedCreateCategory'));
     }
   };
 
@@ -171,7 +171,7 @@ export default function ExpensesListScreen() {
       });
       showSuccess(t('expenses.categoryUpdated'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('expenses.failedUpdateCategory'));
+      showError(err instanceof Error ? err : t('expenses.failedUpdateCategory'));
     }
   };
 
@@ -181,7 +181,7 @@ export default function ExpensesListScreen() {
       showSuccess(t('expenses.categoryDeleted'));
       if (categoryFilter === id) setCategoryFilter(undefined);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('expenses.failedDeleteCategory'));
+      showError(err instanceof Error ? err : t('expenses.failedDeleteCategory'));
     }
   };
 

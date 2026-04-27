@@ -1,3 +1,4 @@
+import { isAppError } from '@gustri/core';
 import type { CafeSettings } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
@@ -29,6 +30,8 @@ export default function CafeSettingsScreen() {
   const [form, setForm] = useState<Partial<CafeSettings>>({});
   const [hasChanges, setHasChanges] = useState(false);
   const [activeTab, setActiveTab] = useState<TabView>('general');
+  // Per-field validation errors surfaced from a ValidationError thrown by the mutation.
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (settings && !hasChanges) {
@@ -39,15 +42,32 @@ export default function CafeSettingsScreen() {
   const updateField = (key: string, value: boolean | string | number | null) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setHasChanges(true);
+    if (fieldErrors[key]) {
+      setFieldErrors((prev) => {
+        const { [key]: _omit, ...rest } = prev;
+        return rest;
+      });
+    }
   };
 
   const handleSave = async () => {
     try {
+      setFieldErrors({});
       await updateSettings.mutateAsync(form);
       showSuccess(t('cafeSettings.settingsSaved'));
       setHasChanges(false);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('cafeSettings.failedSave'));
+      if (isAppError(err) && err.code === 'VALIDATION_ERROR') {
+        const details = err.details as { fieldErrors?: Record<string, string[]> } | undefined;
+        if (details?.fieldErrors) {
+          const flat: Record<string, string> = {};
+          for (const [field, msgs] of Object.entries(details.fieldErrors)) {
+            if (msgs && msgs.length > 0) flat[field] = msgs[0];
+          }
+          setFieldErrors(flat);
+        }
+      }
+      showError(err instanceof Error ? err : t('cafeSettings.failedSave'));
     }
   };
 
@@ -78,7 +98,11 @@ export default function CafeSettingsScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {activeTab === 'general' && (
           <>
-            <RestaurantInfoSection form={form} updateField={updateField} />
+            <RestaurantInfoSection
+              form={form}
+              updateField={updateField}
+              fieldErrors={fieldErrors}
+            />
             <TaxSettingsSection form={form} updateField={updateField} />
             <CurrencySection form={form} updateField={updateField} />
             <OrderSettingsSection form={form} updateField={updateField} />

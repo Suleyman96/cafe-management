@@ -139,7 +139,7 @@ export default function SchedulesScreen() {
       await markInProgress.mutateAsync({ id, actualStart: new Date().toISOString() });
       showSuccess(t('schedules.shiftStarted'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('schedules.failedStartShift'));
+      showError(err instanceof Error ? err : t('schedules.failedStartShift'));
     }
   };
 
@@ -148,7 +148,7 @@ export default function SchedulesScreen() {
       await markCompleted.mutateAsync({ id, actualEnd: new Date().toISOString() });
       showSuccess(t('schedules.shiftCompleted'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('schedules.failedCompleteShift'));
+      showError(err instanceof Error ? err : t('schedules.failedCompleteShift'));
     }
   };
 
@@ -190,7 +190,7 @@ export default function SchedulesScreen() {
       setShowModal(false);
       setEditSchedule(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('schedules.failedSave'));
+      showError(err instanceof Error ? err : t('schedules.failedSave'));
     }
   };
 
@@ -203,7 +203,7 @@ export default function SchedulesScreen() {
       setShowModal(false);
       setEditSchedule(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('schedules.failedDelete'));
+      showError(err instanceof Error ? err : t('schedules.failedDelete'));
     }
   };
 

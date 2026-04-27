@@ -2,10 +2,39 @@
  * Zod schemas for runtime validation
  *
  * Each schema mirrors the corresponding database table Row type.
- * Enum schemas are derived from the enums in ../enums/index.ts.
+ * Enum schemas live in ./enum-schemas so input schemas can share them
+ * without a circular sibling-import.
  */
 
 import { z } from 'zod';
+import {
+  CurrencyPositionSchema,
+  DiscountTypeSchema,
+  ExpensePaymentMethodSchema,
+  FeedbackStatusSchema,
+  FeedbackTypeSchema,
+  OrderItemStatusSchema,
+  OrderSourceSchema,
+  OrderStatusSchema,
+  OrderTypeSchema,
+  PaymentMethodSchema,
+  PaymentTypeSchema,
+  RefundMethodSchema,
+  ScheduleStatusSchema,
+  StockMovementTypeSchema,
+  TableStatusSchema,
+  TaskPrioritySchema,
+  TaskRecurrenceSchema,
+  TaskStatusSchema,
+  UserRoleSchema,
+  WaiterCallPrioritySchema,
+  WaiterCallStatusSchema,
+  WaiterCallTypeSchema,
+  WasteReasonSchema,
+} from './enum-schemas';
+
+// Re-export enum schemas so existing consumers of `@gustri/database` keep working.
+export * from './enum-schemas';
 
 // ─── Reusable Field Schemas ─────────────────────────────────────
 
@@ -14,84 +43,6 @@ const hexColor = z
   .string()
   .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color')
   .max(7);
-
-// ─── Enum Schemas ────────────────────────────────────────────────
-
-export const OrderStatusSchema = z.enum([
-  'pending_approval',
-  'new',
-  'preparing',
-  'ready',
-  'served',
-  'out_for_delivery',
-  'delivered',
-  'closed',
-  'cancelled',
-]);
-
-export const OrderSourceSchema = z.enum(['customer', 'waiter', 'phone']);
-
-export const OrderTypeSchema = z.enum(['dine_in', 'takeout', 'delivery']);
-
-export const OrderItemStatusSchema = z.enum([
-  'pending',
-  'preparing',
-  'ready',
-  'served',
-  'cancelled',
-]);
-
-export const TableStatusSchema = z.enum(['free', 'occupied', 'reserved', 'closed']);
-
-export const PaymentMethodSchema = z.enum(['cash', 'card', 'digital']);
-
-export const PaymentTypeSchema = z.enum(['full', 'partial_amount', 'specific_items']);
-
-export const DiscountTypeSchema = z.enum(['none', 'percentage', 'fixed']);
-
-export const RefundMethodSchema = z.enum(['cash', 'card', 'digital']);
-
-export const WaiterCallStatusSchema = z.enum(['pending', 'acknowledged', 'resolved']);
-
-export const WaiterCallTypeSchema = z.enum([
-  'assistance',
-  'bill',
-  'complaint',
-  'question',
-  'emergency',
-]);
-
-export const WaiterCallPrioritySchema = z.enum(['low', 'normal', 'high', 'urgent']);
-
-export const FeedbackTypeSchema = z.enum(['complaint', 'praise']);
-
-export const FeedbackStatusSchema = z.enum(['pending', 'acknowledged', 'resolved', 'dismissed']);
-
-export const UserRoleSchema = z.enum(['waiter', 'admin', 'kitchen', 'owner']);
-
-export const StockMovementTypeSchema = z.enum(['in', 'out', 'adjustment']);
-
-export const ExpensePaymentMethodSchema = z.enum(['cash', 'card', 'digital', 'bank_transfer']);
-
-export const WasteReasonSchema = z.enum([
-  'expired',
-  'spoiled',
-  'overcooked',
-  'dropped',
-  'returned_by_customer',
-  'preparation_waste',
-  'other',
-]);
-
-export const TaskStatusSchema = z.enum(['pending', 'in_progress', 'completed', 'cancelled']);
-
-export const TaskPrioritySchema = z.enum(['low', 'normal', 'high', 'urgent']);
-
-export const TaskRecurrenceSchema = z.enum(['daily', 'weekly', 'monthly']);
-
-export const ScheduleStatusSchema = z.enum(['scheduled', 'in_progress', 'completed', 'missed']);
-
-export const CurrencyPositionSchema = z.enum(['before', 'after']);
 
 // ─── Table Schemas ───────────────────────────────────────────────
 
@@ -512,3 +463,6 @@ export type RefundInput = z.infer<typeof RefundSchema>;
 export type DeliveryCustomerInput = z.infer<typeof DeliveryCustomerSchema>;
 export type TenantInput = z.infer<typeof TenantSchema>;
 export type CategoryInput = z.infer<typeof CategorySchema>;
+
+// ─── Mutation Input Schemas ──────────────────────────────────────
+export * from './inputs';

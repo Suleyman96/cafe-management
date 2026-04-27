@@ -2,8 +2,8 @@
 export { useOrderPayments } from '@gustri/queries';
 
 // Local hook — uses apiRoutes for payment creation
-import { QUERY_KEYS } from '@gustri/core';
-import type { OrderPayment } from '@gustri/database';
+import { QUERY_KEYS, validateOrThrow } from '@gustri/core';
+import { type OrderPaymentCreateInput, OrderPaymentCreateInputSchema } from '@gustri/database';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
@@ -12,16 +12,12 @@ export function useCreatePayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (payment: {
-      order_id: string;
-      amount: number;
-      payment_method: OrderPayment['payment_method'];
-      received_by?: string;
-      payment_type?: OrderPayment['payment_type'];
-      tip_amount?: number;
-      order_item_ids?: string[] | null;
-      notes?: string | null;
-    }) => {
+    mutationFn: async (input: OrderPaymentCreateInput) => {
+      const payment = validateOrThrow(
+        OrderPaymentCreateInputSchema,
+        input,
+        'Invalid payment payload',
+      );
       const { payment: created } = await apiRoutes.payments.create(payment.order_id, {
         amount: payment.amount,
         payment_method: payment.payment_method,

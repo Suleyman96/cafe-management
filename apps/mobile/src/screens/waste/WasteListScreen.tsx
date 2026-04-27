@@ -114,7 +114,7 @@ export default function WasteListScreen() {
         notes: '',
       });
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('waste.failedLog'));
+      showError(err instanceof Error ? err : t('waste.failedLog'));
     }
   };
 
@@ -123,7 +123,7 @@ export default function WasteListScreen() {
       await deleteWaste.mutateAsync(id);
       showSuccess(t('waste.wasteLogDeleted'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('waste.failedDelete'));
+      showError(err instanceof Error ? err : t('waste.failedDelete'));
     }
   };
 

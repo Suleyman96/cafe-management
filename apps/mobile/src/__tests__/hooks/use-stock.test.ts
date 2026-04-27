@@ -58,7 +58,7 @@ describe('useAdjustStock', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
 
     await result.current.mutateAsync({
-      id: 'item-1',
+      id: '00000000-0000-0000-0000-0000000000a1',
       data: { type: 'in' as const, quantity: 10, reason: 'restock' },
     });
 
@@ -129,7 +129,7 @@ describe('useAdjustStock - QUERY_KEYS', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
 
     await result.current.mutateAsync({
-      id: 'item-1',
+      id: '00000000-0000-0000-0000-0000000000a1',
       data: { type: 'in' as const, quantity: 10, reason: 'restock' },
     });
 

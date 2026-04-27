@@ -34,7 +34,7 @@ export default function WaiterCallsScreen() {
       await updateCall.mutateAsync({ callId, status: 'acknowledged', staffId: staff?.id });
       showSuccess(t('calls.callAcknowledged'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('calls.failedAcknowledge'));
+      showError(err instanceof Error ? err : t('calls.failedAcknowledge'));
     }
   };
 
@@ -43,7 +43,7 @@ export default function WaiterCallsScreen() {
       await updateCall.mutateAsync({ callId, status: 'resolved' });
       showSuccess(t('calls.callResolved'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('calls.failedResolve'));
+      showError(err instanceof Error ? err : t('calls.failedResolve'));
     }
   };
 

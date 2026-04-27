@@ -73,7 +73,7 @@ export default function MenuManagementScreen() {
     try {
       await toggleAvailability.mutateAsync({ id, currentAvailable });
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('menu.failedToggle'));
+      showError(err instanceof Error ? err : t('menu.failedToggle'));
     }
   };
 
@@ -99,7 +99,7 @@ export default function MenuManagementScreen() {
       setShowItemModal(false);
       setEditItem(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('menu.failedSaveItem'));
+      showError(err instanceof Error ? err : t('menu.failedSaveItem'));
     }
   };
 
@@ -110,7 +110,7 @@ export default function MenuManagementScreen() {
       showSuccess(t('menu.itemDeleted'));
       setDeleteItemId(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('menu.failedDelete'));
+      showError(err instanceof Error ? err : t('menu.failedDelete'));
     }
   };
 
@@ -133,7 +133,7 @@ export default function MenuManagementScreen() {
       setShowCategoryModal(false);
       setEditCategory(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('menu.failedSaveCategory'));
+      showError(err instanceof Error ? err : t('menu.failedSaveCategory'));
     }
   };
 
@@ -145,7 +145,7 @@ export default function MenuManagementScreen() {
       setDeleteCategoryId(null);
       if (categoryFilter === deleteCategoryId) setCategoryFilter(undefined);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('menu.failedDeleteCategory'));
+      showError(err instanceof Error ? err : t('menu.failedDeleteCategory'));
     }
   };
 

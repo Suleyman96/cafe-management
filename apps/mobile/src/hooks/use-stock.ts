@@ -1,5 +1,5 @@
-import { QUERY_KEYS } from '@gustri/core';
-import type { StockItemUpdate } from '@gustri/database';
+import { QUERY_KEYS, validateOrThrow } from '@gustri/core';
+import { StockAdjustInputSchema, type StockItemUpdate } from '@gustri/database';
 import { useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -62,13 +62,19 @@ export function useAdjustStock() {
         reason?: string;
         performedBy?: string;
       };
-    }) =>
-      apiRoutes.stock.adjust(id, {
-        movement_type: data.type,
-        quantity_change: data.quantity,
-        reason: data.reason || '',
-        performed_by: data.performedBy || '',
-      }),
+    }) => {
+      const input = validateOrThrow(
+        StockAdjustInputSchema,
+        { id, ...data },
+        'Invalid stock adjustment',
+      );
+      return apiRoutes.stock.adjust(input.id, {
+        movement_type: input.type,
+        quantity_change: input.quantity,
+        reason: input.reason ?? '',
+        performed_by: input.performedBy ?? '',
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_MOVEMENTS] });

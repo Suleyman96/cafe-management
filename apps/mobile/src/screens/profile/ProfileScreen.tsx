@@ -100,7 +100,7 @@ export default function ProfileScreen() {
       await asyncStoragePersister.removeClient();
       clearAuth();
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('profile.failedSignOut'));
+      showError(err instanceof Error ? err : t('profile.failedSignOut'));
     } finally {
       setLoggingOut(false);
     }

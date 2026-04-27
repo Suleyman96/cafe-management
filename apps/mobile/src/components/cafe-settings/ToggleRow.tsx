@@ -5,6 +5,8 @@ import { Switch, Text } from 'react-native-paper';
 export interface SettingsSectionProps {
   form: Partial<CafeSettings> & Record<string, unknown>;
   updateField: (key: string, value: boolean | string | number | null) => void;
+  /** Per-field validation errors keyed by CafeSettings column name. Optional. */
+  fieldErrors?: Record<string, string>;
 }
 
 interface ToggleRowProps {

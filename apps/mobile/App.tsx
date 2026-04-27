@@ -72,7 +72,12 @@ const mutationCache = new MutationCache({
   onError: (error, _variables, _context, mutation) => {
     // Skip if the mutation already has its own onError handler
     if (mutation.options.onError) return;
-    Sentry.captureException(error);
+    const tags: Record<string, string> = { area: 'mutation' };
+    if (isAppError(error)) {
+      tags.errorCode = error.code;
+      tags.errorName = error.name;
+    }
+    Sentry.captureException(error, { tags });
     showSnackbarGlobal(isAppError(error) ? error.message : 'An unexpected error occurred');
   },
 });

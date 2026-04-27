@@ -87,7 +87,7 @@ export default function TakeoutListScreen() {
       await updateOrderStatus.mutateAsync({ orderId, status: 'new' });
       showSuccess(t('takeout.orderApproved'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('takeout.failedApprove'));
+      showError(err instanceof Error ? err : t('takeout.failedApprove'));
     }
   };
 
@@ -96,7 +96,7 @@ export default function TakeoutListScreen() {
       await updateOrderStatus.mutateAsync({ orderId, status: 'preparing' });
       showSuccess(t('takeout.preparingStarted'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('takeout.failedPrepare'));
+      showError(err instanceof Error ? err : t('takeout.failedPrepare'));
     }
   };
 
@@ -105,7 +105,7 @@ export default function TakeoutListScreen() {
       await updateOrderStatus.mutateAsync({ orderId, status: 'ready' });
       showSuccess(t('takeout.orderReadyForPickup'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('takeout.failedReady'));
+      showError(err instanceof Error ? err : t('takeout.failedReady'));
     }
   };
 
@@ -125,7 +125,7 @@ export default function TakeoutListScreen() {
       setCancelTarget(null);
       setCancelReason('');
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('takeout.failedCancel'));
+      showError(err instanceof Error ? err : t('takeout.failedCancel'));
     } finally {
       setCancelling(false);
     }

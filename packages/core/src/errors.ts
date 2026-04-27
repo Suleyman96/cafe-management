@@ -125,3 +125,38 @@ export function handleSupabaseError(error: unknown): AppError {
   // Default error
   return new AppError(getErrorMessage(error), err.code || 'UNKNOWN_ERROR', err.status || 500);
 }
+
+/**
+ * Map an HTTP response (typically from a REST endpoint) to a typed AppError.
+ *
+ * `body` is the parsed JSON body if available — by convention, `{ error: string, details?: unknown }`.
+ * Falls back to a generic message when the body is not JSON or empty.
+ */
+export function httpStatusToAppError(
+  status: number,
+  body: { error?: string; details?: Record<string, unknown> } | null,
+  fallbackMessage = 'Request failed',
+): AppError {
+  const message = body?.error || fallbackMessage;
+  const details = body?.details;
+
+  if (status === 400 || status === 422) {
+    return new ValidationError(message, details);
+  }
+  if (status === 401) {
+    return new AuthenticationError(message);
+  }
+  if (status === 403) {
+    return new AuthorizationError(message);
+  }
+  if (status === 404) {
+    return new NotFoundError(message);
+  }
+  if (status === 409) {
+    return new ConflictError(message);
+  }
+  if (status === 0 || status >= 500) {
+    return new AppError(message, 'SERVER_ERROR', status || 500, details);
+  }
+  return new AppError(message, 'HTTP_ERROR', status, details);
+}
