@@ -1,5 +1,12 @@
 import { AuthenticationError, httpStatusToAppError, NetworkError } from '@gustri/core';
-import type { Database } from '@gustri/database';
+import type {
+  CafeSettings,
+  CafeSettingsUpdateInput,
+  Database,
+  OrderPayment,
+  Refund,
+  StockItem,
+} from '@gustri/database';
 import Constants from 'expo-constants';
 import { supabase } from './supabase';
 
@@ -72,7 +79,7 @@ export const apiRoutes = {
 
   payments: {
     create: (orderId: string, data: Omit<OrderPaymentInsert, 'order_id'>) =>
-      apiFetch<{ payment: Record<string, unknown> }>(`/api/v1/orders/${orderId}/payments`, {
+      apiFetch<{ payment: OrderPayment }>(`/api/v1/orders/${orderId}/payments`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),
@@ -105,7 +112,7 @@ export const apiRoutes = {
         notes?: string | null;
       },
     ) =>
-      apiFetch<{ refund: Record<string, unknown> }>(`/api/v1/orders/${orderId}/refunds`, {
+      apiFetch<{ refund: Refund }>(`/api/v1/orders/${orderId}/refunds`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),
@@ -121,15 +128,15 @@ export const apiRoutes = {
         performed_by: string;
       },
     ) =>
-      apiFetch<{ stockItem: Record<string, unknown> }>(`/api/v1/stock/${stockItemId}/adjust`, {
+      apiFetch<{ stockItem: StockItem }>(`/api/v1/stock/${stockItemId}/adjust`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),
   },
 
   settings: {
-    update: (data: Record<string, unknown>) =>
-      apiFetch<{ settings: Record<string, unknown> }>('/api/v1/settings', {
+    update: (data: CafeSettingsUpdateInput) =>
+      apiFetch<{ settings: CafeSettings }>('/api/v1/settings', {
         method: 'PUT',
         body: JSON.stringify(data),
       }),

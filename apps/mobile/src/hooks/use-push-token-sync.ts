@@ -32,7 +32,7 @@ export function usePushTokenSync() {
         if (cancelled || !token || token === lastSyncedToken.current) return;
         await db.staff.updatePushToken(staffId!, token);
         lastSyncedToken.current = token;
-      } catch (err) {
+      } catch (err: unknown) {
         Sentry.captureException(err, { tags: { area: 'push-token-sync' } });
       }
     }

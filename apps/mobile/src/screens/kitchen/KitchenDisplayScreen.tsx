@@ -11,7 +11,22 @@ import { useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hoo
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { BRAND_PRIMARY, COLORS, TYPOGRAPHY } from '@/theme';
 
-const KITCHEN_STATUSES = [ORDER_STATUS.NEW, ORDER_STATUS.PREPARING, ORDER_STATUS.READY];
+type KitchenStatus =
+  | typeof ORDER_STATUS.NEW
+  | typeof ORDER_STATUS.PREPARING
+  | typeof ORDER_STATUS.READY;
+
+const KITCHEN_STATUSES: KitchenStatus[] = [
+  ORDER_STATUS.NEW,
+  ORDER_STATUS.PREPARING,
+  ORDER_STATUS.READY,
+];
+
+const KITCHEN_STATUS_PRIORITY = {
+  [ORDER_STATUS.NEW]: 0,
+  [ORDER_STATUS.PREPARING]: 1,
+  [ORDER_STATUS.READY]: 2,
+} as const satisfies Record<KitchenStatus, number>;
 
 export default function KitchenDisplayScreen() {
   const { t } = useTranslation('staff');
@@ -32,14 +47,11 @@ export default function KitchenDisplayScreen() {
     if (!orders) return [];
 
     return orders
-      .filter((o) => KITCHEN_STATUSES.includes(o.status as (typeof KITCHEN_STATUSES)[number]))
+      .filter((o): o is typeof o & { status: KitchenStatus } =>
+        KITCHEN_STATUSES.includes(o.status as KitchenStatus),
+      )
       .sort((a, b) => {
-        const priority: Record<string, number> = {
-          [ORDER_STATUS.NEW]: 0,
-          [ORDER_STATUS.PREPARING]: 1,
-          [ORDER_STATUS.READY]: 2,
-        };
-        const pDiff = (priority[a.status] ?? 3) - (priority[b.status] ?? 3);
+        const pDiff = KITCHEN_STATUS_PRIORITY[a.status] - KITCHEN_STATUS_PRIORITY[b.status];
         if (pDiff !== 0) return pDiff;
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       });
