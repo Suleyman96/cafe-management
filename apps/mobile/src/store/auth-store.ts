@@ -21,3 +21,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setIsLoading: (isLoading) => set({ isLoading }),
   clearAuth: () => set({ staff: null, tenantPlan: null, isLoading: false }),
 }));
+
+/**
+ * Selector hook for the current tenant id. Returns `null` until auth is ready.
+ *
+ * Use as an `enabled` guard on tenant-scoped queries so they don't fire before
+ * the staff session has loaded — prevents wasted requests and accidental
+ * cross-tenant fetches during sign-in transitions.
+ */
+export const useTenantId = (): string | null => useAuthStore((s) => s.staff?.tenant_id ?? null);
