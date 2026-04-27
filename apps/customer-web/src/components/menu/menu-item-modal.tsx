@@ -78,7 +78,13 @@ export function MenuItemModal({ item, isOpen, onClose, accentColor }: MenuItemMo
           {/* Image */}
           {item.image_url && (
             <div className="relative h-64 w-full">
-              <Image src={item.image_url} alt={name} fill className="object-cover" unoptimized />
+              <Image
+                src={item.image_url}
+                alt={name}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 100vw, 512px"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1E] via-transparent to-transparent" />
             </div>
           )}

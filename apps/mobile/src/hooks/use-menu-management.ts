@@ -2,6 +2,7 @@ import { QUERY_KEYS } from '@gustri/core';
 import type { CategoriesUpdate, MenuItemsUpdate } from '@gustri/database';
 import { useDb } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { MUTATION_KEYS } from '@/lib/mutation-keys';
 
 // Re-export mutations with matching param shapes
 export {
@@ -18,6 +19,7 @@ export function useUpdateMenuItem() {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: MUTATION_KEYS.UPDATE_MENU_ITEM,
     mutationFn: ({ id, data }: { id: string; data: MenuItemsUpdate }) =>
       db.menuItems.update(id, data),
     onSuccess: () => {
@@ -30,6 +32,7 @@ export function useUpdateCategory() {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: MUTATION_KEYS.UPDATE_CATEGORY,
     mutationFn: ({ id, data }: { id: string; data: CategoriesUpdate }) =>
       db.categories.update(id, data),
     onSuccess: () => {

@@ -2,6 +2,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { PendingSyncBadge } from '@/components/PendingSyncBadge';
+import { RealtimeStatusBanner } from '@/components/RealtimeStatusBanner';
 import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 import { BRAND_PRIMARY, COLORS } from '@/theme';
@@ -41,6 +42,7 @@ export function RootNavigator() {
   return (
     <View style={{ flex: 1 }}>
       <OfflineBanner />
+      <RealtimeStatusBanner />
       <PendingSyncBadge />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {staff ? (

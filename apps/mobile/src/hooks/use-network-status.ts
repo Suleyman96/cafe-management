@@ -3,14 +3,21 @@ import { onlineManager } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
 /**
- * Wire NetInfo to React Query's onlineManager so that:
- * - Offline mutations are queued automatically
- * - Stale queries refetch on reconnect
+ * Treat reachability === false as offline; treat null (probe pending) as online
+ * so app boot isn't blocked. isConnected === true gates the layer-2 check.
+ *
+ * Without the isInternetReachable guard, a device on a router with no WAN
+ * (common on restaurant WiFi behind a captive portal) reports "connected"
+ * and React Query fires writes that immediately fail.
  */
+function isEffectivelyOnline(state: NetInfoState): boolean {
+  return state.isConnected === true && state.isInternetReachable !== false;
+}
+
 export function setupOnlineManager() {
   onlineManager.setEventListener((setOnline) => {
     return NetInfo.addEventListener((state: NetInfoState) => {
-      setOnline(!!state.isConnected);
+      setOnline(isEffectivelyOnline(state));
     });
   });
 }
@@ -23,14 +30,12 @@ export function useNetworkStatus() {
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
-    // Get initial state immediately
     NetInfo.fetch().then((state) => {
-      setIsOnline(!!state.isConnected);
+      setIsOnline(isEffectivelyOnline(state));
     });
 
-    // Listen for changes
     const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
-      setIsOnline(!!state.isConnected);
+      setIsOnline(isEffectivelyOnline(state));
     });
 
     return unsubscribe;

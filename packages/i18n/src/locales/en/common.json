@@ -80,6 +80,8 @@
   "yes": "Yes",
 
   "offline.message": "You're offline — changes will sync when connected",
+  "offline.actionUnavailable": "This action requires an internet connection",
+  "realtime.degraded": "Live updates degraded — refreshing every 2 min",
 
   "error.title": "Something went wrong",
   "error.message": "An unexpected error occurred. Please restart the app.",

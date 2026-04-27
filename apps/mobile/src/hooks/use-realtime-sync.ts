@@ -3,8 +3,10 @@ import * as Sentry from '@sentry/react-native';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth-store';
+import { useRealtimeStatusStore } from '@/store/realtime-status-store';
 
 type RealtimeHandler = {
   table: string;
@@ -49,9 +51,9 @@ export function useRealtimeSync(channelName: string, handlers: RealtimeHandler[]
     if (!tenantId) return;
 
     cancelledRef.current = false;
-    let currentChannel: RealtimeChannel;
+    let currentChannel: RealtimeChannel | null = null;
 
-    function createChannel() {
+    function createChannel(): RealtimeChannel {
       const tenantFilter = `tenant_id=eq.${tenantId}`;
       let channel = supabase.channel(channelName);
 
@@ -85,14 +87,17 @@ export function useRealtimeSync(channelName: string, handlers: RealtimeHandler[]
         if (cancelledRef.current) return;
 
         subscribedRef.current = status === 'SUBSCRIBED';
+        const setStatus = useRealtimeStatusStore.getState().setChannelStatus;
 
         if (status === 'SUBSCRIBED') {
           retryCountRef.current = 0;
+          setStatus(channelName, 'connected');
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           subscribedRef.current = false;
           supabase.removeChannel(channel);
 
           if (retryCountRef.current >= MAX_RETRIES) {
+            setStatus(channelName, 'degraded');
             Sentry.captureMessage(`Realtime channel "${channelName}" exhausted retries`, {
               level: 'warning',
               extra: { tenantId },
@@ -100,6 +105,7 @@ export function useRealtimeSync(channelName: string, handlers: RealtimeHandler[]
             return;
           }
 
+          setStatus(channelName, 'reconnecting');
           const delay = Math.min(1000 * 2 ** retryCountRef.current, MAX_BACKOFF_MS);
           retryCountRef.current += 1;
           retryTimerRef.current = setTimeout(() => {
@@ -114,13 +120,35 @@ export function useRealtimeSync(channelName: string, handlers: RealtimeHandler[]
       return channel;
     }
 
-    createChannel();
+    currentChannel = createChannel();
+
+    // Reconnect on app foreground: the OS often kills WebSocket connections
+    // while the app is backgrounded without firing a CHANNEL_ERROR or TIMED_OUT
+    // event, so the existing backoff path never triggers. Without this listener,
+    // a phone in a waiter's pocket comes back to a silent realtime channel and
+    // misses incoming orders until the 2-min fallback poll catches up.
+    let lastAppState = AppState.currentState;
+    const appStateSub = AppState.addEventListener('change', (next) => {
+      const wasInactive = lastAppState !== 'active';
+      lastAppState = next;
+      if (!wasInactive || next !== 'active' || cancelledRef.current) return;
+
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+      if (currentChannel) supabase.removeChannel(currentChannel);
+      retryCountRef.current = 0;
+      currentChannel = createChannel();
+    });
 
     return () => {
       cancelledRef.current = true;
       subscribedRef.current = false;
+      appStateSub.remove();
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       if (currentChannel) supabase.removeChannel(currentChannel);
+      useRealtimeStatusStore.getState().removeChannel(channelName);
     };
   }, [channelName, tenantId, queryClient]);
 
