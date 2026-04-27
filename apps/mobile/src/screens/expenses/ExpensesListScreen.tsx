@@ -52,6 +52,7 @@ export default function ExpensesListScreen() {
   const {
     data: expenses,
     isLoading,
+    isRefetching,
     error,
     refetch,
   } = useExpenses({ startDate, endDate, paymentMethod: methodFilter, categoryId: categoryFilter });
@@ -332,7 +333,7 @@ export default function ExpensesListScreen() {
       <FlashList
         data={expenses || []}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
         renderItem={({ item }) => (
           <ExpenseCard
             expense={item}

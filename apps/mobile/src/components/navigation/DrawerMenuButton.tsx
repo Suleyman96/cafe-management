@@ -10,6 +10,8 @@ export function DrawerMenuButton() {
       onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
       style={styles.button}
       hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel="Open navigation menu"
     >
       <MaterialCommunityIcons name="menu" size={24} color="#333" />
     </Pressable>

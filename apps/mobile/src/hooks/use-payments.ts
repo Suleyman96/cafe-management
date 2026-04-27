@@ -7,6 +7,7 @@ import { type OrderPaymentCreateInput, OrderPaymentCreateInputSchema } from '@gu
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
+import { hapticSuccess } from '@/lib/haptics';
 
 export function useCreatePayment() {
   const queryClient = useQueryClient();
@@ -37,6 +38,7 @@ export function useCreatePayment() {
       return created;
     },
     onSuccess: (_data, variables) => {
+      hapticSuccess();
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PAYMENTS, variables.order_id] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.order_id] });

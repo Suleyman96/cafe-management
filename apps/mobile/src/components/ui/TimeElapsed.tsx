@@ -1,7 +1,8 @@
 import { TIME_ELAPSED_THRESHOLDS } from '@gustri/core';
 import { differenceInMinutes, differenceInSeconds } from 'date-fns';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Text } from 'react-native-paper';
+import { useNow } from '@/lib/now-store';
 import { COLORS } from '@/theme';
 
 interface TimeElapsedProps {
@@ -16,11 +17,9 @@ function getTimeColor(minutes: number): string {
   return COLORS.textMuted;
 }
 
-function formatElapsed(createdAt: string): { text: string; minutes: number } {
-  const now = new Date();
-  const created = new Date(createdAt);
-  const totalMinutes = differenceInMinutes(now, created);
-  const totalSeconds = differenceInSeconds(now, created);
+function formatElapsed(createdAtMs: number, nowMs: number): { text: string; minutes: number } {
+  const totalMinutes = differenceInMinutes(nowMs, createdAtMs);
+  const totalSeconds = differenceInSeconds(nowMs, createdAtMs);
 
   if (totalSeconds < 60) return { text: `${totalSeconds}s`, minutes: 0 };
   if (totalMinutes < 60) return { text: `${totalMinutes}m`, minutes: totalMinutes };
@@ -33,31 +32,9 @@ export const TimeElapsed = React.memo(function TimeElapsed({
   createdAt,
   showColor = true,
 }: TimeElapsedProps) {
-  const [elapsed, setElapsed] = useState(() => formatElapsed(createdAt));
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    const tick = () => {
-      const result = formatElapsed(createdAt);
-      setElapsed(result);
-
-      // Switch to 60s interval once past the first minute
-      if (result.minutes >= 1 && intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = setInterval(() => {
-          setElapsed(formatElapsed(createdAt));
-        }, 60000);
-      }
-    };
-
-    const initial = formatElapsed(createdAt);
-    const initialInterval = initial.minutes >= 1 ? 60000 : 1000;
-    intervalRef.current = setInterval(tick, initialInterval);
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [createdAt]);
+  const now = useNow();
+  const createdAtMs = useMemo(() => new Date(createdAt).getTime(), [createdAt]);
+  const elapsed = formatElapsed(createdAtMs, now);
 
   const color = showColor ? getTimeColor(elapsed.minutes) : COLORS.textMuted;
 

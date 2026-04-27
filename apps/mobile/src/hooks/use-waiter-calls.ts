@@ -2,6 +2,7 @@ import { QUERY_KEYS } from '@gustri/core';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef } from 'react';
+import { hapticEvent, hapticSuccess } from '@/lib/haptics';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { notifyWaiterCall } from '@/lib/notifications';
 import { playWaiterCallSound } from '@/lib/sound';
@@ -29,6 +30,7 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
         event: 'INSERT' as const,
         queryKeys: [[QUERY_KEYS.WAITER_CALLS]],
         onPayload: async (newRecord: Record<string, unknown>) => {
+          hapticEvent();
           await playWaiterCallSound();
 
           try {
@@ -76,6 +78,7 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
     const newCalls = query.data.filter((c) => !previous.has(c.id));
     if (newCalls.length === 0) return;
 
+    hapticEvent();
     void playWaiterCallSound();
     for (const call of newCalls) {
       if (!call.table_id) continue;
@@ -120,7 +123,8 @@ export function useUpdateWaiterCall() {
       }
       throw new Error(`Unsupported waiter call status: ${status}`);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      if (variables.status === 'acknowledged') hapticSuccess();
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
     },
     onError: (error: Error) => {

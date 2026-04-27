@@ -1,7 +1,6 @@
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock react-native-paper's Text to render in jsdom
 vi.mock('react-native-paper', () => ({
   Text: ({ children, style, ...props }: any) => (
     <span data-testid="elapsed" style={style} {...props}>
@@ -13,68 +12,78 @@ vi.mock('react-native-paper', () => ({
 }));
 
 import { TimeElapsed } from '@/components/ui/TimeElapsed';
+import { __resetNowStoreForTests, useNowStore } from '@/lib/now-store';
 
 describe('TimeElapsed component', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    __resetNowStoreForTests();
   });
 
   afterEach(() => {
     vi.useRealTimers();
     cleanup();
+    __resetNowStoreForTests();
   });
 
   it('renders initial elapsed time in seconds', () => {
     const now = new Date('2026-03-27T12:00:30Z');
     vi.setSystemTime(now);
+    useNowStore.setState({ now: now.getTime() });
 
     const { getByTestId } = render(<TimeElapsed createdAt="2026-03-27T12:00:00Z" />);
 
     expect(getByTestId('elapsed').textContent).toBe('30s');
   });
 
-  it('updates from seconds to minutes after crossing 60s', () => {
-    const now = new Date('2026-03-27T12:00:50Z');
-    vi.setSystemTime(now);
+  it('updates from seconds to minutes when the shared tick advances past 60s', () => {
+    const start = new Date('2026-03-27T12:00:50Z');
+    vi.setSystemTime(start);
+    useNowStore.setState({ now: start.getTime() });
 
     const { getByTestId } = render(<TimeElapsed createdAt="2026-03-27T12:00:00Z" />);
-
     expect(getByTestId('elapsed').textContent).toBe('50s');
 
-    // Advance 15s → 65s total → should show 1m
     act(() => {
-      vi.advanceTimersByTime(15000);
+      const next = start.getTime() + 15_000;
+      vi.setSystemTime(new Date(next));
+      useNowStore.setState({ now: next });
     });
     expect(getByTestId('elapsed').textContent).toBe('1m');
   });
 
-  it('switches interval from 1s to 60s after first minute', () => {
-    const now = new Date('2026-03-27T12:00:55Z');
-    vi.setSystemTime(now);
-
-    const clearSpy = vi.spyOn(global, 'clearInterval');
-
-    render(<TimeElapsed createdAt="2026-03-27T12:00:00Z" />);
-
-    // Advance past 60s — tick fires at 1s intervals, one tick crosses the minute threshold
-    vi.advanceTimersByTime(6000);
-
-    // clearInterval should have been called to switch from 1s to 60s interval
-    expect(clearSpy).toHaveBeenCalled();
-
-    clearSpy.mockRestore();
-  });
-
-  it('cleans up interval on unmount', () => {
+  it('does not run a per-component interval (single shared tick drives updates)', () => {
     const now = new Date('2026-03-27T12:00:30Z');
     vi.setSystemTime(now);
+    useNowStore.setState({ now: now.getTime() });
+
+    const setIntervalSpy = vi.spyOn(global, 'setInterval');
+
+    render(<TimeElapsed createdAt="2026-03-27T12:00:00Z" />);
+    render(<TimeElapsed createdAt="2026-03-27T12:00:00Z" />);
+    render(<TimeElapsed createdAt="2026-03-27T12:00:00Z" />);
+
+    // Three mounts → still exactly one shared interval started.
+    expect(setIntervalSpy).toHaveBeenCalledTimes(1);
+
+    setIntervalSpy.mockRestore();
+  });
+
+  it('clears the shared interval only when the last consumer unmounts', () => {
+    const now = new Date('2026-03-27T12:00:30Z');
+    vi.setSystemTime(now);
+    useNowStore.setState({ now: now.getTime() });
 
     const clearSpy = vi.spyOn(global, 'clearInterval');
 
-    const { unmount } = render(<TimeElapsed createdAt="2026-03-27T12:00:00Z" />);
+    const a = render(<TimeElapsed createdAt="2026-03-27T12:00:00Z" />);
+    const b = render(<TimeElapsed createdAt="2026-03-27T12:00:00Z" />);
 
-    unmount();
-    expect(clearSpy).toHaveBeenCalled();
+    a.unmount();
+    expect(clearSpy).not.toHaveBeenCalled();
+
+    b.unmount();
+    expect(clearSpy).toHaveBeenCalledTimes(1);
 
     clearSpy.mockRestore();
   });
@@ -82,12 +91,12 @@ describe('TimeElapsed component', () => {
   it('applies red color when elapsed >= 20 minutes', () => {
     const now = new Date('2026-03-27T12:20:00Z');
     vi.setSystemTime(now);
+    useNowStore.setState({ now: now.getTime() });
 
     const { getByTestId } = render(<TimeElapsed createdAt="2026-03-27T12:00:00Z" />);
 
     const el = getByTestId('elapsed');
     expect(el.textContent).toBe('20m');
-    // jsdom converts hex to rgb
     expect(el.style.color).toBe('rgb(239, 68, 68)');
     expect(el.style.fontWeight).toBe('700');
   });

@@ -20,6 +20,28 @@ const MAX_BACKOFF_MS = 30_000;
 const MAX_RETRIES = 10;
 
 /**
+ * Detach a channel from the websocket multiplex and drop it from the client
+ * registry. We call `unsubscribe()` explicitly before `removeChannel()` so the
+ * channel's local state is torn down synchronously — important when a retry or
+ * AppState foreground swaps in a fresh channel under the same name immediately
+ * after. Without the explicit unsubscribe, in-flight leave promises and the
+ * new channel can briefly coexist on flaky networks (a real concern on staff
+ * tablets that bounce in and out of coverage all shift).
+ */
+async function teardownChannel(channel: RealtimeChannel): Promise<void> {
+  try {
+    await channel.unsubscribe();
+  } catch {
+    // Already unsubscribed or never subscribed — proceed to removeChannel.
+  }
+  try {
+    await supabase.removeChannel(channel);
+  } catch {
+    // Channel was already evicted from the registry — nothing to do.
+  }
+}
+
+/**
  * Subscribes to Supabase Realtime for a set of table events and
  * invalidates the corresponding React Query caches on changes.
  *
@@ -94,7 +116,7 @@ export function useRealtimeSync(channelName: string, handlers: RealtimeHandler[]
           setStatus(channelName, 'connected');
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           subscribedRef.current = false;
-          supabase.removeChannel(channel);
+          void teardownChannel(channel);
 
           if (retryCountRef.current >= MAX_RETRIES) {
             setStatus(channelName, 'degraded');
@@ -137,7 +159,7 @@ export function useRealtimeSync(channelName: string, handlers: RealtimeHandler[]
         clearTimeout(retryTimerRef.current);
         retryTimerRef.current = null;
       }
-      if (currentChannel) supabase.removeChannel(currentChannel);
+      if (currentChannel) void teardownChannel(currentChannel);
       retryCountRef.current = 0;
       currentChannel = createChannel();
     });
@@ -147,7 +169,7 @@ export function useRealtimeSync(channelName: string, handlers: RealtimeHandler[]
       subscribedRef.current = false;
       appStateSub.remove();
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-      if (currentChannel) supabase.removeChannel(currentChannel);
+      if (currentChannel) void teardownChannel(currentChannel);
       useRealtimeStatusStore.getState().removeChannel(channelName);
     };
   }, [channelName, tenantId, queryClient]);

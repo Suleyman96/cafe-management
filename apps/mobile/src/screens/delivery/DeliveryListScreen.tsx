@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ACTIVE_DELIVERY_STATUSES, ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { FlashList } from '@shopify/flash-list';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Searchbar } from 'react-native-paper';
 import { CreateDeliveryModal } from '@/components/delivery/CreateDeliveryModal';
@@ -49,7 +49,7 @@ export default function DeliveryListScreen() {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
 
-  const { data: orders, isLoading, error, refetch } = useDeliveryOrders();
+  const { data: orders, isLoading, isRefetching, error, refetch } = useDeliveryOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const markOutForDelivery = useMarkOutForDelivery();
   const markDelivered = useMarkDelivered();
@@ -100,56 +100,74 @@ export default function DeliveryListScreen() {
     return result;
   }, [orders, statusFilter, searchTerm]);
 
-  const handleApprove = async (orderId: string) => {
-    try {
-      await updateOrderStatus.mutateAsync({ orderId, status: 'new' });
-      showSuccess(t('delivery.orderApproved'));
-    } catch (err: unknown) {
-      showError(err instanceof Error ? err : t('delivery.failedApprove'));
-    }
-  };
+  const handleApprove = useCallback(
+    async (orderId: string) => {
+      try {
+        await updateOrderStatus.mutateAsync({ orderId, status: 'new' });
+        showSuccess(t('delivery.orderApproved'));
+      } catch (err: unknown) {
+        showError(err instanceof Error ? err : t('delivery.failedApprove'));
+      }
+    },
+    [updateOrderStatus, showSuccess, showError, t],
+  );
 
-  const handleStartPreparing = async (orderId: string) => {
-    try {
-      await updateOrderStatus.mutateAsync({ orderId, status: 'preparing' });
-      showSuccess(t('delivery.preparingStarted'));
-    } catch (err: unknown) {
-      showError(err instanceof Error ? err : t('delivery.failedPrepare'));
-    }
-  };
+  const handleStartPreparing = useCallback(
+    async (orderId: string) => {
+      try {
+        await updateOrderStatus.mutateAsync({ orderId, status: 'preparing' });
+        showSuccess(t('delivery.preparingStarted'));
+      } catch (err: unknown) {
+        showError(err instanceof Error ? err : t('delivery.failedPrepare'));
+      }
+    },
+    [updateOrderStatus, showSuccess, showError, t],
+  );
 
-  const handleMarkReady = async (orderId: string) => {
-    try {
-      await updateOrderStatus.mutateAsync({ orderId, status: 'ready' });
-      showSuccess(t('delivery.orderMarkedReady'));
-    } catch (err: unknown) {
-      showError(err instanceof Error ? err : t('delivery.failedReady'));
-    }
-  };
+  const handleMarkReady = useCallback(
+    async (orderId: string) => {
+      try {
+        await updateOrderStatus.mutateAsync({ orderId, status: 'ready' });
+        showSuccess(t('delivery.orderMarkedReady'));
+      } catch (err: unknown) {
+        showError(err instanceof Error ? err : t('delivery.failedReady'));
+      }
+    },
+    [updateOrderStatus, showSuccess, showError, t],
+  );
 
-  const handleSendOut = async (orderId: string) => {
-    try {
-      await markOutForDelivery.mutateAsync({ orderId, deliveryPersonId: staff?.id || '' });
-      showSuccess(t('delivery.orderSentOut'));
-    } catch (err: unknown) {
-      showError(err instanceof Error ? err : t('delivery.failedSend'));
-    }
-  };
+  const handleSendOut = useCallback(
+    async (orderId: string) => {
+      try {
+        await markOutForDelivery.mutateAsync({ orderId, deliveryPersonId: staff?.id || '' });
+        showSuccess(t('delivery.orderSentOut'));
+      } catch (err: unknown) {
+        showError(err instanceof Error ? err : t('delivery.failedSend'));
+      }
+    },
+    [markOutForDelivery, staff?.id, showSuccess, showError, t],
+  );
 
-  const handleMarkDelivered = async (orderId: string) => {
-    try {
-      await markDelivered.mutateAsync(orderId);
-      showSuccess(t('delivery.orderDelivered'));
-    } catch (err: unknown) {
-      showError(err instanceof Error ? err : t('delivery.failedDelivered'));
-    }
-  };
+  const handleMarkDelivered = useCallback(
+    async (orderId: string) => {
+      try {
+        await markDelivered.mutateAsync(orderId);
+        showSuccess(t('delivery.orderDelivered'));
+      } catch (err: unknown) {
+        showError(err instanceof Error ? err : t('delivery.failedDelivered'));
+      }
+    },
+    [markDelivered, showSuccess, showError, t],
+  );
 
-  const handleOpenCancel = (orderId: string) => {
-    const order = orders?.find((o) => o.id === orderId);
-    setCancelTarget({ id: orderId, customer_name: order?.customer_name });
-    setCancelReason('');
-  };
+  const handleOpenCancel = useCallback(
+    (orderId: string) => {
+      const order = orders?.find((o) => o.id === orderId);
+      setCancelTarget({ id: orderId, customer_name: order?.customer_name });
+      setCancelReason('');
+    },
+    [orders],
+  );
 
   const handleConfirmCancel = async () => {
     if (!cancelTarget || !cancelReason.trim()) return;
@@ -202,7 +220,7 @@ export default function DeliveryListScreen() {
       <FlashList
         data={filtered}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
         renderItem={({ item }) => (
           <DeliveryOrderCard
             order={item}

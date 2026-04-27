@@ -85,6 +85,10 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
                 onPress={() => onMarkItemReady(item.id)}
                 disabled={isProcessing}
                 activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('kitchen.ready')} — ${item.menu_item?.name || t('kitchen.unknownItem')}`}
+                accessibilityState={{ disabled: isProcessing }}
               >
                 <Text style={styles.itemReadyBtnText}>{t('kitchen.ready')}</Text>
               </TouchableOpacity>
@@ -106,6 +110,9 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
             onPress={() => onStartPreparing(order.id)}
             disabled={isProcessing}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={t('kitchen.startPreparing')}
+            accessibilityState={{ disabled: isProcessing, busy: isProcessing }}
           >
             {isProcessing ? (
               <ActivityIndicator size="small" color="#000" />
@@ -122,6 +129,9 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
             onPress={() => onMarkAllReady(order.id)}
             disabled={isProcessing}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={t('kitchen.allReady')}
+            accessibilityState={{ disabled: isProcessing, busy: isProcessing }}
           >
             {isProcessing ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -136,6 +146,9 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
             onPress={() => onMarkAllServed(order.id)}
             disabled={isProcessing}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={t('kitchen.allServed')}
+            accessibilityState={{ disabled: isProcessing, busy: isProcessing }}
           >
             {isProcessing ? (
               <ActivityIndicator size="small" color="#fff" />

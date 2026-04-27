@@ -44,6 +44,7 @@ export function MainTabs() {
       initialRouteName={role === 'kitchen' ? 'KitchenTab' : 'TablesTab'}
       screenOptions={{
         headerShown: false,
+        lazy: true,
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.onSurfaceDisabled,
         tabBarStyle: {
