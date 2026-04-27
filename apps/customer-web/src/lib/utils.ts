@@ -6,16 +6,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Format price with currency symbol
- */
-export function formatPrice(amount: number, currency: string = '€'): string {
-  return `${currency}${amount.toFixed(2)}`;
-}
-
-/**
  * Calculate elapsed time in minutes
  */
-export function getElapsedMinutes(timestamp: string): number {
+function getElapsedMinutes(timestamp: string): number {
   const now = Date.now();
   const then = new Date(timestamp).getTime();
   return Math.floor((now - then) / 1000 / 60);
@@ -23,18 +16,42 @@ export function getElapsedMinutes(timestamp: string): number {
 
 /**
  * Format time ago (e.g., "5 min ago", "2 hours ago")
+ * Accepts an optional translation function for i18n support.
  */
-export function timeAgo(timestamp: string): string {
+export function timeAgo(
+  timestamp: string,
+  t?: (key: string, opts?: Record<string, string | number>) => string,
+): string {
   const minutes = getElapsedMinutes(timestamp);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (t) {
+    if (minutes < 1) return t('customer:time.justNow');
+    if (minutes < 60) return t('customer:time.minutesAgo', { count: minutes });
+    if (hours < 24) return t('customer:time.hoursAgo', { count: hours });
+    return t('customer:time.daysAgo', { count: days });
+  }
 
   if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes} min ago`;
-
-  const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-
-  const days = Math.floor(hours / 24);
   return `${days} day${days > 1 ? 's' : ''} ago`;
+}
+
+/**
+ * Get status color class
+ */
+/**
+ * Get localized field from a menu item or category.
+ * Currently DB has single-language fields, so returns the field directly.
+ */
+export function getLocalizedField(
+  item: { name?: string | null; description?: string | null },
+  field: 'name' | 'description',
+  _language?: string,
+): string {
+  return (item?.[field] as string) ?? '';
 }
 
 /**
@@ -64,24 +81,4 @@ export function getStatusColor(status: string): string {
     default:
       return 'bg-gray-500 text-white';
   }
-}
-
-/**
- * Debounce function
- */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number,
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-
-  return function executedFunction(...args: Parameters<T>) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
 }

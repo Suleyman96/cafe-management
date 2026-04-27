@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { StockItemModal } from '@/components/modals/stock-item-modal';
 import { StockMovementModal } from '@/components/modals/stock-movement-modal';
 import { useDeleteStockItem, useLowStockCount, useStockItems, useStockMovements } from '@/hooks';
@@ -58,6 +59,7 @@ export default function StockClient() {
     type: 'in' | 'out';
   } | null>(null);
   const [historyItem, setHistoryItem] = useState<StockItem | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: stockItems = [], isLoading } = useStockItems();
   const { data: lowStockCount = 0 } = useLowStockCount();
@@ -91,14 +93,16 @@ export default function StockClient() {
     return 'text-green-600 bg-green-50';
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t('stock.confirmDelete'))) return;
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return;
     try {
-      await deleteStockItem.mutateAsync(id);
+      await deleteStockItem.mutateAsync(deletingId);
       toast.success(t('stock.stockItemDeleted'));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t('delete', { ns: 'common' });
       toast.error(message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -275,7 +279,7 @@ export default function StockClient() {
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => setDeletingId(item.id)}
                         className="p-1.5 text-gray-400 hover:text-red-600 rounded"
                         title={t('delete', { ns: 'common' })}
                       >
@@ -319,6 +323,15 @@ export default function StockClient() {
 
       {/* History Modal */}
       {historyItem && <StockHistoryModal item={historyItem} onClose={() => setHistoryItem(null)} />}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deletingId}
+        onClose={() => setDeletingId(null)}
+        onConfirm={handleConfirmDelete}
+        title={t('delete', { ns: 'common' })}
+        message={t('stock.confirmDelete')}
+      />
     </div>
   );
 }
@@ -349,47 +362,53 @@ function StockHistoryModal({ item, onClose }: { item: StockItem; onClose: () => 
             <p className="text-gray-500 text-center py-8">{t('stock.noMovements')}</p>
           ) : (
             <div className="space-y-3">
-              {movements.map((m: any) => (
-                <div key={m.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div
-                    className={`p-1.5 rounded-full ${
-                      m.movement_type === 'in'
-                        ? 'bg-green-100'
-                        : m.movement_type === 'out'
-                          ? 'bg-red-100'
-                          : 'bg-blue-100'
-                    }`}
-                  >
-                    {m.movement_type === 'in' ? (
-                      <ArrowUpCircle className="h-4 w-4 text-green-600" />
-                    ) : m.movement_type === 'out' ? (
-                      <ArrowDownCircle className="h-4 w-4 text-red-600" />
-                    ) : (
-                      <History className="h-4 w-4 text-blue-600" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">
-                        {m.movement_type === 'in'
-                          ? `+${m.quantity_change}`
+              {movements.map(
+                (
+                  m: (typeof movements)[number] & {
+                    performed_by_staff?: { full_name: string } | null;
+                  },
+                ) => (
+                  <div key={m.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div
+                      className={`p-1.5 rounded-full ${
+                        m.movement_type === 'in'
+                          ? 'bg-green-100'
                           : m.movement_type === 'out'
-                            ? m.quantity_change
-                            : t('stock.setToValue', { value: m.quantity_after })}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        &rarr; {m.quantity_after} {t(UNIT_KEYS[item.unit] || item.unit)}
-                      </span>
+                            ? 'bg-red-100'
+                            : 'bg-blue-100'
+                      }`}
+                    >
+                      {m.movement_type === 'in' ? (
+                        <ArrowUpCircle className="h-4 w-4 text-green-600" />
+                      ) : m.movement_type === 'out' ? (
+                        <ArrowDownCircle className="h-4 w-4 text-red-600" />
+                      ) : (
+                        <History className="h-4 w-4 text-blue-600" />
+                      )}
                     </div>
-                    {m.reason && <p className="text-sm text-gray-600 mt-0.5">{m.reason}</p>}
-                    <p className="text-xs text-gray-400 mt-1">
-                      {new Date(m.created_at).toLocaleString()}
-                      {m.performed_by_staff &&
-                        ` ${t('stock.performedBy', { name: m.performed_by_staff.full_name })}`}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">
+                          {m.movement_type === 'in'
+                            ? `+${m.quantity_change}`
+                            : m.movement_type === 'out'
+                              ? m.quantity_change
+                              : t('stock.setToValue', { value: m.quantity_after })}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          &rarr; {m.quantity_after} {t(UNIT_KEYS[item.unit] || item.unit)}
+                        </span>
+                      </div>
+                      {m.reason && <p className="text-sm text-gray-600 mt-0.5">{m.reason}</p>}
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(m.created_at).toLocaleString()}
+                        {m.performed_by_staff &&
+                          ` ${t('stock.performedBy', { name: m.performed_by_staff.full_name })}`}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           )}
         </div>

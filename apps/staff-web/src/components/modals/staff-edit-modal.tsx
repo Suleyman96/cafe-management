@@ -11,8 +11,10 @@ import { supabase } from '@/lib/supabase/client';
 
 type StaffRole = 'waiter' | 'admin' | 'kitchen' | 'owner';
 
+import type { Staff } from '@/types';
+
 interface StaffEditModalProps {
-  staff: any;
+  staff: Staff;
   currentUserRole?: string;
   onClose: () => void;
   onSuccess: () => void;
@@ -188,19 +190,21 @@ export function StaffEditModal({
             </Button>
           </div>
 
-          <div className="border-t pt-4">
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={() => setShowDeleteConfirm(true)}
-              disabled={loading || deleting}
-              className="w-full"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {t('staffMgmt.deleteStaff')}
-            </Button>
-          </div>
+          {staff.role !== 'owner' && (
+            <div className="border-t pt-4">
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={loading || deleting}
+                className="w-full"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {t('staffMgmt.deleteStaff')}
+              </Button>
+            </div>
+          )}
         </form>
 
         <ConfirmDialog

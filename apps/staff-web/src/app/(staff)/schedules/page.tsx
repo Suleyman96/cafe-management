@@ -1,7 +1,12 @@
 'use client';
 
 import { getLocalDateString } from '@gustri/core';
-import type { StaffSchedule } from '@gustri/database';
+import type { StaffSchedule as BaseStaffSchedule, Staff } from '@gustri/database';
+
+type StaffSchedule = BaseStaffSchedule & {
+  staff?: Pick<Staff, 'full_name' | 'role'>;
+};
+
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, User } from 'lucide-react';
@@ -72,7 +77,7 @@ export default function SchedulesPage() {
   const [viewMode, setViewMode] = useState<'weekly' | 'daily' | 'monthly'>('weekly');
   const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
   const [showModal, setShowModal] = useState(false);
-  const [editSchedule, setEditSchedule] = useState<any>(null);
+  const [editSchedule, setEditSchedule] = useState<StaffSchedule | null>(null);
 
   const weekDates = useMemo(() => {
     const ref = new Date();
@@ -96,10 +101,10 @@ export default function SchedulesPage() {
   // Group schedules by staff for weekly view
   const schedulesByStaff = useMemo(() => {
     if (!schedules || !staffList) return {};
-    const map: Record<string, { staff: any; schedules: Record<string, any[]> }> = {};
+    const map: Record<string, { staff: Staff; schedules: Record<string, StaffSchedule[]> }> = {};
 
     // Initialize with all active staff
-    for (const s of staffList.filter((s: any) => s.is_active)) {
+    for (const s of staffList.filter((s) => s.is_active)) {
       map[s.id] = { staff: s, schedules: {} };
       for (const d of weekDates) {
         map[s.id].schedules[formatDate(d)] = [];
@@ -121,7 +126,7 @@ export default function SchedulesPage() {
   // Daily view: filter schedules for selected date
   const dailySchedules = useMemo(() => {
     if (!schedules) return [];
-    return schedules.filter((s: any) => s.date === selectedDate);
+    return schedules.filter((s) => s.date === selectedDate);
   }, [schedules, selectedDate]);
 
   // Monthly view: group schedules by date
@@ -153,7 +158,7 @@ export default function SchedulesPage() {
     if (defaultDate) setSelectedDate(defaultDate);
   };
 
-  const handleOpenEdit = (schedule: any) => {
+  const handleOpenEdit = (schedule: StaffSchedule) => {
     setEditSchedule(schedule);
     setShowModal(true);
   };
@@ -318,7 +323,7 @@ export default function SchedulesPage() {
                         className={`px-2 py-2 text-center ${isToday(d) ? 'bg-blue-50/30' : ''}`}
                       >
                         {daySchedules.length > 0 ? (
-                          daySchedules.map((sched: any) => (
+                          daySchedules.map((sched: StaffSchedule) => (
                             <button
                               key={sched.id}
                               onClick={() => handleOpenEdit(sched)}
@@ -436,7 +441,7 @@ export default function SchedulesPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {dailySchedules.map((sched: any) => {
+                    {dailySchedules.map((sched: StaffSchedule) => {
                       const duration = getDurationHours(sched.actual_start, sched.actual_end);
                       return (
                         <tr
@@ -571,7 +576,7 @@ export default function SchedulesPage() {
                       </button>
                     </div>
                     <div className="space-y-0.5">
-                      {daySchedules.map((sched: any) => (
+                      {daySchedules.map((sched: StaffSchedule) => (
                         <button
                           key={sched.id}
                           onClick={() => handleOpenEdit(sched)}
@@ -610,7 +615,7 @@ export default function SchedulesPage() {
       {/* Modal */}
       {showModal && (
         <ScheduleModal
-          schedule={editSchedule}
+          schedule={editSchedule ?? undefined}
           defaultDate={selectedDate}
           onClose={() => {
             setShowModal(false);

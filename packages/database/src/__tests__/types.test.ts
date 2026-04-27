@@ -363,6 +363,7 @@ describe('Table Schemas', () => {
       estimated_delivery_time: null,
       delivered_at: null,
       delivery_person_id: null,
+      delivery_access_token: null,
     };
 
     it('should validate a complete order', () => {
@@ -494,8 +495,8 @@ describe('Table Schemas', () => {
       expect(MenuItemSchema.safeParse({ ...validMenuItem, price: -10 }).success).toBe(false);
     });
 
-    it('should reject zero price', () => {
-      expect(MenuItemSchema.safeParse({ ...validMenuItem, price: 0 }).success).toBe(false);
+    it('should allow zero price for free/promotional items', () => {
+      expect(MenuItemSchema.safeParse({ ...validMenuItem, price: 0 }).success).toBe(true);
     });
 
     it('should allow nullable category_id', () => {
@@ -521,6 +522,7 @@ describe('Table Schemas', () => {
       last_login_at: null,
       auth_user_id: null,
       preferred_language: 'en',
+      push_token: null,
     };
 
     it('should validate valid staff', () => {

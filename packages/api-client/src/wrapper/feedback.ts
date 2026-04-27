@@ -10,10 +10,10 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
     create: async (data: {
       table_id: string;
       tenant_id?: string;
-      feedback_type: string;
+      feedback_type: 'complaint' | 'praise';
       message?: string;
       order_id?: string | null;
-      status?: string;
+      status?: 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
     }) => {
       const { data: result, error } = await ctx.anyClient
         .from('customer_feedback')
@@ -29,10 +29,11 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
       return result as CustomerFeedbackRow;
     },
 
-    findAll: async (
-      status?: CustomerFeedbackRow['status'],
-      options?: { limit?: number; offset?: number },
-    ) => {
+    findAll: async (options?: {
+      status?: CustomerFeedbackRow['status'];
+      limit?: number;
+      offset?: number;
+    }) => {
       let query = ctx.client
         .from('customer_feedback')
         .select(`
@@ -41,8 +42,8 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
         `)
         .order('created_at', { ascending: false });
 
-      if (status) {
-        query = query.eq('status', status);
+      if (options?.status) {
+        query = query.eq('status', options.status);
       }
 
       // Apply pagination with sensible defaults

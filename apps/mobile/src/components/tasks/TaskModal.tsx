@@ -6,7 +6,8 @@ import { Button, Chip, Modal, Portal, Switch } from 'react-native-paper';
 import { useStaff } from '@/hooks';
 import { getLocalDateString } from '@/lib/date-utils';
 import { Text, TextInput } from '@/lib/paper-compat';
-import type { Task } from '@/types';
+import { COLORS } from '@/theme';
+import type { Staff, Task } from '@/types';
 
 // Generate time options in HH:MM format (30-min intervals)
 const TIME_SLOTS = TIME_OPTIONS;
@@ -15,7 +16,7 @@ interface TaskModalProps {
   task: Task | null;
   staffId?: string;
   isAdmin: boolean;
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: Record<string, unknown>) => Promise<void>;
   isSaving: boolean;
   onClose: () => void;
 }
@@ -53,9 +54,9 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
     { value: 'monthly' as const, label: t('tasks.monthly') },
   ];
 
-  const activeStaff = (staffList as any[]).filter((s: any) => s.is_active);
+  const activeStaff = (staffList as Staff[]).filter((s) => s.is_active);
   const selectedStaffName =
-    activeStaff.find((s: any) => s.id === assignedTo)?.full_name || t('tasks.unassigned');
+    activeStaff.find((s) => s.id === assignedTo)?.full_name || t('tasks.unassigned');
 
   const toggleWeekday = (day: number) => {
     setRecurrenceDays((prev) =>
@@ -63,8 +64,12 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
     );
   };
 
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  const isDueDateValid = !dueDate || dateRegex.test(dueDate);
+
   const handleSubmit = () => {
     if (!title.trim()) return;
+    if (!isRecurring && dueDate && !isDueDateValid) return;
 
     const data: Record<string, unknown> = {
       title: title.trim(),
@@ -149,7 +154,7 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
               >
                 {t('tasks.unassigned')}
               </Chip>
-              {activeStaff.map((s: any) => (
+              {activeStaff.map((s) => (
                 <Chip
                   key={s.id}
                   selected={assignedTo === s.id}
@@ -198,6 +203,7 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
                 dense
                 placeholder="YYYY-MM-DD"
                 style={styles.input}
+                error={!!dueDate && !isDueDateValid}
               />
 
               <Text variant="labelMedium" style={styles.label}>
@@ -395,7 +401,7 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
 
 const styles = StyleSheet.create({
   modal: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     margin: 16,
     padding: 20,
     borderRadius: 12,
@@ -403,7 +409,7 @@ const styles = StyleSheet.create({
   },
   header: { fontWeight: '700', marginBottom: 16 },
   input: { marginBottom: 8 },
-  label: { color: '#374151', marginBottom: 6, marginTop: 8 },
+  label: { color: COLORS.textPrimary, marginBottom: 6, marginTop: 8 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   priorityChip: {},
   pickerChip: { alignSelf: 'flex-start', marginBottom: 4 },
@@ -451,7 +457,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: COLORS.border,
   },
   actionBtn: {},
 });

@@ -16,6 +16,7 @@ import {
   useUpdateOrderStatus,
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
+import { useCanMutate } from '@/hooks/use-can-mutate';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { ItemPaymentForm } from './payment/item-payment-form';
 import { PartialPaymentForm } from './payment/partial-payment-form';
@@ -47,6 +48,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   const { data: existingPayments } = useOrderPayments(order?.id || '');
   const formatPrice = useFormatPrice();
   const { data: cafeSettings } = useCafeSettings();
+  const canMutate = useCanMutate();
 
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('full');
   const [partialAmount, setPartialAmount] = useState<string>('');
@@ -244,6 +246,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
       onSuccess();
     } catch (error) {
       Sentry.captureException(error);
+      toast.error(t('payment.completeFailed'));
     } finally {
       setLoading(false);
     }
@@ -444,7 +447,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
             {isFullyPaid || isZeroTotal ? (
               <Button
                 onClick={handleCompleteOrder}
-                disabled={loading}
+                disabled={loading || !canMutate}
                 className="flex-1 bg-green-600 hover:bg-green-700"
               >
                 <Check className="h-4 w-4 mr-2" />
@@ -457,7 +460,8 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
                   getPaymentAmount() <= 0 ||
                   getPaymentAmount() > (remainingBalance ?? orderTotal) + 0.01 ||
                   loading ||
-                  !staff?.id
+                  !staff?.id ||
+                  !canMutate
                 }
                 className="flex-1"
               >

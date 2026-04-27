@@ -7,7 +7,7 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
   const db = useDb();
   return useQuery({
     queryKey: [QUERY_KEYS.WAITER_CALLS, status],
-    queryFn: () => db.waiterCalls.findAll(status) as Promise<WaiterCall[]>,
+    queryFn: () => db.waiterCalls.findAll(status ? { status } : undefined) as Promise<WaiterCall[]>,
   });
 }
 

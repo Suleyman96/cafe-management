@@ -66,7 +66,11 @@ export async function registerForPushNotifications() {
   }
 }
 
-export async function showLocalNotification(title: string, body: string, data?: any) {
+export async function showLocalNotification(
+  title: string,
+  body: string,
+  data?: Record<string, string>,
+) {
   await Notifications.scheduleNotificationAsync({
     content: {
       title,
@@ -78,29 +82,30 @@ export async function showLocalNotification(title: string, body: string, data?: 
   });
 }
 
-// New order notification
-export async function notifyNewOrder(orderNumber: string, tableNumber: string) {
+// New order notification — orderId enables deep link to OrderDetail
+export async function notifyNewOrder(orderNumber: string, tableNumber: string, orderId?: string) {
   await showLocalNotification('🔔 New Order!', `Order ${orderNumber} from Table ${tableNumber}`, {
     type: 'new_order',
     orderNumber,
     tableNumber,
+    ...(orderId ? { orderId } : {}),
   });
 }
 
-// Waiter call notification
-export async function notifyWaiterCall(tableNumber: string, reason: string) {
+// Waiter call notification — tableId enables deep link to TableDetail
+export async function notifyWaiterCall(tableNumber: string, reason: string, tableId?: string) {
   await showLocalNotification(
     '🔔 Waiter Call',
     `Table ${tableNumber} needs assistance: ${reason}`,
-    { type: 'waiter_call', tableNumber, reason },
+    { type: 'waiter_call', tableNumber, reason, ...(tableId ? { tableId } : {}) },
   );
 }
 
 // Order ready notification
-export async function notifyOrderReady(orderNumber: string, tableNumber: string) {
+export async function notifyOrderReady(orderNumber: string, tableNumber: string, orderId?: string) {
   await showLocalNotification(
     '✅ Order Ready',
     `Order ${orderNumber} for Table ${tableNumber} is ready to serve`,
-    { type: 'order_ready', orderNumber, tableNumber },
+    { type: 'order_ready', orderNumber, tableNumber, ...(orderId ? { orderId } : {}) },
   );
 }

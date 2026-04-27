@@ -130,7 +130,7 @@ export function createMockDb() {
       'generateRecurringTasks',
     ),
     rpc: mockResource('getRemainingBalance', 'transferTable', 'generateOrderNumber'),
-    views: mockResource('getActiveOrders', 'getSalesSummary', 'getOrderPaymentSummary'),
+    views: mockResource('getSalesSummary', 'getOrderPaymentSummary'),
     realtime: mockResource(
       'subscribeToTables',
       'subscribeToOrders',

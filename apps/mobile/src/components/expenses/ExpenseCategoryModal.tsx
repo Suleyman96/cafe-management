@@ -4,6 +4,7 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Divider, IconButton, Modal, Portal, Text } from 'react-native-paper';
 import { ConfirmDialog } from '@/components/ui';
 import { TextInput } from '@/lib/paper-compat';
+import { COLORS } from '@/theme';
 
 interface ExpenseCategoryModalProps {
   visible: boolean;
@@ -101,7 +102,7 @@ export function ExpenseCategoryModal({
                 <IconButton
                   icon="delete"
                   size={18}
-                  iconColor="#ef4444"
+                  iconColor={COLORS.danger}
                   onPress={() => setDeleteId(item.id)}
                 />
               </View>
@@ -169,8 +170,8 @@ export function ExpenseCategoryModal({
 
         <ConfirmDialog
           visible={!!deleteId}
-          title="Delete Category"
-          message="Are you sure you want to delete this category? Expenses will become uncategorized."
+          title={t('expenses.deleteCategory')}
+          message={t('expenses.deleteCategoryConfirm')}
           onConfirm={handleConfirmDelete}
           onCancel={() => setDeleteId(null)}
           destructive
@@ -181,7 +182,13 @@ export function ExpenseCategoryModal({
 }
 
 const styles = StyleSheet.create({
-  modal: { backgroundColor: '#fff', margin: 16, padding: 20, borderRadius: 12, maxHeight: '80%' },
+  modal: {
+    backgroundColor: COLORS.card,
+    margin: 16,
+    padding: 20,
+    borderRadius: 12,
+    maxHeight: '80%',
+  },
   title: { fontWeight: '700', marginBottom: 12 },
   list: { maxHeight: 250 },
   categoryRow: {
@@ -191,15 +198,15 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   categoryInfo: { flex: 1, gap: 2 },
-  categoryName: { fontWeight: '600', color: '#1e293b' },
-  categoryDesc: { color: '#6b7280' },
+  categoryName: { fontWeight: '600', color: COLORS.textPrimary },
+  categoryDesc: { color: COLORS.textMuted },
   categoryActions: { flexDirection: 'row' },
-  emptyText: { color: '#9ca3af', textAlign: 'center', paddingVertical: 16 },
+  emptyText: { color: COLORS.textLight, textAlign: 'center', paddingVertical: 16 },
   divider: { marginVertical: 12 },
   formSection: { gap: 4 },
-  formLabel: { color: '#6b7280', marginBottom: 4 },
+  formLabel: { color: COLORS.textMuted, marginBottom: 4 },
   input: { marginBottom: 8 },
   formActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
-  addBtn: { borderColor: '#d1d5db' },
+  addBtn: { borderColor: COLORS.border },
   closeRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 },
 });

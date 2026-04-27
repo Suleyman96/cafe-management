@@ -1,9 +1,9 @@
 import { ORDER_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, Text } from 'react-native-paper';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StatusBadge, TimeElapsed } from '@/components/ui';
+import { BRAND_PRIMARY, CARD_PADDING, CARD_RADIUS, COLORS, ORDER_STATUS_COLORS } from '@/theme';
 
 interface KitchenOrderCardProps {
   order: {
@@ -43,6 +43,8 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
 
   const allItemsReady = activeItems.length > 0 && activeItems.every((i) => i.status === 'ready');
 
+  const borderColor = ORDER_STATUS_COLORS[order.status]?.text || BRAND_PRIMARY;
+
   const tableLabel = order.table
     ? t('kitchen.tableNumber', { number: order.table.table_number })
     : order.order_type === 'takeout'
@@ -52,96 +54,98 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
         : '—';
 
   return (
-    <Card style={styles.card}>
-      <Card.Content>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text variant="titleLarge" style={styles.orderNumber}>
-              #{order.order_number || '—'}
-            </Text>
-            <Chip compact textStyle={styles.chipText} style={styles.tableChip}>
-              {tableLabel}
-            </Chip>
-          </View>
-          <View style={styles.headerRight}>
-            <TimeElapsed createdAt={order.created_at} showColor />
-            <StatusBadge status={order.status} type="order" />
+    <View style={[styles.card, { borderColor }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.orderNumber}>#{order.order_number || '—'}</Text>
+          <View style={styles.tablePill}>
+            <Text style={styles.tablePillText}>{tableLabel}</Text>
           </View>
         </View>
+        <View style={styles.headerRight}>
+          <TimeElapsed createdAt={order.created_at} showColor />
+          <StatusBadge status={order.status} type="order" />
+        </View>
+      </View>
 
-        {/* Items */}
-        <View style={styles.items}>
-          {activeItems.map((item) => (
-            <View key={item.id} style={styles.itemRow}>
-              <View style={styles.itemInfo}>
-                <Text variant="bodyMedium" style={styles.itemName}>
-                  {item.quantity}x {item.menu_item?.name || t('kitchen.unknownItem')}
-                </Text>
-                {item.notes && (
-                  <Text variant="bodySmall" style={styles.itemNotes}>
-                    {item.notes}
-                  </Text>
-                )}
-              </View>
-              {(item.status === 'pending' || item.status === 'preparing') && (
-                <Button
-                  compact
-                  mode="contained-tonal"
-                  onPress={() => onMarkItemReady(item.id)}
-                  labelStyle={styles.itemActionLabel}
-                  disabled={isProcessing}
-                >
-                  {t('kitchen.ready')}
-                </Button>
-              )}
-              {item.status === 'ready' && (
-                <Chip compact style={styles.readyChip} textStyle={{ color: '#fff', fontSize: 11 }}>
-                  {t('kitchen.ready')}
-                </Chip>
-              )}
+      {/* Items */}
+      <View style={styles.items}>
+        {activeItems.map((item) => (
+          <View key={item.id} style={styles.itemRow}>
+            <View style={styles.itemInfo}>
+              <Text style={styles.itemName}>
+                {item.quantity}x {item.menu_item?.name || t('kitchen.unknownItem')}
+              </Text>
+              {item.notes && <Text style={styles.itemNotes}>{item.notes}</Text>}
             </View>
-          ))}
-        </View>
+            {(item.status === 'pending' || item.status === 'preparing') && (
+              <TouchableOpacity
+                style={styles.itemReadyBtn}
+                onPress={() => onMarkItemReady(item.id)}
+                disabled={isProcessing}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.itemReadyBtnText}>{t('kitchen.ready')}</Text>
+              </TouchableOpacity>
+            )}
+            {item.status === 'ready' && (
+              <View style={styles.readyPill}>
+                <Text style={styles.readyPillText}>{t('kitchen.ready')}</Text>
+              </View>
+            )}
+          </View>
+        ))}
+      </View>
 
-        {/* Actions */}
-        <View style={styles.actions}>
-          {order.status === ORDER_STATUS.NEW && (
-            <Button
-              mode="contained"
-              onPress={() => onStartPreparing(order.id)}
-              style={{ backgroundColor: '#f59e0b' }}
-              disabled={isProcessing}
-              loading={isProcessing}
-            >
-              {t('kitchen.startPreparing')}
-            </Button>
-          )}
-          {order.status === ORDER_STATUS.PREPARING && allItemsReady && (
-            <Button
-              mode="contained"
-              onPress={() => onMarkAllReady(order.id)}
-              style={{ backgroundColor: '#10b981' }}
-              disabled={isProcessing}
-              loading={isProcessing}
-            >
-              {t('kitchen.allReady')}
-            </Button>
-          )}
-          {order.status === ORDER_STATUS.READY && (order as any).order_type !== 'delivery' && (
-            <Button
-              mode="contained"
-              onPress={() => onMarkAllServed(order.id)}
-              style={{ backgroundColor: '#8b5cf6' }}
-              disabled={isProcessing}
-              loading={isProcessing}
-            >
-              {t('kitchen.allServed')}
-            </Button>
-          )}
-        </View>
-      </Card.Content>
-    </Card>
+      {/* Actions */}
+      <View style={styles.actions}>
+        {order.status === ORDER_STATUS.NEW && (
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: COLORS.warning }]}
+            onPress={() => onStartPreparing(order.id)}
+            disabled={isProcessing}
+            activeOpacity={0.7}
+          >
+            {isProcessing ? (
+              <ActivityIndicator size="small" color="#000" />
+            ) : (
+              <Text style={[styles.actionBtnText, { color: '#000' }]}>
+                {t('kitchen.startPreparing')}
+              </Text>
+            )}
+          </TouchableOpacity>
+        )}
+        {order.status === ORDER_STATUS.PREPARING && allItemsReady && (
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: COLORS.success }]}
+            onPress={() => onMarkAllReady(order.id)}
+            disabled={isProcessing}
+            activeOpacity={0.7}
+          >
+            {isProcessing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.actionBtnText}>{t('kitchen.allReady')}</Text>
+            )}
+          </TouchableOpacity>
+        )}
+        {order.status === ORDER_STATUS.READY && order.order_type !== 'delivery' && (
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: '#8b5cf6' }]}
+            onPress={() => onMarkAllServed(order.id)}
+            disabled={isProcessing}
+            activeOpacity={0.7}
+          >
+            {isProcessing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.actionBtnText}>{t('kitchen.allServed')}</Text>
+            )}
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
   );
 });
 
@@ -150,6 +154,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginBottom: 10,
     backgroundColor: '#262626',
+    borderWidth: 3,
+    borderRadius: CARD_RADIUS,
+    padding: CARD_PADDING,
   },
   header: {
     flexDirection: 'row',
@@ -168,13 +175,18 @@ const styles = StyleSheet.create({
   orderNumber: {
     fontWeight: '800',
     color: '#fff',
+    fontSize: 18,
   },
-  tableChip: {
+  tablePill: {
     backgroundColor: '#404040',
+    borderRadius: 9999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  chipText: {
+  tablePillText: {
     color: '#d1d5db',
     fontSize: 11,
+    fontWeight: '600',
   },
   items: {
     marginTop: 12,
@@ -195,19 +207,48 @@ const styles = StyleSheet.create({
   itemName: {
     color: '#e5e7eb',
     fontWeight: '500',
+    fontSize: 14,
   },
   itemNotes: {
-    color: '#f59e0b',
+    color: COLORS.warning,
     fontStyle: 'italic',
-  },
-  itemActionLabel: {
     fontSize: 12,
   },
-  readyChip: {
-    backgroundColor: '#10b981',
+  itemReadyBtn: {
+    backgroundColor: COLORS.success,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  itemReadyBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  readyPill: {
+    backgroundColor: COLORS.success,
+    borderRadius: 9999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  readyPillText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
   },
   actions: {
     marginTop: 12,
     gap: 8,
+  },
+  actionBtn: {
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

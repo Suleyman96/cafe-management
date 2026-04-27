@@ -8,6 +8,8 @@ vi.mock('react-native-paper', () => ({
       {children}
     </span>
   ),
+  MD3LightTheme: { colors: {} },
+  MD3DarkTheme: { colors: {} },
 }));
 
 import { TimeElapsed } from '@/components/ui/TimeElapsed';

@@ -5,7 +5,31 @@ type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
+/**
+ * Client-side rate limiter to prevent rapid-fire API calls.
+ * Tracks timestamps per endpoint and rejects calls that exceed the limit.
+ */
+const requestTimestamps: Map<string, number[]> = new Map();
+
+function checkClientRateLimit(path: string, maxRequests: number, windowMs: number): void {
+  const now = Date.now();
+  const timestamps = requestTimestamps.get(path) ?? [];
+  const recent = timestamps.filter((t) => now - t < windowMs);
+
+  if (recent.length >= maxRequests) {
+    throw new Error('Too many requests. Please wait a moment and try again.');
+  }
+
+  recent.push(now);
+  requestTimestamps.set(path, recent);
+}
+
 async function apiFetch<T>(path: string, init: RequestInit): Promise<T> {
+  // Client-side throttle: max 5 POST requests per 30s per endpoint
+  if (init.method === 'POST') {
+    checkClientRateLimit(path, 5, 30_000);
+  }
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {

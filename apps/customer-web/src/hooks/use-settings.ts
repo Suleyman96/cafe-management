@@ -8,16 +8,14 @@ import {
 import type { Database } from '@gustri/database';
 import * as Sentry from '@sentry/nextjs';
 import { useQuery } from '@tanstack/react-query';
-import { STALE_TIMES } from '@/lib/query-keys';
+import { STALE_TIMES } from '@/lib/stale-times';
 import { db } from '@/lib/supabase';
 
 export type CafeSettings = Database['public']['Tables']['cafe_settings']['Row'];
 
-const SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
-
 // Default settings in case the database fetch fails
 const DEFAULT_SETTINGS: CafeSettings = {
-  id: SETTINGS_ID,
+  id: '00000000-0000-0000-0000-000000000001',
   tenant_id: '00000000-0000-0000-0000-000000000000',
   restaurant_name: 'Restaurant',
   tax_enabled: true,
@@ -25,8 +23,8 @@ const DEFAULT_SETTINGS: CafeSettings = {
   tax_label: 'Tax',
   prices_include_tax: false,
   show_tax_separately: true,
-  currency_symbol: '¥',
-  currency_code: 'JPY',
+  currency_symbol: '$',
+  currency_code: 'USD',
   currency_position: 'before',
   currency_decimal_places: 0,
   minimum_order_amount: 0,
@@ -59,7 +57,7 @@ const DEFAULT_SETTINGS: CafeSettings = {
   social_telegram: null,
   social_line: null,
   location_maps_url: null,
-  default_language: 'ja',
+  default_language: 'en',
   created_at: '',
   updated_at: '',
 };

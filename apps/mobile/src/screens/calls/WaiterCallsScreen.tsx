@@ -1,6 +1,7 @@
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { SegmentedButtons } from 'react-native-paper';
 import { WaiterCallCard } from '@/components/calls/WaiterCallCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
@@ -32,8 +33,8 @@ export default function WaiterCallsScreen() {
     try {
       await updateCall.mutateAsync({ callId, status: 'acknowledged', staffId: staff?.id });
       showSuccess(t('calls.callAcknowledged'));
-    } catch (err: any) {
-      showError(err?.message || t('calls.failedAcknowledge'));
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : t('calls.failedAcknowledge'));
     }
   };
 
@@ -41,8 +42,8 @@ export default function WaiterCallsScreen() {
     try {
       await updateCall.mutateAsync({ callId, status: 'resolved' });
       showSuccess(t('calls.callResolved'));
-    } catch (err: any) {
-      showError(err?.message || t('calls.failedResolve'));
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : t('calls.failedResolve'));
     }
   };
 
@@ -58,7 +59,7 @@ export default function WaiterCallsScreen() {
         style={styles.tabs}
       />
 
-      <FlatList
+      <FlashList
         data={calls || []}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}

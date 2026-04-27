@@ -60,6 +60,7 @@ export function CartPriceSummary({
       )}
 
       <Button
+        data-testid="place-order"
         size="xl"
         className="w-full"
         onClick={onPlaceOrder}

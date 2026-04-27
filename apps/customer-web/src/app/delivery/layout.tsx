@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import { ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
@@ -9,6 +10,7 @@ import { useCafeSettings } from '@/hooks/use-settings';
 import { useCartStore } from '@/store/cart-store';
 
 export default function DeliveryLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation('customer');
   const pathname = usePathname();
   const { data: settings } = useCafeSettings();
   const itemCount = useCartStore((state) => state.getItemCount());
@@ -30,13 +32,15 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
                 className="rounded-full"
               />
             )}
-            <span className="font-bold text-lg">{settings?.restaurant_name || 'Restaurant'}</span>
+            <span className="font-bold text-lg">
+              {settings?.restaurant_name || t('delivery.restaurantFallback')}
+            </span>
           </Link>
           {showCart && (
             <Link href="/delivery/cart">
               <Button variant="outline" size="sm" className="relative">
                 <ShoppingCart className="h-4 w-4 mr-1" />
-                Cart
+                {t('delivery.cart')}
                 <span className="ml-1 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">
                   {itemCount}
                 </span>

@@ -1,13 +1,12 @@
 'use client';
 
+import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
-import * as Sentry from '@sentry/nextjs';
 import { Minus, Plus, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { useFormatPrice } from '@/hooks/use-format-price';
-import { useAddOrderItems, useCreateOrder, useOrder } from '@/hooks/use-order';
+import { useOrder } from '@/hooks/use-order';
+import { usePlaceOrder } from '@/hooks/use-place-order';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
 import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
@@ -26,7 +25,6 @@ interface MenuCartSidebarProps {
 }
 
 export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCartSidebarProps) {
-  const router = useRouter();
   const { t } = useTranslation('customer');
   const { items, updateQuantity, removeItem, clearCart, getTotal } = useCartStore();
   const [orderNotes, setOrderNotes] = useState('');
@@ -34,8 +32,7 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
   const { data: table } = useTable(tableId);
   const actualTableId = table?.id || '';
   const { data: existingOrder } = useOrder(actualTableId);
-  const createOrder = useCreateOrder();
-  const addOrderItems = useAddOrderItems();
+
   const { data: settings } = useCafeSettings();
   const taxMultiplier = useTaxMultiplier();
 
@@ -45,53 +42,13 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
 
   const priceDisplay = useFormatPrice();
 
-  const handlePlaceOrder = async () => {
-    if (items.length === 0 || !actualTableId) return;
-
-    if (settings?.minimum_order_amount && total < settings.minimum_order_amount) {
-      const minAmount = priceDisplay(settings.minimum_order_amount);
-      toast.error(t('cart.minimumOrderToast', { amount: minAmount }));
-      return;
-    }
-
-    try {
-      const tenantId = table?.tenant_id;
-      if (!tenantId) throw new Error('Missing tenant context');
-
-      let orderId = existingOrder?.id;
-
-      if (!orderId) {
-        const newOrder = await createOrder.mutateAsync({
-          tableId: actualTableId,
-          notes: orderNotes,
-          tenantId,
-        });
-        orderId = newOrder.id;
-      }
-
-      await addOrderItems.mutateAsync({
-        orderId,
-        tenantId,
-        items: items.map((item) => ({
-          menu_item_id: item.menuItem.id,
-          item_name: item.menuItem.name,
-          item_price: item.menuItem.price,
-          quantity: item.quantity,
-          notes: item.notes,
-        })),
-      });
-
-      toast.success(t('cart.orderSuccess'));
-      clearCart();
-      onOrderPlaced?.();
-      router.push(`/table/${tableId}/order`);
-    } catch (error) {
-      Sentry.captureException(error);
-      toast.error(t('cart.orderError'));
-    }
-  };
-
-  const isPlacing = createOrder.isPending || addOrderItems.isPending;
+  const { handlePlaceOrder, isPlacing } = usePlaceOrder({
+    tableId,
+    minimumOrderAmount: settings?.minimum_order_amount,
+    orderNotes,
+    total,
+    onOrderPlaced,
+  });
 
   if (items.length === 0) {
     return (
@@ -194,7 +151,9 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
           </div>
           {taxMultiplier !== 1 && (
             <p className="text-[10px] text-white/20 text-right">
-              {t('menu.inclTax', { percent: String(settings?.tax_percentage ?? 18) })}
+              {t('menu.inclTax', {
+                percent: String(settings?.tax_percentage ?? DEFAULT_TAX_PERCENTAGE),
+              })}
             </p>
           )}
         </div>

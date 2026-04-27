@@ -9,20 +9,15 @@ export type OrderItem = Database['public']['Tables']['order_items']['Row'];
 export type WaiterCall = Database['public']['Tables']['waiter_calls']['Row'];
 export type Staff = Database['public']['Tables']['staff']['Row'];
 
-// Extended types with relations
-export interface MenuItemWithCategory extends MenuItem {
-  category: Category | null;
-}
+// Re-export from shared package (avoid local duplicates)
+export type { MenuItemWithCategory } from '@gustri/database';
 
 export interface OrderWithItems extends Order {
   order_items: OrderItem[];
   table: Pick<Table, 'table_number' | 'location'>;
 }
 
-export interface DeliveryOrderWithDetails extends Order {
-  order_items: OrderItem[];
-  delivery_person?: Pick<Staff, 'full_name'>;
-}
+export type { DeliveryOrderWithDetails } from '@gustri/database';
 
 export interface OrderItemWithMenuItem extends OrderItem {
   menu_item: MenuItem;
@@ -33,17 +28,6 @@ export interface CartItem {
   menuItem: MenuItem;
   quantity: number;
   notes?: string;
-}
-
-// Helper to get localized field from a menu item or category
-// Currently DB has single-language fields (name, description),
-// so this returns the field directly with a fallback to empty string.
-export function getLocalizedField(
-  item: { name?: string | null; description?: string | null },
-  field: 'name' | 'description',
-  _language?: string,
-): string {
-  return (item?.[field] as string) ?? '';
 }
 
 // Order status type

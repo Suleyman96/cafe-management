@@ -18,7 +18,7 @@ export function useOrder(tableId: string) {
       if (error) throw error;
       if (!data) return null;
       // RPC returns JSONB matching OrderWithItems shape
-      return data as unknown as OrderWithItems;
+      return data as OrderWithItems;
     },
     enabled: !!tableId,
     staleTime: 10 * 1000, // 10s — realtime subscription handles freshness

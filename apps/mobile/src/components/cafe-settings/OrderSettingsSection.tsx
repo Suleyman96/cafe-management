@@ -19,7 +19,7 @@ export function OrderSettingsSection({ form, updateField }: SettingsSectionProps
           </Text>
         </View>
         <TextInput
-          label={`${t('cafeSettings.minimumOrderAmount')} (${form.currency_symbol || '¥'})`}
+          label={`${t('cafeSettings.minimumOrderAmount')} (${form.currency_symbol || '$'})`}
           value={String(form.minimum_order_amount ?? '')}
           onChangeText={(v: string) =>
             updateField('minimum_order_amount', Number.parseFloat(v) || 0)

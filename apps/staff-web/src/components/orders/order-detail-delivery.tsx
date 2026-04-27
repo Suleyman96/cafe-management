@@ -3,6 +3,7 @@
 import { useTranslation } from '@gustri/i18n';
 import { CreditCard, FileText, Map as MapIcon, MapPin, Phone, Truck, User } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Staff } from '@/types';
 
 interface DeliveryInfoProps {
   order: {
@@ -16,8 +17,8 @@ interface DeliveryInfoProps {
     delivery_person_id?: string | null;
     delivery_person?: { full_name: string } | null;
   };
-  staffList: any[] | undefined;
-  onAssignDriver: (params: { orderId: string; staffId: string }) => Promise<any>;
+  staffList: Staff[] | undefined;
+  onAssignDriver: (params: { orderId: string; staffId: string }) => Promise<unknown>;
   onRefetch: () => void;
   formatPrice: (amount: number) => string;
 }
@@ -106,7 +107,7 @@ export function OrderDetailDelivery({
               }}
             >
               <option value="">{t('orders.selectDriver')}</option>
-              {staffList?.map((s: any) => (
+              {staffList?.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.full_name}
                 </option>

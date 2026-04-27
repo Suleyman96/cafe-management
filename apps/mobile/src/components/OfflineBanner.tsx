@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import { StyleSheet, Text, View } from 'react-native';
 import { useNetworkStatus } from '@/hooks/use-network-status';
 
@@ -6,13 +7,14 @@ import { useNetworkStatus } from '@/hooks/use-network-status';
  * Informs the waiter that changes will sync when connectivity returns.
  */
 export function OfflineBanner() {
+  const { t } = useTranslation('common');
   const { isOnline } = useNetworkStatus();
 
   if (isOnline) return null;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>You're offline — changes will sync when connected</Text>
+      <Text style={styles.text}>{t('offline.message')}</Text>
     </View>
   );
 }

@@ -1,10 +1,13 @@
 'use client';
 
+import { isAppError } from '@gustri/core';
 import type { Language } from '@gustri/i18n';
 import { I18nextProvider, i18n } from '@gustri/i18n';
 import { DbProvider } from '@gustri/queries';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import * as Sentry from '@sentry/nextjs';
+import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import '@/lib/i18n';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { loadAndSwitchLanguage } from '@/lib/i18n';
@@ -45,6 +48,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
+        mutationCache: new MutationCache({
+          onError: (error, _variables, _context, mutation) => {
+            if (mutation.options.onError) return;
+            Sentry.captureException(error);
+            toast.error(isAppError(error) ? error.message : 'An unexpected error occurred');
+          },
+        }),
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000, // 1 minute

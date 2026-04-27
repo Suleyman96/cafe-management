@@ -13,8 +13,8 @@ export const dynamic = 'force-dynamic';
 const AdjustStockSchema = z.object({
   movement_type: z.enum(['in', 'out', 'adjustment']),
   quantity_change: z.number().positive(),
-  reason: z.string().min(1),
-  performed_by: z.string().uuid(),
+  reason: z.string().optional(),
+  performed_by: z.string().optional(),
 });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -33,7 +33,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const stockItem = await adjustStock(getSupabaseAdmin(), {
       stockItemId,
-      data,
+      data: {
+        movement_type: data.movement_type,
+        quantity_change: data.quantity_change,
+        reason: data.reason || '',
+        performed_by: data.performed_by || staffOrError.id,
+      },
       tenantId: staffOrError.tenant_id,
     });
 

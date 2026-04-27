@@ -13,7 +13,10 @@ interface OrderItemsListProps {
   formatPrice: (amount: number) => string;
 }
 
-function getItemStatusBadge(status: string, t: (key: string, opts?: any) => string) {
+function getItemStatusBadge(
+  status: string,
+  t: (key: string, opts?: Record<string, string | number>) => string,
+) {
   switch (status) {
     case 'pending':
       return {

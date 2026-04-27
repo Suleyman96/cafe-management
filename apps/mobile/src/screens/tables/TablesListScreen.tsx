@@ -1,30 +1,35 @@
+import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { FlashList } from '@shopify/flash-list';
 import { useEffect, useMemo, useRef } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TableCard } from '@/components/tables/TableCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useCleanupEmptyOrders, useOrders, useTables, useWaiterCalls } from '@/hooks';
-import { useCafeSettings } from '@/hooks/use-cafe-settings';
+import {
+  useCleanupEmptyOrders,
+  useCurrencySymbol,
+  useOrders,
+  useTables,
+  useWaiterCalls,
+} from '@/hooks';
 import type { TablesStackParamList } from '@/types';
 
 type Nav = StackNavigationProp<TablesStackParamList, 'TablesList'>;
-
-const ACTIVE_STATUSES = ['pending_approval', 'new', 'preparing', 'ready', 'served'];
 
 export default function TablesListScreen() {
   const navigation = useNavigation<Nav>();
   const { t } = useTranslation('staff');
   const insets = useSafeAreaInsets();
   const { data: tables, isLoading, error, refetch } = useTables();
-  const { data: orders } = useOrders();
+  const { data: orders } = useOrders({
+    statuses: ['pending_approval', 'new', 'preparing', 'ready', 'served'],
+  });
   const { data: waiterCalls } = useWaiterCalls('pending');
-  const { data: settings } = useCafeSettings();
+  const currencySymbol = useCurrencySymbol();
   const cleanupEmptyOrders = useCleanupEmptyOrders();
-
-  const currencySymbol = settings?.currency_symbol || '$';
 
   // Cleanup stale empty orders on screen load (run once)
   const didCleanup = useRef(false);
@@ -41,7 +46,11 @@ export default function TablesListScreen() {
 
     return tables.map((table) => {
       const activeOrders =
-        orders?.filter((o) => o.table_id === table.id && ACTIVE_STATUSES.includes(o.status)) || [];
+        orders?.filter(
+          (o) =>
+            o.table_id === table.id &&
+            (ACTIVE_ORDER_STATUSES as readonly string[]).includes(o.status),
+        ) || [];
 
       const orderTotal = activeOrders.reduce((sum, o) => sum + (o.total || 0), 0);
 
@@ -61,7 +70,7 @@ export default function TablesListScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <FlashList
         data={tableData}
         numColumns={2}
         keyExtractor={(item) => item.table.id}

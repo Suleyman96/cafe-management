@@ -16,7 +16,7 @@ describe('useFeedback', () => {
 
   it('passes status filter', () => {
     renderHookWithProviders(() => useFeedback('pending'));
-    expect(db.feedback.findAll).toHaveBeenCalledWith('pending');
+    expect(db.feedback.findAll).toHaveBeenCalledWith({ status: 'pending' });
   });
 });
 

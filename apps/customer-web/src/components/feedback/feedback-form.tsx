@@ -3,6 +3,7 @@
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
+import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { db } from '@/lib/supabase';
@@ -29,7 +30,6 @@ export function FeedbackForm({
   const [message, setMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -40,12 +40,33 @@ export function FeedbackForm({
     };
   }, []);
 
+  const createFeedbackMutation = useMutation({
+    mutationFn: (data: { feedback_type: FeedbackType; message: string }) =>
+      db.feedback.create({
+        table_id: tableId,
+        tenant_id: tenantId,
+        order_id: orderId || null,
+        feedback_type: data.feedback_type,
+        message: data.message,
+      }),
+    onSuccess: () => {
+      setShowSuccess(true);
+      successTimeoutRef.current = setTimeout(() => {
+        onSuccess?.();
+      }, 2000);
+    },
+    onError: (error) => {
+      Sentry.captureException(error);
+      toast.error(t('feedback.errorSubmit'));
+    },
+  });
+
   const FEEDBACK_TYPES: Array<{ value: FeedbackType; label: string; icon: string }> = [
     { value: 'complaint', label: t('feedback.type.complaint'), icon: '😟' },
     { value: 'praise', label: t('feedback.type.praise'), icon: '😊' },
   ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!feedbackType) {
@@ -58,28 +79,12 @@ export function FeedbackForm({
       return;
     }
 
-    if (isSubmitting) return;
+    if (createFeedbackMutation.isPending) return;
 
-    setIsSubmitting(true);
-    try {
-      await db.feedback.create({
-        table_id: tableId,
-        tenant_id: tenantId,
-        order_id: orderId || null,
-        feedback_type: feedbackType,
-        message: message.trim(),
-      });
-
-      setShowSuccess(true);
-      successTimeoutRef.current = setTimeout(() => {
-        onSuccess?.();
-      }, 2000);
-    } catch (error) {
-      Sentry.captureException(error);
-      toast.error(t('feedback.errorSubmit'));
-    } finally {
-      setIsSubmitting(false);
-    }
+    createFeedbackMutation.mutate({
+      feedback_type: feedbackType,
+      message: message.trim(),
+    });
   };
 
   if (showSuccess) {
@@ -146,7 +151,7 @@ export function FeedbackForm({
             onClick={onCancel}
             variant="outline"
             className="flex-1"
-            disabled={isSubmitting}
+            disabled={createFeedbackMutation.isPending}
           >
             {t('feedback.cancel')}
           </Button>
@@ -154,9 +159,9 @@ export function FeedbackForm({
         <Button
           type="submit"
           className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-          disabled={isSubmitting || !feedbackType || !message.trim()}
+          disabled={createFeedbackMutation.isPending || !feedbackType || !message.trim()}
         >
-          {isSubmitting ? t('feedback.submitting') : t('feedback.submit')}
+          {createFeedbackMutation.isPending ? t('feedback.submitting') : t('feedback.submit')}
         </Button>
       </div>
     </form>

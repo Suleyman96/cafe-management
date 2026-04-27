@@ -1,15 +1,17 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { ACTIVE_TAKEOUT_STATUSES, ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { Button, Chip, Dialog, FAB, Portal, Searchbar } from 'react-native-paper';
+import { RefreshControl, StyleSheet, View } from 'react-native';
+import { Button, Dialog, FAB, Portal, Searchbar } from 'react-native-paper';
 import { CreateTakeoutModal } from '@/components/takeout/CreateTakeoutModal';
 import { TakeoutOrderCard } from '@/components/takeout/TakeoutOrderCard';
-import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useCancelOrder, useTakeoutOrders, useUpdateOrderStatus } from '@/hooks';
-import { useCafeSettings } from '@/hooks/use-cafe-settings';
+import { EmptyState, ErrorScreen, FilterChipBar, LoadingScreen } from '@/components/ui';
+import { useCancelOrder, useCurrencySymbol, useTakeoutOrders, useUpdateOrderStatus } from '@/hooks';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text, TextInput } from '@/lib/paper-compat';
+import { COLORS } from '@/theme';
 
 const STATUS_FILTERS = [
   'all',
@@ -20,17 +22,6 @@ const STATUS_FILTERS = [
   'closed',
   'cancelled',
 ];
-
-const STATUS_LABEL_KEYS: Record<string, string> = {
-  pending_approval: 'orders.pendingApproval',
-  new: 'orders.new',
-  preparing: 'orders.preparing',
-  ready: 'orders.ready',
-  closed: 'orders.closed',
-  cancelled: 'orders.cancelled',
-};
-
-const ACTIVE_STATUSES = ['pending_approval', 'new', 'preparing', 'ready'];
 
 export default function TakeoutListScreen() {
   const { showSuccess, showError } = useSnackbar();
@@ -49,15 +40,25 @@ export default function TakeoutListScreen() {
   const [cancelling, setCancelling] = useState(false);
 
   const { data: orders, isLoading, error, refetch } = useTakeoutOrders();
-  const { data: settings } = useCafeSettings();
   const updateOrderStatus = useUpdateOrderStatus();
   const cancelOrder = useCancelOrder();
 
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
+
+  const filterOptions = useMemo(
+    () =>
+      STATUS_FILTERS.map((s) => ({
+        key: s,
+        label: s === 'all' ? tCommon('all') : t(ORDER_STATUS_KEYS[s] || s),
+      })),
+    [t, tCommon],
+  );
 
   const activeCount = useMemo(() => {
     if (!orders) return 0;
-    return orders.filter((o: { status: string }) => ACTIVE_STATUSES.includes(o.status)).length;
+    return orders.filter((o: { status: string }) =>
+      (ACTIVE_TAKEOUT_STATUSES as readonly string[]).includes(o.status),
+    ).length;
   }, [orders]);
 
   const filtered = useMemo(() => {
@@ -71,7 +72,7 @@ export default function TakeoutListScreen() {
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
-        (o: any) =>
+        (o: { id: string; customer_name?: string | null; customer_phone?: string | null }) =>
           o.customer_name?.toLowerCase().includes(term) ||
           o.customer_phone?.includes(term) ||
           o.id.toLowerCase().includes(term),
@@ -109,7 +110,7 @@ export default function TakeoutListScreen() {
   };
 
   const handleOpenCancel = (orderId: string) => {
-    const order = orders?.find((o: any) => o.id === orderId);
+    const order = orders?.find((o) => o.id === orderId);
     setCancelTarget({ id: orderId, customer_name: order?.customer_name });
     setCancelReason('');
   };
@@ -138,7 +139,7 @@ export default function TakeoutListScreen() {
       {/* Active count badge */}
       {activeCount > 0 && (
         <View style={styles.activeCountRow}>
-          <MaterialCommunityIcons name="shopping" size={16} color="#ea580c" />
+          <MaterialCommunityIcons name="shopping" size={16} color={COLORS.orange} />
           <Text variant="bodySmall" style={styles.activeCountText}>
             {activeCount} {t('takeout.activeCount')}
           </Text>
@@ -155,15 +156,14 @@ export default function TakeoutListScreen() {
       />
 
       {/* Status filter chips */}
-      <View style={styles.filterRow}>
-        {STATUS_FILTERS.map((s) => (
-          <Chip key={s} compact selected={statusFilter === s} onPress={() => setStatusFilter(s)}>
-            {s === 'all' ? tCommon('all') : t(STATUS_LABEL_KEYS[s] || s)}
-          </Chip>
-        ))}
-      </View>
+      <FilterChipBar
+        options={filterOptions}
+        selected={statusFilter}
+        onSelect={setStatusFilter}
+        defaultColor={COLORS.orange}
+      />
 
-      <FlatList
+      <FlashList
         data={filtered}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
@@ -270,7 +270,7 @@ export default function TakeoutListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   activeCountRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   activeCountText: {
-    color: '#ea580c',
+    color: COLORS.orange,
     fontWeight: '600',
     fontSize: 13,
   },
@@ -290,30 +290,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   searchInput: { fontSize: 14 },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 6,
-  },
   list: { paddingTop: 4, paddingBottom: 80 },
   fab: {
     position: 'absolute',
     right: 16,
     bottom: 24,
-    backgroundColor: '#ea580c',
+    backgroundColor: COLORS.orange,
   },
-  cancelTitle: { color: '#ef4444' },
+  cancelTitle: { color: COLORS.danger },
   cancelOrderInfo: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background,
     borderRadius: 8,
     padding: 10,
     marginBottom: 12,
   },
   cancelOrderName: { fontWeight: '600' },
-  cancelOrderId: { color: '#9ca3af', marginTop: 2 },
-  cancelHint: { color: '#6b7280', marginBottom: 8 },
+  cancelOrderId: { color: COLORS.textLight, marginTop: 2 },
+  cancelHint: { color: COLORS.textMuted, marginBottom: 8 },
   cancelInput: { marginTop: 4 },
-  cancelBtn: { backgroundColor: '#ef4444' },
+  cancelBtn: { backgroundColor: COLORS.danger },
 });

@@ -1,4 +1,5 @@
 import { QUERY_KEYS } from '@gustri/core';
+import type { CategoriesUpdate, MenuItemsUpdate } from '@gustri/database';
 import { useDb } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -17,7 +18,7 @@ export function useUpdateMenuItem() {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
+    mutationFn: ({ id, data }: { id: string; data: MenuItemsUpdate }) =>
       db.menuItems.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
@@ -29,7 +30,7 @@ export function useUpdateCategory() {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
+    mutationFn: ({ id, data }: { id: string; data: CategoriesUpdate }) =>
       db.categories.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });

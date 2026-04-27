@@ -115,7 +115,6 @@ export async function loadAndSwitchLanguage(lang: string) {
 
   const loader = languageLoaders[lang];
   if (!loader) {
-    console.warn(`No translations available for language: ${lang}`);
     return;
   }
 
@@ -124,8 +123,7 @@ export async function loadAndSwitchLanguage(lang: string) {
     i18n.addResourceBundle(lang, 'common', bundles.common);
     i18n.addResourceBundle(lang, 'customer', bundles.customer);
     i18n.changeLanguage(lang);
-  } catch (err) {
-    console.warn(`Failed to load translations for ${lang}, falling back to Japanese`, err);
+  } catch {
     i18n.changeLanguage('ja');
   }
 }

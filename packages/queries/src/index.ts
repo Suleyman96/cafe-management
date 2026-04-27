@@ -5,7 +5,11 @@ export { type CafeSettings, useCafeSettings } from './hooks/use-cafe-settings';
 // Read hooks — Menu
 export { useCategories } from './hooks/use-categories';
 // Read hooks — Delivery Customers
-export { useDeliveryCustomers, useSearchDeliveryCustomers } from './hooks/use-delivery';
+export {
+  useDeliveryCustomers,
+  useDeliveryCustomersPaginated,
+  useSearchDeliveryCustomers,
+} from './hooks/use-delivery';
 // Read hooks — Expenses
 export {
   useExpense,
@@ -13,10 +17,11 @@ export {
   useExpenseMonthlySummary,
   useExpenses,
 } from './hooks/use-expenses';
+export { useFeatureFlag } from './hooks/use-feature-flag';
 // Read hooks — Feedback
 export { useFeedback, usePendingFeedbackCount } from './hooks/use-feedback';
 export { useFormatPrice, useFormatPriceWithSettings } from './hooks/use-format-price';
-export { useMenuItem, useMenuItems } from './hooks/use-menu-items';
+export { useMenuItem, useMenuItems, useMenuItemsPaginated } from './hooks/use-menu-items';
 // Read hooks — Orders
 export {
   useActiveOrders,
@@ -31,6 +36,14 @@ export {
   useOrderRemainingBalance,
   usePaymentsByStaff,
 } from './hooks/use-payments';
+// Read hooks — Reports
+export {
+  useExpenseSummary,
+  useRevenueSummary,
+  useStaffPerformance,
+  useTopSoldItems,
+  useWasteSummary,
+} from './hooks/use-reports';
 // Read hooks — Schedules
 export {
   useMySchedule,
@@ -40,7 +53,6 @@ export {
 } from './hooks/use-schedules';
 // Read hooks — Staff
 export { useActiveWaiters, useStaff, useStaffByEmail, useStaffMember } from './hooks/use-staff';
-
 // Read hooks — Stock
 export {
   useLowStockCount,

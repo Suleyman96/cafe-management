@@ -7,7 +7,8 @@ export function useStaff(role?: string) {
   const db = useDb();
   return useQuery({
     queryKey: [QUERY_KEYS.STAFF, role],
-    queryFn: () => db.staff.findAll(role) as Promise<Staff[]>,
+    queryFn: () => db.staff.findAll(role ? { role } : undefined) as Promise<Staff[]>,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

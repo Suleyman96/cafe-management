@@ -77,5 +77,13 @@
   "update": "Update",
   "updated": "Updated",
   "view": "View",
-  "yes": "Yes"
+  "yes": "Yes",
+
+  "offline.message": "You're offline — changes will sync when connected",
+
+  "error.title": "Something went wrong",
+  "error.message": "An unexpected error occurred. Please restart the app.",
+  "error.tryAgain": "Try again",
+
+  "sync.pending": "{{count}} pending"
 }

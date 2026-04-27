@@ -17,9 +17,9 @@ import type {
  * (encrypted) PII columns. This helper maps them back to the standard names
  * so the rest of the app doesn't need to know about encryption.
  */
-function mapDecryptedPii<T extends Record<string, any>>(row: T): T {
+function mapDecryptedPii<T extends Record<string, unknown>>(row: T): T {
   if (!row) return row;
-  const mapped: Record<string, any> = { ...row };
+  const mapped = { ...row } as Record<string, unknown>;
   if ('decrypted_customer_name' in mapped) {
     mapped.customer_name = mapped.decrypted_customer_name;
     delete mapped.decrypted_customer_name;
@@ -35,7 +35,7 @@ function mapDecryptedPii<T extends Record<string, any>>(row: T): T {
   return mapped as T;
 }
 
-function mapDecryptedPiiArray<T extends Record<string, any>>(rows: T[]): T[] {
+function mapDecryptedPiiArray<T extends Record<string, unknown>>(rows: T[]): T[] {
   return rows.map(mapDecryptedPii);
 }
 
@@ -209,17 +209,19 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     updateStatus: async (id: string, status: OrderRow['status']) => {
       // Prevent "served" status on delivery and takeout orders
       if (status === 'served') {
-        const { data: order } = (await ctx.client
+        const { data: order, error: fetchError } = await ctx.anyClient
           .from('orders')
-          .select('*')
+          .select('order_type')
           .eq('id', id)
-          .single()) as { data: any; error: any };
-        if (order?.order_type === 'delivery') {
+          .single();
+        if (fetchError) throw handleSupabaseError(fetchError);
+        const orderType = (order as { order_type: string } | null)?.order_type;
+        if (orderType === 'delivery') {
           throw new Error(
             'Delivery orders cannot be set to "served". Use "out_for_delivery" instead.',
           );
         }
-        if (order?.order_type === 'takeout') {
+        if (orderType === 'takeout') {
           throw new Error(
             'Takeout orders cannot be set to "served". Use "ready" and then close after payment.',
           );
@@ -377,9 +379,8 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         discount_applied_by: string;
       },
     ) => {
-      // Don't use .select().single() here — the AFTER trigger recalculate_on_discount_change
-      // updates the same row, which can cause PostgREST "Cannot coerce" errors.
-      // The caller invalidates queries on success to get fresh data.
+      // Don't chain .select() — the recalculate_on_discount_change trigger
+      // modifies the same row, causing PostgREST "Cannot coerce" errors.
       const { error } = await ctx.anyClient
         .from('orders')
         .update({
@@ -391,6 +392,16 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         .eq('id', orderId);
 
       if (error) throw handleSupabaseError(error);
+
+      // Fetch the updated order after the trigger has recalculated totals
+      const { data, error: fetchError } = await ctx.anyClient
+        .from('orders_decrypted')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+      if (fetchError) throw handleSupabaseError(fetchError);
+      return mapDecryptedPii(data) as OrderRow;
     },
 
     // Takeout-specific methods
@@ -533,55 +544,12 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     },
 
     cleanupEmptyOrders: async (olderThanMinutes = 2) => {
-      const cutoff = new Date(Date.now() - olderThanMinutes * 60 * 1000).toISOString();
+      const { data, error } = await ctx.anyClient.rpc('cleanup_empty_orders', {
+        p_older_than_minutes: olderThanMinutes,
+      });
 
-      // Find active orders with 0 items that are older than the cutoff
-      const { data: emptyOrders, error: findError } = await ctx.client
-        .from('orders')
-        .select('id, table_id, order_items(id)')
-        .in('status', ['new', 'pending_approval'])
-        .lt('created_at', cutoff);
-
-      if (findError) throw handleSupabaseError(findError);
-
-      const ordersToCancel: { id: string; table_id: string | null }[] = (emptyOrders || []).filter(
-        (o: any) => !o.order_items || o.order_items.length === 0,
-      );
-
-      if (ordersToCancel.length === 0) return [];
-
-      // Cancel each empty order and free the table if needed
-      const cancelledIds: string[] = [];
-      for (const order of ordersToCancel) {
-        const { error: cancelError } = await ctx.anyClient
-          .from('orders')
-          .update({ status: 'cancelled', internal_notes: 'Auto-cancelled: empty order' })
-          .eq('id', order.id);
-
-        if (!cancelError) {
-          cancelledIds.push(order.id);
-
-          // Free the table if no other active orders
-          if (order.table_id) {
-            const { data: otherOrders } = await ctx.client
-              .from('orders')
-              .select('id')
-              .eq('table_id', order.table_id)
-              .in('status', ['pending_approval', 'new', 'preparing', 'ready', 'served'])
-              .neq('id', order.id)
-              .limit(1);
-
-            if (!otherOrders || otherOrders.length === 0) {
-              await ctx.anyClient
-                .from('tables')
-                .update({ status: 'free', occupied_at: null })
-                .eq('id', order.table_id);
-            }
-          }
-        }
-      }
-
-      return cancelledIds;
+      if (error) throw handleSupabaseError(error);
+      return (data || []).map((row: { cancelled_order_id: string }) => row.cancelled_order_id);
     },
   };
 }

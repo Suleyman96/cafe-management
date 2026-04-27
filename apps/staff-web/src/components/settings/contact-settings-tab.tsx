@@ -2,7 +2,7 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { Globe, Phone } from 'lucide-react';
-import type { SettingsTabProps } from './settings-types';
+import type { SettingsTabProps } from '@/types/settings';
 
 export function ContactSettingsTab({ formData, onChange }: SettingsTabProps) {
   const { t } = useTranslation('staff');

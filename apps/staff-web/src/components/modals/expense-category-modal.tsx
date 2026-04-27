@@ -5,6 +5,7 @@ import { Button } from '@gustri/ui';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import {
   useCreateExpenseCategory,
   useDeleteExpenseCategory,
@@ -26,6 +27,7 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '', icon: '' });
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const resetForm = () => {
     setFormData({ name: '', description: '', icon: '' });
@@ -74,21 +76,25 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t('expenses.deleteCategoryConfirm'))) {
-      return;
-    }
+  const handleDelete = async () => {
+    if (!deletingId) return;
 
     try {
-      await deleteCategory.mutateAsync(id);
+      await deleteCategory.mutateAsync(deletingId);
       toast.success(t('expenses.categoryDeleted'));
+      setDeletingId(null);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t('expenses.failedDeleteCategory');
       toast.error(message);
     }
   };
 
-  const startEdit = (cat: any) => {
+  const startEdit = (cat: {
+    id: string;
+    name: string;
+    description: string | null;
+    icon: string | null;
+  }) => {
     setEditingId(cat.id);
     setFormData({ name: cat.name, description: cat.description || '', icon: cat.icon || '' });
     setShowAddForm(false);
@@ -110,7 +116,7 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
             <p className="text-gray-500 text-center py-4">{t('loading', { ns: 'common' })}...</p>
           ) : (
             <div className="space-y-2">
-              {categories.map((cat: any) => (
+              {categories.map((cat) => (
                 <div
                   key={cat.id}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
@@ -144,7 +150,7 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(cat.id)}
+                          onClick={() => setDeletingId(cat.id)}
                           className="p-1.5 text-gray-400 hover:text-red-600 rounded"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -207,6 +213,15 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={!!deletingId}
+        onClose={() => setDeletingId(null)}
+        onConfirm={handleDelete}
+        title={t('expenses.deleteCategory')}
+        message={t('expenses.deleteCategoryConfirm')}
+        loading={deleteCategory.isPending}
+      />
     </div>
   );
 }

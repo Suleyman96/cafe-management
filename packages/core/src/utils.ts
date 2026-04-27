@@ -85,3 +85,94 @@ export function getDisplaySubtotal(subtotal: number, settings: PricingSettings):
 export function getLocalDateString(date: Date = new Date()): string {
   return date.toLocaleDateString('en-CA');
 }
+
+// ─── UI Color Utilities ─────────────────────────────────────────
+
+/**
+ * Returns Tailwind CSS classes for a staff role badge.
+ */
+export function getRoleBadgeColor(role: string): string {
+  switch (role) {
+    case 'owner':
+      return 'bg-emerald-100 text-emerald-800';
+    case 'admin':
+      return 'bg-purple-100 text-purple-800';
+    case 'kitchen':
+      return 'bg-orange-100 text-orange-800';
+    default:
+      return 'bg-blue-100 text-blue-800';
+  }
+}
+
+/**
+ * Returns Tailwind CSS classes for an order status badge/card.
+ */
+export function getOrderStatusColor(status: string): string {
+  switch (status) {
+    case 'pending_approval':
+      return 'bg-amber-100 text-amber-800 border border-amber-300';
+    case 'new':
+      return 'bg-blue-100 text-blue-800';
+    case 'preparing':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'ready':
+      return 'bg-green-100 text-green-800';
+    case 'served':
+      return 'bg-purple-100 text-purple-800';
+    case 'out_for_delivery':
+      return 'bg-violet-100 text-violet-800';
+    case 'delivered':
+      return 'bg-emerald-100 text-emerald-800';
+    case 'closed':
+      return 'bg-gray-100 text-gray-800';
+    case 'paid':
+      return 'bg-gray-100 text-gray-800';
+    case 'cancelled':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+}
+
+// ─── Order Calculation Utilities ────────────────────────────────
+
+/**
+ * Calculate order total — uses order.total if available, falls back to summing non-cancelled items.
+ */
+export function calculateOrderTotal(order: {
+  total?: number | null;
+  order_items?: Array<{
+    status?: string | null;
+    quantity: number;
+    item_price: number;
+  }> | null;
+}): number {
+  if (order?.total != null) return order.total;
+  if (!order?.order_items) return 0;
+  return order.order_items
+    .filter((item) => item.status !== 'cancelled')
+    .reduce((sum, item) => sum + item.quantity * item.item_price, 0);
+}
+
+// ─── Time Formatting Utilities ──────────────────────────────────
+
+/**
+ * Format elapsed time from a start date to now as "Xm" or "Xh Ym".
+ */
+export function formatElapsedTime(startDate: string | Date): string {
+  const start = typeof startDate === 'string' ? new Date(startDate) : startDate;
+  const diffMs = Date.now() - start.getTime();
+  const minutes = Math.floor(diffMs / 1000 / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  return `${hours}h ${remainingMins}m`;
+}
+
+/**
+ * Format a date/time string to localized time (e.g., "02:30 PM").
+ */
+export function formatTime(dateString: string | Date): string {
+  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}

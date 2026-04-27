@@ -56,6 +56,7 @@
   "deliveryLanding.errorAddress": "Παρακαλώ εισάγετε τη διεύθυνση παράδοσης",
   "deliveryLanding.errorName": "Παρακαλώ εισάγετε το όνομά σας",
   "deliveryLanding.errorPhone": "Παρακαλώ εισάγετε τον αριθμό τηλεφώνου σας",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.heroSubtext": "Συμπληρώστε τα στοιχεία σας και περιηγηθείτε στο μενού μας",
   "deliveryLanding.heroTitle": "Παραγγελία για Παράδοση",
   "deliveryLanding.labelAddress": "Διεύθυνση Παράδοσης *",

@@ -10,7 +10,6 @@ import {
   isMenuItem,
   isOccupiedTable,
   isOrder,
-  isOrderArray,
   isOrderItem,
   isOrderPayment,
   isStaff,
@@ -212,35 +211,6 @@ describe('isOrderItem', () => {
 
   it('returns false for missing quantity', () => {
     expect(isOrderItem({ id: '1', order_id: '2', menu_item_id: '3', item_price: 10 })).toBe(false);
-  });
-});
-
-describe('isOrderArray', () => {
-  it('returns true for valid order array', () => {
-    expect(
-      isOrderArray([
-        { id: '1', status: 'new', created_at: '2024-01-01' },
-        { id: '2', status: 'ready', created_at: '2024-01-01' },
-      ]),
-    ).toBe(true);
-  });
-
-  it('returns false for mixed array', () => {
-    expect(
-      isOrderArray([{ id: '1', status: 'new', created_at: '2024-01-01' }, 'not an order']),
-    ).toBe(false);
-  });
-
-  it('returns true for empty array', () => {
-    expect(isOrderArray([])).toBe(true);
-  });
-
-  it('returns false for non-array input', () => {
-    expect(isOrderArray('not-an-array' as any)).toBe(false);
-  });
-
-  it('returns false for null', () => {
-    expect(isOrderArray(null as any)).toBe(false);
   });
 });
 

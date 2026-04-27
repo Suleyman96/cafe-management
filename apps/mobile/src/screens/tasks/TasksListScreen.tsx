@@ -1,6 +1,8 @@
+import type { TaskInsert, TaskUpdate } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Card, Chip, FAB, SegmentedButtons, Text } from 'react-native-paper';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskModal } from '@/components/tasks/TaskModal';
@@ -23,6 +25,7 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { getLocalDateString } from '@/lib/date-utils';
 import { useAuthStore } from '@/store/auth-store';
+import { COLORS } from '@/theme';
 import type { Task } from '@/types';
 
 type TabView = 'today' | 'all' | 'my' | 'templates';
@@ -104,10 +107,10 @@ export default function TasksListScreen() {
       case 'my': {
         let filtered = myTasks || [];
         if (statusFilter) {
-          filtered = filtered.filter((t: any) => t.status === statusFilter);
+          filtered = filtered.filter((t) => t.status === statusFilter);
         }
         if (priorityFilter) {
-          filtered = filtered.filter((t: any) => t.priority === priorityFilter);
+          filtered = filtered.filter((t) => t.priority === priorityFilter);
         }
         return filtered;
       }
@@ -137,7 +140,7 @@ export default function TasksListScreen() {
           : refetchTemplates;
 
   const completedToday = useMemo(
-    () => (todayTasks || []).filter((t: any) => t.status === 'completed').length,
+    () => (todayTasks || []).filter((t) => t.status === 'completed').length,
     [todayTasks],
   );
 
@@ -155,8 +158,8 @@ export default function TasksListScreen() {
     try {
       await markInProgress.mutateAsync(id);
       showSuccess(t('tasks.taskStarted'));
-    } catch (err: any) {
-      showError(err?.message || t('tasks.failedStart'));
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : t('tasks.failedStart'));
     }
   };
 
@@ -164,8 +167,8 @@ export default function TasksListScreen() {
     try {
       await markCompleted.mutateAsync(id);
       showSuccess(t('tasks.taskCompleted'));
-    } catch (err: any) {
-      showError(err?.message || t('tasks.failedComplete'));
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : t('tasks.failedComplete'));
     }
   };
 
@@ -173,8 +176,8 @@ export default function TasksListScreen() {
     try {
       await markCancelled.mutateAsync(id);
       showSuccess(t('tasks.taskCancelled'));
-    } catch (err: any) {
-      showError(err?.message || t('tasks.failedCancel'));
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : t('tasks.failedCancel'));
     }
   };
 
@@ -193,27 +196,30 @@ export default function TasksListScreen() {
           try {
             await deleteTask.mutateAsync(id);
             showSuccess(t('tasks.taskDeleted'));
-          } catch (err: any) {
-            showError(err?.message || t('tasks.failedDelete'));
+          } catch (err: unknown) {
+            showError(err instanceof Error ? err.message : t('tasks.failedDelete'));
           }
         },
       },
     ]);
   };
 
-  const handleSaveTask = async (data: any) => {
+  const handleSaveTask = async (data: Record<string, unknown>) => {
     try {
       if (editingTask) {
-        await updateTask.mutateAsync({ id: editingTask.id, updates: data });
+        await updateTask.mutateAsync({
+          id: editingTask.id,
+          updates: data as unknown as TaskUpdate,
+        });
         showSuccess(t('tasks.taskUpdated'));
       } else {
-        await createTask.mutateAsync(data);
+        await createTask.mutateAsync(data as unknown as TaskInsert);
         showSuccess(t('tasks.taskCreated'));
       }
       setShowTaskModal(false);
       setEditingTask(null);
-    } catch (err: any) {
-      showError(err?.message || t('tasks.failedSave'));
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : t('tasks.failedSave'));
     }
   };
 
@@ -245,7 +251,7 @@ export default function TasksListScreen() {
             <Text variant="bodySmall" style={styles.muted}>
               {t('tasks.overdue')}
             </Text>
-            <Text variant="titleLarge" style={[styles.boldText, { color: '#ef4444' }]}>
+            <Text variant="titleLarge" style={[styles.boldText, { color: COLORS.danger }]}>
               {overdueCount ?? 0}
             </Text>
           </Card.Content>
@@ -255,7 +261,7 @@ export default function TasksListScreen() {
             <Text variant="bodySmall" style={styles.muted}>
               {t('tasks.doneToday')}
             </Text>
-            <Text variant="titleLarge" style={[styles.boldText, { color: '#10b981' }]}>
+            <Text variant="titleLarge" style={[styles.boldText, { color: COLORS.success }]}>
               {completedToday}
             </Text>
           </Card.Content>
@@ -299,9 +305,9 @@ export default function TasksListScreen() {
         </View>
       )}
 
-      <FlatList
+      <FlashList
         data={currentData}
-        keyExtractor={(item: any) => item.id}
+        keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
         renderItem={({ item }) => (
           <TaskCard
@@ -318,10 +324,8 @@ export default function TasksListScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="checkbox-blank-outline"
-            title={tab === 'templates' ? t('tasks.noRecurringTemplates') : t('tasks.noTasks')}
-            description={
-              tab === 'templates' ? t('tasks.createRecurringHint') : t('tasks.allCaughtUp')
-            }
+            title={tab === 'templates' ? t('tasks.noTemplates') : t('tasks.noTasks')}
+            description={tab !== 'templates' ? t('tasks.allCaughtUp') : undefined}
           />
         }
         contentContainerStyle={styles.list}
@@ -354,16 +358,16 @@ export default function TasksListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   tabs: { marginHorizontal: 16, marginTop: 8, marginBottom: 8 },
   summaryRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
   summaryCard: { flex: 1 },
   summaryContent: { alignItems: 'center', paddingVertical: 4 },
   overdueCard: { borderColor: '#fecaca', borderWidth: 1 },
   boldText: { fontWeight: '700' },
-  muted: { color: '#6b7280' },
+  muted: { color: COLORS.textMuted },
   filterSection: { paddingHorizontal: 16, marginBottom: 8 },
-  filterLabel: { color: '#6b7280', marginBottom: 4 },
+  filterLabel: { color: COLORS.textMuted, marginBottom: 4 },
   filterRow: { flexDirection: 'row', marginBottom: 4 },
   filterChip: { marginRight: 6 },
   list: { paddingTop: 4, paddingBottom: 80 },

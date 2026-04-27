@@ -8,9 +8,9 @@ import { toast } from 'sonner';
 import { BrandingSettingsTab } from '@/components/settings/branding-settings-tab';
 import { ContactSettingsTab } from '@/components/settings/contact-settings-tab';
 import { GeneralSettingsTab } from '@/components/settings/general-settings-tab';
-import type { CafeSettingsFormData } from '@/components/settings/settings-types';
 import { useCafeSettings, useUpdateCafeSettings } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
+import type { CafeSettingsFormData } from '@/types/settings';
 
 export default function CafeSettingsPage() {
   const { t } = useTranslation('staff');
@@ -25,8 +25,8 @@ export default function CafeSettingsPage() {
     tax_enabled: true,
     tax_percentage: 10,
     tax_label: 'Tax',
-    currency_symbol: '¥',
-    currency_code: 'JPY',
+    currency_symbol: '',
+    currency_code: '',
     currency_position: 'before',
     currency_decimal_places: 0,
     minimum_order_amount: 0,
@@ -53,7 +53,7 @@ export default function CafeSettingsPage() {
     social_telegram: null,
     social_line: null,
     location_maps_url: null,
-    default_language: 'ja',
+    default_language: '',
   });
 
   const [hasChanges, setHasChanges] = useState(false);
@@ -96,7 +96,7 @@ export default function CafeSettingsPage() {
         social_telegram: settings.social_telegram,
         social_line: settings.social_line,
         location_maps_url: settings.location_maps_url,
-        default_language: settings.default_language ?? 'ja',
+        default_language: settings.default_language ?? 'en',
       });
       setHasChanges(false);
     }
@@ -172,17 +172,17 @@ export default function CafeSettingsPage() {
         social_telegram: settings.social_telegram,
         social_line: settings.social_line,
         location_maps_url: settings.location_maps_url,
-        default_language: settings.default_language ?? 'ja',
+        default_language: settings.default_language ?? 'en',
       });
       setHasChanges(false);
     }
   };
 
   const tabs = [
-    { id: 'general', label: 'General', icon: Store },
-    { id: 'branding', label: 'Branding', icon: Palette },
-    { id: 'contact', label: 'Contact', icon: Phone },
-  ] as const;
+    { id: 'general' as const, label: t('cafeSettings.tabs.general'), icon: Store },
+    { id: 'branding' as const, label: t('cafeSettings.tabs.branding'), icon: Palette },
+    { id: 'contact' as const, label: t('cafeSettings.tabs.contact'), icon: Phone },
+  ];
 
   return (
     <div className="p-3 sm:p-6 max-w-4xl pb-24">

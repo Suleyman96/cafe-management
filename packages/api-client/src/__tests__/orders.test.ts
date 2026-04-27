@@ -1,31 +1,37 @@
 import { AuthenticationError, ConflictError, ValidationError } from '@gustri/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createOrderItemsWrapper, createOrdersWrapper } from '../wrapper/orders';
+import {
+  buildOrder,
+  buildOrderInsert,
+  buildOrderItem,
+  buildOrderItemInsert,
+  resetFactoryCounter,
+} from './helpers/factories';
 import { createMockContext } from './helpers/mock-supabase';
 
-const validOrder = {
+const validOrder = buildOrder({
   id: '123e4567-e89b-12d3-a456-426614174000',
   status: 'new',
   source: 'customer',
   table_id: '123e4567-e89b-12d3-a456-426614174001',
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
+});
 
-const validOrderItem = {
+const validOrderItem = buildOrderItem({
   id: '123e4567-e89b-12d3-a456-426614174010',
   order_id: validOrder.id,
   menu_item_id: '123e4567-e89b-12d3-a456-426614174020',
   quantity: 2,
   item_price: 15.99,
   status: 'pending',
-};
+});
 
 describe('OrdersWrapper', () => {
   let ctx: ReturnType<typeof createMockContext>;
   let orders: ReturnType<typeof createOrdersWrapper>;
 
   beforeEach(() => {
+    resetFactoryCounter();
     ctx = createMockContext({
       responses: {
         orders: { data: [validOrder], error: null },
@@ -66,11 +72,13 @@ describe('OrdersWrapper', () => {
       },
     });
     const createOrders = createOrdersWrapper(createCtx);
-    const result = await createOrders.create({
-      status: 'new',
-      source: 'customer',
-      table_id: validOrder.table_id,
-    } as any);
+    const result = await createOrders.create(
+      buildOrderInsert({
+        status: 'new',
+        source: 'customer',
+        table_id: validOrder.table_id,
+      }),
+    );
     expect(result).toEqual(validOrder);
   });
 
@@ -135,6 +143,10 @@ describe('OrdersWrapper', () => {
 });
 
 describe('OrderItemsWrapper', () => {
+  beforeEach(() => {
+    resetFactoryCounter();
+  });
+
   it('create inserts order items', async () => {
     const ctx = createMockContext({
       responses: {
@@ -143,12 +155,12 @@ describe('OrderItemsWrapper', () => {
     });
     const items = createOrderItemsWrapper(ctx);
     const result = await items.create([
-      {
+      buildOrderItemInsert({
         order_id: validOrder.id,
         menu_item_id: validOrderItem.menu_item_id,
         quantity: 2,
         item_price: 15.99,
-      } as any,
+      }),
     ]);
     expect(result).toEqual([validOrderItem]);
   });
@@ -216,7 +228,6 @@ describe('OrdersWrapper applyDiscount', () => {
       discount_reason: 'loyalty',
       discount_applied_by: 'staff-1',
     });
-    // applyDiscount no longer returns data (avoids PostgREST trigger conflict)
   });
 
   it('applies fixed discount', async () => {
@@ -237,6 +248,7 @@ describe('OrdersWrapper applyDiscount', () => {
     const ctx = createMockContext({
       responses: {
         orders: { data: null, error: null },
+        orders_decrypted: { data: validOrder, error: null },
       },
     });
     const orders = createOrdersWrapper(ctx);
@@ -247,10 +259,11 @@ describe('OrdersWrapper applyDiscount', () => {
     });
   });
 
-  it('returns void instead of order data (avoids PostgREST trigger conflict)', async () => {
+  it('returns updated order data after refetch', async () => {
     const ctx = createMockContext({
       responses: {
         orders: { data: null, error: null },
+        orders_decrypted: { data: validOrder, error: null },
       },
     });
     const orders = createOrdersWrapper(ctx);
@@ -260,10 +273,8 @@ describe('OrdersWrapper applyDiscount', () => {
       discount_applied_by: 'staff-1',
     });
 
-    // applyDiscount must return void (not order data) to avoid
-    // "Cannot coerce to single JSON object" errors from PostgREST
-    // when the AFTER trigger recalculates order totals
-    expect(result).toBeUndefined();
+    expect(result).toBeDefined();
+    expect(result.id).toBe(validOrder.id);
   });
 
   it('throws on supabase error', async () => {
@@ -311,12 +322,12 @@ describe('OrderItemsWrapper error type verification', () => {
     const items = createOrderItemsWrapper(ctx);
     await expect(
       items.create([
-        {
+        buildOrderItemInsert({
           order_id: validOrder.id,
           menu_item_id: validOrderItem.menu_item_id,
           quantity: 1,
           item_price: 10.0,
-        } as any,
+        }),
       ]),
     ).rejects.toThrow(ConflictError);
   });

@@ -1,6 +1,13 @@
 'use client';
 
-import type { ORDER_STATUS } from '@gustri/core';
+import {
+  ACTIVE_ORDER_STATUSES,
+  calculateOrderTotal,
+  formatElapsedTime,
+  getOrderStatusColor,
+  type ORDER_STATUS,
+  ORDER_STATUS_KEYS,
+} from '@gustri/core';
 import type { Database, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
@@ -25,7 +32,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ItemTransferModal } from '@/components/modals/item-transfer-modal';
 import { OrderItemsList } from '@/components/tables/order-items-list';
@@ -46,29 +53,13 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
+import { useStaffCart } from '@/hooks/use-staff-cart';
 import { useActiveCallsForTable, useResolveWaiterCall } from '@/hooks/use-waiter-calls-safe';
 import type { OrderWithDetails } from '@/types';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
 type OrderItem = Database['public']['Tables']['order_items']['Row'];
-
-type CartItem = {
-  menuItem: MenuItem;
-  quantity: number;
-};
-
-const ORDER_STATUS_KEYS: Record<string, string> = {
-  pending_approval: 'orders.pendingApproval',
-  new: 'orders.new',
-  preparing: 'orders.preparing',
-  ready: 'orders.ready',
-  served: 'orders.served',
-  out_for_delivery: 'orders.outForDelivery',
-  delivered: 'orders.delivered',
-  closed: 'orders.closed',
-  cancelled: 'orders.cancelled',
-};
 
 export default function TableDetailPage() {
   const params = useParams();
@@ -78,7 +69,7 @@ export default function TableDetailPage() {
   const { t } = useTranslation('staff');
 
   const { data: table, isLoading: tableLoading } = useTable(tableId);
-  const { data: orders, refetch: refetchOrders } = useOrders({ table_id: tableId });
+  const { data: orders } = useOrders({ table_id: tableId });
   const { data: menuItems, isLoading: menuLoading } = useMenuItems({ isAvailable: true });
   const { data: categories } = useCategories();
 
@@ -93,7 +84,20 @@ export default function TableDetailPage() {
   const { data: activeCallsForTable } = useActiveCallsForTable(tableId);
   const resolveWaiterCall = useResolveWaiterCall();
 
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const handleResolveCalls = useCallback(async () => {
+    if (!activeCallsForTable) return;
+    try {
+      await Promise.all(
+        activeCallsForTable.map((call) => resolveWaiterCall.mutateAsync({ callId: call.id })),
+      );
+      toast.success(t('calls.resolved'));
+    } catch (error) {
+      Sentry.captureException(error);
+      toast.error(t('calls.failedRespond'));
+    }
+  }, [activeCallsForTable, resolveWaiterCall, t]);
+
+  const { cart, addToCart, removeFromCart, getCartQuantity, clearCart } = useStaffCart();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -111,7 +115,7 @@ export default function TableDetailPage() {
   const activeOrders = useMemo((): OrderWithDetails[] => {
     return (
       orders?.filter((order) =>
-        ['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(order.status),
+        (ACTIVE_ORDER_STATUSES as readonly string[]).includes(order.status),
       ) || []
     );
   }, [orders]);
@@ -175,9 +179,8 @@ export default function TableDetailPage() {
 
       await addOrderItems.mutateAsync(orderItems);
       toast.success(t('orders.orderCreatedSuccess'));
-      setCart([]);
+      clearCart();
       setOrderNotes('');
-      refetchOrders();
     } catch (error) {
       Sentry.captureException(error);
       toast.error(t('orders.failedCreateOrder'));
@@ -197,59 +200,16 @@ export default function TableDetailPage() {
     ? menuItems?.filter((item: MenuItem) => item.category_id === selectedCategory)
     : menuItems;
 
-  // Add item to cart
-  const addToCart = (menuItem: MenuItem) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.menuItem.id === menuItem.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.menuItem.id === menuItem.id ? { ...item, quantity: item.quantity + 1 } : item,
-        );
-      }
-      return [...prev, { menuItem, quantity: 1 }];
-    });
-  };
-
-  // Remove item from cart
-  const removeFromCart = (menuItemId: string) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.menuItem.id === menuItemId);
-      if (existing && existing.quantity > 1) {
-        return prev.map((item) =>
-          item.menuItem.id === menuItemId ? { ...item, quantity: item.quantity - 1 } : item,
-        );
-      }
-      return prev.filter((item) => item.menuItem.id !== menuItemId);
-    });
-  };
-
-  // Get cart quantity for an item
-  const getCartQuantity = (menuItemId: string) => {
-    return cart.find((item) => item.menuItem.id === menuItemId)?.quantity || 0;
-  };
-
   // Calculate cart subtotal (tax is added at order level by DB trigger)
   const cartTotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
 
-  // Get order total from database (includes tax) for consistency
-  // Fall back to calculating from non-cancelled items if total is not set
-  const orderTotal =
-    activeOrder?.total ??
-    activeOrder?.order_items
-      ?.filter((item: OrderItem) => item.status !== 'cancelled')
-      .reduce((sum: number, item: OrderItem) => sum + item.quantity * item.item_price, 0) ??
-    0;
+  const orderTotal = activeOrder ? calculateOrderTotal(activeOrder) : 0;
 
   // Calculate combined total for all orders on this table
-  const combinedTotal = activeOrders.reduce((total: number, order) => {
-    const orderSum =
-      order.total ??
-      order.order_items
-        ?.filter((item: OrderItem) => item.status !== 'cancelled')
-        .reduce((sum: number, item: OrderItem) => sum + item.quantity * item.item_price, 0) ??
-      0;
-    return total + orderSum;
-  }, 0);
+  const combinedTotal = activeOrders.reduce(
+    (total: number, order) => total + calculateOrderTotal(order),
+    0,
+  );
 
   // Submit cart items to existing order
   const handleAddItemsToOrder = async () => {
@@ -277,8 +237,7 @@ export default function TableDetailPage() {
 
       await addOrderItems.mutateAsync(orderItems);
       toast.success(t('orders.itemsAddedToOrder'));
-      setCart([]);
-      refetchOrders();
+      clearCart();
     } catch (error) {
       Sentry.captureException(error);
       toast.error(t('orders.failedAddItems'));
@@ -296,36 +255,8 @@ export default function TableDetailPage() {
         status: newStatus,
       });
       toast.success(`${t('orders.statusUpdated')} ${newStatus.toLowerCase()}`);
-      refetchOrders();
     } catch (_error) {
       toast.error(t('orders.failedUpdateStatus'));
-    }
-  };
-
-  // Format duration
-  const formatDuration = (createdAt: string) => {
-    const start = new Date(createdAt);
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - start.getTime()) / 1000 / 60);
-    if (diff < 60) return `${diff}m`;
-    const hours = Math.floor(diff / 60);
-    const mins = diff % 60;
-    return `${hours}h ${mins}m`;
-  };
-
-  // Get status color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'new':
-        return 'bg-blue-100 text-blue-800';
-      case 'preparing':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'ready':
-        return 'bg-green-100 text-green-800';
-      case 'served':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -371,7 +302,6 @@ export default function TableDetailPage() {
       }
 
       toast.success(t('orders.itemMarkedAs', { status: newStatus }));
-      refetchOrders();
     } catch (_error) {
       toast.error(t('orders.failedUpdateItemStatus'));
     }
@@ -394,7 +324,6 @@ export default function TableDetailPage() {
       );
       setCancelItemConfirm(null);
       setCancelItemQty(1);
-      refetchOrders();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t('orders.failedCancelItem');
       toast.error(message);
@@ -420,7 +349,6 @@ export default function TableDetailPage() {
       toast.success(t('orders.orderCancelled'));
       setShowCancelModal(false);
       setCancelReason('');
-      refetchOrders();
 
       // If there are other orders, stay on page, otherwise go back
       if (activeOrders.length <= 1) {
@@ -466,7 +394,7 @@ export default function TableDetailPage() {
             <h1 className="text-xl sm:text-2xl font-bold">{table.table_number}</h1>
             {activeOrder && (
               <span
-                className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusColor(activeOrder.status)}`}
+                className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getOrderStatusColor(activeOrder.status)}`}
               >
                 {t(ORDER_STATUS_KEYS[activeOrder.status] || activeOrder.status)}
               </span>
@@ -488,17 +416,7 @@ export default function TableDetailPage() {
               variant="outline"
               className="border-red-300 text-red-700 hover:bg-red-100"
               disabled={resolveWaiterCall.isPending}
-              onClick={async () => {
-                try {
-                  for (const call of activeCallsForTable) {
-                    await resolveWaiterCall.mutateAsync({ callId: call.id });
-                  }
-                  toast.success(t('calls.resolved'));
-                } catch (error) {
-                  Sentry.captureException(error);
-                  toast.error(t('calls.failedRespond'));
-                }
-              }}
+              onClick={handleResolveCalls}
             >
               {resolveWaiterCall.isPending ? (
                 <Loader2 className="h-3 w-3 animate-spin mr-1" />
@@ -557,7 +475,7 @@ export default function TableDetailPage() {
                 <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600">
                   <span className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    {formatDuration(activeOrder.created_at)}
+                    {formatElapsedTime(activeOrder.created_at)}
                   </span>
                   <span className="flex items-center gap-1">
                     <DollarSign className="h-4 w-4" />
@@ -642,9 +560,7 @@ export default function TableDetailPage() {
                   </Button>
                 )}
                 {/* Cancel/Reject button - available for active orders */}
-                {['pending_approval', 'new', 'preparing', 'ready', 'served'].includes(
-                  activeOrder.status,
-                ) && (
+                {(ACTIVE_ORDER_STATUSES as readonly string[]).includes(activeOrder.status) && (
                   <Button size="sm" variant="destructive" onClick={() => setShowCancelModal(true)}>
                     <XCircle className="h-4 w-4 mr-1" />
                     {activeOrder.status === 'pending_approval'
@@ -916,7 +832,6 @@ export default function TableDetailPage() {
           onSuccess={() => {
             setShowItemTransferModal(false);
             toast.success(t('tables.itemsTransferred'));
-            refetchOrders();
           }}
         />
       )}

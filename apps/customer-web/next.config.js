@@ -1,4 +1,7 @@
 const { withSentryConfig } = require('@sentry/nextjs');
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -46,7 +49,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
+              `script-src 'self'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
               "style-src 'self' 'unsafe-inline'",
               `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL || ''} wss://*.supabase.co https://*.sentry.io`,
               "img-src 'self' data: blob: https://*.supabase.co",
@@ -62,7 +65,7 @@ const nextConfig = {
   },
 };
 
-module.exports = withSentryConfig(nextConfig, {
+module.exports = withSentryConfig(withBundleAnalyzer(nextConfig), {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   silent: !process.env.CI,

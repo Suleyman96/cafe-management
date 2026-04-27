@@ -1,10 +1,12 @@
 'use client';
 
+import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
 import type { MenuItem, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useAddOrderItems, useCafeSettings, useCreateOrder, useTaxMultiplier } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
 
@@ -92,12 +94,12 @@ export function CreateTakeoutModal({
 
   const handleSubmit = async () => {
     if (!customerName.trim() || !customerPhone.trim()) {
-      alert(t('orders.enterNameAndPhone'));
+      toast.error(t('orders.enterNameAndPhone'));
       return;
     }
 
     if (selectedItems.length === 0) {
-      alert(t('orders.addAtLeastOneItem'));
+      toast.error(t('orders.addAtLeastOneItem'));
       return;
     }
 
@@ -144,7 +146,7 @@ export function CreateTakeoutModal({
       onClose();
     } catch (error) {
       Sentry.captureException(error);
-      alert(t('orders.failedCreateTakeout'));
+      toast.error(t('orders.failedCreateTakeout'));
     } finally {
       setIsSubmitting(false);
     }
@@ -344,9 +346,8 @@ export function CreateTakeoutModal({
                     <div className="flex justify-between">
                       <span className="text-gray-600">
                         {t('orders.taxPercent', {
-                          percent: String(cafeSettings?.tax_percentage ?? 18),
+                          percent: String(cafeSettings?.tax_percentage ?? DEFAULT_TAX_PERCENTAGE),
                         })}
-                        :
                       </span>
                       <span className="font-medium">{formatPrice(tax)}</span>
                     </div>

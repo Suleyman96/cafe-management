@@ -1,15 +1,16 @@
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, FAB } from 'react-native-paper';
 import { ExpenseCard } from '@/components/expenses/ExpenseCard';
 import { ExpenseCategoryModal } from '@/components/expenses/ExpenseCategoryModal';
 import { ExpenseModal } from '@/components/expenses/ExpenseModal';
 import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
-  useCafeSettings,
   useCreateExpense,
   useCreateExpenseCategory,
+  useCurrencySymbol,
   useDeleteExpense,
   useDeleteExpenseCategory,
   useExpenseCategories,
@@ -21,7 +22,7 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
-import { BRAND_PRIMARY } from '@/theme';
+import { BRAND_PRIMARY, COLORS } from '@/theme';
 import type { Expense } from '@/types';
 
 const PAYMENT_METHODS: Expense['payment_method'][] = ['cash', 'card', 'digital', 'bank_transfer'];
@@ -39,7 +40,7 @@ export default function ExpensesListScreen() {
 
   // Modal state
   const [showExpenseModal, setShowExpenseModal] = useState(false);
-  const [editExpense, setEditExpense] = useState<any>(null);
+  const [editExpense, setEditExpense] = useState<Expense | null>(null);
   const [deleteExpenseId, setDeleteExpenseId] = useState<string | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
@@ -56,7 +57,6 @@ export default function ExpensesListScreen() {
   } = useExpenses({ startDate, endDate, paymentMethod: methodFilter, categoryId: categoryFilter });
   const { data: summary } = useExpenseMonthlySummary(year, month);
   const { data: categories } = useExpenseCategories();
-  const { data: settings } = useCafeSettings();
 
   // Mutations
   const createExpense = useCreateExpense();
@@ -66,7 +66,7 @@ export default function ExpensesListScreen() {
   const updateCategory = useUpdateExpenseCategory();
   const deleteCategory = useDeleteExpenseCategory();
 
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
 
   // Top category from summary
   const topCategory = useMemo(() => {
@@ -99,7 +99,14 @@ export default function ExpensesListScreen() {
     } else setMonth(month + 1);
   };
 
-  const handleExpenseSubmit = async (data: any) => {
+  const handleExpenseSubmit = async (data: {
+    description: string;
+    amount: number;
+    payment_method: Expense['payment_method'];
+    category_id: string | null;
+    expense_date: string;
+    notes: string | null;
+  }) => {
     try {
       if (editExpense) {
         await updateExpense.mutateAsync({ id: editExpense.id, data });
@@ -322,7 +329,7 @@ export default function ExpensesListScreen() {
         {t('expenses.expenseCount', { count: (expenses || []).length })}
       </Text>
 
-      <FlatList
+      <FlashList
         data={expenses || []}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
@@ -390,7 +397,7 @@ export default function ExpensesListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   monthNav: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -401,9 +408,9 @@ const styles = StyleSheet.create({
   monthLabel: { fontWeight: '600' },
   summaryRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
   summaryCard: { flex: 1 },
-  totalValue: { fontWeight: '700', color: '#ef4444' },
+  totalValue: { fontWeight: '700', color: COLORS.danger },
   transValue: { fontWeight: '700', color: BRAND_PRIMARY },
-  topCatValue: { fontWeight: '700', color: '#8b5cf6' },
+  topCatValue: { fontWeight: '700', color: COLORS.purpleLight },
   breakdownCard: { marginHorizontal: 16, marginBottom: 8 },
   breakdownRow: { marginBottom: 8 },
   breakdownLabel: {
@@ -412,16 +419,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  breakdownName: { fontWeight: '600', color: '#1e293b', flex: 1, marginRight: 8 },
+  breakdownName: { fontWeight: '600', color: COLORS.textPrimary, flex: 1, marginRight: 8 },
   progressBarBg: {
     height: 6,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: COLORS.border,
     borderRadius: 3,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: 6,
-    backgroundColor: '#6366f1',
+    backgroundColor: COLORS.indigo,
     borderRadius: 3,
   },
   filterSection: { paddingHorizontal: 16, marginBottom: 8 },
@@ -431,11 +438,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
-  manageCatBtn: { borderColor: '#d1d5db' },
+  manageCatBtn: { borderColor: COLORS.border },
   manageCatLabel: { fontSize: 11 },
   filterChips: { gap: 6, paddingBottom: 6 },
-  countText: { color: '#9ca3af', paddingHorizontal: 16, marginBottom: 4 },
+  countText: { color: COLORS.textLight, paddingHorizontal: 16, marginBottom: 4 },
   list: { paddingTop: 4, paddingBottom: 80 },
   fab: { position: 'absolute', right: 16, bottom: 16 },
-  muted: { color: '#6b7280' },
+  muted: { color: COLORS.textMuted },
 });

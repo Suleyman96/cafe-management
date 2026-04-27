@@ -1,4 +1,5 @@
 import { QUERY_KEYS } from '@gustri/core';
+import type { StaffScheduleUpdate } from '@gustri/database';
 import { useDb } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -18,7 +19,7 @@ export function useUpdateSchedule() {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
+    mutationFn: ({ id, data }: { id: string; data: StaffScheduleUpdate }) =>
       db.schedules.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SCHEDULES] });

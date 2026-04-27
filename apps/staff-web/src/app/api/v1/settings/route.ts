@@ -27,6 +27,7 @@ const UpdateSettingsSchema = z
     default_language: z.string().optional(),
     brand_primary_color: z.string().optional(),
     brand_logo_url: z.string().optional().nullable(),
+    feature_flags: z.record(z.string(), z.boolean()).optional(),
   })
   .partial();
 

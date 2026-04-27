@@ -1,16 +1,18 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { AlertCircle, Flame, Leaf, Minus, Plus, Star, X } from 'lucide-react';
+import { AlertCircle, Minus, Plus, Star, X } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
+import { getLocalizedField } from '@/lib/utils';
 import { useCartStore } from '@/store/cart-store';
 import { useLanguageStore } from '@/store/language-store';
-import { getLocalizedField, type MenuItemWithCategory } from '@/types';
+import type { MenuItemWithCategory } from '@/types';
+import { DietaryBadges } from './dietary-badges';
 
 interface MenuItemModalProps {
   item: MenuItemWithCategory;
@@ -96,53 +98,7 @@ export function MenuItemModal({ item, isOpen, onClose, accentColor }: MenuItemMo
                     {t('menuItem.badgePopular')}
                   </span>
                 )}
-                {item.is_vegetarian && (
-                  <span
-                    className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-green-400"
-                    style={{
-                      background: 'rgba(34,197,94,0.12)',
-                      border: '1px solid rgba(34,197,94,0.2)',
-                    }}
-                  >
-                    <Leaf className="h-3 w-3" />
-                    {t('menuItem.badgeVegetarian')}
-                  </span>
-                )}
-                {item.is_vegan && (
-                  <span
-                    className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-green-400"
-                    style={{
-                      background: 'rgba(34,197,94,0.12)',
-                      border: '1px solid rgba(34,197,94,0.2)',
-                    }}
-                  >
-                    <Leaf className="h-3 w-3" />
-                    {t('menuItem.badgeVegan')}
-                  </span>
-                )}
-                {item.is_spicy && (
-                  <span
-                    className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-red-400"
-                    style={{
-                      background: 'rgba(239,68,68,0.12)',
-                      border: '1px solid rgba(239,68,68,0.2)',
-                    }}
-                  >
-                    <Flame className="h-3 w-3" />
-                    {t('menuItem.badgeSpicy')}
-                  </span>
-                )}
-                {item.is_gluten_free && (
-                  <span
-                    className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-amber-400"
-                    style={{
-                      background: 'rgba(217,119,6,0.12)',
-                      border: '1px solid rgba(217,119,6,0.2)',
-                    }}
-                  >
-                    {t('menuItem.badgeGlutenFree')}
-                  </span>
-                )}
+                <DietaryBadges item={item} size="md" />
               </div>
             </div>
 

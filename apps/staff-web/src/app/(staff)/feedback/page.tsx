@@ -103,53 +103,55 @@ export default function FeedbackPage() {
           </div>
         ) : (
           <div className="space-y-3 sm:space-y-4">
-            {feedback.map((item: any) => {
-              const typeInfo = getFeedbackTypeInfo(item.feedback_type);
+            {feedback.map(
+              (item: (typeof feedback)[number] & { table?: { table_number: string } }) => {
+                const typeInfo = getFeedbackTypeInfo(item.feedback_type);
 
-              return (
-                <div key={item.id} className="bg-white rounded-lg shadow-sm border p-3 sm:p-6">
-                  <div className="flex items-start gap-2 sm:gap-4">
-                    <div className="text-2xl sm:text-3xl flex-shrink-0">{typeInfo.icon}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
-                        <h3 className="font-semibold text-sm sm:text-lg">{typeInfo.label}</h3>
-                        <span
-                          className={`px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-medium rounded-full ${
-                            item.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
-                          {item.status === 'pending'
-                            ? t('feedback.status.pending')
-                            : t('feedback.status.read')}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
-                        {item.table && <span>🪑 {item.table.table_number}</span>}
-                        <span>📅 {formatDateTime(item.created_at)}</span>
-                      </div>
-                      <p className="text-xs sm:text-base text-gray-700 whitespace-pre-wrap">
-                        {item.message}
-                      </p>
-
-                      {item.status === 'pending' && (
-                        <div className="mt-3">
-                          <Button
-                            size="sm"
-                            onClick={() => handleMarkRead(item.id)}
-                            disabled={markRead.isPending}
-                            className="text-xs sm:text-sm"
+                return (
+                  <div key={item.id} className="bg-white rounded-lg shadow-sm border p-3 sm:p-6">
+                    <div className="flex items-start gap-2 sm:gap-4">
+                      <div className="text-2xl sm:text-3xl flex-shrink-0">{typeInfo.icon}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                          <h3 className="font-semibold text-sm sm:text-lg">{typeInfo.label}</h3>
+                          <span
+                            className={`px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-medium rounded-full ${
+                              item.status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}
                           >
-                            ✓ {t('feedback.markRead')}
-                          </Button>
+                            {item.status === 'pending'
+                              ? t('feedback.status.pending')
+                              : t('feedback.status.read')}
+                          </span>
                         </div>
-                      )}
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
+                          {item.table && <span>🪑 {item.table.table_number}</span>}
+                          <span>📅 {formatDateTime(item.created_at)}</span>
+                        </div>
+                        <p className="text-xs sm:text-base text-gray-700 whitespace-pre-wrap">
+                          {item.message}
+                        </p>
+
+                        {item.status === 'pending' && (
+                          <div className="mt-3">
+                            <Button
+                              size="sm"
+                              onClick={() => handleMarkRead(item.id)}
+                              disabled={markRead.isPending}
+                              className="text-xs sm:text-sm"
+                            >
+                              ✓ {t('feedback.markRead')}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              },
+            )}
           </div>
         )}
       </div>

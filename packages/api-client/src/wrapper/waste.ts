@@ -110,24 +110,25 @@ export function createWasteWrapper(ctx: WrapperContext) {
 
       if (error) throw handleSupabaseError(error);
 
-      const logs = data || [];
-      const totalCost = logs.reduce((sum: number, l: any) => sum + l.total_cost, 0);
+      type WasteSummaryProjection = Pick<WasteLogRow, 'total_cost' | 'reason' | 'category'>;
+      const logs = (data || []) as WasteSummaryProjection[];
+      const totalCost = logs.reduce((sum: number, l) => sum + (l.total_cost ?? 0), 0);
       const byReason: Record<string, { reason: string; total: number; count: number }> = {};
       const byCategory: Record<string, { category: string; total: number; count: number }> = {};
 
       for (const l of logs) {
-        const reason = (l as any).reason || 'other';
+        const reason = l.reason || 'other';
         if (!byReason[reason]) {
           byReason[reason] = { reason, total: 0, count: 0 };
         }
-        byReason[reason].total += (l as any).total_cost;
+        byReason[reason].total += l.total_cost ?? 0;
         byReason[reason].count += 1;
 
-        const cat = (l as any).category || 'General';
+        const cat = l.category || 'General';
         if (!byCategory[cat]) {
           byCategory[cat] = { category: cat, total: 0, count: 0 };
         }
-        byCategory[cat].total += (l as any).total_cost;
+        byCategory[cat].total += l.total_cost ?? 0;
         byCategory[cat].count += 1;
       }
 
@@ -147,9 +148,9 @@ export function createWasteWrapper(ctx: WrapperContext) {
 
       if (error) throw handleSupabaseError(error);
 
-      const logs = data || [];
+      const logs = (data || []) as Pick<WasteLogRow, 'total_cost'>[];
       return {
-        totalCost: logs.reduce((sum: number, l: any) => sum + l.total_cost, 0),
+        totalCost: logs.reduce((sum: number, l) => sum + (l.total_cost ?? 0), 0),
         count: logs.length,
       };
     },

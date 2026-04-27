@@ -3,10 +3,12 @@ export { useAddOrderItems } from '@gustri/queries';
 // useCreateOrder is not available in @gustri/queries — keep local implementation
 import { QUERY_KEYS } from '@gustri/core';
 import type { OrdersInsert } from '@gustri/database';
+import { useDb } from '@gustri/queries';
+import * as Sentry from '@sentry/react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { db } from '@/lib/supabase';
 
 export function useCreateOrder() {
+  const db = useDb();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -20,7 +22,7 @@ export function useCreateOrder() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDERS] });
     },
     onError: (error: Error) => {
-      console.error('Failed to create order:', error.message);
+      Sentry.captureException(error, { extra: { context: 'createOrder' } });
     },
   });
 }

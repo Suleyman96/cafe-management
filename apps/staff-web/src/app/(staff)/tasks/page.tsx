@@ -97,7 +97,7 @@ export default function TasksPage() {
     generateRecurring.mutate(today);
   }, [generateRecurring]);
 
-  const completedToday = todaysTasks.filter((t: any) => t.status === 'completed').length;
+  const completedToday = todaysTasks.filter((task) => task.status === 'completed').length;
 
   const handleQuickAction = async (taskId: string, action: 'start' | 'complete' | 'cancel') => {
     try {
@@ -147,10 +147,10 @@ export default function TasksPage() {
       case 'my': {
         let filtered = myTasks;
         if (statusFilter) {
-          filtered = filtered.filter((t: any) => t.status === statusFilter);
+          filtered = filtered.filter((task) => task.status === statusFilter);
         }
         if (priorityFilter) {
-          filtered = filtered.filter((t: any) => t.priority === priorityFilter);
+          filtered = filtered.filter((task) => task.priority === priorityFilter);
         }
         return filtered;
       }
@@ -161,7 +161,7 @@ export default function TasksPage() {
     }
   }, [activeTab, todaysTasks, allTasks, myTasks, templates, statusFilter, priorityFilter]);
 
-  const isOverdue = (task: any) => {
+  const isOverdue = (task: Task) => {
     if (!task.due_date) return false;
     if (task.status === 'completed' || task.status === 'cancelled') return false;
     return task.due_date < getLocalDateString();
@@ -295,111 +295,119 @@ export default function TasksPage() {
       )}
 
       <div className="space-y-3">
-        {displayTasks.map((task: any) => (
-          <div
-            key={task.id}
-            className={`bg-white rounded-lg border p-4 hover:shadow-sm transition-shadow ${
-              isOverdue(task) ? 'border-red-300 bg-red-50' : ''
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5">{STATUS_ICONS[task.status] || STATUS_ICONS.pending}</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-medium text-gray-900">{task.title}</h3>
-                  {task.parent_task_id && (
-                    <span title="Recurring">
-                      <Repeat className="h-3.5 w-3.5 text-blue-400" />
-                    </span>
+        {displayTasks.map(
+          (
+            task: (typeof displayTasks)[number] & {
+              assigned_to_staff?: { full_name: string } | null;
+            },
+          ) => (
+            <div
+              key={task.id}
+              className={`bg-white rounded-lg border p-4 hover:shadow-sm transition-shadow ${
+                isOverdue(task) ? 'border-red-300 bg-red-50' : ''
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5">{STATUS_ICONS[task.status] || STATUS_ICONS.pending}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-medium text-gray-900">{task.title}</h3>
+                    {task.parent_task_id && (
+                      <span title="Recurring">
+                        <Repeat className="h-3.5 w-3.5 text-blue-400" />
+                      </span>
+                    )}
+                  </div>
+                  {task.description && (
+                    <p className="text-sm text-gray-500 mt-0.5 truncate">{task.description}</p>
                   )}
-                </div>
-                {task.description && (
-                  <p className="text-sm text-gray-500 mt-0.5 truncate">{task.description}</p>
-                )}
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_COLORS[task.priority]}`}
-                  >
-                    {t(`tasks.${task.priority}`)}
-                  </span>
-                  {task.assigned_to_staff?.full_name && (
-                    <span className="text-xs text-gray-500">
-                      {task.assigned_to_staff.full_name}
-                    </span>
-                  )}
-                  {task.due_date && !task.is_recurring && (
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <span
-                      className={`text-xs flex items-center gap-1 ${isOverdue(task) ? 'text-red-600 font-medium' : 'text-gray-500'}`}
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_COLORS[task.priority]}`}
                     >
-                      <Clock className="h-3 w-3" />
-                      {new Date(task.due_date).toLocaleDateString()}
-                      {task.due_time && ` ${task.due_time.slice(0, 5)}`}
+                      {t(`tasks.${task.priority}`)}
                     </span>
-                  )}
-                  {task.is_recurring && (
-                    <span className="text-xs text-blue-600 flex items-center gap-1">
-                      <Repeat className="h-3 w-3" />
-                      {RECURRENCE_LABELS[task.recurrence_pattern] || task.recurrence_pattern}
-                      {task.recurrence_pattern === 'weekly' && task.recurrence_days?.length > 0 && (
-                        <span>({getWeekdayLabels(task.recurrence_days)})</span>
-                      )}
-                      {task.recurrence_pattern === 'monthly' &&
-                        task.recurrence_days?.length > 0 && (
-                          <span>
-                            ({t('reports.day')} {task.recurrence_days[0]})
-                          </span>
-                        )}
-                    </span>
-                  )}
+                    {task.assigned_to_staff?.full_name && (
+                      <span className="text-xs text-gray-500">
+                        {task.assigned_to_staff.full_name}
+                      </span>
+                    )}
+                    {task.due_date && !task.is_recurring && (
+                      <span
+                        className={`text-xs flex items-center gap-1 ${isOverdue(task) ? 'text-red-600 font-medium' : 'text-gray-500'}`}
+                      >
+                        <Clock className="h-3 w-3" />
+                        {new Date(task.due_date).toLocaleDateString()}
+                        {task.due_time && ` ${task.due_time.slice(0, 5)}`}
+                      </span>
+                    )}
+                    {task.is_recurring && (
+                      <span className="text-xs text-blue-600 flex items-center gap-1">
+                        <Repeat className="h-3 w-3" />
+                        {(task.recurrence_pattern && RECURRENCE_LABELS[task.recurrence_pattern]) ||
+                          task.recurrence_pattern}
+                        {task.recurrence_pattern === 'weekly' &&
+                          (task.recurrence_days?.length ?? 0) > 0 && (
+                            <span>({getWeekdayLabels(task.recurrence_days ?? [])})</span>
+                          )}
+                        {task.recurrence_pattern === 'monthly' &&
+                          (task.recurrence_days?.length ?? 0) > 0 && (
+                            <span>
+                              ({t('reports.day')} {task.recurrence_days?.[0]})
+                            </span>
+                          )}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                {task.status === 'pending' && !task.is_recurring && (
-                  <button
-                    type="button"
-                    onClick={() => handleQuickAction(task.id, 'start')}
-                    className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
-                    title={t('start', { ns: 'common' })}
-                  >
-                    <Play className="h-4 w-4" />
-                  </button>
-                )}
-                {(task.status === 'pending' || task.status === 'in_progress') &&
-                  !task.is_recurring && (
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {task.status === 'pending' && !task.is_recurring && (
                     <button
                       type="button"
-                      onClick={() => handleQuickAction(task.id, 'complete')}
-                      className="p-1.5 text-gray-400 hover:text-green-600 rounded"
-                      title={t('complete', { ns: 'common' })}
+                      onClick={() => handleQuickAction(task.id, 'start')}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
+                      title={t('start', { ns: 'common' })}
                     >
-                      <CheckCircle2 className="h-4 w-4" />
+                      <Play className="h-4 w-4" />
                     </button>
                   )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingTask(task);
-                    setShowTaskModal(true);
-                  }}
-                  className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
-                  title={t('edit', { ns: 'common' })}
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                {isAdmin && (
+                  {(task.status === 'pending' || task.status === 'in_progress') &&
+                    !task.is_recurring && (
+                      <button
+                        type="button"
+                        onClick={() => handleQuickAction(task.id, 'complete')}
+                        className="p-1.5 text-gray-400 hover:text-green-600 rounded"
+                        title={t('complete', { ns: 'common' })}
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                      </button>
+                    )}
                   <button
                     type="button"
-                    onClick={() => setDeleteConfirmTask(task)}
-                    className="p-1.5 text-gray-400 hover:text-red-600 rounded"
-                    title={t('delete', { ns: 'common' })}
+                    onClick={() => {
+                      setEditingTask(task);
+                      setShowTaskModal(true);
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
+                    title={t('edit', { ns: 'common' })}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Pencil className="h-4 w-4" />
                   </button>
-                )}
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmTask(task)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                      title={t('delete', { ns: 'common' })}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ),
+        )}
 
         {displayTasks.length === 0 && (
           <div className="bg-white rounded-lg border p-8 text-center text-gray-500">

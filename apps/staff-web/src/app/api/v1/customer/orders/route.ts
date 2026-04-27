@@ -17,7 +17,11 @@ const CreateCustomerOrderSchema = z.object({
   source: z.string().optional(),
   customer_notes: z.string().optional().nullable(),
   delivery_address: z.string().optional().nullable(),
-  delivery_phone: z.string().optional().nullable(),
+  delivery_phone: z
+    .string()
+    .regex(/^[+\d\s\-()]{7,20}$/, 'Invalid phone format')
+    .optional()
+    .nullable(),
   delivery_customer_name: z.string().optional().nullable(),
   delivery_fee: z.number().optional().nullable(),
 });

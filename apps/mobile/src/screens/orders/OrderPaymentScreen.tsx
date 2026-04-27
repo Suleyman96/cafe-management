@@ -6,8 +6,8 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Divider, RadioButton, Text } from 'react-native-paper';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
-  useCafeSettings,
   useCreatePayment,
+  useCurrencySymbol,
   useOrder,
   useOrderPayments,
   useUpdateOrderStatus,
@@ -15,6 +15,7 @@ import {
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
+import { COLORS } from '@/theme';
 import type { OrdersStackParamList } from '@/types';
 
 type Route = RouteProp<OrdersStackParamList, 'OrderPayment'>;
@@ -38,18 +39,16 @@ export default function OrderPaymentScreen() {
     [tCommon],
   );
 
-  const { data: order, isLoading, error } = useOrder(orderId);
+  const { data: order, isLoading, error, refetch } = useOrder(orderId);
   const { data: payments } = useOrderPayments(orderId);
   const createPayment = useCreatePayment();
   const updateOrderStatus = useUpdateOrderStatus();
-  const { data: settings } = useCafeSettings();
-
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
   const [method, setMethod] = useState<string>('cash');
   const [amount, setAmount] = useState('');
 
   const totalPaid = useMemo(
-    () => payments?.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) || 0,
+    () => payments?.reduce((sum: number, p: { amount: number }) => sum + (p.amount || 0), 0) || 0,
     [payments],
   );
 
@@ -63,6 +62,11 @@ export default function OrderPaymentScreen() {
     const paymentAmount = parseFloat(amount);
     if (Number.isNaN(paymentAmount) || paymentAmount <= 0) {
       showError(t('payment.validAmount'));
+      return;
+    }
+
+    if (paymentAmount > remaining) {
+      showError(t('payment.exceedsRemaining'));
       return;
     }
 
@@ -96,7 +100,8 @@ export default function OrderPaymentScreen() {
   };
 
   if (isLoading) return <LoadingScreen />;
-  if (error || !order) return <ErrorScreen error={error || t('orders.orderNotFound')} />;
+  if (error || !order)
+    return <ErrorScreen error={error || t('orders.orderNotFound')} onRetry={refetch} />;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -116,7 +121,7 @@ export default function OrderPaymentScreen() {
           </View>
           <View style={styles.summaryRow}>
             <Text variant="bodyMedium">{t('payment.alreadyPaid')}</Text>
-            <Text variant="bodyMedium" style={{ color: '#10b981', fontWeight: '600' }}>
+            <Text variant="bodyMedium" style={{ color: COLORS.success, fontWeight: '600' }}>
               {currencySymbol}
               {totalPaid.toFixed(2)}
             </Text>
@@ -128,7 +133,7 @@ export default function OrderPaymentScreen() {
             </Text>
             <Text
               variant="titleLarge"
-              style={{ color: remaining > 0 ? '#ef4444' : '#10b981', fontWeight: '700' }}
+              style={{ color: remaining > 0 ? COLORS.danger : COLORS.success, fontWeight: '700' }}
             >
               {currencySymbol}
               {remaining.toFixed(2)}
@@ -190,22 +195,24 @@ export default function OrderPaymentScreen() {
             <Text variant="titleMedium" style={styles.bold}>
               {t('orders.paymentHistory')}
             </Text>
-            {payments.map((p: any) => (
-              <View key={p.id} style={styles.paymentItem}>
-                <View>
-                  <Text variant="bodyMedium" style={{ textTransform: 'capitalize' }}>
-                    {p.payment_method}
-                  </Text>
-                  <Text variant="bodySmall" style={styles.muted}>
-                    {new Date(p.created_at).toLocaleString()}
+            {payments.map(
+              (p: { id: string; payment_method: string; amount: number; created_at: string }) => (
+                <View key={p.id} style={styles.paymentItem}>
+                  <View>
+                    <Text variant="bodyMedium" style={{ textTransform: 'capitalize' }}>
+                      {p.payment_method}
+                    </Text>
+                    <Text variant="bodySmall" style={styles.muted}>
+                      {new Date(p.created_at).toLocaleString()}
+                    </Text>
+                  </View>
+                  <Text variant="titleSmall" style={{ color: COLORS.success, fontWeight: '600' }}>
+                    {currencySymbol}
+                    {p.amount.toFixed(2)}
                   </Text>
                 </View>
-                <Text variant="titleSmall" style={{ color: '#10b981', fontWeight: '600' }}>
-                  {currencySymbol}
-                  {p.amount.toFixed(2)}
-                </Text>
-              </View>
-            ))}
+              ),
+            )}
           </Card.Content>
         </Card>
       )}
@@ -214,11 +221,11 @@ export default function OrderPaymentScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   content: { padding: 16, gap: 12, paddingBottom: 32 },
   card: {},
-  bold: { fontWeight: '700', color: '#1e293b' },
-  muted: { color: '#6b7280' },
+  bold: { fontWeight: '700', color: COLORS.textPrimary },
+  muted: { color: COLORS.textMuted },
   divider: { marginVertical: 8 },
   summaryRow: {
     flexDirection: 'row',
@@ -235,6 +242,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: COLORS.borderLight,
   },
 });

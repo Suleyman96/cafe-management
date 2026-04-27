@@ -4,7 +4,6 @@ import type { Staff } from '@/types';
 
 interface AuthStore {
   staff: Staff | null;
-  user: Staff | null; // Alias for staff
   tenantPlan: PlanName | null;
   isLoading: boolean;
   setStaff: (staff: Staff | null) => void;
@@ -15,11 +14,10 @@ interface AuthStore {
 
 export const useAuthStore = create<AuthStore>((set) => ({
   staff: null,
-  user: null,
   tenantPlan: null,
   isLoading: true,
-  setStaff: (staff) => set({ staff, user: staff, isLoading: false }),
+  setStaff: (staff) => set({ staff, isLoading: false }),
   setTenantPlan: (tenantPlan) => set({ tenantPlan }),
   setIsLoading: (isLoading) => set({ isLoading }),
-  clearAuth: () => set({ staff: null, user: null, tenantPlan: null, isLoading: false }),
+  clearAuth: () => set({ staff: null, tenantPlan: null, isLoading: false }),
 }));

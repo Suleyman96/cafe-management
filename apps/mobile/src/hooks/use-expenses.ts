@@ -1,4 +1,5 @@
 import { QUERY_KEYS } from '@gustri/core';
+import type { ExpenseCategoryUpdate, ExpenseUpdate } from '@gustri/database';
 import { useDb } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -19,8 +20,7 @@ export function useUpdateExpense() {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
-      db.expenses.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: ExpenseUpdate }) => db.expenses.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSES] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY] });
@@ -32,7 +32,7 @@ export function useUpdateExpenseCategory() {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
+    mutationFn: ({ id, data }: { id: string; data: ExpenseCategoryUpdate }) =>
       db.expenseCategories.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.EXPENSES] });

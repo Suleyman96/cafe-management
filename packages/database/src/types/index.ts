@@ -22,7 +22,6 @@ export type TablesInsert = Database['public']['Tables']['tables']['Insert'];
 export type TablesUpdate = Database['public']['Tables']['tables']['Update'];
 
 export type Category = Database['public']['Tables']['categories']['Row'];
-export type Categories = Category; // Alias for compatibility
 export type CategoriesInsert = Database['public']['Tables']['categories']['Insert'];
 export type CategoriesUpdate = Database['public']['Tables']['categories']['Update'];
 
@@ -37,7 +36,6 @@ export type OrdersInsert = Database['public']['Tables']['orders']['Insert'];
 export type OrdersUpdate = Database['public']['Tables']['orders']['Update'];
 
 export type OrderItem = Database['public']['Tables']['order_items']['Row'];
-export type OrderItems = OrderItem; // Alias for compatibility
 export type OrderItemsInsert = Database['public']['Tables']['order_items']['Insert'];
 export type OrderItemsUpdate = Database['public']['Tables']['order_items']['Update'];
 
@@ -51,7 +49,6 @@ export type StaffInsert = Database['public']['Tables']['staff']['Insert'];
 export type StaffUpdate = Database['public']['Tables']['staff']['Update'];
 
 export type CustomerFeedback = Database['public']['Tables']['customer_feedback']['Row'];
-export type Feedback = CustomerFeedback; // Alias for compatibility
 export type FeedbackInsert = Database['public']['Tables']['customer_feedback']['Insert'];
 export type FeedbackUpdate = Database['public']['Tables']['customer_feedback']['Update'];
 
@@ -65,6 +62,7 @@ export type StockMovement = Database['public']['Tables']['stock_movements']['Row
 export type StockMovementInsert = Database['public']['Tables']['stock_movements']['Insert'];
 export type ExpenseCategory = Database['public']['Tables']['expense_categories']['Row'];
 export type ExpenseCategoryInsert = Database['public']['Tables']['expense_categories']['Insert'];
+export type ExpenseCategoryUpdate = Database['public']['Tables']['expense_categories']['Update'];
 export type Expense = Database['public']['Tables']['expenses']['Row'];
 export type ExpenseInsert = Database['public']['Tables']['expenses']['Insert'];
 export type ExpenseUpdate = Database['public']['Tables']['expenses']['Update'];
@@ -89,6 +87,10 @@ export type DeliveryCustomer = Database['public']['Tables']['delivery_customers'
 export type DeliveryCustomerInsert = Database['public']['Tables']['delivery_customers']['Insert'];
 export type DeliveryCustomerUpdate = Database['public']['Tables']['delivery_customers']['Update'];
 
+export type TaskCategory = Database['public']['Tables']['task_categories']['Row'];
+export type CafeSettings = Database['public']['Tables']['cafe_settings']['Row'];
+export type CafeSettingsUpdate = Database['public']['Tables']['cafe_settings']['Update'];
+
 // Discriminated union types for Order based on order_type
 export interface DineInOrder extends Order {
   order_type: 'dine_in';
@@ -112,7 +114,8 @@ export type TypedOrder = DineInOrder | DeliveryOrder | TakeoutOrder;
 export interface OrderWithDetails extends Order {
   table: Pick<Table, 'table_number' | 'location'>;
   order_items: OrderItemWithMenuItem[];
-  assigned_waiter?: Pick<Staff, 'full_name'>;
+  assigned_waiter?: Pick<Staff, 'full_name'> | null;
+  delivery_person?: Pick<Staff, 'full_name'> | null;
 }
 
 export interface OrderItemWithMenuItem extends OrderItem {
@@ -184,6 +187,12 @@ export interface OrderWithItems extends Order {
   order_items: OrderItemWithMenuItem[];
   order_payments?: OrderPayment[];
   table_transfers?: TableTransferWithDetails[];
+}
+
+// Delivery order with details
+export interface DeliveryOrderWithDetails extends Order {
+  order_items: OrderItemWithMenuItem[];
+  delivery_person?: Pick<Staff, 'full_name'> | null;
 }
 
 // Cart item (client-side only)

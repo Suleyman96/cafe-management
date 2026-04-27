@@ -56,6 +56,7 @@
   "deliveryLanding.errorAddress": "Por favor, introduzca su dirección de entrega",
   "deliveryLanding.errorName": "Por favor, introduzca su nombre",
   "deliveryLanding.errorPhone": "Por favor, introduzca su número de teléfono",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.heroSubtext": "Complete sus datos y explore nuestro menú",
   "deliveryLanding.heroTitle": "Pedir a domicilio",
   "deliveryLanding.labelAddress": "Dirección de entrega *",

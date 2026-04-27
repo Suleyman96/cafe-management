@@ -12,6 +12,7 @@ type Category = Database['public']['Tables']['categories']['Row'];
 
 interface CategoryModalProps {
   category?: Category;
+  categories?: Category[];
   onClose: () => void;
 }
 
@@ -33,17 +34,23 @@ const COMMON_ICONS = [
   '🌮',
 ];
 
-export function CategoryModal({ category, onClose }: CategoryModalProps) {
+export function CategoryModal({ category, categories = [], onClose }: CategoryModalProps) {
   const { t } = useTranslation('staff');
   const isEditing = !!category;
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
 
+  const nextDisplayOrder = isEditing
+    ? category.display_order?.toString() || '0'
+    : String(
+        categories.length > 0 ? Math.max(...categories.map((c) => c.display_order ?? 0)) + 1 : 1,
+      );
+
   const [formData, setFormData] = useState({
     name: category?.name || '',
     description: category?.description || '',
     icon: category?.icon || '📁',
-    display_order: category?.display_order?.toString() || '0',
+    display_order: nextDisplayOrder,
     is_active: category?.is_active !== false,
   });
 

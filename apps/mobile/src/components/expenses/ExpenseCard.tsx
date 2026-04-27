@@ -24,14 +24,14 @@ interface ExpenseCardProps {
     category?: { name: string } | null;
     created_by_staff?: { full_name: string } | null;
   };
-  currencySymbol?: string;
+  currencySymbol: string;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
 
 export const ExpenseCard = React.memo(function ExpenseCard({
   expense,
-  currencySymbol = '$',
+  currencySymbol,
   onEdit,
   onDelete,
 }: ExpenseCardProps) {

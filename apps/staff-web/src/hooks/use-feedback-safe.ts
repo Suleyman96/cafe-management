@@ -12,7 +12,8 @@ type CustomerFeedback = Database['public']['Tables']['customer_feedback']['Row']
 export function useFeedback(status?: 'pending' | 'acknowledged') {
   return useQuery({
     queryKey: [QUERY_KEYS.FEEDBACK, status],
-    queryFn: async (): Promise<CustomerFeedback[]> => db.feedback.findAll(status),
+    queryFn: async (): Promise<CustomerFeedback[]> =>
+      db.feedback.findAll(status ? { status } : undefined),
   });
 }
 

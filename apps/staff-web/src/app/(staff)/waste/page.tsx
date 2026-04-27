@@ -6,6 +6,7 @@ import { Button, LoadingSpinner } from '@gustri/ui';
 import { DollarSign, Pencil, Plus, Trash2, TrendingDown } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { WasteLogModal } from '@/components/modals/waste-log-modal';
 import { useCafeSettings, useDeleteWasteLog, useWasteLogs, useWasteMonthlySummary } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
@@ -20,6 +21,7 @@ export default function WastePage() {
   const [reasonFilter, setReasonFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingLog, setEditingLog] = useState<WasteLog | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const REASON_LABELS: Record<string, string> = {
     expired: t('waste.expired'),
@@ -56,14 +58,16 @@ export default function WastePage() {
   const { data: cafeSettings } = useCafeSettings();
   const deleteWaste = useDeleteWasteLog();
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this waste log?')) return;
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return;
     try {
-      await deleteWaste.mutateAsync(id);
+      await deleteWaste.mutateAsync(deletingId);
       toast.success(t('waste.wasteLogDeleted'));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t('delete', { ns: 'common' });
       toast.error(message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -162,7 +166,7 @@ export default function WastePage() {
         <div className="bg-white rounded-lg border p-4 mb-6">
           <h3 className="text-sm font-medium text-gray-700 mb-3">{t('waste.byReason')}</h3>
           <div className="space-y-2">
-            {summary.byReason.map((item: any) => {
+            {summary.byReason.map((item) => {
               const percentage = summary.totalCost > 0 ? (item.total / summary.totalCost) * 100 : 0;
               return (
                 <div key={item.reason} className="flex items-center gap-3">
@@ -259,56 +263,62 @@ export default function WastePage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {wasteLogs.map((log: any) => (
-                <tr key={log.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {new Date(log.waste_date).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-gray-900 truncate max-w-xs">{log.item_name}</p>
-                    {log.notes && (
-                      <p className="text-xs text-gray-500 truncate max-w-xs">{log.notes}</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                    {log.quantity} {log.unit}
-                  </td>
-                  <td className="px-4 py-3 text-sm font-medium text-red-600 text-right">
-                    {formatPrice(log.total_cost)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full font-medium ${REASON_COLORS[log.reason] || 'bg-gray-100 text-gray-600'}`}
-                    >
-                      {REASON_LABELS[log.reason] || log.reason}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {log.logged_by_staff?.full_name || '-'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => {
-                          setEditingLog(log);
-                          setShowModal(true);
-                        }}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
-                        title={t('edit', { ns: 'common' })}
+              {wasteLogs.map(
+                (
+                  log: (typeof wasteLogs)[number] & {
+                    logged_by_staff?: { full_name: string } | null;
+                  },
+                ) => (
+                  <tr key={log.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {new Date(log.waste_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-gray-900 truncate max-w-xs">{log.item_name}</p>
+                      {log.notes && (
+                        <p className="text-xs text-gray-500 truncate max-w-xs">{log.notes}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                      {log.quantity} {log.unit}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-medium text-red-600 text-right">
+                      {formatPrice(log.total_cost)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full font-medium ${REASON_COLORS[log.reason] || 'bg-gray-100 text-gray-600'}`}
                       >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(log.id)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 rounded"
-                        title={t('delete', { ns: 'common' })}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {REASON_LABELS[log.reason] || log.reason}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {log.logged_by_staff?.full_name || '-'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => {
+                            setEditingLog(log);
+                            setShowModal(true);
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
+                          title={t('edit', { ns: 'common' })}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingId(log.id)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                          title={t('delete', { ns: 'common' })}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ),
+              )}
               {wasteLogs.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
@@ -331,6 +341,15 @@ export default function WastePage() {
           }}
         />
       )}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deletingId}
+        onClose={() => setDeletingId(null)}
+        onConfirm={handleConfirmDelete}
+        title={t('delete', { ns: 'common' })}
+        message={t('waste.confirmDeleteWasteLog')}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { getRoleBadgeColor } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { ChevronDown, LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
@@ -25,19 +26,6 @@ export function UserMenu() {
   }, []);
 
   if (!staff) return null;
-
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-purple-100 text-purple-800';
-      case 'waiter':
-        return 'bg-blue-100 text-blue-800';
-      case 'kitchen':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   return (
     <div className="relative" ref={menuRef}>

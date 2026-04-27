@@ -1,46 +1,62 @@
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+const hasRedis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
 
-const limiters = {
-  'order-create': new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(30, '60 s'),
-    prefix: 'rl:order-create',
-  }),
-  payment: new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(20, '60 s'),
-    prefix: 'rl:payment',
-  }),
-  discount: new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(20, '60 s'),
-    prefix: 'rl:discount',
-  }),
-  staff: new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(10, '60 s'),
-    prefix: 'rl:staff',
-  }),
-  'password-reset': new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(5, '300 s'),
-    prefix: 'rl:password-reset',
-  }),
-};
+const redis = hasRedis
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    })
+  : null;
 
-export type RateLimitCategory = keyof typeof limiters;
+const limiters = redis
+  ? {
+      'order-create': new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(30, '60 s'),
+        prefix: 'rl:order-create',
+      }),
+      payment: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(20, '60 s'),
+        prefix: 'rl:payment',
+      }),
+      discount: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(20, '60 s'),
+        prefix: 'rl:discount',
+      }),
+      staff: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(10, '60 s'),
+        prefix: 'rl:staff',
+      }),
+      'password-reset': new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(5, '300 s'),
+        prefix: 'rl:password-reset',
+      }),
+    }
+  : null;
+
+export type RateLimitCategory =
+  | 'order-create'
+  | 'payment'
+  | 'discount'
+  | 'staff'
+  | 'password-reset';
 
 export async function rateLimit(
   category: RateLimitCategory,
   identifier: string,
 ): Promise<{ success: boolean; remaining: number; resetAt: number }> {
-  const result = await limiters[category].limit(identifier);
+  // Skip rate limiting in development when Upstash is not configured
+  if (!hasRedis) {
+    return { success: true, remaining: 999, resetAt: 0 };
+  }
+
+  const result = await limiters![category].limit(identifier);
   return {
     success: result.success,
     remaining: result.remaining,
@@ -61,8 +77,20 @@ export function getRateLimitIdentifier(request: Request): string {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
-    return ips[ips.length - 1] || 'unknown';
+    if (ips.length > 0) return ips[ips.length - 1];
   }
 
+  // Fallback: use Authorization header hash to isolate per-session.
+  // Prevents one anonymous client from exhausting the limit for all.
+  const auth = request.headers.get('authorization');
+  if (auth) {
+    let hash = 0;
+    for (let i = 0; i < auth.length; i++) {
+      hash = ((hash << 5) - hash + auth.charCodeAt(i)) | 0;
+    }
+    return `session:${hash}`;
+  }
+
+  // Vercel always sets x-real-ip. This fallback is for local dev / non-Vercel hosting.
   return 'unknown';
 }

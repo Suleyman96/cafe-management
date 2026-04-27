@@ -16,7 +16,7 @@ describe('useWaiterCalls', () => {
 
   it('passes status filter', () => {
     const { mockDb } = renderHookWithProviders(() => useWaiterCalls('pending' as any));
-    expect(mockDb.waiterCalls.findAll).toHaveBeenCalledWith('pending');
+    expect(mockDb.waiterCalls.findAll).toHaveBeenCalledWith({ status: 'pending' });
   });
 });
 

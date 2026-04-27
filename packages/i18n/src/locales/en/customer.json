@@ -20,6 +20,18 @@
   "table.status.readyToServe": "Ready to Serve",
   "table.status.served": "Served",
 
+  "time.justNow": "just now",
+  "time.minutesAgo": "{{count}} min ago",
+  "time.hoursAgo_one": "{{count}} hour ago",
+  "time.hoursAgo_other": "{{count}} hours ago",
+  "time.daysAgo_one": "{{count}} day ago",
+  "time.daysAgo_other": "{{count}} days ago",
+
+  "tableLanding.qrNotAvailable": "QR ordering is not available.",
+  "tableLanding.orderAtCounter": "Please order at the counter.",
+  "tableLanding.poweredBy": "Powered by",
+  "tableLanding.items": "items",
+
   "menu.title": "Menu",
   "menu.searchPlaceholder": "Search menu...",
   "menu.filterVegetarian": "Vegetarian",
@@ -147,6 +159,9 @@
   "deliveryStatus.banner.delivered": "Your order has been delivered!",
   "deliveryStatus.orderItemsTitle": "Order Items",
 
+  "delivery.cart": "Cart",
+  "delivery.restaurantFallback": "Restaurant",
+
   "deliveryLanding.unavailableTitle": "Delivery Not Available",
   "deliveryLanding.unavailableSubtext": "Delivery ordering is currently not available. Please try again later.",
   "deliveryLanding.heroTitle": "Order for Delivery",
@@ -163,6 +178,7 @@
   "deliveryLanding.deliveryFeeInfo": "Delivery fee: {{fee}} {{currency}} \u00b7 Minimum order: {{min}} {{currency}}",
   "deliveryLanding.errorName": "Please enter your name",
   "deliveryLanding.errorPhone": "Please enter your phone number",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.errorAddress": "Please enter your delivery address",
 
   "feedback.successTitle": "Thank You!",

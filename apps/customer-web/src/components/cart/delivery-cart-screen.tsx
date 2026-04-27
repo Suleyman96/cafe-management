@@ -7,6 +7,7 @@ import { ArrowLeft, Edit3, MapPin, Phone, Truck, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useCartItemNotes } from '@/hooks/use-cart-item-notes';
 import { useAddDeliveryOrderItems, useCreateDeliveryOrder } from '@/hooks/use-delivery';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useCafeSettings } from '@/hooks/use-settings';
@@ -19,12 +20,18 @@ import { CartPriceSummary } from './cart-price-summary';
 export function DeliveryCartScreen() {
   const router = useRouter();
   const { t } = useTranslation('customer');
-  const { items, updateQuantity, updateNotes, removeItem, clearCart, getTotal } = useCartStore();
+  const { items, updateQuantity, removeItem, clearCart, getTotal } = useCartStore();
   const { customerName, customerPhone, deliveryAddress, deliveryNotes, setLastOrderId } =
     useDeliveryStore();
   const [orderNotes, setOrderNotes] = useState('');
-  const [editingNotes, setEditingNotes] = useState<string | null>(null);
-  const [tempNotes, setTempNotes] = useState<Record<string, string>>({});
+  const {
+    editingNotes,
+    tempNotes,
+    onEditNotes,
+    onCancelEditNotes,
+    onSaveNotes,
+    onTempNotesChange,
+  } = useCartItemNotes();
 
   const createDeliveryOrder = useCreateDeliveryOrder();
   const addDeliveryOrderItems = useAddDeliveryOrderItems();
@@ -81,7 +88,7 @@ export function DeliveryCartScreen() {
       setLastOrderId(order.id);
       toast.success(t('deliveryCart.orderSuccess'));
       clearCart();
-      router.push(`/delivery/order/${order.id}`);
+      router.push(`/delivery/order/${order.id}?token=${order.delivery_access_token}`);
     } catch (error) {
       Sentry.captureException(error);
       toast.error(t('deliveryCart.orderError'));
@@ -159,22 +166,10 @@ export function DeliveryCartScreen() {
               allowItemNotes={settings?.allow_item_notes !== false}
               editingNotes={editingNotes}
               tempNotes={tempNotes}
-              onEditNotes={(id, notes) => {
-                setEditingNotes(id);
-                setTempNotes({ ...tempNotes, [id]: notes });
-              }}
-              onCancelEditNotes={(id) => {
-                setEditingNotes(null);
-                const { [id]: _, ...rest } = tempNotes;
-                setTempNotes(rest);
-              }}
-              onSaveNotes={(id, notes) => {
-                updateNotes(id, notes);
-                setEditingNotes(null);
-                const { [id]: _, ...rest } = tempNotes;
-                setTempNotes(rest);
-              }}
-              onTempNotesChange={(id, value) => setTempNotes({ ...tempNotes, [id]: value })}
+              onEditNotes={onEditNotes}
+              onCancelEditNotes={onCancelEditNotes}
+              onSaveNotes={onSaveNotes}
+              onTempNotesChange={onTempNotesChange}
               onRemoveItem={removeItem}
               onUpdateQuantity={updateQuantity}
               formatPrice={formatPrice}

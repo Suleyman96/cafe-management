@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { calculateOrderTotal } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { Linking, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -21,14 +22,14 @@ interface DeliveryOrderCardProps {
     order_items?: Array<{
       id: string;
       quantity: number;
-      item_price?: number;
+      item_price: number;
       status?: string;
       notes?: string | null;
-      menu_item?: { name_en?: string | null; name?: string | null } | null;
+      menu_item?: { name?: string | null } | null;
     }>;
     delivery_person?: { full_name: string } | null;
   };
-  currencySymbol?: string;
+  currencySymbol: string;
   onApprove?: (orderId: string) => void;
   onStartPreparing?: (orderId: string) => void;
   onMarkReady?: (orderId: string) => void;
@@ -37,16 +38,6 @@ interface DeliveryOrderCardProps {
   onCancel?: (orderId: string) => void;
 }
 
-const calculateOrderTotal = (order: DeliveryOrderCardProps['order']) => {
-  if (order?.total != null) return order.total;
-  if (order?.total_amount != null) return order.total_amount;
-  if (!order?.order_items) return 0;
-  return order.order_items.reduce(
-    (sum, item) => sum + (item.quantity || 0) * (item.item_price || 0),
-    0,
-  );
-};
-
 const openInMaps = (address: string) => {
   const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   Linking.openURL(url);
@@ -54,7 +45,7 @@ const openInMaps = (address: string) => {
 
 export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
   order,
-  currencySymbol = '$',
+  currencySymbol,
   onApprove,
   onStartPreparing,
   onMarkReady,
@@ -65,7 +56,7 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
 
-  const grandTotal = calculateOrderTotal(order); // already includes delivery_fee from DB
+  const grandTotal = calculateOrderTotal({ ...order, total: order.total ?? order.total_amount }); // already includes delivery_fee from DB
   const deliveryFee = order.delivery_fee ?? 0;
   const hasItems = order.order_items?.some((i) => i.status !== 'cancelled') ?? false;
 
@@ -155,7 +146,7 @@ export const DeliveryOrderCard = React.memo(function DeliveryOrderCard({
             {order.order_items.slice(0, 3).map((item) => (
               <View key={item.id} style={styles.itemRow}>
                 <Text variant="bodySmall" style={styles.itemText}>
-                  {item.quantity}x {item.menu_item?.name_en || item.menu_item?.name || 'Item'}
+                  {item.quantity}x {item.menu_item?.name || 'Item'}
                 </Text>
                 {item.notes && (
                   <Text variant="bodySmall" style={styles.itemNotes}>

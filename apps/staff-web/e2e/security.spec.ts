@@ -15,6 +15,12 @@ test.describe('Security', () => {
   });
 
   test('customer API endpoint is rate limited', async ({ request }) => {
+    // Rate limiting requires Upstash Redis — skip when not configured (CI / local dev)
+    test.skip(
+      !process.env.UPSTASH_REDIS_REST_URL,
+      'Rate limiting not enforced (Redis not configured)',
+    );
+
     // Send many requests quickly to trigger rate limiting
     const requests = [];
     for (let i = 0; i < 35; i++) {

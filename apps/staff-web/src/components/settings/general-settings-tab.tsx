@@ -3,7 +3,7 @@
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
 import { NumberInput } from '@gustri/ui';
 import { ClipboardList, DollarSign, Receipt, Store, Truck } from 'lucide-react';
-import type { SettingsTabProps } from './settings-types';
+import type { SettingsTabProps } from '@/types/settings';
 
 export function GeneralSettingsTab({ formData, onChange }: SettingsTabProps) {
   const { t } = useTranslation('staff');

@@ -1,19 +1,18 @@
+import { ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { Chip, Searchbar } from 'react-native-paper';
+import { RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { OrderCard } from '@/components/orders/OrderCard';
-import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useOrders } from '@/hooks';
-import { useCafeSettings } from '@/hooks/use-cafe-settings';
-import { ORDER_STATUS_COLORS } from '@/theme';
+import { EmptyState, ErrorScreen, FilterChipBar, LoadingScreen } from '@/components/ui';
+import { useCurrencySymbol, useOrders } from '@/hooks';
+import { BRAND_PRIMARY, COLORS, ORDER_STATUS_COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, OrdersStackParamList } from '@/types';
 
 type Nav = StackNavigationProp<OrdersStackParamList, 'OrdersList'>;
 
-// The wrapper's findAll returns joined data beyond the base Order type
 type OrderWithJoins = Order & {
   table?: { table_number: string; location: string | null };
   order_items?: OrderItemWithMenuItem[];
@@ -33,28 +32,25 @@ const STATUS_FILTERS = [
   'cancelled',
 ] as const;
 
-const STATUS_LABEL_KEYS: Record<string, string> = {
-  pending_approval: 'orders.pendingApproval',
-  new: 'orders.new',
-  preparing: 'orders.preparing',
-  ready: 'orders.ready',
-  served: 'orders.served',
-  out_for_delivery: 'orders.outForDelivery',
-  delivered: 'orders.delivered',
-  closed: 'orders.closed',
-  cancelled: 'orders.cancelled',
-};
-
 export default function OrdersListScreen() {
   const navigation = useNavigation<Nav>();
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
   const { data: orders, isLoading, error, refetch } = useOrders();
-  const { data: settings } = useCafeSettings();
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
 
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [search, setSearch] = useState('');
+
+  const filterOptions = useMemo(
+    () =>
+      STATUS_FILTERS.map((s) => ({
+        key: s,
+        label: s === 'all' ? tCommon('all') : t(ORDER_STATUS_KEYS[s] || s),
+        color: s === 'all' ? BRAND_PRIMARY : ORDER_STATUS_COLORS[s]?.text || BRAND_PRIMARY,
+      })),
+    [t, tCommon],
+  );
 
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
@@ -81,34 +77,26 @@ export default function OrdersListScreen() {
 
   return (
     <View style={styles.container}>
-      <Searchbar
-        placeholder={t('orders.searchByOrderNumber')}
-        value={search}
-        onChangeText={setSearch}
-        style={styles.searchbar}
+      {/* Search */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          placeholder={t('orders.searchByOrderNumber')}
+          value={search}
+          onChangeText={setSearch}
+          style={styles.searchInput}
+          placeholderTextColor={COLORS.textLight}
+          accessibilityLabel={t('orders.searchByOrderNumber')}
+        />
+      </View>
+
+      {/* Status filter chips */}
+      <FilterChipBar
+        options={filterOptions}
+        selected={selectedStatus}
+        onSelect={setSelectedStatus}
       />
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
-        {STATUS_FILTERS.map((s) => (
-          <Chip
-            key={s}
-            selected={selectedStatus === s}
-            onPress={() => setSelectedStatus(s)}
-            style={[
-              styles.filterChip,
-              selectedStatus === s && {
-                backgroundColor: s === 'all' ? '#2563eb' : ORDER_STATUS_COLORS[s] || '#2563eb',
-              },
-            ]}
-            textStyle={selectedStatus === s ? { color: '#fff' } : undefined}
-            compact
-          >
-            {s === 'all' ? tCommon('all') : t(STATUS_LABEL_KEYS[s] || s)}
-          </Chip>
-        ))}
-      </ScrollView>
-
-      <FlatList
+      <FlashList
         data={filteredOrders}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
@@ -130,7 +118,7 @@ export default function OrdersListScreen() {
                     status:
                       selectedStatus === 'all'
                         ? ''
-                        : t(STATUS_LABEL_KEYS[selectedStatus] || selectedStatus),
+                        : t(ORDER_STATUS_KEYS[selectedStatus] || selectedStatus),
                   })
             }
           />
@@ -144,19 +132,21 @@ export default function OrdersListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background,
   },
-  searchbar: {
+  searchContainer: {
     marginHorizontal: 16,
     marginTop: 8,
   },
-  filterRow: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    maxHeight: 52,
-  },
-  filterChip: {
-    marginHorizontal: 4,
+  searchInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    backgroundColor: COLORS.card,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: COLORS.textPrimary,
   },
   list: {
     paddingTop: 4,

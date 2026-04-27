@@ -1,22 +1,17 @@
-'use client';
+import { createSupabaseWrapper } from '@gustri/api-client';
+import { DeliveryMenuContent } from '@/components/menu/delivery-menu-content';
+import { createServerSupabase } from '@/lib/supabase-server';
 
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { MenuScreen } from '@/components/menu/menu-screen';
-import { useDeliveryStore } from '@/store/delivery-store';
+export default async function DeliveryMenuPage() {
+  const supabase = createServerSupabase();
+  const db = createSupabaseWrapper(supabase);
 
-export default function DeliveryMenuPage() {
-  const router = useRouter();
-  const { customerName, deliveryAddress } = useDeliveryStore();
+  const [categories, menuItems] = await Promise.all([
+    db.categories.findAll({ isActive: true }),
+    db.menuItems.findAll({ isAvailable: true }),
+  ]);
 
-  // Redirect to delivery landing if customer info not filled
-  useEffect(() => {
-    if (!customerName || !deliveryAddress) {
-      router.replace('/delivery');
-    }
-  }, [customerName, deliveryAddress, router]);
-
-  if (!customerName || !deliveryAddress) return null;
-
-  return <MenuScreen tableId="__delivery__" />;
+  return (
+    <DeliveryMenuContent initialCategories={categories ?? []} initialMenuItems={menuItems ?? []} />
+  );
 }

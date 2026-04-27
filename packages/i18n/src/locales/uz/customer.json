@@ -56,6 +56,7 @@
   "deliveryLanding.errorAddress": "Yetkazib berish manzilingizni kiriting",
   "deliveryLanding.errorName": "Ismingizni kiriting",
   "deliveryLanding.errorPhone": "Telefon raqamingizni kiriting",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.heroSubtext": "Ma'lumotlaringizni to'ldiring va menyumizni ko'ring",
   "deliveryLanding.heroTitle": "Yetkazib berishga buyurtma",
   "deliveryLanding.labelAddress": "Yetkazib berish manzili *",

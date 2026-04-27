@@ -29,7 +29,7 @@ export default function WaiterCallsPage() {
   const [filter, setFilter] = useState<FilterStatus>('pending');
 
   // Filter calls based on status
-  const filteredCalls = waiterCalls?.filter((call: any) => {
+  const filteredCalls = waiterCalls?.filter((call) => {
     if (filter === 'all') return true;
     return call.status === filter;
   });
@@ -143,8 +143,7 @@ export default function WaiterCallsPage() {
     );
   }
 
-  const pendingCallsCount =
-    waiterCalls?.filter((call: any) => call.status === 'pending').length || 0;
+  const pendingCallsCount = waiterCalls?.filter((call) => call.status === 'pending').length || 0;
 
   return (
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
@@ -212,93 +211,100 @@ export default function WaiterCallsPage() {
 
       {/* Calls List */}
       <div className="space-y-3 sm:space-y-4">
-        {filteredCalls?.map((call: any) => {
-          const callType = call.call_type || 'assistance';
-          const isEmergency = callType === 'emergency';
-          const isPending = call.status === 'pending';
-          const isAcknowledged = call.status === 'acknowledged';
-          const isActive = isPending || isAcknowledged;
+        {filteredCalls?.map(
+          (
+            call: (typeof filteredCalls)[number] & {
+              table?: { table_number: string; location?: string };
+            },
+          ) => {
+            const callType = call.call_type || 'assistance';
+            const isEmergency = callType === 'emergency';
+            const isPending = call.status === 'pending';
+            const isAcknowledged = call.status === 'acknowledged';
+            const isActive = isPending || isAcknowledged;
 
-          return (
-            <div
-              key={call.id}
-              className={`
+            return (
+              <div
+                key={call.id}
+                className={`
                 border rounded-lg p-3 sm:p-4 transition-all bg-white
                 ${isPending && isEmergency ? 'ring-2 ring-red-500 animate-pulse' : ''}
                 ${!isActive ? 'opacity-60' : ''}
               `}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                <div className="flex-1">
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getCallTypeColor(callType)}`}
-                    >
-                      {getCallTypeIcon(callType)}
-                      <span>{getCallTypeLabel(callType)}</span>
-                    </span>
-                    <span className="text-base sm:text-lg font-semibold">
-                      {call.table?.table_number ? `#${call.table.table_number}` : '—'}
-                    </span>
-                    <span className="text-xs sm:text-sm text-gray-500">
-                      {formatTimeAgo(call.created_at)}
-                    </span>
-                    {isAcknowledged && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                        <Clock className="h-3 w-3" />
-                        {t('calls.acknowledged')}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getCallTypeColor(callType)}`}
+                      >
+                        {getCallTypeIcon(callType)}
+                        <span>{getCallTypeLabel(callType)}</span>
                       </span>
+                      <span className="text-base sm:text-lg font-semibold">
+                        {call.table?.table_number ? `#${call.table.table_number}` : '—'}
+                      </span>
+                      <span className="text-xs sm:text-sm text-gray-500">
+                        {formatTimeAgo(call.created_at)}
+                      </span>
+                      {isAcknowledged && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                          <Clock className="h-3 w-3" />
+                          {t('calls.acknowledged')}
+                        </span>
+                      )}
+                    </div>
+
+                    {call.notes && (
+                      <div className="mb-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs sm:text-sm text-gray-700">{call.notes}</p>
+                      </div>
+                    )}
+
+                    {call.resolved_at && (
+                      <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
+                        <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
+                        <span>
+                          {t('calls.resolved')} {formatTimeAgo(call.resolved_at)}
+                        </span>
+                      </div>
                     )}
                   </div>
 
-                  {call.notes && (
-                    <div className="mb-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs sm:text-sm text-gray-700">{call.notes}</p>
-                    </div>
-                  )}
-
-                  {call.resolved_at && (
-                    <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
-                      <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
-                      <span>
-                        {t('calls.resolved')} {formatTimeAgo(call.resolved_at)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex gap-2 w-full sm:w-auto">
-                  {isPending && (
-                    <Button
-                      onClick={() => handleAcknowledge(call.id)}
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 sm:flex-none"
-                    >
-                      <Bell className="h-4 w-4 mr-1" />
-                      {t('calls.acknowledge')}
-                    </Button>
-                  )}
-                  {isActive && (
-                    <Button
-                      onClick={() => handleResolve(call.id)}
-                      size="sm"
-                      className="flex-1 sm:flex-none"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      {t('calls.resolve')}
-                    </Button>
-                  )}
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    {isPending && (
+                      <Button
+                        onClick={() => handleAcknowledge(call.id)}
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 sm:flex-none"
+                      >
+                        <Bell className="h-4 w-4 mr-1" />
+                        {t('calls.acknowledge')}
+                      </Button>
+                    )}
+                    {isActive && (
+                      <Button
+                        onClick={() => handleResolve(call.id)}
+                        size="sm"
+                        className="flex-1 sm:flex-none"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        {t('calls.resolve')}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          },
+        )}
 
         {filteredCalls?.length === 0 && (
           <div className="text-center py-8 sm:py-12 text-gray-500">
             <Bell className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 text-gray-300" />
             <p className="text-sm sm:text-base">{t('calls.noCalls')}</p>
+            <p className="text-xs sm:text-sm text-gray-400 mt-1">{t('calls.noCallsDescription')}</p>
           </div>
         )}
       </div>

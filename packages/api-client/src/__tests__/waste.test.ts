@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { WasteLogRow } from '../wrapper/types';
 import { createWasteWrapper } from '../wrapper/waste';
 import { createMockContext } from './helpers/mock-supabase';
 
@@ -151,7 +152,7 @@ describe('WasteWrapper', () => {
       },
     });
     const waste = createWasteWrapper(ctx);
-    const result = (await waste.getTopWastedItems(5)) as any[];
+    const result: WasteLogRow[] = await waste.getTopWastedItems(5);
     expect(result).toHaveLength(2);
     expect(result[0].item_name).toBe('Tomatoes');
   });

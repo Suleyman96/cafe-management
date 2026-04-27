@@ -17,7 +17,7 @@ interface StockItemCardProps {
     supplier_name?: string | null;
     notes?: string | null;
   };
-  currencySymbol?: string;
+  currencySymbol: string;
   onAddStock: (id: string) => void;
   onRemoveStock: (id: string) => void;
   onViewHistory: (id: string) => void;
@@ -27,7 +27,7 @@ interface StockItemCardProps {
 
 export const StockItemCard = React.memo(function StockItemCard({
   item,
-  currencySymbol = '$',
+  currencySymbol,
   onAddStock,
   onRemoveStock,
   onViewHistory,

@@ -26,12 +26,12 @@ interface WasteLogCardProps {
     stock_item?: { name: string } | null;
     staff?: { full_name: string } | null;
   };
-  currencySymbol?: string;
+  currencySymbol: string;
 }
 
 export const WasteLogCard = React.memo(function WasteLogCard({
   log,
-  currencySymbol = '$',
+  currencySymbol,
 }: WasteLogCardProps) {
   const { t } = useTranslation('staff');
   const reason = log.reason || 'other';

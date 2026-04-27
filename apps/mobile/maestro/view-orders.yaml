@@ -1,0 +1,19 @@
+appId: com.gustri.app
+---
+- launchApp
+# Login
+- tapOn: "Email address"
+- inputText: "admin@test.com"
+- tapOn: "Password"
+- inputText: "test1234"
+- tapOn:
+    text: "Sign in"
+- assertVisible:
+    text: "Tables|Orders"
+    timeout: 15000
+
+# Navigate to orders tab
+- tapOn: "Orders"
+- assertVisible:
+    text: "Orders"
+    timeout: 10000

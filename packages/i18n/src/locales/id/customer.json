@@ -56,6 +56,7 @@
   "deliveryLanding.errorAddress": "Silakan masukkan alamat pengiriman Anda",
   "deliveryLanding.errorName": "Silakan masukkan nama Anda",
   "deliveryLanding.errorPhone": "Silakan masukkan nomor telepon Anda",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.heroSubtext": "Isi data Anda dan jelajahi menu kami",
   "deliveryLanding.heroTitle": "Pesan untuk Pengiriman",
   "deliveryLanding.labelAddress": "Alamat Pengiriman *",

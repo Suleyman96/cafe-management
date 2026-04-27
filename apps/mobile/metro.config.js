@@ -15,9 +15,11 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
-// Force single React version — redirect all 'react' imports to mobile's copy
+// Force single copies — redirect shared dependencies to mobile's copy
+// to prevent duplicate React contexts from pnpm's isolated node_modules
 const mobileReact = path.resolve(projectRoot, 'node_modules/react');
 const mobileReactNative = path.resolve(projectRoot, 'node_modules/react-native');
+const mobileReactQuery = path.resolve(projectRoot, 'node_modules/@tanstack/react-query');
 const originalResolveRequest = config.resolver.resolveRequest;
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
@@ -37,6 +39,14 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     return {
       type: 'sourceFile',
       filePath: require.resolve(mobileReactNative),
+    };
+  }
+  // Force single @tanstack/react-query — prevents "No QueryClient set" error
+  // when @gustri/queries resolves a different copy than the mobile app
+  if (moduleName === '@tanstack/react-query') {
+    return {
+      type: 'sourceFile',
+      filePath: require.resolve(mobileReactQuery),
     };
   }
 

@@ -26,6 +26,7 @@ export {
 // Composite hook: derives open task count for a specific staff member
 export function useMyOpenTasksCount(staffId: string) {
   const { data: myTasks } = useMyTasksShared(staffId);
-  return (myTasks || []).filter((t: any) => t.status === 'pending' || t.status === 'in_progress')
-    .length;
+  return (myTasks || []).filter(
+    (task) => task.status === 'pending' || task.status === 'in_progress',
+  ).length;
 }

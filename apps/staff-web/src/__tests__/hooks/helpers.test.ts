@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { getFeedbackTypeInfo } from '@/hooks/use-feedback-safe';
-import { formatPaymentMethod } from '@/hooks/use-payments-safe';
 import { calculateTax, calculateTotal, formatPriceWithSettings } from '@/hooks/use-settings-safe';
-import { formatStaffInfo } from '@/hooks/use-staff-safe';
+
 import { getTransferReasonKey } from '@/hooks/use-table-transfers-safe';
-import { getCallTypeInfo, getPriorityInfo } from '@/hooks/use-waiter-calls-safe';
 
 // --- Settings helpers ---
 
@@ -91,104 +89,6 @@ describe('calculateTotal', () => {
 
   it('handles zero subtotal', () => {
     expect(calculateTotal(0, makeSettings())).toBe(0);
-  });
-});
-
-// --- Staff helpers ---
-
-describe('formatStaffInfo', () => {
-  it('formats name with role', () => {
-    expect(formatStaffInfo({ full_name: 'John Doe', role: 'admin' })).toBe('John Doe (Admin)');
-  });
-
-  it('formats name with waiter role', () => {
-    expect(formatStaffInfo({ full_name: 'Jane', role: 'waiter' })).toBe('Jane (Waiter)');
-  });
-
-  it('formats name without role', () => {
-    expect(formatStaffInfo({ full_name: 'John Doe' })).toBe('John Doe');
-  });
-
-  it('formats name with null role', () => {
-    expect(formatStaffInfo({ full_name: 'John Doe', role: null })).toBe('John Doe');
-  });
-});
-
-// --- Payment helpers ---
-
-describe('formatPaymentMethod', () => {
-  it('formats cash', () => {
-    expect(formatPaymentMethod('cash')).toBe('Cash');
-  });
-
-  it('formats card', () => {
-    expect(formatPaymentMethod('card')).toBe('Credit/Debit Card');
-  });
-
-  it('formats digital', () => {
-    expect(formatPaymentMethod('digital')).toBe('Digital Payment');
-  });
-
-  it('returns unknown method as-is', () => {
-    expect(formatPaymentMethod('bitcoin')).toBe('bitcoin');
-  });
-});
-
-// --- Waiter call helpers ---
-
-describe('getCallTypeInfo', () => {
-  it('returns assistance info', () => {
-    const info = getCallTypeInfo('assistance');
-    expect(info.label).toBe('General Help');
-    expect(info.color).toBe('blue');
-  });
-
-  it('returns bill info', () => {
-    const info = getCallTypeInfo('bill');
-    expect(info.label).toBe('Request Bill');
-    expect(info.color).toBe('green');
-  });
-
-  it('returns complaint info', () => {
-    const info = getCallTypeInfo('complaint');
-    expect(info.label).toBe('Complaint');
-    expect(info.color).toBe('red');
-  });
-
-  it('returns question info', () => {
-    expect(getCallTypeInfo('question').label).toBe('Question');
-  });
-
-  it('returns emergency info', () => {
-    expect(getCallTypeInfo('emergency').label).toBe('Emergency');
-  });
-
-  it('returns fallback for unknown type', () => {
-    const info = getCallTypeInfo('unknown');
-    expect(info.label).toBe('Call');
-    expect(info.color).toBe('gray');
-  });
-});
-
-describe('getPriorityInfo', () => {
-  it('returns low priority', () => {
-    expect(getPriorityInfo('low')).toEqual({ label: 'Low', color: 'gray' });
-  });
-
-  it('returns normal priority', () => {
-    expect(getPriorityInfo('normal')).toEqual({ label: 'Normal', color: 'blue' });
-  });
-
-  it('returns high priority', () => {
-    expect(getPriorityInfo('high')).toEqual({ label: 'High', color: 'orange' });
-  });
-
-  it('returns urgent priority', () => {
-    expect(getPriorityInfo('urgent')).toEqual({ label: 'Urgent', color: 'red' });
-  });
-
-  it('returns fallback for unknown priority', () => {
-    expect(getPriorityInfo('unknown')).toEqual({ label: 'Unknown', color: 'gray' });
   });
 });
 

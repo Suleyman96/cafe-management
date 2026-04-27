@@ -10,7 +10,7 @@ describe('useFeedback', () => {
 
   it('passes status filter', () => {
     const { mockDb } = renderHookWithProviders(() => useFeedback('pending'));
-    expect(mockDb.feedback.findAll).toHaveBeenCalledWith('pending');
+    expect(mockDb.feedback.findAll).toHaveBeenCalledWith({ status: 'pending' });
   });
 });
 

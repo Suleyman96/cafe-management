@@ -1,13 +1,14 @@
+import type { Category, MenuItem, MenuItemsInsert, MenuItemsUpdate } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, FAB, IconButton, Searchbar } from 'react-native-paper';
 import { CategoryModal } from '@/components/menu-management/CategoryModal';
 import { MenuItemManageCard } from '@/components/menu-management/MenuItemManageCard';
 import { MenuItemModal } from '@/components/menu-management/MenuItemModal';
 import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useCategories, useMenuItems } from '@/hooks';
-import { useCafeSettings } from '@/hooks/use-cafe-settings';
+import { useCategories, useCurrencySymbol, useMenuItems } from '@/hooks';
 import {
   useCreateCategory,
   useCreateMenuItem,
@@ -19,6 +20,7 @@ import {
 } from '@/hooks/use-menu-management';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
+import { COLORS } from '@/theme';
 
 export default function MenuManagementScreen() {
   const { t } = useTranslation('staff');
@@ -27,17 +29,16 @@ export default function MenuManagementScreen() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | undefined>();
   const [showItemModal, setShowItemModal] = useState(false);
-  const [editItem, setEditItem] = useState<any>(null);
+  const [editItem, setEditItem] = useState<MenuItem | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
 
   // Category modal state
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [editCategory, setEditCategory] = useState<any>(null);
+  const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
 
   const { data: items, isLoading, error, refetch } = useMenuItems({ categoryId: categoryFilter });
   const { data: categories } = useCategories();
-  const { data: settings } = useCafeSettings();
 
   // Item mutations
   const createItem = useCreateMenuItem();
@@ -50,7 +51,7 @@ export default function MenuManagementScreen() {
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
 
-  const currencySymbol = settings?.currency_symbol || '$';
+  const currencySymbol = useCurrencySymbol();
 
   // Search filter (name + description, like staff-web)
   const filtered = useMemo(() => {
@@ -84,13 +85,15 @@ export default function MenuManagementScreen() {
     }
   };
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (
+    data: Record<string, string | number | boolean | string[] | null>,
+  ) => {
     try {
       if (editItem) {
-        await updateItem.mutateAsync({ id: editItem.id, data });
+        await updateItem.mutateAsync({ id: editItem.id, data: data as MenuItemsUpdate });
         showSuccess(t('menu.itemUpdated'));
       } else {
-        await createItem.mutateAsync(data);
+        await createItem.mutateAsync(data as MenuItemsInsert);
         showSuccess(t('menu.itemCreated'));
       }
       setShowItemModal(false);
@@ -112,7 +115,13 @@ export default function MenuManagementScreen() {
   };
 
   // Category handlers
-  const handleCategorySubmit = async (data: any) => {
+  const handleCategorySubmit = async (data: {
+    name: string;
+    description: string;
+    icon: string;
+    display_order: number;
+    is_active: boolean;
+  }) => {
     try {
       if (editCategory) {
         await updateCategory.mutateAsync({ id: editCategory.id, data });
@@ -190,7 +199,7 @@ export default function MenuManagementScreen() {
         <Chip compact selected={!categoryFilter} onPress={() => setCategoryFilter(undefined)}>
           {tCommon('all')} ({(items || []).length})
         </Chip>
-        {(categories || []).map((c: any) => (
+        {(categories || []).map((c) => (
           <Chip
             key={c.id}
             compact
@@ -206,7 +215,7 @@ export default function MenuManagementScreen() {
       {categoryFilter && (
         <View style={styles.categoryHeader}>
           {(() => {
-            const cat = (categories || []).find((c: any) => c.id === categoryFilter);
+            const cat = (categories || []).find((c) => c.id === categoryFilter);
             if (!cat) return null;
             return (
               <>
@@ -231,7 +240,7 @@ export default function MenuManagementScreen() {
                   <IconButton
                     icon="delete"
                     size={16}
-                    iconColor="#ef4444"
+                    iconColor={COLORS.danger}
                     onPress={() => setDeleteCategoryId(cat.id)}
                   />
                 </View>
@@ -241,7 +250,7 @@ export default function MenuManagementScreen() {
         </View>
       )}
 
-      <FlatList
+      <FlashList
         data={filtered}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
@@ -320,7 +329,7 @@ export default function MenuManagementScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   countsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -328,11 +337,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
   },
-  countText: { color: '#9ca3af' },
-  addCategoryBtn: { borderColor: '#d1d5db' },
+  countText: { color: COLORS.textLight },
+  addCategoryBtn: { borderColor: COLORS.border },
   addCategoryLabel: { fontSize: 12 },
   search: { marginHorizontal: 16, marginTop: 8 },
-  searchCount: { color: '#6b7280', paddingHorizontal: 16, paddingTop: 4 },
+  searchCount: { color: COLORS.textMuted, paddingHorizontal: 16, paddingTop: 4 },
   categoryScroll: { maxHeight: 48, marginVertical: 8 },
   categoryContent: { paddingHorizontal: 16, gap: 6 },
   categoryHeader: {
@@ -344,8 +353,8 @@ const styles = StyleSheet.create({
   },
   categoryHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   categoryIcon: { fontSize: 20 },
-  categoryName: { fontWeight: '600', color: '#1e293b' },
-  categoryItemCount: { color: '#9ca3af' },
+  categoryName: { fontWeight: '600', color: COLORS.textPrimary },
+  categoryItemCount: { color: COLORS.textLight },
   categoryActions: { flexDirection: 'row' },
   list: { paddingTop: 4, paddingBottom: 80 },
   fab: { position: 'absolute', right: 16, bottom: 16 },

@@ -7,10 +7,25 @@ import { TextInput } from '@/lib/paper-compat';
 interface MenuItemModalProps {
   visible: boolean;
   onDismiss: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: Record<string, string | number | boolean | string[] | null>) => void;
   loading?: boolean;
-  initialData?: any;
-  categories: any[];
+  initialData?: {
+    name?: string;
+    description?: string | null;
+    price?: number;
+    category_id?: string | null;
+    preparation_time?: number | null;
+    display_order?: number;
+    is_available?: boolean;
+    is_popular?: boolean;
+    is_vegetarian?: boolean;
+    is_vegan?: boolean;
+    is_gluten_free?: boolean;
+    is_spicy?: boolean;
+    is_daily_special?: boolean;
+    allergens?: string[] | null;
+  } | null;
+  categories: { id: string; name: string; icon?: string | null }[];
   currencySymbol?: string;
 }
 
@@ -170,7 +185,7 @@ export function MenuItemModal({
                 >
                   {t('menu.none')}
                 </Chip>
-                {categories.map((c: any) => (
+                {categories.map((c) => (
                   <Chip
                     key={c.id}
                     compact

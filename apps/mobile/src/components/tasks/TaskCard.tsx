@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { Card, Chip, IconButton } from 'react-native-paper';
 import { getLocalDateString } from '@/lib/date-utils';
 import { Text } from '@/lib/paper-compat';
-import { BRAND_PRIMARY } from '@/theme';
+import { BRAND_PRIMARY, CARD_RADIUS, TYPOGRAPHY } from '@/theme';
 import type { Task } from '@/types';
 
 const PRIORITY_COLORS: Record<string, { bg: string; text: string }> = {
@@ -15,7 +15,10 @@ const PRIORITY_COLORS: Record<string, { bg: string; text: string }> = {
   urgent: { bg: '#fee2e2', text: '#dc2626' },
 };
 
-const STATUS_CONFIG: Record<string, { icon: string; color: string }> = {
+const STATUS_CONFIG: Record<
+  string,
+  { icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; color: string }
+> = {
   pending: { icon: 'circle-outline', color: '#9ca3af' },
   in_progress: { icon: 'play-circle', color: BRAND_PRIMARY },
   completed: { icon: 'check-circle', color: '#10b981' },
@@ -81,7 +84,7 @@ export const TaskCard = React.memo(function TaskCard({
         {/* Top: status icon + title + actions */}
         <View style={styles.topRow}>
           <MaterialCommunityIcons
-            name={statusConfig.icon as any}
+            name={statusConfig.icon}
             size={20}
             color={statusConfig.color}
             style={styles.statusIcon}
@@ -216,19 +219,19 @@ export const TaskCard = React.memo(function TaskCard({
 });
 
 const styles = StyleSheet.create({
-  card: { marginHorizontal: 16, marginBottom: 8 },
+  card: { marginHorizontal: 16, marginBottom: 8, borderRadius: CARD_RADIUS },
   overdueCard: { borderColor: '#fca5a5', borderWidth: 1, backgroundColor: '#fef2f2' },
   content: { gap: 6 },
   topRow: { flexDirection: 'row', alignItems: 'flex-start' },
   statusIcon: { marginRight: 8, marginTop: 2 },
   titleArea: { flex: 1 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  title: { fontWeight: '600', color: '#1e293b', flex: 1 },
+  title: { ...TYPOGRAPHY.cardTitle, color: '#1e293b', flex: 1 },
   overdueTitle: { color: '#ef4444' },
   description: { color: '#6b7280', marginTop: 2 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginLeft: 28 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  metaText: { color: '#6b7280', fontSize: 11 },
+  metaText: { color: '#6b7280', ...TYPOGRAPHY.badge },
   priorityChip: { height: 22 },
   actionsRow: {
     flexDirection: 'row',

@@ -1,7 +1,7 @@
 'use client';
 
 import { getLocalDateString, TIME_OPTIONS, WEEKDAYS } from '@gustri/core';
-import type { Database } from '@gustri/database';
+import type { Database, TaskInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, NumberInput } from '@gustri/ui';
 import { useState } from 'react';
@@ -73,39 +73,65 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
     const toastId = toast.loading(isEditing ? t('tasks.updatingTask') : t('tasks.creatingTask'));
 
     try {
-      const data: any = {
+      const base = {
         title: formData.title.trim(),
         description: formData.description || null,
-        priority: formData.priority,
+        priority: formData.priority as TaskInsert['priority'],
         assigned_to: formData.assigned_to || null,
+        notes: null as string | null,
+        category_id: null as string | null,
+        completed_at: null as string | null,
+        parent_task_id: null as string | null,
       };
 
-      if (!isEditing) {
-        data.created_by = staff?.id || null;
-        data.status = 'pending';
-      }
-
-      if (formData.is_recurring) {
-        data.is_recurring = true;
-        data.recurrence_pattern = formData.recurrence_pattern;
-        data.recurrence_days =
-          formData.recurrence_pattern === 'weekly'
-            ? formData.recurrence_days
-            : formData.recurrence_pattern === 'monthly'
-              ? formData.recurrence_days
-              : [];
-        data.due_time = formData.due_time || null;
-      } else {
-        data.is_recurring = false;
-        data.due_date = formData.due_date || null;
-        data.due_time = formData.due_time || null;
-      }
-
       if (isEditing) {
-        await updateTask.mutateAsync({ id: task.id, updates: data });
+        const updates = formData.is_recurring
+          ? {
+              ...base,
+              is_recurring: true,
+              recurrence_pattern: formData.recurrence_pattern,
+              recurrence_days:
+                formData.recurrence_pattern === 'weekly' ||
+                formData.recurrence_pattern === 'monthly'
+                  ? formData.recurrence_days
+                  : [],
+              due_time: formData.due_time || null,
+            }
+          : {
+              ...base,
+              is_recurring: false,
+              due_date: formData.due_date || null,
+              due_time: formData.due_time || null,
+            };
+        await updateTask.mutateAsync({ id: task.id, updates });
         toast.success(t('tasks.taskUpdated'), { id: toastId });
       } else {
-        await createTask.mutateAsync(data);
+        const createData: TaskInsert = formData.is_recurring
+          ? {
+              ...base,
+              created_by: staff?.id || null,
+              status: 'pending',
+              is_recurring: true,
+              recurrence_pattern: formData.recurrence_pattern,
+              recurrence_days:
+                formData.recurrence_pattern === 'weekly' ||
+                formData.recurrence_pattern === 'monthly'
+                  ? formData.recurrence_days
+                  : [],
+              due_date: null,
+              due_time: formData.due_time || null,
+            }
+          : {
+              ...base,
+              created_by: staff?.id || null,
+              status: 'pending',
+              is_recurring: false,
+              recurrence_pattern: null,
+              recurrence_days: null,
+              due_date: formData.due_date || null,
+              due_time: formData.due_time || null,
+            };
+        await createTask.mutateAsync(createData);
         toast.success(t('tasks.taskCreated'), { id: toastId });
       }
 
@@ -179,8 +205,8 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
               <option disabled>{t('loading', { ns: 'common' })}...</option>
             ) : (
               staffList
-                .filter((s: any) => s.is_active !== false)
-                .map((s: any) => (
+                .filter((s) => s.is_active !== false)
+                .map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.full_name} ({s.role})
                   </option>

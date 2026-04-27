@@ -1,5 +1,7 @@
 import { QUERY_KEYS } from '@gustri/core';
+import type { StockItemUpdate } from '@gustri/database';
 import { useDb } from '@gustri/queries';
+import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
 
@@ -26,7 +28,7 @@ export function useUpdateStockItem() {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
+    mutationFn: ({ id, data }: { id: string; data: StockItemUpdate }) =>
       db.stockItems.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
@@ -72,7 +74,7 @@ export function useAdjustStock() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_MOVEMENTS] });
     },
     onError: (error: Error) => {
-      console.error('Failed to adjust stock:', error.message);
+      Sentry.captureException(error, { extra: { context: 'adjustStock' } });
     },
   });
 }

@@ -19,7 +19,15 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- 2. Create a custom GUC for the encryption key (empty default = no encryption)
-ALTER DATABASE postgres SET app.pii_encryption_key = '';
+-- In production, set via: ALTER DATABASE postgres SET app.pii_encryption_key = 'your-key';
+-- In local dev, this may fail due to permissions — that's OK (encryption is disabled when key is empty).
+DO $$
+BEGIN
+  EXECUTE 'ALTER DATABASE postgres SET app.pii_encryption_key = ''''';
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'Skipping app.pii_encryption_key setting (insufficient privileges in local dev)';
+END;
+$$;
 
 -- 3. Encrypt function — returns base64-encoded ciphertext, or NULL/empty passthrough
 CREATE OR REPLACE FUNCTION public.encrypt_pii(plaintext TEXT)

@@ -1,5 +1,11 @@
 'use client';
 
+import {
+  calculateOrderTotal,
+  formatTime,
+  getOrderStatusColor,
+  ORDER_STATUS_KEYS,
+} from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import {
@@ -16,6 +22,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import type { OrderWithDetails } from '@/types';
 
 type OrderStatus =
   | 'pending_approval'
@@ -28,66 +35,18 @@ type OrderStatus =
   | 'cancelled';
 
 interface OrderListCardProps {
-  order: any;
+  order: OrderWithDetails;
   formatPrice: (amount: number) => string;
   onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void;
-  onOpenPayment: (order: any) => void;
-  onOpenCancel: (order: any) => void;
+  onOpenPayment: (order: OrderWithDetails) => void;
+  onOpenCancel: (order: OrderWithDetails) => void;
 }
 
-const calculateOrderTotal = (order: any) => {
-  if (order?.total != null) return order.total;
-  if (!order?.order_items) return 0;
-  return order.order_items
-    .filter((item: any) => item.status !== 'cancelled')
-    .reduce((sum: number, item: any) => sum + item.quantity * item.item_price, 0);
-};
-
-const calculatePaidAmount = (order: any) => {
+const calculatePaidAmount = (
+  order: OrderWithDetails & { order_payments?: Array<{ amount: number }> },
+) => {
   if (!order?.order_payments) return 0;
-  return order.order_payments.reduce((sum: number, payment: any) => sum + payment.amount, 0);
-};
-
-const formatTime = (timestamp: string) => {
-  return new Date(timestamp).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
-const ORDER_STATUS_KEYS: Record<string, string> = {
-  pending_approval: 'orders.pendingApproval',
-  new: 'orders.new',
-  preparing: 'orders.preparing',
-  ready: 'orders.ready',
-  served: 'orders.served',
-  out_for_delivery: 'orders.outForDelivery',
-  delivered: 'orders.delivered',
-  closed: 'orders.closed',
-  cancelled: 'orders.cancelled',
-};
-
-const getStatusColor = (status: OrderStatus) => {
-  switch (status) {
-    case 'pending_approval':
-      return 'bg-amber-100 text-amber-800 border border-amber-300';
-    case 'new':
-      return 'bg-blue-100 text-blue-800';
-    case 'preparing':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'ready':
-      return 'bg-green-100 text-green-800';
-    case 'served':
-      return 'bg-purple-100 text-purple-800';
-    case 'out_for_delivery':
-      return 'bg-violet-100 text-violet-800';
-    case 'delivered':
-      return 'bg-emerald-100 text-emerald-800';
-    case 'cancelled':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
+  return order.order_payments.reduce((sum, payment) => sum + payment.amount, 0);
 };
 
 export function OrderListCard({
@@ -104,7 +63,7 @@ export function OrderListCard({
   const paid = calculatePaidAmount(order);
   const remaining = total - paid;
   const isFullyPaid = remaining === 0 && total > 0;
-  const hasItems = order.order_items?.some((item: any) => item.status !== 'cancelled') ?? false;
+  const hasItems = order.order_items?.some((item) => item.status !== 'cancelled') ?? false;
 
   const isTakeout =
     order.order_type === 'takeout' || (!order.table && order.order_type !== 'delivery');
@@ -142,7 +101,7 @@ export function OrderListCard({
               <h3 className="font-semibold text-base sm:text-lg">{order.table.table_number}</h3>
             )}
             <span
-              className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}
+              className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getOrderStatusColor(order.status)}`}
             >
               {t(ORDER_STATUS_KEYS[order.status] || order.status)}
             </span>
@@ -192,7 +151,7 @@ export function OrderListCard({
 
       {/* Order Items Preview */}
       <div className="mb-3 text-sm text-gray-600">
-        {order.order_items?.slice(0, 3).map((item: any) => (
+        {order.order_items?.slice(0, 3).map((item) => (
           <div key={item.id}>
             {item.quantity}x {item.menu_item?.name}
             {item.notes && <span className="text-xs text-gray-500"> ({item.notes})</span>}

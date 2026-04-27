@@ -6,7 +6,7 @@ import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { StyleSheet, View } from 'react-native';
 import { Badge, Divider, Text } from 'react-native-paper';
-import { useMyOpenTasksCount } from '@/hooks';
+import { useCafeSettings, useMyOpenTasksCount } from '@/hooks';
 import { useAuthStore } from '@/store/auth-store';
 import type { DrawerParamList } from '@/types';
 
@@ -30,20 +30,20 @@ const DRAWER_SECTIONS: DrawerSection[] = [
       {
         key: 'Home',
         labelKey: 'tables',
-        icon: 'home',
+        icon: 'table-furniture',
         roles: ['waiter', 'admin', 'owner', 'kitchen'],
       },
       {
         key: 'DeliveryTab',
         labelKey: 'delivery',
         icon: 'moped',
-        roles: ['waiter', 'admin', 'owner'],
+        roles: ['waiter', 'admin', 'owner', 'kitchen'],
       },
       {
         key: 'TakeoutTab',
         labelKey: 'takeout',
         icon: 'shopping',
-        roles: ['waiter', 'admin', 'owner'],
+        roles: ['waiter', 'admin', 'owner', 'kitchen'],
       },
       {
         key: 'TasksTab',
@@ -61,7 +61,7 @@ const DRAWER_SECTIONS: DrawerSection[] = [
         key: 'FeedbackTab',
         labelKey: 'feedback',
         icon: 'message-star',
-        roles: ['waiter', 'admin', 'owner'],
+        roles: ['admin', 'owner'],
       },
       {
         key: 'StockTab',
@@ -74,7 +74,7 @@ const DRAWER_SECTIONS: DrawerSection[] = [
         key: 'WasteTab',
         labelKey: 'waste',
         icon: 'delete-variant',
-        roles: ['waiter', 'admin', 'owner', 'kitchen'],
+        roles: ['admin', 'owner'],
         minPlan: 'pro',
       },
       {
@@ -103,7 +103,12 @@ const DRAWER_SECTIONS: DrawerSection[] = [
         minPlan: 'pro',
       },
       { key: 'ReportsTab', labelKey: 'reports', icon: 'chart-bar', roles: ['owner'] },
-      { key: 'CafeSettingsTab', labelKey: 'cafeSettings', icon: 'cog', roles: ['admin', 'owner'] },
+      {
+        key: 'CafeSettingsTab',
+        labelKey: 'cafeSettings',
+        icon: 'store',
+        roles: ['admin', 'owner'],
+      },
     ],
   },
 ];
@@ -111,6 +116,7 @@ const DRAWER_SECTIONS: DrawerSection[] = [
 export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const staff = useAuthStore((s) => s.staff);
   const tenantPlan = useAuthStore((s) => s.tenantPlan) ?? 'free';
+  const { data: cafeSettings } = useCafeSettings();
   const role = staff?.role || 'waiter';
   const currentRoute = props.state.routes[props.state.index]?.name;
   const myOpenCount = useMyOpenTasksCount(staff?.id);
@@ -137,6 +143,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         const visibleItems = section.items.filter((item) => {
           if (!item.roles.includes(role)) return false;
           if (item.minPlan && PLAN_ORDER[tenantPlan] < PLAN_ORDER[item.minPlan]) return false;
+          if (item.key === 'WasteTab' && !cafeSettings?.waste_tracking_enabled) return false;
           return true;
         });
         if (visibleItems.length === 0) return null;

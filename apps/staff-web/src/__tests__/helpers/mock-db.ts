@@ -133,7 +133,7 @@ export function createMockDb() {
     ),
     tenants: mockResource('getCurrent', 'getMonthlyOrderCount'),
     rpc: mockResource('getRemainingBalance', 'transferTable', 'generateOrderNumber'),
-    views: mockResource('getActiveOrders', 'getSalesSummary', 'getOrderPaymentSummary'),
+    views: mockResource('getSalesSummary', 'getOrderPaymentSummary'),
     realtime: mockResource(
       'subscribeToTables',
       'subscribeToOrders',

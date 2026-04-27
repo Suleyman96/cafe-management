@@ -87,15 +87,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Verify user has an active staff record
-  const { data: staff } = await supabase
-    .from('staff')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .eq('is_active', true)
-    .single();
+  // Read staff claims from the JWT (injected by custom_access_token_hook)
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
-  if (!staff) {
+  let isActiveStaff = false;
+  try {
+    const payload = JSON.parse(
+      Buffer.from(session.access_token.split('.')[1], 'base64').toString(),
+    );
+    isActiveStaff = payload.is_active_staff === true;
+  } catch {
+    // Invalid token format
+  }
+
+  if (!isActiveStaff) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('error', 'inactive');
     return NextResponse.redirect(loginUrl);

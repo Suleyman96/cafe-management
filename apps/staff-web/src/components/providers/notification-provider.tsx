@@ -3,6 +3,7 @@
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import * as Sentry from '@sentry/nextjs';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { Bell, BellOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -10,6 +11,10 @@ import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
+
+const MAX_BACKOFF_MS = 30_000;
+const MAX_RETRIES = 10;
+const POLL_INTERVAL_MS = 120_000; // 2 minutes — matches REFRESH_INTERVALS.FALLBACK
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation('staff');
@@ -29,6 +34,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const audioUnlockedRef = useRef(false);
   // Queue: store pending sound to play once unlocked
   const pendingSoundRef = useRef<HTMLAudioElement | null>(null);
+
+  // Retry + connection state for realtime subscriptions
+  const retryCountRef = useRef(0);
+  const [realtimeConnected, setRealtimeConnected] = useState(true);
 
   // Keep ref in sync
   useEffect(() => {
@@ -156,123 +165,196 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  // Waiter calls subscription
+  // Consolidated realtime subscription with retry + exponential backoff
   useEffect(() => {
     if (!tenantId) return;
-    Sentry.addBreadcrumb({ category: 'realtime', message: 'Setting up waiter_calls subscription' });
-    const channel = supabase
-      .channel('notify-waiter-calls')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'waiter_calls', filter: `tenant_id=eq.${tenantId}` },
-        (payload) => {
-          Sentry.addBreadcrumb({
-            category: 'realtime',
-            message: `waiter_calls ${payload.eventType}`,
-          });
-          if (payload.eventType === 'INSERT') {
-            playSound(waiterCallAudioRef.current);
-            toast.info(t('notifications.newStaffCall'), {
-              description: t('notifications.tableNeedsAssistance'),
-              duration: 5000,
+
+    let currentChannel: RealtimeChannel | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function setupChannel() {
+      Sentry.addBreadcrumb({ category: 'realtime', message: 'Setting up notifications channel' });
+
+      const channel = supabase
+        .channel('notify-all')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'waiter_calls',
+            filter: `tenant_id=eq.${tenantId}`,
+          },
+          (payload) => {
+            Sentry.addBreadcrumb({
+              category: 'realtime',
+              message: `waiter_calls ${payload.eventType}`,
             });
-          }
-        },
-      )
-      .subscribe((status) => {
-        Sentry.addBreadcrumb({ category: 'realtime', message: `waiter_calls channel: ${status}` });
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [playSound, t, tenantId]);
-
-  // Orders subscription
-  useEffect(() => {
-    if (!tenantId) return;
-    Sentry.addBreadcrumb({ category: 'realtime', message: 'Setting up orders subscription' });
-    const channel = supabase
-      .channel('notify-orders')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders', filter: `tenant_id=eq.${tenantId}` },
-        (payload) => {
-          Sentry.addBreadcrumb({ category: 'realtime', message: `orders ${payload.eventType}` });
-          if (payload.eventType === 'INSERT') {
-            const newOrder = payload.new as OrderRow;
-            if (newOrder.status === 'pending_approval') {
-              playSound(notificationAudioRef.current);
-              toast.info(t('notifications.newQrOrder'), {
-                description: t('notifications.qrOrderDescription'),
+            if (payload.eventType === 'INSERT') {
+              playSound(waiterCallAudioRef.current);
+              toast.info(t('notifications.newStaffCall'), {
+                description: t('notifications.tableNeedsAssistance'),
                 duration: 5000,
               });
-            } else {
+            }
+          },
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders', filter: `tenant_id=eq.${tenantId}` },
+          (payload) => {
+            Sentry.addBreadcrumb({ category: 'realtime', message: `orders ${payload.eventType}` });
+            if (payload.eventType === 'INSERT') {
+              const newOrder = payload.new as OrderRow;
+              if (newOrder.status === 'pending_approval') {
+                playSound(notificationAudioRef.current);
+                toast.info(t('notifications.newQrOrder'), {
+                  description: t('notifications.qrOrderDescription'),
+                  duration: 5000,
+                });
+              } else {
+                playSound(orderAudioRef.current);
+                toast.info(t('notifications.newOrder'), {
+                  description: t('notifications.newOrderDescription'),
+                  duration: 3000,
+                });
+              }
+            }
+            if (payload.eventType === 'UPDATE') {
+              const newOrder = payload.new as OrderRow;
+              const oldOrder = payload.old as Partial<OrderRow>;
+              if (newOrder.status === 'ready' && oldOrder.status !== 'ready') {
+                Sentry.addBreadcrumb({ category: 'realtime', message: 'Order ready notification' });
+                playSound(notificationAudioRef.current);
+                toast.success(t('notifications.orderReady'), {
+                  description: t('notifications.orderReadyDescription'),
+                  duration: 5000,
+                });
+              }
+            }
+          },
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'order_items',
+            filter: `tenant_id=eq.${tenantId}`,
+          },
+          (payload) => {
+            Sentry.addBreadcrumb({
+              category: 'realtime',
+              message: `order_items ${payload.eventType}`,
+            });
+            if (payload.eventType === 'INSERT') {
               playSound(orderAudioRef.current);
-              toast.info(t('notifications.newOrder'), {
-                description: t('notifications.newOrderDescription'),
+              toast.info(t('notifications.newItemsAdded'), {
+                description: t('notifications.itemsAddedDescription'),
                 duration: 3000,
               });
             }
-          }
-          if (payload.eventType === 'UPDATE') {
-            const newOrder = payload.new as OrderRow;
-            const oldOrder = payload.old as Partial<OrderRow>;
-            if (newOrder.status === 'ready' && oldOrder.status !== 'ready') {
-              Sentry.addBreadcrumb({ category: 'realtime', message: 'Order ready notification' });
-              playSound(notificationAudioRef.current);
-              toast.success(t('notifications.orderReady'), {
-                description: t('notifications.orderReadyDescription'),
-                duration: 5000,
-              });
-            }
-          }
-        },
-      )
-      .subscribe((status) => {
-        Sentry.addBreadcrumb({ category: 'realtime', message: `orders channel: ${status}` });
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [playSound, t, tenantId]);
-
-  // Order items subscription (for items added to existing orders)
-  useEffect(() => {
-    if (!tenantId) return;
-    Sentry.addBreadcrumb({ category: 'realtime', message: 'Setting up order_items subscription' });
-    const channel = supabase
-      .channel('notify-order-items')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'order_items', filter: `tenant_id=eq.${tenantId}` },
-        (payload) => {
+          },
+        )
+        .subscribe((status) => {
           Sentry.addBreadcrumb({
             category: 'realtime',
-            message: `order_items ${payload.eventType}`,
+            message: `notifications channel: ${status}`,
           });
-          if (payload.eventType === 'INSERT') {
-            playSound(orderAudioRef.current);
-            toast.info(t('notifications.newItemsAdded'), {
-              description: t('notifications.itemsAddedDescription'),
-              duration: 3000,
-            });
+
+          if (status === 'SUBSCRIBED') {
+            retryCountRef.current = 0;
+            setRealtimeConnected(true);
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            setRealtimeConnected(false);
+            supabase.removeChannel(channel);
+
+            if (retryCountRef.current >= MAX_RETRIES) {
+              Sentry.captureMessage(
+                'Notification realtime: max retries exceeded, falling back to polling',
+                'warning',
+              );
+              return;
+            }
+
+            const delay = Math.min(1000 * 2 ** retryCountRef.current, MAX_BACKOFF_MS);
+            retryCountRef.current++;
+            retryTimer = setTimeout(() => {
+              setupChannel();
+            }, delay);
           }
-        },
-      )
-      .subscribe((status) => {
-        Sentry.addBreadcrumb({ category: 'realtime', message: `order_items channel: ${status}` });
-      });
+        });
+
+      currentChannel = channel;
+    }
+
+    setupChannel();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (retryTimer) clearTimeout(retryTimer);
+      if (currentChannel) supabase.removeChannel(currentChannel);
     };
   }, [playSound, t, tenantId]);
+
+  // Fallback polling when realtime is down
+  useEffect(() => {
+    if (realtimeConnected || !tenantId) return;
+
+    const lastCheck = { current: new Date().toISOString() };
+
+    const pollInterval = setInterval(async () => {
+      try {
+        // Raw queries intentional — narrow select('id') + created_at filter for polling performance
+        const { data: newCalls } = await supabase
+          .from('waiter_calls')
+          .select('id')
+          .eq('tenant_id', tenantId)
+          .gt('created_at', lastCheck.current)
+          .eq('status', 'pending')
+          .limit(1);
+
+        if (newCalls && newCalls.length > 0) {
+          playSound(waiterCallAudioRef.current);
+          toast.info(t('notifications.newStaffCall'), {
+            description: t('notifications.tableNeedsAssistance'),
+            duration: 5000,
+          });
+        }
+
+        const { data: newOrders } = await supabase
+          .from('orders')
+          .select('id, status')
+          .eq('tenant_id', tenantId)
+          .gt('created_at', lastCheck.current)
+          .limit(5);
+
+        if (newOrders && newOrders.length > 0) {
+          playSound(orderAudioRef.current);
+          toast.info(t('notifications.newOrder'), {
+            description: t('notifications.newOrderDescription'),
+            duration: 3000,
+          });
+        }
+
+        lastCheck.current = new Date().toISOString();
+      } catch (err) {
+        Sentry.captureException(err, { tags: { context: 'notification-polling' } });
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => clearInterval(pollInterval);
+  }, [realtimeConnected, tenantId, playSound, t]);
 
   return (
     <>
       {children}
+
+      {/* Realtime degraded indicator */}
+      {!realtimeConnected && (
+        <div className="fixed bottom-16 right-4 z-50 bg-amber-100 text-amber-800 text-xs px-3 py-2 rounded-lg shadow-md border border-amber-200">
+          {t('notifications.realtimeDegraded', 'Live updates paused — checking periodically')}
+        </div>
+      )}
 
       {/* Global Audio Toggle Button */}
       <button

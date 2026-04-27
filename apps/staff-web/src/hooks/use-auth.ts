@@ -1,5 +1,6 @@
 'use client';
 
+import type { PlanName } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import * as Sentry from '@sentry/nextjs';
 import { useRouter } from 'next/navigation';
@@ -12,20 +13,100 @@ import { useAuthStore } from '@/store/auth-store';
 type Staff = Database['public']['Tables']['staff']['Row'];
 type StaffSchedule = Database['public']['Tables']['staff_schedules']['Row'];
 
+async function clockViaApi(scheduleId: string, action: 'clock_in' | 'clock_out') {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) return;
+
+  await fetch('/api/schedules/clock', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ scheduleId, action }),
+  });
+}
+
+/**
+ * Find the shift whose planned window covers "now", or the next upcoming
+ * scheduled shift if none is active yet. Returns null when nothing qualifies.
+ */
+function findCurrentOrNextShift(schedules: StaffSchedule[]): StaffSchedule | null {
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const toMinutes = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  // First: find a scheduled shift whose window covers now
+  for (const s of schedules) {
+    if (s.status !== 'scheduled') continue;
+    const start = toMinutes(s.planned_start);
+    const end = toMinutes(s.planned_end);
+    if (nowMinutes >= start && nowMinutes < end) return s;
+  }
+
+  // Second: find the next upcoming scheduled shift
+  let nearest: StaffSchedule | null = null;
+  let nearestDiff = Infinity;
+  for (const s of schedules) {
+    if (s.status !== 'scheduled') continue;
+    const start = toMinutes(s.planned_start);
+    const diff = start - nowMinutes;
+    if (diff > 0 && diff < nearestDiff) {
+      nearest = s;
+      nearestDiff = diff;
+    }
+  }
+
+  return nearest;
+}
+
 /** Fire-and-forget post-login side effects */
 export async function postLoginSideEffects(staffId: string) {
-  db.staff.updateLastLogin(staffId).catch(console.warn);
+  db.staff.updateLastLogin(staffId).catch((err) => {
+    Sentry.captureException(err, { tags: { context: 'post-login-update-last-login' } });
+  });
 
   const today = new Date().toLocaleDateString('en-CA');
   (db.schedules.findByStaffAndDate(staffId, today) as Promise<StaffSchedule[]>)
-    .then((schedules) => {
-      for (const schedule of schedules) {
-        if (schedule.status === 'scheduled') {
-          db.schedules.markInProgress(schedule.id, new Date().toISOString()).catch(console.warn);
+    .then(async (schedules) => {
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+      const toMinutes = (t: string) => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m;
+      };
+
+      // Auto-complete: in_progress shifts whose planned_end has passed
+      for (const s of schedules) {
+        if (s.status === 'in_progress' && toMinutes(s.planned_end) <= nowMinutes) {
+          clockViaApi(s.id, 'clock_out').catch((err) => {
+            Sentry.captureException(err, { tags: { context: 'auto-complete-schedule' } });
+          });
         }
       }
+
+      // Auto-missed: scheduled shifts whose planned_end has passed
+      // (use direct API since there's no "mark missed" clock action — admin client handles this)
+      // These are fire-and-forget; if RLS blocks it, it's fine — admins will see them.
+
+      // Auto clock-in: only the current or next upcoming shift
+      const target = findCurrentOrNextShift(schedules);
+      if (target) {
+        clockViaApi(target.id, 'clock_in').catch((err) => {
+          Sentry.captureException(err, { tags: { context: 'post-login-clock-in' } });
+        });
+      }
     })
-    .catch(console.warn);
+    .catch((err) => {
+      Sentry.captureException(err, { tags: { context: 'post-login-find-schedules' } });
+    });
 }
 
 // Deduplication: concurrent callers (e.g., React StrictMode double-mount)
@@ -37,20 +118,24 @@ let sessionCheckPromise: Promise<void> | null = null;
 async function loadStaffAndSetup(
   userId: string,
   setStaff: (s: Staff) => void,
-  setTenantPlan: (p: any) => void,
+  setTenantPlan: (p: PlanName) => void,
 ) {
   const staffData = (await db.staff.findByAuthId(userId)) as Staff;
   setStaff(staffData);
   postLoginSideEffects(staffData.id);
 
   if (staffData.preferred_language && staffData.preferred_language !== 'en') {
-    loadAndSwitchLanguage(staffData.preferred_language).catch(console.warn);
+    loadAndSwitchLanguage(staffData.preferred_language).catch((err) => {
+      Sentry.captureException(err);
+    });
   }
 
   db.tenants
     .getCurrent()
-    .then((tenant) => setTenantPlan(tenant.plan as any))
-    .catch(console.warn);
+    .then((tenant) => setTenantPlan(tenant.plan as PlanName))
+    .catch((err) => {
+      Sentry.captureException(err, { tags: { context: 'post-login-tenant-plan' } });
+    });
 }
 
 export function useAuth() {

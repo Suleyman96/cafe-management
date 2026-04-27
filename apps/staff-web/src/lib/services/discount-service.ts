@@ -47,7 +47,7 @@ export async function applyDiscount(supabaseAdmin: SupabaseClient, params: Apply
   }
 
   // Apply discount — the DB trigger recalculate_on_discount_change handles totals.
-  // Don't use .select().single() here to avoid PostgREST "Cannot coerce" errors
+  // Don't chain .select() to avoid PostgREST "Cannot coerce" errors
   // from the AFTER trigger updating the same row.
   const { error: updateError } = await supabaseAdmin
     .from('orders')
@@ -62,4 +62,17 @@ export async function applyDiscount(supabaseAdmin: SupabaseClient, params: Apply
   if (updateError) {
     throw new Error(updateError.message);
   }
+
+  // Fetch the updated order after the trigger has recalculated totals
+  const { data: updatedOrder, error: fetchError } = await supabaseAdmin
+    .from('orders')
+    .select('id, subtotal, tax, total, discount_type, discount_value')
+    .eq('id', orderId)
+    .single();
+
+  if (fetchError) {
+    throw new Error(fetchError.message);
+  }
+
+  return updatedOrder;
 }

@@ -16,7 +16,7 @@ describe('useStaff', () => {
 
   it('passes role filter', () => {
     const { mockDb } = renderHookWithProviders(() => useStaff('admin'));
-    expect(mockDb.staff.findAll).toHaveBeenCalledWith('admin');
+    expect(mockDb.staff.findAll).toHaveBeenCalledWith({ role: 'admin' });
   });
 });
 

@@ -1,17 +1,23 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getStaffClaims } from './jwt-claims';
 
-export function getSupabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
+let _supabaseAdmin: SupabaseClient | null = null;
+
+export function getSupabaseAdmin(): SupabaseClient {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
       },
-    },
-  );
+    );
+  }
+  return _supabaseAdmin;
 }
 
 /**
@@ -36,16 +42,14 @@ export async function verifyAdmin(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: staffData, error: staffError } = await supabaseAdmin
-    .from('staff')
-    .select('id, role, tenant_id')
-    .eq('auth_user_id', user.id)
-    .eq('is_active', true)
-    .single();
-
-  if (staffError || !staffData || !['admin', 'owner'].includes(staffData.role)) {
+  const claims = getStaffClaims(user, token);
+  if (!claims || !['admin', 'owner'].includes(claims.user_role)) {
     return NextResponse.json({ error: 'Forbidden: admin access required' }, { status: 403 });
   }
 
-  return staffData;
+  return {
+    id: claims.staff_id,
+    role: claims.user_role,
+    tenant_id: claims.tenant_id,
+  };
 }

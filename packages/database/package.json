@@ -1,6 +1,7 @@
 {
   "name": "@gustri/database",
   "version": "1.0.0",
+  "sideEffects": false,
   "description": "Database types and schemas for Gustri",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

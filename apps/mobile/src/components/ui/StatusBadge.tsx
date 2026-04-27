@@ -1,6 +1,7 @@
 import { useTranslation } from '@gustri/i18n';
 import React from 'react';
-import { Chip } from 'react-native-paper';
+import { StyleSheet, Text, View } from 'react-native';
+import type { ColorPair } from '@/theme';
 import { ORDER_STATUS_COLORS, TABLE_STATUS_COLORS, WAITER_CALL_REASON_COLORS } from '@/theme';
 
 interface StatusBadgeProps {
@@ -8,12 +9,22 @@ interface StatusBadgeProps {
   type?: 'order' | 'table' | 'waiterCall' | 'orderItem';
 }
 
-const COLOR_MAPS: Record<string, Record<string, string>> = {
+const FALLBACK_COLOR: ColorPair = { bg: '#f3f4f6', text: '#374151' };
+
+const PAIR_MAPS: Record<string, Record<string, ColorPair>> = {
   order: ORDER_STATUS_COLORS,
   table: TABLE_STATUS_COLORS,
-  waiterCall: WAITER_CALL_REASON_COLORS,
   orderItem: ORDER_STATUS_COLORS,
 };
+
+/** Waiter-call reasons use solid colors — wrap them into ColorPair (solid bg + white text) */
+function getColorPair(type: string, status: string): ColorPair {
+  if (type === 'waiterCall') {
+    const solid = WAITER_CALL_REASON_COLORS[status];
+    return solid ? { bg: solid, text: '#fff' } : FALLBACK_COLOR;
+  }
+  return PAIR_MAPS[type]?.[status] || FALLBACK_COLOR;
+}
 
 const STATUS_LABEL_KEYS: Record<string, Record<string, string>> = {
   order: {
@@ -62,19 +73,27 @@ export const StatusBadge = React.memo(function StatusBadge({
   type = 'order',
 }: StatusBadgeProps) {
   const { t } = useTranslation('staff');
-  const colorMap = COLOR_MAPS[type] || ORDER_STATUS_COLORS;
-  const backgroundColor = colorMap[status] || '#6b7280';
+  const colors = getColorPair(type, status);
 
   const labelKey = STATUS_LABEL_KEYS[type]?.[status];
   const label = labelKey ? t(labelKey) : formatLabel(status);
 
   return (
-    <Chip
-      compact
-      textStyle={{ color: '#fff', fontSize: 11, fontWeight: '600' }}
-      style={{ backgroundColor, alignSelf: 'flex-start' }}
-    >
-      {label}
-    </Chip>
+    <View style={[styles.badge, { backgroundColor: colors.bg }]}>
+      <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+    </View>
   );
+});
+
+const styles = StyleSheet.create({
+  badge: {
+    alignSelf: 'flex-start',
+    borderRadius: 9999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
 });

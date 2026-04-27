@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import { getStaffClaims } from './jwt-claims';
 import { jsonError } from './response';
 import { getSupabaseAdmin } from './verify-admin';
 
@@ -25,16 +26,14 @@ export async function verifyStaff(request: NextRequest) {
     return jsonError('Unauthorized', 401);
   }
 
-  const { data: staffData, error: staffError } = await supabaseAdmin
-    .from('staff')
-    .select('id, role, tenant_id')
-    .eq('auth_user_id', user.id)
-    .eq('is_active', true)
-    .single();
-
-  if (staffError || !staffData) {
+  const claims = getStaffClaims(user, token);
+  if (!claims) {
     return jsonError('Forbidden: active staff required', 403);
   }
 
-  return staffData;
+  return {
+    id: claims.staff_id,
+    role: claims.user_role,
+    tenant_id: claims.tenant_id,
+  };
 }

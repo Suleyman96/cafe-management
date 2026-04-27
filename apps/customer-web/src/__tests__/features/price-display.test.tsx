@@ -139,7 +139,7 @@ describe('Price display uses correct currency across all pages', () => {
   });
 
   it('delivery-order-status renders item prices with ₼ currency', () => {
-    renderWithProviders(<DeliveryOrderStatus orderId="del-1" />);
+    renderWithProviders(<DeliveryOrderStatus orderId="del-1" accessToken="test-token" />);
 
     // Pizza: 25 * 1 = 25
     expect(screen.getByText('25.00₼')).toBeInTheDocument();
@@ -148,7 +148,7 @@ describe('Price display uses correct currency across all pages', () => {
   });
 
   it('delivery-order-status adds delivery fee to total for display', () => {
-    renderWithProviders(<DeliveryOrderStatus orderId="del-1" />);
+    renderWithProviders(<DeliveryOrderStatus orderId="del-1" accessToken="test-token" />);
 
     // DB total (50.20) already includes delivery_fee via calculate_order_total trigger
     // subtotal(40) + tax(7.2) + delivery_fee(3) = 50.20

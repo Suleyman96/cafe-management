@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { CategoryModal } from '@/components/menu/category-modal';
 import { MenuItemCard, MenuItemSkeletonCard } from '@/components/menu/menu-item-card';
 import { MenuItemModal } from '@/components/menu/menu-item-modal';
+import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import {
   useCategories,
   useDeleteCategory,
@@ -30,6 +31,8 @@ export default function MenuPage() {
   const [showItemModal, setShowItemModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
 
   // Use hooks - these require QueryClientProvider
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
@@ -77,25 +80,29 @@ export default function MenuPage() {
     [filteredItems],
   );
 
-  const handleDeleteItem = async (id: string) => {
-    if (!confirm(t('menu.confirmDeleteItem'))) return;
+  const handleConfirmDeleteItem = async () => {
+    if (!deletingItemId) return;
     try {
-      await deleteMenuItem.mutateAsync(id);
+      await deleteMenuItem.mutateAsync(deletingItemId);
       toast.success(t('menu.itemDeleted'));
     } catch (error) {
       Sentry.captureException(error);
       toast.error(t('menu.failedDeleteItem'));
+    } finally {
+      setDeletingItemId(null);
     }
   };
 
-  const handleDeleteCategory = async (id: string) => {
-    if (!confirm(t('menu.confirmDeleteCategory'))) return;
+  const handleConfirmDeleteCategory = async () => {
+    if (!deletingCategoryId) return;
     try {
-      await deleteCategory.mutateAsync(id);
+      await deleteCategory.mutateAsync(deletingCategoryId);
       toast.success(t('menu.categoryDeleted'));
     } catch (error) {
       Sentry.captureException(error);
       toast.error(t('menu.failedDeleteCategory'));
+    } finally {
+      setDeletingCategoryId(null);
     }
   };
 
@@ -239,7 +246,7 @@ export default function MenuPage() {
                           setEditingItem(item);
                           setShowItemModal(true);
                         }}
-                        onDelete={() => handleDeleteItem(item.id)}
+                        onDelete={() => setDeletingItemId(item.id)}
                         onToggleAvailability={() =>
                           handleToggleAvailability(item.id, item.is_available)
                         }
@@ -293,7 +300,7 @@ export default function MenuPage() {
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleDeleteCategory(category.id)}
+                            onClick={() => setDeletingCategoryId(category.id)}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                             title={t('delete', { ns: 'common' })}
                           >
@@ -318,7 +325,7 @@ export default function MenuPage() {
                                 setEditingItem(item);
                                 setShowItemModal(true);
                               }}
-                              onDelete={() => handleDeleteItem(item.id)}
+                              onDelete={() => setDeletingItemId(item.id)}
                               onToggleAvailability={() =>
                                 handleToggleAvailability(item.id, item.is_available)
                               }
@@ -352,7 +359,7 @@ export default function MenuPage() {
                             setEditingItem(item);
                             setShowItemModal(true);
                           }}
-                          onDelete={() => handleDeleteItem(item.id)}
+                          onDelete={() => setDeletingItemId(item.id)}
                           onToggleAvailability={() =>
                             handleToggleAvailability(item.id, item.is_available)
                           }
@@ -395,6 +402,7 @@ export default function MenuPage() {
         <MenuItemModal
           item={editingItem || undefined}
           categories={categories}
+          menuItems={menuItems}
           onClose={() => {
             setShowItemModal(false);
             setEditingItem(null);
@@ -405,12 +413,29 @@ export default function MenuPage() {
       {showCategoryModal && (
         <CategoryModal
           category={editingCategory || undefined}
+          categories={categories}
           onClose={() => {
             setShowCategoryModal(false);
             setEditingCategory(null);
           }}
         />
       )}
+
+      {/* Delete Confirmations */}
+      <ConfirmDialog
+        isOpen={!!deletingItemId}
+        onClose={() => setDeletingItemId(null)}
+        onConfirm={handleConfirmDeleteItem}
+        title={t('delete', { ns: 'common' })}
+        message={t('menu.confirmDeleteItem')}
+      />
+      <ConfirmDialog
+        isOpen={!!deletingCategoryId}
+        onClose={() => setDeletingCategoryId(null)}
+        onConfirm={handleConfirmDeleteCategory}
+        title={t('delete', { ns: 'common' })}
+        message={t('menu.confirmDeleteCategory')}
+      />
     </div>
   );
 }

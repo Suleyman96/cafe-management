@@ -56,6 +56,7 @@
   "deliveryLanding.errorAddress": "Çatdırılma ünvanını daxil edin",
   "deliveryLanding.errorName": "Adınızı daxil edin",
   "deliveryLanding.errorPhone": "Telefon nömrənizi daxil edin",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.heroSubtext": "Məlumatlarınızı daxil edin və menyumuza baxın",
   "deliveryLanding.heroTitle": "Çatdırılma Sifarişi",
   "deliveryLanding.labelAddress": "Çatdırılma Ünvanı *",

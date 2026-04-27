@@ -1,24 +1,10 @@
 import { QUERY_KEYS } from '@gustri/core';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { db, supabase } from '@/lib/supabase';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { db } from '@/lib/supabase';
 import type { WaiterCall } from '@/types';
 
 type CallType = 'assistance' | 'bill' | 'question' | 'complaint' | 'emergency';
 type CallPriority = 'low' | 'normal' | 'high' | 'urgent';
-
-export function useWaiterCalls(tableId: string) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.WAITER_CALLS, tableId],
-    queryFn: async (): Promise<WaiterCall[]> => {
-      const { data, error } = await (supabase.rpc as Function)('get_waiter_calls_for_table', {
-        p_table_id: tableId,
-        p_status: 'pending',
-      });
-      if (error) throw error;
-      return (data as unknown as WaiterCall[]) || [];
-    },
-  });
-}
 
 interface CreateWaiterCallData {
   tableId: string;
@@ -56,6 +42,3 @@ export function useCreateWaiterCall() {
     },
   });
 }
-
-// Keep for backwards compatibility
-export const useCallWaiter = useCreateWaiterCall;

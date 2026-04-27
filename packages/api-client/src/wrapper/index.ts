@@ -15,6 +15,7 @@ import { createOrderItemsWrapper, createOrdersWrapper } from './orders';
 import { createPaymentsWrapper } from './payments';
 import { createRealtimeWrapper } from './realtime';
 import { createRefundsWrapper } from './refunds';
+import { createReportsWrapper } from './reports';
 import { createRpcWrapper } from './rpc';
 import { createSchedulesWrapper } from './schedules';
 import { createSettingsWrapper } from './settings';
@@ -51,6 +52,7 @@ export class SupabaseWrapper {
   private _refunds?: ReturnType<typeof createRefundsWrapper>;
   private _tenants?: ReturnType<typeof createTenantsWrapper>;
   private _deliveryCustomers?: ReturnType<typeof createDeliveryCustomersWrapper>;
+  private _reports?: ReturnType<typeof createReportsWrapper>;
   private _rpc?: ReturnType<typeof createRpcWrapper>;
   private _views?: ReturnType<typeof createViewsWrapper>;
   private _realtime?: ReturnType<typeof createRealtimeWrapper>;
@@ -141,6 +143,10 @@ export class SupabaseWrapper {
       this._deliveryCustomers = createDeliveryCustomersWrapper(this.ctx);
     return this._deliveryCustomers;
   }
+  get reports() {
+    if (!this._reports) this._reports = createReportsWrapper(this.ctx);
+    return this._reports;
+  }
   get rpc() {
     if (!this._rpc) this._rpc = createRpcWrapper(this.ctx);
     return this._rpc;
@@ -168,6 +174,14 @@ export type { OrderItemsWrapper, OrdersWrapper } from './orders';
 export type { PaymentsWrapper } from './payments';
 export type { RealtimeWrapper } from './realtime';
 export type { RefundsWrapper } from './refunds';
+export type {
+  ExpenseSummaryRow,
+  ReportsWrapper,
+  RevenueSummaryRow,
+  StaffPerformanceRow,
+  TopSoldItemRow,
+  WasteSummaryRow,
+} from './reports';
 export type { RpcWrapper } from './rpc';
 export type { SchedulesWrapper } from './schedules';
 export type { SettingsWrapper } from './settings';

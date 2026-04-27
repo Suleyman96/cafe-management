@@ -6,6 +6,7 @@ import { Button, LoadingSpinner } from '@gustri/ui';
 import { DollarSign, FolderOpen, Pencil, Plus, Settings, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { ExpenseCategoryModal } from '@/components/modals/expense-category-modal';
 import { ExpenseModal } from '@/components/modals/expense-modal';
 import {
@@ -28,6 +29,7 @@ export default function ExpensesClient() {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const PAYMENT_METHOD_LABELS: Record<string, string> = {
     cash: t('cash', { ns: 'common' }),
@@ -52,14 +54,16 @@ export default function ExpensesClient() {
   const formatPrice = useFormatPrice();
   const deleteExpense = useDeleteExpense();
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return;
     try {
-      await deleteExpense.mutateAsync(id);
+      await deleteExpense.mutateAsync(deletingId);
       toast.success(t('expenses.expenseDeleted'));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t('delete', { ns: 'common' });
       toast.error(message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -140,7 +144,7 @@ export default function ExpensesClient() {
         <div className="bg-white rounded-lg border p-4 mb-6">
           <h3 className="text-sm font-medium text-gray-700 mb-3">{t('expenses.byCategory')}</h3>
           <div className="space-y-2">
-            {summary.byCategory.map((cat: any) => {
+            {summary.byCategory.map((cat) => {
               const percentage = summary.total > 0 ? (cat.total / summary.total) * 100 : 0;
               return (
                 <div key={cat.name} className="flex items-center gap-3">
@@ -197,7 +201,7 @@ export default function ExpensesClient() {
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
           <option value="">{t('expenses.allCategories')}</option>
-          {categories.map((cat: any) => (
+          {categories.map((cat) => (
             <option key={cat.id} value={cat.id}>
               {cat.name}
             </option>
@@ -247,54 +251,61 @@ export default function ExpensesClient() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {expenses.map((expense: any) => (
-                <tr key={expense.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {new Date(expense.expense_date).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-gray-900 truncate max-w-xs">
-                      {expense.description}
-                    </p>
-                    {expense.notes && (
-                      <p className="text-xs text-gray-500 truncate max-w-xs">{expense.notes}</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {expense.category?.name || '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
-                    {formatPrice(expense.amount)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {PAYMENT_METHOD_LABELS[expense.payment_method] || expense.payment_method}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {expense.created_by_staff?.full_name || '-'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => {
-                          setEditingExpense(expense);
-                          setShowExpenseModal(true);
-                        }}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
-                        title={t('edit', { ns: 'common' })}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(expense.id)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 rounded"
-                        title={t('delete', { ns: 'common' })}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {expenses.map(
+                (
+                  expense: (typeof expenses)[number] & {
+                    category?: { name: string } | null;
+                    created_by_staff?: { full_name: string } | null;
+                  },
+                ) => (
+                  <tr key={expense.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {new Date(expense.expense_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-gray-900 truncate max-w-xs">
+                        {expense.description}
+                      </p>
+                      {expense.notes && (
+                        <p className="text-xs text-gray-500 truncate max-w-xs">{expense.notes}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {expense.category?.name || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
+                      {formatPrice(expense.amount)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {PAYMENT_METHOD_LABELS[expense.payment_method] || expense.payment_method}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {expense.created_by_staff?.full_name || '-'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => {
+                            setEditingExpense(expense);
+                            setShowExpenseModal(true);
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
+                          title={t('edit', { ns: 'common' })}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingId(expense.id)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                          title={t('delete', { ns: 'common' })}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ),
+              )}
               {expenses.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
@@ -320,6 +331,15 @@ export default function ExpensesClient() {
 
       {/* Category Management Modal */}
       {showCategoryModal && <ExpenseCategoryModal onClose={() => setShowCategoryModal(false)} />}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deletingId}
+        onClose={() => setDeletingId(null)}
+        onConfirm={handleConfirmDelete}
+        title={t('delete', { ns: 'common' })}
+        message={t('expenses.confirmDeleteExpense')}
+      />
     </div>
   );
 }

@@ -2,9 +2,9 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { MessageSquare, Palette, QrCode } from 'lucide-react';
+import type { SettingsTabProps } from '@/types/settings';
 import { ColorPicker } from './color-picker';
 import { ImageUpload } from './image-upload';
-import type { SettingsTabProps } from './settings-types';
 
 export function BrandingSettingsTab({ formData, onChange }: SettingsTabProps) {
   const { t } = useTranslation('staff');

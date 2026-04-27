@@ -1,5 +1,6 @@
 'use client';
 
+import { calculateOrderTotal, formatElapsedTime } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import {
@@ -18,58 +19,35 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import type { OrderWithDetails } from '@/types';
+import type { OrderWithDetails, Tables, WaiterCalls } from '@/types';
 
 interface TableCardProps {
-  table: any;
-  activeOrders: any[];
-  activeCalls: any[];
+  table: Tables;
+  activeOrders: OrderWithDetails[];
+  activeCalls: WaiterCalls[];
   isAdmin: boolean;
   creatingOrderForTable: string | null;
   tableMenuOpen: string | null;
   onTableMenuToggle: (tableId: string | null) => void;
-  onEditTable: (table: any) => void;
-  onDeleteTable: (table: any) => void;
-  onTransferTable: (table: any) => void;
+  onEditTable: (table: Tables) => void;
+  onDeleteTable: (table: Tables) => void;
+  onTransferTable: (table: Tables) => void;
   formatPrice: (amount: number) => string;
 }
 
-// Get order total from database (includes tax) for consistency
-const calculateOrderTotal = (order: any) => {
-  if (order?.total != null) return order.total;
-  if (!order?.order_items) return 0;
-  return order.order_items
-    .filter((item: any) => item.status !== 'cancelled')
-    .reduce((sum: number, item: any) => sum + item.quantity * item.item_price, 0);
-};
-
-// Format duration
-const formatDuration = (createdAt: string) => {
-  const start = new Date(createdAt);
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - start.getTime()) / 1000 / 60);
-
-  if (diff < 60) {
-    return `${diff}m`;
-  }
-  const hours = Math.floor(diff / 60);
-  const mins = diff % 60;
-  return `${hours}h ${mins}m`;
-};
-
 // Get effective status based on item statuses
-const getEffectiveOrderStatus = (order: any) => {
+const getEffectiveOrderStatus = (order: OrderWithDetails) => {
   if (!order?.order_items || order.order_items.length === 0) {
     return order.status;
   }
 
-  const items = order.order_items.filter((item: any) => item.status !== 'cancelled');
+  const items = order.order_items.filter((item) => item.status !== 'cancelled');
   if (items.length === 0) return order.status;
 
-  const allServed = items.every((item: any) => item.status === 'served');
-  const allReady = items.every((item: any) => item.status === 'ready' || item.status === 'served');
-  const anyReady = items.some((item: any) => item.status === 'ready');
-  const anyPreparing = items.some((item: any) => item.status === 'preparing');
+  const allServed = items.every((item) => item.status === 'served');
+  const allReady = items.every((item) => item.status === 'ready' || item.status === 'served');
+  const anyReady = items.some((item) => item.status === 'ready');
+  const anyPreparing = items.some((item) => item.status === 'preparing');
 
   if (allServed) return 'served';
   if (allReady) return 'ready';
@@ -79,7 +57,7 @@ const getEffectiveOrderStatus = (order: any) => {
 };
 
 // Get table card background based on status and orders
-const getTableCardStyle = (table: any, activeOrders: any[]) => {
+const getTableCardStyle = (table: Tables, activeOrders: OrderWithDetails[]) => {
   if (!table.is_active) {
     return 'bg-gray-100 border-gray-300 opacity-60';
   }
@@ -124,14 +102,12 @@ export function TableCard({
   const activeOrder: OrderWithDetails | undefined = activeOrders[0];
   const hasActiveCalls = activeCalls.length > 0;
 
-  const combinedTotal = activeOrders.reduce((total: number, order: any) => {
+  const combinedTotal = activeOrders.reduce((total, order) => {
     return total + calculateOrderTotal(order);
   }, 0);
 
-  const combinedItemsCount = activeOrders.reduce((count: number, order: any) => {
-    return (
-      count + (order.order_items?.filter((item: any) => item.status !== 'cancelled').length || 0)
-    );
+  const combinedItemsCount = activeOrders.reduce((count, order) => {
+    return count + (order.order_items?.filter((item) => item.status !== 'cancelled').length || 0);
   }, 0);
 
   // Get order status badge styling
@@ -296,7 +272,7 @@ export function TableCard({
 
           {/* Order Status Badges */}
           <div className="flex flex-wrap gap-1.5">
-            {activeOrders.map((order: any, index: number) => {
+            {activeOrders.map((order, index: number) => {
               const orderEffectiveStatus = getEffectiveOrderStatus(order);
               const orderStatusBadge = getOrderStatusBadge(orderEffectiveStatus);
               return (
@@ -317,7 +293,7 @@ export function TableCard({
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="flex items-center gap-2 text-gray-600">
               <Clock className="h-4 w-4 text-gray-400" />
-              <span>{activeOrder && formatDuration(activeOrder.created_at)}</span>
+              <span>{activeOrder && formatElapsedTime(activeOrder.created_at)}</span>
             </div>
             <div className="flex items-center gap-2 text-gray-600">
               <Package className="h-4 w-4 text-gray-400" />
@@ -338,7 +314,7 @@ export function TableCard({
           {/* Individual Order Totals (if multiple) */}
           {hasMultipleOrders && (
             <div className="text-xs text-gray-500 space-y-0.5">
-              {activeOrders.map((order: any, index: number) => (
+              {activeOrders.map((order, index: number) => (
                 <div key={order.id} className="flex justify-between">
                   <span>{t('tables.orderNumber', { number: index + 1 })}</span>
                   <span>{formatPrice(calculateOrderTotal(order))}</span>
@@ -360,7 +336,7 @@ export function TableCard({
       )}
 
       {/* Waiter Calls */}
-      {activeCalls.map((call: any) => (
+      {activeCalls.map((call) => (
         <div key={call.id} className="mt-3 p-3 bg-red-100 border border-red-300 rounded-lg">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-red-600" />
@@ -368,7 +344,7 @@ export function TableCard({
               {t(`calls.${call.reason}`, { defaultValue: call.reason })}
             </span>
           </div>
-          {call.message && <p className="text-red-600 text-sm mt-1">{call.message}</p>}
+          {call.notes && <p className="text-red-600 text-sm mt-1">{call.notes}</p>}
         </div>
       ))}
 

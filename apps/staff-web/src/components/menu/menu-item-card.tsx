@@ -13,7 +13,7 @@ interface MenuItemCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onToggleAvailability: () => void;
-  t: (key: string, opts?: any) => string;
+  t: (key: string, opts?: Record<string, string | number>) => string;
 }
 
 export function MenuItemCard({

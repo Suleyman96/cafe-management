@@ -1,91 +1,58 @@
 import { QUERY_KEYS } from '@gustri/core';
-import type { RealtimeChannel } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useMemo } from 'react';
 import { notifyWaiterCall } from '@/lib/notifications';
 import { playWaiterCallSound } from '@/lib/sound';
-import { db, supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/store/auth-store';
+import { db } from '@/lib/supabase';
 import type { WaiterCall } from '@/types';
+import { useRealtimeSync } from './use-realtime-sync';
 
 // Shared mutations re-exported for direct use
 export { useAcknowledgeWaiterCall, useResolveWaiterCall } from '@gustri/queries';
 
 // Local hook — has realtime subscription with sound/notification side effects
 export function useWaiterCalls(status?: WaiterCall['status']) {
-  const queryClient = useQueryClient();
-  const tenantId = useAuthStore((s) => s.staff?.tenant_id);
-
   const query = useQuery({
     queryKey: [QUERY_KEYS.WAITER_CALLS, status],
     queryFn: async (): Promise<WaiterCall[]> => {
-      return await db.waiterCalls.findAll(status);
+      return await db.waiterCalls.findAll(status ? { status } : undefined);
     },
   });
 
-  // Real-time subscription (needs raw supabase client for channel API)
-  useEffect(() => {
-    if (!tenantId) return;
-    let channel: RealtimeChannel;
+  const realtimeHandlers = useMemo(
+    () => [
+      {
+        table: 'waiter_calls' as const,
+        event: 'INSERT' as const,
+        queryKeys: [[QUERY_KEYS.WAITER_CALLS]],
+        onPayload: async (newRecord: Record<string, unknown>) => {
+          await playWaiterCallSound();
 
-    const tenantFilter = `tenant_id=eq.${tenantId}`;
+          try {
+            const tableData = (await db.tables.findById(newRecord.table_id as string)) as {
+              table_number: string;
+            };
+            await notifyWaiterCall(
+              tableData.table_number,
+              (newRecord.call_type as string) ?? 'assistance',
+              newRecord.table_id as string,
+            );
+          } catch {
+            // Table lookup failed — notification skipped, invalidation still happens
+          }
+        },
+      },
+      {
+        table: 'waiter_calls' as const,
+        event: 'UPDATE' as const,
+        queryKeys: [[QUERY_KEYS.WAITER_CALLS]],
+      },
+    ],
+    [],
+  );
 
-    const setupSubscription = async () => {
-      channel = supabase
-        .channel('waiter_calls')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'waiter_calls',
-            filter: tenantFilter,
-          },
-          async (payload) => {
-            await playWaiterCallSound();
-
-            const newRecord = payload.new as Record<string, unknown>;
-            const { data } = await supabase
-              .from('tables')
-              .select('table_number')
-              .eq('id', newRecord.table_id as string)
-              .single();
-
-            const tableData = data as { table_number: string } | null;
-
-            if (tableData) {
-              await notifyWaiterCall(
-                tableData.table_number,
-                (newRecord.call_type as string) ?? 'assistance',
-              );
-            }
-
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
-          },
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'waiter_calls',
-            filter: tenantFilter,
-          },
-          () => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
-          },
-        )
-        .subscribe();
-    };
-
-    setupSubscription();
-
-    return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
-    };
-  }, [queryClient, tenantId]);
+  useRealtimeSync('waiter_calls', realtimeHandlers);
 
   return query;
 }
@@ -117,7 +84,7 @@ export function useUpdateWaiterCall() {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
     },
     onError: (error: Error) => {
-      console.error('Failed to update waiter call:', error.message);
+      Sentry.captureException(error, { extra: { context: 'updateWaiterCall' } });
     },
   });
 }

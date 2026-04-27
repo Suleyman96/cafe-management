@@ -37,7 +37,7 @@ export function SocialMediaSection({ form, updateField }: SettingsSectionProps) 
           <TextInput
             key={field.key}
             label={field.label}
-            value={form[field.key] || ''}
+            value={(form[field.key] as string) || ''}
             onChangeText={(v: string) => updateField(field.key, v || null)}
             mode="outlined"
             dense

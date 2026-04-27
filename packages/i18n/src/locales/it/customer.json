@@ -56,6 +56,7 @@
   "deliveryLanding.errorAddress": "Inserisci il tuo indirizzo di consegna",
   "deliveryLanding.errorName": "Inserisci il tuo nome",
   "deliveryLanding.errorPhone": "Inserisci il tuo numero di telefono",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.heroSubtext": "Inserisci i tuoi dati e sfoglia il nostro menu",
   "deliveryLanding.heroTitle": "Ordina a Domicilio",
   "deliveryLanding.labelAddress": "Indirizzo di Consegna *",

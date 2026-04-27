@@ -30,6 +30,25 @@ export {
   WASTE_REASON,
 } from '@gustri/database';
 
+// Active order status sets — used to filter "in-progress" orders by order type
+export const ACTIVE_ORDER_STATUSES = [
+  'pending_approval',
+  'new',
+  'preparing',
+  'ready',
+  'served',
+] as const;
+
+export const ACTIVE_TAKEOUT_STATUSES = ['pending_approval', 'new', 'preparing', 'ready'] as const;
+
+export const ACTIVE_DELIVERY_STATUSES = [
+  'pending_approval',
+  'new',
+  'preparing',
+  'ready',
+  'out_for_delivery',
+] as const;
+
 // Waiter call reasons (UI-specific with labels and emojis)
 export const WAITER_CALL_REASONS = [
   { value: 'assistance', label: 'General Help', emoji: '💬' },
@@ -39,8 +58,8 @@ export const WAITER_CALL_REASONS = [
   { value: 'emergency', label: 'Emergency', emoji: '🚨' },
 ] as const;
 
-// Tax rate
-export const TAX_RATE = 0.18; // 18%
+/** Default tax percentage used when cafe settings haven't loaded yet */
+export const DEFAULT_TAX_PERCENTAGE = 0;
 
 // Refresh intervals (ms)
 export const REFRESH_INTERVALS = {
@@ -62,33 +81,6 @@ export const STATUS_COLORS = {
   out_for_delivery: '#8B5CF6', // purple-500
   delivered: '#10B981', // green-500
   cancelled: '#9CA3AF', // gray-400
-} as const;
-
-// Notification sounds
-export const SOUNDS = {
-  NEW_ORDER: 'new-order',
-  WAITER_CALL: 'waiter-call',
-  ORDER_READY: 'order-ready',
-} as const;
-
-// Local storage keys
-export const STORAGE_KEYS = {
-  CART: 'cafe-cart',
-  AUTH_TOKEN: 'cafe-auth-token',
-  USER: 'cafe-user',
-} as const;
-
-// API endpoints (relative to Supabase URL)
-export const API_ENDPOINTS = {
-  TABLES: '/rest/v1/tables',
-  ORDERS: '/rest/v1/orders',
-  ORDER_ITEMS: '/rest/v1/order_items',
-  MENU_ITEMS: '/rest/v1/menu_items',
-  CATEGORIES: '/rest/v1/categories',
-  STAFF: '/rest/v1/staff',
-  WAITER_CALLS: '/rest/v1/waiter_calls',
-  ACTIVE_ORDERS: '/rest/v1/active_orders_view',
-  SALES_SUMMARY: '/rest/v1/sales_summary_view',
 } as const;
 
 // Subscription plan types and limits
@@ -186,6 +178,7 @@ export const QUERY_KEYS = {
   OVERDUE_TASKS_COUNT: 'overdue_tasks_count',
   OPEN_TASKS_COUNT: 'open_tasks_count',
   PAYMENTS: 'payments',
+  REPORTS: 'reports',
   FEEDBACK: 'feedback',
   STAFF_MEMBER: 'staff_member',
   PAYMENTS_BY_STAFF: 'payments_by_staff',
@@ -223,6 +216,26 @@ export const WEEKDAYS = [
   { value: 6, label: 'Sat' },
   { value: 7, label: 'Sun' },
 ] as const;
+
+/** Maps order status enum values to i18n translation keys */
+export const ORDER_STATUS_KEYS: Record<string, string> = {
+  pending_approval: 'orders.pendingApproval',
+  new: 'orders.new',
+  preparing: 'orders.preparing',
+  ready: 'orders.ready',
+  served: 'orders.served',
+  out_for_delivery: 'orders.outForDelivery',
+  delivered: 'orders.delivered',
+  closed: 'orders.closed',
+  cancelled: 'orders.cancelled',
+};
+
+// Time-elapsed color thresholds (minutes) — shared across web & mobile kitchen displays
+export const TIME_ELAPSED_THRESHOLDS = {
+  WARNING: 10, // yellow/amber
+  ELEVATED: 15, // orange
+  CRITICAL: 20, // red
+} as const;
 
 // UI constants
 export const UI = {

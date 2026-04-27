@@ -1,9 +1,15 @@
 import * as Sentry from '@sentry/nextjs';
 import { type NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
 import { validatePassword } from '@/lib/api/password-validation';
 import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
 import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
+
+const ResetPasswordSchema = z.object({
+  staffId: z.string().uuid('Invalid staff ID format'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters').max(128),
+});
 
 export const dynamic = 'force-dynamic';
 
@@ -26,11 +32,15 @@ export async function POST(request: NextRequest) {
     if (adminOrError instanceof NextResponse) return adminOrError;
 
     const body = await request.json();
-    const { staffId, newPassword } = body;
 
-    if (!staffId || !newPassword) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const parseResult = ResetPasswordSchema.safeParse(body);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: parseResult.error.issues },
+        { status: 400 },
+      );
     }
+    const { staffId, newPassword } = parseResult.data;
 
     // Validate password strength
     const passwordCheck = validatePassword(newPassword);

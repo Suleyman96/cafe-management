@@ -3,11 +3,11 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Modal, Portal, Text } from 'react-native-paper';
 import { TextInput } from '@/lib/paper-compat';
-import { BRAND_PRIMARY } from '@/theme';
+import { BRAND_PRIMARY, COLORS } from '@/theme';
 
 const MOVEMENT_TYPES = [
-  { value: 'in', label: '+ Add', color: '#10b981', bg: '#d1fae5' },
-  { value: 'out', label: '- Remove', color: '#ef4444', bg: '#fee2e2' },
+  { value: 'in', label: '+ Add', color: COLORS.success, bg: '#d1fae5' },
+  { value: 'out', label: '- Remove', color: COLORS.danger, bg: '#fee2e2' },
   { value: 'adjustment', label: 'Set To', color: BRAND_PRIMARY, bg: '#dbeafe' },
 ] as const;
 
@@ -136,7 +136,7 @@ export function StockMovementModal({
                 {t('stock.newStockLevel')}
               </Text>
               <Text variant="titleLarge" style={styles.previewValue}>
-                {newQty.toFixed(2)} {unit}
+                {Number.isNaN(newQty) ? '0.00' : newQty.toFixed(2)} {unit}
               </Text>
             </Card.Content>
           </Card>
@@ -169,19 +169,19 @@ export function StockMovementModal({
 }
 
 const styles = StyleSheet.create({
-  modal: { backgroundColor: '#fff', margin: 16, padding: 20, borderRadius: 12 },
+  modal: { backgroundColor: COLORS.card, margin: 16, padding: 20, borderRadius: 12 },
   title: { fontWeight: '700', marginBottom: 12 },
-  label: { color: '#6b7280', marginBottom: 4, marginTop: 4 },
+  label: { color: COLORS.textMuted, marginBottom: 4, marginTop: 4 },
   input: { marginBottom: 8 },
   typeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  currentCard: { backgroundColor: '#f9fafb', marginBottom: 12 },
+  currentCard: { backgroundColor: COLORS.background, marginBottom: 12 },
   currentContent: { alignItems: 'center' },
-  currentLabel: { color: '#6b7280' },
-  currentValue: { fontWeight: '700', color: '#1e293b' },
+  currentLabel: { color: COLORS.textMuted },
+  currentValue: { fontWeight: '700', color: COLORS.textPrimary },
   previewCard: { backgroundColor: '#eff6ff', marginBottom: 8 },
   previewContent: { alignItems: 'center' },
   previewLabel: { color: BRAND_PRIMARY },
   previewValue: { fontWeight: '700', color: '#1e40af' },
-  errorText: { color: '#ef4444', marginBottom: 8, marginTop: -4 },
+  errorText: { color: COLORS.danger, marginBottom: 8, marginTop: -4 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 12 },
 });

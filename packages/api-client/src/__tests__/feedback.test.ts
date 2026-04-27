@@ -63,7 +63,7 @@ describe('FeedbackWrapper', () => {
       },
     });
     const feedback = createFeedbackWrapper(ctx);
-    await feedback.findAll('pending' as any);
+    await feedback.findAll({ status: 'pending' });
     const calls = ctx.getCalls();
     expect(calls[0].table).toBe('customer_feedback');
   });

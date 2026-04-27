@@ -2,13 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { createViewsWrapper } from '../wrapper/views';
 import { createMockContext } from './helpers/mock-supabase';
 
-const activeOrder = {
-  id: 'order-1',
-  status: 'preparing',
-  table_number: 'T01',
-  created_at: new Date().toISOString(),
-};
-
 const salesRow = {
   date: '2024-06-15',
   total_revenue: 1500.0,
@@ -23,28 +16,6 @@ const paymentSummary = {
 };
 
 describe('ViewsWrapper', () => {
-  it('getActiveOrders returns active orders', async () => {
-    const ctx = createMockContext({
-      responses: {
-        active_orders_view: { data: [activeOrder], error: null },
-      },
-    });
-    const views = createViewsWrapper(ctx);
-    const result = await views.getActiveOrders();
-    expect(result).toEqual([activeOrder]);
-  });
-
-  it('getActiveOrders returns empty array when no data', async () => {
-    const ctx = createMockContext({
-      responses: {
-        active_orders_view: { data: null, error: null },
-      },
-    });
-    const views = createViewsWrapper(ctx);
-    const result = await views.getActiveOrders();
-    expect(result).toEqual([]);
-  });
-
   it('getSalesSummary returns sales data', async () => {
     const ctx = createMockContext({
       responses: {
@@ -103,10 +74,10 @@ describe('ViewsWrapper', () => {
   it('throws on supabase error', async () => {
     const ctx = createMockContext({
       responses: {
-        active_orders_view: { data: null, error: { status: 500, message: 'Internal' } },
+        sales_summary_view: { data: null, error: { status: 500, message: 'Internal' } },
       },
     });
     const views = createViewsWrapper(ctx);
-    await expect(views.getActiveOrders()).rejects.toThrow();
+    await expect(views.getSalesSummary()).rejects.toThrow();
   });
 });

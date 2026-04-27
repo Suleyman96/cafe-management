@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
 import { Providers } from '@/components/providers';
+import { HtmlLangSetter } from '@/components/ui/html-lang-setter';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -27,9 +28,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <Providers>
+          <HtmlLangSetter />
           {children}
           <Toaster position="top-center" />
         </Providers>

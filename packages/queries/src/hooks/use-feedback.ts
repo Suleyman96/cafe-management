@@ -7,7 +7,8 @@ export function useFeedback(status?: CustomerFeedback['status']) {
   const db = useDb();
   return useQuery({
     queryKey: [QUERY_KEYS.FEEDBACK, status],
-    queryFn: () => db.feedback.findAll(status) as Promise<CustomerFeedback[]>,
+    queryFn: () =>
+      db.feedback.findAll(status ? { status } : undefined) as Promise<CustomerFeedback[]>,
   });
 }
 

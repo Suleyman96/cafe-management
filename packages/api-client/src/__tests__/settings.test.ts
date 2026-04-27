@@ -32,7 +32,7 @@ describe('SettingsWrapper', () => {
       },
     });
     const settings = createSettingsWrapper(ctx);
-    const result = await settings.update({ restaurant_name: 'Updated Cafe' } as any);
+    const result = await settings.update({ restaurant_name: 'Updated Cafe' });
     expect(result.restaurant_name).toBe('Updated Cafe');
     expect(ctx.getCalls()[1].method).toBe('update');
   });
@@ -54,6 +54,6 @@ describe('SettingsWrapper', () => {
       },
     });
     const settings = createSettingsWrapper(ctx);
-    await expect(settings.update({ restaurant_name: 'Fail' } as any)).rejects.toThrow();
+    await expect(settings.update({ restaurant_name: 'Fail' })).rejects.toThrow();
   });
 });

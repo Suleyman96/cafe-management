@@ -130,6 +130,7 @@ export const OrderSchema = z.object({
   estimated_delivery_time: z.string().max(50).nullable(),
   delivered_at: z.string().nullable(),
   delivery_person_id: z.string().uuid().nullable(),
+  delivery_access_token: z.string().nullable(),
 });
 
 export const OrderItemSchema = z.object({
@@ -168,7 +169,7 @@ export const MenuItemSchema = z.object({
   category_id: z.string().uuid().nullable(),
   name: z.string().max(100),
   description: z.string().max(2000).nullable(),
-  price: z.number().positive(),
+  price: z.number().nonnegative(),
   image_url: optionalUrl,
   preparation_time: z.number().nullable(),
   is_popular: z.boolean(),
@@ -197,6 +198,7 @@ export const StaffSchema = z.object({
   last_login_at: z.string().nullable(),
   auth_user_id: z.string().uuid().nullable(),
   preferred_language: z.string().max(10),
+  push_token: z.string().nullable(),
 });
 
 export const WaiterCallSchema = z.object({
@@ -428,6 +430,41 @@ export const RefundSchema = z.object({
   created_at: z.string(),
 });
 
+export const TenantSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  slug: z.string(),
+  plan: z.enum(['free', 'standard', 'pro', 'business']),
+  is_active: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const CategorySchema = z.object({
+  id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
+  name: z.string(),
+  description: z.string().nullable(),
+  icon: z.string().nullable(),
+  display_order: z.number().int(),
+  is_active: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const DeliveryCustomerSchema = z.object({
+  id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
+  name: z.string(),
+  phone: z.string(),
+  address: z.string(),
+  notes: z.string().nullable(),
+  order_count: z.number().int(),
+  last_order_at: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
 // ─── Inferred Types ──────────────────────────────────────────────
 
 export type OrderStatus = z.infer<typeof OrderStatusSchema>;
@@ -452,3 +489,26 @@ export type TaskRecurrence = z.infer<typeof TaskRecurrenceSchema>;
 export type ScheduleStatus = z.infer<typeof ScheduleStatusSchema>;
 export type CurrencyPosition = z.infer<typeof CurrencyPositionSchema>;
 export type RefundMethod = z.infer<typeof RefundMethodSchema>;
+// Table schema inferred types
+export type OrderInput = z.infer<typeof OrderSchema>;
+export type OrderItemInput = z.infer<typeof OrderItemSchema>;
+export type TableInput = z.infer<typeof TableSchema>;
+export type MenuItemInput = z.infer<typeof MenuItemSchema>;
+export type StaffInput = z.infer<typeof StaffSchema>;
+export type WaiterCallInput = z.infer<typeof WaiterCallSchema>;
+export type CustomerFeedbackInput = z.infer<typeof CustomerFeedbackSchema>;
+export type OrderPaymentInput = z.infer<typeof OrderPaymentSchema>;
+export type TableTransferInput = z.infer<typeof TableTransferSchema>;
+export type StaffScheduleInput = z.infer<typeof StaffScheduleSchema>;
+export type StockItemInput = z.infer<typeof StockItemSchema>;
+export type StockMovementInput = z.infer<typeof StockMovementSchema>;
+export type ExpenseCategoryInput = z.infer<typeof ExpenseCategorySchema>;
+export type ExpenseInput = z.infer<typeof ExpenseSchema>;
+export type WasteLogInput = z.infer<typeof WasteLogSchema>;
+export type TaskCategoryInput = z.infer<typeof TaskCategorySchema>;
+export type TaskInput = z.infer<typeof TaskSchema>;
+export type CafeSettingsInput = z.infer<typeof CafeSettingsSchema>;
+export type RefundInput = z.infer<typeof RefundSchema>;
+export type DeliveryCustomerInput = z.infer<typeof DeliveryCustomerSchema>;
+export type TenantInput = z.infer<typeof TenantSchema>;
+export type CategoryInput = z.infer<typeof CategorySchema>;

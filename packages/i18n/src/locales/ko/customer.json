@@ -56,6 +56,7 @@
   "deliveryLanding.errorAddress": "배달 주소를 입력해 주세요",
   "deliveryLanding.errorName": "이름을 입력해 주세요",
   "deliveryLanding.errorPhone": "전화번호를 입력해 주세요",
+  "deliveryLanding.errorPhoneFormat": "Please enter a valid phone number",
   "deliveryLanding.heroSubtext": "정보를 입력하고 메뉴를 둘러보세요",
   "deliveryLanding.heroTitle": "배달 주문",
   "deliveryLanding.labelAddress": "배달 주소 *",

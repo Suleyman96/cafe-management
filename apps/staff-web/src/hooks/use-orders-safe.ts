@@ -102,7 +102,7 @@ export function useUpdateOrderItemStatus() {
       const updateList = (old: OrderWithDetails[] | undefined) =>
         old?.map((order) => ({
           ...order,
-          order_items: order.order_items?.map((item: any) =>
+          order_items: order.order_items?.map((item) =>
             item.id === itemId ? { ...item, status } : item,
           ),
         }));
