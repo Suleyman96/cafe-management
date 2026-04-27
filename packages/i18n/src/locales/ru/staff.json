@@ -867,6 +867,7 @@
   "staffMgmt.title": "Управление персоналом",
   "staffMgmt.unexpectedError": "Произошла непредвиденная ошибка",
   "staffMgmt.upcomingSchedule": "Ближайшее расписание",
+  "staffMgmt.webOnlyManagement": "Чтобы добавить, изменить или отключить сотрудников, используйте веб-приложение. Мобильное приложение — только для чтения.",
   "staffMgmt.you": "(Вы)",
   "stock.add": "Добавить",
   "stock.addFirstItem": "Добавьте первую складскую позицию",

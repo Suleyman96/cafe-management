@@ -867,6 +867,7 @@
   "staffMgmt.title": "Personel Yönetimi",
   "staffMgmt.unexpectedError": "Beklenmeyen bir hata oluştu",
   "staffMgmt.upcomingSchedule": "Gelecek Vardiya",
+  "staffMgmt.webOnlyManagement": "Personel eklemek, düzenlemek veya devre dışı bırakmak için web uygulamasını kullanın. Mobil yalnızca okumaya yöneliktir.",
   "staffMgmt.you": "(Siz)",
   "stock.add": "Ekle",
   "stock.addFirstItem": "İlk stok ürününüzü ekleyin",

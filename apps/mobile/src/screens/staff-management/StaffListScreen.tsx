@@ -4,7 +4,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
-import { Chip, Searchbar } from 'react-native-paper';
+import { Banner, Chip, Searchbar } from 'react-native-paper';
 import { StaffCard } from '@/components/staff-management/StaffCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useStaff } from '@/hooks';
@@ -37,6 +37,11 @@ export default function StaffListScreen() {
 
   return (
     <View style={styles.container}>
+      <Banner visible icon="information-outline" style={styles.banner}>
+        {t('staffMgmt.webOnlyManagement', {
+          defaultValue: 'Use the web app to add, edit, or deactivate staff. Mobile is read-only.',
+        })}
+      </Banner>
       <Searchbar
         placeholder={t('staffMgmt.searchPlaceholder')}
         value={search}
@@ -79,6 +84,7 @@ export default function StaffListScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
+  banner: { backgroundColor: '#FEF3C7' },
   search: { marginHorizontal: 16, marginTop: 8 },
   filterRow: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 8, gap: 6 },
   list: { paddingTop: 4, paddingBottom: 24 },

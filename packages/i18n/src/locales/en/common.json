@@ -87,5 +87,12 @@
   "error.message": "An unexpected error occurred. Please restart the app.",
   "error.tryAgain": "Try again",
 
-  "sync.pending": "{{count}} pending"
+  "sync.pending": "{{count}} pending",
+
+  "forceUpdateTitle": "Update required",
+  "forceUpdateBody": "A newer version of the app is required to continue. Please update to keep using gustri.",
+  "forceUpdateLatest": "Latest version: {{latest}}",
+  "openStore": "Open store",
+  "maintenanceTitle": "We'll be right back",
+  "maintenanceBody": "We're updating the system. The app will be back online shortly — thanks for your patience."
 }
