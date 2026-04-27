@@ -2,7 +2,7 @@ import { isDeliveryOrder } from '@gustri/core';
 import { ORDER_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { FlashList } from '@shopify/flash-list';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KitchenOrderCard } from '@/components/kitchen/KitchenOrderCard';
@@ -39,6 +39,10 @@ export default function KitchenDisplayScreen() {
       });
   }, [orders]);
 
+  // Ref keeps callbacks stable — they read latest orders without re-creating
+  const kitchenOrdersRef = useRef(kitchenOrders);
+  kitchenOrdersRef.current = kitchenOrders;
+
   const counts = useMemo(() => {
     const c = { new: 0, preparing: 0, ready: 0 };
     kitchenOrders.forEach((o) => {
@@ -51,7 +55,7 @@ export default function KitchenDisplayScreen() {
     async (orderId: string) => {
       setProcessingOrderId(orderId);
       try {
-        const order = kitchenOrders.find((o) => o.id === orderId);
+        const order = kitchenOrdersRef.current.find((o) => o.id === orderId);
         if (!order) return;
 
         const items = order.order_items || [];
@@ -81,7 +85,7 @@ export default function KitchenDisplayScreen() {
         setProcessingOrderId(null);
       }
     },
-    [kitchenOrders, updateItemStatus, updateOrderStatus, showSuccess, showError, t],
+    [updateItemStatus, updateOrderStatus, showSuccess, showError, t],
   );
 
   const handleMarkItemReady = useCallback(
@@ -100,7 +104,7 @@ export default function KitchenDisplayScreen() {
     async (orderId: string) => {
       setProcessingOrderId(orderId);
       try {
-        const order = kitchenOrders.find((o) => o.id === orderId);
+        const order = kitchenOrdersRef.current.find((o) => o.id === orderId);
         if (!order) return;
 
         const items = order.order_items || [];
@@ -132,14 +136,14 @@ export default function KitchenDisplayScreen() {
         setProcessingOrderId(null);
       }
     },
-    [kitchenOrders, updateItemStatus, updateOrderStatus, showSuccess, showError, t],
+    [updateItemStatus, updateOrderStatus, showSuccess, showError, t],
   );
 
   const handleMarkAllServed = useCallback(
     async (orderId: string) => {
       setProcessingOrderId(orderId);
       try {
-        const order = kitchenOrders.find((o) => o.id === orderId);
+        const order = kitchenOrdersRef.current.find((o) => o.id === orderId);
         if (!order) return;
 
         const items = order.order_items || [];
@@ -173,7 +177,7 @@ export default function KitchenDisplayScreen() {
         setProcessingOrderId(null);
       }
     },
-    [kitchenOrders, updateItemStatus, updateOrderStatus, showSuccess, showError, t],
+    [updateItemStatus, updateOrderStatus, showSuccess, showError, t],
   );
 
   if (isLoading) {

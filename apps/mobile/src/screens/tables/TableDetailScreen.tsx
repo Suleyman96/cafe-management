@@ -3,8 +3,9 @@ import { useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, FAB, Text } from 'react-native-paper';
 import {
   ConfirmDialog,
@@ -115,7 +116,7 @@ export default function TableDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <FlashList
         data={activeOrders}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}

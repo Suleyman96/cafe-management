@@ -2,15 +2,9 @@ import { useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { FlashList } from '@shopify/flash-list';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MenuItemCard } from '@/components/orders/MenuItemCard';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
@@ -214,7 +208,7 @@ export default function AddItemsScreen() {
       </View>
 
       {/* Menu items list */}
-      <FlatList
+      <FlashList
         data={filteredItems}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (

@@ -1,7 +1,8 @@
 import type { Category, MenuItem, MenuItemsInsert, MenuItemsUpdate } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, FAB, IconButton, Searchbar } from 'react-native-paper';
 import { CategoryModal } from '@/components/menu-management/CategoryModal';
 import { MenuItemManageCard } from '@/components/menu-management/MenuItemManageCard';
@@ -249,7 +250,7 @@ export default function MenuManagementScreen() {
         </View>
       )}
 
-      <FlatList
+      <FlashList
         data={filtered}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}

@@ -1,6 +1,7 @@
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, FAB, Modal, Portal, Text } from 'react-native-paper';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { WasteLogCard } from '@/components/waste/WasteLogCard';
@@ -208,7 +209,7 @@ export default function WasteListScreen() {
         ))}
       </View>
 
-      <FlatList
+      <FlashList
         data={logs || []}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}

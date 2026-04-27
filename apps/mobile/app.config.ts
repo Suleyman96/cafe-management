@@ -8,10 +8,12 @@ const LOCAL_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const isProduction = process.env.EAS_BUILD_PROFILE === 'production';
+  const requireSecrets = ['production', 'preview'].includes(process.env.EAS_BUILD_PROFILE || '');
 
-  if (isProduction && !process.env.EXPO_PUBLIC_SUPABASE_URL) {
-    throw new Error('EXPO_PUBLIC_SUPABASE_URL must be set for production builds. Use EAS Secrets.');
+  if (requireSecrets && !process.env.EXPO_PUBLIC_SUPABASE_URL) {
+    throw new Error(
+      'EXPO_PUBLIC_SUPABASE_URL must be set for production/preview builds. Use EAS Secrets.',
+    );
   }
 
   return {

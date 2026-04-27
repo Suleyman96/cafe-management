@@ -2,8 +2,9 @@ import { useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { OrderItemRow } from '@/components/orders/OrderItemRow';
 import { StatusActions } from '@/components/orders/StatusActions';
 import { ErrorScreen, LoadingScreen, StatusBadge, TimeElapsed } from '@/components/ui';
@@ -90,7 +91,7 @@ export default function OrderDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <FlashList
         data={items}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}

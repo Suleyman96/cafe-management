@@ -40,6 +40,11 @@ export default function LoginScreen() {
       return;
     }
 
+    if (password.length < 6) {
+      showError(t('passwordTooShort'));
+      return;
+    }
+
     setLoading(true);
 
     try {

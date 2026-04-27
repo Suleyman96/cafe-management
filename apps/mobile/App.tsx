@@ -1,20 +1,23 @@
 import 'react-native-gesture-handler';
 import './src/lib/i18n';
-import type { PlanName } from '@gustri/core';
+import { isAppError, type PlanName } from '@gustri/core';
 import { I18nextProvider, i18n } from '@gustri/i18n';
 import { DbProvider } from '@gustri/queries';
 import { NavigationContainer } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
 import { MutationCache, QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
-import { SnackbarProvider } from './src/components/providers/SnackbarProvider';
+import { SnackbarProvider, showSnackbarGlobal } from './src/components/providers/SnackbarProvider';
+import { useInactivityLock } from './src/hooks/use-inactivity-lock';
 import { setupOnlineManager } from './src/hooks/use-network-status';
 import { getCurrentUser, onAuthStateChange } from './src/lib/auth';
+import { handleNotificationNavigation, navigationRef } from './src/lib/navigation-ref';
 import { registerForPushNotifications } from './src/lib/notifications';
 import {
   asyncStoragePersister,
@@ -33,12 +36,46 @@ Sentry.init({
   environment: __DEV__ ? 'development' : 'production',
   tracesSampleRate: __DEV__ ? 1.0 : 0.2,
   enabled: !__DEV__,
+  beforeSend(event) {
+    if (event.breadcrumbs) {
+      for (const breadcrumb of event.breadcrumbs) {
+        if (breadcrumb.data?.headers) {
+          delete breadcrumb.data.headers.Authorization;
+          delete breadcrumb.data.headers.authorization;
+        }
+        if (breadcrumb.data?.url) {
+          try {
+            const url = new URL(breadcrumb.data.url);
+            url.searchParams.delete('token');
+            url.searchParams.delete('apikey');
+            breadcrumb.data.url = url.toString();
+          } catch {
+            // Not a valid URL, leave as-is
+          }
+        }
+      }
+    }
+    return event;
+  },
+  beforeBreadcrumb(breadcrumb) {
+    if (breadcrumb.category === 'fetch' && breadcrumb.data?.url?.includes('/auth/')) {
+      return null;
+    }
+    return breadcrumb;
+  },
 });
 
 // Wire NetInfo to React Query's online manager
 setupOnlineManager();
 
-const mutationCache = new MutationCache();
+const mutationCache = new MutationCache({
+  onError: (error, _variables, _context, mutation) => {
+    // Skip if the mutation already has its own onError handler
+    if (mutation.options.onError) return;
+    Sentry.captureException(error);
+    showSnackbarGlobal(isAppError(error) ? error.message : 'An unexpected error occurred');
+  },
+});
 configureSyncErrorHandling(mutationCache);
 
 const queryClient = new QueryClient({
@@ -57,6 +94,7 @@ const queryClient = new QueryClient({
 
 function App() {
   const { setStaff, setIsLoading } = useAuthStore();
+  useInactivityLock();
 
   useEffect(() => {
     // Initialize auth
@@ -126,6 +164,33 @@ function App() {
     };
   }, []);
 
+  // Handle notification taps — route to relevant screen
+  useEffect(() => {
+    // Cold-start: app was opened from a notification tap
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (response) {
+          handleNotificationNavigation(
+            response.notification.request.content.data as Record<string, unknown>,
+          );
+        }
+      })
+      .catch(() => {
+        // No prior notification response — normal app launch
+      });
+
+    // Warm: user taps a notification while app is running
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      handleNotificationNavigation(
+        response.notification.request.content.data as Record<string, unknown>,
+      );
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   return (
     <SafeAreaProvider>
       <I18nextProvider i18n={i18n}>
@@ -142,7 +207,7 @@ function App() {
           <DbProvider db={db}>
             <PaperProvider theme={lightTheme}>
               <SnackbarProvider>
-                <NavigationContainer>
+                <NavigationContainer ref={navigationRef}>
                   <ErrorBoundary>
                     <RootNavigator />
                   </ErrorBoundary>

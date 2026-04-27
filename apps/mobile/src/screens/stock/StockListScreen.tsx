@@ -1,7 +1,8 @@
 import type { StockItem, StockItemInsert, StockItemUpdate } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, FAB, Modal, Portal, Searchbar } from 'react-native-paper';
 import { StockItemCard } from '@/components/stock/StockItemCard';
 import { StockItemModal } from '@/components/stock/StockItemModal';
@@ -216,7 +217,7 @@ export default function StockListScreen() {
         {search ? ` ${t('stock.forSearch', { query: search })}` : ''}
       </Text>
 
-      <FlatList
+      <FlashList
         data={filtered}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}

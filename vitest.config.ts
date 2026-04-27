@@ -10,6 +10,11 @@ export default defineConfig({
       'apps/staff-web/**',
       'apps/mobile/**',
       'apps/customer-web/**',
+      // Packages with their own vitest.config.ts (different React resolution).
+      // They are run separately via the root `pnpm test` script.
+      'packages/queries/**',
+      'packages/ui/**',
+      'packages/i18n/**',
     ],
     coverage: {
       provider: 'v8',

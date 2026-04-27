@@ -1,6 +1,7 @@
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, FAB } from 'react-native-paper';
 import { ExpenseCard } from '@/components/expenses/ExpenseCard';
 import { ExpenseCategoryModal } from '@/components/expenses/ExpenseCategoryModal';
@@ -328,7 +329,7 @@ export default function ExpensesListScreen() {
         {t('expenses.expenseCount', { count: (expenses || []).length })}
       </Text>
 
-      <FlatList
+      <FlashList
         data={expenses || []}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}

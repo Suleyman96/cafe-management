@@ -1,14 +1,13 @@
 import { QUERY_KEYS } from '@gustri/core';
 import type { Order, OrderItem } from '@gustri/database';
 import { useDb } from '@gustri/queries';
-import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useMemo } from 'react';
 import { notifyNewOrder } from '@/lib/notifications';
 import { playNewOrderSound } from '@/lib/sound';
-import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/store/auth-store';
+import { db } from '@/lib/supabase';
 import type { OrderWithDetails } from '@/types';
+import { useRealtimeSync } from './use-realtime-sync';
 
 // Re-export read hooks and mutations with matching param shapes
 export { useCleanupEmptyOrders } from '@gustri/queries';
@@ -50,88 +49,55 @@ export function useOrders(filters?: {
   created_before?: string;
   limit?: number;
 }) {
-  const queryClient = useQueryClient();
-  const tenantId = useAuthStore((s) => s.staff?.tenant_id);
-  const db = useDb();
+  const dbClient = useDb();
 
   const query = useQuery({
     queryKey: [QUERY_KEYS.ORDERS, filters],
-    queryFn: async (): Promise<OrderWithDetails[]> => db.orders.findAll(filters || undefined),
+    queryFn: async (): Promise<OrderWithDetails[]> => dbClient.orders.findAll(filters || undefined),
     staleTime: 10 * 1000, // 10s — realtime subscription handles freshness
   });
 
-  // Real-time subscription (needs raw supabase client for channel API)
-  useEffect(() => {
-    if (!tenantId) return;
-    let channel: RealtimeChannel;
+  // Stable handler refs for realtime side effects
+  const realtimeHandlers = useMemo(
+    () => [
+      {
+        table: 'orders' as const,
+        event: 'INSERT' as const,
+        queryKeys: [[QUERY_KEYS.ORDERS]],
+        onPayload: async (newRecord: Record<string, unknown>) => {
+          await playNewOrderSound();
 
-    const tenantFilter = `tenant_id=eq.${tenantId}`;
-
-    const setupSubscription = async () => {
-      channel = supabase
-        .channel('orders:all')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'orders',
-            filter: tenantFilter,
-          },
-          async (payload) => {
-            await playNewOrderSound();
-
-            const newRecord = payload.new as Record<string, unknown>;
-
-            if (newRecord.table_id) {
-              try {
-                const tableData = (await db.tables.findById(newRecord.table_id as string)) as {
-                  table_number: string;
-                };
-                await notifyNewOrder(newRecord.order_number as string, tableData.table_number);
-              } catch {
-                // Table lookup failed — still invalidate queries below
-              }
+          if (newRecord.table_id) {
+            try {
+              const tableData = (await db.tables.findById(newRecord.table_id as string)) as {
+                table_number: string;
+              };
+              await notifyNewOrder(
+                newRecord.order_number as string,
+                tableData.table_number,
+                newRecord.id as string,
+              );
+            } catch {
+              // Table lookup failed — notification skipped, invalidation still happens
             }
+          }
+        },
+      },
+      {
+        table: 'orders' as const,
+        event: 'UPDATE' as const,
+        queryKeys: [[QUERY_KEYS.ORDERS]],
+      },
+      {
+        table: 'order_items' as const,
+        event: '*' as const,
+        queryKeys: [[QUERY_KEYS.ORDERS]],
+      },
+    ],
+    [],
+  );
 
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-          },
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'orders',
-            filter: tenantFilter,
-          },
-          () => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-          },
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'order_items',
-            filter: tenantFilter,
-          },
-          () => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-          },
-        )
-        .subscribe();
-    };
-
-    setupSubscription();
-
-    return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
-    };
-  }, [queryClient, tenantId, db]);
+  useRealtimeSync('orders:all', realtimeHandlers);
 
   return query;
 }

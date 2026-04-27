@@ -1,7 +1,8 @@
 import type { TaskInsert, TaskUpdate } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Card, Chip, FAB, SegmentedButtons, Text } from 'react-native-paper';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskModal } from '@/components/tasks/TaskModal';
@@ -304,7 +305,7 @@ export default function TasksListScreen() {
         </View>
       )}
 
-      <FlatList
+      <FlashList
         data={currentData}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}

@@ -7,15 +7,9 @@ type ScheduleWithStaff = StaffSchedule & {
 };
 
 import { getLocalDateString } from '@gustri/core';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import {
-  FlatList,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Card, Chip, FAB, SegmentedButtons } from 'react-native-paper';
 import { ScheduleCard } from '@/components/schedules/ScheduleCard';
 import { ScheduleModal } from '@/components/schedules/ScheduleModal';
@@ -342,7 +336,7 @@ export default function SchedulesScreen() {
             })}
           </Text>
 
-          <FlatList
+          <FlashList
             data={dailySchedules}
             keyExtractor={(item) => item.id}
             refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}

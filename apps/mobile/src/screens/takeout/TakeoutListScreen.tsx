@@ -1,8 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ACTIVE_TAKEOUT_STATUSES, ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
+import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Searchbar } from 'react-native-paper';
 import { CreateTakeoutModal } from '@/components/takeout/CreateTakeoutModal';
 import { TakeoutOrderCard } from '@/components/takeout/TakeoutOrderCard';
@@ -162,7 +163,7 @@ export default function TakeoutListScreen() {
         defaultColor={COLORS.orange}
       />
 
-      <FlatList
+      <FlashList
         data={filtered}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}

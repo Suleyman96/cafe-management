@@ -61,21 +61,31 @@ export async function getCurrentUser(): Promise<Staff | null> {
 }
 
 export function onAuthStateChange(callback: (staff: Staff | null) => void) {
-  return supabase.auth.onAuthStateChange(async (_event, session) => {
-    if (session?.user) {
-      try {
-        const staff = (await db.staff.findByAuthId(session.user.id)) as Staff;
-        callback(staff);
-      } catch {
-        callback(null);
-      }
-    } else {
-      // Session expired or user signed out — clean up Realtime channels
+  return supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_OUT' || !session) {
       const channels = supabase.getChannels();
       for (const channel of channels) {
         supabase.removeChannel(channel);
       }
       callback(null);
+      return;
+    }
+
+    if (
+      (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') &&
+      session.user
+    ) {
+      try {
+        const staff = (await db.staff.findByAuthId(session.user.id)) as Staff;
+        if (!staff?.is_active) {
+          await supabase.auth.signOut();
+          callback(null);
+          return;
+        }
+        callback(staff);
+      } catch {
+        callback(null);
+      }
     }
   });
 }

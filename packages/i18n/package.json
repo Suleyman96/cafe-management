@@ -17,7 +17,9 @@
     "dev": "tsup --watch",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist node_modules .turbo",
-    "lint": "biome check ./src"
+    "lint": "biome check ./src",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "i18next": "^24.2.2",
