@@ -2,6 +2,7 @@ import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import * as Sentry from '@sentry/react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useEffect, useMemo, useRef } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
@@ -31,13 +32,15 @@ export default function TablesListScreen() {
   const currencySymbol = useCurrencySymbol();
   const cleanupEmptyOrders = useCleanupEmptyOrders();
 
-  // Cleanup stale empty orders on screen load (run once)
+  // Cleanup stale empty orders on screen load (run once).
   const didCleanup = useRef(false);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: fire-and-forget, guarded by ref
+  // biome-ignore lint/correctness/useExhaustiveDependencies: guarded by ref
   useEffect(() => {
     if (!didCleanup.current) {
       didCleanup.current = true;
-      cleanupEmptyOrders.mutate(undefined);
+      cleanupEmptyOrders.mutateAsync(undefined).catch((err) => {
+        Sentry.captureException(err, { tags: { area: 'tables.cleanupEmptyOrders' } });
+      });
     }
   }, []);
 

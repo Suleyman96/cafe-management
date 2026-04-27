@@ -65,8 +65,12 @@ export function useRealtimeSync(channelName: string, handlers: RealtimeHandler[]
             if (onPayload) {
               try {
                 await onPayload(payload.new as Record<string, unknown>);
-              } catch {
-                // Side effect failed — still invalidate below
+              } catch (err) {
+                // Side effect failed — report and still invalidate below.
+                // Without this we lose visibility into broken sound/notification handlers.
+                Sentry.captureException(err, {
+                  tags: { area: 'realtime', channelName, table, event: String(event) },
+                });
               }
             }
 

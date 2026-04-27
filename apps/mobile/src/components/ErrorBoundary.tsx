@@ -1,8 +1,10 @@
+import { isAppError } from '@gustri/core';
 import { i18n } from '@gustri/i18n';
 import * as Sentry from '@sentry/react-native';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
+import { showSnackbarGlobal } from '@/components/providers/SnackbarProvider';
 
 interface Props {
   children: React.ReactNode;
@@ -24,7 +26,17 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
+    const tags: Record<string, string> = { area: 'react-error-boundary' };
+    if (isAppError(error)) {
+      tags.errorCode = error.code;
+      tags.errorName = error.name;
+    }
+    Sentry.captureException(error, {
+      tags,
+      contexts: { react: { componentStack: info.componentStack ?? '' } },
+    });
+    // Surface to user via global snackbar (no-op if SnackbarProvider not mounted yet).
+    showSnackbarGlobal(i18n.t('common:error.message'), 'error');
   }
 
   handleReset = () => {

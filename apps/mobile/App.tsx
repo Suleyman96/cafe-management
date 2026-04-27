@@ -68,6 +68,24 @@ Sentry.init({
 // Wire NetInfo to React Query's online manager
 setupOnlineManager();
 
+// Dev-only: surface unhandled promise rejections in the console so silent
+// fire-and-forget regressions are caught during development. No-op in prod.
+if (__DEV__) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const tracking = require('promise/setimmediate/rejection-tracking');
+    tracking.enable({
+      allRejections: true,
+      onUnhandled: (id: number, err: unknown) => {
+        console.error(`[unhandled-rejection #${id}]`, err);
+      },
+      onHandled: () => {},
+    });
+  } catch {
+    // Module not available — silently skip.
+  }
+}
+
 const mutationCache = new MutationCache({
   onError: (error, _variables, _context, mutation) => {
     // Skip if the mutation already has its own onError handler

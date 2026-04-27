@@ -1,5 +1,6 @@
 import type { TaskInsert, TaskUpdate } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import * as Sentry from '@sentry/react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -95,8 +96,10 @@ export default function TasksListScreen() {
   useEffect(() => {
     if (hasGenerated.current) return;
     hasGenerated.current = true;
-    generateRecurring.mutate(getLocalDateString());
-  }, [generateRecurring.mutate]);
+    generateRecurring.mutateAsync(getLocalDateString()).catch((err) => {
+      Sentry.captureException(err, { tags: { area: 'tasks.generateRecurring' } });
+    });
+  }, [generateRecurring.mutateAsync]);
 
   const currentData = useMemo(() => {
     switch (tab) {
