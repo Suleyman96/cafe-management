@@ -105,7 +105,7 @@ export default function DeliveryListScreen() {
       await updateOrderStatus.mutateAsync({ orderId, status: 'new' });
       showSuccess(t('delivery.orderApproved'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('delivery.failedApprove'));
+      showError(err instanceof Error ? err : t('delivery.failedApprove'));
     }
   };
 
@@ -114,7 +114,7 @@ export default function DeliveryListScreen() {
       await updateOrderStatus.mutateAsync({ orderId, status: 'preparing' });
       showSuccess(t('delivery.preparingStarted'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('delivery.failedPrepare'));
+      showError(err instanceof Error ? err : t('delivery.failedPrepare'));
     }
   };
 
@@ -123,7 +123,7 @@ export default function DeliveryListScreen() {
       await updateOrderStatus.mutateAsync({ orderId, status: 'ready' });
       showSuccess(t('delivery.orderMarkedReady'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('delivery.failedReady'));
+      showError(err instanceof Error ? err : t('delivery.failedReady'));
     }
   };
 
@@ -132,7 +132,7 @@ export default function DeliveryListScreen() {
       await markOutForDelivery.mutateAsync({ orderId, deliveryPersonId: staff?.id || '' });
       showSuccess(t('delivery.orderSentOut'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('delivery.failedSend'));
+      showError(err instanceof Error ? err : t('delivery.failedSend'));
     }
   };
 
@@ -141,7 +141,7 @@ export default function DeliveryListScreen() {
       await markDelivered.mutateAsync(orderId);
       showSuccess(t('delivery.orderDelivered'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('delivery.failedDelivered'));
+      showError(err instanceof Error ? err : t('delivery.failedDelivered'));
     }
   };
 
@@ -161,7 +161,7 @@ export default function DeliveryListScreen() {
       setCancelTarget(null);
       setCancelReason('');
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('delivery.failedCancel'));
+      showError(err instanceof Error ? err : t('delivery.failedCancel'));
     } finally {
       setCancelling(false);
     }

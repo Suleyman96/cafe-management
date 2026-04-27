@@ -60,7 +60,20 @@ pnpm db:studio        # Open Supabase Studio (port 54323)
 - All database operations go through `@gustri/api-client` wrapper (never raw supabase queries in app code)
 - Create wrapper: `const db = createSupabaseWrapper(supabaseClient)`
 - Usage: `db.orders.findAll()`, `db.tables.findById(id)`, `db.waiterCalls.create({...})`
-- Exception: Supabase Realtime channels use the raw `supabase` client directly (not wrappable)
+- Exception 1 — **Realtime**: Supabase Realtime channels use the raw `supabase` client directly (not wrappable)
+- Exception 2 — **Server-side business logic**: Endpoints under `/api/v1/*` (orders create, payments,
+  discounts, refunds, stock adjustments, settings updates) execute server-side transactions or
+  external-service calls and cannot be expressed as a single Supabase query. Mobile uses
+  `apiRoutes` from `apps/mobile/src/lib/api-routes.ts`. The `apiFetch` helper there maps HTTP
+  responses to typed `@gustri/core` errors via `httpStatusToAppError`, so error semantics match
+  the wrapper.
+
+### Runtime Validation
+- Mutation inputs validate at the call boundary (UI → hook) using Zod schemas from
+  `@gustri/database/schemas/inputs`. Use `validateOrThrow(schema, data, label)` from
+  `@gustri/core` — it throws `ValidationError` with `details.fieldErrors` for per-field UI feedback.
+- Validate what the user can corrupt (forms, free text). Don't double-validate fields TypeScript
+  already constrains (system columns, enum types).
 
 ### Types
 - All database types are defined in `@gustri/database` and re-exported from `@gustri/api-client`

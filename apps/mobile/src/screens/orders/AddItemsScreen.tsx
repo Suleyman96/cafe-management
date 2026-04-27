@@ -162,7 +162,7 @@ export default function AddItemsScreen() {
       showSuccess(isNewOrder ? t('orders.orderCreatedSuccess') : t('orders.itemsAddedToOrder'));
       navigation.goBack();
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('orders.failedAddItems'));
+      showError(err instanceof Error ? err : t('orders.failedAddItems'));
     } finally {
       setSubmitting(false);
     }

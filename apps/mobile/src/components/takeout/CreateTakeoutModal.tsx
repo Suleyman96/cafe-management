@@ -53,7 +53,7 @@ export const CreateTakeoutModal = React.memo(function CreateTakeoutModal({
       resetForm();
       onSuccess();
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('takeout.failedCreateTakeout'));
+      showError(err instanceof Error ? err : t('takeout.failedCreateTakeout'));
     } finally {
       setLoading(false);
     }

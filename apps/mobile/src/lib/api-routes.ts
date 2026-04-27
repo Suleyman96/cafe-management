@@ -1,3 +1,4 @@
+import { AuthenticationError, httpStatusToAppError, NetworkError } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import Constants from 'expo-constants';
 import { supabase } from './supabase';
@@ -13,7 +14,7 @@ async function getAuthHeaders(): Promise<HeadersInit> {
   } = await supabase.auth.getSession();
 
   if (!session?.access_token) {
-    throw new Error('No active session — please log in');
+    throw new AuthenticationError('No active session — please log in');
   }
 
   return {
@@ -22,17 +23,35 @@ async function getAuthHeaders(): Promise<HeadersInit> {
   };
 }
 
+async function parseJsonSafe(res: Response): Promise<Record<string, unknown> | null> {
+  try {
+    return (await res.json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 async function apiFetch<T>(path: string, init: RequestInit): Promise<T> {
   const headers = await getAuthHeaders();
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: { ...headers, ...init.headers },
-  });
 
-  const body = await res.json();
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers: { ...headers, ...init.headers },
+    });
+  } catch (err) {
+    throw new NetworkError(err instanceof Error ? err.message : 'Network request failed');
+  }
+
+  const body = await parseJsonSafe(res);
 
   if (!res.ok) {
-    throw new Error(body.error || `API error ${res.status}`);
+    throw httpStatusToAppError(
+      res.status,
+      body as { error?: string; details?: Record<string, unknown> } | null,
+      `API error ${res.status}`,
+    );
   }
 
   return body as T;

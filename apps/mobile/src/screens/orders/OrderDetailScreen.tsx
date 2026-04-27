@@ -64,7 +64,7 @@ export default function OrderDetailScreen() {
       });
       showSuccess(t('orders.orderStatusChanged', { status: newStatus }));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('orders.failedUpdateStatus'));
+      showError(err instanceof Error ? err : t('orders.failedUpdateStatus'));
     }
   };
 
@@ -73,7 +73,7 @@ export default function OrderDetailScreen() {
       await updateItemStatus.mutateAsync({ itemId, status: 'ready' });
       showSuccess(t('orders.itemMarkedAs', { status: 'ready' }));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('orders.failedUpdateItemStatus'));
+      showError(err instanceof Error ? err : t('orders.failedUpdateItemStatus'));
     }
   };
 

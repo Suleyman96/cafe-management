@@ -159,7 +159,7 @@ export default function TasksListScreen() {
       await markInProgress.mutateAsync(id);
       showSuccess(t('tasks.taskStarted'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('tasks.failedStart'));
+      showError(err instanceof Error ? err : t('tasks.failedStart'));
     }
   };
 
@@ -168,7 +168,7 @@ export default function TasksListScreen() {
       await markCompleted.mutateAsync(id);
       showSuccess(t('tasks.taskCompleted'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('tasks.failedComplete'));
+      showError(err instanceof Error ? err : t('tasks.failedComplete'));
     }
   };
 
@@ -177,7 +177,7 @@ export default function TasksListScreen() {
       await markCancelled.mutateAsync(id);
       showSuccess(t('tasks.taskCancelled'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('tasks.failedCancel'));
+      showError(err instanceof Error ? err : t('tasks.failedCancel'));
     }
   };
 
@@ -197,7 +197,7 @@ export default function TasksListScreen() {
             await deleteTask.mutateAsync(id);
             showSuccess(t('tasks.taskDeleted'));
           } catch (err: unknown) {
-            showError(err instanceof Error ? err.message : t('tasks.failedDelete'));
+            showError(err instanceof Error ? err : t('tasks.failedDelete'));
           }
         },
       },
@@ -219,7 +219,7 @@ export default function TasksListScreen() {
       setShowTaskModal(false);
       setEditingTask(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('tasks.failedSave'));
+      showError(err instanceof Error ? err : t('tasks.failedSave'));
     }
   };
 

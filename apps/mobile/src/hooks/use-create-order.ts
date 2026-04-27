@@ -1,8 +1,8 @@
 export { useAddOrderItems } from '@gustri/queries';
 
 // useCreateOrder is not available in @gustri/queries — keep local implementation
-import { QUERY_KEYS } from '@gustri/core';
-import type { OrdersInsert } from '@gustri/database';
+import { QUERY_KEYS, validateOrThrow } from '@gustri/core';
+import { OrderCreateInputSchema, type OrdersInsert } from '@gustri/database';
 import { useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,7 +14,8 @@ export function useCreateOrder() {
   return useMutation({
     mutationKey: ['create-order'],
     mutationFn: async (orderData: OrdersInsert) => {
-      return await db.orders.create(orderData);
+      const validated = validateOrThrow(OrderCreateInputSchema, orderData, 'Invalid order');
+      return await db.orders.create(validated as OrdersInsert);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });

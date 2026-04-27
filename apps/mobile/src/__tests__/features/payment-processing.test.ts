@@ -5,10 +5,12 @@ import { useCreatePayment, useOrderPayments } from '@/hooks/use-payments';
 import { apiRoutes } from '@/lib/api-routes';
 import { createWrapper, renderHookWithProviders } from '../helpers/test-utils';
 
+const ORDER_UUID = '00000000-0000-0000-0000-0000000000a1';
+
 describe('Payment processing correctness', () => {
   it('useCreatePayment calls apiRoutes.payments.create with correct args', async () => {
     const payment = {
-      order_id: 'order-1',
+      order_id: ORDER_UUID,
       amount: 50,
       payment_method: 'card' as const,
       received_by: 'staff-1',
@@ -18,7 +20,7 @@ describe('Payment processing correctness', () => {
     await result.current.mutateAsync(payment);
 
     expect(apiRoutes.payments.create).toHaveBeenCalledWith(
-      'order-1',
+      ORDER_UUID,
       expect.objectContaining({
         amount: 50,
         payment_method: 'card',
@@ -32,15 +34,15 @@ describe('Payment processing correctness', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
 
     await result.current.mutateAsync({
-      order_id: 'order-1',
+      order_id: ORDER_UUID,
       amount: 100,
       payment_method: 'cash',
     });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.PAYMENTS, 'order-1']);
+    expect(keys).toContainEqual([QUERY_KEYS.PAYMENTS, ORDER_UUID]);
     expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(keys).toContainEqual([QUERY_KEYS.ORDER, 'order-1']);
+    expect(keys).toContainEqual([QUERY_KEYS.ORDER, ORDER_UUID]);
   });
 
   it('useOrderPayments is disabled when orderId is empty', () => {

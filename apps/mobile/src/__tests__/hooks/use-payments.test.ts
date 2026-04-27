@@ -17,16 +17,17 @@ describe('useCreatePayment', () => {
     const { result, queryClient } = renderHookWithProviders(() => useCreatePayment());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
 
+    const orderId = '00000000-0000-0000-0000-0000000000a1';
     await result.current.mutateAsync({
-      order_id: 'o1',
+      order_id: orderId,
       amount: 100,
       payment_method: 'cash',
     });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['payments', 'o1']);
+    expect(keys).toContainEqual(['payments', orderId]);
     expect(keys).toContainEqual(['orders']);
-    expect(keys).toContainEqual(['order', 'o1']);
+    expect(keys).toContainEqual(['order', orderId]);
   });
 });
 
@@ -44,10 +45,11 @@ describe('useOrderPayments - data flow', () => {
 
 describe('useCreatePayment - argument verification', () => {
   it('calls apiRoutes.payments.create with payment data', async () => {
-    const paymentData = { order_id: 'o1', amount: 50, payment_method: 'cash' as const };
+    const orderId = '00000000-0000-0000-0000-0000000000a1';
+    const paymentData = { order_id: orderId, amount: 50, payment_method: 'cash' as const };
     const { result } = renderHookWithProviders(() => useCreatePayment());
     await result.current.mutateAsync(paymentData);
-    expect(apiRoutes.payments.create).toHaveBeenCalledWith('o1', {
+    expect(apiRoutes.payments.create).toHaveBeenCalledWith(orderId, {
       amount: 50,
       payment_method: 'cash',
       received_by: '',
@@ -64,15 +66,16 @@ describe('useCreatePayment - QUERY_KEYS', () => {
     const { result, queryClient } = renderHookWithProviders(() => useCreatePayment());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
 
+    const orderId = '00000000-0000-0000-0000-0000000000a1';
     await result.current.mutateAsync({
-      order_id: 'o1',
+      order_id: orderId,
       amount: 100,
       payment_method: 'cash',
     });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.PAYMENTS, 'o1']);
+    expect(keys).toContainEqual([QUERY_KEYS.PAYMENTS, orderId]);
     expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(keys).toContainEqual([QUERY_KEYS.ORDER, 'o1']);
+    expect(keys).toContainEqual([QUERY_KEYS.ORDER, orderId]);
   });
 });

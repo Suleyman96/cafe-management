@@ -89,7 +89,7 @@ export default function TableDetailScreen() {
       showSuccess(t('tables.statusUpdated', { status: newStatus }));
       setStatusConfirm(null);
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('tables.failedUpdateStatus'));
+      showError(err instanceof Error ? err : t('tables.failedUpdateStatus'));
     }
   };
 
@@ -106,7 +106,7 @@ export default function TableDetailScreen() {
       });
       showSuccess(t('calls.callAcknowledged'));
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('calls.failedRespond'));
+      showError(err instanceof Error ? err : t('calls.failedRespond'));
     }
   };
 

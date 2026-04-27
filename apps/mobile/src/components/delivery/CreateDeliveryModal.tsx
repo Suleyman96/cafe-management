@@ -68,7 +68,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
       resetForm();
       onSuccess();
     } catch (err: unknown) {
-      showError(err instanceof Error ? err.message : t('delivery.failedCreateOrder'));
+      showError(err instanceof Error ? err : t('delivery.failedCreateOrder'));
     } finally {
       setLoading(false);
     }
