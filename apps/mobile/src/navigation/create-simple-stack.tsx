@@ -1,24 +1,28 @@
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, type StackScreenProps } from '@react-navigation/stack';
 import type React from 'react';
 import { DrawerMenuButton } from '@/components/navigation/DrawerMenuButton';
 
+type SimpleParamList = Record<string, undefined>;
+type SimpleScreenProps = StackScreenProps<SimpleParamList, string>;
+
 interface SimpleStackConfig {
   name: string;
-  component: React.ComponentType<any>;
+  component: React.ComponentType<SimpleScreenProps>;
   title: string;
 }
 
 export function createSimpleStack({ name, component, title }: SimpleStackConfig) {
-  type ParamList = Record<string, undefined>;
-  const Stack = createStackNavigator<ParamList>();
+  const Stack = createStackNavigator<SimpleParamList>();
 
   function SimpleStack() {
     return (
       <Stack.Navigator>
         <Stack.Screen
           name={name}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- React 18/19 type incompatibility workaround
-          component={component as any}
+          // React 18/19 @types/react clash between React Navigation and the
+          // mobile app's React 19 install. Cast is structurally safe — the
+          // SimpleScreenProps interface above is the real contract.
+          component={component as React.ComponentType<unknown> as never}
           options={{ title, headerLeft: () => <DrawerMenuButton /> }}
         />
       </Stack.Navigator>

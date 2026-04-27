@@ -1,3 +1,4 @@
+import { ORDER_ITEM_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -155,7 +156,7 @@ export default function AddItemsScreen() {
         item_name: c.name,
         item_price: c.price,
         notes: null as string | null,
-        status: 'pending' as const,
+        status: ORDER_ITEM_STATUS.PENDING,
       }));
 
       await addOrderItems.mutateAsync(orderItems);

@@ -8,12 +8,12 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth-store';
 import { useRealtimeStatusStore } from '@/store/realtime-status-store';
 
-type RealtimeHandler = {
+export type RealtimeHandler<TPayload = Record<string, unknown>> = {
   table: string;
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
   queryKeys: string[][];
   /** Optional callback for side effects (sound, notifications). Runs before invalidation. */
-  onPayload?: (payload: Record<string, unknown>) => void | Promise<void>;
+  onPayload?: (payload: TPayload) => void | Promise<void>;
 };
 
 const MAX_BACKOFF_MS = 30_000;
@@ -89,7 +89,7 @@ export function useRealtimeSync(channelName: string, handlers: RealtimeHandler[]
             if (onPayload) {
               try {
                 await onPayload(payload.new as Record<string, unknown>);
-              } catch (err) {
+              } catch (err: unknown) {
                 // Side effect failed — report and still invalidate below.
                 // Without this we lose visibility into broken sound/notification handlers.
                 Sentry.captureException(err, {

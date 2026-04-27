@@ -23,7 +23,7 @@ export function useUpdateCafeSettings() {
         data,
         'Invalid cafe settings',
       );
-      return apiRoutes.settings.update(validated as Record<string, unknown>);
+      return apiRoutes.settings.update(validated);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CAFE_SETTINGS] });

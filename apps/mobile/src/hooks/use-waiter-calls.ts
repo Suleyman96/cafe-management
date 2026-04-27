@@ -1,4 +1,6 @@
 import { QUERY_KEYS } from '@gustri/core';
+import type { Table } from '@gustri/database';
+import { WaiterCallsRealtimeInsertSchema } from '@gustri/database';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef } from 'react';
@@ -33,17 +35,25 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
           hapticEvent();
           await playWaiterCallSound();
 
+          const parsed = WaiterCallsRealtimeInsertSchema.safeParse(newRecord);
+          if (!parsed.success) {
+            Sentry.captureException(parsed.error, {
+              tags: { area: 'realtime.waiter_calls.insert' },
+            });
+            return;
+          }
+          const call = parsed.data;
+
           try {
-            const tableData = (await db.tables.findById(newRecord.table_id as string)) as {
-              table_number: string;
-            };
+            const tableData = (await db.tables.findById(call.table_id)) as Table | null;
+            if (!tableData?.table_number) return;
             await notifyWaiterCall(
               tableData.table_number,
-              (newRecord.call_type as string) ?? 'assistance',
-              newRecord.table_id as string,
+              call.call_type ?? 'assistance',
+              call.table_id,
             );
-          } catch {
-            // Table lookup failed — notification skipped, invalidation still happens
+          } catch (err: unknown) {
+            Sentry.captureException(err, { tags: { area: 'realtime.waiter_calls.notify' } });
           }
         },
       },
@@ -84,13 +94,15 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
       if (!call.table_id) continue;
       void db.tables
         .findById(call.table_id)
-        .then((table) =>
-          notifyWaiterCall(
-            (table as { table_number: string }).table_number,
+        .then((table) => {
+          const t = table as Table | null;
+          if (!t?.table_number) return;
+          return notifyWaiterCall(
+            t.table_number,
             call.call_type ?? 'assistance',
             call.table_id ?? undefined,
-          ),
-        )
+          );
+        })
         .catch(() => {
           // Table lookup failed — sound already played, banner still visible
         });

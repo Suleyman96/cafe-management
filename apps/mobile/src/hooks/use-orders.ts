@@ -1,6 +1,8 @@
 import { QUERY_KEYS } from '@gustri/core';
-import type { Order, OrderItem } from '@gustri/database';
+import type { Order, OrderItem, Table } from '@gustri/database';
+import { OrdersRealtimeInsertSchema } from '@gustri/database';
 import { useDb } from '@gustri/queries';
+import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef } from 'react';
 import { hapticEvent } from '@/lib/haptics';
@@ -73,19 +75,22 @@ export function useOrders(filters?: {
           hapticEvent();
           await playNewOrderSound();
 
-          if (newRecord.table_id) {
-            try {
-              const tableData = (await db.tables.findById(newRecord.table_id as string)) as {
-                table_number: string;
-              };
-              await notifyNewOrder(
-                newRecord.order_number as string,
-                tableData.table_number,
-                newRecord.id as string,
-              );
-            } catch {
-              // Table lookup failed — notification skipped, invalidation still happens
-            }
+          const parsed = OrdersRealtimeInsertSchema.safeParse(newRecord);
+          if (!parsed.success) {
+            Sentry.captureException(parsed.error, {
+              tags: { area: 'realtime.orders.insert' },
+            });
+            return;
+          }
+          const order = parsed.data;
+          if (!order.table_id) return;
+
+          try {
+            const tableData = (await db.tables.findById(order.table_id)) as Table | null;
+            if (!tableData?.table_number) return;
+            await notifyNewOrder(order.order_number ?? '—', tableData.table_number, order.id);
+          } catch (err: unknown) {
+            Sentry.captureException(err, { tags: { area: 'realtime.orders.notify' } });
           }
         },
       },
@@ -133,13 +138,11 @@ export function useOrders(filters?: {
       if (!order.table_id) continue;
       void db.tables
         .findById(order.table_id)
-        .then((table) =>
-          notifyNewOrder(
-            order.order_number ?? '—',
-            (table as { table_number: string }).table_number,
-            order.id,
-          ),
-        )
+        .then((table) => {
+          const t = table as Table | null;
+          if (!t?.table_number) return;
+          return notifyNewOrder(order.order_number ?? '—', t.table_number, order.id);
+        })
         .catch(() => {
           // Table lookup failed — sound already played, banner still visible
         });

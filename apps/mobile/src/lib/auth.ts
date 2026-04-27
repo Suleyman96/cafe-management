@@ -80,7 +80,7 @@ export async function forceLogout(reason: LogoutReason = 'user'): Promise<void> 
   try {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-  } catch (err) {
+  } catch (err: unknown) {
     // Local state already cleared, so the user is functionally logged out.
     // Server-side signOut failure is reported but doesn't reach the UI.
     Sentry.captureException(err, { tags: { area: 'logout.signOut', reason } });
