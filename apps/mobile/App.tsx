@@ -1,11 +1,10 @@
 import 'react-native-gesture-handler';
 import './src/lib/i18n';
-import { isAppError, type PlanName } from '@gustri/core';
+import type { PlanName } from '@gustri/core';
 import { I18nextProvider, i18n } from '@gustri/i18n';
 import { DbProvider } from '@gustri/queries';
 import { NavigationContainer } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
-import { MutationCache, QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
@@ -13,12 +12,13 @@ import { useEffect } from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
-import { SnackbarProvider, showSnackbarGlobal } from './src/components/providers/SnackbarProvider';
+import { SnackbarProvider } from './src/components/providers/SnackbarProvider';
 import { useInactivityLock } from './src/hooks/use-inactivity-lock';
 import { setupOnlineManager } from './src/hooks/use-network-status';
 import { getCurrentUser, onAuthStateChange } from './src/lib/auth';
 import { handleNotificationNavigation, navigationRef } from './src/lib/navigation-ref';
 import { registerForPushNotifications } from './src/lib/notifications';
+import { mutationCache, queryClient } from './src/lib/query-client';
 import {
   asyncStoragePersister,
   OFFLINE_GC_TIME,
@@ -86,34 +86,7 @@ if (__DEV__) {
   }
 }
 
-const mutationCache = new MutationCache({
-  onError: (error, _variables, _context, mutation) => {
-    // Skip if the mutation already has its own onError handler
-    if (mutation.options.onError) return;
-    const tags: Record<string, string> = { area: 'mutation' };
-    if (isAppError(error)) {
-      tags.errorCode = error.code;
-      tags.errorName = error.name;
-    }
-    Sentry.captureException(error, { tags });
-    showSnackbarGlobal(isAppError(error) ? error.message : 'An unexpected error occurred');
-  },
-});
 configureSyncErrorHandling(mutationCache);
-
-const queryClient = new QueryClient({
-  mutationCache,
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000,
-      gcTime: OFFLINE_GC_TIME,
-      retry: 1,
-    },
-    mutations: {
-      networkMode: 'offlineFirst',
-    },
-  },
-});
 
 function App() {
   const { setStaff, setIsLoading } = useAuthStore();

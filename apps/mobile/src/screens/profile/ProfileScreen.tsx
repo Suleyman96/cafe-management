@@ -1,24 +1,21 @@
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
-import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Avatar, Button, Card, Chip, Divider, List } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useUpdateStaff } from '@/hooks/use-staff-management';
-import { logout } from '@/lib/auth';
+import { forceLogout } from '@/lib/auth';
 import { loadAndSwitchLanguage } from '@/lib/i18n';
 import { Text, TextInput } from '@/lib/paper-compat';
-import { asyncStoragePersister } from '@/lib/query-persister';
 import { cleanupSounds } from '@/lib/sound';
-import { db, supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth-store';
 import { ROLE_COLORS } from '@/theme';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { staff, clearAuth } = useAuthStore();
-  const queryClient = useQueryClient();
+  const { staff } = useAuthStore();
   const { showSuccess, showError } = useSnackbar();
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
@@ -92,13 +89,9 @@ export default function ProfileScreen() {
     setLoggingOut(true);
     try {
       await cleanupSounds();
-      if (staff?.id) {
-        await db.staff.updatePushToken(staff.id, null).catch(() => {});
-      }
-      await logout();
-      queryClient.clear();
-      await asyncStoragePersister.removeClient();
-      clearAuth();
+      // forceLogout owns the full sequence: push-token clear, channel teardown,
+      // queryClient.clear, persister cleanup, store clear, supabase signOut.
+      await forceLogout('user');
     } catch (err: unknown) {
       showError(err instanceof Error ? err : t('profile.failedSignOut'));
     } finally {
