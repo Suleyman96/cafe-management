@@ -1,4 +1,4 @@
-import { useTranslation } from '@gustri/i18n';
+import { useLocale, useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, Text } from 'react-native-paper';
@@ -34,6 +34,7 @@ export const WasteLogCard = React.memo(function WasteLogCard({
   currencySymbol,
 }: WasteLogCardProps) {
   const { t } = useTranslation('staff');
+  const locale = useLocale();
   const reason = log.reason || 'other';
   const reasonColor = REASON_COLORS[reason] || '#9ca3af';
 
@@ -64,7 +65,7 @@ export const WasteLogCard = React.memo(function WasteLogCard({
             {t(`waste.${reason}`)}
           </Chip>
           <Text variant="bodySmall" style={styles.muted}>
-            {log.staff?.full_name || '—'} · {new Date(log.created_at).toLocaleDateString()}
+            {log.staff?.full_name || '—'} · {new Date(log.created_at).toLocaleDateString(locale)}
           </Text>
         </View>
 

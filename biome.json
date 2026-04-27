@@ -87,6 +87,25 @@
           }
         }
       }
+    },
+    {
+      "includes": ["packages/core/**", "packages/database/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "react": "Headless package — do not import React. Move logic to @gustri/queries or @gustri/ui.",
+                  "react-native": "Headless package — do not import React Native.",
+                  "react-dom": "Headless package — do not import React DOM."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }

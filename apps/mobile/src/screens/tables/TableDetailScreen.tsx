@@ -54,7 +54,11 @@ export default function TableDetailScreen() {
   const { t } = useTranslation('staff');
 
   const { data: table, isLoading, error, refetch } = useTable(tableId);
-  const { data: orders } = useOrders();
+  const { data: orders } = useOrders({
+    statuses: ACTIVE_ORDER_STATUSES as unknown as Order['status'][],
+    table_id: tableId,
+    limit: 50,
+  });
   const { data: waiterCalls } = useWaiterCalls('pending');
   const currencySymbol = useCurrencySymbol();
   const updateTableStatus = useUpdateTableStatus();

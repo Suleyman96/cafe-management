@@ -37,7 +37,7 @@ export default function KitchenDisplayScreen() {
     isRefetching,
     error,
     refetch,
-  } = useOrders({ statuses: KITCHEN_STATUSES });
+  } = useOrders({ statuses: KITCHEN_STATUSES, limit: 100 });
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const { showSuccess, showError } = useSnackbar();

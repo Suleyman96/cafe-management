@@ -17,3 +17,9 @@ appId: com.gustri.app
 - assertVisible:
     text: "Orders"
     timeout: 10000
+
+# Guard against the historical regression where Metro served two copies of
+# @tanstack/react-query and screens crashed with "No QueryClient set". The
+# manual dedup workaround in metro.config.js exists to prevent this — if it
+# ever regresses, this assertion fails first.
+- assertNotVisible: "No QueryClient set"

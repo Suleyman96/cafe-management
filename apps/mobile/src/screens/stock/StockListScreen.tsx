@@ -1,5 +1,5 @@
 import type { StockItem, StockItemInsert, StockItemUpdate } from '@gustri/database';
-import { useTranslation } from '@gustri/i18n';
+import { useLocale, useTranslation } from '@gustri/i18n';
 import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -29,6 +29,7 @@ export default function StockListScreen() {
   const { showSuccess, showError } = useSnackbar();
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
+  const locale = useLocale();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | undefined>();
 
@@ -331,7 +332,7 @@ export default function StockListScreen() {
                         </Text>
                       )}
                       <Text variant="bodySmall" style={styles.historyDate}>
-                        {new Date(m.created_at).toLocaleDateString()}
+                        {new Date(m.created_at).toLocaleDateString(locale)}
                       </Text>
                     </View>
                   </View>

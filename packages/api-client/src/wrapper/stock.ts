@@ -7,8 +7,14 @@ import type { StockItemInsert, StockItemRow, StockItemUpdate, WrapperContext } f
 
 export function createStockItemsWrapper(ctx: WrapperContext) {
   return {
-    findAll: async (options?: { category?: string; lowStockOnly?: boolean }) => {
-      let query = ctx.client.from('stock_items').select('*').eq('is_active', true).order('name');
+    findAll: async (options?: { category?: string; lowStockOnly?: boolean; limit?: number }) => {
+      const limit = options?.limit ?? 1000;
+      let query = ctx.client
+        .from('stock_items')
+        .select('*')
+        .eq('is_active', true)
+        .order('name')
+        .limit(limit);
 
       if (options?.category) {
         query = query.eq('category', options.category);

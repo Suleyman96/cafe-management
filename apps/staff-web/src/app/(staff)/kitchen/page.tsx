@@ -30,7 +30,17 @@ import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 export default function KitchenDisplayPage() {
   const { t } = useTranslation('staff');
-  const { data: orders, isLoading: loading, error } = useOrders();
+  // Kitchen view shows only the active queue. Server-side filter keeps the
+  // payload tight; the explicit limit prevents the silent 200-row cap that
+  // used to hide older rows.
+  const {
+    data: orders,
+    isLoading: loading,
+    error,
+  } = useOrders({
+    statuses: ['pending_approval', 'new', 'preparing', 'ready'],
+    limit: 100,
+  });
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const cancelOrder = useCancelOrder();

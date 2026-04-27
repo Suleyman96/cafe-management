@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react-native';
+import { clearPushTokenSyncCache } from '@/hooks/use-push-token-sync';
 import { useAuthStore } from '@/store/auth-store';
 import type { Staff } from '@/types';
 import { queryClient } from './query-client';
@@ -51,6 +52,9 @@ export async function cleanupClientState(): Promise<void> {
   } catch {
     // Persister cleanup is best-effort; AsyncStorage failures shouldn't block logout.
   }
+  // Drop the push-token dedup cache so the next user re-syncs immediately
+  // rather than skipping on a stale composite from the previous session.
+  clearPushTokenSyncCache();
   useAuthStore.getState().clearAuth();
 }
 

@@ -1,12 +1,13 @@
 import { QUERY_KEYS } from '@gustri/core';
 import type { Table } from '@gustri/database';
-import { WaiterCallsRealtimeInsertSchema } from '@gustri/database';
+import { WaiterCallsRealtimeInsertSchema, WaiterCallsRealtimeUpdateSchema } from '@gustri/database';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef } from 'react';
 import { hapticEvent, hapticSuccess } from '@/lib/haptics';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { notifyWaiterCall } from '@/lib/notifications';
+import { validateRealtimePayload } from '@/lib/realtime-validation';
 import { playWaiterCallSound } from '@/lib/sound';
 import { db } from '@/lib/supabase';
 import { useRealtimeStatusStore } from '@/store/realtime-status-store';
@@ -61,6 +62,15 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
         table: 'waiter_calls' as const,
         event: 'UPDATE' as const,
         queryKeys: [[QUERY_KEYS.WAITER_CALLS]],
+        onPayload: (newRecord: Record<string, unknown>) => {
+          // Validate to surface schema drift via Sentry. Invalidation runs
+          // unconditionally — even if validation fails we still want the cache
+          // to refetch from the source of truth.
+          validateRealtimePayload(WaiterCallsRealtimeUpdateSchema, newRecord, {
+            table: 'waiter_calls',
+            event: 'UPDATE',
+          });
+        },
       },
     ],
     [],

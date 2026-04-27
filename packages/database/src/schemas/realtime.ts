@@ -15,7 +15,7 @@
  */
 
 import { z } from 'zod';
-import { WaiterCallTypeSchema } from './enum-schemas';
+import { OrderStatusSchema, WaiterCallStatusSchema, WaiterCallTypeSchema } from './enum-schemas';
 
 // ─── Orders INSERT ───────────────────────────────────────────────
 
@@ -27,6 +27,17 @@ export const OrdersRealtimeInsertSchema = z.object({
 
 export type OrdersRealtimeInsert = z.infer<typeof OrdersRealtimeInsertSchema>;
 
+// ─── Orders UPDATE ───────────────────────────────────────────────
+
+export const OrdersRealtimeUpdateSchema = z.object({
+  id: z.string().uuid(),
+  status: OrderStatusSchema.nullable(),
+  table_id: z.string().uuid().nullable(),
+  updated_at: z.string().datetime({ offset: true }).nullable(),
+});
+
+export type OrdersRealtimeUpdatePayload = z.infer<typeof OrdersRealtimeUpdateSchema>;
+
 // ─── Waiter calls INSERT ─────────────────────────────────────────
 
 export const WaiterCallsRealtimeInsertSchema = z.object({
@@ -36,3 +47,13 @@ export const WaiterCallsRealtimeInsertSchema = z.object({
 });
 
 export type WaiterCallsRealtimeInsert = z.infer<typeof WaiterCallsRealtimeInsertSchema>;
+
+// ─── Waiter calls UPDATE ─────────────────────────────────────────
+
+export const WaiterCallsRealtimeUpdateSchema = z.object({
+  id: z.string().uuid(),
+  status: WaiterCallStatusSchema.nullable(),
+  resolved_at: z.string().datetime({ offset: true }).nullable(),
+});
+
+export type WaiterCallsRealtimeUpdatePayload = z.infer<typeof WaiterCallsRealtimeUpdateSchema>;

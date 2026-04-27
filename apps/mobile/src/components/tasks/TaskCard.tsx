@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTranslation } from '@gustri/i18n';
+import { useLocale, useTranslation } from '@gustri/i18n';
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, IconButton } from 'react-native-paper';
@@ -56,6 +56,7 @@ export const TaskCard = React.memo(function TaskCard({
   onDelete,
 }: TaskCardProps) {
   const { t } = useTranslation('staff');
+  const locale = useLocale();
 
   const RECURRENCE_LABELS: Record<string, string> = useMemo(
     () => ({
@@ -140,7 +141,7 @@ export const TaskCard = React.memo(function TaskCard({
                 variant="bodySmall"
                 style={[styles.metaText, isOverdue && { color: '#ef4444', fontWeight: '600' }]}
               >
-                {new Date(task.due_date).toLocaleDateString()}
+                {new Date(task.due_date).toLocaleDateString(locale)}
                 {task.due_time ? ` ${task.due_time.slice(0, 5)}` : ''}
               </Text>
             </View>

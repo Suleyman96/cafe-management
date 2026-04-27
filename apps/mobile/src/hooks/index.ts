@@ -41,6 +41,7 @@ export {
   useUpdateOrderItemStatus,
   useUpdateOrderStatus,
 } from './use-orders';
+export { useOrdersHistory } from './use-orders-history';
 export { useCreatePayment, useOrderPayments } from './use-payments';
 export {
   useCreateSchedule,

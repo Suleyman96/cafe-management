@@ -1,4 +1,6 @@
 import { createNavigationContainerRef } from '@react-navigation/native';
+import { useAuthStore } from '@/store/auth-store';
+import { usePendingIntentStore } from '@/store/pending-intent-store';
 
 /**
  * Ref to the root navigation container — used to imperatively navigate
@@ -8,10 +10,19 @@ export const navigationRef = createNavigationContainerRef();
 
 /**
  * Routes a notification payload to the appropriate screen.
- * Safe to call before navigation is ready — falls back silently.
+ *
+ * If navigation isn't ready yet, or the user is logged out, the payload is
+ * stashed in the pending-intent store so the post-login replay effect in
+ * RootNavigator can dispatch it once the Main stack mounts. This prevents
+ * cold-start notification taps from being silently dropped.
  */
 export function handleNotificationNavigation(data: Record<string, unknown> | null | undefined) {
-  if (!data || !navigationRef.isReady()) return;
+  if (!data) return;
+
+  if (!navigationRef.isReady() || !useAuthStore.getState().staff) {
+    usePendingIntentStore.getState().setPending({ type: 'notification', data });
+    return;
+  }
 
   const type = data.type as string | undefined;
 

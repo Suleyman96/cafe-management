@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ORDER_STATUS_KEYS } from '@gustri/core';
-import { useTranslation } from '@gustri/i18n';
+import { useLocale, useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
@@ -28,6 +28,7 @@ const ROLES_NO_OWNER: Staff['role'][] = ['waiter', 'kitchen', 'admin'];
 export default function StaffDetailScreen() {
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
+  const locale = useLocale();
   const route = useRoute<Route>();
   const { staffId } = route.params;
   const currentUser = useAuthStore((s) => s.staff);
@@ -113,7 +114,7 @@ export default function StaffDetailScreen() {
             </Text>
           )}
           <Text variant="bodySmall" style={styles.muted}>
-            {t('staffMgmt.memberSince')} {new Date(member.created_at).toLocaleDateString()}
+            {t('staffMgmt.memberSince')} {new Date(member.created_at).toLocaleDateString(locale)}
           </Text>
           <Button mode="outlined" onPress={openEdit} style={styles.editBtn}>
             {t('staffMgmt.editProfile')}
@@ -191,7 +192,7 @@ export default function StaffDetailScreen() {
                     {p.amount?.toFixed(2)}
                   </Text>
                   <Text variant="bodySmall" style={styles.muted}>
-                    {new Date(p.created_at).toLocaleDateString()}
+                    {new Date(p.created_at).toLocaleDateString(locale)}
                   </Text>
                 </View>
               ),

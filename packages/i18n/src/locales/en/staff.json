@@ -893,6 +893,7 @@
   "staffMgmt.validationPasswordUppercase": "Must include at least one uppercase letter",
   "staffMgmt.validationPhoneInvalid": "Phone must be 7-20 digits, may include +, spaces, dashes",
   "staffMgmt.upcomingSchedule": "Upcoming Schedule",
+  "staffMgmt.webOnlyManagement": "Use the web app to add, edit, or deactivate staff. Mobile is read-only.",
   "staffMgmt.you": "(You)",
   "stock.add": "Add",
   "stock.addFirstItem": "Add your first stock item",

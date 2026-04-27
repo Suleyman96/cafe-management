@@ -1,4 +1,4 @@
-import { useTranslation } from '@gustri/i18n';
+import { useLocale, useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
@@ -30,6 +30,7 @@ export default function OrderPaymentScreen() {
 
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
+  const locale = useLocale();
 
   const paymentMethods = useMemo(
     () => [
@@ -205,7 +206,7 @@ export default function OrderPaymentScreen() {
                       {p.payment_method}
                     </Text>
                     <Text variant="bodySmall" style={styles.muted}>
-                      {new Date(p.created_at).toLocaleString()}
+                      {new Date(p.created_at).toLocaleString(locale)}
                     </Text>
                   </View>
                   <Text variant="titleSmall" style={{ color: COLORS.success, fontWeight: '600' }}>

@@ -65,3 +65,7 @@ __pycache__/
 # Misc
 .cache/
 *.pem
+
+# Sentry — only the [defaults] section is committed; never commit auth tokens.
+# (Comment intentional: file is committed, but reviewers should reject any PR
+# that adds a `token=...` value to it.)

@@ -7,8 +7,9 @@ import type { StaffInsert, StaffUpdate, WrapperContext } from './types';
 
 export function createStaffWrapper(ctx: WrapperContext) {
   return {
-    findAll: async (options?: { role?: string }) => {
-      let query = ctx.client.from('staff').select('*').order('full_name').limit(200);
+    findAll: async (options?: { role?: string; limit?: number }) => {
+      const limit = options?.limit ?? 200;
+      let query = ctx.client.from('staff').select('*').order('full_name').limit(limit);
 
       if (options?.role) {
         query = query.eq('role', options.role);

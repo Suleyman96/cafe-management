@@ -1,4 +1,4 @@
-import { useTranslation } from '@gustri/i18n';
+import { useLocale, useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, IconButton } from 'react-native-paper';
@@ -36,6 +36,7 @@ export const ExpenseCard = React.memo(function ExpenseCard({
   onDelete,
 }: ExpenseCardProps) {
   const { t } = useTranslation('staff');
+  const locale = useLocale();
   const method = expense.payment_method || 'cash';
   const methodColor = METHOD_COLORS[method] || '#6b7280';
   const displayDate = expense.expense_date || expense.created_at;
@@ -76,7 +77,7 @@ export const ExpenseCard = React.memo(function ExpenseCard({
               {method.replace(/_/g, ' ')}
             </Chip>
             <Text variant="bodySmall" style={styles.muted}>
-              {new Date(displayDate).toLocaleDateString()}
+              {new Date(displayDate).toLocaleDateString(locale)}
             </Text>
           </View>
           {(onEdit || onDelete) && (

@@ -102,6 +102,19 @@ describe('formatPriceWithSettings', () => {
     const settings = { ...defaultSettings, currency_decimal_places: 4 };
     expect(formatPriceWithSettings(10.12345, settings)).toBe('10.1235₼');
   });
+
+  it('respects locale for thousands/decimal separators when locale provided', () => {
+    expect(formatPriceWithSettings(1234.5, defaultSettings, 'en-US')).toBe('1,234.50₼');
+    expect(formatPriceWithSettings(1234.5, defaultSettings, 'de-DE')).toBe('1.234,50₼');
+  });
+
+  it('keeps non-locale digit grouping when locale undefined', () => {
+    expect(formatPriceWithSettings(1234.5, defaultSettings)).toBe('1234.50₼');
+  });
+
+  it('does not use Intl on non-finite amounts even with locale', () => {
+    expect(formatPriceWithSettings(NaN, defaultSettings, 'en-US')).toBe('NaN₼');
+  });
 });
 
 describe('calculateTaxWithSettings', () => {

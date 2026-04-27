@@ -7,8 +7,16 @@ import type { TableInsert, TableRow, TableUpdate, WrapperContext } from './types
 
 export function createTablesWrapper(ctx: WrapperContext) {
   return {
-    findAll: async () => {
-      const { data, error } = await ctx.client.from('tables').select('*').order('table_number');
+    findAll: async (options?: { limit?: number }) => {
+      // Per-tenant table count is small today (≈8–20) but a future feature
+      // (table_history join, reservations) could blow up the row count.
+      // Defensive cap is free here and prevents one bad query from stalling.
+      const limit = options?.limit ?? 500;
+      const { data, error } = await ctx.client
+        .from('tables')
+        .select('*')
+        .order('table_number')
+        .limit(limit);
 
       if (error) throw handleSupabaseError(error);
       const tables = data || [];

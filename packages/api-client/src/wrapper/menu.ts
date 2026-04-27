@@ -144,12 +144,14 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
 
 export function createCategoriesWrapper(ctx: WrapperContext) {
   return {
-    findAll: async (options?: { isActive?: boolean }) => {
+    findAll: async (options?: { isActive?: boolean; limit?: number }) => {
+      const limit = options?.limit ?? 200;
       let query = ctx.client
         .from('categories')
         .select('*')
         .order('display_order', { ascending: true })
-        .order('name', { ascending: true });
+        .order('name', { ascending: true })
+        .limit(limit);
 
       if (options?.isActive !== undefined) {
         query = query.eq('is_active', options.isActive);

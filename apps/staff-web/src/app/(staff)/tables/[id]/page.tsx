@@ -69,7 +69,9 @@ export default function TableDetailPage() {
   const { t } = useTranslation('staff');
 
   const { data: table, isLoading: tableLoading } = useTable(tableId);
-  const { data: orders } = useOrders({ table_id: tableId });
+  // Most recent orders for this table. The cap prevents unbounded growth as
+  // a popular table accumulates years of history.
+  const { data: orders } = useOrders({ table_id: tableId, limit: 50 });
   const { data: menuItems, isLoading: menuLoading } = useMenuItems({ isAvailable: true });
   const { data: categories } = useCategories();
 

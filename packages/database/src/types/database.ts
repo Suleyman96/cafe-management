@@ -551,6 +551,18 @@ export interface Database {
         > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['delivery_customers']['Insert']>;
       };
+      app_versions: {
+        Row: {
+          platform: 'ios' | 'android';
+          min_supported_version: string;
+          latest_version: string;
+          maintenance_mode: boolean;
+          maintenance_message: string | null;
+          updated_at: string;
+        };
+        Insert: Database['public']['Tables']['app_versions']['Row'];
+        Update: Partial<Database['public']['Tables']['app_versions']['Row']>;
+      };
     };
     Views: {
       active_orders_view: {
@@ -701,6 +713,16 @@ export interface Database {
       run_data_retention: {
         Args: Record<string, never>;
         Returns: Json;
+      };
+      // Force-update gate
+      get_app_version: {
+        Args: { p_platform: string };
+        Returns: {
+          min_supported_version: string;
+          latest_version: string;
+          maintenance_mode: boolean;
+          maintenance_message: string | null;
+        }[];
       };
     };
   };

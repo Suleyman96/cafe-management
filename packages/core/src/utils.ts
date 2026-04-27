@@ -30,10 +30,28 @@ export interface PricingSettings {
 }
 
 /**
- * Format price using cafe settings (currency symbol, position, decimals)
+ * Format price using cafe settings (currency symbol, position, decimals).
+ *
+ * If `locale` is provided, the numeric portion uses `Intl.NumberFormat` for
+ * locale-correct thousands/decimal separators (e.g. `1.234,56` in `de-DE`,
+ * `1,234.56` in `en-US`). The cafe's `currency_symbol` and `currency_position`
+ * are preserved regardless — the locale only affects digit grouping.
  */
-export function formatPriceWithSettings(amount: number, settings: PricingSettings): string {
-  const formatted = amount.toFixed(settings.currency_decimal_places);
+export function formatPriceWithSettings(
+  amount: number,
+  settings: PricingSettings,
+  locale?: string,
+): string {
+  const decimals = settings.currency_decimal_places;
+  let formatted: string;
+  if (locale && Number.isFinite(amount)) {
+    formatted = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(amount);
+  } else {
+    formatted = amount.toFixed(decimals);
+  }
   return settings.currency_position === 'before'
     ? `${settings.currency_symbol}${formatted}`
     : `${formatted}${settings.currency_symbol}`;
@@ -81,9 +99,14 @@ export function getDisplaySubtotal(subtotal: number, settings: PricingSettings):
  * Returns YYYY-MM-DD string in the device's local timezone.
  * Replaces `new Date().toISOString().split('T')[0]` which returns UTC date
  * and produces wrong results near midnight in non-UTC timezones.
+ *
+ * Locale defaults to `'en-CA'` because YYYY-MM-DD is the canonical *data*
+ * format used in DB columns (e.g. `task.due_date`, `expense_date`) and
+ * comparisons. Do NOT change the default — use locale-aware display
+ * formatters (see `useDateFormatter` in `@gustri/i18n`) for user-facing dates.
  */
-export function getLocalDateString(date: Date = new Date()): string {
-  return date.toLocaleDateString('en-CA');
+export function getLocalDateString(date: Date = new Date(), locale: string = 'en-CA'): string {
+  return date.toLocaleDateString(locale);
 }
 
 // ─── UI Color Utilities ─────────────────────────────────────────

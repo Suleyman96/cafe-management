@@ -156,6 +156,29 @@ STOCK_MOVEMENT: in, out, adjustment
 - Do NOT add React 19-only APIs (`use()`, `useFormStatus`, `useOptimistic`) to shared packages
 - Web apps will upgrade to React 19 when Next.js 15 migration is done
 
+### Headless package boundary
+`@gustri/core` and `@gustri/database` MUST NOT import `react`, `react-dom`, or
+`react-native`. They run in Node (server endpoints, scripts) as well as RN/web,
+and a stray React import locks them to a single runtime. Hooks belong in
+`@gustri/queries`. Components in `@gustri/ui`. Biome enforces this via a
+`noRestrictedImports` override in `biome.json` — `pnpm check` fails on
+violation. CI also verifies that `@gustri/queries`, `@gustri/i18n`, and
+`@gustri/ui` keep React 19 in their peer range.
+
 ## Real-time
 
 Supabase Realtime is used for live updates on orders, tables, and waiter calls. Sound notifications play via `.mp3` files in `public/`.
+
+## Intentional mobile-only omissions
+
+These admin-tier features are intentionally web-only and will not be added to mobile:
+
+- Staff CRUD (hire, edit, deactivate)
+- Tenant/cafe creation and billing
+- Plan upgrades / Stripe portal
+- Bulk menu import / category reorganization
+- Audit log viewing
+
+Rationale: keep mobile focused on shift-time operations (orders, tables, kitchen, calls).
+Mobile users authenticate but don't perform org-management tasks. The mobile staff list
+surfaces a banner pointing org-management work to the web app.

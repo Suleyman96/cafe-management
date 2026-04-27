@@ -1,5 +1,5 @@
 import type { StaffSchedule, StaffScheduleInsert } from '@gustri/database';
-import { useTranslation } from '@gustri/i18n';
+import { useLocale, useTranslation } from '@gustri/i18n';
 
 // The schedules hook joins staff data via Supabase select
 type ScheduleWithStaff = StaffSchedule & {
@@ -61,6 +61,7 @@ export default function SchedulesScreen() {
   const { showSuccess, showError } = useSnackbar();
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
+  const locale = useLocale();
   const todayStr = formatDate(new Date());
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState(todayStr);
@@ -234,8 +235,8 @@ export default function SchedulesScreen() {
         </Button>
         <View style={styles.weekCenter}>
           <Text variant="titleSmall" style={styles.weekLabel}>
-            {weekDates[0].toLocaleDateString('default', { month: 'short', day: 'numeric' })} –{' '}
-            {weekDates[6].toLocaleDateString('default', {
+            {weekDates[0].toLocaleDateString(locale, { month: 'short', day: 'numeric' })} –{' '}
+            {weekDates[6].toLocaleDateString(locale, {
               month: 'short',
               day: 'numeric',
               year: 'numeric',
@@ -310,7 +311,7 @@ export default function SchedulesScreen() {
                   ]}
                 >
                   <Text style={[styles.dayWeekday, isSelected && styles.dayTextSelected]}>
-                    {d.toLocaleDateString('default', { weekday: 'short' })}
+                    {d.toLocaleDateString(locale, { weekday: 'short' })}
                   </Text>
                   <Text
                     variant="titleSmall"
@@ -329,7 +330,7 @@ export default function SchedulesScreen() {
           {/* Daily count */}
           <Text variant="bodySmall" style={styles.countText}>
             {t('schedules.scheduleCount', { count: dailySchedules.length })} ·{' '}
-            {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('default', {
+            {new Date(`${selectedDate}T00:00:00`).toLocaleDateString(locale, {
               weekday: 'long',
               month: 'long',
               day: 'numeric',
@@ -377,7 +378,7 @@ export default function SchedulesScreen() {
                     variant="titleSmall"
                     style={[styles.weeklyDayLabel, isTodayDay && styles.weeklyDayLabelToday]}
                   >
-                    {d.toLocaleDateString('default', {
+                    {d.toLocaleDateString(locale, {
                       weekday: 'short',
                       month: 'short',
                       day: 'numeric',
