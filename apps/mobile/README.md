@@ -63,6 +63,44 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 EXPO_PUBLIC_APP_NAME="Gustri"
 ```
 
+#### EAS-managed secrets
+
+Build-time secrets are scoped per EAS environment (`development` / `preview` /
+`production`) — they live in EAS, not in `.env`. `eas.json` binds each build
+profile to its environment, so a `preview` build can never inherit production
+secrets, and `app.config.ts` throws at config resolution if a required secret
+is missing for production/preview builds.
+
+Provision once per environment:
+
+```bash
+cd apps/mobile
+
+# Production
+eas env:create --environment production --name EXPO_PUBLIC_SUPABASE_URL --value <prod-url>
+eas env:create --environment production --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <prod-key>
+eas env:create --environment production --name EXPO_PUBLIC_SENTRY_DSN --value <prod-dsn>
+
+# Preview / staging
+eas env:create --environment preview --name EXPO_PUBLIC_SUPABASE_URL --value <staging-url>
+eas env:create --environment preview --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <staging-key>
+
+# Development
+eas env:create --environment development --name EXPO_PUBLIC_SUPABASE_URL --value <dev-url>
+```
+
+Sync the development environment into a local `.env` for `expo start`:
+
+```bash
+eas env:pull --environment development
+```
+
+Verify what's stored:
+
+```bash
+eas env:list --environment production
+```
+
 ### Development
 
 ```bash

@@ -163,7 +163,7 @@ export default function ProfileScreen() {
               <Divider />
               <List.Item
                 title={t('staffMgmt.lastLogin')}
-                description={new Date(staff.last_login_at).toLocaleString()}
+                description={new Date(staff.last_login_at).toLocaleString(i18n.language)}
                 left={(props) => <List.Icon {...props} icon="clock-outline" />}
               />
             </>

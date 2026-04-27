@@ -11,6 +11,17 @@ import { useCurrencySymbol, useOrders } from '@/hooks';
 import { BRAND_PRIMARY, COLORS, ORDER_STATUS_COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, OrdersStackParamList } from '@/types';
 
+// 30 days back covers the recent-orders view (active + recently closed).
+// Older orders need a dedicated history screen with infinite pagination —
+// keeping this list bounded prevents the silent cap that hid older rows.
+const RECENT_WINDOW_DAYS = 30;
+function startOfRecentWindow(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - RECENT_WINDOW_DAYS);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
 type Nav = StackNavigationProp<OrdersStackParamList, 'OrdersList'>;
 
 type OrderWithJoins = Order & {
@@ -36,7 +47,16 @@ export default function OrdersListScreen() {
   const navigation = useNavigation<Nav>();
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
-  const { data: orders, isLoading, isRefetching, error, refetch } = useOrders();
+  const createdAfter = useMemo(() => startOfRecentWindow(), []);
+  const {
+    data: orders,
+    isLoading,
+    isRefetching,
+    error,
+    refetch,
+  } = useOrders({
+    created_after: createdAfter,
+  });
   const currencySymbol = useCurrencySymbol();
 
   const handleOrderPress = useCallback(

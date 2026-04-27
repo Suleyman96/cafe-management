@@ -464,8 +464,9 @@ export type DeliveryCustomerInput = z.infer<typeof DeliveryCustomerSchema>;
 export type TenantInput = z.infer<typeof TenantSchema>;
 export type CategoryInput = z.infer<typeof CategorySchema>;
 
+// ─── Force-Update Gate Schemas ───────────────────────────────────
+export * from './app-version';
 // ─── Mutation Input Schemas ──────────────────────────────────────
 export * from './inputs';
-
 // ─── Realtime Payload Schemas ────────────────────────────────────
 export * from './realtime';

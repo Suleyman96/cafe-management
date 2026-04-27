@@ -1,4 +1,4 @@
-import { useTranslation } from '@gustri/i18n';
+import { useLocale, useTranslation } from '@gustri/i18n';
 import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -32,6 +32,7 @@ export default function ExpensesListScreen() {
   const { showSuccess, showError } = useSnackbar();
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
+  const locale = useLocale();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -197,7 +198,7 @@ export default function ExpensesListScreen() {
           {t('expenses.prev')}
         </Button>
         <Text variant="titleMedium" style={styles.monthLabel}>
-          {new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}
+          {new Date(year, month - 1).toLocaleString(locale, { month: 'long', year: 'numeric' })}
         </Text>
         <Button compact onPress={handleNextMonth}>
           {t('expenses.next')}

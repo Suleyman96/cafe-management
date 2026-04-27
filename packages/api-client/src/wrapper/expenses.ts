@@ -14,12 +14,14 @@ import type {
 
 export function createExpenseCategoriesWrapper(ctx: WrapperContext) {
   return {
-    findAll: async () => {
+    findAll: async (options?: { limit?: number }) => {
+      const limit = options?.limit ?? 200;
       const { data, error } = await ctx.client
         .from('expense_categories')
         .select('*')
         .eq('is_active', true)
-        .order('name');
+        .order('name')
+        .limit(limit);
 
       if (error) throw handleSupabaseError(error);
       return data || [];

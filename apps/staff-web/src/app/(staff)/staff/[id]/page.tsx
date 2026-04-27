@@ -62,7 +62,9 @@ export default function StaffDetailPage() {
     isLoading: staffLoading,
     refetch: refetchStaff,
   } = useStaffMember(staffId);
-  const { data: allOrders, isLoading: ordersLoading } = useOrders();
+  // Bounded fetch — the staff detail page only renders the most recent orders
+  // assigned to or relevant to this staff member.
+  const { data: allOrders, isLoading: ordersLoading } = useOrders({ limit: 200 });
   const { data: recentPayments, isLoading: paymentsLoading } = usePaymentsByStaff(staffId);
   const formatPrice = useFormatPrice();
 

@@ -14,7 +14,8 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.gustri.app"
+      "bundleIdentifier": "com.gustri.app",
+      "associatedDomains": ["applinks:app.gustri.com"]
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +23,15 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.gustri.app",
-      "permissions": ["NOTIFICATIONS", "VIBRATE"]
+      "permissions": ["NOTIFICATIONS", "VIBRATE"],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [{ "scheme": "https", "host": "app.gustri.com" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,7 +48,14 @@
       ],
       "expo-localization",
       "expo-secure-store",
-      "@sentry/react-native/expo"
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "gustri",
+          "project": "gustri-mobile",
+          "url": "https://sentry.io/"
+        }
+      ]
     ],
     "scheme": "gustri",
     "extra": {
@@ -51,7 +67,13 @@
       }
     },
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/c0780054-a6d7-4e65-8ead-1a4b09f661a5",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 5000,
+      "enabled": true
     },
     "owner": "hajilov-k"
   }

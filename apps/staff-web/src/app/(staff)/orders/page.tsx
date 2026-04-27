@@ -5,7 +5,7 @@ import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import { ClipboardList, Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CancelOrderModal } from '@/components/modals/cancel-order-modal';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
@@ -28,7 +28,21 @@ type OrderSource = 'customer' | 'waiter' | 'phone' | 'delivery';
 
 export default function OrdersPage() {
   const { t } = useTranslation('staff');
-  const { data: orders, isLoading: loading, error, refetch } = useOrders();
+  // 30-day window keeps the orders list bounded. Orders older than this need a
+  // dedicated history view with pagination — the wrapper used to silently cap
+  // at 200 rows, so older orders disappeared as a tenant grew.
+  const recentWindowStart = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  }, []);
+  const {
+    data: orders,
+    isLoading: loading,
+    error,
+    refetch,
+  } = useOrders({ created_after: recentWindowStart });
   const updateOrderStatus = useUpdateOrderStatus();
   const markOutForDelivery = useMarkOutForDelivery();
   const markDelivered = useMarkDelivered();

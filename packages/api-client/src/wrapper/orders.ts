@@ -52,6 +52,17 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       limit?: number;
       offset?: number;
     }) => {
+      // Require an explicit scope. Without one, this query silently capped at
+      // 200 rows and older orders disappeared as a tenant grew. Callers must
+      // pass either a `limit` (active/kitchen views) or `created_after` (date
+      // window). Use `findAllPaginated` for unbounded history scrolling.
+      if (!filters?.limit && !filters?.created_after) {
+        throw new Error(
+          'orders.findAll requires either an explicit `limit` or `created_after` filter. ' +
+            'Unbounded queries are not allowed — use findAllPaginated for history views.',
+        );
+      }
+
       let query = ctx.anyClient
         .from('orders_decrypted')
         .select(`
@@ -66,32 +77,30 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         `)
         .order('created_at', { ascending: false });
 
-      if (filters?.statuses && filters.statuses.length > 0) {
+      if (filters.statuses && filters.statuses.length > 0) {
         query = query.in('status', filters.statuses);
-      } else if (filters?.status) {
+      } else if (filters.status) {
         query = query.eq('status', filters.status);
       }
-      if (filters?.table_id) {
+      if (filters.table_id) {
         query = query.eq('table_id', filters.table_id);
       }
-      if (filters?.order_type) {
+      if (filters.order_type) {
         query = query.eq('order_type', filters.order_type);
       }
-      if (filters?.assigned_waiter_id) {
+      if (filters.assigned_waiter_id) {
         query = query.eq('assigned_waiter_id', filters.assigned_waiter_id);
       }
-      if (filters?.created_after) {
+      if (filters.created_after) {
         query = query.gte('created_at', filters.created_after);
       }
-      if (filters?.created_before) {
+      if (filters.created_before) {
         query = query.lt('created_at', filters.created_before);
       }
 
-      // Apply pagination with sensible defaults
-      const limit = filters?.limit ?? 200;
-      const offset = filters?.offset ?? 0;
-      if (limit > 0) {
-        query = query.range(offset, offset + limit - 1);
+      if (filters.limit && filters.limit > 0) {
+        const offset = filters.offset ?? 0;
+        query = query.range(offset, offset + filters.limit - 1);
       }
 
       const { data, error } = await query;

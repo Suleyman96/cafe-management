@@ -42,15 +42,27 @@ describe('OrdersWrapper', () => {
   });
 
   it('findAll returns orders', async () => {
-    const result = await orders.findAll();
+    const result = await orders.findAll({ limit: 50 });
     expect(result).toEqual([validOrder]);
   });
 
   it('findAll applies status filter', async () => {
-    await orders.findAll({ status: 'new' });
+    await orders.findAll({ status: 'new', limit: 50 });
     const calls = ctx.getCalls();
     expect(calls[0].table).toBe('orders_decrypted');
     expect(calls[0].method).toBe('select');
+  });
+
+  it('findAll throws when no scope is supplied', async () => {
+    await expect(orders.findAll()).rejects.toThrow(
+      /requires either an explicit `limit` or `created_after` filter/,
+    );
+  });
+
+  it('findAll allows created_after as the only scope', async () => {
+    await expect(orders.findAll({ created_after: '2026-01-01T00:00:00Z' })).resolves.toEqual([
+      validOrder,
+    ]);
   });
 
   it('findById returns single order', async () => {
@@ -138,7 +150,7 @@ describe('OrdersWrapper', () => {
       },
     });
     const errorOrders = createOrdersWrapper(errorCtx);
-    await expect(errorOrders.findAll()).rejects.toThrow();
+    await expect(errorOrders.findAll({ limit: 50 })).rejects.toThrow();
   });
 });
 
@@ -184,7 +196,7 @@ describe('OrdersWrapper error type verification', () => {
       responses: { orders: errResp, orders_decrypted: errResp },
     });
     const wrapper = createOrdersWrapper(ctx);
-    await expect(wrapper.findAll()).rejects.toThrow(ConflictError);
+    await expect(wrapper.findAll({ limit: 50 })).rejects.toThrow(ConflictError);
   });
 
   it('throws AuthenticationError for PGRST301 code', async () => {
@@ -193,7 +205,7 @@ describe('OrdersWrapper error type verification', () => {
       responses: { orders: errResp, orders_decrypted: errResp },
     });
     const wrapper = createOrdersWrapper(ctx);
-    await expect(wrapper.findAll()).rejects.toThrow(AuthenticationError);
+    await expect(wrapper.findAll({ limit: 50 })).rejects.toThrow(AuthenticationError);
   });
 
   it('throws ValidationError for foreign key violation', async () => {
@@ -202,7 +214,7 @@ describe('OrdersWrapper error type verification', () => {
       responses: { orders: errResp, orders_decrypted: errResp },
     });
     const wrapper = createOrdersWrapper(ctx);
-    await expect(wrapper.findAll()).rejects.toThrow(ValidationError);
+    await expect(wrapper.findAll({ limit: 50 })).rejects.toThrow(ValidationError);
   });
 });
 
@@ -301,7 +313,7 @@ describe('OrdersWrapper empty data handling', () => {
       responses: { orders: emptyResp, orders_decrypted: emptyResp },
     });
     const wrapper = createOrdersWrapper(ctx);
-    const result = await wrapper.findAll();
+    const result = await wrapper.findAll({ limit: 50 });
     expect(result).toEqual([]);
   });
 
@@ -309,7 +321,7 @@ describe('OrdersWrapper empty data handling', () => {
     const nullResp = { data: null, error: null };
     const ctx = createMockContext({ responses: { orders: nullResp, orders_decrypted: nullResp } });
     const wrapper = createOrdersWrapper(ctx);
-    const result = await wrapper.findAll();
+    const result = await wrapper.findAll({ limit: 50 });
     expect(result).toEqual([]);
   });
 });

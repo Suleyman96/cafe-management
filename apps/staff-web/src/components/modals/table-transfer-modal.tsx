@@ -26,7 +26,12 @@ export function TableTransferModal({
   const { t } = useTranslation('staff');
   const { staff } = useAuth();
   const { data: tables } = useTables();
-  const { data: orders } = useOrders();
+  // Transfer modal only inspects active orders. Filter server-side so the
+  // payload stays small even on busy floors.
+  const { data: orders } = useOrders({
+    statuses: ['pending_approval', 'new', 'preparing', 'ready', 'served'],
+    limit: 200,
+  });
   const transferTable = useTransferTable();
 
   const [selectedTableId, setSelectedTableId] = useState<string>('');

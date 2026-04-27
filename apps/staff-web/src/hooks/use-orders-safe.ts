@@ -145,9 +145,14 @@ export function useCreateOrder() {
   });
 }
 
-// Composite hook: derives pending approval count from orders
+// Composite hook: derives pending approval count from orders. The limit caps
+// the worst case — pending-approval orders should clear within seconds, so
+// 100 is plenty even for a busy floor and stays bounded if the queue stalls.
 export function usePendingApprovalCount() {
-  const { data: orders } = useOrdersShared({ status: 'pending_approval' as OrderStatus });
+  const { data: orders } = useOrdersShared({
+    status: 'pending_approval' as OrderStatus,
+    limit: 100,
+  });
   return (orders || []).length;
 }
 

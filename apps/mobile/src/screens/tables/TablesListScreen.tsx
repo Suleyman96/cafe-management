@@ -27,6 +27,7 @@ export default function TablesListScreen() {
   const { data: tables, isLoading, isRefetching, error, refetch } = useTables();
   const { data: orders } = useOrders({
     statuses: ['pending_approval', 'new', 'preparing', 'ready', 'served'],
+    limit: 200,
   });
   const { data: waiterCalls } = useWaiterCalls('pending');
   const currencySymbol = useCurrencySymbol();

@@ -1,6 +1,6 @@
 import { QUERY_KEYS } from '@gustri/core';
 import type { Order, OrderItem, Table } from '@gustri/database';
-import { OrdersRealtimeInsertSchema } from '@gustri/database';
+import { OrdersRealtimeInsertSchema, OrdersRealtimeUpdateSchema } from '@gustri/database';
 import { useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { hapticEvent } from '@/lib/haptics';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { notifyNewOrder } from '@/lib/notifications';
+import { validateRealtimePayload } from '@/lib/realtime-validation';
 import { playNewOrderSound } from '@/lib/sound';
 import { db } from '@/lib/supabase';
 import { useRealtimeStatusStore } from '@/store/realtime-status-store';
@@ -51,6 +52,7 @@ export function useUpdateOrderItemStatus() {
 export function useOrders(filters?: {
   status?: Order['status'];
   statuses?: Order['status'][];
+  table_id?: string;
   assigned_waiter_id?: string;
   created_after?: string;
   created_before?: string;
@@ -98,6 +100,15 @@ export function useOrders(filters?: {
         table: 'orders' as const,
         event: 'UPDATE' as const,
         queryKeys: [[QUERY_KEYS.ORDERS]],
+        onPayload: (newRecord: Record<string, unknown>) => {
+          // Validate to surface schema drift via Sentry. Invalidation runs
+          // unconditionally — even if validation fails we still want the cache
+          // to refetch from the source of truth.
+          validateRealtimePayload(OrdersRealtimeUpdateSchema, newRecord, {
+            table: 'orders',
+            event: 'UPDATE',
+          });
+        },
       },
       {
         table: 'order_items' as const,

@@ -31,7 +31,12 @@ export default function TablesPage() {
     error: tablesError,
     refetch: refetchTables,
   } = useTables();
-  const { data: orders } = useOrders();
+  // Tables overview only consumes active orders to render per-table totals.
+  // Filtering by active statuses + a hard cap keeps the payload bounded.
+  const { data: orders } = useOrders({
+    statuses: ['pending_approval', 'new', 'preparing', 'ready', 'served'],
+    limit: 200,
+  });
   const { data: waiterCalls } = useWaiterCalls();
   const deleteTable = useDeleteTable();
 

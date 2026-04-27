@@ -13,12 +13,15 @@ import type {
 
 export function createDeliveryCustomersWrapper(ctx: WrapperContext) {
   return {
-    findAll: async () => {
+    findAll: async (options?: { limit?: number }) => {
+      // Defensive cap — for paginated reads use findAllPaginated.
+      const limit = options?.limit ?? 500;
       const { data, error } = await ctx.anyClient
         .from('delivery_customers')
         .select('*')
         .order('order_count', { ascending: false })
-        .order('name', { ascending: true });
+        .order('name', { ascending: true })
+        .limit(limit);
 
       if (error) throw handleSupabaseError(error);
       return data || [];
