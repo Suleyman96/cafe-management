@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Gustri — a restaurant management system built as a Turborepo monorepo with 3 client apps and 4 shared packages, powered by Supabase (PostgreSQL + Auth + Realtime).
+Gustri — a restaurant management system built as a Turborepo monorepo with 4 client apps and 6 shared packages, powered by Supabase (PostgreSQL + Auth + Realtime).
 
 ## Monorepo Structure
 
@@ -10,16 +10,19 @@ Gustri — a restaurant management system built as a Turborepo monorepo with 3 c
 apps/
   staff-web/        Next.js 14 staff dashboard (port 3001)
   customer-web/     Next.js 14 customer ordering interface (port 3000)
-  mobile/           React Native / Expo mobile app
+  marketing/        Next.js 14 marketing site + blog (port 3002)
+  mobile/           React Native 0.81 / Expo 54 staff app
 
 packages/
-  database/         Database types, Zod schemas, enums
-  core/             Shared business logic, utils, validators, type guards, error handling
+  database/         DB types, Zod input schemas, enums (headless)
+  core/             Business logic, validators, type guards, errors (headless)
   api-client/       Type-safe Supabase wrapper (SupabaseWrapper class)
-  ui/               Reusable React components (Button, LoadingSpinner)
+  queries/          Shared TanStack Query hooks/mutations (web + mobile)
+  i18n/             i18next setup + locale bundles (20 languages)
+  ui/               Shared React components (Button, Badge, LoadingSpinner, …)
 
 supabase/           Migrations, seed data, config
-scripts/            Utility scripts (create-admin-user.sh)
+scripts/            Utility scripts (admin user, type generation, i18n sync)
 ```
 
 ## Commands
@@ -40,15 +43,47 @@ pnpm db:studio        # Open Supabase Studio (port 54323)
 
 ## Tech Stack
 
-- **Runtime:** Node.js 18+, pnpm 8.14
-- **Build:** Turborepo + tsup (packages), Next.js (apps)
-- **Language:** TypeScript 5.3+ (strict mode)
+- **Runtime:** Node.js 18+, pnpm 9.15
+- **Build:** Turborepo 2.8 + tsup (packages), Next.js 14 (apps)
+- **Language:** TypeScript 5.6+ (strict mode)
 - **Linter/Formatter:** Biome 2.4 (NOT eslint/prettier)
-- **Testing:** Vitest 4.0 (unit/integration), Playwright 1.58 (E2E)
+- **Testing:** Vitest 4 (unit/integration), Playwright 1.58 (E2E), dedicated RLS test config
 - **Database:** Supabase (PostgreSQL 15, RLS enabled)
-- **Frontend:** React 18, Tailwind CSS 3.4, TanStack React Query 5
+- **Frontend:** React 18 (web), Tailwind CSS 3.4, TanStack React Query 5 (via `@gustri/queries`)
 - **State:** Zustand
-- **Mobile:** Expo 51, React Native 0.74
+- **Mobile:** Expo 54, React Native 0.81, React 19
+
+## Where Does New Code Go?
+
+Before adding a file, run through this decision tree. Wrong placement is the #1 source of refactors in this repo.
+
+| You're adding… | Goes in… | Reason |
+|---|---|---|
+| Pure business logic, validators, calculations, type guards, error classes | `@gustri/core` | Headless, reused across web + mobile + server |
+| DB-shaped types, Zod input schemas, enum constants | `@gustri/database` | Single source of truth for DB shape |
+| New table/column/RPC access pattern | `@gustri/api-client` (extend the relevant `*Wrapper`) | Never raw Supabase queries in apps |
+| TanStack Query hook/mutation used by **more than one app** | `@gustri/queries` | Shared cache keys & invalidation rules |
+| TanStack Query hook used by **only one app** | App-local `src/hooks/` | YAGNI — promote to `@gustri/queries` only when a second consumer appears |
+| Reusable React component (used by 2+ apps **or** clearly generic) | `@gustri/ui` | One source of truth for shared visuals |
+| App-specific component (feature/screen-specific) | `apps/<app>/src/components/<feature>/` | Locality beats premature sharing |
+| User-facing string | i18n key in `@gustri/i18n` locales | Never hardcode visible text |
+| Server-side transaction or third-party call | `apps/staff-web` or `apps/customer-web` route under `/api/v1/*` | See Data Access exception 2 |
+| Shared business constant (tax rounding, color palette) | `@gustri/core/constants.ts` | Headless |
+
+**Promotion rule:** start app-local. Promote to a shared package the moment a **second** consumer needs it — not on speculation.
+
+## Feature Workflow Checklist
+
+When adding a feature, work through this in order:
+
+1. **Schema first.** If new tables/columns are needed, write the migration (see `Database` section), regenerate types (`./scripts/generate-types.sh`), then update Zod schemas in `@gustri/database`.
+2. **Wrapper.** Extend `@gustri/api-client` if a new query shape is needed.
+3. **Hook.** Add a TanStack Query hook — `@gustri/queries` if it'll be reused, app-local otherwise.
+4. **UI.** Build components per the placement table above.
+5. **i18n.** Add keys to all required locales (see i18n rule below).
+6. **Tests.** Unit tests for `core`/`database` logic, integration tests for the wrapper, component tests for non-trivial UI.
+7. **Mobile parity.** Decide explicitly — see Mobile Parity rule below.
+8. **Feature flag?** If risky or staged rollout, gate behind `feature_flags` table + `useFeatureFlag` hook.
 
 ## Code Conventions
 
@@ -122,12 +157,70 @@ pnpm db:studio        # Open Supabase Studio (port 54323)
 - Tests in `apps/*/e2e/`
 - Requires running dev server (`reuseExistingServer: true` for local)
 
+## Mobile Parity Rule
+
+When adding a feature to `staff-web`, decide mobile parity explicitly. Default: **shift-time operations get mobile, admin/org tasks do not.**
+
+| Feature category | Mobile? | Examples |
+|---|---|---|
+| Shift-time operations | **Yes — ship in same PR or follow-up before release** | Orders, tables, kitchen view, waiter calls, stock counts, waste logging, payments at the table |
+| Reporting & analytics | Read-only views OK; bulk export web-only | Daily summary card on mobile; PDF export web-only |
+| Admin/org tasks | **No** — see "Intentional mobile-only omissions" | Staff CRUD, billing, plan upgrades, bulk menu import, audit log |
+| Settings | Per-shift settings yes; org settings no | Sound toggle yes; tax rate / branding no |
+
+If unsure, leave a TODO + GitHub issue link rather than half-shipping.
+
+## Server-side endpoints (`/api/v1/*`)
+
+Use a route only when the operation **cannot** be expressed as a single Supabase query:
+
+- Multi-table transactions (orders create → items + payments + audit)
+- External-service calls (Stripe, push notifications, file generation)
+- Operations that need elevated privileges beyond RLS (refunds, discount overrides, financial audit writes)
+- Validation that depends on server-only state (rate limits, idempotency keys)
+
+Otherwise, extend `@gustri/api-client`. Don't create routes "for symmetry."
+
+Routes return typed errors via `httpStatusToAppError` so wrapper and route call sites have the same error semantics. Mobile calls routes through `apiRoutes` in `apps/mobile/src/lib/api-routes.ts`.
+
+## Feature Flag Rule
+
+Risky, staged, or tenant-scoped features ship behind `feature_flags`:
+
+- Anything that touches money flow (new payment method, discount type, refund path)
+- New realtime subscriptions (load risk)
+- Schema-level changes consumed by clients before all clients are upgraded
+- Anything you'd want to kill without a deploy
+
+Read flags via the `useFeatureFlag(name)` hook. Default behavior when the flag is absent must be the **safe/old** path. Remove the flag once the feature is stable for ≥2 weeks — stale flags rot.
+
+## Migration Rule
+
+- File name: `YYYYMMDDNNNNNN_short_snake_case.sql` (e.g. `20260427000001_app_versions.sql`).
+- **Never edit a migration that has been merged to `main`.** Add a new migration that alters/fixes.
+- All new tables must declare RLS policies in the same migration. RLS-disabled tables fail review.
+- Destructive changes (`DROP COLUMN`, type narrowing) need a paired rollback file under `supabase/migrations/_rollbacks/`.
+- After any schema change: run `./scripts/generate-types.sh` and commit the regenerated types in the same PR.
+- Index changes: prefer `CREATE INDEX CONCURRENTLY` for tables with significant row counts.
+- Keep migrations idempotent where reasonable (`IF NOT EXISTS`, `ON CONFLICT DO NOTHING` for seed data).
+
+## i18n Rule
+
+- **Every user-visible string** goes through `@gustri/i18n` keys. No hardcoded text in JSX, alerts, toasts, or error messages.
+- Locale coverage at PR time:
+  - **Required**: `en`, `az` (primary launch markets) — PR is blocked without these.
+  - **Required for staff UI**: `en`, `az`, `ru`, `tr`.
+  - **Customer-web**: aim for full 20-locale coverage; missing locales fall back to `en`.
+- Use `useTranslation()` in components, `t()` in hooks/utilities. Never import locale JSON directly.
+- Numbers/dates/currencies go through formatters in `@gustri/i18n/formatters.ts`, not raw `toLocaleString`.
+- New keys: place under the most specific namespace; avoid generic top-level keys.
+
 ## Database
 
-- Migrations in `supabase/migrations/` (sequential numbering)
+- Migrations in `supabase/migrations/` (sequential numbering — see Migration Rule)
 - RLS policies enabled on all tables
 - Default admin: `admin@test.com` / `test1234`
-- Key tables: orders, tables, menu_items, categories, staff, waiter_calls, customer_feedback, order_payments, table_transfers, staff_schedules, cafe_settings, stock_items, stock_movements, expense_categories, expenses, waste_logs, tasks, task_categories
+- Key tables: orders, tables, menu_items, categories, staff, waiter_calls, customer_feedback, order_payments, table_transfers, staff_schedules, cafe_settings, stock_items, stock_movements, expense_categories, expenses, waste_logs, tasks, task_categories, financial_audit_log, feature_flags, app_versions, delivery_access_tokens
 
 ### Enums
 ```

@@ -4,19 +4,42 @@ A comprehensive restaurant management system built with modern web technologies,
 
 ## Architecture
 
-This is a Turborepo monorepo containing:
+This is a Turborepo monorepo containing four apps and six shared packages:
+
+```
+apps/
+  staff-web/        Next.js 14 staff dashboard (port 3001)
+  customer-web/     Next.js 14 customer ordering UI (port 3000)
+  marketing/        Next.js 14 marketing site + blog (port 3002)
+  mobile/           React Native / Expo staff app
+
+packages/
+  database/         Generated DB types, Zod input schemas, enums (headless)
+  core/             Business logic, validators, type guards, errors (headless)
+  api-client/       Type-safe Supabase wrapper used by all apps
+  queries/          Shared TanStack Query hooks/mutations (web + mobile)
+  i18n/             i18next setup + locale bundles (20 languages)
+  ui/               Shared React components
+
+supabase/           Migrations, seed data, config
+scripts/            Utility scripts (admin user, type generation, i18n sync)
+```
 
 ### Apps
 - **`staff-web`** - Staff management dashboard (Next.js 14, port 3001)
 - **`customer-web`** - Customer ordering interface (Next.js 14, port 3000)
-- **`mobile`** - Staff mobile app (React Native / Expo 54)
+- **`marketing`** - Public marketing site and blog (Next.js 14, port 3002)
+- **`mobile`** - Staff mobile app (React Native 0.81, Expo 54)
 
 ### Packages
-- **`@gustri/core`** - Shared business logic, utilities, constants, and query keys
-- **`@gustri/database`** - Database types (generated from Supabase), Zod schemas, enums
-- **`@gustri/api-client`** - Type-safe Supabase API wrapper with runtime validation
-- **`@gustri/i18n`** - Internationalization (i18next) with shared locale bundles
-- **`@gustri/ui`** - Shared React components (Button, LoadingSpinner)
+- **`@gustri/core`** - Headless business logic: utilities, validators, type guards, error classes, profit metrics, color/constants. Runtime-agnostic (no React, no react-native).
+- **`@gustri/database`** - Database types (generated from Supabase), Zod input schemas, enums, supabase helpers. Headless.
+- **`@gustri/api-client`** - Type-safe Supabase wrapper (`SupabaseWrapper`) used by all apps for data access.
+- **`@gustri/queries`** - Shared TanStack Query hooks and mutations (orders, tables, menu, stock, payments, reports, etc.) used by web and mobile.
+- **`@gustri/i18n`** - Internationalization (i18next) with locale bundles for 20 languages.
+- **`@gustri/ui`** - Shared React components (Button, Badge, LoadingSpinner, NumberInput, GustriLogo, etc.).
+
+> **Headless package boundary:** `@gustri/core` and `@gustri/database` MUST NOT import `react`, `react-dom`, or `react-native` — they run in Node (server endpoints, scripts) as well as RN/web. Hooks live in `@gustri/queries`, components in `@gustri/ui`. Biome enforces this via `noRestrictedImports` in `biome.json`.
 
 ## Getting Started
 
@@ -37,7 +60,8 @@ pnpm install
 # Set up environment variables
 cp apps/staff-web/.env.example apps/staff-web/.env.local
 cp apps/customer-web/.env.example apps/customer-web/.env.local
-# Add your Supabase credentials to both .env.local files
+cp apps/marketing/.env.example apps/marketing/.env.local 2>/dev/null || true
+# Add your Supabase credentials to each .env.local file
 ```
 
 #### Windows
@@ -61,6 +85,8 @@ pnpm install
 cp apps/staff-web/.env.example apps/staff-web/.env.local
 cp apps/customer-web/.env.example apps/customer-web/.env.local
 ```
+
+> Mobile (`apps/mobile`) reads its Supabase config from `app.config.ts` / `eas.json`. See the app's own README for Expo setup.
 
 ### Windows Troubleshooting
 
@@ -108,7 +134,7 @@ This single file contains all tables, functions, triggers, views, and default da
 
 ### Option 3: Running Migrations Individually
 
-If you prefer to apply migrations one by one, run each file inside `supabase/migrations/` in alphabetical order via the SQL Editor. There are currently 51 migration files covering schema creation, RLS policies, functions, views, and incremental features.
+If you prefer to apply migrations one by one, run each file inside `supabase/migrations/` in alphabetical order via the SQL Editor. The schema starts from a single squashed baseline (`00000000000000_baseline.sql`) followed by incremental migrations covering RLS hardening, indexes, encryption of customer PII, financial audit logging, feature flags, push tokens, monitoring functions, data retention, and app version gating. Older pre-baseline migrations are preserved under `supabase/migrations/_archive/` for reference.
 
 ### Creating an Admin User
 
@@ -152,6 +178,8 @@ pnpm dev
 # Run specific app
 pnpm dev --filter=@gustri/staff-web
 pnpm dev --filter=@gustri/customer-web
+pnpm dev --filter=@gustri/marketing
+pnpm dev --filter=@gustri/mobile
 
 # Build all packages
 pnpm build
@@ -163,10 +191,14 @@ pnpm type-check
 pnpm check
 pnpm check:fix
 
-# Run tests
+# Run tests (root + every workspace config)
 pnpm test
 pnpm test:watch
 pnpm test:mobile
+pnpm test:coverage
+
+# RLS policy tests (require local Supabase running)
+pnpm test:rls
 
 # E2E tests (requires running dev server)
 pnpm test:e2e
@@ -179,16 +211,23 @@ pnpm db:studio
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), React 18, TypeScript 5
-- **Mobile**: React Native 0.81, Expo 54
+- **Frontend (web)**: Next.js 14 (App Router), React 18, TypeScript 5.6+ (strict)
+- **Mobile**: React Native 0.81, Expo 54, React 19 (RN's required version)
 - **Styling**: Tailwind CSS 3.4, shadcn/ui patterns
-- **State Management**: Zustand, TanStack Query v5
+- **State Management**: Zustand, TanStack Query v5 (via `@gustri/queries`)
 - **Backend**: Supabase (PostgreSQL 15, Realtime, Auth, Storage, RLS)
-- **Build System**: Turborepo, tsup
-- **Package Manager**: pnpm 9
-- **Linting/Formatting**: Biome 2.4
-- **Testing**: Vitest 4 (unit/integration), Playwright (E2E)
-- **Internationalization**: i18next (EN, AZ, RU, TR)
+- **Build System**: Turborepo 2.8, tsup
+- **Package Manager**: pnpm 9.15
+- **Linting/Formatting**: Biome 2.4 (no eslint/prettier)
+- **Testing**: Vitest 4 (unit/integration), Playwright 1.58 (E2E), dedicated RLS test config
+- **Internationalization**: i18next — 20 customer-facing locales (ar, az, de, el, en, es, fa, fr, id, it, ja, ka, kk, ko, pt, ru, th, tr, uk, uz); staff UI ships in EN/AZ/RU/TR
+
+### React version policy
+
+- Web apps (`staff-web`, `customer-web`, `marketing`): React 18.x
+- Mobile app: React 19.x (required by React Native 0.81+)
+- Shared packages declare both via peer ranges (`^18.2.0 || ^19.0.0`)
+- Do **not** add React 19-only APIs (`use()`, `useFormStatus`, `useOptimistic`) to shared packages
 
 ---
 
@@ -213,21 +252,31 @@ pnpm db:studio
 
 ### Customer Interface (`customer-web`)
 - **QR Code Ordering** - Scan QR code at table to browse menu and place orders
-- **Delivery Ordering** - Order via direct link (shared on social media, WhatsApp, etc.)
+- **Delivery Ordering** - Order via tokenized direct link (shareable on social, WhatsApp, etc.)
 - **Digital Menu** - Browse categories, view item details, dietary info
 - **Cart** - Add items with notes, review before ordering
 - **Real-time Tracking** - Live order status updates via Supabase Realtime
-- **Multi-language** - Japanese, English, Korean, and 17 more
+- **Multi-language** - 20 locales (see Tech Stack)
 - **Feedback** - Submit complaints, questions, and praise
 - **Call Waiter** - Request assistance from staff
 
 ### Mobile App (`mobile`)
-- **Order Management** - View and manage orders on the go
+- **Order Management** - Take, edit, and progress orders from the floor
 - **Table Overview** - Monitor table statuses
-- **Waiter Calls** - Receive real-time notifications
-- **Stock & Expenses** - Track inventory and expenses
+- **Kitchen View** - Cook-side order queue
+- **Waiter Calls** - Receive real-time call notifications
+- **Stock & Expenses & Waste** - Operational logging on the go
 - **Task Management** - View and complete assigned tasks
-- **Push Notifications** - Expo push notifications for real-time alerts
+- **Push Notifications** - Expo push for new orders, waiter calls, and announcements
+- **Force-update flow** - Backed by the `app_versions` table — clients below the minimum supported build are blocked with an upgrade prompt
+
+> **Mobile is intentionally scoped to shift-time work.** Staff CRUD, tenant/billing, plan upgrades,
+> bulk menu import, and audit log viewing remain web-only. The mobile staff list shows a banner
+> pointing org-management tasks to the web app.
+
+### Marketing Site (`marketing`)
+- Public landing page, pricing, and MDX-powered blog
+- Independent of staff/customer apps; runs on port 3002
 
 ### Order Types
 | Type | Source | Table Required | Customer Info |
@@ -251,7 +300,7 @@ Delivery order:  new -> preparing -> ready -> out_for_delivery -> delivered -> c
 
 | Table | Description |
 |-------|-------------|
-| `staff` | Staff members (admin, waiter, kitchen, owner) linked to auth.users |
+| `staff` | Staff members (admin, waiter, kitchen, owner) linked to auth.users; per-tenant unique emails; carries Expo push token |
 | `tables` | Physical cafe tables with QR codes |
 | `categories` | Menu categories (multi-language) |
 | `menu_items` | Menu items with pricing, dietary info, images |
@@ -270,6 +319,10 @@ Delivery order:  new -> preparing -> ready -> out_for_delivery -> delivered -> c
 | `waste_logs` | Waste tracking with item, quantity, reason, and cost |
 | `task_categories` | Task category definitions |
 | `tasks` | Staff tasks with priority, assignment, recurrence |
+| `financial_audit_log` | Append-only audit trail for money-affecting changes (payments, refunds, discounts) |
+| `feature_flags` | Server-driven feature toggles consumed via `useFeatureFlag` |
+| `app_versions` | Min/recommended mobile build numbers driving the force-update flow |
+| `delivery_access_tokens` | Per-link customer-facing delivery ordering tokens |
 
 ### Views
 
@@ -292,11 +345,24 @@ Delivery order:  new -> preparing -> ready -> out_for_delivery -> delivered -> c
 ### Enums
 
 ```
-STAFF_ROLE:       waiter, admin, kitchen, owner
-ORDER_STATUS:     pending_approval, new, preparing, ready, out_for_delivery, delivered, served, closed, cancelled
-TABLE_STATUS:     free, occupied, reserved, closed
-PAYMENT_METHOD:   cash, card, digital
-LANGUAGES:        en, az, ru, tr
+USER_ROLE:           waiter, admin, kitchen, owner
+ORDER_STATUS:        pending_approval, new, preparing, ready, served,
+                     out_for_delivery, delivered, closed, cancelled
+ORDER_ITEM_STATUS:   pending, preparing, ready, served, cancelled
+TABLE_STATUS:        free, occupied, reserved, closed
+ORDER_TYPE:          dine_in, takeout, delivery
+ORDER_SOURCE:        customer, waiter, phone
+PAYMENT_METHOD:      cash, card, digital
+PAYMENT_TYPE:        full, partial_amount, specific_items
+FEEDBACK_TYPE:       complaint_food, complaint_service, complaint_staff,
+                     question_menu, request_general, praise
+CALL_TYPE:           assistance, bill, complaint, question, emergency
+PRIORITY:            low, normal, high, urgent
+SCHEDULE_STATUS:     scheduled, in_progress, completed, missed
+TASK_STATUS:         pending, in_progress, completed, cancelled
+WASTE_REASON:        expired, spoiled, overcooked, dropped,
+                     returned_by_customer, preparation_waste, other
+STOCK_MOVEMENT:      in, out, adjustment
 ```
 
 ---
