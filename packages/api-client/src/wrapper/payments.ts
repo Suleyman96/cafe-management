@@ -2,7 +2,8 @@
  * Payments wrapper module
  */
 
-import { handleSupabaseError, isOrderPayment } from '@gustri/core';
+import { isOrderPayment } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type { OrderPaymentInsert, WrapperContext } from './types';
 
 export function createPaymentsWrapper(ctx: WrapperContext) {

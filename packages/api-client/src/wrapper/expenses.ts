@@ -2,7 +2,8 @@
  * Expenses wrapper module
  */
 
-import { handleSupabaseError, isExpense, isExpenseCategory } from '@gustri/core';
+import { isExpense, isExpenseCategory } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type {
   ExpenseCategoryInsert,
   ExpenseCategoryRow,

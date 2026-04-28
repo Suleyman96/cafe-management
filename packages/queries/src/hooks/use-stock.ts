@@ -1,6 +1,6 @@
-import { QUERY_KEYS } from '@gustri/core';
 import type { StockItem, StockMovement } from '@gustri/database';
 import { useQuery } from '@tanstack/react-query';
+import { QUERY_KEYS } from '../keys';
 import { useDb } from '../provider';
 
 export function useStockItems(options?: Record<string, unknown>) {

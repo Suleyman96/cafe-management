@@ -2,7 +2,8 @@
  * Refunds wrapper module
  */
 
-import { handleSupabaseError, isRefund } from '@gustri/core';
+import { isRefund } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type { WrapperContext } from './types';
 
 export function createRefundsWrapper(ctx: WrapperContext) {

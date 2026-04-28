@@ -1,4 +1,5 @@
-import { AuthenticationError, httpStatusToAppError, NetworkError } from '@gustri/core';
+import { httpStatusToAppError } from '@gustri/api-client';
+import { AuthenticationError, NetworkError } from '@gustri/core';
 import type {
   CafeSettings,
   CafeSettingsUpdateInput,

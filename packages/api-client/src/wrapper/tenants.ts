@@ -2,8 +2,8 @@
  * Tenants wrapper module
  */
 
-import { handleSupabaseError } from '@gustri/core';
 import type { Database } from '@gustri/database';
+import { handleSupabaseError } from '../errors';
 import type { WrapperContext } from './types';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];

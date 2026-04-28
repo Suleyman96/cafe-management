@@ -2,7 +2,8 @@
  * Stock items wrapper module
  */
 
-import { handleSupabaseError, isStockItem } from '@gustri/core';
+import { isStockItem } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type { StockItemInsert, StockItemRow, StockItemUpdate, WrapperContext } from './types';
 
 export function createStockItemsWrapper(ctx: WrapperContext) {

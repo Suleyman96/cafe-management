@@ -2,7 +2,8 @@
  * Menu items and categories wrapper module
  */
 
-import { handleSupabaseError, isCategory, isCategoryArray, isMenuItem } from '@gustri/core';
+import { isCategory, isCategoryArray, isMenuItem } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type {
   CategoryInsert,
   CategoryUpdate,

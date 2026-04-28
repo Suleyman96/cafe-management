@@ -2,15 +2,9 @@
  * Orders wrapper module
  */
 
-import { handleSupabaseError, isOrder, isOrderItem, isOrderItemArray } from '@gustri/core';
-import type {
-  OrderInsert,
-  OrderItemInsert,
-  OrderItemRow,
-  OrderRow,
-  PaginatedResult,
-  WrapperContext,
-} from './types';
+import { isOrder } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
+import type { OrderInsert, OrderRow, PaginatedResult, WrapperContext } from './types';
 
 /**
  * The orders_decrypted view adds decrypted_* columns alongside the raw
@@ -563,88 +557,4 @@ export function createOrdersWrapper(ctx: WrapperContext) {
   };
 }
 
-export function createOrderItemsWrapper(ctx: WrapperContext) {
-  return {
-    create: async (items: OrderItemInsert[]) => {
-      const { data, error } = await ctx.anyClient.from('order_items').insert(items).select();
-
-      if (error) throw handleSupabaseError(error);
-      const orderItems = data || [];
-      if (!isOrderItemArray(orderItems)) throw new Error('Invalid order items data');
-      return orderItems as OrderItemRow[];
-    },
-
-    updateStatus: async (id: string, status: OrderItemRow['status']) => {
-      const { data, error } = await ctx.anyClient
-        .from('order_items')
-        .update({ status })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw handleSupabaseError(error);
-      if (!isOrderItem(data)) throw new Error('Invalid order item data');
-      return data as OrderItemRow;
-    },
-
-    delete: async (id: string) => {
-      const { error } = await ctx.anyClient.from('order_items').delete().eq('id', id);
-
-      if (error) throw handleSupabaseError(error);
-    },
-
-    cancel: async (id: string, cancelQty?: number) => {
-      if (cancelQty !== undefined && cancelQty > 0) {
-        // Partial cancel: fetch current item, reduce quantity, or cancel if all
-        const { data: current, error: fetchError } = await ctx.anyClient
-          .from('order_items')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (fetchError) throw handleSupabaseError(fetchError);
-        if (!current) throw new Error('Order item not found');
-        const currentItem = current as OrderItemRow;
-
-        if (cancelQty >= currentItem.quantity) {
-          // Cancel entire item
-          const { data, error } = await ctx.anyClient
-            .from('order_items')
-            .update({ status: 'cancelled' })
-            .eq('id', id)
-            .select()
-            .single();
-          if (error) throw handleSupabaseError(error);
-          if (!isOrderItem(data)) throw new Error('Invalid order item data');
-          return data as OrderItemRow;
-        }
-
-        // Reduce quantity
-        const { data, error } = await ctx.anyClient
-          .from('order_items')
-          .update({ quantity: currentItem.quantity - cancelQty })
-          .eq('id', id)
-          .select()
-          .single();
-        if (error) throw handleSupabaseError(error);
-        if (!isOrderItem(data)) throw new Error('Invalid order item data');
-        return data as OrderItemRow;
-      }
-
-      // Cancel entire item (no quantity specified)
-      const { data, error } = await ctx.anyClient
-        .from('order_items')
-        .update({ status: 'cancelled' })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw handleSupabaseError(error);
-      if (!isOrderItem(data)) throw new Error('Invalid order item data');
-      return data as OrderItemRow;
-    },
-  };
-}
-
 export type OrdersWrapper = ReturnType<typeof createOrdersWrapper>;
-export type OrderItemsWrapper = ReturnType<typeof createOrderItemsWrapper>;

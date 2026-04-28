@@ -2,7 +2,7 @@
  * Type-Safe Z-Report Hook
  */
 
-import { QUERY_KEYS } from '@gustri/core';
+import { QUERY_KEYS } from '@gustri/queries';
 import { useQuery } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
 

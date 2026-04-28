@@ -1,15 +1,10 @@
 'use client';
 
-import {
-  formatTime,
-  getOrderStatusColor,
-  type ORDER_STATUS,
-  ORDER_STATUS_KEYS,
-  QUERY_KEYS,
-} from '@gustri/core';
+import { formatTime, type ORDER_STATUS, ORDER_STATUS_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { QUERY_KEYS } from '@gustri/queries';
+import { Button, getOrderStatusColor, LoadingSpinner } from '@gustri/ui';
 import {
   AlertCircle,
   ArrowLeft,

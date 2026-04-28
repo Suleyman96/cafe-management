@@ -1,4 +1,4 @@
-import { handleSupabaseError } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type { WrapperContext } from './types';
 
 export interface RevenueSummaryRow {

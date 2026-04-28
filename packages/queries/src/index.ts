@@ -101,6 +101,8 @@ export {
   refetchTasks,
   refetchWaste,
 } from './invalidation';
+// Centralized query keys
+export { QUERY_KEYS } from './keys';
 // Mutation types
 export type { MutationCallbacks } from './mutations/types';
 export { DbProvider, useDb } from './provider';

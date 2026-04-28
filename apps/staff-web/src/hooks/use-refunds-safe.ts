@@ -2,7 +2,7 @@
  * Type-Safe Refund Hooks
  */
 
-import { QUERY_KEYS } from '@gustri/core';
+import { QUERY_KEYS } from '@gustri/queries';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
 import { db } from '@/lib/supabase/wrapped-client';

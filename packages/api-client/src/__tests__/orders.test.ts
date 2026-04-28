@@ -1,6 +1,7 @@
 import { AuthenticationError, ConflictError, ValidationError } from '@gustri/core';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createOrderItemsWrapper, createOrdersWrapper } from '../wrapper/orders';
+import { createOrderItemsWrapper } from '../wrapper/order-items';
+import { createOrdersWrapper } from '../wrapper/orders';
 import {
   buildOrder,
   buildOrderInsert,

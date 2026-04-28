@@ -1,10 +1,10 @@
 'use client';
 
 import type { PlanName } from '@gustri/core';
-import { getLocalDateString, getRoleBadgeColor, PLAN_ORDER } from '@gustri/core';
+import { getLocalDateString, PLAN_ORDER } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { invalidateSchedules } from '@gustri/queries';
-import { GustriIcon, GustriLogo } from '@gustri/ui';
+import { GustriIcon, GustriLogo, getRoleBadgeColor } from '@gustri/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   BarChart3,

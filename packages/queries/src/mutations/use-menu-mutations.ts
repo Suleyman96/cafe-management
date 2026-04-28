@@ -1,4 +1,3 @@
-import { QUERY_KEYS } from '@gustri/core';
 import type {
   CategoriesInsert,
   CategoriesUpdate,
@@ -7,6 +6,7 @@ import type {
 } from '@gustri/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invalidateMenuAndCategories } from '../invalidation';
+import { QUERY_KEYS } from '../keys';
 import { useDb } from '../provider';
 import type { MutationCallbacks } from './types';
 

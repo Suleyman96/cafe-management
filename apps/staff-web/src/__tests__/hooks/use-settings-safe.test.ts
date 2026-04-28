@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/core';
+import { QUERY_KEYS } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import { useCafeSettings, useUpdateCafeSettings } from '@/hooks/use-settings-safe';
 import { renderHookWithProviders } from '../helpers/test-utils';

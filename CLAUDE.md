@@ -39,6 +39,8 @@ pnpm check:fix        # Auto-fix biome issues
 pnpm type-check       # TypeScript type checking
 pnpm db:reset         # Reset Supabase DB + create admin user
 pnpm db:studio        # Open Supabase Studio (port 54323)
+pnpm db:types:generate # Regenerate packages/database/src/types/generated.ts from local DB
+pnpm db:types:check   # CI gate: fails if committed types drift from the live schema
 ```
 
 ## Tech Stack
@@ -200,7 +202,7 @@ Read flags via the `useFeatureFlag(name)` hook. Default behavior when the flag i
 - **Never edit a migration that has been merged to `main`.** Add a new migration that alters/fixes.
 - All new tables must declare RLS policies in the same migration. RLS-disabled tables fail review.
 - Destructive changes (`DROP COLUMN`, type narrowing) need a paired rollback file under `supabase/migrations/_rollbacks/`.
-- After any schema change: run `./scripts/generate-types.sh` and commit the regenerated types in the same PR.
+- After any schema change: run `pnpm db:types:generate` (writes `packages/database/src/types/generated.ts`) and commit the regenerated file in the same PR. CI runs `pnpm db:types:check` to detect drift.
 - Index changes: prefer `CREATE INDEX CONCURRENTLY` for tables with significant row counts.
 - Keep migrations idempotent where reasonable (`IF NOT EXISTS`, `ON CONFLICT DO NOTHING` for seed data).
 

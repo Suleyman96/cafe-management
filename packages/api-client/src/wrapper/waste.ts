@@ -2,7 +2,8 @@
  * Waste logs wrapper module
  */
 
-import { handleSupabaseError, isWasteLog } from '@gustri/core';
+import { isWasteLog } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type { WasteLogInsert, WasteLogRow, WasteLogUpdate, WrapperContext } from './types';
 
 export function createWasteWrapper(ctx: WrapperContext) {

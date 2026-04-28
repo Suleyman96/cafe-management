@@ -1,5 +1,4 @@
-import { createSupabaseWrapper } from '@gustri/api-client';
-import { handleSupabaseError } from '@gustri/core';
+import { createSupabaseWrapper, handleSupabaseError } from '@gustri/api-client';
 import type { Database } from '@gustri/database';
 import { createClient } from '@supabase/supabase-js';
 

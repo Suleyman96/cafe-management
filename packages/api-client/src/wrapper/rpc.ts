@@ -2,7 +2,7 @@
  * RPC functions wrapper module
  */
 
-import { handleSupabaseError } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type { WrapperContext } from './types';
 
 export function createRpcWrapper(ctx: WrapperContext) {

@@ -1,5 +1,5 @@
-import { QUERY_KEYS } from '@gustri/core';
 import { useQuery } from '@tanstack/react-query';
+import { QUERY_KEYS } from '../keys';
 import { useDb } from '../provider';
 
 export function useRevenueSummary(tenantId: string | undefined, from: string, to: string) {

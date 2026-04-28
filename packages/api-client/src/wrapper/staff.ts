@@ -2,7 +2,8 @@
  * Staff wrapper module
  */
 
-import { handleSupabaseError, isStaff, isStaffArray } from '@gustri/core';
+import { isStaff, isStaffArray } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type { StaffInsert, StaffUpdate, WrapperContext } from './types';
 
 export function createStaffWrapper(ctx: WrapperContext) {

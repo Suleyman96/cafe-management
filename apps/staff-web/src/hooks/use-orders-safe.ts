@@ -4,9 +4,9 @@
  * and app-specific mutations (apiRoutes).
  */
 
-import { ORDER_STATUS, QUERY_KEYS } from '@gustri/core';
+import { ORDER_STATUS } from '@gustri/core';
 import type { Database } from '@gustri/database';
-import { useOrders as useOrdersShared } from '@gustri/queries';
+import { QUERY_KEYS, useOrders as useOrdersShared } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
 import { invalidateOrdersAndTables } from '@/lib/query-helpers';

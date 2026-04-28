@@ -26,6 +26,8 @@
     "db:studio": "turbo run db:studio",
     "db:reset": "supabase db reset && ./scripts/create-admin-user.sh",
     "db:seed-user": "./scripts/create-admin-user.sh",
+    "db:types:generate": "./scripts/generate-types.sh",
+    "db:types:check": "./scripts/generate-types.sh --check",
     "analyze": "ANALYZE=true turbo build --filter=@gustri/staff-web --filter=@gustri/customer-web",
     "prepare": "husky"
   },

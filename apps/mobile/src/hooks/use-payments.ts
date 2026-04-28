@@ -2,8 +2,9 @@
 export { useOrderPayments } from '@gustri/queries';
 
 // Local hook — uses apiRoutes for payment creation
-import { QUERY_KEYS, validateOrThrow } from '@gustri/core';
+import { validateOrThrow } from '@gustri/core';
 import { type OrderPaymentCreateInput, OrderPaymentCreateInputSchema } from '@gustri/database';
+import { QUERY_KEYS } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';

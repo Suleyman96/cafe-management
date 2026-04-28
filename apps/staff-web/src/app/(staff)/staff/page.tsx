@@ -1,8 +1,7 @@
 'use client';
 
-import { getRoleBadgeColor } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { Button, getRoleBadgeColor, LoadingSpinner } from '@gustri/ui';
 import { ChefHat, Edit2, Plus, Search, Shield, User, UserCheck, UserX } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';

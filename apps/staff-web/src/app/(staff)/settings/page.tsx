@@ -1,8 +1,8 @@
 'use client';
 
-import { getRoleBadgeColor, QUERY_KEYS } from '@gustri/core';
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { QUERY_KEYS } from '@gustri/queries';
+import { Button, getRoleBadgeColor, LoadingSpinner } from '@gustri/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Eye, EyeOff, Globe, Key, Mail, Shield, User } from 'lucide-react';
 import { useState } from 'react';

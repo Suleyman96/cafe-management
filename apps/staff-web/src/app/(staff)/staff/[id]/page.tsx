@@ -1,8 +1,8 @@
 'use client';
 
-import { getLocalDateString, getRoleBadgeColor } from '@gustri/core';
+import { getLocalDateString } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { Button, getRoleBadgeColor, LoadingSpinner } from '@gustri/ui';
 import {
   ArrowLeft,
   Calendar,

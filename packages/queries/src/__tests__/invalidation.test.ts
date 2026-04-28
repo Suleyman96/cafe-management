@@ -1,4 +1,3 @@
-import { QUERY_KEYS } from '@gustri/core';
 import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -7,6 +6,7 @@ import {
   invalidateStock,
   invalidateWaiterCalls,
 } from '../invalidation';
+import { QUERY_KEYS } from '../keys';
 
 function createMockQueryClient() {
   const qc = new QueryClient();

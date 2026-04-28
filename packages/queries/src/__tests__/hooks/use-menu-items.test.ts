@@ -1,7 +1,7 @@
-import { QUERY_KEYS } from '@gustri/core';
 import { describe, expect, it } from 'vitest';
 import { useCategories } from '../../hooks/use-categories';
 import { useMenuItem, useMenuItems, useMenuItemsPaginated } from '../../hooks/use-menu-items';
+import { QUERY_KEYS } from '../../keys';
 import { renderHookWithProviders } from '../helpers/test-utils';
 
 describe('useMenuItems', () => {

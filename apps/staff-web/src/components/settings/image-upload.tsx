@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@gustri/i18n';
 import * as Sentry from '@sentry/nextjs';
 import imageCompression from 'browser-image-compression';
 import { ImageIcon, Loader2, Upload, X } from 'lucide-react';
@@ -29,6 +30,7 @@ export function ImageUpload({
   aspectRatio = 'square',
   maxSizeMB = 2,
 }: ImageUploadProps) {
+  const { t } = useTranslation();
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -43,14 +45,14 @@ export function ImageUpload({
     async (file: File) => {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
+        toast.error(t('imageUpload.invalidType'));
         return;
       }
 
       // Validate file size
       const maxSize = maxSizeMB * 1024 * 1024;
       if (file.size > maxSize) {
-        toast.error(`Image must be smaller than ${maxSizeMB}MB`);
+        toast.error(t('imageUpload.tooLarge', { size: maxSizeMB }));
         return;
       }
 
@@ -79,7 +81,7 @@ export function ImageUpload({
 
         if (uploadError) {
           Sentry.captureException(uploadError);
-          toast.error('Failed to upload image');
+          toast.error(t('imageUpload.uploadFailed'));
           return;
         }
 
@@ -87,15 +89,15 @@ export function ImageUpload({
         const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filename);
 
         onChange(urlData.publicUrl);
-        toast.success('Image uploaded successfully');
+        toast.success(t('imageUpload.uploadSuccess'));
       } catch (err) {
         Sentry.captureException(err);
-        toast.error('Failed to upload image');
+        toast.error(t('imageUpload.uploadFailed'));
       } finally {
         setIsUploading(false);
       }
     },
-    [bucket, folder, maxSizeMB, onChange],
+    [bucket, folder, maxSizeMB, onChange, t],
   );
 
   const handleDrop = useCallback(
@@ -144,13 +146,13 @@ export function ImageUpload({
       await supabase.storage.from(bucket).remove([filename]);
 
       onChange(null);
-      toast.success('Image removed');
+      toast.success(t('imageUpload.removed'));
     } catch (err) {
       Sentry.captureException(err);
       // Still clear the value even if deletion fails
       onChange(null);
     }
-  }, [value, bucket, onChange]);
+  }, [value, bucket, onChange, t]);
 
   return (
     <div className="space-y-2">

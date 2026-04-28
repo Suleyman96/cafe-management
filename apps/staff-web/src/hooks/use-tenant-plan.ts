@@ -1,5 +1,6 @@
 import type { PlanName } from '@gustri/core';
-import { PLAN_LIMITS, QUERY_KEYS } from '@gustri/core';
+import { PLAN_LIMITS } from '@gustri/core';
+import { QUERY_KEYS } from '@gustri/queries';
 import { useQuery } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
 import { useAuthStore } from '@/store/auth-store';

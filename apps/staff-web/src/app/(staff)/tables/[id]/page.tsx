@@ -4,13 +4,12 @@ import {
   ACTIVE_ORDER_STATUSES,
   calculateOrderTotal,
   formatElapsedTime,
-  getOrderStatusColor,
   type ORDER_STATUS,
   ORDER_STATUS_KEYS,
 } from '@gustri/core';
 import type { Database, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { Button, getOrderStatusColor, LoadingSpinner } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
 import {
   ArrowLeft,

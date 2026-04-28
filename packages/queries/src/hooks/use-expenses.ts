@@ -1,6 +1,6 @@
-import { QUERY_KEYS } from '@gustri/core';
 import type { Expense, ExpenseCategory } from '@gustri/database';
 import { useQuery } from '@tanstack/react-query';
+import { QUERY_KEYS } from '../keys';
 import { useDb } from '../provider';
 
 export function useExpenses(options?: Record<string, unknown>) {

@@ -139,55 +139,6 @@ export const PLAN_LIMITS = {
 
 export const PLAN_ORDER: Record<PlanName, number> = { free: 0, standard: 1, pro: 2, business: 3 };
 
-// Query keys for React Query
-export const QUERY_KEYS = {
-  TABLES: 'tables',
-  TABLE: 'table',
-  TABLE_QR: 'table_qr',
-  ORDERS: 'orders',
-  ORDER: 'order',
-  MENU_ITEMS: 'menu_items',
-  MENU_ITEM: 'menu_item',
-  CATEGORIES: 'categories',
-  STAFF: 'staff',
-  WAITER_CALLS: 'waiter_calls',
-  ACTIVE_ORDERS: 'active_orders',
-  SALES: 'sales',
-  CAFE_SETTINGS: 'cafe_settings',
-  STOCK_ITEMS: 'stock_items',
-  STOCK_ITEM: 'stock_item',
-  STOCK_MOVEMENTS: 'stock_movements',
-  LOW_STOCK_COUNT: 'low_stock_count',
-  EXPENSE_CATEGORIES: 'expense_categories',
-  EXPENSES: 'expenses',
-  EXPENSE: 'expense',
-  EXPENSE_MONTHLY_SUMMARY: 'expense_monthly_summary',
-  SCHEDULES: 'schedules',
-  MY_SCHEDULE: 'my_schedule',
-  DELIVERY_ORDER: 'delivery_order',
-  DELIVERY_ORDERS: 'delivery_orders',
-  DELIVERY_CUSTOMERS: 'delivery_customers',
-  DELIVERY_CUSTOMER: 'delivery_customer',
-  TAKEOUT_ORDER: 'takeout_order',
-  TAKEOUT_ORDERS: 'takeout_orders',
-  WASTE_LOGS: 'waste_logs',
-  WASTE_LOG: 'waste_log',
-  WASTE_SUMMARY: 'waste_summary',
-  TASKS: 'tasks',
-  TASK: 'task',
-  OVERDUE_TASKS_COUNT: 'overdue_tasks_count',
-  OPEN_TASKS_COUNT: 'open_tasks_count',
-  PAYMENTS: 'payments',
-  REPORTS: 'reports',
-  FEEDBACK: 'feedback',
-  STAFF_MEMBER: 'staff_member',
-  PAYMENTS_BY_STAFF: 'payments_by_staff',
-  WAITER_CALLS_COUNT: 'waiter_calls_count',
-  Z_REPORT: 'z_report',
-  TENANT: 'tenant',
-  MONTHLY_ORDER_COUNT: 'monthly_order_count',
-} as const;
-
 // 30-minute interval time slots (00:00 to 23:30)
 export const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const hours = String(Math.floor(i / 2)).padStart(2, '0');

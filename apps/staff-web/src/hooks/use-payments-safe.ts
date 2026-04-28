@@ -3,9 +3,9 @@
  * Re-exports from @gustri/queries, with local overrides for apiRoutes mutations
  */
 
-import { QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import {
+  QUERY_KEYS,
   useOrderPayments as useOrderPaymentsShared,
   useOrderRemainingBalance as useOrderRemainingBalanceShared,
 } from '@gustri/queries';

@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/core';
+import { QUERY_KEYS } from '@gustri/queries';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sentry from '@sentry/react-native';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';

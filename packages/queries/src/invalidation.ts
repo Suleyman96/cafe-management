@@ -3,8 +3,8 @@
  * Groups related query invalidations to reduce boilerplate in hooks.
  */
 
-import { QUERY_KEYS } from '@gustri/core';
 import type { QueryClient } from '@tanstack/react-query';
+import { QUERY_KEYS } from './keys';
 
 // ─── Orders ─────────────────────────────────────────────────────────────────
 

@@ -3,9 +3,9 @@ import {
   calculateTotalWithSettings,
   formatPriceWithSettings,
   getDisplaySubtotal,
-  QUERY_KEYS,
 } from '@gustri/core';
 import type { Database } from '@gustri/database';
+import { QUERY_KEYS } from '@gustri/queries';
 import * as Sentry from '@sentry/nextjs';
 import { useQuery } from '@tanstack/react-query';
 import { STALE_TIMES } from '@/lib/stale-times';

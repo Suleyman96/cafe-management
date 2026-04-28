@@ -1,4 +1,3 @@
-import { QUERY_KEYS } from '@gustri/core';
 import { waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import {
@@ -8,6 +7,7 @@ import {
   useOrders,
   useTakeoutOrders,
 } from '../../hooks/use-orders';
+import { QUERY_KEYS } from '../../keys';
 import { renderHookWithProviders } from '../helpers/test-utils';
 
 describe('useOrders', () => {

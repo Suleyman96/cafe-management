@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/core';
+import { QUERY_KEYS } from '@gustri/queries';
 import { useCreateWaiterCall } from '@/hooks/use-waiter-call';
 import { db } from '@/lib/supabase';
 import { renderHookWithProviders } from '../helpers/test-utils';

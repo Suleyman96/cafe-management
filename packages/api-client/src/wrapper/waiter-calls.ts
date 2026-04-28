@@ -2,7 +2,8 @@
  * Waiter calls wrapper module
  */
 
-import { handleSupabaseError, isWaiterCall } from '@gustri/core';
+import { isWaiterCall } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type { WaiterCallRow, WrapperContext } from './types';
 
 export function createWaiterCallsWrapper(ctx: WrapperContext) {
