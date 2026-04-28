@@ -19,6 +19,9 @@ const nextConfig = {
     ],
   },
   reactStrictMode: true,
+  experimental: {
+    instrumentationHook: true,
+  },
   // Important: transpile workspace packages
   transpilePackages: [
     '@gustri/api-client',

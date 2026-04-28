@@ -112,36 +112,12 @@ describe('StockItemsWrapper', () => {
     expect(ctx.getCalls()[0].method).toBe('update');
   });
 
-  it('adjustStock adds stock (in)', async () => {
-    const ctx = createMockContext({
-      responses: {
-        stock_items: { data: { ...validItem, quantity: 60 }, error: null },
-        stock_movements: { data: null, error: null },
-      },
-    });
+  it('adjustStock is disabled and points callers at the API route', async () => {
+    const ctx = createMockContext({ responses: {} });
     const stock = createStockItemsWrapper(ctx);
-    const result = await stock.adjustStock(validItem.id, {
-      type: 'in',
-      quantity: 10,
-      reason: 'New shipment',
-    });
-    expect(result.quantity).toBe(60);
-  });
-
-  it('adjustStock removes stock (out)', async () => {
-    const ctx = createMockContext({
-      responses: {
-        stock_items: { data: { ...validItem, quantity: 40 }, error: null },
-        stock_movements: { data: null, error: null },
-      },
-    });
-    const stock = createStockItemsWrapper(ctx);
-    const result = await stock.adjustStock(validItem.id, {
-      type: 'out',
-      quantity: 10,
-      reason: 'Used in production',
-    });
-    expect(result.quantity).toBe(40);
+    await expect(stock.adjustStock(validItem.id, { type: 'in', quantity: 10 })).rejects.toThrow(
+      /apiRoutes\.stock\.adjust/,
+    );
   });
 
   it('getMovements returns movement history', async () => {

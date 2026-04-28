@@ -80,56 +80,22 @@ export function createStockItemsWrapper(ctx: WrapperContext) {
     },
 
     adjustStock: async (
-      id: string,
-      data: {
+      _id: string,
+      _data: {
         type: 'in' | 'out' | 'adjustment';
         quantity: number;
         reason?: string;
         performedBy?: string;
       },
-    ) => {
-      // Get current stock item
-      const { data: item, error: fetchError } = await ctx.client
-        .from('stock_items')
-        .select('quantity')
-        .eq('id', id)
-        .single();
-
-      if (fetchError) throw handleSupabaseError(fetchError);
-
-      const currentQuantity = (item as StockItemRow).quantity;
-      let newQuantity: number;
-
-      if (data.type === 'in') {
-        newQuantity = currentQuantity + data.quantity;
-      } else if (data.type === 'out') {
-        newQuantity = currentQuantity - data.quantity;
-      } else {
-        newQuantity = data.quantity;
-      }
-
-      // Insert movement record
-      const { error: movementError } = await ctx.anyClient.from('stock_movements').insert({
-        stock_item_id: id,
-        movement_type: data.type,
-        quantity_change: data.type === 'out' ? -data.quantity : data.quantity,
-        quantity_after: newQuantity,
-        reason: data.reason || null,
-        performed_by: data.performedBy || null,
-      });
-
-      if (movementError) throw handleSupabaseError(movementError);
-
-      // Update stock quantity
-      const { data: updated, error: updateError } = await ctx.anyClient
-        .from('stock_items')
-        .update({ quantity: newQuantity })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (updateError) throw handleSupabaseError(updateError);
-      return updated as StockItemRow;
+    ): Promise<StockItemRow> => {
+      // Stock adjustments must go through the server route
+      // /api/v1/stock/[id]/adjust which computes quantity_after server-side
+      // and writes via service_role. Direct client writes to stock_movements
+      // were removed by migration 20260428000001 (security hardening) so the
+      // ledger and on-hand count cannot drift through forged quantity_after.
+      throw new Error(
+        'db.stockItems.adjustStock is disabled. Use apiRoutes.stock.adjust(id, ...) instead.',
+      );
     },
 
     getMovements: async (stockItemId: string) => {

@@ -20,6 +20,7 @@ export function createRpcWrapper(ctx: WrapperContext) {
       orderId: string;
       fromTableId: string;
       toTableId: string;
+      /** @deprecated server derives the actor from auth.uid() since 20260428000001. */
       staffId: string;
       reason?: string;
     }): Promise<boolean> => {
@@ -46,6 +47,7 @@ export function createRpcWrapper(ctx: WrapperContext) {
       sourceOrderId: string;
       destinationTableId: string;
       items: Array<{ item_id: string; quantity: number }>;
+      /** @deprecated server derives the actor from auth.uid() since 20260428000001. */
       staffId: string;
       reason?: string;
     }): Promise<string> => {

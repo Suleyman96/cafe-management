@@ -1,0 +1,10 @@
+[defaults]
+org=gustri
+project=gustri-mobile
+url=https://sentry.io/
+
+# auth.token is intentionally not committed.
+# Local builds: export SENTRY_AUTH_TOKEN=<token> before running expo prebuild / eas build.
+# EAS builds: provisioned via `eas secret:create --name SENTRY_AUTH_TOKEN`.
+[auth]
+token=
