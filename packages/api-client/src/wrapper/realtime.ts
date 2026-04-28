@@ -1,5 +1,16 @@
 /**
- * Realtime subscriptions wrapper module
+ * Realtime subscriptions wrapper module.
+ *
+ * **Provider leak (intentional, scheduled to close).** Methods here return
+ * a raw `RealtimeChannel` from `@supabase/supabase-js`. This is documented
+ * as Exception 1 in CLAUDE.md (realtime is not a single-query operation
+ * and stays statefully open). Tracked as **H1** in
+ * `plans/10-PACKAGE-ARCHITECTURE-DEFERRED.md` — to be replaced with a
+ * domain `Subscription { unsubscribe(): void }` interface before tenant #2.
+ *
+ * Until then, every consumer that calls `db.realtime.subscribeTo*` imports
+ * `RealtimeChannel` transitively. Be aware when measuring provider-swap
+ * surface area.
  */
 
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';

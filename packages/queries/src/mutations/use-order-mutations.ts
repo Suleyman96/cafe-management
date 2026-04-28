@@ -1,5 +1,6 @@
 import type { Order, OrderItem, OrderItemsInsert } from '@gustri/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { getOrCreateClientRequestId } from '../idempotency';
 import { invalidateOrders, invalidateOrdersAndTables } from '../invalidation';
 import { useDb } from '../provider';
 import type { MutationCallbacks } from './types';
@@ -84,6 +85,16 @@ export function useAddOrderItems(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
+    // Stamp a distinct `client_request_id` per item — the unique index is
+    // per row, so a batch with shared ids would self-conflict. On replay
+    // every item carries the id minted on the first attempt, the entire
+    // batch trips the index, and `dedupeInsertMany` refetches the
+    // original rows instead of inserting duplicates.
+    onMutate: (items: OrderItemsInsert[]) => {
+      for (const item of items) {
+        item.client_request_id = getOrCreateClientRequestId(item.client_request_id);
+      }
+    },
     mutationFn: (items: OrderItemsInsert[]) => db.orderItems.create(items),
     onSuccess: () => {
       invalidateOrders(queryClient);

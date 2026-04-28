@@ -37,6 +37,7 @@ export const OrderCreateInputSchema = z.object({
   subtotal: z.number().nonnegative().optional(),
   tax: z.number().nonnegative().optional(),
   total: z.number().nonnegative().optional(),
+  client_request_id: z.string().uuid().optional(),
 });
 
 export type OrderCreateInput = z.infer<typeof OrderCreateInputSchema>;
@@ -52,6 +53,7 @@ export const OrderPaymentCreateInputSchema = z.object({
   received_by: z.string().optional(),
   order_item_ids: z.array(z.string().uuid()).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
+  client_request_id: z.string().uuid().optional(),
 });
 
 export type OrderPaymentCreateInput = z.infer<typeof OrderPaymentCreateInputSchema>;
@@ -65,6 +67,7 @@ export const StockAdjustInputSchema = z
     quantity: z.number().refine((v) => v !== 0, { message: 'Quantity change must be non-zero' }),
     reason: z.string().max(255).optional(),
     performedBy: z.string().optional(),
+    clientRequestId: z.string().uuid().optional(),
   })
   .superRefine((val, ctx) => {
     if (val.type === 'in' && val.quantity < 0) {

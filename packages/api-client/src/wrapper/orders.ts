@@ -4,6 +4,7 @@
 
 import { isOrder } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
+import { dedupeInsert } from './_dedupe';
 import type { OrderInsert, OrderRow, PaginatedResult, WrapperContext } from './types';
 
 /**
@@ -198,17 +199,34 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     },
 
     create: async (orderData: OrderInsert) => {
-      const { data, error } = await ctx.anyClient
-        .from('orders')
-        .insert(orderData)
-        .select()
-        .single();
+      const data = await dedupeInsert<unknown>(orderData.client_request_id, {
+        insert: () => ctx.anyClient.from('orders').insert(orderData).select().single(),
+        refetch: () =>
+          ctx.anyClient
+            .from('orders')
+            .select()
+            .eq('client_request_id', orderData.client_request_id ?? '')
+            .single(),
+      });
 
-      if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
       return data as OrderRow;
     },
 
+    /**
+     * Advance an order's lifecycle status.
+     *
+     * Enforces two business rules that consumers MUST NOT replicate:
+     * - **`served` is dine-in only.** Delivery orders use `out_for_delivery`
+     *   → `delivered`; takeout orders go `ready` → `closed` after payment.
+     *   Throws if `served` is set on a delivery/takeout order.
+     * - **No advancing empty orders.** Statuses `preparing`, `ready`,
+     *   `served`, `out_for_delivery`, `delivered` require at least one
+     *   non-cancelled item. Throws otherwise.
+     *
+     * Validate at the call site if you need a friendlier UX (the thrown
+     * `AppError` is catchable but the message is operator-facing).
+     */
     updateStatus: async (id: string, status: OrderRow['status']) => {
       // Prevent "served" status on delivery and takeout orders
       if (status === 'served') {
@@ -373,6 +391,18 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       return data as OrderRow;
     },
 
+    /**
+     * Apply (or clear) a discount on an order.
+     *
+     * The `recalculate_on_discount_change` Postgres trigger fires on this
+     * update and rewrites `subtotal`/`tax`/`total` on the same row. Chaining
+     * `.select()` here causes PostgREST to fail with "Cannot coerce the
+     * result to a single JSON object", so the implementation does the
+     * update WITHOUT `.select()` and then refetches via `orders_decrypted`.
+     * This is intentional — do not "fix" by adding `.select()`.
+     *
+     * Authorization (who can apply discounts) is enforced by RLS, not here.
+     */
     applyDiscount: async (
       orderId: string,
       discount: {
@@ -382,8 +412,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         discount_applied_by: string;
       },
     ) => {
-      // Don't chain .select() — the recalculate_on_discount_change trigger
-      // modifies the same row, causing PostgREST "Cannot coerce" errors.
+      // Don't chain .select() — see JSDoc above.
       const { error } = await ctx.anyClient
         .from('orders')
         .update({
@@ -546,6 +575,16 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       return data as OrderRow;
     },
 
+    /**
+     * Bulk-cancel `new` / `pending_approval` orders older than `olderThanMinutes`
+     * with no non-cancelled items. Used to reap abandoned QR-flow carts.
+     *
+     * **Security note.** The underlying RPC `cleanup_empty_orders` currently
+     * has no role guard — any authenticated staff member can call it (see
+     * `plans/09-DB-SECURITY-DEFERRED.md` M10). Until that's fixed, only
+     * call this from admin/owner code paths. Returns the array of cancelled
+     * order IDs.
+     */
     cleanupEmptyOrders: async (olderThanMinutes = 2) => {
       const { data, error } = await ctx.anyClient.rpc('cleanup_empty_orders', {
         p_older_than_minutes: olderThanMinutes,

@@ -22,17 +22,24 @@ import { setupOnlineManager } from './src/hooks/use-network-status';
 import { usePushTokenSync } from './src/hooks/use-push-token-sync';
 import { getCurrentUser, onAuthStateChange } from './src/lib/auth';
 import { checkForOtaUpdate } from './src/lib/check-for-updates';
+import { drainMismatchedMutations } from './src/lib/mutation-drain';
 import { handleNotificationNavigation, navigationRef } from './src/lib/navigation-ref';
 import { queryClient } from './src/lib/query-client';
 import {
   asyncStoragePersister,
   CACHE_BUSTER,
+  initEncryptedMmkv,
   migrateAsyncStorageToMMKV,
   PERSISTED_MAX_AGE,
   shouldPersistQuery,
   startCacheSizeTelemetry,
 } from './src/lib/query-persister';
 import { registerMutationDefaults } from './src/lib/register-mutation-defaults';
+import {
+  clearSessionStamp,
+  initEncryptedSessionStamp,
+  readSessionStamp,
+} from './src/lib/session-stamp';
 import { cleanupSounds, setupSounds } from './src/lib/sound';
 import { db } from './src/lib/supabase';
 import { linkingConfig } from './src/navigation/linking-config';
@@ -130,9 +137,54 @@ function App() {
 
   useEffect(() => {
     let active = true;
-    migrateAsyncStorageToMMKV().then(() => {
+    (async () => {
+      // Encryption-key + encrypted MMKV instances must be ready before any
+      // code reads/writes a persisted blob. Both inits are idempotent and
+      // share the keystore-resident key, so the second `getOrCreate` call
+      // hits the in-memory cache.
+      try {
+        await initEncryptedMmkv();
+        await initEncryptedSessionStamp();
+      } catch (err) {
+        Sentry.captureException(err, { tags: { area: 'mmkv-encryption-init' } });
+        // Boot is unrecoverable without an encrypted persister; surface the
+        // loader indefinitely rather than mounting the app with a broken
+        // cache. The next cold launch retries.
+        return;
+      }
+
+      await migrateAsyncStorageToMMKV();
+
+      // Tenant-mismatch check BEFORE the persister hydrates. If the previous
+      // session on this device belonged to a different tenant/staff than the
+      // one currently authenticated (auth flip while offline, app crash
+      // mid-cleanup, etc.), drop the persisted blob entirely so no screen
+      // can render the prior tenant's data — even for one frame.
+      try {
+        const stamp = readSessionStamp();
+        if (stamp) {
+          const current = await getCurrentUser();
+          const matches = current?.tenant_id === stamp.tenantId && current?.id === stamp.staffId;
+          if (!matches) {
+            try {
+              await asyncStoragePersister.removeClient();
+            } catch {
+              // Persister cleanup is best-effort.
+            }
+            clearSessionStamp();
+            Sentry.addBreadcrumb({
+              category: 'auth',
+              message: 'pre-hydration tenant mismatch — dropped persisted cache',
+              data: { hadStamp: true, hasCurrent: current !== null },
+            });
+          }
+        }
+      } catch (err) {
+        Sentry.captureException(err, { tags: { area: 'pre-hydration-tenant-check' } });
+      }
+
       if (active) setMigrationDone(true);
-    });
+    })();
     return () => {
       active = false;
     };
@@ -287,18 +339,44 @@ function App() {
               // default in register-mutation-defaults.ts. The key gate is a
               // belt-and-braces check: re-exported queries-package mutations
               // (no mobile mutationKey) won't accidentally hydrate as orphans.
-              shouldDehydrateMutation: (m) =>
-                m.state.isPaused === true && m.options.mutationKey !== undefined,
+              // The meta gate enforces that any persisted mutation carries
+              // tenant/staff identity so cross-tenant replay can be detected
+              // on next launch (see C2 / mutation-drain).
+              shouldDehydrateMutation: (m) => {
+                if (!(m.state.isPaused === true && m.options.mutationKey !== undefined)) {
+                  return false;
+                }
+                const meta = (m.meta ?? {}) as Record<string, unknown>;
+                return typeof meta.tenantId === 'string' && typeof meta.staffId === 'string';
+              },
             },
             maxAge: PERSISTED_MAX_AGE,
           }}
           onSuccess={() => {
-            // Hydration complete — resume any paused mutations carried over
-            // from the previous session so queued offline writes replay now
-            // that the queryClient is ready.
-            queryClient.resumePausedMutations().catch((err) => {
-              Sentry.captureException(err, { tags: { area: 'resume-paused-mutations' } });
-            });
+            // Hydration complete — drop any paused mutations whose stamp
+            // doesn't match the current session before resuming, then replay
+            // the rest. Without the drain, user A's queued offline mutations
+            // would replay under user B's auth context (cross-tenant write)
+            // when B logs in on the same device.
+            (async () => {
+              try {
+                const current = await getCurrentUser();
+                const session = current
+                  ? { tenantId: current.tenant_id, staffId: current.id }
+                  : null;
+                const discarded = drainMismatchedMutations(queryClient, session);
+                if (discarded > 0) {
+                  Sentry.addBreadcrumb({
+                    category: 'auth',
+                    message: `discarded ${discarded} mismatched mutation(s) on hydration`,
+                    data: { discarded, hasCurrent: current !== null },
+                  });
+                }
+                await queryClient.resumePausedMutations();
+              } catch (err) {
+                Sentry.captureException(err, { tags: { area: 'resume-paused-mutations' } });
+              }
+            })();
           }}
         >
           <DbProvider db={db}>

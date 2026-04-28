@@ -3,7 +3,8 @@ import { clearPushTokenSyncCache } from '@/hooks/use-push-token-sync';
 import { useAuthStore } from '@/store/auth-store';
 import type { Staff } from '@/types';
 import { queryClient } from './query-client';
-import { asyncStoragePersister } from './query-persister';
+import { asyncStoragePersister, clearEncryptedQueryCache } from './query-persister';
+import { clearSessionStamp } from './session-stamp';
 import { db, supabase } from './supabase';
 
 export interface LoginCredentials {
@@ -40,22 +41,46 @@ export async function login({ email, password }: LoginCredentials) {
  * `onAuthStateChange` when Supabase notifies us of a server-side sign-out
  * (token expiry, admin revocation, etc.) so we clean up locally without
  * recursing into supabase.auth.signOut.
+ *
+ * Awaits every step (cancel in-flight queries, clear cache, remove the
+ * persister blob, clear the push-token dedup cache, clear the session
+ * stamp, reset the auth store). Callers — most importantly the auth gate
+ * in `RootNavigator` — rely on `await cleanupClientState()` resolving
+ * before the navigator flips `staff = null`, otherwise a paused mutation
+ * could replay under the next user's session before its cache entry has
+ * been wiped. Flips `isLoading: true` for the duration so the navigator
+ * shows the splash drain loader instead of a half-cleared previous tenant.
  */
 export async function cleanupClientState(): Promise<void> {
-  const channels = supabase.getChannels();
-  for (const channel of channels) {
-    supabase.removeChannel(channel);
-  }
-  queryClient.clear();
+  useAuthStore.getState().setIsLoading(true);
   try {
-    await asyncStoragePersister.removeClient();
-  } catch {
-    // Persister cleanup is best-effort; AsyncStorage failures shouldn't block logout.
+    const channels = supabase.getChannels();
+    for (const channel of channels) {
+      supabase.removeChannel(channel);
+    }
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    try {
+      await asyncStoragePersister.removeClient();
+    } catch {
+      // Persister cleanup is best-effort; AsyncStorage failures shouldn't block logout.
+    }
+    // Wipe the encrypted MMKV instance entirely (not just the React Query
+    // blob) so any throttled-write debris or unrelated keys can't outlive
+    // the session. Pairs with `removeClient()` above — that drops the
+    // persisted client key; this drops everything else.
+    clearEncryptedQueryCache();
+    // Drop the push-token dedup cache so the next user re-syncs immediately
+    // rather than skipping on a stale composite from the previous session.
+    clearPushTokenSyncCache();
+    clearSessionStamp();
+    useAuthStore.getState().reset();
+  } catch (err) {
+    // Ensure the drain gate releases even if a step throws — the user is
+    // still effectively logged out locally.
+    useAuthStore.getState().reset();
+    throw err;
   }
-  // Drop the push-token dedup cache so the next user re-syncs immediately
-  // rather than skipping on a stale composite from the previous session.
-  clearPushTokenSyncCache();
-  useAuthStore.getState().clearAuth();
 }
 
 export type LogoutReason = 'user' | 'inactivity' | 'auth-change';

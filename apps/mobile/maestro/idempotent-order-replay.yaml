@@ -1,0 +1,58 @@
+appId: com.gustri.app
+# Idempotent-order replay E2E (C1).
+#
+# Scenario: a waiter creates an order while offline. The mutation is paused
+# and persisted to MMKV. Replaying it on relaunch must NOT create a duplicate
+# kitchen ticket — the server's `(tenant_id, client_request_id)` unique
+# index turns the second insert into a no-op and returns the original row.
+#
+# This file documents the manual + automated steps. Maestro alone cannot
+# toggle airplane mode reliably across iOS/Android, so steps marked
+# `[manual]` are run by the operator before the next automated step.
+#
+# Prereqs:
+#   - Dev DB seeded fresh: `pnpm db:reset`
+#   - Mobile dev build installed on a connected device/simulator.
+#   - SQL access to the test tenant for the post-replay assertion.
+---
+- launchApp
+- tapOn: "Email address"
+- inputText: "admin@test.com"
+- tapOn: "Password"
+- inputText: "test1234"
+- tapOn:
+    text: "Sign in"
+- assertVisible:
+    text: "Tables|Orders"
+    timeout: 15000
+
+# [manual] Enable airplane mode — keeps the device offline.
+# After enabling, tap through to create an order. The mutation will pause.
+- tapOn: "Tables"
+- tapOn: "T1"
+- tapOn: "New order"
+- tapOn: "Espresso"
+- tapOn: "Send to kitchen"
+# Snackbar / toast: order is queued for sync (depends on offline-banner copy).
+- assertVisible:
+    text: "Queued|Saved offline|will sync"
+    timeout: 10000
+
+# [manual] Force-quit the app (swipe-up + dismiss) and disable airplane mode.
+
+# Relaunch with the network restored. The persister rehydrates the paused
+# mutation and replays it; the server dedupes against the unique index.
+- launchApp
+- assertVisible:
+    text: "Tables|Orders"
+    timeout: 20000
+- tapOn: "Orders"
+
+# The order should appear exactly once. If two tickets show up, dedupe
+# failed and the server-side unique index (or wrapper) regressed.
+# [manual] Run this SQL against the test DB:
+#   SELECT count(*) FROM orders
+#   WHERE tenant_id = '<test-tenant-uuid>'
+#     AND client_request_id IS NOT NULL
+#     AND created_at > now() - interval '10 minutes';
+# Expected: exactly 1 row per offline-created order.

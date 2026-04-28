@@ -4,6 +4,7 @@
 
 import { getLocalDateString, isTask } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
+import { dedupeInsert } from './_dedupe';
 import { generateRecurringTaskInstances, listRecurringTemplates } from './task-recurrence';
 import type { TaskInsert, TaskRow, TaskUpdate, WrapperContext } from './types';
 
@@ -133,16 +134,25 @@ export function createTasksWrapper(ctx: WrapperContext) {
       return (data || []).length;
     },
 
+    /**
+     * List all active recurring task templates (rows where
+     * `is_recurring = true` and `parent_task_id IS NULL`). Templates
+     * themselves are not assignable work — they are blueprints used by
+     * `generateRecurringTasks` to materialize daily instances.
+     */
     getRecurringTemplates: () => listRecurringTemplates(ctx),
 
     create: async (data: TaskInsert) => {
-      const { data: result, error } = await ctx.anyClient
-        .from('tasks')
-        .insert(data)
-        .select()
-        .single();
+      const result = await dedupeInsert<unknown>(data.client_request_id, {
+        insert: () => ctx.anyClient.from('tasks').insert(data).select().single(),
+        refetch: () =>
+          ctx.anyClient
+            .from('tasks')
+            .select()
+            .eq('client_request_id', data.client_request_id ?? '')
+            .single(),
+      });
 
-      if (error) throw handleSupabaseError(error);
       if (!isTask(result)) throw new Error('Invalid task data');
       return result as TaskRow;
     },
@@ -214,6 +224,18 @@ export function createTasksWrapper(ctx: WrapperContext) {
       return data as TaskRow;
     },
 
+    /**
+     * Materialize task instances for the given `date` (YYYY-MM-DD) from
+     * every active recurring template whose pattern matches. Idempotent —
+     * skips any template that already has an instance for that date.
+     *
+     * Day-of-week math is computed in *local* time (deliberately): parsing
+     * `new Date('YYYY-MM-DD')` returns UTC midnight, which can drift to
+     * the previous day in negative-UTC offsets. See `task-recurrence.ts`.
+     *
+     * Typically called on app boot from `useGenerateRecurringTasks` so
+     * staff see today's recurring tasks without a manual trigger.
+     */
     generateRecurringTasks: (date: string) => generateRecurringTaskInstances(ctx, date),
   };
 }

@@ -2,8 +2,10 @@ import { QUERY_KEYS } from '@gustri/queries';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sentry from '@sentry/react-native';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
+import type { Persister } from '@tanstack/react-query-persist-client';
 import Constants from 'expo-constants';
 import { MMKV } from 'react-native-mmkv';
+import { getOrCreateMmkvEncryptionKey } from './storage-key';
 
 /**
  * Persists the React Query cache to MMKV so previously fetched data survives
@@ -15,6 +17,11 @@ import { MMKV } from 'react-native-mmkv';
  * inside React Query's commit, so a fast storage avoids jank during heavy
  * cache churn (kitchen view, table grid). The previous AsyncStorage path
  * also blocked the bridge on each write.
+ *
+ * The instance is encrypted with a per-install key from the OS keystore
+ * (see `storage-key.ts`). MMKV init is async because the key fetch is async,
+ * so callers must `await initEncryptedMmkv()` once at app boot before
+ * touching `asyncStoragePersister`.
  *
  * Only critical operational data is persisted (orders, tables, menu,
  * settings). Reports and analytics are excluded to keep cache size lean.
@@ -52,36 +59,126 @@ const PERSISTED_QUERY_KEYS: Set<string> = new Set([
  * Consumed by PersistQueryClientProvider's `persistOptions.buster` — when the
  * value changes between launches, the persister discards the stored client.
  */
-const CACHE_SCHEMA_VERSION = 1;
+const CACHE_SCHEMA_VERSION = 2;
 const APP_VERSION = Constants.expoConfig?.version ?? '0.0.0';
 export const CACHE_BUSTER = `v${CACHE_SCHEMA_VERSION}-${APP_VERSION}`;
 
 const STORAGE_KEY = 'GUSTRI_QUERY_CACHE';
+const MMKV_INSTANCE_ID = 'gustri-query-cache';
 
-const storage = new MMKV({ id: 'gustri-query-cache' });
+let storage: MMKV | null = null;
+let persister: Persister | null = null;
+
+function buildPersister(mmkv: MMKV): Persister {
+  const adapter = {
+    setItem: (key: string, value: string) => {
+      mmkv.set(key, value);
+    },
+    getItem: (key: string): string | null => mmkv.getString(key) ?? null,
+    removeItem: (key: string) => {
+      mmkv.delete(key);
+    },
+  };
+
+  return createSyncStoragePersister({
+    storage: adapter,
+    key: STORAGE_KEY,
+    throttleTime: 2000,
+    serialize: (data: unknown) => JSON.stringify(data),
+    deserialize: (data: string) => JSON.parse(data),
+  });
+}
 
 /**
- * MMKV-backed adapter shaped like the Web Storage API expected by
- * `createSyncStoragePersister`. MMKV is synchronous so we can implement the
- * sync interface directly — no Promise wrapper needed.
+ * Initialize the encrypted MMKV instance and the persister. Awaitable; safe
+ * to call multiple times (subsequent calls are no-ops). Must complete before
+ * `PersistQueryClientProvider` mounts and before `asyncStoragePersister` is
+ * read.
+ *
+ * Legacy unencrypted bundles from prior releases won't decrypt under the new
+ * key, which manifests as either a throw or unreadable garbage. Either way
+ * we wipe the instance — losing the cache is acceptable; rolling out
+ * encryption is the priority. Paused mutations on the affected device's
+ * first encrypted launch are dropped along with the cache.
  */
-const mmkvStorageAdapter = {
-  setItem: (key: string, value: string) => {
-    storage.set(key, value);
-  },
-  getItem: (key: string): string | null => storage.getString(key) ?? null,
-  removeItem: (key: string) => {
-    storage.delete(key);
-  },
+export async function initEncryptedMmkv(): Promise<void> {
+  if (storage && persister) return;
+
+  const encryptionKey = await getOrCreateMmkvEncryptionKey();
+
+  let mmkv: MMKV;
+  try {
+    mmkv = new MMKV({ id: MMKV_INSTANCE_ID, encryptionKey });
+  } catch (err) {
+    Sentry.captureException(err, { tags: { area: 'mmkv-init' } });
+    throw err;
+  }
+
+  // Probe-read the persisted blob. If a pre-encryption (legacy) bundle is on
+  // disk, MMKV will fail to decrypt and either throw or return garbage that
+  // JSON.parse rejects. Wipe and continue.
+  try {
+    const probe = mmkv.getString(STORAGE_KEY);
+    if (probe !== undefined) {
+      JSON.parse(probe);
+    }
+  } catch (err) {
+    Sentry.addBreadcrumb({
+      category: 'cache',
+      message: 'legacy unencrypted MMKV detected — wiping',
+      level: 'warning',
+    });
+    Sentry.captureException(err, { tags: { area: 'mmkv-legacy-wipe' } });
+    try {
+      mmkv.clearAll();
+    } catch {
+      // Even clearAll can fail on a corrupt instance; nothing more to do.
+    }
+  }
+
+  storage = mmkv;
+  persister = buildPersister(mmkv);
+}
+
+function requireStorage(): MMKV {
+  if (!storage) {
+    throw new Error('Encrypted MMKV not initialized — call initEncryptedMmkv() first');
+  }
+  return storage;
+}
+
+function requirePersister(): Persister {
+  if (!persister) {
+    throw new Error('Query persister not initialized — call initEncryptedMmkv() first');
+  }
+  return persister;
+}
+
+/**
+ * Persister proxy — forwards to the lazily-built sync persister. Created
+ * once at module load so consumers (App.tsx, auth.ts) can hold a stable
+ * reference; calls before `initEncryptedMmkv()` resolves throw.
+ */
+export const asyncStoragePersister: Persister = {
+  persistClient: (client) => requirePersister().persistClient(client),
+  restoreClient: () => requirePersister().restoreClient(),
+  removeClient: () => requirePersister().removeClient(),
 };
 
-export const asyncStoragePersister = createSyncStoragePersister({
-  storage: mmkvStorageAdapter,
-  key: STORAGE_KEY,
-  throttleTime: 2000,
-  serialize: (data: unknown) => JSON.stringify(data),
-  deserialize: (data: string) => JSON.parse(data),
-});
+/**
+ * Wipes the on-disk encrypted cache outright. Used by logout to ensure no
+ * residual MMKV keys (e.g. throttled-write debris) outlive the session.
+ * `removeClient()` only removes the React Query blob key; this nukes the
+ * whole instance.
+ */
+export function clearEncryptedQueryCache(): void {
+  if (!storage) return;
+  try {
+    storage.clearAll();
+  } catch (err) {
+    Sentry.captureException(err, { tags: { area: 'mmkv-clear-all' } });
+  }
+}
 
 /**
  * One-time migration from AsyncStorage → MMKV. Runs before the persister
@@ -93,8 +190,9 @@ export async function migrateAsyncStorageToMMKV(): Promise<void> {
   try {
     const legacy = await AsyncStorage.getItem(STORAGE_KEY);
     if (!legacy) return;
-    if (!storage.contains(STORAGE_KEY)) {
-      storage.set(STORAGE_KEY, legacy);
+    const mmkv = requireStorage();
+    if (!mmkv.contains(STORAGE_KEY)) {
+      mmkv.set(STORAGE_KEY, legacy);
     }
     await AsyncStorage.removeItem(STORAGE_KEY);
   } catch (err) {
@@ -114,6 +212,7 @@ export function startCacheSizeTelemetry(intervalMs = 60_000): () => void {
   let warned = false;
 
   const sample = () => {
+    if (!storage) return;
     const size = storage.size; // bytes — total of all keys in the MMKV instance
     Sentry.addBreadcrumb({
       category: 'cache',
@@ -157,3 +256,9 @@ export const OFFLINE_GC_TIME = 4 * 60 * 60 * 1000;
  * data is worth refetching anyway.
  */
 export const PERSISTED_MAX_AGE = 24 * 60 * 60 * 1000;
+
+// Test-only — wipe internal state between tests.
+export function __resetQueryPersisterForTests(): void {
+  storage = null;
+  persister = null;
+}

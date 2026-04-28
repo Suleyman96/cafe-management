@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import { MMKV } from 'react-native-mmkv';
 import { registerForPushNotifications } from '@/lib/notifications';
+import { getOrCreateMmkvEncryptionKey } from '@/lib/storage-key';
 import { db } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -19,13 +20,46 @@ import { useAuthStore } from '@/store/auth-store';
  * also hit the no-op path. A 7-day max-age forces a periodic re-sync to
  * catch the edge case where the server-side token is cleared by an
  * unrelated process (manual ops, schema change, etc.).
+ *
+ * Encrypted with the shared keystore key so the dedup composite (which
+ * includes staff.id) isn't readable from a pulled MMKV file.
  */
-const tokenStorage = new MMKV({ id: 'gustri-push-token' });
 const LAST_SYNCED_KEY = 'last-synced-token';
 const LAST_SYNCED_AT_KEY = 'last-synced-at';
 const RESYNC_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+const TOKEN_MMKV_INSTANCE_ID = 'gustri-push-token';
+
+let tokenStorage: MMKV | null = null;
+
+async function getTokenStorage(): Promise<MMKV> {
+  if (tokenStorage) return tokenStorage;
+  const encryptionKey = await getOrCreateMmkvEncryptionKey();
+  try {
+    tokenStorage = new MMKV({ id: TOKEN_MMKV_INSTANCE_ID, encryptionKey });
+  } catch (err) {
+    Sentry.captureException(err, { tags: { area: 'push-token-mmkv-init' } });
+    throw err;
+  }
+  // Pre-encryption legacy data won't decrypt. The dedup cache is a write-
+  // through optimization — losing it triggers at most one redundant push-
+  // token write on next foreground.
+  try {
+    const probe = tokenStorage.getString(LAST_SYNCED_KEY);
+    if (probe !== undefined && typeof probe !== 'string') {
+      // unreachable; getString returns string | undefined
+    }
+  } catch {
+    try {
+      tokenStorage.clearAll();
+    } catch {
+      // best-effort
+    }
+  }
+  return tokenStorage;
+}
 
 export function clearPushTokenSyncCache() {
+  if (!tokenStorage) return;
   tokenStorage.delete(LAST_SYNCED_KEY);
   tokenStorage.delete(LAST_SYNCED_AT_KEY);
 }
@@ -40,18 +74,19 @@ export function usePushTokenSync() {
 
     async function sync() {
       try {
+        const storage = await getTokenStorage();
         const token = await registerForPushNotifications();
         if (cancelled || !token) return;
 
         const composite = `${staffId}:${token}`;
-        const lastSynced = tokenStorage.getString(LAST_SYNCED_KEY);
-        const lastSyncedAt = tokenStorage.getNumber(LAST_SYNCED_AT_KEY) ?? 0;
+        const lastSynced = storage.getString(LAST_SYNCED_KEY);
+        const lastSyncedAt = storage.getNumber(LAST_SYNCED_AT_KEY) ?? 0;
         const stale = Date.now() - lastSyncedAt > RESYNC_INTERVAL_MS;
         if (lastSynced === composite && !stale) return;
 
         await db.staff.updatePushToken(staffId!, token);
-        tokenStorage.set(LAST_SYNCED_KEY, composite);
-        tokenStorage.set(LAST_SYNCED_AT_KEY, Date.now());
+        storage.set(LAST_SYNCED_KEY, composite);
+        storage.set(LAST_SYNCED_AT_KEY, Date.now());
       } catch (err: unknown) {
         Sentry.captureException(err, { tags: { area: 'push-token-sync' } });
       }

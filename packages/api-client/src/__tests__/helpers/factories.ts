@@ -73,6 +73,7 @@ export function buildOrder(overrides?: Partial<OrderRow>): OrderRow {
     delivered_at: null,
     delivery_person_id: null,
     delivery_access_token: null,
+    client_request_id: null,
     ...overrides,
   };
 }
@@ -90,6 +91,7 @@ export function buildOrderItem(overrides?: Partial<OrderItemRow>): OrderItemRow 
     status: 'pending',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    client_request_id: null,
     ...overrides,
   };
 }
@@ -184,6 +186,7 @@ export function buildStockMovement(overrides?: Partial<StockMovementRow>): Stock
     reason: null,
     performed_by: null,
     created_at: new Date().toISOString(),
+    client_request_id: null,
     ...overrides,
   };
 }
@@ -215,6 +218,7 @@ export function buildExpense(overrides?: Partial<ExpenseRow>): ExpenseRow {
     notes: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    client_request_id: null,
     ...overrides,
   };
 }
@@ -253,6 +257,7 @@ export function buildWaiterCall(overrides?: Partial<WaiterCallRow>): WaiterCallR
     acknowledged_at: null,
     resolved_at: null,
     notes: null,
+    client_request_id: null,
     ...overrides,
   };
 }

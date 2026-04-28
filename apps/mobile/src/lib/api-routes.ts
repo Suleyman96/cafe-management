@@ -68,10 +68,19 @@ async function apiFetch<T>(path: string, init: RequestInit): Promise<T> {
 /**
  * Typed client for calling staff-web API routes.
  * Used for mutations that require server-side validation.
+ *
+ * Mutating routes that mobile can replay offline accept an optional
+ * `client_request_id` (UUID v4). The server uses it to dedupe replays via
+ * the `(tenant_id, client_request_id)` partial-unique index, so a paused
+ * mutation that committed but lost its response cannot create a duplicate
+ * row when the persister rehydrates and retries it. Generate ids with
+ * `getOrCreateClientRequestId` from `apps/mobile/src/lib/idempotency.ts`.
  */
 export const apiRoutes = {
   orders: {
-    create: (data: Database['public']['Tables']['orders']['Insert']) =>
+    create: (
+      data: Database['public']['Tables']['orders']['Insert'] & { client_request_id?: string },
+    ) =>
       apiFetch<{ order: OrderRow }>('/api/v1/orders', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -79,7 +88,10 @@ export const apiRoutes = {
   },
 
   payments: {
-    create: (orderId: string, data: Omit<OrderPaymentInsert, 'order_id'>) =>
+    create: (
+      orderId: string,
+      data: Omit<OrderPaymentInsert, 'order_id'> & { client_request_id?: string },
+    ) =>
       apiFetch<{ payment: OrderPayment }>(`/api/v1/orders/${orderId}/payments`, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -111,6 +123,7 @@ export const apiRoutes = {
         refund_method: string;
         order_item_ids?: string[] | null;
         notes?: string | null;
+        client_request_id?: string;
       },
     ) =>
       apiFetch<{ refund: Refund }>(`/api/v1/orders/${orderId}/refunds`, {
@@ -127,6 +140,7 @@ export const apiRoutes = {
         quantity_change: number;
         reason: string;
         performed_by: string;
+        client_request_id?: string;
       },
     ) =>
       apiFetch<{ stockItem: StockItem }>(`/api/v1/stock/${stockItemId}/adjust`, {

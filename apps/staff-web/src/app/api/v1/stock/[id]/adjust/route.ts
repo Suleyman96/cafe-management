@@ -15,6 +15,7 @@ const AdjustStockSchema = z.object({
   quantity_change: z.number().positive(),
   reason: z.string().optional(),
   performed_by: z.string().optional(),
+  client_request_id: z.string().uuid().optional(),
 });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -31,18 +32,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { data, error } = await validateBody(request, AdjustStockSchema);
     if (error) return error;
 
-    const stockItem = await adjustStock(getSupabaseAdmin(), {
+    const { stockItem, deduped } = await adjustStock(getSupabaseAdmin(), {
       stockItemId,
       data: {
         movement_type: data.movement_type,
         quantity_change: data.quantity_change,
         reason: data.reason || '',
         performed_by: data.performed_by || staffOrError.id,
+        client_request_id: data.client_request_id,
       },
       tenantId: staffOrError.tenant_id,
     });
 
-    return jsonOk({ stockItem });
+    return jsonOk({ stockItem }, deduped ? 200 : 201);
   } catch (err) {
     return handleRouteError(err);
   }

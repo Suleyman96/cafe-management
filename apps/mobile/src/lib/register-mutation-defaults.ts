@@ -12,6 +12,8 @@ import type {
   Table,
 } from '@gustri/database';
 import type { QueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '@/store/auth-store';
+import { getOrCreateClientRequestId } from './idempotency';
 import { MUTATION_KEYS } from './mutation-keys';
 import { db } from './supabase';
 
@@ -29,8 +31,47 @@ import { db } from './supabase';
  * Keep in sync with `mutation-keys.ts` and the `useMutation` call sites.
  */
 export function registerMutationDefaults(queryClient: QueryClient) {
+  // Stamp every newly-created mutation with the current tenant/staff identity
+  // so the persister carries enough context to drain mismatched entries on
+  // next launch (see C2 / mutation-drain.ts). The mutation cache emits the
+  // `added` event synchronously when a mutation is created, before its
+  // `onMutate` runs, so this is the earliest hook we have. We only stamp
+  // mutations whose key is one we plan to persist — anything else (e.g.
+  // shared-package mutations without a mobile mutationKey) is left alone so
+  // we don't accidentally promote them into the persisted set.
+  const cache = queryClient.getMutationCache();
+  const knownKeys = new Set<string>(Object.values(MUTATION_KEYS).map((k) => JSON.stringify(k)));
+  cache.subscribe((event) => {
+    if (event.type !== 'added') return;
+    const m = event.mutation;
+    const key = m.options.mutationKey;
+    if (!key || !knownKeys.has(JSON.stringify(key))) return;
+
+    const staff = useAuthStore.getState().staff;
+    if (!staff) return;
+
+    const existing = (m.options.meta ?? {}) as Record<string, unknown>;
+    const existingClientRequestId =
+      typeof existing.clientRequestId === 'string' ? existing.clientRequestId : null;
+    m.options.meta = {
+      ...existing,
+      tenantId: staff.tenant_id,
+      staffId: staff.id,
+      clientRequestId: getOrCreateClientRequestId(existingClientRequestId),
+    };
+  });
+
   queryClient.setMutationDefaults(MUTATION_KEYS.CREATE_ORDER, {
-    mutationFn: (orderData: OrdersInsert) => db.orders.create(orderData),
+    // Defense-in-depth: hooks should stamp `client_request_id` in their
+    // own `onMutate` so it's persisted with the variables. If a paused
+    // mutation predating this PR rehydrates without one, mint one here so
+    // a single replay retry still goes through the dedupe path. Multiple
+    // retries within the same mutation lifecycle reuse the variables
+    // object, so the id stays stable across retries.
+    mutationFn: (orderData: OrdersInsert) => {
+      const clientRequestId = getOrCreateClientRequestId(orderData.client_request_id);
+      return db.orders.create({ ...orderData, client_request_id: clientRequestId });
+    },
   });
 
   queryClient.setMutationDefaults(MUTATION_KEYS.UPDATE_ORDER_STATUS, {

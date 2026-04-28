@@ -4,6 +4,7 @@
 
 import { isRefund } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
+import { dedupeInsert } from './_dedupe';
 import type { WrapperContext } from './types';
 
 export function createRefundsWrapper(ctx: WrapperContext) {
@@ -16,17 +17,23 @@ export function createRefundsWrapper(ctx: WrapperContext) {
       refund_method: 'cash' | 'card' | 'digital';
       order_item_ids?: string[] | null;
       notes?: string | null;
+      client_request_id?: string | null;
     }) => {
-      const { data, error } = await ctx.anyClient
-        .from('refunds')
-        .insert(refundData)
-        .select(`
+      const selectShape = `
           *,
           processed_by_staff:staff!refunds_processed_by_fkey(full_name, role)
-        `)
-        .single();
+        `;
 
-      if (error) throw handleSupabaseError(error);
+      const data = await dedupeInsert<unknown>(refundData.client_request_id, {
+        insert: () => ctx.anyClient.from('refunds').insert(refundData).select(selectShape).single(),
+        refetch: () =>
+          ctx.anyClient
+            .from('refunds')
+            .select(selectShape)
+            .eq('client_request_id', refundData.client_request_id ?? '')
+            .single(),
+      });
+
       if (!isRefund(data)) throw new Error('Invalid refund data');
       return data;
     },

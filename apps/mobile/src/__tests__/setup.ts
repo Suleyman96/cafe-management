@@ -7,6 +7,71 @@ vi.mock('@/lib/haptics', () => ({
   hapticSuccess: vi.fn(),
 }));
 
+// In-memory expo-secure-store mock. Both functions are async in real life;
+// keep that contract so callers awaiting them behave identically.
+vi.mock('expo-secure-store', () => {
+  const store = new Map<string, string>();
+  return {
+    WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WHEN_UNLOCKED_THIS_DEVICE_ONLY',
+    getItemAsync: vi.fn(async (key: string) => store.get(key) ?? null),
+    setItemAsync: vi.fn(async (key: string, value: string) => {
+      store.set(key, value);
+    }),
+    deleteItemAsync: vi.fn(async (key: string) => {
+      store.delete(key);
+    }),
+  };
+});
+
+// expo-crypto mock — getRandomBytesAsync returns deterministic-but-shaped
+// bytes so encryption-key generation tests can assert hex round-tripping.
+vi.mock('expo-crypto', () => ({
+  getRandomBytesAsync: vi.fn(async (length: number) => {
+    const bytes = new Uint8Array(length);
+    for (let i = 0; i < length; i++) bytes[i] = i & 0xff;
+    return bytes;
+  }),
+}));
+
+// In-memory MMKV mock — react-native-mmkv is JSI-backed and unavailable in
+// jsdom. Each `new MMKV({ id })` returns an isolated Map-backed store with
+// the subset of methods we use in app code.
+vi.mock('react-native-mmkv', () => {
+  class MMKV {
+    private store = new Map<string, string | number | boolean>();
+    set(key: string, value: string | number | boolean) {
+      this.store.set(key, value);
+    }
+    getString(key: string): string | undefined {
+      const v = this.store.get(key);
+      return typeof v === 'string' ? v : undefined;
+    }
+    getNumber(key: string): number | undefined {
+      const v = this.store.get(key);
+      return typeof v === 'number' ? v : undefined;
+    }
+    getBoolean(key: string): boolean | undefined {
+      const v = this.store.get(key);
+      return typeof v === 'boolean' ? v : undefined;
+    }
+    delete(key: string) {
+      this.store.delete(key);
+    }
+    contains(key: string): boolean {
+      return this.store.has(key);
+    }
+    get size() {
+      let total = 0;
+      for (const v of this.store.values()) total += String(v).length;
+      return total;
+    }
+    clearAll() {
+      this.store.clear();
+    }
+  }
+  return { MMKV };
+});
+
 // Mock Supabase module (prevents real client initialization)
 vi.mock('@/lib/supabase', () => ({
   db: createMockDb(),

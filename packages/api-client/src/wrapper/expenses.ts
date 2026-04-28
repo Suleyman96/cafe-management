@@ -4,6 +4,7 @@
 
 import { isExpense, isExpenseCategory } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
+import { dedupeInsert } from './_dedupe';
 import type {
   ExpenseCategoryInsert,
   ExpenseCategoryRow,
@@ -126,13 +127,16 @@ export function createExpensesWrapper(ctx: WrapperContext) {
     },
 
     create: async (data: ExpenseInsert) => {
-      const { data: result, error } = await ctx.anyClient
-        .from('expenses')
-        .insert(data)
-        .select()
-        .single();
+      const result = await dedupeInsert<unknown>(data.client_request_id, {
+        insert: () => ctx.anyClient.from('expenses').insert(data).select().single(),
+        refetch: () =>
+          ctx.anyClient
+            .from('expenses')
+            .select()
+            .eq('client_request_id', data.client_request_id ?? '')
+            .single(),
+      });
 
-      if (error) throw handleSupabaseError(error);
       if (!isExpense(result)) throw new Error('Invalid expense data');
       return result as ExpenseRow;
     },

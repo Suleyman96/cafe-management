@@ -9,6 +9,7 @@ import * as Sentry from '@sentry/react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
 import { hapticSuccess } from '@/lib/haptics';
+import { getOrCreateClientRequestId } from '@/lib/idempotency';
 
 export function useCreatePayment() {
   const queryClient = useQueryClient();
@@ -19,8 +20,15 @@ export function useCreatePayment() {
     // another card or diverge from the customer-facing receipt. UI guards
     // (OfflineGuardButton) prevent the action while offline; if the user
     // bypasses that, fail loudly here rather than silently queueing.
+    //
+    // We still stamp a `client_request_id` so an in-flight retry (request
+    // sent, response dropped) reaches the server's dedupe path instead of
+    // double-charging.
     networkMode: 'always',
     retry: 0,
+    onMutate: (input: OrderPaymentCreateInput) => {
+      input.client_request_id = getOrCreateClientRequestId(input.client_request_id);
+    },
     mutationFn: async (input: OrderPaymentCreateInput) => {
       const payment = validateOrThrow(
         OrderPaymentCreateInputSchema,
@@ -35,6 +43,7 @@ export function useCreatePayment() {
         tip_amount: payment.tip_amount ?? 0,
         order_item_ids: payment.order_item_ids ?? null,
         notes: payment.notes ?? null,
+        client_request_id: payment.client_request_id,
       });
       return created;
     },

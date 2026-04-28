@@ -44,20 +44,27 @@ describe('useOrderPayments - data flow', () => {
 });
 
 describe('useCreatePayment - argument verification', () => {
-  it('calls apiRoutes.payments.create with payment data', async () => {
+  it('calls apiRoutes.payments.create with payment data and a generated client_request_id', async () => {
     const orderId = '00000000-0000-0000-0000-0000000000a1';
     const paymentData = { order_id: orderId, amount: 50, payment_method: 'cash' as const };
     const { result } = renderHookWithProviders(() => useCreatePayment());
     await result.current.mutateAsync(paymentData);
-    expect(apiRoutes.payments.create).toHaveBeenCalledWith(orderId, {
-      amount: 50,
-      payment_method: 'cash',
-      received_by: '',
-      payment_type: 'full',
-      tip_amount: 0,
-      order_item_ids: null,
-      notes: null,
-    });
+    expect(apiRoutes.payments.create).toHaveBeenCalledWith(
+      orderId,
+      expect.objectContaining({
+        amount: 50,
+        payment_method: 'cash',
+        received_by: '',
+        payment_type: 'full',
+        tip_amount: 0,
+        order_item_ids: null,
+        notes: null,
+        // onMutate stamps a UUID v4 — assert shape, not exact value.
+        client_request_id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        ),
+      }),
+    );
   });
 });
 

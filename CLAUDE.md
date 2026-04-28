@@ -61,16 +61,19 @@ Before adding a file, run through this decision tree. Wrong placement is the #1 
 
 | You're adding… | Goes in… | Reason |
 |---|---|---|
-| Pure business logic, validators, calculations, type guards, error classes | `@gustri/core` | Headless, reused across web + mobile + server |
+| Pure business logic, validators, calculations, type guards, error classes (provider-agnostic) | `@gustri/core` | Headless, reused across web + mobile + server. NO React, NO Supabase codes, NO Tailwind class strings. |
 | DB-shaped types, Zod input schemas, enum constants | `@gustri/database` | Single source of truth for DB shape |
 | New table/column/RPC access pattern | `@gustri/api-client` (extend the relevant `*Wrapper`) | Never raw Supabase queries in apps |
+| Supabase-specific error/HTTP-status mapping | `@gustri/api-client/errors` (`handleSupabaseError`, `httpStatusToAppError`) | Provider-specific code stays at the boundary, not in core |
 | TanStack Query hook/mutation used by **more than one app** | `@gustri/queries` | Shared cache keys & invalidation rules |
-| TanStack Query hook used by **only one app** | App-local `src/hooks/` | YAGNI — promote to `@gustri/queries` only when a second consumer appears |
+| TanStack Query hook used by **only one app** | App-local `src/hooks/` (see "Hooks" rule below — `-safe` only when justified) | YAGNI — promote to `@gustri/queries` once a second consumer appears |
+| `QUERY_KEYS` constant / new query-key entry | `@gustri/queries/keys.ts` | Shared cache namespace |
 | Reusable React component (used by 2+ apps **or** clearly generic) | `@gustri/ui` | One source of truth for shared visuals |
+| Tailwind class helpers (e.g., `getRoleBadgeColor`) | `@gustri/ui/badges.ts` (or alongside the consuming component) | Tailwind strings are styling — not headless |
 | App-specific component (feature/screen-specific) | `apps/<app>/src/components/<feature>/` | Locality beats premature sharing |
-| User-facing string | i18n key in `@gustri/i18n` locales | Never hardcode visible text |
-| Server-side transaction or third-party call | `apps/staff-web` or `apps/customer-web` route under `/api/v1/*` | See Data Access exception 2 |
-| Shared business constant (tax rounding, color palette) | `@gustri/core/constants.ts` | Headless |
+| User-facing string | i18n key in `@gustri/i18n` locales | Never hardcode visible text — CI gate enforces it |
+| Server-side transaction or third-party call | `apps/staff-web` route under `/api/v1/*`; helper in `apps/staff-web/src/lib/services/` | See Data Access exception 2 |
+| Shared business constant (tax rounding, color palette as hex) | `@gustri/core/constants.ts` or `@gustri/core/colors.ts` | Headless |
 
 **Promotion rule:** start app-local. Promote to a shared package the moment a **second** consumer needs it — not on speculation.
 
@@ -118,8 +121,31 @@ When adding a feature, work through this in order:
 - Zod schemas for runtime validation live in `packages/database/src/schemas/`
 
 ### Hooks
-- Staff-web hooks use `-safe` suffix convention (e.g., `use-orders-safe.ts`)
-- Hooks use TanStack React Query for data fetching with `queryKey` conventions: `['orders']`, `['table', id]`
+- Hooks use TanStack React Query for data fetching. Query keys come from
+  `QUERY_KEYS` in `@gustri/queries` — never inline string literals.
+- **Shared hooks live in `@gustri/queries`.** Apps import `useOrders`,
+  `useCreateOrder`, etc. directly from there.
+- **App-local `-safe` wrapper rule (staff-web).** A `-safe` hook in
+  `apps/staff-web/src/hooks/` exists ONLY when the app needs one of these
+  beyond what the shared hook provides:
+  1. **Server-side mutation via `apiRoutes`** that the shared hook can't
+     express (e.g. `useCreateOrder` calls `/api/v1/orders` rather than
+     `db.orders.create` because it's a multi-table transaction).
+  2. **App-specific UI state** layered on top of the shared hook
+     (e.g. `usePendingApprovalCount` derives a count from `useOrders` —
+     never reimplements the fetch).
+  3. **Plan-gated behavior** that consults `useTenantPlan` / `PLAN_LIMITS`
+     before mutating (e.g. `useCreateTable` checks the table cap).
+- **Default to the shared hook.** If none of the three rules apply, do not
+  create a `-safe` wrapper — import from `@gustri/queries` directly.
+  Wrappers that just re-export are deleted.
+- **Mobile** does not use the `-safe` suffix. Mobile-local hooks in
+  `apps/mobile/src/hooks/` follow the same three rules but keep the plain
+  name (e.g., `use-create-order.ts`) since there is no shared-hook
+  collision.
+- **Promotion to `@gustri/queries`.** When a *second* app needs the same
+  hook with the same shape, move it to `@gustri/queries` and accept
+  per-app overrides via callbacks/options rather than forking.
 
 ### Components
 - Organized by feature: `components/orders/`, `components/modals/`, `components/auth/`
@@ -127,8 +153,15 @@ When adding a feature, work through this in order:
 - Styling: Tailwind CSS classes, `cn()` utility for conditional classes
 
 ### Error Handling
-- Use error classes from `@gustri/core`: `AppError`, `ValidationError`, `NotFoundError`, etc.
-- `handleSupabaseError()` maps Supabase error codes to typed errors
+- Provider-agnostic error classes live in `@gustri/core`: `AppError`,
+  `ValidationError`, `NotFoundError`, `ConflictError`, `AuthenticationError`,
+  `AuthorizationError`, `NetworkError`.
+- Provider-specific mapping lives in `@gustri/api-client`:
+  - `handleSupabaseError(err)` — translates Supabase/PostgREST/PostgreSQL
+    error codes (`PGRST116`, `23505`, `42501`, …) to `AppError` subclasses.
+    Used inside every wrapper and once in customer-web's `setTableContext`.
+  - `httpStatusToAppError(status, body)` — translates HTTP responses from
+    `/api/v1/*` routes (mobile's `apiFetch`, web's fetch helpers).
 - Type guards from `@gustri/core`: `isOrder()`, `isTable()`, `isStaff()`, etc.
 
 ## Biome Rules

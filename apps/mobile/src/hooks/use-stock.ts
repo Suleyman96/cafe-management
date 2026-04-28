@@ -4,6 +4,7 @@ import { QUERY_KEYS, useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
+import { getOrCreateClientRequestId } from '@/lib/idempotency';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 
 // Re-export hooks and mutations with matching param shapes
@@ -56,8 +57,24 @@ export function useAdjustStock() {
     // Stock adjustments are inventory-of-record writes. Queueing them creates
     // ordering ambiguity (out-of-stock checks may use the wrong number) and
     // amplifies retry conflicts. Fail loudly online, refuse offline.
+    //
+    // We still stamp `clientRequestId` so an in-flight retry (request sent,
+    // response dropped) hits the server's dedupe path and doesn't apply the
+    // adjustment twice.
     networkMode: 'always',
     retry: 0,
+    onMutate: (variables: {
+      id: string;
+      data: {
+        type: 'in' | 'out' | 'adjustment';
+        quantity: number;
+        reason?: string;
+        performedBy?: string;
+        clientRequestId?: string;
+      };
+    }) => {
+      variables.data.clientRequestId = getOrCreateClientRequestId(variables.data.clientRequestId);
+    },
     mutationFn: ({
       id,
       data,
@@ -68,6 +85,7 @@ export function useAdjustStock() {
         quantity: number;
         reason?: string;
         performedBy?: string;
+        clientRequestId?: string;
       };
     }) => {
       const input = validateOrThrow(
@@ -80,6 +98,7 @@ export function useAdjustStock() {
         quantity_change: input.quantity,
         reason: input.reason ?? '',
         performed_by: input.performedBy ?? '',
+        client_request_id: input.clientRequestId,
       });
     },
     onSuccess: () => {
