@@ -1,10 +1,10 @@
 import * as Sentry from '@sentry/react-native';
 import { useEffect } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { MMKV } from 'react-native-mmkv';
+import { apiRoutes } from '@/lib/api-routes';
 import { registerForPushNotifications } from '@/lib/notifications';
 import { getOrCreateMmkvEncryptionKey } from '@/lib/storage-key';
-import { db } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth-store';
 
 /**
@@ -27,6 +27,12 @@ import { useAuthStore } from '@/store/auth-store';
 const LAST_SYNCED_KEY = 'last-synced-token';
 const LAST_SYNCED_AT_KEY = 'last-synced-at';
 const RESYNC_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+// Lower bound between sync attempts. Without this, an OS that fires multiple
+// AppState `active` transitions in quick succession (e.g. notification
+// permission sheet dismiss → focus regain) would re-hit the register route
+// per transition. 60s is well below the 7-day resync interval and well above
+// any plausible foreground-bounce burst.
+const MIN_RESYNC_INTERVAL_MS = 60_000;
 const TOKEN_MMKV_INSTANCE_ID = 'gustri-push-token';
 
 let tokenStorage: MMKV | null = null;
@@ -64,6 +70,24 @@ export function clearPushTokenSyncCache() {
   tokenStorage.delete(LAST_SYNCED_AT_KEY);
 }
 
+/**
+ * Read the most-recently-synced expo push token for the given staffId, if
+ * any. Returns null when the dedup cache is empty or owned by a different
+ * staff (mid-tenant transition before the next sync runs). Used by
+ * `forceLogout` to enqueue a revoke mutation against the right token.
+ */
+export function readLastSyncedExpoToken(staffId: string): string | null {
+  if (!tokenStorage) return null;
+  const composite = tokenStorage.getString(LAST_SYNCED_KEY);
+  if (!composite) return null;
+  const sep = composite.indexOf(':');
+  if (sep < 0) return null;
+  const cachedStaffId = composite.slice(0, sep);
+  const token = composite.slice(sep + 1);
+  if (cachedStaffId !== staffId || !token) return null;
+  return token;
+}
+
 export function usePushTokenSync() {
   const staffId = useAuthStore((s) => s.staff?.id);
 
@@ -81,10 +105,15 @@ export function usePushTokenSync() {
         const composite = `${staffId}:${token}`;
         const lastSynced = storage.getString(LAST_SYNCED_KEY);
         const lastSyncedAt = storage.getNumber(LAST_SYNCED_AT_KEY) ?? 0;
-        const stale = Date.now() - lastSyncedAt > RESYNC_INTERVAL_MS;
+        const sinceLast = Date.now() - lastSyncedAt;
+        const stale = sinceLast > RESYNC_INTERVAL_MS;
         if (lastSynced === composite && !stale) return;
+        // Throttle floor — same composite within MIN_RESYNC_INTERVAL_MS is
+        // a foreground-bounce burst, not a real change.
+        if (lastSynced === composite && sinceLast < MIN_RESYNC_INTERVAL_MS) return;
 
-        await db.staff.updatePushToken(staffId!, token);
+        const platform = Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : null;
+        await apiRoutes.pushTokens.register({ expo_token: token, platform });
         storage.set(LAST_SYNCED_KEY, composite);
         storage.set(LAST_SYNCED_AT_KEY, Date.now());
       } catch (err: unknown) {

@@ -226,13 +226,28 @@ export interface Database {
           last_login_at: string | null;
           auth_user_id: string | null;
           preferred_language: string;
-          push_token: string | null;
         };
         Insert: Omit<
           Database['public']['Tables']['staff']['Row'],
           'id' | 'tenant_id' | 'created_at' | 'updated_at'
         > & { tenant_id?: string };
         Update: Partial<Database['public']['Tables']['staff']['Insert']>;
+      };
+      staff_push_tokens: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          staff_id: string;
+          expo_token: string;
+          platform: string | null;
+          last_seen_at: string;
+          created_at: string;
+        };
+        Insert: Omit<
+          Database['public']['Tables']['staff_push_tokens']['Row'],
+          'id' | 'last_seen_at' | 'created_at'
+        > & { last_seen_at?: string; created_at?: string };
+        Update: Partial<Database['public']['Tables']['staff_push_tokens']['Insert']>;
       };
       customer_feedback: {
         Row: {

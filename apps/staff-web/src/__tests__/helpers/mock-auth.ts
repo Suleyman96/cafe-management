@@ -9,7 +9,6 @@ export const mockAdminStaff = {
   phone: null,
   last_login_at: null,
   preferred_language: 'en',
-  push_token: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };

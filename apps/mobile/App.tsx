@@ -24,6 +24,7 @@ import { getCurrentUser, onAuthStateChange } from './src/lib/auth';
 import { checkForOtaUpdate } from './src/lib/check-for-updates';
 import { drainMismatchedMutations } from './src/lib/mutation-drain';
 import { handleNotificationNavigation, navigationRef } from './src/lib/navigation-ref';
+import { drainPendingRevokes } from './src/lib/pending-revokes';
 import { queryClient } from './src/lib/query-client';
 import {
   asyncStoragePersister,
@@ -197,6 +198,18 @@ function App() {
     const stop = startCacheSizeTelemetry();
     return stop;
   }, []);
+
+  // One-shot drain of any push-token revokes queued during a previous
+  // offline logout. Runs once after MMKV is encrypted-init'd; the queue
+  // is read regardless of who (if anyone) is logged in, since the prior
+  // tenant's tokens still need to come off the server. Network/5xx
+  // failures keep the entry queued for the next launch.
+  useEffect(() => {
+    if (!migrationDone) return;
+    drainPendingRevokes().catch((err) => {
+      Sentry.captureException(err, { tags: { area: 'boot-drain-pending-revokes' } });
+    });
+  }, [migrationDone]);
 
   // Boot-time OTA check — fetches a published update if available and reloads
   // into it before the user starts interacting. No-op in dev. Failures are

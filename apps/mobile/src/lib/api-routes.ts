@@ -66,6 +66,36 @@ async function apiFetch<T>(path: string, init: RequestInit): Promise<T> {
 }
 
 /**
+ * Variant of `apiFetch` that does NOT attach an Authorization header.
+ * Used for the unauthenticated push-token revoke endpoint, which has to
+ * succeed even when no user is logged in (offline-logout drain on next
+ * boot) — see `pending-revokes.ts` for context.
+ */
+async function apiFetchUnauthed<T>(path: string, init: RequestInit): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...init.headers },
+    });
+  } catch (err) {
+    throw new NetworkError(err instanceof Error ? err.message : 'Network request failed');
+  }
+
+  const body = await parseJsonSafe(res);
+
+  if (!res.ok) {
+    throw httpStatusToAppError(
+      res.status,
+      body as { error?: string; details?: Record<string, unknown> } | null,
+      `API error ${res.status}`,
+    );
+  }
+
+  return body as T;
+}
+
+/**
  * Typed client for calling staff-web API routes.
  * Used for mutations that require server-side validation.
  *
@@ -153,6 +183,28 @@ export const apiRoutes = {
     update: (data: CafeSettingsUpdateInput) =>
       apiFetch<{ settings: CafeSettings }>('/api/v1/settings', {
         method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+  },
+
+  pushTokens: {
+    register: (data: { expo_token: string; platform?: 'ios' | 'android' | null }) =>
+      apiFetch<{
+        token: {
+          id: string;
+          tenant_id: string;
+          staff_id: string;
+          expo_token: string;
+          platform: string | null;
+          last_seen_at: string;
+        };
+      }>('/api/v1/push-tokens/register', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    revoke: (data: { expo_token: string }) =>
+      apiFetchUnauthed<{ revoked: true }>('/api/v1/push-tokens/revoke', {
+        method: 'POST',
         body: JSON.stringify(data),
       }),
   },

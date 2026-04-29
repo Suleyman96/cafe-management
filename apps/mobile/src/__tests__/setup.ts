@@ -118,6 +118,10 @@ vi.mock('@/lib/api-routes', () => ({
     settings: {
       update: vi.fn().mockResolvedValue({ settings: {} }),
     },
+    pushTokens: {
+      register: vi.fn().mockResolvedValue({ token: { id: 'test-token-id' } }),
+      revoke: vi.fn().mockResolvedValue({ revoked: true }),
+    },
   },
 }));
 

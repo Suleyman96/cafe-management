@@ -99,15 +99,6 @@ export function createStaffWrapper(ctx: WrapperContext) {
       return waiters;
     },
 
-    updatePushToken: async (staffId: string, pushToken: string | null) => {
-      const { error } = await ctx.anyClient
-        .from('staff')
-        .update({ push_token: pushToken })
-        .eq('id', staffId);
-
-      if (error) throw handleSupabaseError(error);
-    },
-
     updateLastLogin: async (staffId: string) => {
       const { error } = await ctx.anyClient
         .from('staff')

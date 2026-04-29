@@ -1,7 +1,8 @@
 import * as Sentry from '@sentry/react-native';
-import { clearPushTokenSyncCache } from '@/hooks/use-push-token-sync';
+import { clearPushTokenSyncCache, readLastSyncedExpoToken } from '@/hooks/use-push-token-sync';
 import { useAuthStore } from '@/store/auth-store';
 import type { Staff } from '@/types';
+import { drainPendingRevokes, enqueuePendingRevoke } from './pending-revokes';
 import { queryClient } from './query-client';
 import { asyncStoragePersister, clearEncryptedQueryCache } from './query-persister';
 import { clearSessionStamp } from './session-stamp';
@@ -96,11 +97,24 @@ export type LogoutReason = 'user' | 'inactivity' | 'auth-change';
 export async function forceLogout(reason: LogoutReason = 'user'): Promise<void> {
   Sentry.addBreadcrumb({ category: 'auth', message: `forceLogout: ${reason}` });
 
-  // Best-effort push-token clear — read staff.id before clearing the store.
+  // Enqueue a server-side revoke into the persistent queue, then opportun-
+  // istically drain it. Online: drain succeeds, queue is empty. Offline:
+  // drain fails, the entry stays for the next online drain (App.tsx boot
+  // hook). Without the queue, an offline logout — the common end-of-shift
+  // case on flaky cafe Wi-Fi — would leave the prior tenant's token bound
+  // server-side, and the next user on the device would receive their
+  // notifications.
   const staffId = useAuthStore.getState().staff?.id;
-  if (staffId) {
-    db.staff.updatePushToken(staffId, null).catch((err) => {
-      Sentry.captureException(err, { tags: { area: 'logout.clearPushToken', reason } });
+  const expoToken = staffId ? readLastSyncedExpoToken(staffId) : null;
+  if (expoToken) {
+    try {
+      await enqueuePendingRevoke(expoToken);
+    } catch (err) {
+      Sentry.captureException(err, { tags: { area: 'logout.enqueueRevoke', reason } });
+    }
+    // Fire-and-forget online attempt — actual retry lives in the queue.
+    drainPendingRevokes().catch((err) => {
+      Sentry.captureException(err, { tags: { area: 'logout.drainRevokes', reason } });
     });
   }
 

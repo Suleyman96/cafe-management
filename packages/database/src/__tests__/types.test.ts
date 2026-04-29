@@ -522,7 +522,6 @@ describe('Table Schemas', () => {
       last_login_at: null,
       auth_user_id: null,
       preferred_language: 'en',
-      push_token: null,
     };
 
     it('should validate valid staff', () => {
