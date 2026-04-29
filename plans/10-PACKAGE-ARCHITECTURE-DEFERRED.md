@@ -9,6 +9,10 @@
 > **Hard gate:** before onboarding tenant #2, every High item in this file
 > must be fixed or explicitly waived. Bundle-size and polish items can ship
 > incrementally.
+>
+> **Implementation plan:** see
+> [`11-PACKAGE-ARCHITECTURE-ROADMAP.md`](./11-PACKAGE-ARCHITECTURE-ROADMAP.md)
+> for concrete steps, ordering, and PR-sized batches.
 
 ---
 
@@ -134,17 +138,11 @@ hook and provide a `QueryDefaultsProvider` for app-level defaults.
 
 ---
 
-### M2. `-safe` hook proliferation in staff-web has no documented promotion rule
-**Where:** [apps/staff-web/src/hooks/](../apps/staff-web/src/hooks/) — 8+ `-safe` hooks
-
-The `-safe` suffix means "wraps a shared hook with staff-specific
-server-error handling" but the criterion is not documented. Mobile may
-need similar wrappers and will independently invent its own.
-
-**Fix:** document the wrapper criterion in `CLAUDE.md` (probably:
-"shared hook + app-specific UI state for typed server errors") OR push
-the variation into `@gustri/queries` via callback options so apps don't
-need wrappers at all.
+### ~~M2. `-safe` hook promotion rule~~ ✅ Closed 2026-04-28
+Documented in CLAUDE.md → "Hooks" section. The `-safe` suffix is now
+gated by three explicit criteria (apiRoutes, app-specific UI state, or
+plan-gated behavior); anything else uses `@gustri/queries` directly.
+Promotion path to `@gustri/queries` documented as well.
 
 ---
 
@@ -228,13 +226,19 @@ keep `OrderRow` internal to `api-client`.
 
 ---
 
-### L4. Missing JSDoc on wrapper public APIs
-The wrappers carry real semantics (status gating in `updateStatus`,
-trigger workarounds in `applyDiscount`) but only line comments. New
-consumers can't see this without reading the source.
+### L4. JSDoc on wrapper public APIs (partial) 🟡
+JSDoc added in 2026-04 for the high-risk methods:
+- `orders.updateStatus` — `served` rule + empty-order rule
+- `orders.applyDiscount` — trigger collision (don't add `.select()`)
+- `orders.cleanupEmptyOrders` — DB security M10 caveat
+- `order-items.cancel` — partial vs full cancel branches
+- `tasks.getRecurringTemplates` / `generateRecurringTasks` — local-time
+  day-of-week math
+- `payments.create` — when to use the route vs the wrapper
+- `realtime` (module-level) — `RealtimeChannel` leak warning
 
-**Fix:** add JSDoc to public wrapper methods that enforce business
-rules. Document the rule in the doc comment.
+**Remaining (opportunistic):** add JSDoc when touching other wrappers
+that enforce non-obvious rules. No standalone PR needed.
 
 ---
 
@@ -260,3 +264,5 @@ rules. Document the rule in the doc comment.
 | C4 (partial) | Added `pnpm db:types:generate` + `pnpm db:types:check`; soft CI gate (`db-types-check` job, `continue-on-error: true`). The actual replacement of `database.ts` → `generated.ts` is tracked as **H0** above. |
 | H2   | Added Biome / CI rule flagging hardcoded JSX text and `toast.*`/`Alert.alert(` literals not produced via `t(...)` |
 | H3   | Split `orders.ts` (650 LOC) into `orders.ts` + `order-items.ts`; split `tasks.ts` similarly |
+| M2   | Documented `-safe` hook promotion rule in CLAUDE.md (3 explicit criteria + promotion path to `@gustri/queries`) |
+| L4 (partial) | Added JSDoc to high-risk wrapper methods (orders/order-items/tasks/payments/realtime). Remaining methods documented opportunistically. |
