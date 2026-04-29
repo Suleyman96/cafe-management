@@ -5,6 +5,14 @@ import type { Staff } from '@/types';
 
 interface AuthStore {
   staff: Staff | null;
+  /**
+   * Client-side plan hint for UI gating only. **Never authoritative** —
+   * the server independently enforces every plan-gated mutation via
+   * `verifyPlan` (`/api/v1/*` routes) and the `plan_allows_feature(...)`
+   * RLS check (direct-wrapper writes to tasks/waste_logs/stock/schedules).
+   * Do not add a new client-only gate without a matching server check.
+   * See plans/mobile-audit-2026-04/01-CRITICAL.md C5.
+   */
   tenantPlan: PlanName | null;
   isLoading: boolean;
   setStaff: (staff: Staff | null) => void;
