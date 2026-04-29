@@ -59,7 +59,11 @@ const PERSISTED_QUERY_KEYS: Set<string> = new Set([
  * Consumed by PersistQueryClientProvider's `persistOptions.buster` — when the
  * value changes between launches, the persister discards the stored client.
  */
-const CACHE_SCHEMA_VERSION = 2;
+// v3: C2 added required `meta.tenantId` + `meta.staffId` on every persisted
+// mutation. Pre-C2 caches don't carry the stamp and the C2 drain would
+// discard them anyway — bumping the buster makes that an explicit one-time
+// drop on first launch rather than a hydrate-then-discard round-trip.
+const CACHE_SCHEMA_VERSION = 3;
 const APP_VERSION = Constants.expoConfig?.version ?? '0.0.0';
 export const CACHE_BUSTER = `v${CACHE_SCHEMA_VERSION}-${APP_VERSION}`;
 

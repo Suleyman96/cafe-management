@@ -24,6 +24,7 @@ const CreateCustomerOrderSchema = z.object({
     .nullable(),
   delivery_customer_name: z.string().optional().nullable(),
   delivery_fee: z.number().optional().nullable(),
+  client_request_id: z.string().uuid().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -35,11 +36,11 @@ export async function POST(request: NextRequest) {
     const { data, error } = await validateBody(request, CreateCustomerOrderSchema);
     if (error) return error;
 
-    const order = await createCustomerOrder(getSupabaseAdmin(), {
+    const { order, deduped } = await createCustomerOrder(getSupabaseAdmin(), {
       orderData: data,
     });
 
-    return jsonOk({ order }, 201);
+    return jsonOk({ order }, deduped ? 200 : 201);
   } catch (err) {
     return handleRouteError(err);
   }

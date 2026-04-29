@@ -16,8 +16,13 @@
 -- (web staff dashboard, customer web) can still write without a
 -- key. Partial-unique index ignores NULLs so this stays safe.
 --
--- NOTE: CREATE INDEX CONCURRENTLY cannot run inside a transaction
--- block. This migration intentionally has no BEGIN/COMMIT.
+-- NOTE: Indexes use plain CREATE UNIQUE INDEX (not CONCURRENTLY) because
+-- the Supabase CLI runs migrations in a pipelined transaction (see
+-- `db reset`), which rejects CONCURRENTLY. The trade-off is a brief
+-- exclusive lock on each table during index build — acceptable here
+-- because these tables are small at deploy time, and any production
+-- index promotion that needs CONCURRENTLY can ship as a follow-up
+-- migration without BEGIN/COMMIT.
 -- ============================================================
 
 -- Add nullable column to each replay-target table.
@@ -36,35 +41,35 @@ ALTER TABLE public.expenses        ADD COLUMN IF NOT EXISTS client_request_id uu
 -- WHERE client_request_id IS NOT NULL keeps NULL rows unconstrained,
 -- so existing data and server-originated inserts continue to work.
 
-CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS orders_tenant_client_request_id_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS orders_tenant_client_request_id_uidx
   ON public.orders (tenant_id, client_request_id)
   WHERE client_request_id IS NOT NULL;
 
-CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS order_items_tenant_client_request_id_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS order_items_tenant_client_request_id_uidx
   ON public.order_items (tenant_id, client_request_id)
   WHERE client_request_id IS NOT NULL;
 
-CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS order_payments_tenant_client_request_id_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS order_payments_tenant_client_request_id_uidx
   ON public.order_payments (tenant_id, client_request_id)
   WHERE client_request_id IS NOT NULL;
 
-CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS refunds_tenant_client_request_id_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS refunds_tenant_client_request_id_uidx
   ON public.refunds (tenant_id, client_request_id)
   WHERE client_request_id IS NOT NULL;
 
-CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS stock_movements_tenant_client_request_id_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS stock_movements_tenant_client_request_id_uidx
   ON public.stock_movements (tenant_id, client_request_id)
   WHERE client_request_id IS NOT NULL;
 
-CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS waiter_calls_tenant_client_request_id_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS waiter_calls_tenant_client_request_id_uidx
   ON public.waiter_calls (tenant_id, client_request_id)
   WHERE client_request_id IS NOT NULL;
 
-CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS tasks_tenant_client_request_id_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS tasks_tenant_client_request_id_uidx
   ON public.tasks (tenant_id, client_request_id)
   WHERE client_request_id IS NOT NULL;
 
-CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS expenses_tenant_client_request_id_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS expenses_tenant_client_request_id_uidx
   ON public.expenses (tenant_id, client_request_id)
   WHERE client_request_id IS NOT NULL;
 

@@ -3,6 +3,13 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 /**
  * Server-side discount validation and application.
  * Replaces client-side validation in discount-modal.tsx.
+ *
+ * Idempotency: this is an UPDATE that writes absolute discount values
+ * (`discount_type`, `discount_value`) — not deltas — and the
+ * `recalculate_on_discount_change` trigger derives totals from those
+ * absolute values. A paused-then-replayed mutation produces the same
+ * final order state, so no `client_request_id` is required here.
+ * Do NOT switch to delta math without also adding a dedupe key.
  */
 
 interface ApplyDiscountParams {
