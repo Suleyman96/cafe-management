@@ -1,0 +1,145 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - button [ref=e5] [cursor=pointer]:
+          - img [ref=e6]
+        - heading "Restaurant" [level=1] [ref=e8]
+      - generic [ref=e10]:
+        - img [ref=e11]
+        - textbox "Search menu..." [ref=e14]
+        - button [ref=e16] [cursor=pointer]:
+          - img [ref=e17]
+    - generic [ref=e19]:
+      - navigation [ref=e21]:
+        - button "☕ Hot Drinks" [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]: ☕
+          - generic [ref=e24]: Hot Drinks
+        - button "🥤 Cold Drinks" [ref=e25] [cursor=pointer]:
+          - generic [ref=e26]: 🥤
+          - generic [ref=e27]: Cold Drinks
+        - button "🍜 Rice & Noodles" [ref=e28] [cursor=pointer]:
+          - generic [ref=e29]: 🍜
+          - generic [ref=e30]: Rice & Noodles
+        - button "🍣 Sushi & Sashimi" [ref=e31] [cursor=pointer]:
+          - generic [ref=e32]: 🍣
+          - generic [ref=e33]: Sushi & Sashimi
+        - button "🍡 Desserts" [ref=e34] [cursor=pointer]:
+          - generic [ref=e35]: 🍡
+          - generic [ref=e36]: Desserts
+      - generic [ref=e38]:
+        - generic [ref=e39] [cursor=pointer]:
+          - generic [ref=e40]:
+            - generic [ref=e42]: ☕
+            - generic [ref=e44]:
+              - img [ref=e45]
+              - text: Popular
+            - button [ref=e47]:
+              - img [ref=e48]
+          - generic [ref=e49]:
+            - heading "Cappuccino" [level=3] [ref=e50]
+            - paragraph [ref=e51]: Espresso with steamed milk and foam
+            - generic [ref=e52]:
+              - generic [ref=e53]: $550
+              - generic [ref=e54]:
+                - img [ref=e55]
+                - text: ~5 min
+            - generic [ref=e59]:
+              - img [ref=e60]
+              - text: Veg
+        - generic [ref=e66]:
+          - button [ref=e67] [cursor=pointer]:
+            - img [ref=e68]
+          - generic [ref=e71]:
+            - generic [ref=e72]:
+              - heading "Cappuccino" [level=2] [ref=e73]
+              - generic [ref=e74]:
+                - generic [ref=e75]:
+                  - img [ref=e76]
+                  - text: Popular
+                - generic [ref=e78]:
+                  - img [ref=e79]
+                  - text: Vegetarian
+            - paragraph [ref=e82]: Espresso with steamed milk and foam
+            - generic [ref=e84]:
+              - img [ref=e85]
+              - generic [ref=e87]:
+                - paragraph [ref=e88]: "Contains allergens:"
+                - paragraph [ref=e89]: milk, lactose
+            - paragraph [ref=e90]: "⏱️ Preparation time: ~5 minutes"
+            - generic [ref=e91]: $550
+            - generic [ref=e92]:
+              - generic [ref=e93]: Quantity
+              - generic [ref=e94]:
+                - button [disabled] [ref=e95]:
+                  - img [ref=e96]
+                - generic [ref=e97]: "1"
+                - button [ref=e98] [cursor=pointer]:
+                  - img [ref=e99]
+            - generic [ref=e100]:
+              - generic [ref=e101]: Special requests (optional)
+              - textbox "e.g., Less sugar, Extra hot, No ice..." [ref=e102]
+            - button "Add to Order · $550" [ref=e103] [cursor=pointer]
+        - generic [ref=e104] [cursor=pointer]:
+          - generic [ref=e105]:
+            - generic [ref=e107]: ☕
+            - generic [ref=e109]:
+              - img [ref=e110]
+              - text: Popular
+            - button [ref=e112]:
+              - img [ref=e113]
+          - generic [ref=e114]:
+            - heading "Hojicha" [level=3] [ref=e115]
+            - paragraph [ref=e116]: Roasted Japanese green tea
+            - generic [ref=e117]:
+              - generic [ref=e118]: $495
+              - generic [ref=e119]:
+                - img [ref=e120]
+                - text: ~3 min
+            - generic [ref=e124]:
+              - img [ref=e125]
+              - text: Veg
+        - generic [ref=e128] [cursor=pointer]:
+          - generic [ref=e129]:
+            - generic [ref=e131]: ☕
+            - generic [ref=e133]:
+              - img [ref=e134]
+              - text: Popular
+            - button [ref=e136]:
+              - img [ref=e137]
+          - generic [ref=e138]:
+            - heading "Matcha Latte" [level=3] [ref=e139]
+            - paragraph [ref=e140]: Traditional Japanese matcha with steamed milk
+            - generic [ref=e141]:
+              - generic [ref=e142]: $605
+              - generic [ref=e143]:
+                - img [ref=e144]
+                - text: ~3 min
+            - generic [ref=e148]:
+              - img [ref=e149]
+              - text: Veg
+        - generic [ref=e152] [cursor=pointer]:
+          - generic [ref=e153]:
+            - generic [ref=e155]: ☕
+            - button [ref=e156]:
+              - img [ref=e157]
+          - generic [ref=e158]:
+            - heading "Sencha" [level=3] [ref=e159]
+            - paragraph [ref=e160]: Premium Japanese green tea
+            - generic [ref=e161]:
+              - generic [ref=e162]: $440
+              - generic [ref=e163]:
+                - img [ref=e164]
+                - text: ~3 min
+            - generic [ref=e168]:
+              - img [ref=e169]
+              - text: Veg
+  - button "Call Staff" [ref=e172] [cursor=pointer]:
+    - img [ref=e173]
+    - generic [ref=e176]: Call Staff
+  - region "Notifications alt+T"
+  - alert [ref=e177]
+```
