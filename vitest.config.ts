@@ -14,6 +14,7 @@ export default defineConfig({
       // They are run separately via the root `pnpm test` script.
       'packages/queries/**',
       'packages/ui/**',
+      'packages/ui-web/**',
       'packages/i18n/**',
     ],
     coverage: {
