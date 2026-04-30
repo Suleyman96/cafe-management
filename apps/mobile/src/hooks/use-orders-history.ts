@@ -1,6 +1,5 @@
-import { QUERY_KEYS } from '@gustri/core';
 import type { Order, OrderWithDetails } from '@gustri/database';
-import { useDb } from '@gustri/queries';
+import { QUERY_KEYS, useDb } from '@gustri/queries';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const PAGE_SIZE = 50;

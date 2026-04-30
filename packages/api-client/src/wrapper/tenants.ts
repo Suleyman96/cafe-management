@@ -2,8 +2,9 @@
  * Tenants wrapper module
  */
 
-import { handleSupabaseError } from '@gustri/core';
 import type { Database } from '@gustri/database';
+import { handleSupabaseError } from '../errors';
+import { rpc } from './rpc-typed';
 import type { WrapperContext } from './types';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
@@ -18,8 +19,7 @@ export function createTenantsWrapper(ctx: WrapperContext) {
     },
 
     getMonthlyOrderCount: async (): Promise<number> => {
-      const { data, error } = await ctx.anyClient.rpc('get_monthly_order_count');
-      if (error) throw handleSupabaseError(error);
+      const data = await rpc(ctx, 'get_monthly_order_count');
       return data ?? 0;
     },
   };

@@ -1,6 +1,5 @@
-import { QUERY_KEYS } from '@gustri/core';
 import type { StaffUpdate } from '@gustri/database';
-import { useDb } from '@gustri/queries';
+import { QUERY_KEYS, useDb } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 

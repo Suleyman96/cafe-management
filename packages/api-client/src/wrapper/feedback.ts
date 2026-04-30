@@ -2,7 +2,8 @@
  * Customer feedback wrapper module
  */
 
-import { handleSupabaseError, isCustomerFeedback } from '@gustri/core';
+import { isCustomerFeedback } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type { CustomerFeedbackRow, WrapperContext } from './types';
 
 export function createFeedbackWrapper(ctx: WrapperContext) {

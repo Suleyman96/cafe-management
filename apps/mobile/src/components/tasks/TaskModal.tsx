@@ -3,7 +3,7 @@ import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, Modal, Portal, Switch } from 'react-native-paper';
-import { useStaff } from '@/hooks';
+import { useStaff } from '@/hooks/shared';
 import { getLocalDateString } from '@/lib/date-utils';
 import { Text, TextInput } from '@/lib/paper-compat';
 import { COLORS } from '@/theme';

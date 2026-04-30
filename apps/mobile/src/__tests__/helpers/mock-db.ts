@@ -129,13 +129,9 @@ export function createMockDb() {
       'assignTo',
       'generateRecurringTasks',
     ),
+    tenants: mockResource('getCurrent'),
     rpc: mockResource('getRemainingBalance', 'transferTable', 'generateOrderNumber'),
     views: mockResource('getSalesSummary', 'getOrderPaymentSummary'),
-    realtime: mockResource(
-      'subscribeToTables',
-      'subscribeToOrders',
-      'subscribeToWaiterCalls',
-      'unsubscribe',
-    ),
+    realtime: mockResource('subscribeToTables', 'subscribeToOrders', 'subscribeToWaiterCalls'),
   };
 }

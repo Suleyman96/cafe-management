@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/core';
+import { QUERY_KEYS } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase';
 import type { WaiterCall } from '@/types';

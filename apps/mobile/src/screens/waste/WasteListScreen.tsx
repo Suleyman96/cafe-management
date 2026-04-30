@@ -5,13 +5,13 @@ import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, FAB, Modal, Portal, Text } from 'react-native-paper';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { WasteLogCard } from '@/components/waste/WasteLogCard';
+import { useCurrencySymbol } from '@/hooks/local';
 import {
   useCreateWasteLog,
-  useCurrencySymbol,
   useDeleteWasteLog,
   useWasteLogs,
   useWasteMonthlySummary,
-} from '@/hooks';
+} from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { getLocalDateString } from '@/lib/date-utils';
 import { TextInput } from '@/lib/paper-compat';

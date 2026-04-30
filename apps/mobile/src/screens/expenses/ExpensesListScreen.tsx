@@ -7,18 +7,16 @@ import { ExpenseCard } from '@/components/expenses/ExpenseCard';
 import { ExpenseCategoryModal } from '@/components/expenses/ExpenseCategoryModal';
 import { ExpenseModal } from '@/components/expenses/ExpenseModal';
 import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
+import { useCurrencySymbol, useUpdateExpense, useUpdateExpenseCategory } from '@/hooks/local';
 import {
   useCreateExpense,
   useCreateExpenseCategory,
-  useCurrencySymbol,
   useDeleteExpense,
   useDeleteExpenseCategory,
   useExpenseCategories,
   useExpenseMonthlySummary,
   useExpenses,
-  useUpdateExpense,
-  useUpdateExpenseCategory,
-} from '@/hooks';
+} from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';

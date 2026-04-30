@@ -4,10 +4,12 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Card, Chip, Text } from 'react-native-paper';
 import { MetricCard } from '@/components/reports/MetricCard';
 import { LoadingScreen } from '@/components/ui';
-import { useCurrencySymbol, useExpenses, useOrders, useStaff, useWasteLogs } from '@/hooks';
+import { useCurrencySymbol, useOrders } from '@/hooks/local';
+import { useExpenses, useStaff, useWasteLogs } from '@/hooks/shared';
 import { getLocalDateString } from '@/lib/date-utils';
+import { aggregateReports } from '@/lib/reports-aggregate';
 import { COLORS } from '@/theme';
-import type { OrderItemWithMenuItem, OrderWithDetails } from '@/types';
+import type { OrderWithDetails } from '@/types';
 
 function getDateRange(preset: number): { startDate: string; endDate: string } {
   const now = new Date();
@@ -54,60 +56,19 @@ export default function ReportsScreen() {
 
   const filteredOrders = (orders || []) as OrderWithDetails[];
 
-  // Key metrics
-  const metrics = useMemo(() => {
-    const paidOrders = filteredOrders.filter((o) => o.status === 'closed' || o.status === 'served');
-    const revenue = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const orderCount = filteredOrders.length;
-    const avgOrderValue = paidOrders.length > 0 ? revenue / paidOrders.length : 0;
-    const completionRate = orderCount > 0 ? (paidOrders.length / orderCount) * 100 : 0;
-
-    return { revenue, orderCount, avgOrderValue, completionRate };
-  }, [filteredOrders]);
-
-  // Order types
-  const orderTypes = useMemo(() => {
-    const types = { dine_in: 0, takeout: 0, delivery: 0 };
-    filteredOrders.forEach((o) => {
-      const ot = o.order_type || 'dine_in';
-      if (ot in types) types[ot as keyof typeof types]++;
-    });
-    return types;
-  }, [filteredOrders]);
-
-  // Top sold items
-  const topItems = useMemo(() => {
-    const itemMap: Record<string, { name: string; qty: number; revenue: number }> = {};
-    filteredOrders.forEach((o) => {
-      (o.order_items || []).forEach((item: OrderItemWithMenuItem) => {
-        const name = item.menu_item?.name || t('kitchen.unknownItem');
-        if (!itemMap[name]) itemMap[name] = { name, qty: 0, revenue: 0 };
-        itemMap[name].qty += item.quantity || 0;
-        itemMap[name].revenue += (item.item_price || 0) * (item.quantity || 0);
-      });
-    });
-    return Object.values(itemMap)
-      .sort((a, b) => b.qty - a.qty)
-      .slice(0, 10);
-  }, [filteredOrders, t]);
-
-  // Staff performance
-  const staffPerformance = useMemo(() => {
-    if (!staffList) return [];
-    const perf: Record<string, { name: string; orders: number; revenue: number }> = {};
-    filteredOrders.forEach((o) => {
-      const wId = o.assigned_waiter_id;
-      if (!wId) return;
-      const s = staffList.find((st) => st.id === wId);
-      if (!perf[wId])
-        perf[wId] = { name: s?.full_name || t('kitchen.unknownItem'), orders: 0, revenue: 0 };
-      perf[wId].orders++;
-      perf[wId].revenue += o.total || 0;
-    });
-    return Object.values(perf)
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 10);
-  }, [filteredOrders, staffList, t]);
+  // Single aggregation pass replaces four separate memos. Same render still
+  // reads `metrics`, `orderTypes`, `topItems`, `staffPerformance` — they're
+  // now slices of one shared aggregate so we walk `filteredOrders` exactly
+  // once per data change.
+  const unknownLabel = t('kitchen.unknownItem');
+  const report = useMemo(
+    () => aggregateReports(filteredOrders, staffList, unknownLabel),
+    [filteredOrders, staffList, unknownLabel],
+  );
+  const metrics = report.totals;
+  const orderTypes = report.byType;
+  const topItems = report.topItems;
+  const staffPerformance = report.byStaff;
 
   // Expense total
   const expenseTotal = useMemo(() => {

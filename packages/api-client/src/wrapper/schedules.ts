@@ -2,7 +2,8 @@
  * Staff schedules wrapper module
  */
 
-import { handleSupabaseError, isStaffSchedule } from '@gustri/core';
+import { isStaffSchedule } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type { StaffScheduleInsert, StaffScheduleUpdate, WrapperContext } from './types';
 
 const STAFF_JOIN = `

@@ -149,7 +149,16 @@ export const StaffSchema = z.object({
   last_login_at: z.string().nullable(),
   auth_user_id: z.string().uuid().nullable(),
   preferred_language: z.string().max(10),
-  push_token: z.string().nullable(),
+});
+
+export const StaffPushTokenSchema = z.object({
+  id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
+  staff_id: z.string().uuid(),
+  expo_token: z.string().min(1),
+  platform: z.string().nullable(),
+  last_seen_at: z.string(),
+  created_at: z.string(),
 });
 
 export const WaiterCallSchema = z.object({

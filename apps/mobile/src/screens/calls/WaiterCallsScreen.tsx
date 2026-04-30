@@ -1,11 +1,11 @@
 import { useTranslation } from '@gustri/i18n';
 import { FlashList } from '@shopify/flash-list';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { SegmentedButtons } from 'react-native-paper';
 import { WaiterCallCard } from '@/components/calls/WaiterCallCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useUpdateWaiterCall, useWaiterCalls } from '@/hooks';
+import { useUpdateWaiterCall, useWaiterCalls } from '@/hooks/local';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
 import type { WaiterCall } from '@/types';
@@ -29,23 +29,40 @@ export default function WaiterCallsScreen() {
     [t, tCommon],
   );
 
-  const handleAcknowledge = async (callId: string) => {
-    try {
-      await updateCall.mutateAsync({ callId, status: 'acknowledged', staffId: staff?.id });
-      showSuccess(t('calls.callAcknowledged'));
-    } catch (err: unknown) {
-      showError(err instanceof Error ? err : t('calls.failedAcknowledge'));
-    }
-  };
+  // Stable identities so React.memo on WaiterCallCard actually skips
+  // re-renders. Recreated only when their dependencies change — typing the
+  // dep list here is the correctness anchor: forget one and an unrelated
+  // realtime tick re-renders every card on screen.
+  const handleAcknowledge = useCallback(
+    async (callId: string) => {
+      try {
+        await updateCall.mutateAsync({ callId, status: 'acknowledged', staffId: staff?.id });
+        showSuccess(t('calls.callAcknowledged'));
+      } catch (err: unknown) {
+        showError(err instanceof Error ? err : t('calls.failedAcknowledge'));
+      }
+    },
+    [updateCall, staff?.id, showSuccess, showError, t],
+  );
 
-  const handleResolve = async (callId: string) => {
-    try {
-      await updateCall.mutateAsync({ callId, status: 'resolved' });
-      showSuccess(t('calls.callResolved'));
-    } catch (err: unknown) {
-      showError(err instanceof Error ? err : t('calls.failedResolve'));
-    }
-  };
+  const handleResolve = useCallback(
+    async (callId: string) => {
+      try {
+        await updateCall.mutateAsync({ callId, status: 'resolved' });
+        showSuccess(t('calls.callResolved'));
+      } catch (err: unknown) {
+        showError(err instanceof Error ? err : t('calls.failedResolve'));
+      }
+    },
+    [updateCall, showSuccess, showError, t],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: WaiterCall }) => (
+      <WaiterCallCard call={item} onAcknowledge={handleAcknowledge} onResolve={handleResolve} />
+    ),
+    [handleAcknowledge, handleResolve],
+  );
 
   if (isLoading) return <LoadingScreen message={t('calls.loadingCalls')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
@@ -63,9 +80,7 @@ export default function WaiterCallsScreen() {
         data={calls || []}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} />}
-        renderItem={({ item }) => (
-          <WaiterCallCard call={item} onAcknowledge={handleAcknowledge} onResolve={handleResolve} />
-        )}
+        renderItem={renderItem}
         ListEmptyComponent={
           <EmptyState
             icon="bell-off"

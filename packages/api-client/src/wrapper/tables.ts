@@ -2,7 +2,8 @@
  * Tables wrapper module
  */
 
-import { handleSupabaseError, isTable, isTableArray } from '@gustri/core';
+import { isTable, isTableArray } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type { TableInsert, TableRow, TableUpdate, WrapperContext } from './types';
 
 export function createTablesWrapper(ctx: WrapperContext) {

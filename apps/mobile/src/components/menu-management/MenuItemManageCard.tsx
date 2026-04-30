@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from '@gustri/i18n';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, IconButton, Switch } from 'react-native-paper';
 import { Text } from '@/lib/paper-compat';
@@ -44,8 +44,9 @@ export const MenuItemManageCard = React.memo(function MenuItemManageCard({
 }: MenuItemManageCardProps) {
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
-  const dietaryBadges = Object.entries(BADGE_CONFIG).filter(
-    ([key]) => item[key as keyof typeof item],
+  const dietaryBadges = useMemo(
+    () => Object.entries(BADGE_CONFIG).filter(([key]) => item[key as keyof typeof item]),
+    [item],
   );
 
   return (

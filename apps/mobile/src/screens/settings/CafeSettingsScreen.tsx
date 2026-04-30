@@ -16,7 +16,8 @@ import {
 } from '@/components/cafe-settings';
 import { OfflineGuardButton } from '@/components/OfflineGuardButton';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useCafeSettings, useUpdateCafeSettings } from '@/hooks';
+import { useUpdateCafeSettings } from '@/hooks/local';
+import { useCafeSettings } from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
 
 type TabView = 'general' | 'branding' | 'contact';

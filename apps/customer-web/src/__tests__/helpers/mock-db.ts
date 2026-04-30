@@ -139,11 +139,6 @@ export function createMockDb() {
     ),
     rpc: mockResource('getRemainingBalance', 'transferTable', 'generateOrderNumber'),
     views: mockResource('getSalesSummary', 'getOrderPaymentSummary'),
-    realtime: mockResource(
-      'subscribeToTables',
-      'subscribeToOrders',
-      'subscribeToWaiterCalls',
-      'unsubscribe',
-    ),
+    realtime: mockResource('subscribeToTables', 'subscribeToOrders', 'subscribeToWaiterCalls'),
   };
 }

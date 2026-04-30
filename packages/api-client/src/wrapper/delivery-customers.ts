@@ -2,7 +2,8 @@
  * Delivery Customers wrapper module
  */
 
-import { handleSupabaseError, isDeliveryCustomer } from '@gustri/core';
+import { isDeliveryCustomer } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type {
   DeliveryCustomerInsert,
   DeliveryCustomerRow,

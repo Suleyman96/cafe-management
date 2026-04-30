@@ -1,14 +1,9 @@
 'use client';
 
-import {
-  calculateOrderTotal,
-  formatTime,
-  getOrderStatusColor,
-  ORDER_STATUS_KEYS,
-} from '@gustri/core';
+import { calculateOrderTotal, formatTime, ORDER_STATUS_KEYS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button, getOrderStatusColor } from '@gustri/ui';
 import {
   CheckCircle,
   ChefHat,

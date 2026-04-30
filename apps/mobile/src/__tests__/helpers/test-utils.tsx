@@ -28,7 +28,6 @@ export const TEST_STAFF: Staff = {
   last_login_at: null,
   auth_user_id: null,
   preferred_language: 'en',
-  push_token: null,
 };
 
 export function seedAuth(staff: Staff | null = TEST_STAFF) {

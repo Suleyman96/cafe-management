@@ -7,7 +7,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { EmptyState, ErrorScreen, FilterChipBar, LoadingScreen } from '@/components/ui';
-import { useCurrencySymbol, useOrders } from '@/hooks';
+import { useCurrencySymbol, useOrders } from '@/hooks/local';
 import { BRAND_PRIMARY, COLORS, ORDER_STATUS_COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, OrdersStackParamList } from '@/types';
 

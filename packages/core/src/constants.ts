@@ -61,13 +61,72 @@ export const WAITER_CALL_REASONS = [
 /** Default tax percentage used when cafe settings haven't loaded yet */
 export const DEFAULT_TAX_PERCENTAGE = 0;
 
-// Refresh intervals (ms)
+/**
+ * How long after going offline a recently-failed mutation is treated as
+ * "queued for retry" rather than a hard failure. Mutation error handlers
+ * read `wasOfflineRecently(OFFLINE_SYNC_WINDOW_MS)` to phrase the user-
+ * facing message ("Failed to sync queued change: …") and to set the Sentry
+ * tag `context: offline-sync-replay`, so a paused-then-replayed mutation
+ * doesn't get reported the same way as a fresh interactive failure.
+ *
+ * Tuned to cover the worst-case re-online → replay drain seen in the wild:
+ * the radio re-attaches, onlineManager fires, and the persister flushes
+ * pending mutations — that whole sequence completes well under 60s on the
+ * slowest networks we've measured. Raising this would mask real failures;
+ * lowering it would misclassify legit replay errors as fresh ones.
+ */
+export const OFFLINE_SYNC_WINDOW_MS = 60_000;
+
+/**
+ * Persisted query-cache schema version. Bump when the persisted cache shape
+ * changes incompatibly — i.e. when old serialized payloads cannot be safely
+ * deserialized into the new client (renamed field on a persisted entity,
+ * removed nested column, narrowed enum, mutation-meta contract change).
+ *
+ * Mobile composes a per-release buster as `${CACHE_SCHEMA_VERSION}-${appVersion}`
+ * so any release with a fresh bundle also drops the cache, even if the
+ * developer forgot to bump. Web persistence (when added) must consume the
+ * same constant so a coordinated bump here invalidates every client at once.
+ *
+ * Bump history:
+ *  - v1: initial persisted cache shape.
+ *  - v2: ...
+ *  - v3: C2 added required `meta.tenantId` + `meta.staffId` on every persisted
+ *        mutation; pre-C2 caches don't carry the stamp.
+ */
+export const CACHE_SCHEMA_VERSION = 3;
+
+/**
+ * Polling intervals for query fallbacks (ms). Consumed by both web and
+ * mobile. Platforms may halve these values when backgrounded; do not raise
+ * them without checking battery impact on mobile (each poll wakes the radio
+ * on cellular).
+ *
+ * Realtime is the primary freshness path on every screen — these intervals
+ * are safety nets for the WS dropping or going degraded.
+ *
+ * `FALLBACK` is the steady-state safety-net poll used while realtime is
+ * healthy or in soft retry — slow on purpose, since the WS should be doing
+ * the work.
+ *
+ * `DEGRADED_FALLBACK` is the active-recovery poll: once a channel exhausts
+ * its retry budget and goes `degraded`, mobile flips to this faster cadence
+ * so the kitchen/waiter screens don't black out for two minutes during
+ * service.
+ */
 export const REFRESH_INTERVALS = {
+  /** Orders list view — covers most non-kitchen workflows. */
   ORDERS: 30000, // 30 seconds
+  /** Kitchen display — tightest cadence; staff watch this in real time. */
   KITCHEN: 10000, // 10 seconds
+  /** Waiter-call surfacing on tables/calls screens. */
   WAITER_CALLS: 15000, // 15 seconds
+  /** Tables grid — slow on purpose, status only changes on order events. */
   TABLES: 60000, // 1 minute
-  FALLBACK: 120000, // 2 minutes — safety-net poll when realtime WS is disconnected
+  /** Steady-state safety-net poll when realtime WS is disconnected. */
+  FALLBACK: 120000, // 2 minutes
+  /** Active-recovery poll while a channel is in `degraded` state (H1). */
+  DEGRADED_FALLBACK: 20000, // 20 seconds
 } as const;
 
 // Status colors
@@ -139,55 +198,6 @@ export const PLAN_LIMITS = {
 
 export const PLAN_ORDER: Record<PlanName, number> = { free: 0, standard: 1, pro: 2, business: 3 };
 
-// Query keys for React Query
-export const QUERY_KEYS = {
-  TABLES: 'tables',
-  TABLE: 'table',
-  TABLE_QR: 'table_qr',
-  ORDERS: 'orders',
-  ORDER: 'order',
-  MENU_ITEMS: 'menu_items',
-  MENU_ITEM: 'menu_item',
-  CATEGORIES: 'categories',
-  STAFF: 'staff',
-  WAITER_CALLS: 'waiter_calls',
-  ACTIVE_ORDERS: 'active_orders',
-  SALES: 'sales',
-  CAFE_SETTINGS: 'cafe_settings',
-  STOCK_ITEMS: 'stock_items',
-  STOCK_ITEM: 'stock_item',
-  STOCK_MOVEMENTS: 'stock_movements',
-  LOW_STOCK_COUNT: 'low_stock_count',
-  EXPENSE_CATEGORIES: 'expense_categories',
-  EXPENSES: 'expenses',
-  EXPENSE: 'expense',
-  EXPENSE_MONTHLY_SUMMARY: 'expense_monthly_summary',
-  SCHEDULES: 'schedules',
-  MY_SCHEDULE: 'my_schedule',
-  DELIVERY_ORDER: 'delivery_order',
-  DELIVERY_ORDERS: 'delivery_orders',
-  DELIVERY_CUSTOMERS: 'delivery_customers',
-  DELIVERY_CUSTOMER: 'delivery_customer',
-  TAKEOUT_ORDER: 'takeout_order',
-  TAKEOUT_ORDERS: 'takeout_orders',
-  WASTE_LOGS: 'waste_logs',
-  WASTE_LOG: 'waste_log',
-  WASTE_SUMMARY: 'waste_summary',
-  TASKS: 'tasks',
-  TASK: 'task',
-  OVERDUE_TASKS_COUNT: 'overdue_tasks_count',
-  OPEN_TASKS_COUNT: 'open_tasks_count',
-  PAYMENTS: 'payments',
-  REPORTS: 'reports',
-  FEEDBACK: 'feedback',
-  STAFF_MEMBER: 'staff_member',
-  PAYMENTS_BY_STAFF: 'payments_by_staff',
-  WAITER_CALLS_COUNT: 'waiter_calls_count',
-  Z_REPORT: 'z_report',
-  TENANT: 'tenant',
-  MONTHLY_ORDER_COUNT: 'monthly_order_count',
-} as const;
-
 // 30-minute interval time slots (00:00 to 23:30)
 export const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const hours = String(Math.floor(i / 2)).padStart(2, '0');
@@ -236,6 +246,72 @@ export const TIME_ELAPSED_THRESHOLDS = {
   ELEVATED: 15, // orange
   CRITICAL: 20, // red
 } as const;
+
+/**
+ * Per-role cap on discount magnitude (as a fraction of order subtotal).
+ *
+ * `discount-service.ts` enforces this server-side before applying any
+ * `percentage`/`fixed` discount; mobile mirrors it as a UX courtesy. A
+ * waiter applying a 99% "fixed" discount is economically a refund, which
+ * already requires admin role — so the cap closes the parallel hole on the
+ * discount path.
+ *
+ *  - waiter:  10% — service recovery (cold coffee, slow kitchen)
+ *  - kitchen:  0% — no discount authority
+ *  - admin: 100% — owner/admin can comp the entire order
+ *  - owner: 100% — same
+ *
+ * Tenants with a stricter policy can override via
+ * `tenant_settings.max_discount_percent_<role>` (added in a follow-up
+ * migration). Until then this hard table is the floor.
+ */
+export const DISCOUNT_CAPS_BY_ROLE: Record<string, number> = {
+  waiter: 0.1,
+  kitchen: 0,
+  admin: 1.0,
+  owner: 1.0,
+};
+
+/** Threshold above which a discount writes a financial_audit_log entry. */
+export const DISCOUNT_AUDIT_THRESHOLD = 0.2;
+
+export function getDiscountCapForRole(role: string | null | undefined): number {
+  if (role && role in DISCOUNT_CAPS_BY_ROLE) return DISCOUNT_CAPS_BY_ROLE[role]!;
+  return 0;
+}
+
+/**
+ * Auto-logout window per role. Shared devices in the kitchen / waiter station
+ * shouldn't sit unlocked for an admin's worth of time after the last user
+ * walked away, so we tighten the budget by responsibility tier:
+ *
+ * - kitchen: 15min  — public tablets, lowest privilege but high data exposure
+ * - waiter:  30min  — handheld but easy to drop on a table mid-shift
+ * - admin:   60min  — usually the owner's personal device
+ * - owner:   60min  — same
+ *
+ * The mobile inactivity hook reads this map by `staff.role` on every
+ * AppState resume and on cold start. Default to the most restrictive
+ * (15 min) when role is missing, since "unknown" is closer to "kitchen
+ * tablet" than "owner laptop" in our threat model.
+ */
+export const INACTIVITY_TIMEOUTS_BY_ROLE = {
+  kitchen: 15 * 60 * 1000,
+  waiter: 30 * 60 * 1000,
+  admin: 60 * 60 * 1000,
+  owner: 60 * 60 * 1000,
+} as const;
+
+export const DEFAULT_INACTIVITY_TIMEOUT_MS = INACTIVITY_TIMEOUTS_BY_ROLE.kitchen;
+
+export type InactivityTimeoutRole = keyof typeof INACTIVITY_TIMEOUTS_BY_ROLE;
+
+export function getInactivityTimeoutMs(role: string | null | undefined): number {
+  if (role && role in INACTIVITY_TIMEOUTS_BY_ROLE) {
+    return INACTIVITY_TIMEOUTS_BY_ROLE[role as InactivityTimeoutRole];
+  }
+  return DEFAULT_INACTIVITY_TIMEOUT_MS;
+}
 
 // UI constants
 export const UI = {

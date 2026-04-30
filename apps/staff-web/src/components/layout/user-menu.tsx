@@ -1,7 +1,7 @@
 'use client';
 
-import { getRoleBadgeColor } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
+import { getRoleBadgeColor } from '@gustri/ui';
 import { ChevronDown, LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';

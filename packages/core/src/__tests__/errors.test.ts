@@ -5,7 +5,6 @@ import {
   AuthorizationError,
   ConflictError,
   getErrorMessage,
-  handleSupabaseError,
   isAppError,
   NetworkError,
   NotFoundError,
@@ -121,88 +120,5 @@ describe('Error inheritance', () => {
 
   it('ValidationError instanceof ValidationError', () => {
     expect(new ValidationError('x') instanceof ValidationError).toBe(true);
-  });
-});
-
-describe('handleSupabaseError', () => {
-  it('maps PGRST301 to AuthenticationError', () => {
-    const error = handleSupabaseError({ code: 'PGRST301' });
-    expect(error).toBeInstanceOf(AuthenticationError);
-  });
-
-  it('maps 23505 to ConflictError', () => {
-    const error = handleSupabaseError({ code: '23505' });
-    expect(error).toBeInstanceOf(ConflictError);
-  });
-
-  it('maps 23503 to ValidationError', () => {
-    const error = handleSupabaseError({ code: '23503' });
-    expect(error).toBeInstanceOf(ValidationError);
-  });
-
-  it('maps PGRST116 to NotFoundError', () => {
-    const error = handleSupabaseError({
-      code: 'PGRST116',
-      message: 'JSON object requested, multiple (or no) rows returned',
-    });
-    expect(error).toBeInstanceOf(NotFoundError);
-  });
-
-  it('maps 42501 to AuthorizationError', () => {
-    const error = handleSupabaseError({
-      code: '42501',
-      message: 'permission denied for table orders',
-    });
-    expect(error).toBeInstanceOf(AuthorizationError);
-  });
-
-  it('maps 23514 to ValidationError', () => {
-    const error = handleSupabaseError({
-      code: '23514',
-      message: 'new row violates check constraint',
-    });
-    expect(error).toBeInstanceOf(ValidationError);
-  });
-
-  it('maps status 404 to NotFoundError', () => {
-    const error = handleSupabaseError({ status: 404 });
-    expect(error).toBeInstanceOf(NotFoundError);
-  });
-
-  it('maps status 401 to AuthenticationError', () => {
-    const error = handleSupabaseError({ status: 401 });
-    expect(error).toBeInstanceOf(AuthenticationError);
-  });
-
-  it('maps status 403 to AuthorizationError', () => {
-    const error = handleSupabaseError({ status: 403 });
-    expect(error).toBeInstanceOf(AuthorizationError);
-  });
-
-  it('code takes priority over status when both are present', () => {
-    const error = handleSupabaseError({ code: '23505', status: 404 });
-    expect(error).toBeInstanceOf(ConflictError);
-  });
-
-  it('maps NETWORK_ERROR code to NetworkError', () => {
-    const error = handleSupabaseError({ code: 'NETWORK_ERROR' });
-    expect(error).toBeInstanceOf(NetworkError);
-  });
-
-  it('returns default AppError for null', () => {
-    const error = handleSupabaseError(null);
-    expect(error).toBeInstanceOf(AppError);
-    expect(error.code).toBe('UNKNOWN_ERROR');
-  });
-
-  it('returns default AppError for undefined', () => {
-    const error = handleSupabaseError(undefined);
-    expect(error).toBeInstanceOf(AppError);
-  });
-
-  it('returns default AppError for unknown error shape', () => {
-    const error = handleSupabaseError({ something: 'unknown' });
-    expect(error).toBeInstanceOf(AppError);
-    expect(error.statusCode).toBe(500);
   });
 });

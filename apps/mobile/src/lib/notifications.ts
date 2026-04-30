@@ -2,16 +2,64 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { seenRecently } from './event-dedup';
 
-// Configure notification behavior
+// Configure notification behavior. The dedup gate suppresses the foreground
+// sound when the same event already played via the realtime path within the
+// last 500ms. The banner still shows so the user has the visual cue.
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
+  handleNotification: async (notification) => {
+    const data = (notification.request.content.data ?? {}) as Record<string, unknown>;
+    const orderId = typeof data.orderId === 'string' ? data.orderId : null;
+    const tableId = typeof data.tableId === 'string' ? data.tableId : null;
+    const type = typeof data.type === 'string' ? data.type : null;
+
+    let suppressSound = false;
+    if (type === 'new_order' && orderId && seenRecently(`order:${orderId}`)) {
+      suppressSound = true;
+    } else if (type === 'waiter_call' && tableId && seenRecently(`waiter_call:${tableId}`)) {
+      suppressSound = true;
+    }
+
+    return {
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: !suppressSound,
+      shouldSetBadge: true,
+    };
+  },
 });
+
+/**
+ * Wrap `requestPermissionsAsync()` with a 5s timeout. On rare custom Android
+ * ROMs the dialog hangs and blocks app startup; the timeout treats the
+ * unanswered prompt as `'undetermined'` so boot continues. The next AppState
+ * `active` event in `usePushTokenSync` retries — by then the system dialog
+ * has usually resolved one way or the other.
+ */
+const PERMISSION_TIMEOUT_MS = 5_000;
+
+export async function requestPermissionsWithTimeout(
+  timeoutMs: number = PERMISSION_TIMEOUT_MS,
+): Promise<{ status: Notifications.PermissionStatus }> {
+  type PermResult = { status: Notifications.PermissionStatus };
+  const undetermined: PermResult = {
+    status: 'undetermined' as Notifications.PermissionStatus,
+  };
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<PermResult>((resolve) => {
+    timer = setTimeout(() => resolve(undetermined), timeoutMs);
+  });
+  try {
+    const result = (await Promise.race([
+      Notifications.requestPermissionsAsync(),
+      timeoutPromise,
+    ])) as PermResult;
+    return result;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 export async function registerForPushNotifications() {
   if (!Device.isDevice) {
@@ -22,7 +70,7 @@ export async function registerForPushNotifications() {
   let finalStatus = existingStatus;
 
   if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
+    const { status } = await requestPermissionsWithTimeout();
     finalStatus = status;
   }
 

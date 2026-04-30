@@ -7,7 +7,7 @@ import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KitchenOrderCard } from '@/components/kitchen/KitchenOrderCard';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
+import { useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks/local';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { BRAND_PRIMARY, COLORS, TYPOGRAPHY } from '@/theme';
 

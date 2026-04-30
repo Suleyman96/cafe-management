@@ -5,7 +5,7 @@ import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
 import { jsonOk, jsonRateLimited } from '@/lib/api/response';
 import { validateBody } from '@/lib/api/validate';
 import { getSupabaseAdmin } from '@/lib/api/verify-admin';
-import { verifyStaff } from '@/lib/api/verify-staff';
+import { verifyPlan } from '@/lib/api/verify-plan';
 import { adjustStock } from '@/lib/services/stock-service';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +15,7 @@ const AdjustStockSchema = z.object({
   quantity_change: z.number().positive(),
   reason: z.string().optional(),
   performed_by: z.string().optional(),
+  client_request_id: z.string().uuid().optional(),
 });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -25,24 +26,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { success, resetAt } = await rateLimit('staff', ip);
     if (!success) return jsonRateLimited(resetAt);
 
-    const staffOrError = await verifyStaff(request);
-    if (staffOrError instanceof NextResponse) return staffOrError;
+    // Inventory is a pro-tier feature. The mobile/web UIs hide stock
+    // screens for free/standard tenants, but a modified client could call
+    // this route directly — verifyPlan is the authoritative server check.
+    const planContext = await verifyPlan(request, ['pro', 'business']);
+    if (planContext instanceof NextResponse) return planContext;
+    if (planContext instanceof Response) return planContext;
 
     const { data, error } = await validateBody(request, AdjustStockSchema);
     if (error) return error;
 
-    const stockItem = await adjustStock(getSupabaseAdmin(), {
+    const { stockItem, deduped } = await adjustStock(getSupabaseAdmin(), {
       stockItemId,
       data: {
         movement_type: data.movement_type,
         quantity_change: data.quantity_change,
         reason: data.reason || '',
-        performed_by: data.performed_by || staffOrError.id,
+        performed_by: data.performed_by || planContext.staff.id,
+        client_request_id: data.client_request_id,
       },
-      tenantId: staffOrError.tenant_id,
+      tenantId: planContext.staff.tenant_id,
     });
 
-    return jsonOk({ stockItem });
+    return jsonOk({ stockItem }, deduped ? 200 : 201);
   } catch (err) {
     return handleRouteError(err);
   }

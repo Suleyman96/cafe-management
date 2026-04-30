@@ -1,6 +1,6 @@
-import { QUERY_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { QUERY_KEYS } from '../keys';
 import { useDb } from '../provider';
 import type { MutationCallbacks } from './types';
 

@@ -9,13 +9,8 @@ import { RefreshControl, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TableCard } from '@/components/tables/TableCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
-import {
-  useCleanupEmptyOrders,
-  useCurrencySymbol,
-  useOrders,
-  useTables,
-  useWaiterCalls,
-} from '@/hooks';
+import { useCurrencySymbol, useOrders, useTables, useWaiterCalls } from '@/hooks/local';
+import { useCleanupEmptyOrders } from '@/hooks/shared';
 import type { TablesStackParamList } from '@/types';
 
 type Nav = StackNavigationProp<TablesStackParamList, 'TablesList'>;

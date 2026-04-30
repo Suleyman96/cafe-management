@@ -2,15 +2,11 @@
  * Orders wrapper module
  */
 
-import { handleSupabaseError, isOrder, isOrderItem, isOrderItemArray } from '@gustri/core';
-import type {
-  OrderInsert,
-  OrderItemInsert,
-  OrderItemRow,
-  OrderRow,
-  PaginatedResult,
-  WrapperContext,
-} from './types';
+import { isOrder } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
+import { dedupeInsert } from './_dedupe';
+import { rpc } from './rpc-typed';
+import type { OrderInsert, OrderRow, PaginatedResult, WrapperContext } from './types';
 
 /**
  * The orders_decrypted view adds decrypted_* columns alongside the raw
@@ -204,17 +200,34 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     },
 
     create: async (orderData: OrderInsert) => {
-      const { data, error } = await ctx.anyClient
-        .from('orders')
-        .insert(orderData)
-        .select()
-        .single();
+      const data = await dedupeInsert<unknown>(orderData.client_request_id, {
+        insert: () => ctx.anyClient.from('orders').insert(orderData).select().single(),
+        refetch: () =>
+          ctx.anyClient
+            .from('orders')
+            .select()
+            .eq('client_request_id', orderData.client_request_id ?? '')
+            .single(),
+      });
 
-      if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
       return data as OrderRow;
     },
 
+    /**
+     * Advance an order's lifecycle status.
+     *
+     * Enforces two business rules that consumers MUST NOT replicate:
+     * - **`served` is dine-in only.** Delivery orders use `out_for_delivery`
+     *   → `delivered`; takeout orders go `ready` → `closed` after payment.
+     *   Throws if `served` is set on a delivery/takeout order.
+     * - **No advancing empty orders.** Statuses `preparing`, `ready`,
+     *   `served`, `out_for_delivery`, `delivered` require at least one
+     *   non-cancelled item. Throws otherwise.
+     *
+     * Validate at the call site if you need a friendlier UX (the thrown
+     * `AppError` is catchable but the message is operator-facing).
+     */
     updateStatus: async (id: string, status: OrderRow['status']) => {
       // Prevent "served" status on delivery and takeout orders
       if (status === 'served') {
@@ -379,6 +392,18 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       return data as OrderRow;
     },
 
+    /**
+     * Apply (or clear) a discount on an order.
+     *
+     * The `recalculate_on_discount_change` Postgres trigger fires on this
+     * update and rewrites `subtotal`/`tax`/`total` on the same row. Chaining
+     * `.select()` here causes PostgREST to fail with "Cannot coerce the
+     * result to a single JSON object", so the implementation does the
+     * update WITHOUT `.select()` and then refetches via `orders_decrypted`.
+     * This is intentional — do not "fix" by adding `.select()`.
+     *
+     * Authorization (who can apply discounts) is enforced by RLS, not here.
+     */
     applyDiscount: async (
       orderId: string,
       discount: {
@@ -388,8 +413,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         discount_applied_by: string;
       },
     ) => {
-      // Don't chain .select() — the recalculate_on_discount_change trigger
-      // modifies the same row, causing PostgREST "Cannot coerce" errors.
+      // Don't chain .select() — see JSDoc above.
       const { error } = await ctx.anyClient
         .from('orders')
         .update({
@@ -552,99 +576,21 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       return data as OrderRow;
     },
 
+    /**
+     * Bulk-cancel `new` / `pending_approval` orders older than `olderThanMinutes`
+     * with no non-cancelled items. Used to reap abandoned QR-flow carts.
+     *
+     * The RPC requires the caller to have role admin or owner; calls from
+     * other staff roles raise `Only admin or owner can clean up empty orders`.
+     */
     cleanupEmptyOrders: async (olderThanMinutes = 2) => {
-      const { data, error } = await ctx.anyClient.rpc('cleanup_empty_orders', {
+      const data = await rpc(ctx, 'cleanup_empty_orders', {
         p_older_than_minutes: olderThanMinutes,
       });
-
-      if (error) throw handleSupabaseError(error);
-      return (data || []).map((row: { cancelled_order_id: string }) => row.cancelled_order_id);
-    },
-  };
-}
-
-export function createOrderItemsWrapper(ctx: WrapperContext) {
-  return {
-    create: async (items: OrderItemInsert[]) => {
-      const { data, error } = await ctx.anyClient.from('order_items').insert(items).select();
-
-      if (error) throw handleSupabaseError(error);
-      const orderItems = data || [];
-      if (!isOrderItemArray(orderItems)) throw new Error('Invalid order items data');
-      return orderItems as OrderItemRow[];
-    },
-
-    updateStatus: async (id: string, status: OrderItemRow['status']) => {
-      const { data, error } = await ctx.anyClient
-        .from('order_items')
-        .update({ status })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw handleSupabaseError(error);
-      if (!isOrderItem(data)) throw new Error('Invalid order item data');
-      return data as OrderItemRow;
-    },
-
-    delete: async (id: string) => {
-      const { error } = await ctx.anyClient.from('order_items').delete().eq('id', id);
-
-      if (error) throw handleSupabaseError(error);
-    },
-
-    cancel: async (id: string, cancelQty?: number) => {
-      if (cancelQty !== undefined && cancelQty > 0) {
-        // Partial cancel: fetch current item, reduce quantity, or cancel if all
-        const { data: current, error: fetchError } = await ctx.anyClient
-          .from('order_items')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (fetchError) throw handleSupabaseError(fetchError);
-        if (!current) throw new Error('Order item not found');
-        const currentItem = current as OrderItemRow;
-
-        if (cancelQty >= currentItem.quantity) {
-          // Cancel entire item
-          const { data, error } = await ctx.anyClient
-            .from('order_items')
-            .update({ status: 'cancelled' })
-            .eq('id', id)
-            .select()
-            .single();
-          if (error) throw handleSupabaseError(error);
-          if (!isOrderItem(data)) throw new Error('Invalid order item data');
-          return data as OrderItemRow;
-        }
-
-        // Reduce quantity
-        const { data, error } = await ctx.anyClient
-          .from('order_items')
-          .update({ quantity: currentItem.quantity - cancelQty })
-          .eq('id', id)
-          .select()
-          .single();
-        if (error) throw handleSupabaseError(error);
-        if (!isOrderItem(data)) throw new Error('Invalid order item data');
-        return data as OrderItemRow;
-      }
-
-      // Cancel entire item (no quantity specified)
-      const { data, error } = await ctx.anyClient
-        .from('order_items')
-        .update({ status: 'cancelled' })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw handleSupabaseError(error);
-      if (!isOrderItem(data)) throw new Error('Invalid order item data');
-      return data as OrderItemRow;
+      const rows = (data ?? []) as unknown as Array<{ cancelled_order_id: string }>;
+      return rows.map((row) => row.cancelled_order_id);
     },
   };
 }
 
 export type OrdersWrapper = ReturnType<typeof createOrdersWrapper>;
-export type OrderItemsWrapper = ReturnType<typeof createOrderItemsWrapper>;

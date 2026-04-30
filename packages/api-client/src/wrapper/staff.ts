@@ -2,7 +2,8 @@
  * Staff wrapper module
  */
 
-import { handleSupabaseError, isStaff, isStaffArray } from '@gustri/core';
+import { isStaff, isStaffArray } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
 import type { StaffInsert, StaffUpdate, WrapperContext } from './types';
 
 export function createStaffWrapper(ctx: WrapperContext) {
@@ -96,15 +97,6 @@ export function createStaffWrapper(ctx: WrapperContext) {
       const waiters = data || [];
       if (!isStaffArray(waiters)) throw new Error('Invalid staff data');
       return waiters;
-    },
-
-    updatePushToken: async (staffId: string, pushToken: string | null) => {
-      const { error } = await ctx.anyClient
-        .from('staff')
-        .update({ push_token: pushToken })
-        .eq('id', staffId);
-
-      if (error) throw handleSupabaseError(error);
     },
 
     updateLastLogin: async (staffId: string) => {

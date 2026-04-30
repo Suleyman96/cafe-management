@@ -16,6 +16,7 @@ const CreateRefundSchema = z.object({
   processed_by: z.string().uuid(),
   order_item_ids: z.array(z.string().uuid()).optional().nullable(),
   notes: z.string().optional().nullable(),
+  client_request_id: z.string().uuid().optional(),
 });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -32,13 +33,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { data, error } = await validateBody(request, CreateRefundSchema);
     if (error) return error;
 
-    const refund = await createRefund(getSupabaseAdmin(), {
+    const { refund, deduped } = await createRefund(getSupabaseAdmin(), {
       orderId,
       refundData: data,
       tenantId: adminOrError.tenant_id,
     });
 
-    return jsonOk({ refund }, 201);
+    return jsonOk({ refund }, deduped ? 200 : 201);
   } catch (err) {
     return handleRouteError(err);
   }

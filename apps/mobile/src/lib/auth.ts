@@ -1,9 +1,12 @@
 import * as Sentry from '@sentry/react-native';
-import { clearPushTokenSyncCache } from '@/hooks/use-push-token-sync';
+import { clearPushTokenSyncCache, readLastSyncedExpoToken } from '@/hooks/use-push-token-sync';
 import { useAuthStore } from '@/store/auth-store';
 import type { Staff } from '@/types';
+import { clearLastActiveAt } from './last-active-at';
+import { drainPendingRevokes, enqueuePendingRevoke } from './pending-revokes';
 import { queryClient } from './query-client';
-import { asyncStoragePersister } from './query-persister';
+import { asyncStoragePersister, clearEncryptedQueryCache } from './query-persister';
+import { clearSessionStamp } from './session-stamp';
 import { db, supabase } from './supabase';
 
 export interface LoginCredentials {
@@ -40,22 +43,50 @@ export async function login({ email, password }: LoginCredentials) {
  * `onAuthStateChange` when Supabase notifies us of a server-side sign-out
  * (token expiry, admin revocation, etc.) so we clean up locally without
  * recursing into supabase.auth.signOut.
+ *
+ * Awaits every step (cancel in-flight queries, clear cache, remove the
+ * persister blob, clear the push-token dedup cache, clear the session
+ * stamp, reset the auth store). Callers — most importantly the auth gate
+ * in `RootNavigator` — rely on `await cleanupClientState()` resolving
+ * before the navigator flips `staff = null`, otherwise a paused mutation
+ * could replay under the next user's session before its cache entry has
+ * been wiped. Flips `isLoading: true` for the duration so the navigator
+ * shows the splash drain loader instead of a half-cleared previous tenant.
  */
 export async function cleanupClientState(): Promise<void> {
-  const channels = supabase.getChannels();
-  for (const channel of channels) {
-    supabase.removeChannel(channel);
-  }
-  queryClient.clear();
+  useAuthStore.getState().setIsLoading(true);
   try {
-    await asyncStoragePersister.removeClient();
-  } catch {
-    // Persister cleanup is best-effort; AsyncStorage failures shouldn't block logout.
+    const channels = supabase.getChannels();
+    for (const channel of channels) {
+      supabase.removeChannel(channel);
+    }
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    try {
+      await asyncStoragePersister.removeClient();
+    } catch {
+      // Persister cleanup is best-effort; AsyncStorage failures shouldn't block logout.
+    }
+    // Wipe the encrypted MMKV instance entirely (not just the React Query
+    // blob) so any throttled-write debris or unrelated keys can't outlive
+    // the session. Pairs with `removeClient()` above — that drops the
+    // persisted client key; this drops everything else.
+    clearEncryptedQueryCache();
+    // Drop the push-token dedup cache so the next user re-syncs immediately
+    // rather than skipping on a stale composite from the previous session.
+    clearPushTokenSyncCache();
+    clearSessionStamp();
+    clearLastActiveAt();
+    // `reset()` clears the persisted SecureStore snapshot too — without that,
+    // the next cold launch would hydrate the prior tenant before getCurrentUser()
+    // resolves, briefly painting the authed stack for someone who is logged out.
+    useAuthStore.getState().reset();
+  } catch (err) {
+    // Ensure the drain gate releases even if a step throws — the user is
+    // still effectively logged out locally.
+    useAuthStore.getState().reset();
+    throw err;
   }
-  // Drop the push-token dedup cache so the next user re-syncs immediately
-  // rather than skipping on a stale composite from the previous session.
-  clearPushTokenSyncCache();
-  useAuthStore.getState().clearAuth();
 }
 
 export type LogoutReason = 'user' | 'inactivity' | 'auth-change';
@@ -71,11 +102,24 @@ export type LogoutReason = 'user' | 'inactivity' | 'auth-change';
 export async function forceLogout(reason: LogoutReason = 'user'): Promise<void> {
   Sentry.addBreadcrumb({ category: 'auth', message: `forceLogout: ${reason}` });
 
-  // Best-effort push-token clear — read staff.id before clearing the store.
+  // Enqueue a server-side revoke into the persistent queue, then opportun-
+  // istically drain it. Online: drain succeeds, queue is empty. Offline:
+  // drain fails, the entry stays for the next online drain (App.tsx boot
+  // hook). Without the queue, an offline logout — the common end-of-shift
+  // case on flaky cafe Wi-Fi — would leave the prior tenant's token bound
+  // server-side, and the next user on the device would receive their
+  // notifications.
   const staffId = useAuthStore.getState().staff?.id;
-  if (staffId) {
-    db.staff.updatePushToken(staffId, null).catch((err) => {
-      Sentry.captureException(err, { tags: { area: 'logout.clearPushToken', reason } });
+  const expoToken = staffId ? readLastSyncedExpoToken(staffId) : null;
+  if (expoToken) {
+    try {
+      await enqueuePendingRevoke(expoToken);
+    } catch (err) {
+      Sentry.captureException(err, { tags: { area: 'logout.enqueueRevoke', reason } });
+    }
+    // Fire-and-forget online attempt — actual retry lives in the queue.
+    drainPendingRevokes().catch((err) => {
+      Sentry.captureException(err, { tags: { area: 'logout.drainRevokes', reason } });
     });
   }
 

@@ -1,5 +1,6 @@
 import type { TaskInsert, TaskUpdate } from '@gustri/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { getOrCreateClientRequestId } from '../idempotency';
 import { invalidateTasks } from '../invalidation';
 import { useDb } from '../provider';
 import type { MutationCallbacks } from './types';
@@ -8,6 +9,9 @@ export function useCreateTask(options?: MutationCallbacks) {
   const db = useDb();
   const queryClient = useQueryClient();
   return useMutation({
+    onMutate: (data: TaskInsert) => {
+      data.client_request_id = getOrCreateClientRequestId(data.client_request_id);
+    },
     mutationFn: async (data: TaskInsert) => {
       const task = await db.tasks.create(data);
       if (data.is_recurring) {

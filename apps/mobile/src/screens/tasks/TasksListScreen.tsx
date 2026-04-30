@@ -15,14 +15,12 @@ import {
   useMarkTaskCancelled,
   useMarkTaskCompleted,
   useMarkTaskInProgress,
-  useMyTasks,
   useOpenTasksCount,
   useOverdueTasksCount,
   useRecurringTemplates,
   useTasks,
-  useTodaysTasks,
   useUpdateTask,
-} from '@/hooks';
+} from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { getLocalDateString } from '@/lib/date-utils';
 import { useAuthStore } from '@/store/auth-store';
@@ -65,17 +63,24 @@ export default function TasksListScreen() {
     [t, tCommon],
   );
 
-  const { data: todayTasks, isLoading: loadingToday, refetch: refetchToday } = useTodaysTasks();
+  // Single server-side query — `scope` is forwarded to the wrapper so 'today'
+  // and 'mine' filter at the database, not in JavaScript. Pre-M12 we issued
+  // 3 concurrent fetches and discarded most of the result client-side.
+  const taskScope = tab === 'today' ? 'today' : tab === 'my' ? 'mine' : 'all';
   const {
-    data: allTasks,
-    isLoading: loadingAll,
-    refetch: refetchAll,
+    data: scopedTasks,
+    isLoading: loadingScoped,
+    refetch: refetchScoped,
   } = useTasks({
+    scope: taskScope,
+    staffId: tab === 'my' ? staff?.id : undefined,
     status: statusFilter || undefined,
     priority: priorityFilter || undefined,
     isTemplate: false,
   });
-  const { data: myTasks, isLoading: loadingMine, refetch: refetchMine } = useMyTasks(staff?.id);
+  // Today's tasks drive the "completed today" stat — keep a small dedicated
+  // query so the badge stays fresh even when the user is on a different tab.
+  const { data: todayTasks } = useTasks({ scope: 'today', isTemplate: false });
   const {
     data: templates,
     isLoading: loadingTemplates,
@@ -102,45 +107,12 @@ export default function TasksListScreen() {
   }, [generateRecurring.mutateAsync]);
 
   const currentData = useMemo(() => {
-    switch (tab) {
-      case 'today':
-        return todayTasks || [];
-      case 'all':
-        return allTasks || [];
-      case 'my': {
-        let filtered = myTasks || [];
-        if (statusFilter) {
-          filtered = filtered.filter((t) => t.status === statusFilter);
-        }
-        if (priorityFilter) {
-          filtered = filtered.filter((t) => t.priority === priorityFilter);
-        }
-        return filtered;
-      }
-      case 'templates':
-        return templates || [];
-      default:
-        return [];
-    }
-  }, [tab, todayTasks, allTasks, myTasks, templates, statusFilter, priorityFilter]);
+    if (tab === 'templates') return templates || [];
+    return scopedTasks || [];
+  }, [tab, scopedTasks, templates]);
 
-  const isLoading =
-    tab === 'today'
-      ? loadingToday
-      : tab === 'all'
-        ? loadingAll
-        : tab === 'my'
-          ? loadingMine
-          : loadingTemplates;
-
-  const refetch =
-    tab === 'today'
-      ? refetchToday
-      : tab === 'all'
-        ? refetchAll
-        : tab === 'my'
-          ? refetchMine
-          : refetchTemplates;
+  const isLoading = tab === 'templates' ? loadingTemplates : loadingScoped;
+  const refetch = tab === 'templates' ? refetchTemplates : refetchScoped;
 
   const completedToday = useMemo(
     () => (todayTasks || []).filter((t) => t.status === 'completed').length,

@@ -2,23 +2,43 @@
  * Payments wrapper module
  */
 
-import { handleSupabaseError, isOrderPayment } from '@gustri/core';
+import { isOrderPayment } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
+import { dedupeInsert } from './_dedupe';
 import type { OrderPaymentInsert, WrapperContext } from './types';
 
 export function createPaymentsWrapper(ctx: WrapperContext) {
   return {
+    /**
+     * Record a single payment against an order.
+     *
+     * For multi-payment / split-bill flows, prefer the server route
+     * `POST /api/v1/orders/:id/payments` (used by `useCreatePayment`),
+     * which runs the order-status update + financial-audit-log write in
+     * one transaction. This wrapper method is suitable for single-payment
+     * paths (full-bill cash/card) where atomicity isn't critical.
+     *
+     * The `update_order_payment_status` trigger flips `orders.payment_status`
+     * after this insert; clients should refetch the order to see it.
+     */
     create: async (paymentData: OrderPaymentInsert) => {
-      const { data, error } = await ctx.anyClient
-        .from('order_payments')
-        .insert(paymentData)
-        .select(`
+      const selectShape = `
           id, tenant_id, order_id, received_by, payment_type,
           amount, tip_amount, payment_method, order_item_ids, notes, created_at,
           received_by_staff:staff!order_payments_received_by_fkey(full_name, role)
-        `)
-        .single();
+        `;
 
-      if (error) throw handleSupabaseError(error);
+      const data = await dedupeInsert<unknown>(paymentData.client_request_id, {
+        insert: () =>
+          ctx.anyClient.from('order_payments').insert(paymentData).select(selectShape).single(),
+        refetch: () =>
+          ctx.anyClient
+            .from('order_payments')
+            .select(selectShape)
+            .eq('client_request_id', paymentData.client_request_id ?? '')
+            .single(),
+      });
+
       if (!isOrderPayment(data)) throw new Error('Invalid payment data');
       return data;
     },

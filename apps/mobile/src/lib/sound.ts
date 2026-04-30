@@ -19,6 +19,35 @@ let newOrderPlayer: AudioPlayer | null = null;
 let waiterCallPlayer: AudioPlayer | null = null;
 let soundsAvailable = false;
 
+/**
+ * Serialize and rate-limit sound playback per player. Five orders inserted
+ * within the same render tick must produce ONE audible cue, not five
+ * overlapping ones. The mutex coalesces concurrent calls; the time floor
+ * drops calls that arrive within MIN_GAP_MS of the previous completion.
+ */
+const MIN_GAP_MS = 300;
+type Channel = { inFlight: Promise<void> | null; lastPlayedAt: number };
+const channels = new Map<AudioPlayer, Channel>();
+
+function getChannel(player: AudioPlayer): Channel {
+  let ch = channels.get(player);
+  if (!ch) {
+    ch = { inFlight: null, lastPlayedAt: 0 };
+    channels.set(player, ch);
+  }
+  return ch;
+}
+
+export function __resetSoundChannelsForTests(): void {
+  channels.clear();
+}
+
+export function __setPlayersForTests(p: AudioPlayer | null): void {
+  newOrderPlayer = p;
+  waiterCallPlayer = p;
+  soundsAvailable = p !== null;
+}
+
 export async function setupSounds() {
   try {
     await setAudioModeAsync({
@@ -45,24 +74,38 @@ async function replay(player: AudioPlayer) {
   player.play();
 }
 
-export async function playNewOrderSound() {
-  try {
-    if (soundsAvailable && newOrderPlayer) {
-      await replay(newOrderPlayer);
+async function playOnce(player: AudioPlayer): Promise<void> {
+  const ch = getChannel(player);
+  // Mutex: while a play is in flight, return that same promise so concurrent
+  // callers coalesce. The .finally below clears it once the play settles.
+  if (ch.inFlight) return ch.inFlight;
+  // Time floor: drop calls that arrive too soon after the last completion.
+  const now = Date.now();
+  if (ch.lastPlayedAt !== 0 && now - ch.lastPlayedAt < MIN_GAP_MS) return;
+
+  const run = (async () => {
+    try {
+      await replay(player);
+    } catch {
+      // Sound is non-critical — silently fail.
     }
-  } catch {
-    // Sound is non-critical — silently fail.
-  }
+  })().finally(() => {
+    ch.lastPlayedAt = Date.now();
+    ch.inFlight = null;
+  });
+
+  ch.inFlight = run;
+  return run;
+}
+
+export async function playNewOrderSound() {
+  if (!soundsAvailable || !newOrderPlayer) return;
+  await playOnce(newOrderPlayer);
 }
 
 export async function playWaiterCallSound() {
-  try {
-    if (soundsAvailable && waiterCallPlayer) {
-      await replay(waiterCallPlayer);
-    }
-  } catch {
-    // Sound is non-critical — silently fail.
-  }
+  if (!soundsAvailable || !waiterCallPlayer) return;
+  await playOnce(waiterCallPlayer);
 }
 
 export async function cleanupSounds() {
@@ -85,4 +128,5 @@ export async function cleanupSounds() {
   newOrderPlayer = null;
   waiterCallPlayer = null;
   soundsAvailable = false;
+  channels.clear();
 }

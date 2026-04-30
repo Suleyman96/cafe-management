@@ -37,6 +37,11 @@ const limiters = redis
         limiter: Ratelimit.slidingWindow(5, '300 s'),
         prefix: 'rl:password-reset',
       }),
+      'push-token-revoke': new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(10, '60 s'),
+        prefix: 'rl:push-token-revoke',
+      }),
     }
   : null;
 
@@ -45,7 +50,8 @@ export type RateLimitCategory =
   | 'payment'
   | 'discount'
   | 'staff'
-  | 'password-reset';
+  | 'password-reset'
+  | 'push-token-revoke';
 
 export async function rateLimit(
   category: RateLimitCategory,

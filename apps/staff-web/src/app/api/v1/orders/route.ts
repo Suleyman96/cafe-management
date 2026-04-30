@@ -28,6 +28,7 @@ const CreateOrderSchema = z.object({
   tax: z.number().optional().nullable(),
   total: z.number().optional().nullable(),
   status: z.string().optional(),
+  client_request_id: z.string().uuid().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -42,12 +43,12 @@ export async function POST(request: NextRequest) {
     const { data, error } = await validateBody(request, CreateOrderSchema);
     if (error) return error;
 
-    const order = await createOrder(getSupabaseAdmin(), {
+    const { order, deduped } = await createOrder(getSupabaseAdmin(), {
       orderData: data,
       tenantId: staffOrError.tenant_id,
     });
 
-    return jsonOk({ order }, 201);
+    return jsonOk({ order }, deduped ? 200 : 201);
   } catch (err) {
     return handleRouteError(err);
   }

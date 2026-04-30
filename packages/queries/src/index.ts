@@ -84,6 +84,7 @@ export {
   useWasteMonthlySummary,
 } from './hooks/use-waste';
 // Invalidation helpers
+export type { OrderTransition } from './invalidation';
 export {
   invalidateDeliveryOrders,
   invalidateExpenses,
@@ -101,6 +102,10 @@ export {
   refetchTasks,
   refetchWaste,
 } from './invalidation';
+// Centralized query keys
+export { QUERY_KEYS } from './keys';
+// Centralized mutation keys (mobile persister + web mutations)
+export { MUTATION_KEYS, type MutationKey, type MutationKeyName } from './mutation-keys';
 // Mutation types
 export type { MutationCallbacks } from './mutations/types';
 export { DbProvider, useDb } from './provider';

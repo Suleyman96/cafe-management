@@ -1,9 +1,10 @@
-import { QUERY_KEYS } from '@gustri/core';
 import type { Table } from '@gustri/database';
 import { WaiterCallsRealtimeInsertSchema, WaiterCallsRealtimeUpdateSchema } from '@gustri/database';
+import { QUERY_KEYS } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef } from 'react';
+import { markEvent } from '@/lib/event-dedup';
 import { hapticEvent, hapticSuccess } from '@/lib/haptics';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { notifyWaiterCall } from '@/lib/notifications';
@@ -33,10 +34,17 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
         event: 'INSERT' as const,
         queryKeys: [[QUERY_KEYS.WAITER_CALLS]],
         onPayload: async (newRecord: Record<string, unknown>) => {
+          const parsed = WaiterCallsRealtimeInsertSchema.safeParse(newRecord);
+          if (parsed.success) {
+            // Mark by table_id so the push handler — whose payload carries
+            // tableId, not callId — can match. Mark BEFORE playing so a
+            // near-simultaneous push suppresses its own sound via seenRecently.
+            markEvent(`waiter_call:${parsed.data.table_id}`);
+          }
+
           hapticEvent();
           await playWaiterCallSound();
 
-          const parsed = WaiterCallsRealtimeInsertSchema.safeParse(newRecord);
           if (!parsed.success) {
             Sentry.captureException(parsed.error, {
               tags: { area: 'realtime.waiter_calls.insert' },

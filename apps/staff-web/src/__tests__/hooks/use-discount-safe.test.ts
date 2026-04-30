@@ -7,7 +7,7 @@
  *    (missing remaining-balance invalidation was a bug that caused stale payment data)
  */
 
-import { QUERY_KEYS } from '@gustri/core';
+import { QUERY_KEYS } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import { useApplyDiscount } from '@/hooks/use-discount-safe';
 import { apiRoutes } from '@/lib/api-routes';

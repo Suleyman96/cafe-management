@@ -1,4 +1,4 @@
-import { handleSupabaseError } from '@gustri/core';
+import { rpc } from './rpc-typed';
 import type { WrapperContext } from './types';
 
 export interface RevenueSummaryRow {
@@ -49,60 +49,33 @@ export interface StaffPerformanceRow {
 
 export function createReportsWrapper(ctx: WrapperContext) {
   return {
-    getRevenueSummary: async (tenantId: string, from: string, to: string) => {
-      const { data, error } = await ctx.anyClient.rpc('get_revenue_summary', {
-        p_tenant_id: tenantId,
-        p_from: from,
-        p_to: to,
-      });
-
-      if (error) throw handleSupabaseError(error);
-      return (data || []) as RevenueSummaryRow[];
+    getRevenueSummary: async (from: string, to: string) => {
+      const data = await rpc(ctx, 'get_revenue_summary', { p_from: from, p_to: to });
+      return (data || []) as unknown as RevenueSummaryRow[];
     },
 
-    getTopSoldItems: async (tenantId: string, from: string, to: string, limit?: number) => {
-      const { data, error } = await ctx.anyClient.rpc('get_top_sold_items', {
-        p_tenant_id: tenantId,
+    getTopSoldItems: async (from: string, to: string, limit?: number) => {
+      const data = await rpc(ctx, 'get_top_sold_items', {
         p_from: from,
         p_to: to,
         p_limit: limit ?? 20,
       });
-
-      if (error) throw handleSupabaseError(error);
-      return (data || []) as TopSoldItemRow[];
+      return (data || []) as unknown as TopSoldItemRow[];
     },
 
-    getExpenseSummary: async (tenantId: string, from: string, to: string) => {
-      const { data, error } = await ctx.anyClient.rpc('get_expense_summary', {
-        p_tenant_id: tenantId,
-        p_from: from,
-        p_to: to,
-      });
-
-      if (error) throw handleSupabaseError(error);
-      return (data || []) as ExpenseSummaryRow[];
+    getExpenseSummary: async (from: string, to: string) => {
+      const data = await rpc(ctx, 'get_expense_summary', { p_from: from, p_to: to });
+      return (data || []) as unknown as ExpenseSummaryRow[];
     },
 
-    getWasteSummary: async (tenantId: string, from: string, to: string) => {
-      const { data, error } = await ctx.anyClient.rpc('get_waste_summary', {
-        p_tenant_id: tenantId,
-        p_from: from,
-        p_to: to,
-      });
-
-      if (error) throw handleSupabaseError(error);
-      return (data || []) as WasteSummaryRow[];
+    getWasteSummary: async (from: string, to: string) => {
+      const data = await rpc(ctx, 'get_waste_summary', { p_from: from, p_to: to });
+      return (data || []) as unknown as WasteSummaryRow[];
     },
 
-    getStaffPerformance: async (tenantId: string, from: string, to: string) => {
-      const { data, error } = await ctx.anyClient.rpc('get_staff_performance', {
-        p_tenant_id: tenantId,
-        p_from: from,
-        p_to: to,
-      });
-
-      if (error) throw handleSupabaseError(error);
-      return (data || []) as StaffPerformanceRow[];
+    getStaffPerformance: async (from: string, to: string) => {
+      const data = await rpc(ctx, 'get_staff_performance', { p_from: from, p_to: to });
+      return (data || []) as unknown as StaffPerformanceRow[];
     },
   };
 }

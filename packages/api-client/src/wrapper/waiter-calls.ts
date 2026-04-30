@@ -2,7 +2,9 @@
  * Waiter calls wrapper module
  */
 
-import { handleSupabaseError, isWaiterCall } from '@gustri/core';
+import { isWaiterCall } from '@gustri/core';
+import { handleSupabaseError } from '../errors';
+import { dedupeInsert } from './_dedupe';
 import type { WaiterCallRow, WrapperContext } from './types';
 
 export function createWaiterCallsWrapper(ctx: WrapperContext) {
@@ -14,17 +16,20 @@ export function createWaiterCallsWrapper(ctx: WrapperContext) {
       reason?: string;
       priority?: 'low' | 'normal' | 'high' | 'urgent';
       status?: 'pending' | 'acknowledged' | 'resolved';
+      client_request_id?: string | null;
     }) => {
-      const { data: result, error } = await ctx.anyClient
-        .from('waiter_calls')
-        .insert({
-          ...data,
-          status: data.status || 'pending',
-        })
-        .select()
-        .single();
+      const insertRow = { ...data, status: data.status || 'pending' };
 
-      if (error) throw handleSupabaseError(error);
+      const result = await dedupeInsert<unknown>(data.client_request_id, {
+        insert: () => ctx.anyClient.from('waiter_calls').insert(insertRow).select().single(),
+        refetch: () =>
+          ctx.anyClient
+            .from('waiter_calls')
+            .select()
+            .eq('client_request_id', data.client_request_id ?? '')
+            .single(),
+      });
+
       if (!isWaiterCall(result)) throw new Error('Invalid waiter call data');
       return result as WaiterCallRow;
     },

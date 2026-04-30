@@ -2,9 +2,10 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
 import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
-import { jsonOk, jsonRateLimited } from '@/lib/api/response';
+import { jsonError, jsonOk, jsonRateLimited } from '@/lib/api/response';
 import { validateBody } from '@/lib/api/validate';
 import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
+import { requirePlanAtLeast } from '@/lib/api/verify-plan';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,21 @@ export async function PUT(request: NextRequest) {
 
     const { data, error } = await validateBody(request, UpdateSettingsSchema);
     if (error) return error;
+
+    // Custom branding (logo + primary color) is gated to `standard+` per
+    // PLAN_LIMITS[*].customBranding. The rest of the settings payload is
+    // open to all plans, so check is scoped to whether the body actually
+    // attempts to set those fields rather than rejecting the whole route
+    // for free-tier admins.
+    const touchesBranding =
+      data.brand_primary_color !== undefined || data.brand_logo_url !== undefined;
+    if (touchesBranding) {
+      try {
+        await requirePlanAtLeast(adminOrError.tenant_id, 'standard');
+      } catch {
+        return jsonError('plan_required', 403);
+      }
+    }
 
     const supabaseAdmin = getSupabaseAdmin();
 

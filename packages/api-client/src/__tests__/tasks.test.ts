@@ -57,6 +57,26 @@ describe('TasksWrapper', () => {
     expect(result).toEqual([validTask]);
   });
 
+  it("findAll throws when scope='mine' is requested without staffId", async () => {
+    const ctx = createMockContext({
+      responses: { tasks: { data: [], error: null } },
+    });
+    const tasks = createTasksWrapper(ctx);
+    await expect(tasks.findAll({ scope: 'mine' })).rejects.toThrow(/staffId/);
+  });
+
+  it('findAll resolves cleanly for each scope when given valid args', async () => {
+    const ctx = createMockContext({
+      responses: { tasks: { data: [validTask], error: null } },
+    });
+    const tasks = createTasksWrapper(ctx);
+    await expect(tasks.findAll({ scope: 'all' })).resolves.toEqual([validTask]);
+    await expect(tasks.findAll({ scope: 'today' })).resolves.toEqual([validTask]);
+    await expect(
+      tasks.findAll({ scope: 'mine', staffId: validTask.assigned_to! }),
+    ).resolves.toEqual([validTask]);
+  });
+
   it('findById returns single task', async () => {
     const ctx = createMockContext({
       responses: {

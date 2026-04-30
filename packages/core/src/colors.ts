@@ -2,8 +2,8 @@
  * Shared Status Color Maps (hex pairs)
  *
  * Single source of truth for status badge colors across web and mobile.
- * Hex values correspond exactly to the Tailwind classes used in
- * getOrderStatusColor() / getRoleBadgeColor() in utils.ts.
+ * Hex values correspond to the Tailwind classes returned by
+ * getOrderStatusColor() / getRoleBadgeColor() in `@gustri/ui/badges`.
  */
 
 export type StatusColorPair = { bg: string; text: string };

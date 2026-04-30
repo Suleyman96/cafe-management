@@ -19,6 +19,7 @@ const AddItemsSchema = z.object({
         quantity: z.number().int().positive(),
         notes: z.string().optional().nullable(),
         tenant_id: z.string().uuid(),
+        client_request_id: z.string().uuid().optional(),
       }),
     )
     .min(1),

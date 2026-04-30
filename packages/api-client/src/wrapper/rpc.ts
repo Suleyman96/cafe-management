@@ -2,18 +2,14 @@
  * RPC functions wrapper module
  */
 
-import { handleSupabaseError } from '@gustri/core';
+import { rpc } from './rpc-typed';
 import type { WrapperContext } from './types';
 
 export function createRpcWrapper(ctx: WrapperContext) {
   return {
     getRemainingBalance: async (orderId: string): Promise<number> => {
-      const { data, error } = await ctx.anyClient.rpc('get_order_remaining_balance', {
-        order_uuid: orderId,
-      });
-
-      if (error) throw handleSupabaseError(error);
-      return (data as number) ?? 0;
+      const data = await rpc(ctx, 'get_order_remaining_balance', { order_uuid: orderId });
+      return data ?? 0;
     },
 
     transferTable: async (params: {
@@ -24,23 +20,19 @@ export function createRpcWrapper(ctx: WrapperContext) {
       staffId: string;
       reason?: string;
     }): Promise<boolean> => {
-      const { data, error } = await ctx.anyClient.rpc('transfer_table', {
+      const data = await rpc(ctx, 'transfer_table', {
         p_order_id: params.orderId,
         p_from_table_id: params.fromTableId,
         p_to_table_id: params.toTableId,
         p_staff_id: params.staffId,
         p_reason: params.reason,
       });
-
-      if (error) throw handleSupabaseError(error);
-      return (data as boolean) || false;
+      return data || false;
     },
 
     generateOrderNumber: async (): Promise<string> => {
-      const { data, error } = await ctx.anyClient.rpc('generate_order_number');
-
-      if (error) throw handleSupabaseError(error);
-      return (data as string) || '';
+      const data = await rpc(ctx, 'generate_order_number');
+      return data || '';
     },
 
     transferOrderItems: async (params: {
@@ -51,16 +43,14 @@ export function createRpcWrapper(ctx: WrapperContext) {
       staffId: string;
       reason?: string;
     }): Promise<string> => {
-      const { data, error } = await ctx.anyClient.rpc('transfer_order_items', {
+      const data = await rpc(ctx, 'transfer_order_items', {
         p_source_order_id: params.sourceOrderId,
         p_destination_table_id: params.destinationTableId,
         p_items: params.items,
         p_staff_id: params.staffId,
         p_reason: params.reason || null,
       });
-
-      if (error) throw handleSupabaseError(error);
-      return (data as string) || '';
+      return data || '';
     },
   };
 }

@@ -14,10 +14,9 @@ export {
   useUpdateTask,
 } from '@gustri/queries';
 
-// Local useMyTasks — accepts string | undefined (shared requires string)
-import { QUERY_KEYS } from '@gustri/core';
 import type { Task } from '@gustri/database';
-import { useDb } from '@gustri/queries';
+// Local useMyTasks — accepts string | undefined (shared requires string)
+import { QUERY_KEYS, useDb } from '@gustri/queries';
 import { useQuery } from '@tanstack/react-query';
 
 export function useMyTasks(staffId: string | undefined) {

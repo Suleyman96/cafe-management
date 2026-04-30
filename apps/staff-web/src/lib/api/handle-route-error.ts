@@ -1,3 +1,4 @@
+import { isAppError } from '@gustri/core';
 import * as Sentry from '@sentry/nextjs';
 import { jsonError } from './response';
 
@@ -7,6 +8,7 @@ import { jsonError } from './response';
  */
 const SAFE_ERRORS: Record<string, { message: string; status: number }> = {
   'plan allows': { message: 'Order limit reached for your plan', status: 403 },
+  plan_required: { message: 'plan_required', status: 403 },
   'exceeds remaining': { message: 'Payment amount exceeds remaining balance', status: 422 },
   'exceeds available': { message: 'Refund amount exceeds available balance', status: 422 },
   'order limit reached': { message: 'Monthly order limit reached for your plan', status: 403 },
@@ -19,6 +21,14 @@ const SAFE_ERRORS: Record<string, { message: string; status: number }> = {
  * 2. Reporting the real error to Sentry
  */
 export function handleRouteError(err: unknown) {
+  // Typed AppError subclasses (`AuthorizationError`, `ValidationError`, …)
+  // carry their own status + a user-facing message. Honor them before the
+  // legacy substring map below, which only exists for raw `new Error(...)`
+  // strings thrown from older service code.
+  if (isAppError(err)) {
+    return jsonError(err.message, err.statusCode);
+  }
+
   const raw = err instanceof Error ? err.message : String(err);
 
   for (const [pattern, response] of Object.entries(SAFE_ERRORS)) {

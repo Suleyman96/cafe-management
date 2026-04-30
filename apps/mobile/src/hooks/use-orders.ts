@@ -1,10 +1,10 @@
-import { QUERY_KEYS } from '@gustri/core';
 import type { Order, OrderItem, Table } from '@gustri/database';
 import { OrdersRealtimeInsertSchema, OrdersRealtimeUpdateSchema } from '@gustri/database';
-import { useDb } from '@gustri/queries';
+import { QUERY_KEYS, useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef } from 'react';
+import { markEvent } from '@/lib/event-dedup';
 import { hapticEvent } from '@/lib/haptics';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { notifyNewOrder } from '@/lib/notifications';
@@ -49,6 +49,12 @@ export function useUpdateOrderItemStatus() {
 
 // Read hooks with realtime subscriptions — kept local
 
+/**
+ * Wraps `@gustri/queries.useOrders` semantics with mobile-specific behavior:
+ * a Supabase realtime subscription on the `orders` table that plays a sound
+ * and posts a local push notification on INSERT, plus a fallback poll diff
+ * that fires the same side effects when realtime is degraded.
+ */
 export function useOrders(filters?: {
   status?: Order['status'];
   statuses?: Order['status'][];
@@ -74,10 +80,16 @@ export function useOrders(filters?: {
         event: 'INSERT' as const,
         queryKeys: [[QUERY_KEYS.ORDERS]],
         onPayload: async (newRecord: Record<string, unknown>) => {
+          const parsed = OrdersRealtimeInsertSchema.safeParse(newRecord);
+          if (parsed.success) {
+            // Mark BEFORE playing so a near-simultaneous push (which checks
+            // seenRecently in the foreground handler) suppresses its sound.
+            markEvent(`order:${parsed.data.id}`);
+          }
+
           hapticEvent();
           await playNewOrderSound();
 
-          const parsed = OrdersRealtimeInsertSchema.safeParse(newRecord);
           if (!parsed.success) {
             Sentry.captureException(parsed.error, {
               tags: { area: 'realtime.orders.insert' },
@@ -163,6 +175,11 @@ export function useOrders(filters?: {
   return query;
 }
 
+/**
+ * Mobile-local single-order read. Unlike `@gustri/queries.useOrder`, this
+ * variant doesn't gate on `enabled: !!orderId` because every call site
+ * routes via a stack-navigation param that's guaranteed non-empty.
+ */
 export function useOrder(orderId: string) {
   const db = useDb();
   return useQuery({

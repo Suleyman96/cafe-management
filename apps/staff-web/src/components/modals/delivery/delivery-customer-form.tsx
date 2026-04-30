@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { NumberInput } from '@gustri/ui';
+import { NumberInput } from '@gustri/ui-web';
 import { Map as MapIcon, MapPin, Phone, Search, StickyNote, Truck, User, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchDeliveryCustomers } from '@/hooks';

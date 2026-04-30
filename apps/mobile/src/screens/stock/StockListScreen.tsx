@@ -10,15 +10,17 @@ import { StockMovementModal } from '@/components/stock/StockMovementModal';
 import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
   useAdjustStock,
-  useCreateStockItem,
   useCurrencySymbol,
-  useDeleteStockItem,
-  useLowStockCount,
-  useStockItems,
   useStockMovements,
   useStockTotalValue,
   useUpdateStockItem,
-} from '@/hooks';
+} from '@/hooks/local';
+import {
+  useCreateStockItem,
+  useDeleteStockItem,
+  useLowStockCount,
+  useStockItems,
+} from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';

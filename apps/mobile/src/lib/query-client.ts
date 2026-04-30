@@ -1,4 +1,4 @@
-import { isAppError } from '@gustri/core';
+import { isAppError, OFFLINE_SYNC_WINDOW_MS } from '@gustri/core';
 import * as Sentry from '@sentry/react-native';
 import { MutationCache, QueryClient } from '@tanstack/react-query';
 import { showSnackbarGlobal } from '@/components/providers/SnackbarProvider';
@@ -22,11 +22,11 @@ const mutationCache = new MutationCache({
       tags.errorName = error.name;
     }
 
-    // Detect sync-replay failures — the device was offline within the last
-    // minute, so this mutation almost certainly came off the paused queue.
-    // Surface it differently so the user understands a queued change failed
-    // rather than something they just did.
-    const isSyncReplay = wasOfflineRecently(60_000);
+    // Detect sync-replay failures — the device was offline within
+    // OFFLINE_SYNC_WINDOW_MS, so this mutation almost certainly came off
+    // the paused queue. Surface it differently so the user understands a
+    // queued change failed rather than something they just did.
+    const isSyncReplay = wasOfflineRecently(OFFLINE_SYNC_WINDOW_MS);
     if (isSyncReplay) {
       tags.context = 'offline-sync-replay';
     }

@@ -19,6 +19,7 @@ const CreatePaymentSchema = z.object({
   tip_amount: z.number().min(0).optional().default(0),
   notes: z.string().optional().nullable(),
   item_ids: z.array(z.string().uuid()).optional().nullable(),
+  client_request_id: z.string().uuid().optional(),
 });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -35,13 +36,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { data, error } = await validateBody(request, CreatePaymentSchema);
     if (error) return error;
 
-    const payment = await createPayment(getSupabaseAdmin(), {
+    const { payment, deduped } = await createPayment(getSupabaseAdmin(), {
       orderId,
       paymentData: data,
       tenantId: staffOrError.tenant_id,
     });
 
-    return jsonOk({ payment }, 201);
+    return jsonOk({ payment }, deduped ? 200 : 201);
   } catch (err) {
     return handleRouteError(err);
   }

@@ -8,32 +8,39 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
 
-  // Get all active staff push tokens for this tenant
-  const { data: staff } = await supabase
-    .from('staff')
-    .select('push_token')
-    .eq('tenant_id', tenant_id)
-    .eq('is_active', true)
-    .not('push_token', 'is', null);
+  // Pull device tokens via the normalized table, scoped by the join to
+  // `staff` so a token can only be addressed under its current owner's
+  // tenant — even though `staff_push_tokens` already carries tenant_id,
+  // joining to `staff` defends against any future drift between the two
+  // (e.g. if a staff row is moved between tenants).
+  const { data: rows, error } = await supabase
+    .from('staff_push_tokens')
+    .select('expo_token, staff:staff!inner(id, tenant_id, is_active)')
+    .eq('staff.tenant_id', tenant_id)
+    .eq('staff.is_active', true);
 
-  if (!staff || staff.length === 0) {
+  if (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  if (!rows || rows.length === 0) {
     return new Response(JSON.stringify({ sent: 0 }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  // Send via Expo Push API
-  const messages = staff
-    .filter((s: { push_token: string | null }) => s.push_token)
-    .map((s: { push_token: string }) => ({
-      to: s.push_token,
-      title,
-      body,
-      data,
-      sound: 'default',
-      priority: 'high' as const,
-    }));
+  const messages = rows.map((r: { expo_token: string }) => ({
+    to: r.expo_token,
+    title,
+    body,
+    data,
+    sound: 'default',
+    priority: 'high' as const,
+  }));
 
   const response = await fetch('https://exp.host/--/api/v2/push/send', {
     method: 'POST',

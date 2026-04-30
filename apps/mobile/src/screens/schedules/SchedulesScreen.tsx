@@ -14,6 +14,7 @@ import { Button, Card, Chip, FAB, SegmentedButtons } from 'react-native-paper';
 import { ScheduleCard } from '@/components/schedules/ScheduleCard';
 import { ScheduleModal } from '@/components/schedules/ScheduleModal';
 import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
+import { useUpdateSchedule } from '@/hooks/local';
 import {
   useCreateSchedule,
   useDeleteSchedule,
@@ -21,8 +22,7 @@ import {
   useMarkScheduleInProgress,
   useSchedulesByDateRange,
   useStaff,
-  useUpdateSchedule,
-} from '@/hooks';
+} from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 import { BRAND_PRIMARY, CARD_RADIUS, COLORS } from '@/theme';

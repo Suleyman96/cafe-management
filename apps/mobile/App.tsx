@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import './src/lib/i18n';
-import type { PlanName } from '@gustri/core';
+import { getInactivityTimeoutMs } from '@gustri/core';
 import { I18nextProvider, i18n } from '@gustri/i18n';
 import { DbProvider } from '@gustri/queries';
 import { NavigationContainer } from '@react-navigation/native';
@@ -20,19 +20,33 @@ import { SnackbarProvider } from './src/components/providers/SnackbarProvider';
 import { useInactivityLock } from './src/hooks/use-inactivity-lock';
 import { setupOnlineManager } from './src/hooks/use-network-status';
 import { usePushTokenSync } from './src/hooks/use-push-token-sync';
-import { getCurrentUser, onAuthStateChange } from './src/lib/auth';
+import { forceLogout, getCurrentUser, onAuthStateChange } from './src/lib/auth';
 import { checkForOtaUpdate } from './src/lib/check-for-updates';
+import {
+  clearLastActiveAt,
+  initLastActiveAtStore,
+  readLastActiveAt,
+} from './src/lib/last-active-at';
+import { drainMismatchedMutations } from './src/lib/mutation-drain';
 import { handleNotificationNavigation, navigationRef } from './src/lib/navigation-ref';
+import { drainPendingRevokes } from './src/lib/pending-revokes';
 import { queryClient } from './src/lib/query-client';
 import {
   asyncStoragePersister,
   CACHE_BUSTER,
+  initEncryptedMmkv,
   migrateAsyncStorageToMMKV,
   PERSISTED_MAX_AGE,
   shouldPersistQuery,
   startCacheSizeTelemetry,
 } from './src/lib/query-persister';
 import { registerMutationDefaults } from './src/lib/register-mutation-defaults';
+import { redactJsonBody, redactPii } from './src/lib/sentry-redaction';
+import {
+  clearSessionStamp,
+  initEncryptedSessionStamp,
+  readSessionStamp,
+} from './src/lib/session-stamp';
 import { cleanupSounds, setupSounds } from './src/lib/sound';
 import { db } from './src/lib/supabase';
 import { linkingConfig } from './src/navigation/linking-config';
@@ -68,7 +82,18 @@ Sentry.init({
             // Not a valid URL, leave as-is
           }
         }
+        // M9: Strip PII from request bodies. Fetch breadcrumbs put the body
+        // under `data.body`; xhr puts it under `data.data`. Both can carry
+        // customer name/phone/address from order-create or feedback flows.
+        if (breadcrumb.data) {
+          const data = breadcrumb.data as Record<string, unknown>;
+          if ('body' in data) data.body = redactJsonBody(data.body);
+          if ('data' in data) data.data = redactJsonBody(data.data);
+        }
       }
+    }
+    if (event.request && event.request.data !== undefined) {
+      event.request.data = redactPii(event.request.data) as typeof event.request.data;
     }
     return event;
   },
@@ -118,7 +143,8 @@ if (__DEV__) {
 }
 
 function App() {
-  const { setStaff, setIsLoading } = useAuthStore();
+  const setIsLoading = useAuthStore((s) => s.setIsLoading);
+  const loadSession = useAuthStore((s) => s.loadSession);
   // Gate the persister mount on AsyncStorage→MMKV migration. The migration is
   // async (one AsyncStorage read), but MMKV is sync — once migrated, the
   // persister hydrates synchronously. Without the gate, a freshly upgraded
@@ -130,9 +156,55 @@ function App() {
 
   useEffect(() => {
     let active = true;
-    migrateAsyncStorageToMMKV().then(() => {
+    (async () => {
+      // Encryption-key + encrypted MMKV instances must be ready before any
+      // code reads/writes a persisted blob. Both inits are idempotent and
+      // share the keystore-resident key, so the second `getOrCreate` call
+      // hits the in-memory cache.
+      try {
+        await initEncryptedMmkv();
+        await initEncryptedSessionStamp();
+        await initLastActiveAtStore();
+      } catch (err) {
+        Sentry.captureException(err, { tags: { area: 'mmkv-encryption-init' } });
+        // Boot is unrecoverable without an encrypted persister; surface the
+        // loader indefinitely rather than mounting the app with a broken
+        // cache. The next cold launch retries.
+        return;
+      }
+
+      await migrateAsyncStorageToMMKV();
+
+      // Tenant-mismatch check BEFORE the persister hydrates. If the previous
+      // session on this device belonged to a different tenant/staff than the
+      // one currently authenticated (auth flip while offline, app crash
+      // mid-cleanup, etc.), drop the persisted blob entirely so no screen
+      // can render the prior tenant's data — even for one frame.
+      try {
+        const stamp = readSessionStamp();
+        if (stamp) {
+          const current = await getCurrentUser();
+          const matches = current?.tenant_id === stamp.tenantId && current?.id === stamp.staffId;
+          if (!matches) {
+            try {
+              await asyncStoragePersister.removeClient();
+            } catch {
+              // Persister cleanup is best-effort.
+            }
+            clearSessionStamp();
+            Sentry.addBreadcrumb({
+              category: 'auth',
+              message: 'pre-hydration tenant mismatch — dropped persisted cache',
+              data: { hadStamp: true, hasCurrent: current !== null },
+            });
+          }
+        }
+      } catch (err) {
+        Sentry.captureException(err, { tags: { area: 'pre-hydration-tenant-check' } });
+      }
+
       if (active) setMigrationDone(true);
-    });
+    })();
     return () => {
       active = false;
     };
@@ -146,6 +218,18 @@ function App() {
     return stop;
   }, []);
 
+  // One-shot drain of any push-token revokes queued during a previous
+  // offline logout. Runs once after MMKV is encrypted-init'd; the queue
+  // is read regardless of who (if anyone) is logged in, since the prior
+  // tenant's tokens still need to come off the server. Network/5xx
+  // failures keep the entry queued for the next launch.
+  useEffect(() => {
+    if (!migrationDone) return;
+    drainPendingRevokes().catch((err) => {
+      Sentry.captureException(err, { tags: { area: 'boot-drain-pending-revokes' } });
+    });
+  }, [migrationDone]);
+
   // Boot-time OTA check — fetches a published update if available and reloads
   // into it before the user starts interacting. No-op in dev. Failures are
   // captured to Sentry via checkForOtaUpdate and never block app start.
@@ -156,21 +240,32 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Initialize auth
+    // Initialize auth — also enforce the inactivity lock at cold start.
+    // Without this check, force-quit + relaunch (or relaunch after the
+    // device sat locked overnight) would silently restore a stale session.
     getCurrentUser()
-      .then((staff) => {
-        setStaff(staff);
-        // Bug 4: Fetch tenant plan so pro features are visible
+      .then(async (staff) => {
         if (staff) {
-          db.tenants
-            .getCurrent()
-            .then((tenant) => {
-              useAuthStore.getState().setTenantPlan(tenant.plan as PlanName);
-            })
-            .catch((err) => {
-              Sentry.captureException(err, { tags: { context: 'mobile-tenant-plan' } });
-            });
+          const last = readLastActiveAt();
+          if (last !== null) {
+            const elapsed = Date.now() - last;
+            const timeoutMs = getInactivityTimeoutMs(staff.role);
+            // Always clear the stamp post-read so we don't re-trigger if the
+            // user retries a failed network call before backgrounding again.
+            clearLastActiveAt();
+            if (elapsed >= timeoutMs) {
+              Sentry.addBreadcrumb({
+                category: 'auth',
+                message: 'cold-start inactivity timeout — forcing logout',
+                data: { role: staff.role, elapsedMs: elapsed, timeoutMs },
+              });
+              await forceLogout('inactivity');
+              setIsLoading(false);
+              return;
+            }
+          }
         }
+        await loadSession(staff);
       })
       .catch((err) => {
         Sentry.captureException(err);
@@ -179,24 +274,15 @@ function App() {
         setIsLoading(false);
       });
 
-    // Listen for auth changes
+    // Listen for auth changes — single fetch path through loadSession.
     const { data } = onAuthStateChange((staff) => {
-      setStaff(staff);
-      // Also fetch tenant plan on auth state change
-      if (staff) {
-        db.tenants
-          .getCurrent()
-          .then((tenant) => {
-            useAuthStore.getState().setTenantPlan(tenant.plan as PlanName);
-          })
-          .catch(() => {});
-      }
+      void loadSession(staff);
     });
 
     return () => {
       data.subscription.unsubscribe();
     };
-  }, [setIsLoading, setStaff]);
+  }, [setIsLoading, loadSession]);
 
   useEffect(() => {
     setupSounds();
@@ -245,7 +331,7 @@ function App() {
       .then((url) => {
         if (!url) return;
         if (!useAuthStore.getState().staff) {
-          usePendingIntentStore.getState().setPending({ type: 'deep-link', url });
+          usePendingIntentStore.getState().addPending({ type: 'deep-link', url });
         }
       })
       .catch(() => {
@@ -254,7 +340,7 @@ function App() {
 
     const subscription = Linking.addEventListener('url', ({ url }) => {
       if (!useAuthStore.getState().staff || !navigationRef.isReady()) {
-        usePendingIntentStore.getState().setPending({ type: 'deep-link', url });
+        usePendingIntentStore.getState().addPending({ type: 'deep-link', url });
       }
       // When logged in and ready, NavigationContainer's linking config
       // handles the URL automatically — no manual openURL needed.
@@ -287,18 +373,44 @@ function App() {
               // default in register-mutation-defaults.ts. The key gate is a
               // belt-and-braces check: re-exported queries-package mutations
               // (no mobile mutationKey) won't accidentally hydrate as orphans.
-              shouldDehydrateMutation: (m) =>
-                m.state.isPaused === true && m.options.mutationKey !== undefined,
+              // The meta gate enforces that any persisted mutation carries
+              // tenant/staff identity so cross-tenant replay can be detected
+              // on next launch (see C2 / mutation-drain).
+              shouldDehydrateMutation: (m) => {
+                if (!(m.state.isPaused === true && m.options.mutationKey !== undefined)) {
+                  return false;
+                }
+                const meta = (m.meta ?? {}) as Record<string, unknown>;
+                return typeof meta.tenantId === 'string' && typeof meta.staffId === 'string';
+              },
             },
             maxAge: PERSISTED_MAX_AGE,
           }}
           onSuccess={() => {
-            // Hydration complete — resume any paused mutations carried over
-            // from the previous session so queued offline writes replay now
-            // that the queryClient is ready.
-            queryClient.resumePausedMutations().catch((err) => {
-              Sentry.captureException(err, { tags: { area: 'resume-paused-mutations' } });
-            });
+            // Hydration complete — drop any paused mutations whose stamp
+            // doesn't match the current session before resuming, then replay
+            // the rest. Without the drain, user A's queued offline mutations
+            // would replay under user B's auth context (cross-tenant write)
+            // when B logs in on the same device.
+            (async () => {
+              try {
+                const current = await getCurrentUser();
+                const session = current
+                  ? { tenantId: current.tenant_id, staffId: current.id }
+                  : null;
+                const discarded = drainMismatchedMutations(queryClient, session);
+                if (discarded > 0) {
+                  Sentry.addBreadcrumb({
+                    category: 'auth',
+                    message: `discarded ${discarded} mismatched mutation(s) on hydration`,
+                    data: { discarded, hasCurrent: current !== null },
+                  });
+                }
+                await queryClient.resumePausedMutations();
+              } catch (err) {
+                Sentry.captureException(err, { tags: { area: 'resume-paused-mutations' } });
+              }
+            })();
           }}
         >
           <DbProvider db={db}>

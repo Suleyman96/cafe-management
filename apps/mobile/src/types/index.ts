@@ -31,6 +31,7 @@ export type UserRole = Staff['role'];
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
+  NotificationExpired: undefined;
 };
 
 export type MainTabParamList = {

@@ -87,7 +87,13 @@ export function createMockSupabase(config: MockSupabaseConfig = {}) {
       calls.push({ table: '__channel', method: 'channel', args: [name] });
       const channelObj: Record<string, any> = {
         on: (..._args: any[]) => channelObj,
-        subscribe: () => channelObj,
+        subscribe: (cb?: (status: string) => void) => {
+          if (cb) cb('SUBSCRIBED');
+          return channelObj;
+        },
+        unsubscribe: () => {
+          calls.push({ table: '__channel', method: 'unsubscribe', args: [] });
+        },
       };
       return channelObj;
     },

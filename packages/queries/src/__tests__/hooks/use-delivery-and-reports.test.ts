@@ -51,19 +51,14 @@ describe('report hooks', () => {
     const { mockDb } = renderHookWithProviders(() =>
       useRevenueSummary('t1', '2026-04-01', '2026-04-30'),
     );
-    expect(mockDb.reports.getRevenueSummary).toHaveBeenCalledWith('t1', '2026-04-01', '2026-04-30');
+    expect(mockDb.reports.getRevenueSummary).toHaveBeenCalledWith('2026-04-01', '2026-04-30');
   });
 
   it('useTopSoldItems forwards limit', () => {
     const { mockDb } = renderHookWithProviders(() =>
       useTopSoldItems('t1', '2026-04-01', '2026-04-30', 5),
     );
-    expect(mockDb.reports.getTopSoldItems).toHaveBeenCalledWith(
-      't1',
-      '2026-04-01',
-      '2026-04-30',
-      5,
-    );
+    expect(mockDb.reports.getTopSoldItems).toHaveBeenCalledWith('2026-04-01', '2026-04-30', 5);
   });
 
   it('useExpenseSummary disabled when from missing', () => {
@@ -75,17 +70,13 @@ describe('report hooks', () => {
     const { mockDb } = renderHookWithProviders(() =>
       useWasteSummary('t1', '2026-04-01', '2026-04-30'),
     );
-    expect(mockDb.reports.getWasteSummary).toHaveBeenCalledWith('t1', '2026-04-01', '2026-04-30');
+    expect(mockDb.reports.getWasteSummary).toHaveBeenCalledWith('2026-04-01', '2026-04-30');
   });
 
   it('useStaffPerformance forwards args', () => {
     const { mockDb } = renderHookWithProviders(() =>
       useStaffPerformance('t1', '2026-04-01', '2026-04-30'),
     );
-    expect(mockDb.reports.getStaffPerformance).toHaveBeenCalledWith(
-      't1',
-      '2026-04-01',
-      '2026-04-30',
-    );
+    expect(mockDb.reports.getStaffPerformance).toHaveBeenCalledWith('2026-04-01', '2026-04-30');
   });
 });

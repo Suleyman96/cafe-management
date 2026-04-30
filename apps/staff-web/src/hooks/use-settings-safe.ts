@@ -5,9 +5,9 @@ import {
   calculateTaxWithSettings,
   calculateTotalWithSettings,
   formatPriceWithSettings as formatPriceCore,
-  QUERY_KEYS,
 } from '@gustri/core';
 import type { Database } from '@gustri/database';
+import { QUERY_KEYS } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
 
