@@ -71,7 +71,11 @@ describe('useActiveOrders', () => {
 // --- Local hooks (use direct db import → assert on db from vi.mock) ---
 
 describe('useUpdateOrderStatus', () => {
-  it('invalidates ORDERS, TABLES, and ACTIVE_ORDERS on success', async () => {
+  it('invalidates ORDERS and ACTIVE_ORDERS on a non-terminal status change', async () => {
+    // PREPARING is not a terminal state, so the optimized helper deliberately
+    // skips TABLES (see packages/queries/src/invalidation.ts:84). Without a
+    // previous-order context, oldStatus is undefined → not terminal → no
+    // claim/free signal for TABLES either way.
     const { result, queryClient } = renderHookWithProviders(() => useUpdateOrderStatus());
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -79,8 +83,25 @@ describe('useUpdateOrderStatus', () => {
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    expect(invalidatedKeys).not.toContainEqual([QUERY_KEYS.TABLES]);
+  });
+
+  it('invalidates TABLES when transitioning into a terminal status', async () => {
+    // Seed the cache with a previous order at a non-terminal status; the
+    // hook's onMutate captures it and feeds oldStatus into the helper, so
+    // CLOSED (terminal) crosses the boundary and TABLES gets invalidated.
+    const { result, queryClient } = renderHookWithProviders(() => useUpdateOrderStatus());
+    queryClient.setQueryData(
+      [QUERY_KEYS.ORDERS],
+      [{ id: 'o1', status: 'preparing', order_type: 'dine_in' }],
+    );
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await result.current.mutateAsync({ orderId: 'o1', status: 'CLOSED' });
+
+    const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
   });
 
   it('calls updateStatus with correct status value', async () => {
