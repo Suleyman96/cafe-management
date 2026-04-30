@@ -8,8 +8,20 @@ import { dedupeInsert } from './_dedupe';
 import { generateRecurringTaskInstances, listRecurringTemplates } from './task-recurrence';
 import type { TaskInsert, TaskRow, TaskUpdate, WrapperContext } from './types';
 
+export type TaskScope = 'all' | 'today' | 'mine';
+
 export function createTasksWrapper(ctx: WrapperContext) {
   return {
+    /**
+     * List tasks with optional filters.
+     *
+     * `scope` (M12) replaces the previous client-side fan-out where the
+     * tasks screen called useTasks + useTodaysTasks + useMyTasks in
+     * parallel and then filtered in memory:
+     *   - 'all' — no extra filter (the default)
+     *   - 'today' — `due_date = current local date`
+     *   - 'mine' — `assigned_to = staffId` (requires `staffId`)
+     */
     findAll: async (options?: {
       status?: string;
       priority?: string;
@@ -18,6 +30,8 @@ export function createTasksWrapper(ctx: WrapperContext) {
       isTemplate?: boolean;
       limit?: number;
       offset?: number;
+      scope?: TaskScope;
+      staffId?: string;
     }) => {
       let query = ctx.client
         .from('tasks')
@@ -46,6 +60,16 @@ export function createTasksWrapper(ctx: WrapperContext) {
         } else {
           query = query.eq('is_recurring', false);
         }
+      }
+
+      const scope = options?.scope ?? 'all';
+      if (scope === 'today') {
+        query = query.eq('due_date', getLocalDateString());
+      } else if (scope === 'mine') {
+        if (!options?.staffId) {
+          throw new Error('tasks.findAll: scope=mine requires staffId');
+        }
+        query = query.eq('assigned_to', options.staffId);
       }
 
       // Apply pagination with sensible defaults

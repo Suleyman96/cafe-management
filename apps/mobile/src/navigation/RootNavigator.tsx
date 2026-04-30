@@ -9,6 +9,7 @@ import { Text } from '@/lib/paper-compat';
 import { checkVersion, type GateResult } from '@/lib/version-gate';
 import { ForceUpdateScreen } from '@/screens/system/ForceUpdateScreen';
 import { MaintenanceScreen } from '@/screens/system/MaintenanceScreen';
+import NotificationExpiredScreen from '@/screens/system/NotificationExpiredScreen';
 import { useAuthStore } from '@/store/auth-store';
 import { usePendingIntentStore } from '@/store/pending-intent-store';
 import { BRAND_PRIMARY, COLORS } from '@/theme';
@@ -43,7 +44,8 @@ function SplashView() {
 }
 
 export function RootNavigator() {
-  const { staff, isLoading } = useAuthStore();
+  const staff = useAuthStore((s) => s.staff);
+  const isLoading = useAuthStore((s) => s.isLoading);
   const [gate, setGate] = useState<GateResult | null>(null);
   const [retrying, setRetrying] = useState(false);
 
@@ -58,19 +60,21 @@ export function RootNavigator() {
       .finally(() => setRetrying(false));
   };
 
-  // Replay any pending notification/deep-link intent that arrived while the
+  // Replay any pending notification/deep-link intents that arrived while the
   // user was logged out. Defer one frame so the Main stack finishes mounting
   // before we navigate, otherwise the dispatch hits the still-mounted Auth
-  // stack and is dropped.
+  // stack and is dropped. Multiple intents replay in arrival order.
   useEffect(() => {
     if (!staff) return;
-    const intent = usePendingIntentStore.getState().consumePending();
-    if (!intent) return;
+    const intents = usePendingIntentStore.getState().consumeAll();
+    if (intents.length === 0) return;
     requestAnimationFrame(() => {
-      if (intent.type === 'notification') {
-        handleNotificationNavigation(intent.data as Record<string, unknown> | null | undefined);
-      } else if (intent.type === 'deep-link') {
-        Linking.openURL(intent.url);
+      for (const intent of intents) {
+        if (intent.type === 'notification') {
+          handleNotificationNavigation(intent.data as Record<string, unknown> | null | undefined);
+        } else if (intent.type === 'deep-link') {
+          Linking.openURL(intent.url);
+        }
       }
     });
   }, [staff]);
@@ -91,7 +95,10 @@ export function RootNavigator() {
       <PendingSyncBadge />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {staff ? (
-          <Stack.Screen name="Main" component={DrawerNavigator} />
+          <>
+            <Stack.Screen name="Main" component={DrawerNavigator} />
+            <Stack.Screen name="NotificationExpired" component={NotificationExpiredScreen} />
+          </>
         ) : (
           <Stack.Screen name="Auth" component={AuthStack} />
         )}

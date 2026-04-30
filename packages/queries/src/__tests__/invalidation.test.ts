@@ -50,7 +50,7 @@ describe('invalidateOrders', () => {
 });
 
 describe('invalidateOrdersAndTables', () => {
-  it('invalidates orders and tables keys', () => {
+  it('invalidates the conservative pre-M6 superset when no transition info is given', () => {
     const { qc, spy } = createMockQueryClient();
     invalidateOrdersAndTables(qc);
     const keys = getInvalidatedKeys(spy);
@@ -62,13 +62,79 @@ describe('invalidateOrdersAndTables', () => {
     expect(keys).toContainEqual([QUERY_KEYS.TAKEOUT_ORDERS]);
   });
 
-  it('invalidates specific order when orderId provided', () => {
+  it('invalidates the specific order when orderId is in the transition', () => {
     const { qc, spy } = createMockQueryClient();
-    invalidateOrdersAndTables(qc, 'order-456');
+    invalidateOrdersAndTables(qc, { orderId: 'order-456' });
     const keys = getInvalidatedKeys(spy);
 
     expect(keys).toContainEqual([QUERY_KEYS.ORDER, 'order-456']);
+  });
+
+  it('does NOT invalidate TABLES on a non-terminal status transition (preparing → ready)', () => {
+    const { qc, spy } = createMockQueryClient();
+    invalidateOrdersAndTables(qc, {
+      oldStatus: 'preparing',
+      newStatus: 'ready',
+      oldType: 'dine_in',
+    });
+    const keys = getInvalidatedKeys(spy);
+
+    expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
+    expect(keys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.TABLES]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.DELIVERY_ORDERS]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.TAKEOUT_ORDERS]);
+  });
+
+  it('DOES invalidate TABLES when the transition crosses into a terminal state (served → closed)', () => {
+    const { qc, spy } = createMockQueryClient();
+    invalidateOrdersAndTables(qc, {
+      oldStatus: 'served',
+      newStatus: 'closed',
+      oldType: 'dine_in',
+    });
+    const keys = getInvalidatedKeys(spy);
+
     expect(keys).toContainEqual([QUERY_KEYS.TABLES]);
+  });
+
+  it('DOES invalidate TABLES on cancellation (preparing → cancelled)', () => {
+    const { qc, spy } = createMockQueryClient();
+    invalidateOrdersAndTables(qc, {
+      oldStatus: 'preparing',
+      newStatus: 'cancelled',
+    });
+    const keys = getInvalidatedKeys(spy);
+
+    expect(keys).toContainEqual([QUERY_KEYS.TABLES]);
+  });
+
+  it('invalidates DELIVERY_ORDERS when status enters the delivery flow', () => {
+    const { qc, spy } = createMockQueryClient();
+    invalidateOrdersAndTables(qc, {
+      oldStatus: 'ready',
+      newStatus: 'out_for_delivery',
+      newType: 'delivery',
+    });
+    const keys = getInvalidatedKeys(spy);
+
+    expect(keys).toContainEqual([QUERY_KEYS.DELIVERY_ORDERS]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.TAKEOUT_ORDERS]);
+  });
+
+  it('invalidates TAKEOUT_ORDERS only when type === takeout', () => {
+    const { qc, spy } = createMockQueryClient();
+    invalidateOrdersAndTables(qc, {
+      oldStatus: 'preparing',
+      newStatus: 'ready',
+      oldType: 'takeout',
+      newType: 'takeout',
+    });
+    const keys = getInvalidatedKeys(spy);
+
+    expect(keys).toContainEqual([QUERY_KEYS.TAKEOUT_ORDERS]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.TABLES]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.DELIVERY_ORDERS]);
   });
 });
 

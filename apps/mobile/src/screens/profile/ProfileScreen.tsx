@@ -15,7 +15,7 @@ import { ROLE_COLORS } from '@/theme';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { staff } = useAuthStore();
+  const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');

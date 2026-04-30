@@ -77,5 +77,14 @@
   "update": "Yenilə",
   "updated": "Yeniləndi",
   "view": "Bax",
-  "yes": "Bəli"
+  "yes": "Bəli",
+
+  "offline.message": "Oflaynsız — qoşulanda dəyişikliklər sinxronlaşacaq",
+  "offline.actionUnavailable": "Bu əməliyyat üçün internet bağlantısı tələb olunur",
+  "online.captive_portal": "Wi-Fi-yə qoşuludur, lakin internet yoxdur — şəbəkəyə daxil olun və ya əlçatan olduqda dəyişikliklər sinxronlaşacaq.",
+  "notification.expired.title": "Bildiriş artıq mövcud deyil",
+  "notification.expired.body": "Bu bildiriş bu hesabda artıq mövcud olmayan məlumata istinad edir.",
+  "realtime.degraded": "Canlı yeniləmələr zəifdir — hər 20 saniyədən bir yenilənir",
+
+  "sync.pending": "{{count}} gözləyir"
 }

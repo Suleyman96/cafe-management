@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import './src/lib/i18n';
-import type { PlanName } from '@gustri/core';
+import { getInactivityTimeoutMs } from '@gustri/core';
 import { I18nextProvider, i18n } from '@gustri/i18n';
 import { DbProvider } from '@gustri/queries';
 import { NavigationContainer } from '@react-navigation/native';
@@ -20,8 +20,13 @@ import { SnackbarProvider } from './src/components/providers/SnackbarProvider';
 import { useInactivityLock } from './src/hooks/use-inactivity-lock';
 import { setupOnlineManager } from './src/hooks/use-network-status';
 import { usePushTokenSync } from './src/hooks/use-push-token-sync';
-import { getCurrentUser, onAuthStateChange } from './src/lib/auth';
+import { forceLogout, getCurrentUser, onAuthStateChange } from './src/lib/auth';
 import { checkForOtaUpdate } from './src/lib/check-for-updates';
+import {
+  clearLastActiveAt,
+  initLastActiveAtStore,
+  readLastActiveAt,
+} from './src/lib/last-active-at';
 import { drainMismatchedMutations } from './src/lib/mutation-drain';
 import { handleNotificationNavigation, navigationRef } from './src/lib/navigation-ref';
 import { drainPendingRevokes } from './src/lib/pending-revokes';
@@ -36,6 +41,7 @@ import {
   startCacheSizeTelemetry,
 } from './src/lib/query-persister';
 import { registerMutationDefaults } from './src/lib/register-mutation-defaults';
+import { redactJsonBody, redactPii } from './src/lib/sentry-redaction';
 import {
   clearSessionStamp,
   initEncryptedSessionStamp,
@@ -76,7 +82,18 @@ Sentry.init({
             // Not a valid URL, leave as-is
           }
         }
+        // M9: Strip PII from request bodies. Fetch breadcrumbs put the body
+        // under `data.body`; xhr puts it under `data.data`. Both can carry
+        // customer name/phone/address from order-create or feedback flows.
+        if (breadcrumb.data) {
+          const data = breadcrumb.data as Record<string, unknown>;
+          if ('body' in data) data.body = redactJsonBody(data.body);
+          if ('data' in data) data.data = redactJsonBody(data.data);
+        }
       }
+    }
+    if (event.request && event.request.data !== undefined) {
+      event.request.data = redactPii(event.request.data) as typeof event.request.data;
     }
     return event;
   },
@@ -126,7 +143,8 @@ if (__DEV__) {
 }
 
 function App() {
-  const { setStaff, setIsLoading } = useAuthStore();
+  const setIsLoading = useAuthStore((s) => s.setIsLoading);
+  const loadSession = useAuthStore((s) => s.loadSession);
   // Gate the persister mount on AsyncStorage→MMKV migration. The migration is
   // async (one AsyncStorage read), but MMKV is sync — once migrated, the
   // persister hydrates synchronously. Without the gate, a freshly upgraded
@@ -146,6 +164,7 @@ function App() {
       try {
         await initEncryptedMmkv();
         await initEncryptedSessionStamp();
+        await initLastActiveAtStore();
       } catch (err) {
         Sentry.captureException(err, { tags: { area: 'mmkv-encryption-init' } });
         // Boot is unrecoverable without an encrypted persister; surface the
@@ -221,21 +240,32 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Initialize auth
+    // Initialize auth — also enforce the inactivity lock at cold start.
+    // Without this check, force-quit + relaunch (or relaunch after the
+    // device sat locked overnight) would silently restore a stale session.
     getCurrentUser()
-      .then((staff) => {
-        setStaff(staff);
-        // Bug 4: Fetch tenant plan so pro features are visible
+      .then(async (staff) => {
         if (staff) {
-          db.tenants
-            .getCurrent()
-            .then((tenant) => {
-              useAuthStore.getState().setTenantPlan(tenant.plan as PlanName);
-            })
-            .catch((err) => {
-              Sentry.captureException(err, { tags: { context: 'mobile-tenant-plan' } });
-            });
+          const last = readLastActiveAt();
+          if (last !== null) {
+            const elapsed = Date.now() - last;
+            const timeoutMs = getInactivityTimeoutMs(staff.role);
+            // Always clear the stamp post-read so we don't re-trigger if the
+            // user retries a failed network call before backgrounding again.
+            clearLastActiveAt();
+            if (elapsed >= timeoutMs) {
+              Sentry.addBreadcrumb({
+                category: 'auth',
+                message: 'cold-start inactivity timeout — forcing logout',
+                data: { role: staff.role, elapsedMs: elapsed, timeoutMs },
+              });
+              await forceLogout('inactivity');
+              setIsLoading(false);
+              return;
+            }
+          }
         }
+        await loadSession(staff);
       })
       .catch((err) => {
         Sentry.captureException(err);
@@ -244,24 +274,15 @@ function App() {
         setIsLoading(false);
       });
 
-    // Listen for auth changes
+    // Listen for auth changes — single fetch path through loadSession.
     const { data } = onAuthStateChange((staff) => {
-      setStaff(staff);
-      // Also fetch tenant plan on auth state change
-      if (staff) {
-        db.tenants
-          .getCurrent()
-          .then((tenant) => {
-            useAuthStore.getState().setTenantPlan(tenant.plan as PlanName);
-          })
-          .catch(() => {});
-      }
+      void loadSession(staff);
     });
 
     return () => {
       data.subscription.unsubscribe();
     };
-  }, [setIsLoading, setStaff]);
+  }, [setIsLoading, loadSession]);
 
   useEffect(() => {
     setupSounds();
@@ -310,7 +331,7 @@ function App() {
       .then((url) => {
         if (!url) return;
         if (!useAuthStore.getState().staff) {
-          usePendingIntentStore.getState().setPending({ type: 'deep-link', url });
+          usePendingIntentStore.getState().addPending({ type: 'deep-link', url });
         }
       })
       .catch(() => {
@@ -319,7 +340,7 @@ function App() {
 
     const subscription = Linking.addEventListener('url', ({ url }) => {
       if (!useAuthStore.getState().staff || !navigationRef.isReady()) {
-        usePendingIntentStore.getState().setPending({ type: 'deep-link', url });
+        usePendingIntentStore.getState().addPending({ type: 'deep-link', url });
       }
       // When logged in and ready, NavigationContainer's linking config
       // handles the URL automatically — no manual openURL needed.

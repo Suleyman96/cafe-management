@@ -1,3 +1,4 @@
+export type { OrderTransition } from '@gustri/queries';
 export {
   invalidateDeliveryOrders,
   invalidateExpenses,

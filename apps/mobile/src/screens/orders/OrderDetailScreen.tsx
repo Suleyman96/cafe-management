@@ -3,7 +3,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { FlashList } from '@shopify/flash-list';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { OrderItemRow } from '@/components/orders/OrderItemRow';
 import { StatusActions } from '@/components/orders/StatusActions';
@@ -56,26 +56,53 @@ export default function OrderDetailScreen() {
   const remaining = (order?.total ?? 0) - totalPaid;
   const items = details?.order_items || [];
 
-  const handleUpdateStatus = async (newStatus: string) => {
-    try {
-      await updateOrderStatus.mutateAsync({
-        orderId,
-        status: newStatus as Order['status'],
-      });
-      showSuccess(t('orders.orderStatusChanged', { status: newStatus }));
-    } catch (err: unknown) {
-      showError(err instanceof Error ? err : t('orders.failedUpdateStatus'));
-    }
-  };
+  // Stable identities so OrderItemRow's React.memo isn't bypassed by every
+  // parent render (currencySymbol, role-derived showActions, the renderItem
+  // closure all close over these). Without useCallback, a 30-item order
+  // re-renders all 30 rows on every realtime tick.
+  const handleUpdateStatus = useCallback(
+    async (newStatus: string) => {
+      try {
+        await updateOrderStatus.mutateAsync({
+          orderId,
+          status: newStatus as Order['status'],
+        });
+        showSuccess(t('orders.orderStatusChanged', { status: newStatus }));
+      } catch (err: unknown) {
+        showError(err instanceof Error ? err : t('orders.failedUpdateStatus'));
+      }
+    },
+    [updateOrderStatus, orderId, showSuccess, showError, t],
+  );
 
-  const handleMarkItemReady = async (itemId: string) => {
-    try {
-      await updateItemStatus.mutateAsync({ itemId, status: 'ready' });
-      showSuccess(t('orders.itemMarkedAs', { status: 'ready' }));
-    } catch (err: unknown) {
-      showError(err instanceof Error ? err : t('orders.failedUpdateItemStatus'));
-    }
-  };
+  const handleMarkItemReady = useCallback(
+    async (itemId: string) => {
+      try {
+        await updateItemStatus.mutateAsync({ itemId, status: 'ready' });
+        showSuccess(t('orders.itemMarkedAs', { status: 'ready' }));
+      } catch (err: unknown) {
+        showError(err instanceof Error ? err : t('orders.failedUpdateItemStatus'));
+      }
+    },
+    [updateItemStatus, showSuccess, showError, t],
+  );
+
+  const showItemActions =
+    staff?.role === 'kitchen' || staff?.role === 'admin' || staff?.role === 'owner';
+
+  const renderItem = useCallback(
+    ({ item }: { item: OrderItemWithMenuItem }) => (
+      <View style={styles.itemWrapper}>
+        <OrderItemRow
+          item={item}
+          currencySymbol={currencySymbol}
+          showActions={showItemActions}
+          onMarkReady={handleMarkItemReady}
+        />
+      </View>
+    ),
+    [currencySymbol, showItemActions, handleMarkItemReady],
+  );
 
   if (isLoading) return <LoadingScreen />;
   if (error || !order)
@@ -196,18 +223,7 @@ export default function OrderDetailScreen() {
             </Text>
           </View>
         }
-        renderItem={({ item }: { item: OrderItemWithMenuItem }) => (
-          <View style={styles.itemWrapper}>
-            <OrderItemRow
-              item={item}
-              currencySymbol={currencySymbol}
-              showActions={
-                staff?.role === 'kitchen' || staff?.role === 'admin' || staff?.role === 'owner'
-              }
-              onMarkReady={handleMarkItemReady}
-            />
-          </View>
-        )}
+        renderItem={renderItem}
         ListFooterComponent={
           <View style={styles.footer}>
             <View style={styles.divider} />

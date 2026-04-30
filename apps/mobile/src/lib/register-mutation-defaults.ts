@@ -11,11 +11,77 @@ import type {
   StockItemUpdate,
   Table,
 } from '@gustri/database';
-import type { QueryClient } from '@tanstack/react-query';
+import { MUTATION_KEYS, type MutationKeyName } from '@gustri/queries';
+import * as Sentry from '@sentry/react-native';
+import type { MutationFunction, QueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth-store';
 import { getOrCreateClientRequestId } from './idempotency';
-import { MUTATION_KEYS } from './mutation-keys';
 import { db } from './supabase';
+
+/**
+ * Build the full per-key registration map. We define this as a
+ * `Record<MutationKeyName, MutationFunction>` so `tsc` errors at compile time
+ * if a new key is added to `MUTATION_KEYS` in `@gustri/queries` without a
+ * corresponding mobile registration. Static check beats the runtime check
+ * below — the runtime check is the safety net for shape drift across
+ * untyped boundaries (e.g. shared package gets out of sync).
+ */
+function buildDefaults(): Record<MutationKeyName, MutationFunction<unknown, unknown>> {
+  return {
+    CREATE_ORDER: ((orderData: OrdersInsert) => {
+      // Defense-in-depth: hooks should stamp `client_request_id` in their
+      // own `onMutate` so it's persisted with the variables. If a paused
+      // mutation predating this PR rehydrates without one, mint one here so
+      // a single replay retry still goes through the dedupe path. Multiple
+      // retries within the same mutation lifecycle reuse the variables
+      // object, so the id stays stable across retries.
+      const clientRequestId = getOrCreateClientRequestId(orderData.client_request_id);
+      return db.orders.create({ ...orderData, client_request_id: clientRequestId });
+    }) as MutationFunction<unknown, unknown>,
+    UPDATE_ORDER_STATUS: (({ orderId, status }: { orderId: string; status: Order['status'] }) =>
+      db.orders.updateStatus(orderId, status)) as MutationFunction<unknown, unknown>,
+    UPDATE_ORDER_ITEM_STATUS: (({
+      itemId,
+      status,
+    }: {
+      itemId: string;
+      status: OrderItem['status'];
+    }) => db.orderItems.updateStatus(itemId, status)) as MutationFunction<unknown, unknown>,
+    UPDATE_TABLE_STATUS: (({ tableId, status }: { tableId: string; status: Table['status'] }) =>
+      db.tables.updateStatus(tableId, status)) as MutationFunction<unknown, unknown>,
+    UPDATE_WAITER_CALL: (async ({
+      callId,
+      status,
+      staffId,
+    }: {
+      callId: string;
+      status: string;
+      staffId?: string;
+    }) => {
+      if (status === 'acknowledged' && staffId) {
+        return await db.waiterCalls.acknowledge(callId, staffId);
+      }
+      if (status === 'resolved') {
+        return await db.waiterCalls.resolve(callId);
+      }
+      throw new Error(`Unsupported waiter call status: ${status}`);
+    }) as MutationFunction<unknown, unknown>,
+    UPDATE_STAFF: (({ id, data }: { id: string; data: StaffUpdate }) =>
+      db.staff.update(id, data)) as MutationFunction<unknown, unknown>,
+    UPDATE_EXPENSE: (({ id, data }: { id: string; data: ExpenseUpdate }) =>
+      db.expenses.update(id, data)) as MutationFunction<unknown, unknown>,
+    UPDATE_EXPENSE_CATEGORY: (({ id, data }: { id: string; data: ExpenseCategoryUpdate }) =>
+      db.expenseCategories.update(id, data)) as MutationFunction<unknown, unknown>,
+    UPDATE_MENU_ITEM: (({ id, data }: { id: string; data: MenuItemsUpdate }) =>
+      db.menuItems.update(id, data)) as MutationFunction<unknown, unknown>,
+    UPDATE_CATEGORY: (({ id, data }: { id: string; data: CategoriesUpdate }) =>
+      db.categories.update(id, data)) as MutationFunction<unknown, unknown>,
+    UPDATE_SCHEDULE: (({ id, data }: { id: string; data: StaffScheduleUpdate }) =>
+      db.schedules.update(id, data)) as MutationFunction<unknown, unknown>,
+    UPDATE_STOCK_ITEM: (({ id, data }: { id: string; data: StockItemUpdate }) =>
+      db.stockItems.update(id, data)) as MutationFunction<unknown, unknown>,
+  };
+}
 
 /**
  * Register a `mutationFn` for every replayable mobile mutation key BEFORE the
@@ -28,7 +94,12 @@ import { db } from './supabase';
  * they work outside the React tree on next launch when no provider is mounted
  * yet.
  *
- * Keep in sync with `mutation-keys.ts` and the `useMutation` call sites.
+ * Completeness check: we iterate `MUTATION_KEYS` (the shared registry in
+ * `@gustri/queries`) and assert each entry has a registered default. In dev
+ * we throw — visible during the next hot reload. In prod we capture to Sentry
+ * and skip registration so the app still boots, even if a release ships with
+ * a missing key (the affected mutation will fail loudly, but unrelated
+ * mutations still drain).
  */
 export function registerMutationDefaults(queryClient: QueryClient) {
   // Stamp every newly-created mutation with the current tenant/staff identity
@@ -61,84 +132,32 @@ export function registerMutationDefaults(queryClient: QueryClient) {
     };
   });
 
-  queryClient.setMutationDefaults(MUTATION_KEYS.CREATE_ORDER, {
-    // Defense-in-depth: hooks should stamp `client_request_id` in their
-    // own `onMutate` so it's persisted with the variables. If a paused
-    // mutation predating this PR rehydrates without one, mint one here so
-    // a single replay retry still goes through the dedupe path. Multiple
-    // retries within the same mutation lifecycle reuse the variables
-    // object, so the id stays stable across retries.
-    mutationFn: (orderData: OrdersInsert) => {
-      const clientRequestId = getOrCreateClientRequestId(orderData.client_request_id);
-      return db.orders.create({ ...orderData, client_request_id: clientRequestId });
-    },
-  });
+  const defaults = buildDefaults();
 
-  queryClient.setMutationDefaults(MUTATION_KEYS.UPDATE_ORDER_STATUS, {
-    mutationFn: ({ orderId, status }: { orderId: string; status: Order['status'] }) =>
-      db.orders.updateStatus(orderId, status),
-  });
-
-  queryClient.setMutationDefaults(MUTATION_KEYS.UPDATE_ORDER_ITEM_STATUS, {
-    mutationFn: ({ itemId, status }: { itemId: string; status: OrderItem['status'] }) =>
-      db.orderItems.updateStatus(itemId, status),
-  });
-
-  queryClient.setMutationDefaults(MUTATION_KEYS.UPDATE_TABLE_STATUS, {
-    mutationFn: ({ tableId, status }: { tableId: string; status: Table['status'] }) =>
-      db.tables.updateStatus(tableId, status),
-  });
-
-  queryClient.setMutationDefaults(MUTATION_KEYS.UPDATE_WAITER_CALL, {
-    mutationFn: async ({
-      callId,
-      status,
-      staffId,
-    }: {
-      callId: string;
-      status: string;
-      staffId?: string;
-    }) => {
-      if (status === 'acknowledged' && staffId) {
-        return await db.waiterCalls.acknowledge(callId, staffId);
+  for (const [name, key] of Object.entries(MUTATION_KEYS) as [
+    MutationKeyName,
+    readonly string[],
+  ][]) {
+    const fn = defaults[name];
+    if (!fn) {
+      const message = `register-mutation-defaults: missing mutationFn for ${name}`;
+      // `__DEV__` is the React Native runtime flag; absent in vitest/jsdom,
+      // so guard the access with `typeof` to avoid a ReferenceError under
+      // tests (where we WANT the throw, by design).
+      const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
+      if (isDev) {
+        throw new Error(message);
       }
-      if (status === 'resolved') {
-        return await db.waiterCalls.resolve(callId);
-      }
-      throw new Error(`Unsupported waiter call status: ${status}`);
-    },
-  });
-
-  queryClient.setMutationDefaults(MUTATION_KEYS.UPDATE_STAFF, {
-    mutationFn: ({ id, data }: { id: string; data: StaffUpdate }) => db.staff.update(id, data),
-  });
-
-  queryClient.setMutationDefaults(MUTATION_KEYS.UPDATE_EXPENSE, {
-    mutationFn: ({ id, data }: { id: string; data: ExpenseUpdate }) => db.expenses.update(id, data),
-  });
-
-  queryClient.setMutationDefaults(MUTATION_KEYS.UPDATE_EXPENSE_CATEGORY, {
-    mutationFn: ({ id, data }: { id: string; data: ExpenseCategoryUpdate }) =>
-      db.expenseCategories.update(id, data),
-  });
-
-  queryClient.setMutationDefaults(MUTATION_KEYS.UPDATE_MENU_ITEM, {
-    mutationFn: ({ id, data }: { id: string; data: MenuItemsUpdate }) =>
-      db.menuItems.update(id, data),
-  });
-
-  queryClient.setMutationDefaults(MUTATION_KEYS.UPDATE_CATEGORY, {
-    mutationFn: ({ id, data }: { id: string; data: CategoriesUpdate }) =>
-      db.categories.update(id, data),
-  });
-
-  queryClient.setMutationDefaults(MUTATION_KEYS.UPDATE_SCHEDULE, {
-    mutationFn: ({ id, data }: { id: string; data: StaffScheduleUpdate }) =>
-      db.schedules.update(id, data),
-  });
-
-  queryClient.setMutationDefaults(MUTATION_KEYS.UPDATE_STOCK_ITEM, {
-    mutationFn: ({ id, data }: { id: string; data: StockItemUpdate }) =>
-      db.stockItems.update(id, data),
-  });
+      Sentry.captureMessage(message, {
+        level: 'error',
+        tags: { area: 'register-mutation-defaults' },
+      });
+      continue;
+    }
+    queryClient.setMutationDefaults(key, { mutationFn: fn });
+  }
 }
+
+// Test-only escape hatch: the buildDefaults map is the actual content
+// surface, so tests can drop a key and assert the registration check fires.
+export const __defaultsForTests = buildDefaults;

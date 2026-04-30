@@ -79,6 +79,15 @@
   "view": "Görüntüle",
   "yes": "Evet",
 
+  "offline.message": "Çevrimdışısınız — değişiklikler bağlanınca senkronize edilecek",
+  "offline.actionUnavailable": "Bu işlem için internet bağlantısı gerekiyor",
+  "online.captive_portal": "Wi-Fi bağlı ancak internet yok — ağa giriş yapın yoksa değişiklikler erişilebildiğinde senkronize olur.",
+  "notification.expired.title": "Bildirim artık kullanılamıyor",
+  "notification.expired.body": "Bu bildirim, bu hesapta artık kullanılamayan verilere işaret ediyor.",
+  "realtime.degraded": "Canlı güncellemeler azalmış — her 20 saniyede bir yenileniyor",
+
+  "sync.pending": "{{count}} bekliyor",
+
   "forceUpdateTitle": "Güncelleme gerekli",
   "forceUpdateBody": "Devam etmek için uygulamanın daha yeni bir sürümüne ihtiyacınız var. Lütfen gustri'yi kullanmaya devam etmek için güncelleyin.",
   "forceUpdateLatest": "Son sürüm: {{latest}}",

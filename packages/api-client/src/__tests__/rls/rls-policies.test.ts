@@ -112,6 +112,25 @@ describe('RLS Policies — Authenticated Access', () => {
     expect(data!.length).toBeGreaterThanOrEqual(4);
   });
 
+  // M15: post-restriction, admin/owner can still see colleagues in their tenant —
+  // including waiter/kitchen rows. The pre-M15 policy let any active staff see
+  // all rows regardless of role. The check that *waiters* now see only their
+  // own row lives in tests/rls/staff-visibility.waiter.test.ts (skipped here
+  // because the default seed does not provision a waiter password — once the
+  // seed adds `waiter@test.com / test1234`, that test moves into this file).
+  test('M15: admin sees colleagues across roles in their tenant', async () => {
+    const { data, error } = await staffClient.from('staff').select('id, role, tenant_id, email');
+    expect(error).toBeNull();
+    expect(data).not.toBeNull();
+    const roles = new Set((data ?? []).map((row: { role: string }) => row.role));
+    // Admin should see at least one non-admin row — proves the policy isn't
+    // accidentally restricted to "self only" for the admin.
+    expect(roles.size).toBeGreaterThanOrEqual(2);
+    // Every visible row must be in the admin's tenant.
+    const tenantIds = new Set((data ?? []).map((row: { tenant_id: string }) => row.tenant_id));
+    expect(tenantIds.size).toBe(1);
+  });
+
   test('can read own tenant menu items', async () => {
     const { data, error } = await staffClient.from('menu_items').select('*');
     expect(error).toBeNull();

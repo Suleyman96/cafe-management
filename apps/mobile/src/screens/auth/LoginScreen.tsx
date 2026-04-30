@@ -19,7 +19,7 @@ import { useAuthStore } from '@/store/auth-store';
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const { setStaff } = useAuthStore();
+  const setStaff = useAuthStore((s) => s.setStaff);
   const { showError } = useSnackbar();
   const { t } = useTranslation('auth');
 

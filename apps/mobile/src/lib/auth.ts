@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/react-native';
 import { clearPushTokenSyncCache, readLastSyncedExpoToken } from '@/hooks/use-push-token-sync';
 import { useAuthStore } from '@/store/auth-store';
 import type { Staff } from '@/types';
+import { clearLastActiveAt } from './last-active-at';
 import { drainPendingRevokes, enqueuePendingRevoke } from './pending-revokes';
 import { queryClient } from './query-client';
 import { asyncStoragePersister, clearEncryptedQueryCache } from './query-persister';
@@ -75,6 +76,10 @@ export async function cleanupClientState(): Promise<void> {
     // rather than skipping on a stale composite from the previous session.
     clearPushTokenSyncCache();
     clearSessionStamp();
+    clearLastActiveAt();
+    // `reset()` clears the persisted SecureStore snapshot too — without that,
+    // the next cold launch would hydrate the prior tenant before getCurrentUser()
+    // resolves, briefly painting the authed stack for someone who is logged out.
     useAuthStore.getState().reset();
   } catch (err) {
     // Ensure the drain gate releases even if a step throws — the user is

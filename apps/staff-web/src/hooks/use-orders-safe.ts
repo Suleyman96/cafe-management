@@ -9,7 +9,7 @@ import type { Database } from '@gustri/database';
 import { QUERY_KEYS, useOrders as useOrdersShared } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
-import { invalidateOrdersAndTables } from '@/lib/query-helpers';
+import { invalidateOrders, invalidateOrdersAndTables } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 import type { OrderWithDetails } from '@/types';
 
@@ -38,7 +38,9 @@ export function useCancelOrderItem() {
     mutationFn: ({ itemId, cancelQty }: { itemId: string; cancelQty?: number }) =>
       db.orderItems.cancel(itemId, cancelQty),
     onSuccess: () => {
-      invalidateOrdersAndTables(queryClient);
+      // Item-level cancel — order may flip to empty/cancelled but TABLES/DELIVERY/TAKEOUT
+      // shape doesn't shift on item changes. Refetch only ORDERS.
+      invalidateOrders(queryClient);
     },
   });
 }
@@ -59,6 +61,11 @@ export function useUpdateOrderStatus() {
 
       const previousOrders = queryClient.getQueryData([QUERY_KEYS.ORDERS]);
       const previousActive = queryClient.getQueryData([QUERY_KEYS.ACTIVE_ORDERS]);
+      // Capture pre-mutation order so we can pass {oldStatus, oldType} to
+      // invalidateOrdersAndTables in onSettled. Without this the helper
+      // can't tell whether the transition crossed a terminal state and
+      // would invalidate TABLES on every kitchen toggle.
+      const previousOrder = queryClient.getQueryData<OrderWithDetails>([QUERY_KEYS.ORDER, orderId]);
 
       const updateList = (old: OrderWithDetails[] | undefined) =>
         old?.map((o) => (o.id === orderId ? { ...o, status: statusValue } : o));
@@ -66,7 +73,7 @@ export function useUpdateOrderStatus() {
       queryClient.setQueryData([QUERY_KEYS.ORDERS], updateList);
       queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], updateList);
 
-      return { previousOrders, previousActive };
+      return { previousOrders, previousActive, previousOrder };
     },
     onError: (_err, _vars, context) => {
       if (context?.previousOrders) {
@@ -76,8 +83,14 @@ export function useUpdateOrderStatus() {
         queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], context.previousActive);
       }
     },
-    onSettled: () => {
-      invalidateOrdersAndTables(queryClient);
+    onSettled: (_data, _err, { orderId, status }, context) => {
+      const statusValue = ORDER_STATUS[status] as OrderStatus;
+      invalidateOrdersAndTables(queryClient, {
+        orderId,
+        oldStatus: context?.previousOrder?.status,
+        newStatus: statusValue,
+        oldType: context?.previousOrder?.order_type,
+      });
     },
   });
 }
@@ -121,7 +134,9 @@ export function useUpdateOrderItemStatus() {
       }
     },
     onSettled: () => {
-      invalidateOrdersAndTables(queryClient);
+      // Item status changes don't move the order between terminal states —
+      // tables, delivery and takeout shapes are unaffected. Refetch only ORDERS.
+      invalidateOrders(queryClient);
     },
   });
 }

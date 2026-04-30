@@ -39,6 +39,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       discountReason: data.discount_reason,
       discountAppliedBy: data.discount_applied_by,
       tenantId: staffOrError.tenant_id,
+      callerRole: staffOrError.role,
     });
 
     return jsonOk({ success: true, order: updatedOrder });

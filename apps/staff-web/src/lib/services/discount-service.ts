@@ -1,3 +1,4 @@
+import { AuthorizationError, DISCOUNT_AUDIT_THRESHOLD, getDiscountCapForRole } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -10,6 +11,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * absolute values. A paused-then-replayed mutation produces the same
  * final order state, so no `client_request_id` is required here.
  * Do NOT switch to delta math without also adding a dedupe key.
+ *
+ * Role cap enforcement: a waiter applying a 99% fixed discount is
+ * economically a refund without the admin guard refunds require. The
+ * cap from `DISCOUNT_CAPS_BY_ROLE` (in `@gustri/core/constants`) bounds
+ * the effective fraction (`discount_value / subtotal` for fixed,
+ * `discount_value / 100` for percentage) at apply time. Discounts above
+ * `DISCOUNT_AUDIT_THRESHOLD` always write a `financial_audit_log` row
+ * regardless of role so triage has a paper trail.
  */
 
 interface ApplyDiscountParams {
@@ -19,11 +28,20 @@ interface ApplyDiscountParams {
   discountReason?: string | null;
   discountAppliedBy: string;
   tenantId: string;
+  /** Caller's role — required to enforce per-role caps. */
+  callerRole: string;
 }
 
 export async function applyDiscount(supabaseAdmin: SupabaseClient, params: ApplyDiscountParams) {
-  const { orderId, discountType, discountValue, discountReason, discountAppliedBy, tenantId } =
-    params;
+  const {
+    orderId,
+    discountType,
+    discountValue,
+    discountReason,
+    discountAppliedBy,
+    tenantId,
+    callerRole,
+  } = params;
 
   // Verify the order belongs to this tenant
   const { data: order, error: orderError } = await supabaseAdmin
@@ -37,7 +55,9 @@ export async function applyDiscount(supabaseAdmin: SupabaseClient, params: Apply
     throw new Error('Order not found');
   }
 
-  // Validate discount
+  const subtotal = Number(order.subtotal) || 0;
+
+  // Validate discount shape
   if (discountType === 'none') {
     // Removing discount — no further validation needed
   } else if (discountType === 'percentage') {
@@ -48,8 +68,26 @@ export async function applyDiscount(supabaseAdmin: SupabaseClient, params: Apply
     if (discountValue <= 0) {
       throw new Error('Fixed discount must be greater than 0');
     }
-    if (discountValue > Number(order.subtotal)) {
+    if (discountValue > subtotal) {
       throw new Error('Fixed discount cannot exceed order subtotal');
+    }
+  }
+
+  // Per-role cap. `none` is always allowed (clearing a discount can't be a
+  // privilege escalation). For percentage we compare directly; for fixed we
+  // derive the effective fraction against the subtotal.
+  if (discountType !== 'none') {
+    const requestedFraction =
+      discountType === 'percentage'
+        ? discountValue / 100
+        : subtotal > 0
+          ? discountValue / subtotal
+          : 1;
+    const cap = getDiscountCapForRole(callerRole);
+    if (requestedFraction > cap + 1e-9) {
+      throw new AuthorizationError(
+        `Discount cap exceeded for role "${callerRole}" (cap ${(cap * 100).toFixed(0)}%, requested ${(requestedFraction * 100).toFixed(1)}%)`,
+      );
     }
   }
 
@@ -73,12 +111,44 @@ export async function applyDiscount(supabaseAdmin: SupabaseClient, params: Apply
   // Fetch the updated order after the trigger has recalculated totals
   const { data: updatedOrder, error: fetchError } = await supabaseAdmin
     .from('orders')
-    .select('id, subtotal, tax, total, discount_type, discount_value')
+    .select('id, subtotal, tax, total, discount_type, discount_value, discount_amount')
     .eq('id', orderId)
     .single();
 
   if (fetchError) {
     throw new Error(fetchError.message);
+  }
+
+  // Audit-log any discount above the threshold. This is best-effort: if the
+  // insert fails (table missing, RLS hiccup) the discount itself is already
+  // applied — log to console and Sentry but never roll back the discount.
+  // Calling out the cap-bypass case (cap=1.0 for admin/owner) explicitly: a
+  // 100%-cap role can apply any discount, but a 100% comp still gets a
+  // financial_audit_log row.
+  if (discountType !== 'none' && subtotal > 0) {
+    const fraction = discountType === 'percentage' ? discountValue / 100 : discountValue / subtotal;
+    if (fraction >= DISCOUNT_AUDIT_THRESHOLD) {
+      const discountAmount = Number(updatedOrder?.discount_amount ?? 0);
+      try {
+        await supabaseAdmin.from('financial_audit_log').insert({
+          tenant_id: tenantId,
+          staff_id: discountAppliedBy,
+          order_id: orderId,
+          action: 'discount_applied',
+          details: {
+            discount_type: discountType,
+            discount_value: discountValue,
+            discount_amount: discountAmount,
+            role: callerRole,
+            reason: discountReason ?? null,
+            fraction,
+          },
+        });
+      } catch (err) {
+        // Non-fatal — surface for triage but never break the discount path.
+        console.warn('[discount-service] financial_audit_log insert failed', err);
+      }
+    }
   }
 
   return updatedOrder;

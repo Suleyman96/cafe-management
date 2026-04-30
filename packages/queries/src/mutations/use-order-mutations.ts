@@ -1,9 +1,20 @@
 import type { Order, OrderItem, OrderItemsInsert } from '@gustri/database';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrCreateClientRequestId } from '../idempotency';
 import { invalidateOrders, invalidateOrdersAndTables } from '../invalidation';
+import { QUERY_KEYS } from '../keys';
 import { useDb } from '../provider';
 import type { MutationCallbacks } from './types';
+
+/**
+ * Read the cached order shape so we can pass {oldStatus, oldType} into the
+ * scoped invalidator. When the order isn't cached (e.g. cache cold) we
+ * return undefineds and the helper invalidates conservatively.
+ */
+function peekOrder(qc: QueryClient, orderId: string): Pick<Order, 'status' | 'order_type'> | null {
+  const cached = qc.getQueryData<Pick<Order, 'status' | 'order_type'>>([QUERY_KEYS.ORDER, orderId]);
+  return cached ?? null;
+}
 
 export function useUpdateOrderStatus(options?: MutationCallbacks) {
   const db = useDb();
@@ -11,8 +22,14 @@ export function useUpdateOrderStatus(options?: MutationCallbacks) {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: Order['status'] }) =>
       db.orders.updateStatus(id, status),
-    onSuccess: () => {
-      invalidateOrdersAndTables(queryClient);
+    onSuccess: (_data, { id, status }) => {
+      const prev = peekOrder(queryClient, id);
+      invalidateOrdersAndTables(queryClient, {
+        orderId: id,
+        oldStatus: prev?.status,
+        newStatus: status,
+        oldType: prev?.order_type,
+      });
     },
     onError: options?.onError,
   });
@@ -44,8 +61,14 @@ export function useCancelOrder(options?: MutationCallbacks) {
       reason: string;
       tableId?: string | null;
     }) => db.orders.cancelOrder(orderId, reason, tableId),
-    onSuccess: () => {
-      invalidateOrdersAndTables(queryClient);
+    onSuccess: (_data, { orderId }) => {
+      const prev = peekOrder(queryClient, orderId);
+      invalidateOrdersAndTables(queryClient, {
+        orderId,
+        oldStatus: prev?.status,
+        newStatus: 'cancelled',
+        oldType: prev?.order_type,
+      });
     },
     onError: options?.onError,
   });
@@ -75,7 +98,9 @@ export function useCleanupEmptyOrders(options?: MutationCallbacks) {
   return useMutation({
     mutationFn: (olderThanMinutes?: number) => db.orders.cleanupEmptyOrders(olderThanMinutes),
     onSuccess: () => {
-      invalidateOrdersAndTables(queryClient);
+      // Bulk cleanup — no per-order transition info available. Pass {} so
+      // the helper falls through to its conservative pre-M6 superset.
+      invalidateOrdersAndTables(queryClient, {});
     },
     onError: options?.onError,
   });
@@ -175,8 +200,15 @@ export function useMarkOutForDelivery(options?: MutationCallbacks) {
   return useMutation({
     mutationFn: ({ orderId, deliveryPersonId }: { orderId: string; deliveryPersonId: string }) =>
       db.orders.markOutForDelivery(orderId, deliveryPersonId),
-    onSuccess: () => {
-      invalidateOrdersAndTables(queryClient);
+    onSuccess: (_data, { orderId }) => {
+      const prev = peekOrder(queryClient, orderId);
+      invalidateOrdersAndTables(queryClient, {
+        orderId,
+        oldStatus: prev?.status,
+        newStatus: 'out_for_delivery',
+        oldType: prev?.order_type ?? 'delivery',
+        newType: 'delivery',
+      });
     },
     onError: options?.onError,
   });
@@ -187,8 +219,15 @@ export function useMarkDelivered(options?: MutationCallbacks) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (orderId: string) => db.orders.markDelivered(orderId),
-    onSuccess: () => {
-      invalidateOrdersAndTables(queryClient);
+    onSuccess: (_data, orderId) => {
+      const prev = peekOrder(queryClient, orderId);
+      invalidateOrdersAndTables(queryClient, {
+        orderId,
+        oldStatus: prev?.status,
+        newStatus: 'delivered',
+        oldType: prev?.order_type ?? 'delivery',
+        newType: 'delivery',
+      });
     },
     onError: options?.onError,
   });

@@ -19,6 +19,7 @@ import {
   useUpdateMenuItem,
 } from '@/hooks/use-menu-management';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { buildCategoryItemCounts } from '@/lib/build-category-item-counts';
 import { Text } from '@/lib/paper-compat';
 import { COLORS } from '@/theme';
 
@@ -70,10 +71,15 @@ export default function MenuManagementScreen() {
     );
   }, [items, search]);
 
-  // Category item counts (from full list, not filtered)
-  const getCategoryItemCount = (categoryId: string) =>
-    (items || []).filter((i: { category_id: string | null }) => i.category_id === categoryId)
-      .length;
+  // Category item counts (from full list, not filtered). Build the map once
+  // per items change — the chip loop below reads it O(1) per category.
+  // Pre-M11: nested filter rebuilt the count for every chip render.
+  const categoryItemCounts = useMemo(
+    () => buildCategoryItemCounts((items || []) as { category_id: string | null }[]),
+    [items],
+  );
+
+  const getCategoryItemCount = (categoryId: string) => categoryItemCounts.get(categoryId) ?? 0;
 
   const handleToggle = async (id: string, currentAvailable: boolean) => {
     try {

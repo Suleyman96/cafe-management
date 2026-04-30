@@ -4,6 +4,7 @@ import { QUERY_KEYS, useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef } from 'react';
+import { markEvent } from '@/lib/event-dedup';
 import { hapticEvent } from '@/lib/haptics';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { notifyNewOrder } from '@/lib/notifications';
@@ -73,10 +74,16 @@ export function useOrders(filters?: {
         event: 'INSERT' as const,
         queryKeys: [[QUERY_KEYS.ORDERS]],
         onPayload: async (newRecord: Record<string, unknown>) => {
+          const parsed = OrdersRealtimeInsertSchema.safeParse(newRecord);
+          if (parsed.success) {
+            // Mark BEFORE playing so a near-simultaneous push (which checks
+            // seenRecently in the foreground handler) suppresses its sound.
+            markEvent(`order:${parsed.data.id}`);
+          }
+
           hapticEvent();
           await playNewOrderSound();
 
-          const parsed = OrdersRealtimeInsertSchema.safeParse(newRecord);
           if (!parsed.success) {
             Sentry.captureException(parsed.error, {
               tags: { area: 'realtime.orders.insert' },

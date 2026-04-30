@@ -28,12 +28,23 @@ describe('useUpdateOrderStatus', () => {
     expect(mockDb.orders.updateStatus).toHaveBeenCalledWith('o1', 'preparing');
   });
 
-  it('invalidates orders + tables on success', async () => {
+  // M6: a non-terminal transition (e.g. preparing) does NOT touch TABLES —
+  // tables only refetch when an order crosses into closed/cancelled.
+  it('invalidates ORDERS + ACTIVE_ORDERS but NOT TABLES on a non-terminal status', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useUpdateOrderStatus());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({ id: 'o1', status: 'preparing' });
     const keys = getInvalidatedKeys(spy);
     expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
+    expect(keys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.TABLES]);
+  });
+
+  it('invalidates TABLES when the new status is terminal (closed)', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useUpdateOrderStatus());
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+    await result.current.mutateAsync({ id: 'o1', status: 'closed' });
+    const keys = getInvalidatedKeys(spy);
     expect(keys).toContainEqual([QUERY_KEYS.TABLES]);
   });
 
@@ -202,13 +213,16 @@ describe('delivery mutations', () => {
     expect(mockDb.orders.markOutForDelivery).toHaveBeenCalledWith('o1', 'd1');
   });
 
-  it('useMarkOutForDelivery invalidates orders + tables on success', async () => {
+  // M6: out_for_delivery is in the delivery flow but NOT terminal — DELIVERY_ORDERS
+  // refetches; TABLES does not (delivery orders don't occupy tables).
+  it('useMarkOutForDelivery invalidates orders + delivery, leaves tables alone', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useMarkOutForDelivery());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({ orderId: 'o1', deliveryPersonId: 'd1' });
     const keys = getInvalidatedKeys(spy);
     expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(keys).toContainEqual([QUERY_KEYS.TABLES]);
+    expect(keys).toContainEqual([QUERY_KEYS.DELIVERY_ORDERS]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.TABLES]);
   });
 
   it('useMarkDelivered forwards orderId', async () => {
