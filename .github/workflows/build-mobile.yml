@@ -30,6 +30,14 @@ jobs:
     name: EAS Build (Preview)
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    # The post-build step writes a comment on the PR with the EAS build URL.
+    # Default GITHUB_TOKEN is read-only for issues/PRs, so the github-script
+    # call returned 403 "Resource not accessible by integration" until these
+    # were granted. `contents: read` keeps `actions/checkout` working.
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
 
     steps:
       - name: Checkout
@@ -76,7 +84,8 @@ jobs:
           echo "build_url=$BUILD_URL" >> "$GITHUB_OUTPUT"
 
       - name: Comment build URL on PR
-        if: steps.eas-build.outputs.build_url != ''
+        # Skip on fork PRs (token is read-only regardless of permissions block).
+        if: steps.eas-build.outputs.build_url != '' && github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@v7
         with:
           script: |
