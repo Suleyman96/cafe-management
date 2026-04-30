@@ -45,20 +45,15 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              `script-src 'self'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
-              "style-src 'self' 'unsafe-inline'",
-              `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL || ''} wss://*.supabase.co https://*.sentry.io`,
-              "img-src 'self' data: blob: https://*.supabase.co",
-              "font-src 'self'",
-              "frame-ancestors 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join('; '),
-          },
+          // CSP intentionally NOT set here — it's emitted per-request by
+          // src/middleware.ts so the policy can carry a fresh nonce that
+          // Next.js stamps onto its inline hydration `<script>` blocks.
+          // Setting CSP statically here would override the middleware
+          // header on first paint (the static one wins) and break
+          // hydration with "Executing inline script violates the
+          // following Content Security Policy" — which is exactly what
+          // was leaving the customer menu page stuck on the loading
+          // skeleton.
         ],
       },
     ];
