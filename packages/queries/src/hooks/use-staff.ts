@@ -3,37 +3,39 @@ import { useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS } from '../keys';
 import { useDb } from '../provider';
 
-export function useStaff(role?: string) {
+export function useStaff(role?: string, options?: { enabled?: boolean }) {
   const db = useDb();
   return useQuery({
     queryKey: [QUERY_KEYS.STAFF, role],
     queryFn: () => db.staff.findAll(role ? { role } : undefined) as Promise<Staff[]>,
     staleTime: 5 * 60 * 1000,
+    enabled: options?.enabled ?? true,
   });
 }
 
-export function useStaffMember(id: string) {
+export function useStaffMember(id: string, options?: { enabled?: boolean }) {
   const db = useDb();
   return useQuery({
     queryKey: [QUERY_KEYS.STAFF_MEMBER, id],
     queryFn: () => db.staff.findById(id) as Promise<Staff>,
-    enabled: !!id,
+    enabled: !!id && (options?.enabled ?? true),
   });
 }
 
-export function useActiveWaiters() {
+export function useActiveWaiters(options?: { enabled?: boolean }) {
   const db = useDb();
   return useQuery({
     queryKey: [QUERY_KEYS.STAFF, 'active_waiters'],
     queryFn: () => db.staff.getActiveWaiters() as Promise<Staff[]>,
+    enabled: options?.enabled ?? true,
   });
 }
 
-export function useStaffByEmail(email: string) {
+export function useStaffByEmail(email: string, options?: { enabled?: boolean }) {
   const db = useDb();
   return useQuery({
     queryKey: [QUERY_KEYS.STAFF, 'email', email],
     queryFn: () => db.staff.findByEmail(email) as Promise<Staff>,
-    enabled: !!email,
+    enabled: !!email && (options?.enabled ?? true),
   });
 }

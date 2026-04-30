@@ -1,6 +1,6 @@
 import type { Table } from '@gustri/database';
-import { QUERY_KEYS, useDb } from '@gustri/queries';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QUERY_KEYS, useDb, useTables as useSharedTables } from '@gustri/queries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { useTenantId } from '@/store/auth-store';
 
@@ -13,16 +13,13 @@ export { useTable } from '@gustri/queries';
  * the staff session has not yet loaded. Without this, the request runs
  * under unready auth context and either fails or returns the wrong tenant's
  * rows during a session transition.
+ *
+ * Pre-L11 this hook reimplemented `useQuery` to inject the gate; the shared
+ * hook now accepts `{ enabled }` directly so the wrapper just forwards.
  */
 export function useTables() {
-  const db = useDb();
   const tenantId = useTenantId();
-  return useQuery({
-    queryKey: [QUERY_KEYS.TABLES],
-    queryFn: () => db.tables.findAll() as Promise<Table[]>,
-    enabled: !!tenantId,
-    staleTime: 30 * 1000,
-  });
+  return useSharedTables({ enabled: !!tenantId });
 }
 
 // Local mutation — mobile consumers use { tableId, status } instead of { id, status }
