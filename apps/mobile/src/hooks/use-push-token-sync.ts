@@ -99,18 +99,21 @@ export function usePushTokenSync() {
     async function sync() {
       try {
         const storage = await getTokenStorage();
+        const lastSyncedAt = storage.getNumber(LAST_SYNCED_AT_KEY) ?? 0;
+        const sinceLast = Date.now() - lastSyncedAt;
+        // Hard time floor — if we synced anything (success or no-op write)
+        // within MIN_RESYNC_INTERVAL_MS, skip without even calling out to
+        // Expo. Covers AppState bursts that fire before an in-flight sync
+        // has had a chance to write LAST_SYNCED_KEY back.
+        if (sinceLast < MIN_RESYNC_INTERVAL_MS) return;
+
         const token = await registerForPushNotifications();
         if (cancelled || !token) return;
 
         const composite = `${staffId}:${token}`;
         const lastSynced = storage.getString(LAST_SYNCED_KEY);
-        const lastSyncedAt = storage.getNumber(LAST_SYNCED_AT_KEY) ?? 0;
-        const sinceLast = Date.now() - lastSyncedAt;
         const stale = sinceLast > RESYNC_INTERVAL_MS;
         if (lastSynced === composite && !stale) return;
-        // Throttle floor — same composite within MIN_RESYNC_INTERVAL_MS is
-        // a foreground-bounce burst, not a real change.
-        if (lastSynced === composite && sinceLast < MIN_RESYNC_INTERVAL_MS) return;
 
         const platform = Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : null;
         await apiRoutes.pushTokens.register({ expo_token: token, platform });

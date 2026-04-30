@@ -8,7 +8,8 @@ import { CategoryModal } from '@/components/menu-management/CategoryModal';
 import { MenuItemManageCard } from '@/components/menu-management/MenuItemManageCard';
 import { MenuItemModal } from '@/components/menu-management/MenuItemModal';
 import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useCategories, useCurrencySymbol, useMenuItems } from '@/hooks';
+import { useCategories, useCurrencySymbol } from '@/hooks/local';
+import { useMenuItems } from '@/hooks/shared';
 import {
   useCreateCategory,
   useCreateMenuItem,

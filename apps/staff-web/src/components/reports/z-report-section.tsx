@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { NumberInput } from '@gustri/ui';
+import { NumberInput } from '@gustri/ui-web';
 import { Banknote, CreditCard, Receipt, Smartphone, TrendingDown, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 

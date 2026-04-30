@@ -11,10 +11,10 @@ import { ErrorScreen, LoadingScreen, StatusBadge, TimeElapsed } from '@/componen
 import {
   useCurrencySymbol,
   useOrder,
-  useOrderPayments,
   useUpdateOrderItemStatus,
   useUpdateOrderStatus,
-} from '@/hooks';
+} from '@/hooks/local';
+import { useOrderPayments } from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';

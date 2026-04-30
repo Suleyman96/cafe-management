@@ -9,13 +9,8 @@ import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } fro
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MenuItemCard } from '@/components/orders/MenuItemCard';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
-import {
-  useAddOrderItems,
-  useCategories,
-  useCreateOrder,
-  useCurrencySymbol,
-  useMenuItems,
-} from '@/hooks';
+import { useCategories, useCreateOrder, useCurrencySymbol } from '@/hooks/local';
+import { useAddOrderItems, useMenuItems } from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';

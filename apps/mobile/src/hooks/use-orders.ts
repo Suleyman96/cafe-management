@@ -49,6 +49,12 @@ export function useUpdateOrderItemStatus() {
 
 // Read hooks with realtime subscriptions — kept local
 
+/**
+ * Wraps `@gustri/queries.useOrders` semantics with mobile-specific behavior:
+ * a Supabase realtime subscription on the `orders` table that plays a sound
+ * and posts a local push notification on INSERT, plus a fallback poll diff
+ * that fires the same side effects when realtime is degraded.
+ */
 export function useOrders(filters?: {
   status?: Order['status'];
   statuses?: Order['status'][];
@@ -169,6 +175,11 @@ export function useOrders(filters?: {
   return query;
 }
 
+/**
+ * Mobile-local single-order read. Unlike `@gustri/queries.useOrder`, this
+ * variant doesn't gate on `enabled: !!orderId` because every call site
+ * routes via a stack-navigation param that's guaranteed non-empty.
+ */
 export function useOrder(orderId: string) {
   const db = useDb();
   return useQuery({

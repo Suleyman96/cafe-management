@@ -4,7 +4,7 @@ import { useTranslation } from '@gustri/i18n';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Dialog, Portal } from 'react-native-paper';
-import { useCreateOrder } from '@/hooks';
+import { useCreateOrder } from '@/hooks/local';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text, TextInput } from '@/lib/paper-compat';
 

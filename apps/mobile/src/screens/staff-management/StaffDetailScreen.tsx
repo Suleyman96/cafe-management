@@ -7,13 +7,8 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Modal, Portal, Text } from 'react-native-paper';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
-import {
-  useCurrencySymbol,
-  useOrders,
-  usePaymentsByStaff,
-  useStaffMember,
-  useUpdateStaff,
-} from '@/hooks';
+import { useCurrencySymbol, useOrders, useUpdateStaff } from '@/hooks/local';
+import { usePaymentsByStaff, useStaffMember } from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';

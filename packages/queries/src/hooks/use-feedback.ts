@@ -1,5 +1,5 @@
 import type { CustomerFeedback } from '@gustri/database';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS } from '../keys';
 import { useDb } from '../provider';
 
@@ -9,6 +9,7 @@ export function useFeedback(status?: CustomerFeedback['status']) {
     queryKey: [QUERY_KEYS.FEEDBACK, status],
     queryFn: () =>
       db.feedback.findAll(status ? { status } : undefined) as Promise<CustomerFeedback[]>,
+    placeholderData: keepPreviousData,
   });
 }
 

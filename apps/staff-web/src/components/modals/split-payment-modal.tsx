@@ -3,7 +3,8 @@
 import type { ORDER_STATUS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button, NumberInput } from '@gustri/ui';
+import { Button } from '@gustri/ui';
+import { NumberInput } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { Check, CheckCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';

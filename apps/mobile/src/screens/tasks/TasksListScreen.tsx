@@ -20,7 +20,7 @@ import {
   useRecurringTemplates,
   useTasks,
   useUpdateTask,
-} from '@/hooks';
+} from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { getLocalDateString } from '@/lib/date-utils';
 import { useAuthStore } from '@/store/auth-store';

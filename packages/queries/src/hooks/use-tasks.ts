@@ -1,5 +1,5 @@
 import type { Task } from '@gustri/database';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS } from '../keys';
 import { useDb } from '../provider';
 
@@ -8,6 +8,7 @@ export function useTasks(options?: Record<string, unknown>) {
   return useQuery({
     queryKey: [QUERY_KEYS.TASKS, options],
     queryFn: () => db.tasks.findAll(options) as Promise<Task[]>,
+    placeholderData: keepPreviousData,
   });
 }
 

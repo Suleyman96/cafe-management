@@ -5,7 +5,7 @@ import { RefreshControl, StyleSheet, View } from 'react-native';
 import { SegmentedButtons } from 'react-native-paper';
 import { WaiterCallCard } from '@/components/calls/WaiterCallCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useUpdateWaiterCall, useWaiterCalls } from '@/hooks';
+import { useUpdateWaiterCall, useWaiterCalls } from '@/hooks/local';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
 import type { WaiterCall } from '@/types';

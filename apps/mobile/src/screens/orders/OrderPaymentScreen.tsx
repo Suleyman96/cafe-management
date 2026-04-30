@@ -6,13 +6,8 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Divider, RadioButton, Text } from 'react-native-paper';
 import { OfflineGuardButton } from '@/components/OfflineGuardButton';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
-import {
-  useCreatePayment,
-  useCurrencySymbol,
-  useOrder,
-  useOrderPayments,
-  useUpdateOrderStatus,
-} from '@/hooks';
+import { useCreatePayment, useCurrencySymbol, useOrder, useUpdateOrderStatus } from '@/hooks/local';
+import { useOrderPayments } from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';

@@ -61,20 +61,72 @@ export const WAITER_CALL_REASONS = [
 /** Default tax percentage used when cafe settings haven't loaded yet */
 export const DEFAULT_TAX_PERCENTAGE = 0;
 
-// Refresh intervals (ms)
-//
-// `FALLBACK` is the steady-state safety-net poll used while realtime is healthy
-// or in soft retry — slow on purpose, since the WS should be doing the work.
-// `DEGRADED_FALLBACK` is the active-recovery poll: once a channel exhausts its
-// retry budget and goes `degraded`, mobile flips to this faster cadence so the
-// kitchen/waiter screens don't blackout for two minutes during service.
+/**
+ * How long after going offline a recently-failed mutation is treated as
+ * "queued for retry" rather than a hard failure. Mutation error handlers
+ * read `wasOfflineRecently(OFFLINE_SYNC_WINDOW_MS)` to phrase the user-
+ * facing message ("Failed to sync queued change: …") and to set the Sentry
+ * tag `context: offline-sync-replay`, so a paused-then-replayed mutation
+ * doesn't get reported the same way as a fresh interactive failure.
+ *
+ * Tuned to cover the worst-case re-online → replay drain seen in the wild:
+ * the radio re-attaches, onlineManager fires, and the persister flushes
+ * pending mutations — that whole sequence completes well under 60s on the
+ * slowest networks we've measured. Raising this would mask real failures;
+ * lowering it would misclassify legit replay errors as fresh ones.
+ */
+export const OFFLINE_SYNC_WINDOW_MS = 60_000;
+
+/**
+ * Persisted query-cache schema version. Bump when the persisted cache shape
+ * changes incompatibly — i.e. when old serialized payloads cannot be safely
+ * deserialized into the new client (renamed field on a persisted entity,
+ * removed nested column, narrowed enum, mutation-meta contract change).
+ *
+ * Mobile composes a per-release buster as `${CACHE_SCHEMA_VERSION}-${appVersion}`
+ * so any release with a fresh bundle also drops the cache, even if the
+ * developer forgot to bump. Web persistence (when added) must consume the
+ * same constant so a coordinated bump here invalidates every client at once.
+ *
+ * Bump history:
+ *  - v1: initial persisted cache shape.
+ *  - v2: ...
+ *  - v3: C2 added required `meta.tenantId` + `meta.staffId` on every persisted
+ *        mutation; pre-C2 caches don't carry the stamp.
+ */
+export const CACHE_SCHEMA_VERSION = 3;
+
+/**
+ * Polling intervals for query fallbacks (ms). Consumed by both web and
+ * mobile. Platforms may halve these values when backgrounded; do not raise
+ * them without checking battery impact on mobile (each poll wakes the radio
+ * on cellular).
+ *
+ * Realtime is the primary freshness path on every screen — these intervals
+ * are safety nets for the WS dropping or going degraded.
+ *
+ * `FALLBACK` is the steady-state safety-net poll used while realtime is
+ * healthy or in soft retry — slow on purpose, since the WS should be doing
+ * the work.
+ *
+ * `DEGRADED_FALLBACK` is the active-recovery poll: once a channel exhausts
+ * its retry budget and goes `degraded`, mobile flips to this faster cadence
+ * so the kitchen/waiter screens don't black out for two minutes during
+ * service.
+ */
 export const REFRESH_INTERVALS = {
+  /** Orders list view — covers most non-kitchen workflows. */
   ORDERS: 30000, // 30 seconds
+  /** Kitchen display — tightest cadence; staff watch this in real time. */
   KITCHEN: 10000, // 10 seconds
+  /** Waiter-call surfacing on tables/calls screens. */
   WAITER_CALLS: 15000, // 15 seconds
+  /** Tables grid — slow on purpose, status only changes on order events. */
   TABLES: 60000, // 1 minute
-  FALLBACK: 120000, // 2 minutes — safety-net poll when realtime WS is disconnected
-  DEGRADED_FALLBACK: 20000, // 20 seconds — active-recovery poll while channel is degraded
+  /** Steady-state safety-net poll when realtime WS is disconnected. */
+  FALLBACK: 120000, // 2 minutes
+  /** Active-recovery poll while a channel is in `degraded` state (H1). */
+  DEGRADED_FALLBACK: 20000, // 20 seconds
 } as const;
 
 // Status colors

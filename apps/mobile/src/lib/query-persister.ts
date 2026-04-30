@@ -1,3 +1,4 @@
+import { CACHE_SCHEMA_VERSION } from '@gustri/core';
 import { QUERY_KEYS } from '@gustri/queries';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sentry from '@sentry/react-native';
@@ -46,24 +47,16 @@ const PERSISTED_QUERY_KEYS: Set<string> = new Set([
 ]);
 
 /**
- * Bump CACHE_SCHEMA_VERSION when changing the SHAPE of any persisted query
- * payload in a way that old serialized data can't be safely deserialized into
- * (e.g. renaming a field on Order, removing a nested column, changing an enum
- * value). The app version suffix is a safety net so any release with a fresh
- * bundle also busts the cache, even if the developer forgot to bump.
+ * `CACHE_SCHEMA_VERSION` lives in `@gustri/core` so web persistence (when
+ * added) reads the same source of truth — see the JSDoc there for bump
+ * semantics. The app-version suffix below is a safety net so any release
+ * with a fresh bundle also busts the cache, even if the developer forgot
+ * to bump the schema version.
  *
- * Without this, an OTA/store update can hydrate a stale cache that the new
- * code mishandles — bugs are subtle because they only repro for users with
- * persisted state.
- *
- * Consumed by PersistQueryClientProvider's `persistOptions.buster` — when the
- * value changes between launches, the persister discards the stored client.
+ * Consumed by PersistQueryClientProvider's `persistOptions.buster` — when
+ * the value changes between launches, the persister discards the stored
+ * client.
  */
-// v3: C2 added required `meta.tenantId` + `meta.staffId` on every persisted
-// mutation. Pre-C2 caches don't carry the stamp and the C2 drain would
-// discard them anyway — bumping the buster makes that an explicit one-time
-// drop on first launch rather than a hydrate-then-discard round-trip.
-const CACHE_SCHEMA_VERSION = 3;
 const APP_VERSION = Constants.expoConfig?.version ?? '0.0.0';
 export const CACHE_BUSTER = `v${CACHE_SCHEMA_VERSION}-${APP_VERSION}`;
 

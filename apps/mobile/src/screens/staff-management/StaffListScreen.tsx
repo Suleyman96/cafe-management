@@ -7,7 +7,7 @@ import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Banner, Chip, Searchbar } from 'react-native-paper';
 import { StaffCard } from '@/components/staff-management/StaffCard';
 import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useStaff } from '@/hooks';
+import { useStaff } from '@/hooks/shared';
 import type { Staff, StaffManagementStackParamList } from '@/types';
 
 type NavProp = StackNavigationProp<StaffManagementStackParamList, 'StaffList'>;

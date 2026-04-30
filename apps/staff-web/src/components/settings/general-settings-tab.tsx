@@ -1,7 +1,7 @@
 'use client';
 
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
-import { NumberInput } from '@gustri/ui';
+import { NumberInput } from '@gustri/ui-web';
 import { ClipboardList, DollarSign, Receipt, Store, Truck } from 'lucide-react';
 import type { SettingsTabProps } from '@/types/settings';
 

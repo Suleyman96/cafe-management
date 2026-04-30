@@ -6,7 +6,8 @@ import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { StyleSheet, View } from 'react-native';
 import { Badge, Divider, Text } from 'react-native-paper';
-import { useCafeSettings, useMyOpenTasksCount } from '@/hooks';
+import { useMyOpenTasksCount } from '@/hooks/local';
+import { useCafeSettings } from '@/hooks/shared';
 import { useAuthStore } from '@/store/auth-store';
 import type { DrawerParamList } from '@/types';
 

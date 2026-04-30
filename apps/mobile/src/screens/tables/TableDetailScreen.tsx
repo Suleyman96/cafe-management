@@ -17,11 +17,11 @@ import {
 import {
   useCurrencySymbol,
   useOrders,
-  useTable,
   useUpdateTableStatus,
   useUpdateWaiterCall,
   useWaiterCalls,
-} from '@/hooks';
+} from '@/hooks/local';
+import { useTable } from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
 import { COLORS, TABLE_STATUS_COLORS, WAITER_CALL_REASON_COLORS } from '@/theme';

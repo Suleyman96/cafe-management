@@ -4,7 +4,7 @@ import { useTranslation } from '@gustri/i18n';
 import React, { useEffect, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Dialog, Portal } from 'react-native-paper';
-import { useCreateOrder } from '@/hooks';
+import { useCreateOrder } from '@/hooks/local';
 import { useCafeSettings } from '@/hooks/use-cafe-settings';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text, TextInput } from '@/lib/paper-compat';
