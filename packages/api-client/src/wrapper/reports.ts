@@ -49,9 +49,8 @@ export interface StaffPerformanceRow {
 
 export function createReportsWrapper(ctx: WrapperContext) {
   return {
-    getRevenueSummary: async (tenantId: string, from: string, to: string) => {
+    getRevenueSummary: async (from: string, to: string) => {
       const { data, error } = await ctx.anyClient.rpc('get_revenue_summary', {
-        p_tenant_id: tenantId,
         p_from: from,
         p_to: to,
       });
@@ -60,9 +59,8 @@ export function createReportsWrapper(ctx: WrapperContext) {
       return (data || []) as RevenueSummaryRow[];
     },
 
-    getTopSoldItems: async (tenantId: string, from: string, to: string, limit?: number) => {
+    getTopSoldItems: async (from: string, to: string, limit?: number) => {
       const { data, error } = await ctx.anyClient.rpc('get_top_sold_items', {
-        p_tenant_id: tenantId,
         p_from: from,
         p_to: to,
         p_limit: limit ?? 20,
@@ -72,9 +70,8 @@ export function createReportsWrapper(ctx: WrapperContext) {
       return (data || []) as TopSoldItemRow[];
     },
 
-    getExpenseSummary: async (tenantId: string, from: string, to: string) => {
+    getExpenseSummary: async (from: string, to: string) => {
       const { data, error } = await ctx.anyClient.rpc('get_expense_summary', {
-        p_tenant_id: tenantId,
         p_from: from,
         p_to: to,
       });
@@ -83,9 +80,8 @@ export function createReportsWrapper(ctx: WrapperContext) {
       return (data || []) as ExpenseSummaryRow[];
     },
 
-    getWasteSummary: async (tenantId: string, from: string, to: string) => {
+    getWasteSummary: async (from: string, to: string) => {
       const { data, error } = await ctx.anyClient.rpc('get_waste_summary', {
-        p_tenant_id: tenantId,
         p_from: from,
         p_to: to,
       });
@@ -94,9 +90,8 @@ export function createReportsWrapper(ctx: WrapperContext) {
       return (data || []) as WasteSummaryRow[];
     },
 
-    getStaffPerformance: async (tenantId: string, from: string, to: string) => {
+    getStaffPerformance: async (from: string, to: string) => {
       const { data, error } = await ctx.anyClient.rpc('get_staff_performance', {
-        p_tenant_id: tenantId,
         p_from: from,
         p_to: to,
       });

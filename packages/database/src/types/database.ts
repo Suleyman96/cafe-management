@@ -700,25 +700,25 @@ export interface Database {
         };
         Returns: string;
       };
-      // Reports RPCs
+      // Reports RPCs (tenant derived from current_tenant_id())
       get_revenue_summary: {
-        Args: { p_tenant_id: string; p_from: string; p_to: string };
+        Args: { p_from: string; p_to: string };
         Returns: Json;
       };
       get_top_sold_items: {
-        Args: { p_tenant_id: string; p_from: string; p_to: string; p_limit?: number };
+        Args: { p_from: string; p_to: string; p_limit?: number };
         Returns: Json;
       };
       get_expense_summary: {
-        Args: { p_tenant_id: string; p_from: string; p_to: string };
+        Args: { p_from: string; p_to: string };
         Returns: Json;
       };
       get_waste_summary: {
-        Args: { p_tenant_id: string; p_from: string; p_to: string };
+        Args: { p_from: string; p_to: string };
         Returns: Json;
       };
       get_staff_performance: {
-        Args: { p_tenant_id: string; p_from: string; p_to: string };
+        Args: { p_from: string; p_to: string };
         Returns: Json;
       };
       // Orders RPC

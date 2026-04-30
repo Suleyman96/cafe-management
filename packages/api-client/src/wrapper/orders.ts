@@ -579,11 +579,8 @@ export function createOrdersWrapper(ctx: WrapperContext) {
      * Bulk-cancel `new` / `pending_approval` orders older than `olderThanMinutes`
      * with no non-cancelled items. Used to reap abandoned QR-flow carts.
      *
-     * **Security note.** The underlying RPC `cleanup_empty_orders` currently
-     * has no role guard — any authenticated staff member can call it (see
-     * `plans/09-DB-SECURITY-DEFERRED.md` M10). Until that's fixed, only
-     * call this from admin/owner code paths. Returns the array of cancelled
-     * order IDs.
+     * The RPC requires the caller to have role admin or owner; calls from
+     * other staff roles raise `Only admin or owner can clean up empty orders`.
      */
     cleanupEmptyOrders: async (olderThanMinutes = 2) => {
       const { data, error } = await ctx.anyClient.rpc('cleanup_empty_orders', {

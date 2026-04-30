@@ -2025,7 +2025,7 @@ export type Database = {
         Returns: Json;
       };
       get_expense_summary: {
-        Args: { p_from: string; p_tenant_id: string; p_to: string };
+        Args: { p_from: string; p_to: string };
         Returns: {
           category_name: string;
           entry_count: number;
@@ -2040,7 +2040,7 @@ export type Database = {
         Returns: number;
       };
       get_revenue_summary: {
-        Args: { p_from: string; p_tenant_id: string; p_to: string };
+        Args: { p_from: string; p_to: string };
         Returns: {
           avg_ticket: number;
           cancelled_count: number;
@@ -2067,7 +2067,7 @@ export type Database = {
         }[];
       };
       get_staff_performance: {
-        Args: { p_from: string; p_tenant_id: string; p_to: string };
+        Args: { p_from: string; p_to: string };
         Returns: {
           cancelled_orders: number;
           completed_orders: number;
@@ -2090,12 +2090,7 @@ export type Database = {
       };
       get_tenant_plan_from_context: { Args: never; Returns: string };
       get_top_sold_items: {
-        Args: {
-          p_from: string;
-          p_limit?: number;
-          p_tenant_id: string;
-          p_to: string;
-        };
+        Args: { p_from: string; p_limit?: number; p_to: string };
         Returns: {
           item_name: string;
           menu_item_id: string;
@@ -2108,7 +2103,7 @@ export type Database = {
         Returns: Json;
       };
       get_waste_summary: {
-        Args: { p_from: string; p_tenant_id: string; p_to: string };
+        Args: { p_from: string; p_to: string };
         Returns: {
           entry_count: number;
           item_name: string;
