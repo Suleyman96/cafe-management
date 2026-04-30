@@ -66,8 +66,7 @@ vi.mock('@gustri/i18n', () => ({
   useLocale: () => 'en',
   useDateFormatter: (options?: Intl.DateTimeFormatOptions) =>
     new Intl.DateTimeFormat('en', options),
-  useNumberFormatter: (options?: Intl.NumberFormatOptions) =>
-    new Intl.NumberFormat('en', options),
+  useNumberFormatter: (options?: Intl.NumberFormatOptions) => new Intl.NumberFormat('en', options),
   useCurrencyFormatter: (currency: string) =>
     new Intl.NumberFormat('en', { style: 'currency', currency }),
   initI18n: vi.fn(),
