@@ -165,7 +165,7 @@ LIMIT 1;
 
 ## 🟠 High
 
-### H4. Storage buckets have no tenant scoping
+### ~~H4. Storage buckets have no tenant scoping~~ ✅ Closed 2026-05-01
 **Where:** [supabase/migrations/20260424000001_storage_policies.sql:18-65](../supabase/migrations/20260424000001_storage_policies.sql#L18)
 
 `Authenticated users can upload/update/delete branding` and the matching
@@ -391,3 +391,11 @@ doc; do not re-fix them:
 | H8   | revoked client `INSERT/UPDATE` on `stock_movements` |
 | M6   | added `pii_encryption_status()` probe + Next.js `instrumentation.ts` |
 | L3   | added partial `idx_orders_delivery_token` |
+
+---
+
+## Quick reference — fixed in `20260501000001`
+
+| Item | Fix |
+|------|-----|
+| H4   | Storage RLS for `branding` and `menu-images` now requires the path's first segment to equal the caller's tenant id (`split_part(name, '/', 1) = current_tenant_id_text()`); existing object names + URL columns backfilled to the new prefix; `image-upload.tsx` and `menu-item-modal.tsx` now write to `<tenant_id>/<folder>/<file>`. |
