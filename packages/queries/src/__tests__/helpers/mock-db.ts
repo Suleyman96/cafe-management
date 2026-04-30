@@ -153,12 +153,7 @@ export function createMockDb() {
       'getStaffPerformance',
     ),
     views: mockResource('getSalesSummary', 'getOrderPaymentSummary'),
-    realtime: mockResource(
-      'subscribeToTables',
-      'subscribeToOrders',
-      'subscribeToWaiterCalls',
-      'unsubscribe',
-    ),
+    realtime: mockResource('subscribeToTables', 'subscribeToOrders', 'subscribeToWaiterCalls'),
   };
 }
 

@@ -58,7 +58,7 @@ shape diffs.
 
 ---
 
-### A2 (= H1). Domain `Subscription` interface for realtime 🟡
+### A2 (= H1). Domain `Subscription` interface for realtime ✅ Done 2026-04-30
 **Why now:** every realtime caller currently imports `RealtimeChannel`
 from `@supabase/supabase-js`. With tenant #2 the realtime channel filter
 needs to be tenant-scoped *and* the public type stops being Supabase-y.
@@ -149,7 +149,7 @@ the data hits the network.
 
 ---
 
-### A4 (= M6). Typed RPC bindings 🟡
+### A4 (= M6). Typed RPC bindings ✅ Done 2026-04-30
 **Why now:** depends on A1 (generator output includes
 `Database['public']['Functions']`). Bundle them.
 
@@ -194,12 +194,27 @@ the data hits the network.
 
 ### Batch A landing checklist
 
-- [ ] A1 lands first (others depend on generated types).
-- [ ] A4 piggybacks on the same PR as A1 if context allows.
-- [ ] A2 + A3 in a follow-up PR (touch the wrapper layer together).
+- [x] A2 (Subscription interface) — 2026-04-30
+- [x] A4 (typed RPC bindings) — 2026-04-30. Built on the existing
+  `Database['public']['Functions']` shape rather than blocking on A1; the
+  helper signature is correct in either case.
+- [ ] A1 (replace hand-written `database.ts`) — deferred. The hand-written
+  file carries CHECK-constraint narrowings (`status: 'free' | 'occupied' | …`,
+  `payment_method: 'cash' | 'card' | 'digital'`, etc.) that the generator
+  cannot infer. A naked `export * from './generated'` would weaken
+  `findAll({ status })` typing across ~30 wrapper methods. Pre-tenant-#2
+  this needs its own focused PR with either: (a) an overlay layer that
+  preserves narrowings on top of `generated.ts`, or (b) accepting the
+  narrowing loss and patching consumers. Soft CI gate (`db-types-check`)
+  already detects column drift today.
+- [ ] A3 (defense-in-depth tenant filter) — deferred. Touches every
+  wrapper read method (~20 wrappers), wrapper context, and integration
+  tests; needs a focused 2–3 day PR with cross-tenant test fixtures.
+  Hard prerequisite before tenant #2.
 - [ ] After all four: `pnpm check`, `pnpm test`, `pnpm type-check` all
   green; CI's `db-types-check` job is required (no `continue-on-error`).
 - [ ] Update `plans/10` — move H0/H1/H5/M6 to "Quick reference — fixed".
+  H1 and M6 already moved 2026-04-30.
 - [ ] Add a CHANGELOG entry: "Tenant-#2 readiness — wrapper boundary
   hardening, typed RPCs, generated DB types."
 

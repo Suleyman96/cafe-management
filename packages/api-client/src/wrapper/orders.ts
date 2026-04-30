@@ -5,6 +5,7 @@
 import { isOrder } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
 import { dedupeInsert } from './_dedupe';
+import { rpc } from './rpc-typed';
 import type { OrderInsert, OrderRow, PaginatedResult, WrapperContext } from './types';
 
 /**
@@ -583,12 +584,11 @@ export function createOrdersWrapper(ctx: WrapperContext) {
      * other staff roles raise `Only admin or owner can clean up empty orders`.
      */
     cleanupEmptyOrders: async (olderThanMinutes = 2) => {
-      const { data, error } = await ctx.anyClient.rpc('cleanup_empty_orders', {
+      const data = await rpc(ctx, 'cleanup_empty_orders', {
         p_older_than_minutes: olderThanMinutes,
       });
-
-      if (error) throw handleSupabaseError(error);
-      return (data || []).map((row: { cancelled_order_id: string }) => row.cancelled_order_id);
+      const rows = (data ?? []) as unknown as Array<{ cancelled_order_id: string }>;
+      return rows.map((row) => row.cancelled_order_id);
     },
   };
 }

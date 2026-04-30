@@ -53,30 +53,18 @@ with launch fixes.
 
 ---
 
-### H1. `RealtimeChannel` leaks into `@gustri/api-client` public surface
-**Where:** [packages/api-client/src/wrapper/realtime.ts](../packages/api-client/src/wrapper/realtime.ts)
-
-`subscribeToTables`, `subscribeToOrders`, etc. return `RealtimeChannel` (a
-raw `@supabase/supabase-js` type). Every consumer (staff-web,
-customer-web, mobile) imports a Supabase symbol into its component tree.
-Provider swap = every subscriber edits.
-
-**Fix:** wrap with a domain `Subscription { unsubscribe(): void }`
-interface. Internally the wrapper still uses `RealtimeChannel`, but
-consumers don't see it.
-
-```ts
-// packages/api-client/src/wrapper/realtime.ts
-export interface Subscription {
-  unsubscribe(): void;
-}
-
-function toSubscription(channel: RealtimeChannel): Subscription {
-  return { unsubscribe: () => { channel.unsubscribe(); } };
-}
-```
-
-Update every `subscribeTo*` to return `Subscription`. Migrate callers.
+### ~~H1. `RealtimeChannel` leaks into `@gustri/api-client` public surface~~ ✅ Closed 2026-04-30
+[packages/api-client/src/wrapper/realtime.ts](../packages/api-client/src/wrapper/realtime.ts)
+now exports a domain `Subscription { unsubscribe(): void }` interface and
+returns it from every `subscribeTo*` method. The internal `RealtimeChannel`
+is held inside `toSubscription(ctx, channel)`, which combines
+`channel.unsubscribe()` and `ctx.client.removeChannel(channel)` for a
+full teardown. Public API surface no longer leaks
+`@supabase/supabase-js` types from the realtime wrapper. The standalone
+`realtime.unsubscribe(channel)` method has been removed; consumers call
+`subscription.unsubscribe()` instead. App-level realtime code (e.g.
+`use-realtime-sync.ts`, `notification-provider.tsx`) still uses the raw
+`supabase` client by design (CLAUDE.md Exception 1).
 
 ---
 
@@ -184,16 +172,18 @@ accordingly.
 
 ---
 
-### M6. RPCs called via `ctx.anyClient.rpc(...)`
-**Where:** various wrappers, e.g., [packages/api-client/src/wrapper/orders.ts:556](../packages/api-client/src/wrapper/orders.ts#L556)
-
-Each RPC call escapes into `anyClient` (untyped) — no end-to-end safety
-from RPC name → arg shape → return shape. Combined with deferred-DB M10
-(no role guard on `cleanup_empty_orders`), this is where bugs hide.
-
-**Fix:** generate typed RPC bindings (`supabase gen types` includes
-`Database['public']['Functions']`) and use them via a typed
-`rpc<Name>(args)` helper. Drop `AnySupabaseClient` for RPC paths.
+### ~~M6. RPCs called via `ctx.anyClient.rpc(...)`~~ ✅ Closed 2026-04-30
+Replaced by a typed `rpc(ctx, name, args)` helper at
+[packages/api-client/src/wrapper/rpc-typed.ts](../packages/api-client/src/wrapper/rpc-typed.ts)
+that constrains `name` to
+`keyof Database['public']['Functions']`, infers `args` from
+`Functions[name]['Args']`, and returns
+`Functions[name]['Returns']` — with uniform error mapping via
+`handleSupabaseError`. All 11 `ctx.anyClient.rpc(...)` call sites in
+`reports.ts`, `tenants.ts`, `orders.ts:cleanupEmptyOrders`, and
+`rpc.ts` have been migrated. The `anyClient` field on `WrapperContext`
+remains for view queries that the typed `Database` doesn't cover, per
+the plans/11 "Out of scope" guidance.
 
 ---
 
@@ -262,7 +252,9 @@ that enforce non-obvious rules. No standalone PR needed.
 | C2   | Moved `handleSupabaseError` (and `httpStatusToAppError`) from `@gustri/core` → `@gustri/api-client/errors`; removed `navigator.onLine` |
 | C3   | Moved `QUERY_KEYS` to `@gustri/queries`; moved `getRoleBadgeColor`/`getOrderStatusColor` to `@gustri/ui` |
 | C4 (partial) | Added `pnpm db:types:generate` + `pnpm db:types:check`; soft CI gate (`db-types-check` job, `continue-on-error: true`). The actual replacement of `database.ts` → `generated.ts` is tracked as **H0** above. |
+| H1   | Added domain `Subscription` interface to `realtime.ts`; wrapper public surface no longer leaks `RealtimeChannel`. App-level raw realtime code preserved per CLAUDE.md Exception 1. |
 | H2   | Added Biome / CI rule flagging hardcoded JSX text and `toast.*`/`Alert.alert(` literals not produced via `t(...)` |
 | H3   | Split `orders.ts` (650 LOC) into `orders.ts` + `order-items.ts`; split `tasks.ts` similarly |
 | M2   | Documented `-safe` hook promotion rule in CLAUDE.md (3 explicit criteria + promotion path to `@gustri/queries`) |
+| M6   | Added typed `rpc(ctx, name, args)` helper at `wrapper/rpc-typed.ts`; migrated 11 `anyClient.rpc(...)` call sites for end-to-end RPC type safety. |
 | L4 (partial) | Added JSDoc to high-risk wrapper methods (orders/order-items/tasks/payments/realtime). Remaining methods documented opportunistically. |
