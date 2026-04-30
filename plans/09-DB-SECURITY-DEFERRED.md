@@ -23,14 +23,7 @@
 
 ## 🔴 Critical (block tenant #2)
 
-> **Status update 2026-04-30:** C1, C2, C3, C4, C5, H5, H7, M1, M2, M3, M10,
-> L1, L2, L5 were closed by `20260430000002_multitenant_security_hardening.sql`.
-> H4 was closed by `20260501000001_storage_tenant_scoping.sql`. Original
-> entries are kept below for audit traceability; see "Quick reference — fixed
-> in `20260430000002`" and "Quick reference — fixed in `20260501000001`" at
-> the bottom for the closure summaries.
-
-### ~~C1. Report aggregation RPCs accept any `p_tenant_id`~~ ✅ Closed 2026-04-30
+### C1. Report aggregation RPCs accept any `p_tenant_id`
 **Where:**
 - [supabase/migrations/20260423000001_report_aggregation_functions.sql](../supabase/migrations/20260423000001_report_aggregation_functions.sql)
 - [supabase/migrations/20260425000001_fix_report_functions.sql](../supabase/migrations/20260425000001_fix_report_functions.sql)
@@ -62,7 +55,7 @@ Better still: drop `p_tenant_id` and read `current_tenant_id()` inside.
 
 ---
 
-### ~~C2. `Anyone can view ...` policies bypass `tenant_isolation`~~ ✅ Closed 2026-04-30
+### C2. `Anyone can view ...` policies bypass `tenant_isolation`
 **Where:** [supabase/migrations/00000000000000_baseline.sql:2647-2687](../supabase/migrations/00000000000000_baseline.sql#L2647)
 
 These permissive policies have no `TO` clause and use `USING(true)`, so
@@ -92,7 +85,7 @@ The scoped `anon_read_*` replacements already exist for anon traffic.
 
 ---
 
-### ~~C3. `set_table_context()` lets staff pivot to another tenant~~ ✅ Closed 2026-04-30
+### C3. `set_table_context()` lets staff pivot to another tenant
 **Where:**
 - [supabase/migrations/00000000000000_baseline.sql:259-267](../supabase/migrations/00000000000000_baseline.sql#L259) (`current_tenant_id`)
 - [supabase/migrations/00000000000000_baseline.sql:529-548](../supabase/migrations/00000000000000_baseline.sql#L529) (`set_table_context`)
@@ -120,7 +113,7 @@ REVOKE EXECUTE ON FUNCTION public.set_table_context(text) FROM authenticated;
 
 ---
 
-### ~~C4. `cafe_settings_single_row_check` blocks tenant #2 signup~~ ✅ Closed 2026-04-30
+### C4. `cafe_settings_single_row_check` blocks tenant #2 signup
 **Where:** [supabase/migrations/00000000000000_baseline.sql:1040](../supabase/migrations/00000000000000_baseline.sql#L1040)
 
 ```sql
@@ -141,7 +134,7 @@ ALTER TABLE public.cafe_settings DROP CONSTRAINT IF EXISTS cafe_settings_single_
 
 ---
 
-### ~~C5. `calculate_order_total()` reads `cafe_settings` with no tenant filter~~ ✅ Closed 2026-04-30
+### C5. `calculate_order_total()` reads `cafe_settings` with no tenant filter
 **Where:**
 - [supabase/migrations/20260418100001_upgrade_decimal_precision.sql:78-81](../supabase/migrations/20260418100001_upgrade_decimal_precision.sql#L78)
 - [supabase/migrations/20260419000002_add_financial_audit_log.sql:150-153](../supabase/migrations/20260419000002_add_financial_audit_log.sql#L150)
@@ -172,7 +165,7 @@ LIMIT 1;
 
 ## 🟠 High
 
-### ~~H4. Storage buckets have no tenant scoping~~ ✅ Closed 2026-05-01
+### H4. Storage buckets have no tenant scoping
 **Where:** [supabase/migrations/20260424000001_storage_policies.sql:18-65](../supabase/migrations/20260424000001_storage_policies.sql#L18)
 
 `Authenticated users can upload/update/delete branding` and the matching
@@ -194,7 +187,7 @@ helpers in `apps/staff-web/src/lib/services/*` accordingly.
 
 ---
 
-### ~~H5. `set_table_context` granted to `authenticated`~~ ✅ Closed 2026-04-30
+### H5. `set_table_context` granted to `authenticated`
 Same root cause as C3. Even after C3 is fixed, leave the GUC writeable
 only to `anon` (the QR-code customer flow needs it).
 
@@ -205,7 +198,7 @@ REVOKE EXECUTE ON FUNCTION public.set_table_context(text) FROM authenticated;
 
 ---
 
-### ~~H7. `update_order_payment_status` updates orders/tables with no tenant guard~~ ✅ Closed 2026-04-30
+### H7. `update_order_payment_status` updates orders/tables with no tenant guard
 **Where:** [supabase/migrations/00000000000000_baseline.sql:784-829](../supabase/migrations/00000000000000_baseline.sql#L784)
 
 The trigger is `SECURITY DEFINER`. With C2/C3 still open, an attacker who
@@ -226,7 +219,7 @@ END IF;
 
 ## 🟡 Medium
 
-### ~~M1. Global uniqueness on `tables.table_number` and `orders.order_number`~~ ✅ Closed 2026-04-30
+### M1. Global uniqueness on `tables.table_number` and `orders.order_number`
 **Where:**
 - [supabase/migrations/00000000000000_baseline.sql:1657](../supabase/migrations/00000000000000_baseline.sql#L1657) (`orders_order_number_key`)
 - [supabase/migrations/00000000000000_baseline.sql:1712](../supabase/migrations/00000000000000_baseline.sql#L1712) (`tables_table_number_key`)
@@ -245,7 +238,7 @@ CREATE UNIQUE INDEX orders_tenant_number_uniq ON public.orders (tenant_id, order
 
 ---
 
-### ~~M2. `generate_order_number()` opens-fails when no tenant context is set~~ ✅ Closed 2026-04-30
+### M2. `generate_order_number()` opens-fails when no tenant context is set
 **Where:** [supabase/migrations/00000000000000_baseline.sql:273-298](../supabase/migrations/00000000000000_baseline.sql#L273)
 
 ```sql
@@ -263,7 +256,7 @@ IF v_tenant_id IS NULL THEN RAISE EXCEPTION 'no tenant context'; END IF;
 
 ---
 
-### ~~M3. `check_order_limit` / `check_table_limit` open-default to unlimited~~ ✅ Closed 2026-04-30
+### M3. `check_order_limit` / `check_table_limit` open-default to unlimited
 **Where:** [supabase/migrations/00000000000000_baseline.sql:189-256](../supabase/migrations/00000000000000_baseline.sql#L189)
 
 When `tenants.plan` is `NULL` or unrecognized, `v_max := -1` and the
@@ -317,7 +310,7 @@ test before tenant #2 onboards.
 
 ---
 
-### ~~M10. `cleanup_empty_orders` has no role guard~~ ✅ Closed 2026-04-30
+### M10. `cleanup_empty_orders` has no role guard
 **Where:** [supabase/migrations/20260423000003_cleanup_empty_orders_function.sql](../supabase/migrations/20260423000003_cleanup_empty_orders_function.sql)
 
 Any active staff member can call it and bulk-cancel `new` /
@@ -339,20 +332,24 @@ the upcoming `tenant_id = current_tenant_id()` predicate keep it scoped.
 
 ## 🟢 Low
 
-### ~~L1. Index column order on staff email~~ ✅ Closed 2026-04-30
-Index dropped and recreated as `(tenant_id, LOWER(email))` in
-`20260430000002_multitenant_security_hardening.sql`.
+### L1. Index column order on staff email
+[supabase/migrations/20260423000005_staff_email_per_tenant.sql:9-10](../supabase/migrations/20260423000005_staff_email_per_tenant.sql#L9) —
+`(LOWER(email), tenant_id)` should be `(tenant_id, LOWER(email))` for
+prefix-scan efficiency. Drop and recreate.
 
-### ~~L2. `idx_staff_auth_user` should be `UNIQUE`~~ ✅ Closed 2026-04-30
-Promoted to a UNIQUE index in `20260430000002_multitenant_security_hardening.sql`.
+### L2. `idx_staff_auth_user` should be `UNIQUE`
+[supabase/migrations/00000000000000_baseline.sql:1946](../supabase/migrations/00000000000000_baseline.sql#L1946) —
+the codebase assumes one staff row per auth user. Enforce it.
 
 ### L4. CHECK-constraint enums vs. PG ENUM
 Multiple tables use literal `CHECK ((status)::text = ANY(...))` lists for
 status/priority. Adding a state requires a migration. Consider a
 PostgreSQL `ENUM` and re-use it from the wrapper TS types.
 
-### ~~L5. Staff email backfill missing `LOWER()`~~ ✅ Closed 2026-04-30
-Backfilled in `20260430000002_multitenant_security_hardening.sql`.
+### L5. Staff email backfill missing `LOWER()`
+The new tenant-scoped unique index uses `LOWER(email)` but no migration
+backfilled `LOWER()` against existing rows. Pre-existing emails may
+collide if two staff at the same tenant differ only by case.
 
 ### L6. Some triggers don't set `search_path`
 `auto_acknowledge_feedback` and a few others don't declare
@@ -394,32 +391,3 @@ doc; do not re-fix them:
 | H8   | revoked client `INSERT/UPDATE` on `stock_movements` |
 | M6   | added `pii_encryption_status()` probe + Next.js `instrumentation.ts` |
 | L3   | added partial `idx_orders_delivery_token` |
-
----
-
-## Quick reference — fixed in `20260430000002`
-
-| Item | Fix |
-|------|-----|
-| C1   | Dropped `p_tenant_id` from all 5 report RPCs; tenant derived from `current_tenant_id()` inside each function |
-| C2   | Dropped `Anyone can view ...` policies on `tables`, `cafe_settings`, `customer_feedback`; scoped `anon_read_*` policies cover legitimate anon reads |
-| C3   | Rewrote `current_tenant_id()` to derive from staff row for authenticated callers; GUC fallback is anon-only |
-| C4   | Dropped `cafe_settings_single_row_check`; unique index on `(tenant_id)` keeps the per-tenant invariant |
-| C5   | `calculate_order_total()` joins `cafe_settings` to `orders.tenant_id` instead of `LIMIT 1` |
-| H5   | Revoked `set_table_context(text)` from `authenticated` and `PUBLIC`; granted to `anon` only |
-| H7   | `update_order_payment_status` asserts `payment.tenant_id = orders.tenant_id` before mutating |
-| M1   | Dropped global unique constraints on `tables.table_number` / `orders.order_number`; replaced with `(tenant_id, ...)` unique indexes |
-| M2   | `generate_order_number()` raises on null tenant context instead of falling open |
-| M3   | `check_order_limit` / `check_table_limit` default to the lowest plan when `tenants.plan` is null/unrecognized |
-| M10  | `cleanup_empty_orders` requires `get_my_staff_role() IN ('admin','owner')` |
-| L1   | Recreated `idx_staff_email_per_tenant` as `(tenant_id, LOWER(email))` for prefix-scan efficiency |
-| L2   | Promoted `idx_staff_auth_user` to `UNIQUE` |
-| L5   | Backfilled mixed-case staff emails to lowercase |
-
----
-
-## Quick reference — fixed in `20260501000001`
-
-| Item | Fix |
-|------|-----|
-| H4   | Storage RLS for `branding` and `menu-images` now requires the path's first segment to equal the caller's tenant id (`split_part(name, '/', 1) = current_tenant_id_text()`); existing object names + URL columns backfilled to the new prefix; `image-upload.tsx` and `menu-item-modal.tsx` now write to `<tenant_id>/<folder>/<file>`. |

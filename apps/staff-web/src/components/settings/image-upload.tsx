@@ -8,7 +8,6 @@ import Image from 'next/image';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
-import { useAuthStore } from '@/store/auth-store';
 
 interface ImageUploadProps {
   value: string | null;
@@ -32,7 +31,6 @@ export function ImageUpload({
   maxSizeMB = 2,
 }: ImageUploadProps) {
   const { t } = useTranslation();
-  const tenantId = useAuthStore((s) => s.staff?.tenant_id);
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -58,11 +56,6 @@ export function ImageUpload({
         return;
       }
 
-      if (!tenantId) {
-        toast.error(t('imageUpload.uploadFailed'));
-        return;
-      }
-
       setIsUploading(true);
 
       try {
@@ -74,9 +67,8 @@ export function ImageUpload({
           fileType: 'image/webp',
         });
 
-        // Tenant-prefixed path is required by storage RLS (H4 — see
-        // supabase/migrations/20260501000001_storage_tenant_scoping.sql).
-        const filename = `${tenantId}/${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
+        // Generate filename with .webp extension
+        const filename = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
 
         // Upload compressed file to Supabase Storage
         const { error: uploadError } = await supabase.storage
@@ -105,7 +97,7 @@ export function ImageUpload({
         setIsUploading(false);
       }
     },
-    [bucket, folder, maxSizeMB, onChange, t, tenantId],
+    [bucket, folder, maxSizeMB, onChange, t],
   );
 
   const handleDrop = useCallback(

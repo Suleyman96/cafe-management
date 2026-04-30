@@ -169,15 +169,6 @@ vi.mock('@gustri/i18n', () => {
       t: (key: string) => en[key] ?? key,
       i18n: { language: 'en', changeLanguage: vi.fn() },
     }),
-    // Consumed by `useFormatPrice` in `@gustri/queries`. Missing any of these
-    // surfaces as "No 'X' export is defined on the '@gustri/i18n' mock".
-    useLocale: () => 'en',
-    useDateFormatter: (options?: Intl.DateTimeFormatOptions) =>
-      new Intl.DateTimeFormat('en', options),
-    useNumberFormatter: (options?: Intl.NumberFormatOptions) =>
-      new Intl.NumberFormat('en', options),
-    useCurrencyFormatter: (currency: string) =>
-      new Intl.NumberFormat('en', { style: 'currency', currency }),
     I18nextProvider: ({ children }: any) => children,
     Trans: ({ children }: any) => children,
   };

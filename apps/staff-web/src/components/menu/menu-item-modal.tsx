@@ -9,7 +9,6 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateMenuItem, useUpdateMenuItem } from '@/hooks';
 import { supabase } from '@/lib/supabase/client';
-import { useAuthStore } from '@/store/auth-store';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -34,7 +33,6 @@ const COMMON_ALLERGENS = [
 
 export function MenuItemModal({ item, categories, menuItems = [], onClose }: MenuItemModalProps) {
   const { t } = useTranslation('staff');
-  const tenantId = useAuthStore((s) => s.staff?.tenant_id);
   const isEditing = !!item;
   const createItem = useCreateMenuItem();
   const updateItem = useUpdateMenuItem();
@@ -86,14 +84,9 @@ export function MenuItemModal({ item, categories, menuItems = [], onClose }: Men
 
       // Upload image if selected
       if (imageFile) {
-        if (!tenantId) {
-          throw new Error('Missing tenant context for upload');
-        }
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${crypto.randomUUID()}.${fileExt}`;
-        // Tenant-prefixed path is required by storage RLS (H4 — see
-        // supabase/migrations/20260501000001_storage_tenant_scoping.sql).
-        const filePath = `${tenantId}/menu-items/${fileName}`;
+        const filePath = `menu-items/${fileName}`;
 
         toast.loading(t('menu.uploadingImage'), { id: toastId });
 

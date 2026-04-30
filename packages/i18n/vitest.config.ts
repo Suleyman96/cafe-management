@@ -10,18 +10,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: [
-        'src/**/*.test.{ts,tsx}',
-        'src/__tests__/**',
-        'src/index.ts',
-        'src/locales/**',
-        // React-hook wrappers around `Intl.*`. Testing them here would
-        // require adding `jsdom` + `@testing-library/react` to a package
-        // that's otherwise pure config + locale bundles. `useLocale` and
-        // friends are exercised by consumers (`useFormatPrice` test in
-        // `@gustri/queries`).
-        'src/formatters.ts',
-      ],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/__tests__/**', 'src/index.ts', 'src/locales/**'],
       thresholds: {
         statements: 50,
         branches: 50,
