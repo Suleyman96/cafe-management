@@ -30,14 +30,6 @@ jobs:
     name: EAS Build (Preview)
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    # The post-build step writes a comment on the PR with the EAS build URL.
-    # Default GITHUB_TOKEN is read-only for issues/PRs, so the github-script
-    # call returned 403 "Resource not accessible by integration" until these
-    # were granted. `contents: read` keeps `actions/checkout` working.
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
 
     steps:
       - name: Checkout
@@ -65,27 +57,13 @@ jobs:
         id: eas-build
         working-directory: apps/mobile
         run: |
-          # `--json` writes JSON to stdout; progress + warnings ("No environment
-          # variables…", "Created update channel…") go to stderr. Capture stdout
-          # only — mixing them feeds non-JSON to jq and the parser explodes on
-          # the leading "✔ …" lines.
-          set -o pipefail
-          BUILD_OUTPUT=$(eas build --profile preview --platform android --non-interactive --no-wait --json)
+          BUILD_OUTPUT=$(eas build --profile preview --platform android --non-interactive --no-wait --json 2>&1 || true)
           echo "$BUILD_OUTPUT"
-
-          BUILD_ID=$(echo "$BUILD_OUTPUT" | jq -r '.[0].id // empty')
-          OWNER=$(echo "$BUILD_OUTPUT" | jq -r '.[0].project.ownerAccount.name // empty')
-          SLUG=$(echo "$BUILD_OUTPUT"  | jq -r '.[0].project.slug // empty')
-          if [ -n "$BUILD_ID" ] && [ -n "$OWNER" ] && [ -n "$SLUG" ]; then
-            BUILD_URL="https://expo.dev/accounts/$OWNER/projects/$SLUG/builds/$BUILD_ID"
-          else
-            BUILD_URL=""
-          fi
+          BUILD_URL=$(echo "$BUILD_OUTPUT" | jq -r '.[0].buildDetailsPage // empty')
           echo "build_url=$BUILD_URL" >> "$GITHUB_OUTPUT"
 
       - name: Comment build URL on PR
-        # Skip on fork PRs (token is read-only regardless of permissions block).
-        if: steps.eas-build.outputs.build_url != '' && github.event.pull_request.head.repo.full_name == github.repository
+        if: steps.eas-build.outputs.build_url != ''
         uses: actions/github-script@v7
         with:
           script: |

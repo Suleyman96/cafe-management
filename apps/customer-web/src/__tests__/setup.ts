@@ -48,10 +48,7 @@ vi.mock('sonner', () => ({
   },
 }));
 
-// Mock i18n — returns translation keys as-is for test assertions.
-// `useLocale`, `useDateFormatter`, `useNumberFormatter`, `useCurrencyFormatter`
-// are consumed by `useFormatPrice` in `@gustri/queries`; missing any of them
-// causes "No 'X' export is defined on the '@gustri/i18n' mock" at render time.
+// Mock i18n — returns translation keys as-is for test assertions
 vi.mock('@gustri/i18n', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, any>) => {
@@ -63,12 +60,6 @@ vi.mock('@gustri/i18n', () => ({
     },
     i18n: { language: 'en', changeLanguage: vi.fn() },
   }),
-  useLocale: () => 'en',
-  useDateFormatter: (options?: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat('en', options),
-  useNumberFormatter: (options?: Intl.NumberFormatOptions) => new Intl.NumberFormat('en', options),
-  useCurrencyFormatter: (currency: string) =>
-    new Intl.NumberFormat('en', { style: 'currency', currency }),
   initI18n: vi.fn(),
 }));
 
