@@ -361,10 +361,11 @@ keeps Supabase's linter quiet.
 
 ## Operational follow-ups
 
-- **PII encryption probe:** the staff-web `instrumentation.ts` introduced in
-  `20260428000001` blocks production boot if `app.pii_encryption_key` is
-  unset. Set it via `ALTER DATABASE postgres SET app.pii_encryption_key =
-  '<rotation-key>'` in the Supabase dashboard before the next deploy.
+> The PII-encryption probe (`apps/staff-web/instrumentation.ts`) is now
+> fully shipped — boot-fail when `app.pii_encryption_key` is unset, plus
+> a Sentry breadcrumb on success. Setting the key on the database itself
+> is a launch-checklist operational task; see `08-LAUNCH-PLAN.md`.
+
 - **Backfill encrypted rows:** when the key is first set, re-run the
   `UPDATE public.orders SET ... = encrypt_pii(...)` block from
   `20260421000001_encrypt_customer_pii.sql` once. Existing plaintext rows
@@ -399,3 +400,40 @@ doc; do not re-fix them:
 | Item | Fix |
 |------|-----|
 | H4   | Storage RLS for `branding` and `menu-images` now requires the path's first segment to equal the caller's tenant id (`split_part(name, '/', 1) = current_tenant_id_text()`); existing object names + URL columns backfilled to the new prefix; `image-upload.tsx` and `menu-item-modal.tsx` now write to `<tenant_id>/<folder>/<file>`. |
+
+---
+
+## Quick reference — fixed in `20260430000002`
+
+Verified 2026-05-01. The bodies above for these items are kept for
+historical reference but are no longer actionable.
+
+| Item | Fix |
+|------|-----|
+| C1   | Report RPCs (`get_revenue_summary`, `get_top_sold_items`, `get_expense_summary`, `get_waste_summary`, `get_staff_performance`) redefined to derive tenant from `current_tenant_id()` instead of accepting `p_tenant_id`. |
+| C2   | Dropped four permissive `Anyone can view ...` policies on `tables`, `cafe_settings`, `customer_feedback`. |
+| C3   | `current_tenant_id()` rewritten to prioritize the staff-derived tenant for authenticated users; `set_table_context()` revoked from `authenticated`. |
+| C4   | Dropped `cafe_settings_single_row_check` constraint — multi-tenant signup now unblocked. |
+| C5   | `calculate_order_total()` scoped via `WHERE tenant_id = v_order_tenant_id` (joined through the order). |
+| H5   | `set_table_context()` revoked from `authenticated`; granted only to `anon`. |
+| H7   | `update_order_payment_status()` trigger asserts tenant match before mutating the order/table. |
+| M1   | Dropped global `tables_table_number_key` and `orders_order_number_key`; created per-tenant unique indexes (`tenant_id, table_number`) and (`tenant_id, order_number`). |
+| M2   | `generate_order_number()` raises `'No tenant context'` if `v_tenant_id IS NULL` instead of falling open. |
+| M3   | `check_order_limit()` / `check_table_limit()` default to free-plan caps via `COALESCE(v_plan, 'free')`. |
+| M10  | `cleanup_empty_orders()` enforces `IF v_role NOT IN ('admin','owner') THEN RAISE EXCEPTION`. |
+| L1   | Recreated staff-email index as `(tenant_id, LOWER(email))` for prefix-scan efficiency. |
+| L2   | `idx_staff_auth_user` made `UNIQUE`. |
+| L5   | Backfilled existing `staff.email` rows via `UPDATE … SET email = LOWER(email)`. |
+
+---
+
+## Still deferred (verified 2026-05-01)
+
+These remain open and gate tenant #2:
+
+- **M4** — `tenant_self_view` exposing only `name, slug` not yet created; staff still SELECT full `tenants` row including `plan` and `is_active`.
+- **M8** — `current_tenant_id()` / `get_my_staff_role()` / `is_active_staff()` still query the `staff` table on every RLS evaluation; the JWT custom-claims hook from `20260423000006` is wired but unread.
+- **M9** — Closes automatically once C2/C3 close (now done); load-test verification still pending.
+- **M11** — `active_orders_view` still has no `LIMIT`.
+- **L4** — CHECK-constraint enums vs. PG ENUM — informational only.
+- **L6** — Some triggers still don't `SET search_path` — defense-in-depth, not exploitable.

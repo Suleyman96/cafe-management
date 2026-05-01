@@ -3,18 +3,33 @@
 > Generated: 2026-04-20
 > Author: Senior Architecture Review
 > Branch: rafactoring/global-refactoring
+> **Status update: 2026-05-01.** Most items below are shipped. The
+> recommended-execution-order section is preserved as historical record;
+> see the **Status** column for the live picture and the per-file plans
+> for any remaining residue. New work since this audit is tracked in
+> `06–11`, not here.
 
 ## Summary
 
-| Priority | Issues | Estimated Effort | Timeline |
-|----------|--------|-----------------|----------|
-| [CRITICAL](01-CRITICAL-fixes.md) | 2 issues | 1-2 days | Immediate |
-| [HIGH](02-HIGH-fixes.md) | 6 issues | 3-5 days | This sprint |
-| [MEDIUM](03-MEDIUM-fixes.md) | 10 issues | 5-8 days | Next 1-2 sprints |
-| [LOW](04-LOW-fixes.md) | 7 issues | 1-2 days | When convenient |
-| [ADDITIONAL](05-ADDITIONAL-findings.md) | 9 findings | Varies | Long-term |
+| Priority | Issues | Status (2026-05-01) | Source |
+|----------|--------|---------------------|--------|
+| [CRITICAL](01-CRITICAL-fixes.md) | 2 | ✅ all shipped | CRIT-1, CRIT-2 |
+| [HIGH](02-HIGH-fixes.md) | 6 | ✅ all shipped | HIGH-1..6 |
+| [MEDIUM](03-MEDIUM-fixes.md) | 10 | 🟡 8 done, 2 partial (MED-7 component split, MED-8 global staleTime) | — |
+| [LOW](04-LOW-fixes.md) | 7 | ✅ all shipped | — |
+| [ADDITIONAL](05-ADDITIONAL-findings.md) | 9 | 🟡 6 done, 3 backlog (ADD-5 optimistic, ADD-8 HMAC, ADD-9 logging) | — |
+| [SCALE](07-SCALING-AND-ARCHITECTURE-fixes.md) | 34 | 🟡 22 done, 12 pending — see file | — |
+| [DB-SECURITY](09-DB-SECURITY-DEFERRED.md) | 20 | 🟡 15 done in `20260428/30/501`, 5 deferred (M4, M8, M9, M11, L4) | — |
+| [PACKAGE-ARCH](10-PACKAGE-ARCHITECTURE-DEFERRED.md) | 8 deferred | 🟠 0 of remaining shipped (H0/H4/H5/M1/M3/M4/M5/L*) — gate for tenant #2 | — |
+| [LAUNCH](08-LAUNCH-PLAN.md) | operational | 🟡 code-side ready, infra pending | — |
 
-## Recommended Execution Order
+## Recommended Execution Order (historical — kept for context)
+
+> The phases below were the original sequencing recommendation when this
+> file was generated. Almost all of these are now shipped; the live
+> prioritization for *remaining* work lives in `09`, `10`, `11`, and the
+> launch checklist in `08`. Don't re-execute from this list — read it as
+> a record of how the early architecture work was sequenced.
 
 ### Phase 1 — Stop the Bleeding (Day 1)
 1. **CRIT-1:** Fix CI heredoc indentation (15 min)
