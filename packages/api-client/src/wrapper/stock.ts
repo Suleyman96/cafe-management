@@ -12,12 +12,7 @@ export function createStockItemsWrapper(ctx: WrapperContext) {
     findAll: async (options?: { category?: string; lowStockOnly?: boolean; limit?: number }) => {
       const limit = options?.limit ?? 1000;
       let query = applyTenantScope(
-        ctx.client
-          .from('stock_items')
-          .select('*')
-          .eq('is_active', true)
-          .order('name')
-          .limit(limit),
+        ctx.client.from('stock_items').select('*').eq('is_active', true).order('name').limit(limit),
         ctx,
       );
 

@@ -13,10 +13,7 @@ export function createViewsWrapper(ctx: WrapperContext) {
   return {
     getSalesSummary: async (startDate?: string, endDate?: string) => {
       let query = applyTenantScope(
-        ctx.anyClient
-          .from('sales_summary_view')
-          .select('*')
-          .order('date', { ascending: false }),
+        ctx.anyClient.from('sales_summary_view').select('*').order('date', { ascending: false }),
         ctx,
       );
 
@@ -36,10 +33,7 @@ export function createViewsWrapper(ctx: WrapperContext) {
     },
 
     getOrderPaymentSummary: async (orderId?: string) => {
-      let query = applyTenantScope(
-        ctx.anyClient.from('order_payment_summary').select('*'),
-        ctx,
-      );
+      let query = applyTenantScope(ctx.anyClient.from('order_payment_summary').select('*'), ctx);
 
       if (orderId) {
         query = query.eq('order_id', orderId);

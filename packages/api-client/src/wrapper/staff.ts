@@ -54,11 +54,7 @@ export function createStaffWrapper(ctx: WrapperContext) {
       // Login flow: tenant context is bound from auth.uid() lookup, so this
       // call resolves before setTenantContext() — must allow null.
       const { data, error } = await applyTenantScope(
-        ctx.client
-          .from('staff')
-          .select('*')
-          .eq('auth_user_id', authUserId)
-          .eq('is_active', true),
+        ctx.client.from('staff').select('*').eq('auth_user_id', authUserId).eq('is_active', true),
         ctx,
         { allowNull: true },
       ).single();

@@ -87,16 +87,14 @@ describe('tenant-context wrapper scoping', () => {
 
   it('assertInsertTenantMatches throws when payload tenant differs', () => {
     const ctx = createMockContext({ tenantId: TENANT_A });
-    expect(() =>
-      assertInsertTenantMatches({ tenant_id: TENANT_B }, ctx as never),
-    ).toThrow(AuthorizationError);
+    expect(() => assertInsertTenantMatches({ tenant_id: TENANT_B }, ctx as never)).toThrow(
+      AuthorizationError,
+    );
   });
 
   it('assertInsertTenantMatches accepts matching tenant id', () => {
     const ctx = createMockContext({ tenantId: TENANT_A });
-    expect(() =>
-      assertInsertTenantMatches({ tenant_id: TENANT_A }, ctx as never),
-    ).not.toThrow();
+    expect(() => assertInsertTenantMatches({ tenant_id: TENANT_A }, ctx as never)).not.toThrow();
   });
 
   it('assertInsertTenantMatches accepts a payload without tenant_id', () => {
@@ -106,8 +104,6 @@ describe('tenant-context wrapper scoping', () => {
 
   it('assertInsertTenantMatches is a no-op when both context and payload are null', () => {
     const ctx = createMockContext({ tenantId: null });
-    expect(() =>
-      assertInsertTenantMatches({ tenant_id: null }, ctx as never),
-    ).not.toThrow();
+    expect(() => assertInsertTenantMatches({ tenant_id: null }, ctx as never)).not.toThrow();
   });
 });
