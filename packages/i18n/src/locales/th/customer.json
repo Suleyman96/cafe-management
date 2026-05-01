@@ -128,6 +128,8 @@
   "menuItem.prepTime": "~{{count}} นาที",
   "menuItem.prepTimeFull": "เวลาเตรียม: ~{{count}} นาที",
   "menuItem.quantityLabel": "จำนวน",
+  "menuItem.quantityIncrease": "เพิ่มจำนวน",
+  "menuItem.quantityDecrease": "ลดจำนวน",
   "menuItem.specialRequests": "คำขอพิเศษ (ไม่จำเป็น)",
   "menuItem.specialRequestsPlaceholder": "เช่น น้ำตาลน้อย ร้อนมาก ไม่ใส่น้ำแข็ง...",
   "orderStatus.addMoreItems": "เพิ่มรายการ",

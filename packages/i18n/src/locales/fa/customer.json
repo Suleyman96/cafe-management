@@ -128,6 +128,8 @@
   "menuItem.prepTime": "~{{count}} دقیقه",
   "menuItem.prepTimeFull": "زمان آماده‌سازی: ~{{count}} دقیقه",
   "menuItem.quantityLabel": "تعداد",
+  "menuItem.quantityIncrease": "افزایش تعداد",
+  "menuItem.quantityDecrease": "کاهش تعداد",
   "menuItem.specialRequests": "درخواست‌های ویژه (اختیاری)",
   "menuItem.specialRequestsPlaceholder": "مثلاً شکر کمتر، خیلی داغ، بدون یخ...",
   "orderStatus.addMoreItems": "افزودن آیتم‌های بیشتر",

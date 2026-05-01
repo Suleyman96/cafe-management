@@ -128,6 +128,8 @@
   "menuItem.prepTime": "약 {{count}}분",
   "menuItem.prepTimeFull": "조리 시간: 약 {{count}}분",
   "menuItem.quantityLabel": "수량",
+  "menuItem.quantityIncrease": "수량 증가",
+  "menuItem.quantityDecrease": "수량 감소",
   "menuItem.specialRequests": "특별 요청 (선택사항)",
   "menuItem.specialRequestsPlaceholder": "예: 설탕 적게, 뜨겁게, 얼음 없이...",
   "orderStatus.addMoreItems": "추가 주문",

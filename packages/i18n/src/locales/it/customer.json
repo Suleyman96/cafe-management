@@ -128,6 +128,8 @@
   "menuItem.prepTime": "~{{count}} min",
   "menuItem.prepTimeFull": "Tempo di preparazione: ~{{count}} minuti",
   "menuItem.quantityLabel": "Quantità",
+  "menuItem.quantityIncrease": "Aumenta quantità",
+  "menuItem.quantityDecrease": "Diminuisci quantità",
   "menuItem.specialRequests": "Richieste speciali (facoltativo)",
   "menuItem.specialRequestsPlaceholder": "es. Meno zucchero, Extra caldo, Senza ghiaccio...",
   "orderStatus.addMoreItems": "Aggiungi Altri Articoli",

@@ -128,6 +128,8 @@
   "menuItem.prepTime": "~{{count}} წთ",
   "menuItem.prepTimeFull": "მომზადების დრო: ~{{count}} წუთი",
   "menuItem.quantityLabel": "რაოდენობა",
+  "menuItem.quantityIncrease": "რაოდენობის გაზრდა",
+  "menuItem.quantityDecrease": "რაოდენობის შემცირება",
   "menuItem.specialRequests": "სპეციალური მოთხოვნები (არასავალდებულო)",
   "menuItem.specialRequestsPlaceholder": "მაგ., ნაკლები შაქარი, უფრო ცხელი, ყინულის გარეშე...",
   "orderStatus.addMoreItems": "მეტის დამატება",

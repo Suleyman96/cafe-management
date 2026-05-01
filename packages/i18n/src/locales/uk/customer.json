@@ -128,6 +128,8 @@
   "menuItem.prepTime": "~{{count}} хв",
   "menuItem.prepTimeFull": "Час приготування: ~{{count}} хвилин",
   "menuItem.quantityLabel": "Кількість",
+  "menuItem.quantityIncrease": "Збільшити кількість",
+  "menuItem.quantityDecrease": "Зменшити кількість",
   "menuItem.specialRequests": "Особливі побажання (необов'язково)",
   "menuItem.specialRequestsPlaceholder": "Напр., менше цукру, гарячіше, без льоду...",
   "orderStatus.addMoreItems": "Додати ще",

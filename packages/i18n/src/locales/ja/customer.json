@@ -140,6 +140,8 @@
   "menuItem.prepTime": "約{{count}}分",
   "menuItem.prepTimeFull": "調理時間: 約{{count}}分",
   "menuItem.quantityLabel": "数量",
+  "menuItem.quantityIncrease": "数量を増やす",
+  "menuItem.quantityDecrease": "数量を減らす",
   "menuItem.specialRequests": "特別なリクエスト（任意）",
   "menuItem.specialRequestsPlaceholder": "例: 砂糖少なめ、熱め、氷なし...",
   "orderStatus.addMoreItems": "追加注文",
