@@ -36,4 +36,12 @@ export async function register() {
         '(Set SKIP_PII_ENCRYPTION_PROBE=1 to bypass — only for dev/staging.)',
     );
   }
+
+  // Lazy import keeps Sentry out of the bundle when the probe is skipped.
+  const Sentry = await import('@sentry/nextjs');
+  Sentry.addBreadcrumb({
+    category: 'startup',
+    level: 'info',
+    message: 'pii_encryption_probe: ok',
+  });
 }
