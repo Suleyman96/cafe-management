@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS } from '../keys';
 import { useDb } from '../provider';
 
-export function useStaff(role?: string, options?: { enabled?: boolean }) {
+export function useStaff(role?: Staff['role'], options?: { enabled?: boolean }) {
   const db = useDb();
   return useQuery({
     queryKey: [QUERY_KEYS.STAFF, role],

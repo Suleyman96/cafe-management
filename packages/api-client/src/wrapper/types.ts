@@ -72,8 +72,42 @@ export interface PaginatedResult<T> {
 export type AnySupabaseClient = SupabaseClient<any>;
 export type TypedSupabaseClient = SupabaseClient<Database>;
 
-// Base context passed to all wrapper modules
+/**
+ * Tenant context carried by every wrapper instance.
+ *
+ * The wrapper layer adds defense-in-depth tenant scoping on top of RLS:
+ * every read on a tenant-scoped table appends `.eq('tenant_id', tenantId)`
+ * when this is set. RLS remains the primary boundary; this ensures that
+ * even if a future migration regresses RLS, cross-tenant reads can't slip
+ * past the wrapper.
+ *
+ * `tenantId` is `null` when no session is bound (anon customer-web before
+ * `set_table_context()` runs). Wrappers that legitimately need to operate
+ * without a tenant (anon QR flows) check `allowNull` on the helper.
+ */
+export interface TenantContext {
+  tenantId: string | null;
+  setTenantId(id: string | null): void;
+}
+
+/**
+ * In-process Sentry shim. The api-client package can't take a hard
+ * dependency on either `@sentry/nextjs` or `@sentry/react-native`, so the
+ * factory accepts a captureMessage hook from the host app. When unset (or
+ * not in development) the tenant-context helpers stay silent.
+ */
+export interface SentryShim {
+  captureMessage(message: string, options?: { level?: 'warning' | 'info' | 'error' }): void;
+}
+
+// Base context passed to all wrapper modules.
+// `tenantContext` is optional only so that legacy test fixtures that
+// constructed `{ client, anyClient }` directly continue to type-check;
+// the wrapper factory always provides one. Helpers treat a missing
+// `tenantContext` as "no tenant bound" (same as null).
 export interface WrapperContext {
   client: TypedSupabaseClient;
   anyClient: AnySupabaseClient;
+  tenantContext?: TenantContext;
+  sentry?: SentryShim;
 }

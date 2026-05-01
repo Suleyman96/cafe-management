@@ -308,7 +308,9 @@ export default function TasksPage() {
               }`}
             >
               <div className="flex items-start gap-3">
-                <div className="mt-0.5">{STATUS_ICONS[task.status] || STATUS_ICONS.pending}</div>
+                <div className="mt-0.5">
+                  {(task.status && STATUS_ICONS[task.status]) || STATUS_ICONS.pending}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-medium text-gray-900">{task.title}</h3>
@@ -323,9 +325,9 @@ export default function TasksPage() {
                   )}
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_COLORS[task.priority]}`}
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${task.priority ? PRIORITY_COLORS[task.priority] : PRIORITY_COLORS.normal}`}
                     >
-                      {t(`tasks.${task.priority}`)}
+                      {t(`tasks.${task.priority ?? 'normal'}`)}
                     </span>
                     {task.assigned_to_staff?.full_name && (
                       <span className="text-xs text-gray-500">

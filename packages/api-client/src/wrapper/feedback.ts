@@ -4,6 +4,7 @@
 
 import { isCustomerFeedback } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
+import { applyTenantScope, assertInsertTenantMatches } from './_tenant-scope';
 import type { CustomerFeedbackRow, WrapperContext } from './types';
 
 export function createFeedbackWrapper(ctx: WrapperContext) {
@@ -16,6 +17,7 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
       order_id?: string | null;
       status?: 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
     }) => {
+      assertInsertTenantMatches(data, ctx);
       const { data: result, error } = await ctx.anyClient
         .from('customer_feedback')
         .insert({
@@ -35,13 +37,16 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
       limit?: number;
       offset?: number;
     }) => {
-      let query = ctx.client
-        .from('customer_feedback')
-        .select(`
-          *,
-          table:tables!customer_feedback_table_id_fkey(table_number)
-        `)
-        .order('created_at', { ascending: false });
+      let query = applyTenantScope(
+        ctx.client
+          .from('customer_feedback')
+          .select(`
+            *,
+            table:tables!customer_feedback_table_id_fkey(table_number)
+          `)
+          .order('created_at', { ascending: false }),
+        ctx,
+      );
 
       if (options?.status) {
         query = query.eq('status', options.status);
@@ -78,10 +83,13 @@ export function createFeedbackWrapper(ctx: WrapperContext) {
     },
 
     getPendingCount: async () => {
-      const { count, error } = await ctx.client
-        .from('customer_feedback')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+      const { count, error } = await applyTenantScope(
+        ctx.client
+          .from('customer_feedback')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending'),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return count || 0;

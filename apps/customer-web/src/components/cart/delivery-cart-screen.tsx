@@ -196,7 +196,7 @@ export function DeliveryCartScreen() {
         total={grandTotal}
         taxPercentage={settings?.tax_enabled ? settings.tax_percentage : undefined}
         deliveryFee={deliveryFee}
-        minimumAmount={settings?.minimum_delivery_amount}
+        minimumAmount={settings?.minimum_delivery_amount ?? undefined}
         minimumMet={minimumMet}
         minimumWarning={
           settings?.minimum_delivery_amount

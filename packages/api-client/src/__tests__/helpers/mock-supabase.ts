@@ -9,7 +9,10 @@ interface MockResponse {
   count?: number;
 }
 
-function createChainableQuery(response: MockResponse) {
+function createChainableQuery(
+  response: MockResponse,
+  recordCall?: (method: string, args: any[]) => void,
+) {
   const builder: Record<string, any> = {};
 
   const chainMethods = [
@@ -34,7 +37,10 @@ function createChainableQuery(response: MockResponse) {
   ];
 
   for (const method of chainMethods) {
-    builder[method] = (..._args: any[]) => builder;
+    builder[method] = (...args: any[]) => {
+      recordCall?.(method, args);
+      return builder;
+    };
   }
 
   // biome-ignore lint/suspicious/noThenProperty: required to make the mock chainable like Supabase queries
@@ -62,19 +68,27 @@ export function createMockSupabase(config: MockSupabaseConfig = {}) {
       return {
         select: (...args: any[]) => {
           calls.push({ table, method: 'select', args });
-          return createChainableQuery(response);
+          return createChainableQuery(response, (method, args) => {
+            calls.push({ table, method, args });
+          });
         },
         insert: (data: any) => {
           calls.push({ table, method: 'insert', args: [data] });
-          return createChainableQuery(response);
+          return createChainableQuery(response, (method, args) => {
+            calls.push({ table, method, args });
+          });
         },
         update: (data: any) => {
           calls.push({ table, method: 'update', args: [data] });
-          return createChainableQuery(response);
+          return createChainableQuery(response, (method, args) => {
+            calls.push({ table, method, args });
+          });
         },
         delete: () => {
           calls.push({ table, method: 'delete', args: [] });
-          return createChainableQuery(response);
+          return createChainableQuery(response, (method, args) => {
+            calls.push({ table, method, args });
+          });
         },
       };
     },
@@ -109,11 +123,26 @@ export function createMockSupabase(config: MockSupabaseConfig = {}) {
   return client as any;
 }
 
-export function createMockContext(config: MockSupabaseConfig = {}) {
-  const client = createMockSupabase(config);
+export interface MockContextOptions extends MockSupabaseConfig {
+  /** Initial tenant id for the mock wrapper context. Defaults to null. */
+  tenantId?: string | null;
+  /** Capture-message hook to assert dev-only Sentry warnings in tests. */
+  sentry?: { captureMessage: (message: string, options?: { level?: string }) => void };
+}
+
+export function createMockContext(options: MockContextOptions = {}) {
+  const client = createMockSupabase(options);
+  const tenantContext = {
+    tenantId: options.tenantId ?? null,
+    setTenantId(id: string | null) {
+      tenantContext.tenantId = id;
+    },
+  };
   return {
     client,
     anyClient: client,
+    tenantContext,
+    sentry: options.sentry,
     getCalls: client.getCalls,
     resetCalls: client.resetCalls,
   };

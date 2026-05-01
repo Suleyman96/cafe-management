@@ -4,6 +4,7 @@
 
 import { isCategory, isCategoryArray, isMenuItem } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
+import { applyTenantScope, assertInsertTenantMatches } from './_tenant-scope';
 import type {
   CategoryInsert,
   CategoryUpdate,
@@ -21,15 +22,20 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
       isAvailable?: boolean;
       isPopular?: boolean;
     }) => {
-      let query = ctx.client
-        .from('menu_items')
-        .select(`
-          *,
-          category:categories(*)
-        `)
-        .order('display_order', { ascending: true })
-        .order('name', { ascending: true })
-        .limit(500);
+      // Anon QR menu browse hits this before set_table_context() runs.
+      let query = applyTenantScope(
+        ctx.client
+          .from('menu_items')
+          .select(`
+            *,
+            category:categories(*)
+          `)
+          .order('display_order', { ascending: true })
+          .order('name', { ascending: true })
+          .limit(500),
+        ctx,
+        { allowNull: true },
+      );
 
       if (options?.categoryId) {
         query = query.eq('category_id', options.categoryId);
@@ -48,14 +54,17 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
     },
 
     findById: async (id: string) => {
-      const { data, error } = await ctx.client
-        .from('menu_items')
-        .select(`
-          *,
-          category:categories(*)
-        `)
-        .eq('id', id)
-        .single();
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('menu_items')
+          .select(`
+            *,
+            category:categories(*)
+          `)
+          .eq('id', id),
+        ctx,
+        { allowNull: true },
+      ).single();
 
       if (error) throw handleSupabaseError(error);
       if (!isMenuItem(data)) throw new Error('Invalid menu item data');
@@ -76,6 +85,7 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
     },
 
     create: async (itemData: MenuItemInsert) => {
+      assertInsertTenantMatches(itemData, ctx);
       const { data, error } = await ctx.anyClient
         .from('menu_items')
         .insert(itemData)
@@ -116,11 +126,14 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
       const pageSize = options?.pageSize ?? 100;
       const offset = (page - 1) * pageSize;
 
-      let query = ctx.client
-        .from('menu_items')
-        .select('*, category:categories(*)', { count: 'exact' })
-        .order('display_order', { ascending: true })
-        .order('name', { ascending: true });
+      let query = applyTenantScope(
+        ctx.client
+          .from('menu_items')
+          .select('*, category:categories(*)', { count: 'exact' })
+          .order('display_order', { ascending: true })
+          .order('name', { ascending: true }),
+        ctx,
+      );
 
       if (options?.categoryId) {
         query = query.eq('category_id', options.categoryId);
@@ -147,12 +160,17 @@ export function createCategoriesWrapper(ctx: WrapperContext) {
   return {
     findAll: async (options?: { isActive?: boolean; limit?: number }) => {
       const limit = options?.limit ?? 200;
-      let query = ctx.client
-        .from('categories')
-        .select('*')
-        .order('display_order', { ascending: true })
-        .order('name', { ascending: true })
-        .limit(limit);
+      // Anon QR menu browse reads categories before tenant context binds.
+      let query = applyTenantScope(
+        ctx.client
+          .from('categories')
+          .select('*')
+          .order('display_order', { ascending: true })
+          .order('name', { ascending: true })
+          .limit(limit),
+        ctx,
+        { allowNull: true },
+      );
 
       if (options?.isActive !== undefined) {
         query = query.eq('is_active', options.isActive);
@@ -167,6 +185,7 @@ export function createCategoriesWrapper(ctx: WrapperContext) {
     },
 
     create: async (categoryData: CategoryInsert) => {
+      assertInsertTenantMatches(categoryData, ctx);
       const { data, error } = await ctx.anyClient
         .from('categories')
         .insert(categoryData)

@@ -283,6 +283,7 @@ export function buildSchedule(overrides?: Partial<StaffScheduleRow>): StaffSched
 
 export function buildOrderInsert(overrides?: Partial<OrderInsert>): OrderInsert {
   return {
+    order_number: `ORD-${Date.now()}`,
     status: 'new',
     source: 'waiter',
     order_type: 'dine_in',

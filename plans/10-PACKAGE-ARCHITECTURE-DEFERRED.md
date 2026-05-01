@@ -26,30 +26,14 @@
 
 ## 🟠 High
 
-### H0. Replace hand-written `database.ts` with generator output (C4 finishing step)
-**Where:** [packages/database/src/types/database.ts](../packages/database/src/types/database.ts) (729 lines, hand-written)
-
-The audit's C4 was partially landed: `pnpm db:types:generate` and
-`pnpm db:types:check` are in place, plus a CI job (currently
-`continue-on-error: true`). The remaining one-shot is to replace the
-hand-written `database.ts` with `export * from './generated'` after
-running the generator once and reconciling any column-shape differences
-that surface (Insert/Update generics differ between the hand-rolled
-`Omit<Row, ...>` and Supabase's emitted shapes).
-
-**Steps:**
-1. `supabase start` locally.
-2. `pnpm db:types:generate` — produces `packages/database/src/types/generated.ts`.
-3. Replace `database.ts` body with `export * from './generated';` (and the `Json` re-export if needed).
-4. Build all packages — fix any consumers where `Insert`/`Update` shapes differ.
-5. Update `index.ts` extension types if columns moved.
-6. Flip the CI job: remove `continue-on-error: true` from the `db-types-check` step in `.github/workflows/ci.yml`.
-
-**Why deferred:** the swap may surface shape diffs (e.g., generator
-emits `tenant_id?: string` where the hand-written file has
-`tenant_id: string`) that ripple into wrapper signatures and Zod
-schemas. Worth a focused PR with explicit consumer review, not bundled
-with launch fixes.
+### ~~H0. Replace hand-written `database.ts` with generator output~~ ✅ Closed 2026-05-01
+[packages/database/src/types/database.ts](../packages/database/src/types/database.ts)
+is now an overlay over `./generated.ts` (regenerated via
+`pnpm db:types:generate`). The overlay preserves CHECK-constraint
+narrowings (e.g., `orders.status`, `payment_method`) and the
+default-populated non-null assertions (`created_at`, `updated_at`,
+`is_active`) the wrapper layer and UI relied on. The
+`db-types-check` CI gate is now required (no `continue-on-error`).
 
 ---
 
@@ -90,24 +74,25 @@ across apps over time.
 
 ---
 
-### H5. Wrapper has no defense-in-depth tenant filter
-**Where:** every wrapper in [packages/api-client/src/wrapper/](../packages/api-client/src/wrapper/)
+### ~~H5. Wrapper has no defense-in-depth tenant filter~~ ✅ Closed 2026-05-01
+The wrapper context now carries an optional `tenantContext: { tenantId, setTenantId }`,
+and a shared `applyTenantScope(query, ctx, options?)` helper appends
+`.eq('tenant_id', tenantId)` to every read on tenant-scoped tables. Inserts
+that include `tenant_id` are validated against the bound context via
+`assertInsertTenantMatches`, throwing `AuthorizationError` on mismatch.
+Each app-level factory binds the tenant after auth:
 
-Today the wrapper relies entirely on RLS for tenant scoping. RLS is
-correct *now* (post-`20260428000001`), but every deferred-DB-security
-finding (`09-DB-SECURITY-DEFERRED.md` C1–C5) is a reminder that a single
-bad migration can let cross-tenant reads slip past. Belt-and-braces:
-the wrapper should *also* append a `tenant_id = current_tenant_id()`
-predicate explicitly.
+- `apps/staff-web/src/hooks/use-auth.ts` — calls `db.setTenantContext(staff.tenant_id)`
+  in `loadStaffAndSetup`; `stableLogout` clears it.
+- `apps/mobile/src/lib/auth.ts` — `getCurrentUser` binds; `cleanupClientState` clears.
+- `apps/customer-web/src/lib/supabase.ts` — anon QR session binds via
+  `setTableContext()` after the table-row lookup.
 
-**Fix sketch:** introduce a `tenantContext: { tenantId: string }` to the
-wrapper context, populated once on session start. Every `from(...)` in
-the wrappers chains `.eq('tenant_id', ctx.tenantContext.tenantId)`. RLS
-remains primary; this is detection (a query missing the filter throws
-in dev) + defense.
-
-**Why deferred:** single tenant means the only tenant context is the
-default row. Implementing now is overhead with no payoff.
+Reads that legitimately run before a tenant is bound (anon menu/category
+browse, `tables.findByQrCode`, `cafe_settings.get`, customer order/feedback
+RPCs) pass `{ allowNull: true }` so they don't trip the dev-only Sentry
+warning. RLS remains the primary boundary; this is the belt-and-braces
+layer (H5/A3).
 
 ---
 
@@ -251,7 +236,9 @@ that enforce non-obvious rules. No standalone PR needed.
 | C1   | Audit re-classified: `lib/services/*` are server-side helpers used only by `/api/v1/*` routes (CLAUDE.md Exception 2) and use `supabaseAdmin` (service-role) — not boundary violations. The actual app-side `supabase.from(` usage is the realtime fallback polling in `notification-provider.tsx` (annotated `Raw queries intentional` for performance). Added a CI grep gate (`Wrapper boundary`) that fails on new raw `.from(`/`.rpc(` in `apps/*/src/hooks/` and `apps/*/src/components/`, with documented exceptions for storage + the annotated realtime fallback. |
 | C2   | Moved `handleSupabaseError` (and `httpStatusToAppError`) from `@gustri/core` → `@gustri/api-client/errors`; removed `navigator.onLine` |
 | C3   | Moved `QUERY_KEYS` to `@gustri/queries`; moved `getRoleBadgeColor`/`getOrderStatusColor` to `@gustri/ui` |
-| C4 (partial) | Added `pnpm db:types:generate` + `pnpm db:types:check`; soft CI gate (`db-types-check` job, `continue-on-error: true`). The actual replacement of `database.ts` → `generated.ts` is tracked as **H0** above. |
+| C4   | Added `pnpm db:types:generate` + `pnpm db:types:check`. Soft gate flipped to required as part of H0 (2026-05-01). |
+| H0   | Replaced hand-written `database.ts` with an overlay over `generated.ts` that preserves CHECK-constraint narrowings and DB-default non-null assertions. CI `db-types-check` gate is now required. (2026-05-01) |
+| H5   | Wrapper-level defense-in-depth tenant filter. New `applyTenantScope` / `assertInsertTenantMatches` helpers; `WrapperContext` carries a `TenantContext`; all three app-level factories bind/clear it on auth events. Tests at `packages/api-client/src/__tests__/tenant-context.test.ts`. (2026-05-01) |
 | H1   | Added domain `Subscription` interface to `realtime.ts`; wrapper public surface no longer leaks `RealtimeChannel`. App-level raw realtime code preserved per CLAUDE.md Exception 1. |
 | H2   | Added Biome / CI rule flagging hardcoded JSX text and `toast.*`/`Alert.alert(` literals not produced via `t(...)` |
 | H3   | Split `orders.ts` (650 LOC) into `orders.ts` + `order-items.ts`; split `tasks.ts` similarly |

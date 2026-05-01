@@ -7,7 +7,8 @@ export function useOrderPayments(orderId: string, options?: { enabled?: boolean 
   const db = useDb();
   return useQuery({
     queryKey: [QUERY_KEYS.PAYMENTS, orderId],
-    queryFn: () => db.payments.findByOrderId(orderId) as Promise<OrderPayment[]>,
+    queryFn: () =>
+      db.payments.findByOrderId(orderId) as Promise<unknown> as Promise<OrderPayment[]>,
     enabled: !!orderId && (options?.enabled ?? true),
   });
 }
@@ -20,7 +21,8 @@ export function usePaymentsByStaff(
   const db = useDb();
   return useQuery({
     queryKey: [QUERY_KEYS.PAYMENTS_BY_STAFF, staffId, limit],
-    queryFn: () => db.payments.findByReceivedBy(staffId, limit) as Promise<OrderPayment[]>,
+    queryFn: () =>
+      db.payments.findByReceivedBy(staffId, limit) as Promise<unknown> as Promise<OrderPayment[]>,
     enabled: !!staffId && (options?.enabled ?? true),
   });
 }

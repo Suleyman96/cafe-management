@@ -5,6 +5,7 @@
 import { isOrder } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
 import { dedupeInsert } from './_dedupe';
+import { applyTenantScope, assertInsertTenantMatches } from './_tenant-scope';
 import { rpc } from './rpc-typed';
 import type { OrderInsert, OrderRow, PaginatedResult, WrapperContext } from './types';
 
@@ -59,19 +60,22 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         );
       }
 
-      let query = ctx.anyClient
-        .from('orders_decrypted')
-        .select(`
-          *,
-          table:tables!orders_table_id_fkey(table_number, location),
-          order_items(
+      let query = applyTenantScope(
+        ctx.anyClient
+          .from('orders_decrypted')
+          .select(`
             *,
-            menu_item:menu_items(*)
-          ),
-          assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name),
-          delivery_person:staff!orders_delivery_person_id_fkey(full_name)
-        `)
-        .order('created_at', { ascending: false });
+            table:tables!orders_table_id_fkey(table_number, location),
+            order_items(
+              *,
+              menu_item:menu_items(*)
+            ),
+            assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name),
+            delivery_person:staff!orders_delivery_person_id_fkey(full_name)
+          `)
+          .order('created_at', { ascending: false }),
+        ctx,
+      );
 
       if (filters.statuses && filters.statuses.length > 0) {
         query = query.in('status', filters.statuses);
@@ -116,22 +120,25 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       limit?: number;
       offset?: number;
     }): Promise<PaginatedResult<OrderRow>> => {
-      let query = ctx.anyClient
-        .from('orders_decrypted')
-        .select(
-          `
-          *,
-          table:tables!orders_table_id_fkey(table_number, location),
-          order_items(
+      let query = applyTenantScope(
+        ctx.anyClient
+          .from('orders_decrypted')
+          .select(
+            `
             *,
-            menu_item:menu_items(*)
-          ),
-          assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name),
-          delivery_person:staff!orders_delivery_person_id_fkey(full_name)
-        `,
-          { count: 'exact' },
-        )
-        .order('created_at', { ascending: false });
+            table:tables!orders_table_id_fkey(table_number, location),
+            order_items(
+              *,
+              menu_item:menu_items(*)
+            ),
+            assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name),
+            delivery_person:staff!orders_delivery_person_id_fkey(full_name)
+          `,
+            { count: 'exact' },
+          )
+          .order('created_at', { ascending: false }),
+        ctx,
+      );
 
       if (filters?.statuses && filters.statuses.length > 0) {
         query = query.in('status', filters.statuses);
@@ -169,30 +176,32 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     },
 
     findById: async (id: string) => {
-      const { data, error } = await ctx.anyClient
-        .from('orders_decrypted')
-        .select(`
-          *,
-          table:tables!orders_table_id_fkey(table_number, location),
-          order_items(
+      const { data, error } = await applyTenantScope(
+        ctx.anyClient
+          .from('orders_decrypted')
+          .select(`
             *,
-            menu_item:menu_items(*)
-          ),
-          assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name),
-          delivery_person:staff!orders_delivery_person_id_fkey(full_name),
-          order_payments(
-            *,
-            received_by_staff:staff!order_payments_received_by_fkey(full_name)
-          ),
-          table_transfers(
-            *,
-            from_table:tables!table_transfers_from_table_id_fkey(table_number),
-            to_table:tables!table_transfers_to_table_id_fkey(table_number),
-            transferred_by_staff:staff!table_transfers_transferred_by_fkey(full_name)
-          )
-        `)
-        .eq('id', id)
-        .single();
+            table:tables!orders_table_id_fkey(table_number, location),
+            order_items(
+              *,
+              menu_item:menu_items(*)
+            ),
+            assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name),
+            delivery_person:staff!orders_delivery_person_id_fkey(full_name),
+            order_payments(
+              *,
+              received_by_staff:staff!order_payments_received_by_fkey(full_name)
+            ),
+            table_transfers(
+              *,
+              from_table:tables!table_transfers_from_table_id_fkey(table_number),
+              to_table:tables!table_transfers_to_table_id_fkey(table_number),
+              transferred_by_staff:staff!table_transfers_transferred_by_fkey(full_name)
+            )
+          `)
+          .eq('id', id),
+        ctx,
+      ).single();
 
       if (error) throw handleSupabaseError(error);
       if (!isOrder(data)) throw new Error('Invalid order data');
@@ -200,14 +209,17 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     },
 
     create: async (orderData: OrderInsert) => {
+      assertInsertTenantMatches(orderData, ctx);
       const data = await dedupeInsert<unknown>(orderData.client_request_id, {
         insert: () => ctx.anyClient.from('orders').insert(orderData).select().single(),
         refetch: () =>
-          ctx.anyClient
-            .from('orders')
-            .select()
-            .eq('client_request_id', orderData.client_request_id ?? '')
-            .single(),
+          applyTenantScope(
+            ctx.anyClient
+              .from('orders')
+              .select()
+              .eq('client_request_id', orderData.client_request_id ?? ''),
+            ctx,
+          ).single(),
       });
 
       if (!isOrder(data)) throw new Error('Invalid order data');
@@ -286,40 +298,47 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     },
 
     findActiveByTable: async (tableId: string) => {
-      const { data, error } = await ctx.anyClient
-        .from('orders_decrypted')
-        .select(`
-          *,
-          table:tables!orders_table_id_fkey(table_number, location),
-          order_items(*)
-        `)
-        .eq('table_id', tableId)
-        .in('status', ['pending_approval', 'new', 'preparing', 'ready', 'served'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data, error } = await applyTenantScope(
+        ctx.anyClient
+          .from('orders_decrypted')
+          .select(`
+            *,
+            table:tables!orders_table_id_fkey(table_number, location),
+            order_items(*)
+          `)
+          .eq('table_id', tableId)
+          .in('status', ['pending_approval', 'new', 'preparing', 'ready', 'served'])
+          .order('created_at', { ascending: false })
+          .limit(1),
+        ctx,
+        // Anon QR sessions read this before the tenant context is bound.
+        { allowNull: true },
+      ).maybeSingle();
 
       if (error) throw handleSupabaseError(error);
       return data ? mapDecryptedPii(data) : null;
     },
 
     getActiveOrders: async () => {
-      const { data, error } = await ctx.anyClient
-        .from('orders_decrypted')
-        .select(`
-          *,
-          table:tables!orders_table_id_fkey(table_number),
-          order_items(count)
-        `)
-        .in('status', [
-          'pending_approval',
-          'new',
-          'preparing',
-          'ready',
-          'served',
-          'out_for_delivery',
-        ])
-        .order('created_at', { ascending: false });
+      const { data, error } = await applyTenantScope(
+        ctx.anyClient
+          .from('orders_decrypted')
+          .select(`
+            *,
+            table:tables!orders_table_id_fkey(table_number),
+            order_items(count)
+          `)
+          .in('status', [
+            'pending_approval',
+            'new',
+            'preparing',
+            'ready',
+            'served',
+            'out_for_delivery',
+          ])
+          .order('created_at', { ascending: false }),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return mapDecryptedPiiArray(data || []);

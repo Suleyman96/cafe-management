@@ -4,6 +4,7 @@
 
 import { isWasteLog } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
+import { applyTenantScope, assertInsertTenantMatches } from './_tenant-scope';
 import type { WasteLogInsert, WasteLogRow, WasteLogUpdate, WrapperContext } from './types';
 
 export function createWasteWrapper(ctx: WrapperContext) {
@@ -11,19 +12,22 @@ export function createWasteWrapper(ctx: WrapperContext) {
     findAll: async (options?: {
       startDate?: string;
       endDate?: string;
-      reason?: string;
+      reason?: NonNullable<WasteLogRow['reason']>;
       stockItemId?: string;
       limit?: number;
       offset?: number;
     }) => {
-      let query = ctx.client
-        .from('waste_logs')
-        .select(`
-          *,
-          logged_by_staff:staff!waste_logs_logged_by_fkey(full_name),
-          stock_item:stock_items!waste_logs_stock_item_id_fkey(name, unit)
-        `)
-        .order('waste_date', { ascending: false });
+      let query = applyTenantScope(
+        ctx.client
+          .from('waste_logs')
+          .select(`
+            *,
+            logged_by_staff:staff!waste_logs_logged_by_fkey(full_name),
+            stock_item:stock_items!waste_logs_stock_item_id_fkey(name, unit)
+          `)
+          .order('waste_date', { ascending: false }),
+        ctx,
+      );
 
       if (options?.startDate) {
         query = query.gte('waste_date', options.startDate);
@@ -52,15 +56,17 @@ export function createWasteWrapper(ctx: WrapperContext) {
     },
 
     findById: async (id: string) => {
-      const { data, error } = await ctx.client
-        .from('waste_logs')
-        .select(`
-          *,
-          logged_by_staff:staff!waste_logs_logged_by_fkey(full_name),
-          stock_item:stock_items!waste_logs_stock_item_id_fkey(name, unit)
-        `)
-        .eq('id', id)
-        .single();
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('waste_logs')
+          .select(`
+            *,
+            logged_by_staff:staff!waste_logs_logged_by_fkey(full_name),
+            stock_item:stock_items!waste_logs_stock_item_id_fkey(name, unit)
+          `)
+          .eq('id', id),
+        ctx,
+      ).single();
 
       if (error) throw handleSupabaseError(error);
       if (!isWasteLog(data)) throw new Error('Invalid waste log data');
@@ -68,6 +74,7 @@ export function createWasteWrapper(ctx: WrapperContext) {
     },
 
     create: async (data: WasteLogInsert) => {
+      assertInsertTenantMatches(data, ctx);
       const { data: result, error } = await ctx.anyClient
         .from('waste_logs')
         .insert(data)
@@ -103,11 +110,14 @@ export function createWasteWrapper(ctx: WrapperContext) {
       const endDate =
         month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`;
 
-      const { data, error } = await ctx.client
-        .from('waste_logs')
-        .select('total_cost, reason, category')
-        .gte('waste_date', startDate)
-        .lt('waste_date', endDate);
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('waste_logs')
+          .select('total_cost, reason, category')
+          .gte('waste_date', startDate)
+          .lt('waste_date', endDate),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
 
@@ -142,10 +152,10 @@ export function createWasteWrapper(ctx: WrapperContext) {
     },
 
     getDailySummary: async (date: string) => {
-      const { data, error } = await ctx.client
-        .from('waste_logs')
-        .select('total_cost')
-        .eq('waste_date', date);
+      const { data, error } = await applyTenantScope(
+        ctx.client.from('waste_logs').select('total_cost').eq('waste_date', date),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
 
@@ -157,11 +167,14 @@ export function createWasteWrapper(ctx: WrapperContext) {
     },
 
     getTopWastedItems: async (limit = 5) => {
-      const { data, error } = await ctx.client
-        .from('waste_logs')
-        .select('item_name, total_cost, quantity, unit')
-        .order('total_cost', { ascending: false })
-        .limit(limit);
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('waste_logs')
+          .select('item_name, total_cost, quantity, unit')
+          .order('total_cost', { ascending: false })
+          .limit(limit),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return data || [];

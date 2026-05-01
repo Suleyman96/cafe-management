@@ -48,6 +48,7 @@ const makeSettings = (overrides: Partial<CafeSettings> = {}): CafeSettings => ({
   social_line: null,
   location_maps_url: null,
   default_language: 'en',
+  feature_flags: {},
   created_at: '',
   updated_at: '',
   ...overrides,

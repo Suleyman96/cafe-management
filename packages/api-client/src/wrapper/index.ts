@@ -25,13 +25,22 @@ import { createStockItemsWrapper } from './stock';
 import { createTablesWrapper } from './tables';
 import { createTasksWrapper } from './tasks';
 import { createTenantsWrapper } from './tenants';
-import type { AnySupabaseClient, WrapperContext } from './types';
+import type { AnySupabaseClient, SentryShim, TenantContext, WrapperContext } from './types';
 import { createViewsWrapper } from './views';
 import { createWaiterCallsWrapper } from './waiter-calls';
 import { createWasteWrapper } from './waste';
 
+export interface SupabaseWrapperOptions {
+  /** Initial tenant id; can be set later via `setTenantId`. */
+  tenantId?: string | null;
+  /** Optional Sentry shim — used to log dev-only warnings when a wrapper
+   * read runs without a tenant context. */
+  sentry?: SentryShim;
+}
+
 export class SupabaseWrapper {
   private ctx: WrapperContext;
+  private tenantContext: TenantContext;
 
   // Cached domain wrappers (lazy-initialized)
   private _tables?: ReturnType<typeof createTablesWrapper>;
@@ -58,11 +67,33 @@ export class SupabaseWrapper {
   private _views?: ReturnType<typeof createViewsWrapper>;
   private _realtime?: ReturnType<typeof createRealtimeWrapper>;
 
-  constructor(client: SupabaseClient<Database>) {
+  constructor(client: SupabaseClient<Database>, options?: SupabaseWrapperOptions) {
+    this.tenantContext = {
+      tenantId: options?.tenantId ?? null,
+      setTenantId: (id: string | null) => {
+        this.tenantContext.tenantId = id;
+      },
+    };
     this.ctx = {
       client,
       anyClient: client as AnySupabaseClient,
+      tenantContext: this.tenantContext,
+      sentry: options?.sentry,
     };
+  }
+
+  /**
+   * Bind (or clear) the tenant id used for the defense-in-depth tenant
+   * scoping in every read. Call this once after sign-in (staff apps) or
+   * after `set_table_context()` resolves the QR session (customer-web).
+   */
+  setTenantContext(tenantId: string | null) {
+    this.tenantContext.setTenantId(tenantId);
+  }
+
+  /** Read the current tenant id (or `null` when no session is bound). */
+  getTenantId(): string | null {
+    return this.tenantContext.tenantId;
   }
 
   // Domain wrappers — lazy-initialized on first access
@@ -163,8 +194,11 @@ export class SupabaseWrapper {
 }
 
 // Export factory function
-export function createSupabaseWrapper(client: SupabaseClient<Database>) {
-  return new SupabaseWrapper(client);
+export function createSupabaseWrapper(
+  client: SupabaseClient<Database>,
+  options?: SupabaseWrapperOptions,
+) {
+  return new SupabaseWrapper(client, options);
 }
 
 export type { DeliveryCustomersWrapper } from './delivery-customers';

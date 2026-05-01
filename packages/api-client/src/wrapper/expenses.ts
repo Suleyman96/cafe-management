@@ -5,6 +5,7 @@
 import { isExpense, isExpenseCategory } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
 import { dedupeInsert } from './_dedupe';
+import { applyTenantScope, assertInsertTenantMatches } from './_tenant-scope';
 import type {
   ExpenseCategoryInsert,
   ExpenseCategoryRow,
@@ -18,18 +19,22 @@ export function createExpenseCategoriesWrapper(ctx: WrapperContext) {
   return {
     findAll: async (options?: { limit?: number }) => {
       const limit = options?.limit ?? 200;
-      const { data, error } = await ctx.client
-        .from('expense_categories')
-        .select('*')
-        .eq('is_active', true)
-        .order('name')
-        .limit(limit);
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('expense_categories')
+          .select('*')
+          .eq('is_active', true)
+          .order('name')
+          .limit(limit),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return data || [];
     },
 
     create: async (data: ExpenseCategoryInsert) => {
+      assertInsertTenantMatches(data, ctx);
       const { data: result, error } = await ctx.anyClient
         .from('expense_categories')
         .insert(data)
@@ -71,18 +76,21 @@ export function createExpensesWrapper(ctx: WrapperContext) {
       categoryId?: string;
       startDate?: string;
       endDate?: string;
-      paymentMethod?: string;
+      paymentMethod?: NonNullable<ExpenseRow['payment_method']>;
       limit?: number;
       offset?: number;
     }) => {
-      let query = ctx.client
-        .from('expenses')
-        .select(`
-          *,
-          category:expense_categories!expenses_category_id_fkey(id, name, icon),
-          created_by_staff:staff!expenses_created_by_fkey(full_name)
-        `)
-        .order('expense_date', { ascending: false });
+      let query = applyTenantScope(
+        ctx.client
+          .from('expenses')
+          .select(`
+            *,
+            category:expense_categories!expenses_category_id_fkey(id, name, icon),
+            created_by_staff:staff!expenses_created_by_fkey(full_name)
+          `)
+          .order('expense_date', { ascending: false }),
+        ctx,
+      );
 
       if (options?.categoryId) {
         query = query.eq('category_id', options.categoryId);
@@ -111,15 +119,17 @@ export function createExpensesWrapper(ctx: WrapperContext) {
     },
 
     findById: async (id: string) => {
-      const { data, error } = await ctx.client
-        .from('expenses')
-        .select(`
-          *,
-          category:expense_categories!expenses_category_id_fkey(id, name, icon),
-          created_by_staff:staff!expenses_created_by_fkey(full_name)
-        `)
-        .eq('id', id)
-        .single();
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('expenses')
+          .select(`
+            *,
+            category:expense_categories!expenses_category_id_fkey(id, name, icon),
+            created_by_staff:staff!expenses_created_by_fkey(full_name)
+          `)
+          .eq('id', id),
+        ctx,
+      ).single();
 
       if (error) throw handleSupabaseError(error);
       if (!isExpense(data)) throw new Error('Invalid expense data');
@@ -127,14 +137,17 @@ export function createExpensesWrapper(ctx: WrapperContext) {
     },
 
     create: async (data: ExpenseInsert) => {
+      assertInsertTenantMatches(data, ctx);
       const result = await dedupeInsert<unknown>(data.client_request_id, {
         insert: () => ctx.anyClient.from('expenses').insert(data).select().single(),
         refetch: () =>
-          ctx.anyClient
-            .from('expenses')
-            .select()
-            .eq('client_request_id', data.client_request_id ?? '')
-            .single(),
+          applyTenantScope(
+            ctx.anyClient
+              .from('expenses')
+              .select()
+              .eq('client_request_id', data.client_request_id ?? ''),
+            ctx,
+          ).single(),
       });
 
       if (!isExpense(result)) throw new Error('Invalid expense data');
@@ -165,14 +178,17 @@ export function createExpensesWrapper(ctx: WrapperContext) {
       const endDate =
         month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`;
 
-      const { data, error } = await ctx.client
-        .from('expenses')
-        .select(`
-          amount,
-          category:expense_categories!expenses_category_id_fkey(id, name)
-        `)
-        .gte('expense_date', startDate)
-        .lt('expense_date', endDate);
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('expenses')
+          .select(`
+            amount,
+            category:expense_categories!expenses_category_id_fkey(id, name)
+          `)
+          .gte('expense_date', startDate)
+          .lt('expense_date', endDate),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
 

@@ -4,18 +4,17 @@
 
 import { isStockItem } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
+import { applyTenantScope, assertInsertTenantMatches } from './_tenant-scope';
 import type { StockItemInsert, StockItemRow, StockItemUpdate, WrapperContext } from './types';
 
 export function createStockItemsWrapper(ctx: WrapperContext) {
   return {
     findAll: async (options?: { category?: string; lowStockOnly?: boolean; limit?: number }) => {
       const limit = options?.limit ?? 1000;
-      let query = ctx.client
-        .from('stock_items')
-        .select('*')
-        .eq('is_active', true)
-        .order('name')
-        .limit(limit);
+      let query = applyTenantScope(
+        ctx.client.from('stock_items').select('*').eq('is_active', true).order('name').limit(limit),
+        ctx,
+      );
 
       if (options?.category) {
         query = query.eq('category', options.category);
@@ -35,11 +34,10 @@ export function createStockItemsWrapper(ctx: WrapperContext) {
     },
 
     findById: async (id: string) => {
-      const { data, error } = await ctx.client
-        .from('stock_items')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data, error } = await applyTenantScope(
+        ctx.client.from('stock_items').select('*').eq('id', id),
+        ctx,
+      ).single();
 
       if (error) throw handleSupabaseError(error);
       if (!isStockItem(data)) throw new Error('Invalid stock item data');
@@ -47,6 +45,7 @@ export function createStockItemsWrapper(ctx: WrapperContext) {
     },
 
     create: async (data: StockItemInsert) => {
+      assertInsertTenantMatches(data, ctx);
       const { data: result, error } = await ctx.anyClient
         .from('stock_items')
         .insert(data)
@@ -100,24 +99,30 @@ export function createStockItemsWrapper(ctx: WrapperContext) {
     },
 
     getMovements: async (stockItemId: string) => {
-      const { data, error } = await ctx.client
-        .from('stock_movements')
-        .select(`
-          *,
-          performed_by_staff:staff!stock_movements_performed_by_fkey(full_name)
-        `)
-        .eq('stock_item_id', stockItemId)
-        .order('created_at', { ascending: false });
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('stock_movements')
+          .select(`
+            *,
+            performed_by_staff:staff!stock_movements_performed_by_fkey(full_name)
+          `)
+          .eq('stock_item_id', stockItemId)
+          .order('created_at', { ascending: false }),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return data || [];
     },
 
     getLowStockCount: async () => {
-      const { data, error } = await ctx.client
-        .from('stock_items')
-        .select('id, quantity, minimum_stock_level')
-        .eq('is_active', true);
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('stock_items')
+          .select('id, quantity, minimum_stock_level')
+          .eq('is_active', true),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
 
@@ -128,10 +133,10 @@ export function createStockItemsWrapper(ctx: WrapperContext) {
     },
 
     getTotalValue: async () => {
-      const { data, error } = await ctx.client
-        .from('stock_items')
-        .select('quantity, cost_price')
-        .eq('is_active', true);
+      const { data, error } = await applyTenantScope(
+        ctx.client.from('stock_items').select('quantity, cost_price').eq('is_active', true),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
 

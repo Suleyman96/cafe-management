@@ -48,7 +48,7 @@ export function createRpcWrapper(ctx: WrapperContext) {
         p_destination_table_id: params.destinationTableId,
         p_items: params.items,
         p_staff_id: params.staffId,
-        p_reason: params.reason || null,
+        p_reason: params.reason,
       });
       return data || '';
     },
