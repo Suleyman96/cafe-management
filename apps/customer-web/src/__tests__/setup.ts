@@ -60,6 +60,7 @@ vi.mock('@gustri/i18n', () => ({
     },
     i18n: { language: 'en', changeLanguage: vi.fn() },
   }),
+  useLocale: () => 'en',
   initI18n: vi.fn(),
 }));
 
