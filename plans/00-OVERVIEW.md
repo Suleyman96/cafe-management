@@ -15,10 +15,10 @@
 |----------|--------|---------------------|--------|
 | [CRITICAL](01-CRITICAL-fixes.md) | 2 | ✅ all shipped | CRIT-1, CRIT-2 |
 | [HIGH](02-HIGH-fixes.md) | 6 | ✅ all shipped | HIGH-1..6 |
-| [MEDIUM](03-MEDIUM-fixes.md) | 10 | 🟡 8 done, 2 partial (MED-7 component split, MED-8 global staleTime) | — |
+| [MEDIUM](03-MEDIUM-fixes.md) | 10 | 🟡 9 done, 1 partial (MED-8 global staleTime) | — |
 | [LOW](04-LOW-fixes.md) | 7 | ✅ all shipped | — |
 | [ADDITIONAL](05-ADDITIONAL-findings.md) | 9 | 🟡 6 done, 3 backlog (ADD-5 optimistic, ADD-8 HMAC, ADD-9 logging) | — |
-| [SCALE](07-SCALING-AND-ARCHITECTURE-fixes.md) | 34 | 🟡 22 done, 12 pending — see file | — |
+| [SCALE](07-SCALING-AND-ARCHITECTURE-fixes.md) | 34 | 🟡 26 done, 8 pending — see file (Tier 3 closed SCALE-14/17/18/21) | — |
 | [DB-SECURITY](09-DB-SECURITY-DEFERRED.md) | 20 | 🟡 15 done in `20260428/30/501`, 5 deferred (M4, M8, M9, M11, L4) | — |
 | [PACKAGE-ARCH](10-PACKAGE-ARCHITECTURE-DEFERRED.md) | 8 deferred | 🟠 0 of remaining shipped (H0/H4/H5/M1/M3/M4/M5/L*) — gate for tenant #2 | — |
 | [LAUNCH](08-LAUNCH-PLAN.md) | operational | 🟡 code-side ready, infra pending | — |

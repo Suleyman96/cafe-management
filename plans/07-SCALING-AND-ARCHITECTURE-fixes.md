@@ -959,6 +959,12 @@ Step 3 — Keep realtime-heavy pages as client components:
 
 ### SCALE-14: Real E2E tests (Issue #6)
 
+**Status (2026-05-02): ✅ shipped.** All seven `*.spec.ts` files now exist
+under `apps/staff-web/e2e/` and `apps/customer-web/e2e/` with real
+assertions, plus a `fixtures.ts` helper. CI runs both Playwright suites
+in `.github/workflows/ci.yml`. Closed by f25a30f, de8314c, 4293206,
+b6464f2, ab792dd.
+
 **Problem:** Current e2e tests assert `page.locator('body').toBeVisible()`.
 They pass even if the app is completely broken. No actual user flows are
 tested.
@@ -1120,6 +1126,12 @@ Phases 1-6 or interleave as time allows.
 
 ### SCALE-17: Remove CSP `unsafe-inline` for scripts
 
+**Status (2026-05-02): ✅ shipped (no nonce needed).** Both apps' CSP
+headers now use `script-src 'self'` with no `'unsafe-inline'` (see
+`apps/staff-web/next.config.js:59` and customer-web's nonce-based
+middleware from commit 6444b1c). `style-src` retains `'unsafe-inline'`
+intentionally — Tailwind/inline styles require it; tracked separately.
+
 **Problem:** Both apps set `script-src 'self' 'unsafe-inline'` in their CSP
 header. This weakens XSS protection — if an attacker injects HTML, inline
 scripts will execute.
@@ -1163,6 +1175,12 @@ Step 4 — If nonce-based CSP is too complex for now, at minimum add
 ---
 
 ### SCALE-18: Add error boundaries to remaining pages
+
+**Status (2026-05-02): ✅ shipped.** Closed by PR #78. Added
+`error.tsx` re-exports for `reports`, `menu`, `delivery`, `settings`
+under `apps/staff-web/src/app/(staff)/`, all pointing at the existing
+shared `@/components/ui/page-error` component used by `cafe-settings`,
+`feedback`, `schedules`, `staff`.
 
 **Problem:** Four staff-web pages have no section-level error boundary. They
 rely on the global `(staff)/error.tsx` which replaces the entire page layout.
@@ -1340,6 +1358,20 @@ total recalculation to an async job instead of a synchronous trigger.
 ---
 
 ### SCALE-21: Server-side file upload validation
+
+**Status (2026-05-02): ✅ shipped (Option C — client validator + RLS
+tightening).** Closed by PR #80. Premise was partly stale — uploads are
+client-side via Supabase Storage SDK, not via a `/api/v1/uploads/*`
+route. Added a shared `validateImageFile` helper at
+`apps/staff-web/src/lib/uploads/validate-image.ts` (size cap, MIME
+allowlist of jpeg/png/webp only, magic-byte check on first 12 bytes)
+wired into both call sites (`image-upload.tsx`, `menu-item-modal.tsx`).
+Migration `20260502000002_drop_svg_from_branding_uploads.sql` removed
+SVG from the branding bucket RLS allowlist. Residual gap (a tenant
+owner uploading non-image bytes claiming a valid mime type) is
+bounded by Storage RLS path-scoping to their own tenant — not an
+attack on others. A full server-route fix is filed under future work
+if customer-web ever accepts uploads.
 
 **Problem:** Image upload validation (file type, file size) only happens in
 the browser (`apps/staff-web/src/components/settings/image-upload.tsx:44-54`).

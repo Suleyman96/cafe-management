@@ -353,6 +353,13 @@ REST API rate limiting, which should be configured at the Supabase infrastructur
 
 ## MED-7: Large Components Need Splitting (400-550 lines)
 
+**Status (2026-05-02): ✅ shipped (residue closed by PR #79).** Earlier
+PRs split delivery/takeout pages. The two remaining 400+ line outliers
+(`split-payment-modal.tsx` 477→369; `menu/page.tsx` 441→212) were
+extracted into focused subcomponents under `components/modals/payment/`
+and `components/menu/`. No new abstractions; each split is a verbatim
+JSX move with prop drilling. Tests, type-check, biome all pass.
+
 ### Problem
 
 Four components exceed 400 lines, making them hard to maintain, test, and review:

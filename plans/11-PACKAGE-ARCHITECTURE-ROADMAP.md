@@ -286,7 +286,12 @@ showing realtime-driven refetches at >5/sec per session.
 
 ---
 
-### C3 (= M5). `/api/v1/*` versioning consistency ⚪
+### C3 (= M5). `/api/v1/*` versioning consistency ✅ Done 2026-05-02 (PR #77)
+All three legacy routes (`/api/staff`, `/api/staff/reset-password`,
+`/api/schedules/clock`) moved under `/api/v1/`. Five internal callers
+updated. No 308 stubs — auth-gated admin endpoints with no plausible
+external caller. Mobile and customer-web don't reference these paths.
+
 **Trigger:** before introducing `/v2/*`, OR when a new client has to
 shim around the inconsistent prefix.
 
