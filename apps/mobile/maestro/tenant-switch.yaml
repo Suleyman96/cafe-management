@@ -1,0 +1,71 @@
+appId: com.gustri.app
+---
+# Cross-tenant cache isolation regression test.
+#
+# Locks in the behavior added in PR ref/mobile-auth-tenant-safety:
+# `onAuthStateChange` in apps/mobile/src/lib/auth.ts calls
+# cleanupClientState() when the user identity changes mid-session, so
+# tenant A's React Query cache cannot leak into tenant B's session.
+#
+# Regression check: comment out the cleanupClientState() call in the
+# tenant-transition branch of auth.ts and this flow should fail at the
+# "T01 not visible" assertion below.
+#
+# Fixtures live in supabase/seed.sql:
+#   tenant 1 — admin@test.com  / test1234, tables T01..T08
+#   tenant 2 — admin2@test.com / test1234, table T2-ONLY
+
+- launchApp:
+    clearState: true
+
+# ── Sign in as tenant-1 admin ────────────────────────────────────────────────
+- assertVisible: "Email address"
+- tapOn: "Email address"
+- inputText: "admin@test.com"
+- tapOn: "Password"
+- inputText: "test1234"
+- tapOn:
+    text: "Sign in"
+- assertVisible:
+    text: "Tables|Orders"
+    timeout: 15000
+
+# ── Tables tab shows tenant-1 data ───────────────────────────────────────────
+- tapOn: "Tables"
+- assertVisible:
+    text: "#T01"
+    timeout: 10000
+- assertNotVisible: "#T2-ONLY"
+
+# ── Sign out from Profile ────────────────────────────────────────────────────
+# ProfileScreen calls forceLogout('user') immediately on tap — no
+# confirmation dialog. forceLogout clears the auth store and the
+# RootNavigator flips back to the Login stack.
+- tapOn: "Profile"
+- assertVisible:
+    text: "Sign Out"
+    timeout: 10000
+- tapOn: "Sign Out"
+
+# ── Sign in as tenant-2 admin ────────────────────────────────────────────────
+- assertVisible:
+    text: "Email address"
+    timeout: 15000
+- tapOn: "Email address"
+- inputText: "admin2@test.com"
+- tapOn: "Password"
+- inputText: "test1234"
+- tapOn:
+    text: "Sign in"
+- assertVisible:
+    text: "Tables|Orders"
+    timeout: 15000
+
+# ── Tables tab now shows ONLY tenant-2 data ──────────────────────────────────
+# This is the critical assertion: if cleanupClientState() did not run on the
+# tenant transition, T01 would still be cached and visible here.
+- tapOn: "Tables"
+- assertVisible:
+    text: "#T2-ONLY"
+    timeout: 10000
+- assertNotVisible: "#T01"
