@@ -642,16 +642,6 @@ export interface Database {
           decrypted_delivery_address: string | null;
         };
       };
-      // Added 2026-05-01 (M4 — column-leak hardening). Authenticated callers
-      // read from this view instead of `tenants` directly; plan stays
-      // reachable via `get_my_tenant_plan()`.
-      tenant_self_view: {
-        Row: {
-          id: string;
-          name: string;
-          slug: string;
-        };
-      };
     };
     Functions: {
       set_table_context: {
@@ -691,11 +681,6 @@ export interface Database {
       get_active_order_for_table: {
         Args: { p_table_id: string };
         Returns: Json;
-      };
-      // Added 2026-05-01 (M4). JWT-aware plan lookup; no direct SELECT on tenants.
-      get_my_tenant_plan: {
-        Args: Record<string, never>;
-        Returns: string;
       };
       get_delivery_order: {
         Args: { p_order_id: string; p_access_token?: string | null };
