@@ -421,7 +421,7 @@ function MyTasksIndicator({ staffId }: { staffId: string }) {
 
   const priorityOrder: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
   const displayTasks = [...activeTasks]
-    .sort((a, b) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3))
+    .sort((a, b) => (priorityOrder[a.priority ?? 'normal'] ?? 3) - (priorityOrder[b.priority ?? 'normal'] ?? 3))
     .slice(0, 3);
 
   const isOverdue = (task: { due_date: string | null }) => task.due_date && task.due_date < today;
@@ -447,7 +447,7 @@ function MyTasksIndicator({ staffId }: { staffId: string }) {
           {displayTasks.map((task) => (
             <div key={task.id} className="flex items-center gap-1.5 text-gray-700">
               <span
-                className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isOverdue(task) ? 'bg-red-500' : priorityDot[task.priority] || priorityDot.normal}`}
+                className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isOverdue(task) ? 'bg-red-500' : priorityDot[task.priority ?? 'normal'] || priorityDot.normal}`}
               />
               <span className={`truncate ${isOverdue(task) ? 'text-red-600' : ''}`}>
                 {task.title}

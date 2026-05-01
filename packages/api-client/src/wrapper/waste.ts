@@ -11,7 +11,7 @@ export function createWasteWrapper(ctx: WrapperContext) {
     findAll: async (options?: {
       startDate?: string;
       endDate?: string;
-      reason?: string;
+      reason?: NonNullable<WasteLogRow['reason']>;
       stockItemId?: string;
       limit?: number;
       offset?: number;

@@ -162,14 +162,14 @@ export default function DeliveryPage() {
           </Button>
 
           {/* Delivery fee info */}
-          {settings.delivery_fee_default > 0 && (
+          {(settings.delivery_fee_default ?? 0) > 0 && (
             <p className="text-xs text-center text-muted-foreground">
               {t('deliveryLanding.deliveryFeeInfo', {
-                fee: settings.delivery_fee_default.toFixed(2),
+                fee: (settings.delivery_fee_default ?? 0).toFixed(2),
                 currency: settings.currency_symbol,
                 min:
-                  settings.minimum_delivery_amount > 0
-                    ? settings.minimum_delivery_amount.toFixed(2)
+                  (settings.minimum_delivery_amount ?? 0) > 0
+                    ? (settings.minimum_delivery_amount ?? 0).toFixed(2)
                     : '0',
               })}
             </p>

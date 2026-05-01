@@ -76,7 +76,7 @@ export function DeliveryOrderStatus({ orderId, accessToken }: DeliveryOrderStatu
           </div>
           <div className="flex items-center justify-between mt-2">
             <span className="text-sm text-muted-foreground">{t('deliveryStatus.labelPlaced')}</span>
-            <span className="font-medium">{timeAgo(order.created_at, t)}</span>
+            <span className="font-medium">{order.created_at ? timeAgo(order.created_at, t) : '—'}</span>
           </div>
         </div>
 
@@ -191,10 +191,10 @@ export function DeliveryOrderStatus({ orderId, accessToken }: DeliveryOrderStatu
                 </div>
               </>
             ) : null}
-            {order.delivery_fee > 0 && (
+            {(order.delivery_fee ?? 0) > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{t('deliveryFee', { ns: 'common' })}</span>
-                <span>{formatPrice(order.delivery_fee)}</span>
+                <span>{formatPrice(order.delivery_fee ?? 0)}</span>
               </div>
             )}
             <div className="flex justify-between text-lg font-bold">

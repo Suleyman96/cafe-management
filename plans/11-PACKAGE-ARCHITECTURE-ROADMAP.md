@@ -25,36 +25,18 @@
 Doing them in separate PRs causes three rounds of conflict resolution in
 `packages/api-client/src/wrapper/`.
 
-### A1 (= H0). Replace hand-written `database.ts` with generator output 🟡
-**Why now:** runtime correctness. Drift today silently ships wrong types.
-Pre-requisite for A4 (typed RPCs).
+### A1 (= H0). Replace hand-written `database.ts` with generator output ✅ Done 2026-05-01
+`packages/database/src/types/database.ts` is now an overlay over
+`./generated.ts`. The overlay preserves:
 
-**Steps:**
-1. `supabase start` locally; ensure migrations applied (`supabase db reset`).
-2. `pnpm db:types:generate` — writes `packages/database/src/types/generated.ts`.
-3. Replace `packages/database/src/types/database.ts` with:
-   ```ts
-   export type { Json } from './generated';
-   export type { Database } from './generated';
-   ```
-4. `pnpm build --filter='./packages/*'` — fix any consumer where the
-   generator's `Insert`/`Update` shape differs from the hand-rolled
-   `Omit<Row, ...>`. Likely sites: wrappers using `Insert` types,
-   Zod schemas in `packages/database/src/schemas/inputs.ts`.
-5. Update the relation types in `packages/database/src/types/index.ts`
-   if any column moved.
-6. Flip the CI gate from soft to required: in
-   `.github/workflows/ci.yml`, remove `continue-on-error: true` from the
-   `db-types-check` job's "Verify generated types match schema" step.
+- CHECK-constraint narrowings (`orders.status`, `tables.status`,
+  `payment_method`, etc.) the generator can't infer.
+- Default-populated non-null assertions (`created_at`, `updated_at`,
+  `is_active`) the wrapper layer and UI rely on. Documented inline.
 
-**Success criteria:**
-- `pnpm db:types:check` passes locally.
-- `pnpm build` passes.
-- `pnpm test` passes (some Zod tests may need fixture tweaks).
-- CI's `db-types-check` job is required, not advisory.
-
-**Estimate:** 1 day. Most of the time goes into reconciling Insert/Update
-shape diffs.
+The CI `db-types-check` gate has been flipped from `continue-on-error`
+to required. Drift between the live schema and the committed types now
+fails the PR.
 
 ---
 
@@ -198,11 +180,10 @@ the data hits the network.
 - [x] A4 (typed RPC bindings) — 2026-04-30. Built on the existing
   `Database['public']['Functions']` shape rather than blocking on A1; the
   helper signature is correct in either case.
-- [ ] A1 (replace hand-written `database.ts`) — deferred. The hand-written
-  file carries CHECK-constraint narrowings (`status: 'free' | 'occupied' | …`,
-  `payment_method: 'cash' | 'card' | 'digital'`, etc.) that the generator
-  cannot infer. A naked `export * from './generated'` would weaken
-  `findAll({ status })` typing across ~30 wrapper methods. Pre-tenant-#2
+- [x] A1 (replace hand-written `database.ts`) — 2026-05-01. Shipped as
+  an overlay (not naked re-export) that preserves CHECK-constraint
+  narrowings and DB-default non-null assertions. CI gate now required.
+  Original deferral rationale was: a naked `export * from './generated'` would weaken
   this needs its own focused PR with either: (a) an overlay layer that
   preserves narrowings on top of `generated.ts`, or (b) accepting the
   narrowing loss and patching consumers. Soft CI gate (`db-types-check`)

@@ -4,11 +4,11 @@
 
 import { isStaff, isStaffArray } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
-import type { StaffInsert, StaffUpdate, WrapperContext } from './types';
+import type { StaffInsert, StaffRow, StaffUpdate, WrapperContext } from './types';
 
 export function createStaffWrapper(ctx: WrapperContext) {
   return {
-    findAll: async (options?: { role?: string; limit?: number }) => {
+    findAll: async (options?: { role?: StaffRow['role']; limit?: number }) => {
       const limit = options?.limit ?? 200;
       let query = ctx.client.from('staff').select('*').order('full_name').limit(limit);
 

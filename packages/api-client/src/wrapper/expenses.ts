@@ -71,7 +71,7 @@ export function createExpensesWrapper(ctx: WrapperContext) {
       categoryId?: string;
       startDate?: string;
       endDate?: string;
-      paymentMethod?: string;
+      paymentMethod?: NonNullable<ExpenseRow['payment_method']>;
       limit?: number;
       offset?: number;
     }) => {

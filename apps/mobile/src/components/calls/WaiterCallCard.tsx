@@ -8,8 +8,8 @@ import { CARD_RADIUS, TYPOGRAPHY, WAITER_CALL_REASON_COLORS } from '@/theme';
 interface WaiterCallCardProps {
   call: {
     id: string;
-    call_type: string;
-    reason: string;
+    call_type: string | null;
+    reason: string | null;
     status: string;
     created_at: string;
     acknowledged_at?: string | null;

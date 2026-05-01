@@ -207,7 +207,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
           </div>
           <div className="flex items-center justify-between mt-2">
             <span className="text-sm text-muted-foreground">{t('orderStatus.labelPlaced')}</span>
-            <span className="font-medium">{timeAgo(order.created_at, t)}</span>
+            <span className="font-medium">{order.created_at ? timeAgo(order.created_at, t) : '—'}</span>
           </div>
         </div>
 

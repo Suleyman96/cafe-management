@@ -403,7 +403,9 @@ export default function OrderDetailPage() {
                 to: transfer.to_table?.table_number,
               })}
               {transfer.reason && ` - ${transfer.reason}`}
-              <span className="text-gray-600 ml-2">({formatTime(transfer.created_at)})</span>
+              {transfer.created_at && (
+                <span className="text-gray-600 ml-2">({formatTime(transfer.created_at)})</span>
+              )}
             </div>
           ))}
         </div>

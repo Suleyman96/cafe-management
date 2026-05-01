@@ -23,8 +23,8 @@ export function createTasksWrapper(ctx: WrapperContext) {
      *   - 'mine' — `assigned_to = staffId` (requires `staffId`)
      */
     findAll: async (options?: {
-      status?: string;
-      priority?: string;
+      status?: NonNullable<TaskRow['status']>;
+      priority?: NonNullable<TaskRow['priority']>;
       assignedTo?: string;
       dueBefore?: string;
       isTemplate?: boolean;
