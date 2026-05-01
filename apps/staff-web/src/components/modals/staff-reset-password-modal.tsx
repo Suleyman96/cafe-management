@@ -44,7 +44,7 @@ export function StaffResetPasswordModal({
         data: { session },
       } = await supabase.auth.getSession();
 
-      const response = await fetch('/api/staff/reset-password', {
+      const response = await fetch('/api/v1/staff/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -498,7 +498,7 @@ function TodayShiftIndicator({ staffId }: { staffId: string }) {
       } = await supabase.auth.getSession();
       if (!session?.access_token) return;
 
-      const res = await fetch('/api/schedules/clock', {
+      const res = await fetch('/api/v1/schedules/clock', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

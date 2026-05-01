@@ -124,7 +124,7 @@ export function StaffCreateModal({ currentUserRole, onClose, onSuccess }: StaffC
         data: { session },
       } = await supabase.auth.getSession();
 
-      const response = await fetch('/api/staff', {
+      const response = await fetch('/api/v1/staff', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

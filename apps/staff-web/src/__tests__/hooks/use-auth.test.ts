@@ -74,7 +74,7 @@ describe('postLoginSideEffects', () => {
 
     await vi.waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledWith(
-        '/api/schedules/clock',
+        '/api/v1/schedules/clock',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ scheduleId: 'sched-1', action: 'clock_in' }),
@@ -126,7 +126,7 @@ describe('postLoginSideEffects', () => {
 
     // No clock_in fetch — findCurrentOrNextShift only considers 'scheduled' status
     expect(fetchSpy).not.toHaveBeenCalledWith(
-      '/api/schedules/clock',
+      '/api/v1/schedules/clock',
       expect.objectContaining({
         body: expect.stringContaining('clock_in'),
       }),

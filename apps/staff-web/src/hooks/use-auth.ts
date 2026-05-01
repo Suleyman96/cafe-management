@@ -19,7 +19,7 @@ async function clockViaApi(scheduleId: string, action: 'clock_in' | 'clock_out')
   } = await supabase.auth.getSession();
   if (!session?.access_token) return;
 
-  await fetch('/api/schedules/clock', {
+  await fetch('/api/v1/schedules/clock', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
