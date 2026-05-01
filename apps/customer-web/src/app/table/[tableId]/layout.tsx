@@ -3,9 +3,11 @@
 import { useTranslation } from '@gustri/i18n';
 import * as Sentry from '@sentry/nextjs';
 import { ConciergeBell, Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { useTable } from '@/hooks/use-table';
 import { useCreateWaiterCall } from '@/hooks/use-waiter-call';
+import { db } from '@/lib/supabase';
 
 export default function TableLayout({
   children,
@@ -18,6 +20,26 @@ export default function TableLayout({
   const { data: table } = useTable(params.tableId);
   const actualTableId = table?.id || '';
   const createWaiterCall = useCreateWaiterCall();
+
+  // Bind wrapper-side tenant filter as soon as the table resolves. Without
+  // this, navigating directly to /table/T01/menu (no `?token=` query param)
+  // leaves `db.tenantId` null, and queries fall back to RLS-only — and the
+  // anon RLS on menu/category/tables tables is `USING (true)`. The wrapper
+  // appending `.eq('tenant_id', X)` is the actual current isolation gate
+  // for these reads; binding it here closes the gap on direct navigation.
+  // (The QR-token flow in `table-landing.tsx` calls setTableContext too —
+  // this layout-level bind is belt-and-braces and covers menu/cart/order
+  // routes that don't go through the landing page.)
+  useEffect(() => {
+    if (table?.tenant_id) {
+      db.setTenantContext(table.tenant_id);
+    }
+    return () => {
+      // Clear on unmount so a different tab/session can't inherit a stale
+      // tenant id. The wrapper is a singleton; explicit cleanup matters.
+      db.setTenantContext(null);
+    };
+  }, [table?.tenant_id]);
 
   const handleCallStaff = async () => {
     if (!actualTableId || createWaiterCall.isPending) return;
