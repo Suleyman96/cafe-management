@@ -71,16 +71,43 @@ describe('useActiveOrders', () => {
 // --- Local hooks (use direct db import → assert on db from vi.mock) ---
 
 describe('useUpdateOrderStatus', () => {
-  it('invalidates ORDERS, TABLES, and ACTIVE_ORDERS on success', async () => {
+  it('invalidates ORDERS and ACTIVE_ORDERS but NOT TABLES on a non-terminal transition', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useUpdateOrderStatus());
+    // Seed previousOrder so the mutation captures oldStatus="new" (non-terminal)
+    // and the smart helper can decide whether to refetch TABLES.
+    queryClient.setQueryData([QUERY_KEYS.ORDER, 'o1'], {
+      id: 'o1',
+      status: 'new',
+      order_type: 'dine_in',
+    });
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
     await result.current.mutateAsync({ orderId: 'o1', status: 'PREPARING' });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    // new → preparing is not a terminal-state crossing, so TABLES must NOT
+    // be refetched (kitchen toggles would otherwise spam table queries).
+    expect(invalidatedKeys).not.toContainEqual([QUERY_KEYS.TABLES]);
+  });
+
+  it('invalidates TABLES on a terminal transition (preparing → closed)', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useUpdateOrderStatus());
+    queryClient.setQueryData([QUERY_KEYS.ORDER, 'o1'], {
+      id: 'o1',
+      status: 'preparing',
+      order_type: 'dine_in',
+    });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await result.current.mutateAsync({ orderId: 'o1', status: 'CLOSED' });
+
+    const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    // closing the order frees the table — TABLES must refetch.
+    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
   });
 
   it('calls updateStatus with correct status value', async () => {
