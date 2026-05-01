@@ -275,27 +275,23 @@ END;
 
 ---
 
-### M4. `tenants` row leaks `plan` / `is_active` to every staff member
-**Where:** [supabase/migrations/00000000000000_baseline.sql:3052](../supabase/migrations/00000000000000_baseline.sql#L3052)
-
-`tenant_read_own` allows SELECT of all columns. If staff shouldn't know
-they're on the `free` plan, expose only safe columns through a view.
-
-**Fix:** create `public.tenant_self_view` returning `name, slug` only and
-revoke direct table SELECT.
+### ~~M4. `tenants` row leaks `plan` / `is_active` to every staff member~~ ✅ Closed 2026-05-01
+Migration `20260501000002_tenant2_residual_hardening.sql` introduces
+`public.tenant_self_view` (id, name, slug only), revokes SELECT on
+`public.tenants` from `authenticated` and `anon`, and adds the
+SECURITY-DEFINER RPC `get_my_tenant_plan()` for the staff/anon
+flows that need the plan. Wrapper `db.tenants.getCurrent()` reads
+the view; new `db.tenants.getCurrentPlan()` calls the RPC.
 
 ---
 
-### M8. JWT custom-claims hook is wired but unused at the RLS layer
-**Where:** [supabase/migrations/20260423000006_jwt_custom_claims_hook.sql](../supabase/migrations/20260423000006_jwt_custom_claims_hook.sql)
-
-The hook writes `tenant_id`, `user_role`, `is_active_staff` into the JWT,
-but `current_tenant_id()` / `get_my_staff_role()` / `is_active_staff()`
-still query the `staff` table on every RLS evaluation. One staff lookup
-per query × every policy = wasted load.
-
-**Fix:** read `auth.jwt() ->> 'tenant_id'` first and fall back to the
-table only when the claim is missing.
+### ~~M8. JWT custom-claims hook is wired but unused at the RLS layer~~ ✅ Closed 2026-05-01
+Migration `20260501000002_tenant2_residual_hardening.sql` rewrites
+`current_tenant_id()`, `get_my_staff_role()`, and `is_active_staff()`
+to read the JWT claim first (`tenant_id`, `user_role`,
+`is_active_staff`) and fall back to the staff table only when the
+claim is absent. Anon QR sessions still pick up
+`app.current_tenant_id` via the third fallback.
 
 ---
 
@@ -320,13 +316,11 @@ Any active staff member can call it and bulk-cancel `new` /
 
 ---
 
-### M11. `active_orders_view` has no `LIMIT` and joins four tables
-**Where:** [supabase/migrations/00000000000000_baseline.sql:2114-2134](../supabase/migrations/00000000000000_baseline.sql#L2114)
-
-Fine for a single 30-table cafe. At thousands of tenants × dozens of
-active orders it becomes the most expensive query in
-`pg_stat_statements`. Add `LIMIT 200` and let `security_invoker = on` +
-the upcoming `tenant_id = current_tenant_id()` predicate keep it scoped.
+### ~~M11. `active_orders_view` has no `LIMIT` and joins four tables~~ ✅ Closed 2026-05-01
+Migration `20260501000002_tenant2_residual_hardening.sql` recreates
+`active_orders_view` with an explicit `tenant_id = current_tenant_id()`
+predicate (defense-in-depth on top of `security_invoker = on`) and a
+`LIMIT 200` cap. Existing predicates and columns preserved verbatim.
 
 ---
 
@@ -427,13 +421,20 @@ historical reference but are no longer actionable.
 
 ---
 
+## Quick reference — fixed in `20260501000002`
+
+| Item | Fix |
+|------|-----|
+| M4   | Created `public.tenant_self_view` (id, name, slug); revoked SELECT on `public.tenants` from `authenticated` and `anon`; added `get_my_tenant_plan()` SECURITY-DEFINER RPC. Wrapper `tenants.getCurrent()` reads the view; `tenants.getCurrentPlan()` calls the RPC. |
+| M8   | `current_tenant_id()`, `get_my_staff_role()`, `is_active_staff()` now read the JWT claim emitted by `custom_access_token_hook` first; fall back to staff-table lookup for sessions issued before the hook was enabled; anon QR sessions fall through to the `app.current_tenant_id` GUC. |
+| M11  | Recreated `active_orders_view` with `LIMIT 200` and an explicit `tenant_id = current_tenant_id()` predicate (defense-in-depth on top of `security_invoker = on`). Existing columns and joins preserved verbatim. |
+
+---
+
 ## Still deferred (verified 2026-05-01)
 
 These remain open and gate tenant #2:
 
-- **M4** — `tenant_self_view` exposing only `name, slug` not yet created; staff still SELECT full `tenants` row including `plan` and `is_active`.
-- **M8** — `current_tenant_id()` / `get_my_staff_role()` / `is_active_staff()` still query the `staff` table on every RLS evaluation; the JWT custom-claims hook from `20260423000006` is wired but unread.
 - **M9** — Closes automatically once C2/C3 close (now done); load-test verification still pending.
-- **M11** — `active_orders_view` still has no `LIMIT`.
 - **L4** — CHECK-constraint enums vs. PG ENUM — informational only.
 - **L6** — Some triggers still don't `SET search_path` — defense-in-depth, not exploitable.

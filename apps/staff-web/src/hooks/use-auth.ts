@@ -130,9 +130,12 @@ async function loadStaffAndSetup(
     });
   }
 
+  // Plan moved off `tenants.*` (M4 — column leak). Use the JWT-aware RPC.
   db.tenants
-    .getCurrent()
-    .then((tenant) => setTenantPlan(tenant.plan as PlanName))
+    .getCurrentPlan()
+    .then((plan) => {
+      if (plan) setTenantPlan(plan as PlanName);
+    })
     .catch((err) => {
       Sentry.captureException(err, { tags: { context: 'post-login-tenant-plan' } });
     });
