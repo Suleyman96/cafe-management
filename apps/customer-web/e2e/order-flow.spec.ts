@@ -92,12 +92,11 @@ test.describe('Customer Order Flow', () => {
     const addToOrderBtn = page.getByRole('button', { name: /add to order/i });
     await expect(addToOrderBtn).toBeVisible({ timeout: 5000 });
 
-    // Find the plus button to increase quantity
-    // The quantity selector has a minus button, quantity text, and plus button
-    const plusBtn = page
-      .locator('button')
-      .filter({ has: page.locator('svg.lucide-plus') })
-      .last();
+    // Click the plus button inside the open dialog. Using the testid keeps
+    // us scoped to the modal — the menu cards behind the modal also render
+    // a plus-icon button (data-testid="quick-add"), and an unscoped locator
+    // would race with it and time out on the modal overlay.
+    const plusBtn = page.getByTestId('modal-quantity-increase');
     await plusBtn.click();
 
     // Quantity should now be 2

@@ -128,6 +128,8 @@
   "menuItem.prepTime": "~{{count}} мин",
   "menuItem.prepTimeFull": "Дайындау уақыты: ~{{count}} минут",
   "menuItem.quantityLabel": "Саны",
+  "menuItem.quantityIncrease": "Санды көбейту",
+  "menuItem.quantityDecrease": "Санды азайту",
   "menuItem.specialRequests": "Арнайы тілектер (міндетті емес)",
   "menuItem.specialRequestsPlaceholder": "мыс., Қант аз, Қатты ыстық, Мұз жоқ...",
   "orderStatus.addMoreItems": "Тағы қосу",

@@ -128,6 +128,8 @@
   "menuItem.prepTime": "~{{count}} دقيقة",
   "menuItem.prepTimeFull": "وقت التحضير: ~{{count}} دقيقة",
   "menuItem.quantityLabel": "الكمية",
+  "menuItem.quantityIncrease": "زيادة الكمية",
+  "menuItem.quantityDecrease": "إنقاص الكمية",
   "menuItem.specialRequests": "طلبات خاصة (اختياري)",
   "menuItem.specialRequestsPlaceholder": "مثال: سكر أقل، ساخن جداً، بدون ثلج...",
   "orderStatus.addMoreItems": "إضافة المزيد من الأصناف",

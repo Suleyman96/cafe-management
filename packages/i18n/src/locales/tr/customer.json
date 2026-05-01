@@ -128,6 +128,8 @@
   "menuItem.prepTime": "~{{count}} dk",
   "menuItem.prepTimeFull": "Hazırlık süresi: ~{{count}} dakika",
   "menuItem.quantityLabel": "Miktar",
+  "menuItem.quantityIncrease": "Miktarı artır",
+  "menuItem.quantityDecrease": "Miktarı azalt",
   "menuItem.specialRequests": "Özel istekler (isteğe bağlı)",
   "menuItem.specialRequestsPlaceholder": "Örn., az şekerli, çok sıcak, buzsuz...",
   "orderStatus.addMoreItems": "Daha Fazla Ürün Ekle",

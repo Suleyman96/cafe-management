@@ -128,6 +128,8 @@
   "menuItem.prepTime": "~{{count}} menit",
   "menuItem.prepTimeFull": "Waktu persiapan: ~{{count}} menit",
   "menuItem.quantityLabel": "Jumlah",
+  "menuItem.quantityIncrease": "Tambah jumlah",
+  "menuItem.quantityDecrease": "Kurangi jumlah",
   "menuItem.specialRequests": "Permintaan khusus (opsional)",
   "menuItem.specialRequestsPlaceholder": "mis. Gula sedikit, Ekstra panas, Tanpa es...",
   "orderStatus.addMoreItems": "Tambah Item",

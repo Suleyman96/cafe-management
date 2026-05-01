@@ -128,6 +128,8 @@
   "menuItem.prepTime": "~{{count}} λεπτά",
   "menuItem.prepTimeFull": "Χρόνος προετοιμασίας: ~{{count}} λεπτά",
   "menuItem.quantityLabel": "Ποσότητα",
+  "menuItem.quantityIncrease": "Αύξηση ποσότητας",
+  "menuItem.quantityDecrease": "Μείωση ποσότητας",
   "menuItem.specialRequests": "Ειδικά αιτήματα (προαιρετικά)",
   "menuItem.specialRequestsPlaceholder": "π.χ. Λιγότερη ζάχαρη, Πολύ ζεστό, Χωρίς πάγο...",
   "orderStatus.addMoreItems": "Προσθήκη Ειδών",

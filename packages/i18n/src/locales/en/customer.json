@@ -58,6 +58,8 @@
   "menuItem.buttonAdd": "Add",
   "menuItem.allergens": "Contains allergens:",
   "menuItem.quantityLabel": "Quantity",
+  "menuItem.quantityIncrease": "Increase quantity",
+  "menuItem.quantityDecrease": "Decrease quantity",
   "menuItem.specialRequests": "Special requests (optional)",
   "menuItem.specialRequestsPlaceholder": "e.g., Less sugar, Extra hot, No ice...",
   "menuItem.addToOrder": "Add to Order \u00b7 {{price}}",

@@ -128,6 +128,8 @@
   "menuItem.prepTime": "~{{count}} daq",
   "menuItem.prepTimeFull": "Tayyorlash vaqti: ~{{count}} daqiqa",
   "menuItem.quantityLabel": "Miqdor",
+  "menuItem.quantityIncrease": "Miqdorni oshirish",
+  "menuItem.quantityDecrease": "Miqdorni kamaytirish",
   "menuItem.specialRequests": "Maxsus so'rovlar (ixtiyoriy)",
   "menuItem.specialRequestsPlaceholder": "masalan, Kamroq shakar, Juda issiq, Muzsiz...",
   "orderStatus.addMoreItems": "Yana qo'shish",

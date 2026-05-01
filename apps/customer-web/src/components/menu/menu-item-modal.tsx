@@ -55,6 +55,9 @@ export function MenuItemModal({ item, isOpen, onClose, accentColor }: MenuItemMo
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={name}
           className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl shadow-2xl"
           style={{
             background: 'linear-gradient(180deg, #1A1A1E, #141416)',
@@ -151,6 +154,8 @@ export function MenuItemModal({ item, isOpen, onClose, accentColor }: MenuItemMo
               </label>
               <div className="flex items-center gap-3">
                 <button
+                  data-testid="modal-quantity-decrease"
+                  aria-label={t('menuItem.quantityDecrease')}
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   disabled={quantity <= 1}
                   className="flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-95 disabled:opacity-30"
@@ -163,6 +168,8 @@ export function MenuItemModal({ item, isOpen, onClose, accentColor }: MenuItemMo
                 </button>
                 <span className="text-2xl font-bold text-white w-12 text-center">{quantity}</span>
                 <button
+                  data-testid="modal-quantity-increase"
+                  aria-label={t('menuItem.quantityIncrease')}
                   onClick={() => setQuantity(quantity + 1)}
                   className="flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-95"
                   style={{
