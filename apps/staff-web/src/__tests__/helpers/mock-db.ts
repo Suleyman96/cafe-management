@@ -13,6 +13,11 @@ function mockResource(...methods: string[]) {
 
 export function createMockDb() {
   return {
+    // Top-level wrapper methods (not domain resources). use-auth.ts calls
+    // db.setTenantContext(staff.tenant_id) on login and db.setTenantContext(null)
+    // on logout — without this stub the whole login flow throws before setStaff.
+    setTenantContext: vi.fn(),
+    getTenantId: vi.fn().mockReturnValue(null),
     tables: mockResource(
       'findAll',
       'findById',
