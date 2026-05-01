@@ -121,6 +121,10 @@ async function loadStaffAndSetup(
   setTenantPlan: (p: PlanName) => void,
 ) {
   const staffData = (await db.staff.findByAuthId(userId)) as Staff;
+  // Bind the wrapper tenant context for the defense-in-depth tenant
+  // predicate (H5). Every subsequent wrapper read appends
+  // `.eq('tenant_id', tenantId)`. Sign-out clears it via clearAuth().
+  db.setTenantContext(staffData.tenant_id);
   setStaff(staffData);
   postLoginSideEffects(staffData.id);
 
@@ -147,6 +151,7 @@ export function useAuth() {
 
   const stableLogout = useCallback(async () => {
     await supabase.auth.signOut();
+    db.setTenantContext(null);
     clearAuth();
     routerRef.current.push('/login');
   }, [clearAuth]);

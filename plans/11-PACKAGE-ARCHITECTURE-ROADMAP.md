@@ -81,53 +81,23 @@ needs to be tenant-scoped *and* the public type stops being Supabase-y.
 
 ---
 
-### A3 (= H5). Wrapper-level defense-in-depth tenant filter 🟡
-**Why now:** RLS is the primary tenant boundary, but every deferred-DB
-finding (`09-DB-SECURITY-DEFERRED.md`) is a reminder that one bad
-migration leaks across tenants. Wrapper-level filter catches it before
-the data hits the network.
+### A3 (= H5). Wrapper-level defense-in-depth tenant filter ✅ Done 2026-05-01
+`WrapperContext` carries an optional `TenantContext` populated by each
+app's auth flow. The shared helpers in
+`packages/api-client/src/wrapper/_tenant-scope.ts`:
 
-**Design:**
-- Add `tenantContext` to `WrapperContext` populated at session start.
-- All read methods append `.eq('tenant_id', ctx.tenantContext.tenantId)`.
-- All RPC calls validate `p_tenant_id === ctx.tenantContext.tenantId`
-  before invocation; throw `AuthorizationError` otherwise.
-- In dev, a wrapper-level assertion logs a Sentry warning if a query
-  goes out without the tenant predicate (helps catch drift during
-  refactors).
+- `applyTenantScope(query, ctx, options?)` appends
+  `.eq('tenant_id', tenantId)` when bound, or skips with a dev-only
+  Sentry warning when null. `{ allowNull: true }` silences the warning
+  on legitimate anon paths (QR menu browse, table lookup, customer
+  feedback create, etc.).
+- `assertInsertTenantMatches(payload, ctx)` throws
+  `AuthorizationError` if the payload's `tenant_id` mismatches the
+  bound context.
 
-**Steps:**
-1. Extend `WrapperContext` in `packages/api-client/src/wrapper/types.ts`:
-   ```ts
-   export interface TenantContext {
-     tenantId: string | null;
-   }
-   export interface WrapperContext {
-     client: ...; anyClient: ...;
-     tenantContext: TenantContext;
-   }
-   ```
-2. In `createSupabaseWrapper`, accept an optional `tenantId` and store
-   it. Provide a `setTenantContext(id)` method for the auth flow to call
-   after sign-in.
-3. Update each wrapper (start with `orders.ts`, `tables.ts`, `payments.ts`)
-   to chain `.eq('tenant_id', ctx.tenantContext.tenantId!)` on reads.
-   For inserts where `tenant_id` is in the payload, assert it matches.
-4. Update consumer factories:
-   - `apps/staff-web/src/lib/supabase/wrapped-client.ts`
-   - `apps/customer-web/src/lib/supabase.ts`
-   - `apps/mobile/src/lib/supabase.ts`
-5. Test: integration test that mocks two tenants and asserts cross-tenant
-   reads throw before hitting the wire.
-
-**Success criteria:**
-- Existing single-tenant tests still pass.
-- New test: query with mismatched tenantId throws
-  `AuthorizationError`.
-- No measurable perf regression (predicate is RLS-redundant but cheap).
-
-**Estimate:** 2–3 days. The bulk is updating wrappers + their tests
-(20+ wrappers).
+Tests: `packages/api-client/src/__tests__/tenant-context.test.ts`
+(7 cases — read with bound tenant, read with null tenant + dev
+warning, insert mismatch throws, insert match passes).
 
 ---
 
@@ -188,10 +158,10 @@ the data hits the network.
   preserves narrowings on top of `generated.ts`, or (b) accepting the
   narrowing loss and patching consumers. Soft CI gate (`db-types-check`)
   already detects column drift today.
-- [ ] A3 (defense-in-depth tenant filter) — deferred. Touches every
-  wrapper read method (~20 wrappers), wrapper context, and integration
-  tests; needs a focused 2–3 day PR with cross-tenant test fixtures.
-  Hard prerequisite before tenant #2.
+- [x] A3 (defense-in-depth tenant filter) — 2026-05-01. Helper +
+  context plumbing applied across every wrapper that reads a
+  tenant-scoped table. App-level factories bind the tenant after
+  auth. Tests at `packages/api-client/src/__tests__/tenant-context.test.ts`.
 - [ ] After all four: `pnpm check`, `pnpm test`, `pnpm type-check` all
   green; CI's `db-types-check` job is required (no `continue-on-error`).
 - [ ] Update `plans/10` — move H0/H1/H5/M6 to "Quick reference — fixed".

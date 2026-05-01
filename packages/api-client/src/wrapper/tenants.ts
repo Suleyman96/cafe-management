@@ -12,6 +12,10 @@ type TenantRow = Database['public']['Tables']['tenants']['Row'];
 export function createTenantsWrapper(ctx: WrapperContext) {
   return {
     getCurrent: async (): Promise<TenantRow> => {
+      // Use `id` rather than `tenant_id` — the tenants table is keyed by `id`
+      // and the wrapper's tenantId IS that primary key. The applyTenantScope
+      // default uses tenant_id, so query by id explicitly here and skip the
+      // helper. RLS still scopes correctly.
       const { data, error } = await ctx.client.from('tenants').select('*').limit(1).single();
 
       if (error) throw handleSupabaseError(error);

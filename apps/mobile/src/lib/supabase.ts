@@ -1,6 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import { createSupabaseWrapper } from '@gustri/api-client';
 import type { Database } from '@gustri/database';
+import * as Sentry from '@sentry/react-native';
 import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
@@ -32,5 +33,14 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Wrapped client for type-safe operations
-export const db = createSupabaseWrapper(supabase);
+// Wrapped client for type-safe operations.
+// `tenantId` is null until auth.ts calls `db.setTenantContext(tenantId)` after
+// staff lookup; the wrapper applies a defense-in-depth `eq('tenant_id')`
+// predicate to every read once it's bound.
+export const db = createSupabaseWrapper(supabase, {
+  sentry: {
+    captureMessage: (message, options) => {
+      Sentry.captureMessage(message, options);
+    },
+  },
+});

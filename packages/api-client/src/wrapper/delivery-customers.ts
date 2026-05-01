@@ -4,6 +4,7 @@
 
 import { isDeliveryCustomer } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
+import { applyTenantScope } from './_tenant-scope';
 import type {
   DeliveryCustomerInsert,
   DeliveryCustomerRow,
@@ -17,12 +18,15 @@ export function createDeliveryCustomersWrapper(ctx: WrapperContext) {
     findAll: async (options?: { limit?: number }) => {
       // Defensive cap — for paginated reads use findAllPaginated.
       const limit = options?.limit ?? 500;
-      const { data, error } = await ctx.anyClient
-        .from('delivery_customers')
-        .select('*')
-        .order('order_count', { ascending: false })
-        .order('name', { ascending: true })
-        .limit(limit);
+      const { data, error } = await applyTenantScope(
+        ctx.anyClient
+          .from('delivery_customers')
+          .select('*')
+          .order('order_count', { ascending: false })
+          .order('name', { ascending: true })
+          .limit(limit),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return data || [];
@@ -37,11 +41,14 @@ export function createDeliveryCustomersWrapper(ctx: WrapperContext) {
       const pageSize = options?.pageSize ?? 50;
       const offset = (page - 1) * pageSize;
 
-      let query = ctx.anyClient
-        .from('delivery_customers')
-        .select('*', { count: 'exact' })
-        .order('order_count', { ascending: false })
-        .order('name', { ascending: true });
+      let query = applyTenantScope(
+        ctx.anyClient
+          .from('delivery_customers')
+          .select('*', { count: 'exact' })
+          .order('order_count', { ascending: false })
+          .order('name', { ascending: true }),
+        ctx,
+      );
 
       if (options?.search) {
         query = query.or(`name.ilike.%${options.search}%,phone.ilike.%${options.search}%`);
@@ -60,23 +67,25 @@ export function createDeliveryCustomersWrapper(ctx: WrapperContext) {
     },
 
     search: async (query: string) => {
-      const { data, error } = await ctx.anyClient
-        .from('delivery_customers')
-        .select('*')
-        .or(`name.ilike.%${query}%,phone.ilike.%${query}%`)
-        .order('order_count', { ascending: false })
-        .limit(10);
+      const { data, error } = await applyTenantScope(
+        ctx.anyClient
+          .from('delivery_customers')
+          .select('*')
+          .or(`name.ilike.%${query}%,phone.ilike.%${query}%`)
+          .order('order_count', { ascending: false })
+          .limit(10),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return data || [];
     },
 
     findByPhone: async (phone: string) => {
-      const { data, error } = await ctx.anyClient
-        .from('delivery_customers')
-        .select('*')
-        .eq('phone', phone)
-        .maybeSingle();
+      const { data, error } = await applyTenantScope(
+        ctx.anyClient.from('delivery_customers').select('*').eq('phone', phone),
+        ctx,
+      ).maybeSingle();
 
       if (error) throw handleSupabaseError(error);
       return data;

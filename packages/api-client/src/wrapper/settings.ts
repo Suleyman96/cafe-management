@@ -4,6 +4,7 @@
 
 import type { Database } from '@gustri/database';
 import { handleSupabaseError } from '../errors';
+import { applyTenantScope } from './_tenant-scope';
 import type { WrapperContext } from './types';
 
 type CafeSettingsRow = Database['public']['Tables']['cafe_settings']['Row'];
@@ -12,8 +13,13 @@ type CafeSettingsUpdate = Database['public']['Tables']['cafe_settings']['Update'
 export function createSettingsWrapper(ctx: WrapperContext) {
   return {
     get: async (): Promise<CafeSettingsRow> => {
-      // RLS scopes to current tenant; each tenant has one settings row
-      const { data, error } = await ctx.client.from('cafe_settings').select('*').limit(1).single();
+      // RLS scopes to current tenant; each tenant has one settings row.
+      // Anon customer-web reads this before tenant context binds.
+      const { data, error } = await applyTenantScope(
+        ctx.client.from('cafe_settings').select('*').limit(1),
+        ctx,
+        { allowNull: true },
+      ).single();
 
       if (error) throw handleSupabaseError(error);
       return data;
@@ -21,11 +27,10 @@ export function createSettingsWrapper(ctx: WrapperContext) {
 
     update: async (updates: CafeSettingsUpdate): Promise<CafeSettingsRow> => {
       // First get the current row's id (RLS scopes to current tenant)
-      const { data: current, error: getError } = await ctx.client
-        .from('cafe_settings')
-        .select('id')
-        .limit(1)
-        .single();
+      const { data: current, error: getError } = await applyTenantScope(
+        ctx.client.from('cafe_settings').select('id').limit(1),
+        ctx,
+      ).single();
 
       if (getError) throw handleSupabaseError(getError);
 

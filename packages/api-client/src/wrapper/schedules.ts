@@ -4,6 +4,7 @@
 
 import { isStaffSchedule } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
+import { applyTenantScope, assertInsertTenantMatches } from './_tenant-scope';
 import type { StaffScheduleInsert, StaffScheduleUpdate, WrapperContext } from './types';
 
 const STAFF_JOIN = `
@@ -14,6 +15,7 @@ const STAFF_JOIN = `
 export function createSchedulesWrapper(ctx: WrapperContext) {
   return {
     create: async (data: StaffScheduleInsert) => {
+      assertInsertTenantMatches(data, ctx);
       const { data: result, error } = await ctx.anyClient
         .from('staff_schedules')
         .insert(data)
@@ -45,50 +47,62 @@ export function createSchedulesWrapper(ctx: WrapperContext) {
     },
 
     findByDate: async (date: string) => {
-      const { data, error } = await ctx.client
-        .from('staff_schedules')
-        .select(STAFF_JOIN)
-        .eq('date', date)
-        .order('planned_start', { ascending: true });
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('staff_schedules')
+          .select(STAFF_JOIN)
+          .eq('date', date)
+          .order('planned_start', { ascending: true }),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return data || [];
     },
 
     findByStaffAndDate: async (staffId: string, date: string) => {
-      const { data, error } = await ctx.client
-        .from('staff_schedules')
-        .select(STAFF_JOIN)
-        .eq('staff_id', staffId)
-        .eq('date', date)
-        .order('planned_start', { ascending: true });
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('staff_schedules')
+          .select(STAFF_JOIN)
+          .eq('staff_id', staffId)
+          .eq('date', date)
+          .order('planned_start', { ascending: true }),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return data || [];
     },
 
     findByStaffRange: async (staffId: string, startDate: string, endDate: string) => {
-      const { data, error } = await ctx.client
-        .from('staff_schedules')
-        .select(STAFF_JOIN)
-        .eq('staff_id', staffId)
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: true })
-        .order('planned_start', { ascending: true });
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('staff_schedules')
+          .select(STAFF_JOIN)
+          .eq('staff_id', staffId)
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date', { ascending: true })
+          .order('planned_start', { ascending: true }),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return data || [];
     },
 
     findByDateRange: async (startDate: string, endDate: string) => {
-      const { data, error } = await ctx.client
-        .from('staff_schedules')
-        .select(STAFF_JOIN)
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: true })
-        .order('planned_start', { ascending: true });
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('staff_schedules')
+          .select(STAFF_JOIN)
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date', { ascending: true })
+          .order('planned_start', { ascending: true }),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return data || [];

@@ -4,6 +4,7 @@
 
 import { isTable, isTableArray } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
+import { applyTenantScope, assertInsertTenantMatches } from './_tenant-scope';
 import type { TableInsert, TableRow, TableUpdate, WrapperContext } from './types';
 
 export function createTablesWrapper(ctx: WrapperContext) {
@@ -13,11 +14,10 @@ export function createTablesWrapper(ctx: WrapperContext) {
       // (table_history join, reservations) could blow up the row count.
       // Defensive cap is free here and prevents one bad query from stalling.
       const limit = options?.limit ?? 500;
-      const { data, error } = await ctx.client
-        .from('tables')
-        .select('*')
-        .order('table_number')
-        .limit(limit);
+      const { data, error } = await applyTenantScope(
+        ctx.client.from('tables').select('*').order('table_number').limit(limit),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       const tables = data || [];
@@ -26,7 +26,10 @@ export function createTablesWrapper(ctx: WrapperContext) {
     },
 
     findById: async (id: string) => {
-      const { data, error } = await ctx.client.from('tables').select('*').eq('id', id).single();
+      const { data, error } = await applyTenantScope(
+        ctx.client.from('tables').select('*').eq('id', id),
+        ctx,
+      ).single();
 
       if (error) throw handleSupabaseError(error);
       if (!isTable(data)) throw new Error('Invalid table data');
@@ -34,11 +37,10 @@ export function createTablesWrapper(ctx: WrapperContext) {
     },
 
     findByTableNumber: async (tableNumber: string) => {
-      const { data, error } = await ctx.client
-        .from('tables')
-        .select('*')
-        .eq('table_number', tableNumber)
-        .single();
+      const { data, error } = await applyTenantScope(
+        ctx.client.from('tables').select('*').eq('table_number', tableNumber),
+        ctx,
+      ).single();
 
       if (error) throw handleSupabaseError(error);
       if (!isTable(data)) throw new Error('Invalid table data');
@@ -46,11 +48,12 @@ export function createTablesWrapper(ctx: WrapperContext) {
     },
 
     findByQrCode: async (qrCode: string) => {
-      const { data, error } = await ctx.client
-        .from('tables')
-        .select('*')
-        .eq('qr_code', qrCode)
-        .single();
+      // Anon QR scans hit this before set_table_context() binds the tenant.
+      const { data, error } = await applyTenantScope(
+        ctx.client.from('tables').select('*').eq('qr_code', qrCode),
+        ctx,
+        { allowNull: true },
+      ).single();
 
       if (error) throw handleSupabaseError(error);
       if (!isTable(data)) throw new Error('Invalid table data');
@@ -71,6 +74,7 @@ export function createTablesWrapper(ctx: WrapperContext) {
     },
 
     create: async (tableData: TableInsert) => {
+      assertInsertTenantMatches(tableData, ctx);
       const { data, error } = await ctx.anyClient
         .from('tables')
         .insert(tableData)

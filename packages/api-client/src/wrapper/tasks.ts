@@ -5,6 +5,7 @@
 import { getLocalDateString, isTask } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
 import { dedupeInsert } from './_dedupe';
+import { applyTenantScope, assertInsertTenantMatches } from './_tenant-scope';
 import { generateRecurringTaskInstances, listRecurringTemplates } from './task-recurrence';
 import type { TaskInsert, TaskRow, TaskUpdate, WrapperContext } from './types';
 
@@ -33,14 +34,17 @@ export function createTasksWrapper(ctx: WrapperContext) {
       scope?: TaskScope;
       staffId?: string;
     }) => {
-      let query = ctx.client
-        .from('tasks')
-        .select(`
-          *,
-          assigned_to_staff:staff!tasks_assigned_to_fkey(full_name),
-          created_by_staff:staff!tasks_created_by_fkey(full_name)
-        `)
-        .order('created_at', { ascending: false });
+      let query = applyTenantScope(
+        ctx.client
+          .from('tasks')
+          .select(`
+            *,
+            assigned_to_staff:staff!tasks_assigned_to_fkey(full_name),
+            created_by_staff:staff!tasks_created_by_fkey(full_name)
+          `)
+          .order('created_at', { ascending: false }),
+        ctx,
+      );
 
       if (options?.status) {
         query = query.eq('status', options.status);
@@ -86,15 +90,17 @@ export function createTasksWrapper(ctx: WrapperContext) {
     },
 
     findById: async (id: string) => {
-      const { data, error } = await ctx.client
-        .from('tasks')
-        .select(`
-          *,
-          assigned_to_staff:staff!tasks_assigned_to_fkey(full_name),
-          created_by_staff:staff!tasks_created_by_fkey(full_name)
-        `)
-        .eq('id', id)
-        .single();
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('tasks')
+          .select(`
+            *,
+            assigned_to_staff:staff!tasks_assigned_to_fkey(full_name),
+            created_by_staff:staff!tasks_created_by_fkey(full_name)
+          `)
+          .eq('id', id),
+        ctx,
+      ).single();
 
       if (error) throw handleSupabaseError(error);
       if (!isTask(data)) throw new Error('Invalid task data');
@@ -102,16 +108,19 @@ export function createTasksWrapper(ctx: WrapperContext) {
     },
 
     findMyTasks: async (staffId: string) => {
-      const { data, error } = await ctx.client
-        .from('tasks')
-        .select(`
-          *,
-          assigned_to_staff:staff!tasks_assigned_to_fkey(full_name),
-          created_by_staff:staff!tasks_created_by_fkey(full_name)
-        `)
-        .eq('assigned_to', staffId)
-        .eq('is_recurring', false)
-        .order('due_date', { ascending: true });
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('tasks')
+          .select(`
+            *,
+            assigned_to_staff:staff!tasks_assigned_to_fkey(full_name),
+            created_by_staff:staff!tasks_created_by_fkey(full_name)
+          `)
+          .eq('assigned_to', staffId)
+          .eq('is_recurring', false)
+          .order('due_date', { ascending: true }),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return data || [];
@@ -119,16 +128,19 @@ export function createTasksWrapper(ctx: WrapperContext) {
 
     getTodaysTasks: async () => {
       const today = getLocalDateString();
-      const { data, error } = await ctx.client
-        .from('tasks')
-        .select(`
-          *,
-          assigned_to_staff:staff!tasks_assigned_to_fkey(full_name),
-          created_by_staff:staff!tasks_created_by_fkey(full_name)
-        `)
-        .eq('due_date', today)
-        .eq('is_recurring', false)
-        .order('due_time', { ascending: true });
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('tasks')
+          .select(`
+            *,
+            assigned_to_staff:staff!tasks_assigned_to_fkey(full_name),
+            created_by_staff:staff!tasks_created_by_fkey(full_name)
+          `)
+          .eq('due_date', today)
+          .eq('is_recurring', false)
+          .order('due_time', { ascending: true }),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return data || [];
@@ -136,23 +148,29 @@ export function createTasksWrapper(ctx: WrapperContext) {
 
     getOverdueCount: async () => {
       const today = getLocalDateString();
-      const { data, error } = await ctx.client
-        .from('tasks')
-        .select('id')
-        .lt('due_date', today)
-        .in('status', ['pending', 'in_progress'])
-        .eq('is_recurring', false);
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('tasks')
+          .select('id')
+          .lt('due_date', today)
+          .in('status', ['pending', 'in_progress'])
+          .eq('is_recurring', false),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return (data || []).length;
     },
 
     getOpenTasksCount: async () => {
-      const { data, error } = await ctx.client
-        .from('tasks')
-        .select('id')
-        .in('status', ['pending', 'in_progress'])
-        .eq('is_recurring', false);
+      const { data, error } = await applyTenantScope(
+        ctx.client
+          .from('tasks')
+          .select('id')
+          .in('status', ['pending', 'in_progress'])
+          .eq('is_recurring', false),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
       return (data || []).length;
@@ -167,14 +185,17 @@ export function createTasksWrapper(ctx: WrapperContext) {
     getRecurringTemplates: () => listRecurringTemplates(ctx),
 
     create: async (data: TaskInsert) => {
+      assertInsertTenantMatches(data, ctx);
       const result = await dedupeInsert<unknown>(data.client_request_id, {
         insert: () => ctx.anyClient.from('tasks').insert(data).select().single(),
         refetch: () =>
-          ctx.anyClient
-            .from('tasks')
-            .select()
-            .eq('client_request_id', data.client_request_id ?? '')
-            .single(),
+          applyTenantScope(
+            ctx.anyClient
+              .from('tasks')
+              .select()
+              .eq('client_request_id', data.client_request_id ?? ''),
+            ctx,
+          ).single(),
       });
 
       if (!isTask(result)) throw new Error('Invalid task data');

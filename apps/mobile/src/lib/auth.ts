@@ -77,6 +77,10 @@ export async function cleanupClientState(): Promise<void> {
     clearPushTokenSyncCache();
     clearSessionStamp();
     clearLastActiveAt();
+    // Clear the wrapper's defense-in-depth tenant context (H5) so the
+    // next user's reads bind their own tenant id rather than inheriting
+    // the previous session's.
+    db.setTenantContext(null);
     // `reset()` clears the persisted SecureStore snapshot too — without that,
     // the next cold launch would hydrate the prior tenant before getCurrentUser()
     // resolves, briefly painting the authed stack for someone who is logged out.
@@ -157,6 +161,9 @@ export async function getCurrentUser(): Promise<Staff | null> {
       await supabase.auth.signOut();
       return null;
     }
+    // Bind the wrapper's defense-in-depth tenant context (H5) so every
+    // subsequent read appends `.eq('tenant_id', tenantId)`.
+    db.setTenantContext(staff.tenant_id);
     return staff;
   } catch {
     return null;

@@ -6,15 +6,19 @@
  */
 
 import { handleSupabaseError } from '../errors';
+import { applyTenantScope } from './_tenant-scope';
 import type { WrapperContext } from './types';
 
 export function createViewsWrapper(ctx: WrapperContext) {
   return {
     getSalesSummary: async (startDate?: string, endDate?: string) => {
-      let query = ctx.anyClient
-        .from('sales_summary_view')
-        .select('*')
-        .order('date', { ascending: false });
+      let query = applyTenantScope(
+        ctx.anyClient
+          .from('sales_summary_view')
+          .select('*')
+          .order('date', { ascending: false }),
+        ctx,
+      );
 
       if (startDate) {
         query = query.gte('date', startDate);
@@ -32,7 +36,10 @@ export function createViewsWrapper(ctx: WrapperContext) {
     },
 
     getOrderPaymentSummary: async (orderId?: string) => {
-      let query = ctx.anyClient.from('order_payment_summary').select('*');
+      let query = applyTenantScope(
+        ctx.anyClient.from('order_payment_summary').select('*'),
+        ctx,
+      );
 
       if (orderId) {
         query = query.eq('order_id', orderId);

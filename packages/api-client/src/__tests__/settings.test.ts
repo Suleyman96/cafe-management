@@ -34,7 +34,9 @@ describe('SettingsWrapper', () => {
     const settings = createSettingsWrapper(ctx);
     const result = await settings.update({ restaurant_name: 'Updated Cafe' });
     expect(result.restaurant_name).toBe('Updated Cafe');
-    expect(ctx.getCalls()[1].method).toBe('update');
+    expect(
+      (ctx.getCalls() as Array<{ method: string }>).some((c) => c.method === 'update'),
+    ).toBe(true);
   });
 
   it('throws on supabase error for get', async () => {

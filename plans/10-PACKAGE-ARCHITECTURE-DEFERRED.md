@@ -74,24 +74,25 @@ across apps over time.
 
 ---
 
-### H5. Wrapper has no defense-in-depth tenant filter
-**Where:** every wrapper in [packages/api-client/src/wrapper/](../packages/api-client/src/wrapper/)
+### ~~H5. Wrapper has no defense-in-depth tenant filter~~ ✅ Closed 2026-05-01
+The wrapper context now carries an optional `tenantContext: { tenantId, setTenantId }`,
+and a shared `applyTenantScope(query, ctx, options?)` helper appends
+`.eq('tenant_id', tenantId)` to every read on tenant-scoped tables. Inserts
+that include `tenant_id` are validated against the bound context via
+`assertInsertTenantMatches`, throwing `AuthorizationError` on mismatch.
+Each app-level factory binds the tenant after auth:
 
-Today the wrapper relies entirely on RLS for tenant scoping. RLS is
-correct *now* (post-`20260428000001`), but every deferred-DB-security
-finding (`09-DB-SECURITY-DEFERRED.md` C1–C5) is a reminder that a single
-bad migration can let cross-tenant reads slip past. Belt-and-braces:
-the wrapper should *also* append a `tenant_id = current_tenant_id()`
-predicate explicitly.
+- `apps/staff-web/src/hooks/use-auth.ts` — calls `db.setTenantContext(staff.tenant_id)`
+  in `loadStaffAndSetup`; `stableLogout` clears it.
+- `apps/mobile/src/lib/auth.ts` — `getCurrentUser` binds; `cleanupClientState` clears.
+- `apps/customer-web/src/lib/supabase.ts` — anon QR session binds via
+  `setTableContext()` after the table-row lookup.
 
-**Fix sketch:** introduce a `tenantContext: { tenantId: string }` to the
-wrapper context, populated once on session start. Every `from(...)` in
-the wrappers chains `.eq('tenant_id', ctx.tenantContext.tenantId)`. RLS
-remains primary; this is detection (a query missing the filter throws
-in dev) + defense.
-
-**Why deferred:** single tenant means the only tenant context is the
-default row. Implementing now is overhead with no payoff.
+Reads that legitimately run before a tenant is bound (anon menu/category
+browse, `tables.findByQrCode`, `cafe_settings.get`, customer order/feedback
+RPCs) pass `{ allowNull: true }` so they don't trip the dev-only Sentry
+warning. RLS remains the primary boundary; this is the belt-and-braces
+layer (H5/A3).
 
 ---
 
@@ -237,6 +238,7 @@ that enforce non-obvious rules. No standalone PR needed.
 | C3   | Moved `QUERY_KEYS` to `@gustri/queries`; moved `getRoleBadgeColor`/`getOrderStatusColor` to `@gustri/ui` |
 | C4   | Added `pnpm db:types:generate` + `pnpm db:types:check`. Soft gate flipped to required as part of H0 (2026-05-01). |
 | H0   | Replaced hand-written `database.ts` with an overlay over `generated.ts` that preserves CHECK-constraint narrowings and DB-default non-null assertions. CI `db-types-check` gate is now required. (2026-05-01) |
+| H5   | Wrapper-level defense-in-depth tenant filter. New `applyTenantScope` / `assertInsertTenantMatches` helpers; `WrapperContext` carries a `TenantContext`; all three app-level factories bind/clear it on auth events. Tests at `packages/api-client/src/__tests__/tenant-context.test.ts`. (2026-05-01) |
 | H1   | Added domain `Subscription` interface to `realtime.ts`; wrapper public surface no longer leaks `RealtimeChannel`. App-level raw realtime code preserved per CLAUDE.md Exception 1. |
 | H2   | Added Biome / CI rule flagging hardcoded JSX text and `toast.*`/`Alert.alert(` literals not produced via `t(...)` |
 | H3   | Split `orders.ts` (650 LOC) into `orders.ts` + `order-items.ts`; split `tasks.ts` similarly |
