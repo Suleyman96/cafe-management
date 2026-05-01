@@ -26,7 +26,11 @@
       "channel": "production",
       "environment": "production",
       "env": {
-        "SENTRY_DISABLE_AUTO_UPLOAD": "false"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "false",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://REPLACE-ME.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "REPLACE_ME",
+        "EXPO_PUBLIC_API_BASE_URL": "https://app.gustri.com",
+        "EXPO_PUBLIC_SENTRY_DSN": "REPLACE_ME"
       }
     }
   },
