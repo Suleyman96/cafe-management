@@ -69,3 +69,7 @@ __pycache__/
 # Sentry — only the [defaults] section is committed; never commit auth tokens.
 # (Comment intentional: file is committed, but reviewers should reject any PR
 # that adds a `token=...` value to it.)
+
+# Playwright test artifacts (generated; never committed)
+playwright-report/
+test-results/
