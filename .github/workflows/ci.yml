@@ -299,7 +299,16 @@ jobs:
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned. `latest` made drift detection non-deterministic — newer
+          # CLI versions apply newer Supabase Storage extension migrations
+          # (e.g., adding `metadata` to storage.s3_multipart_uploads, the
+          # `allow_*_operation` helpers) which silently inflate the
+          # generated types diff and turn green PRs red without any code
+          # change.
+          #
+          # Bump this version deliberately and regenerate types in the
+          # same PR. Match it locally with: `npx supabase@<ver> start`.
+          version: 2.78.1
 
       - name: Start Supabase
         run: supabase start
@@ -337,7 +346,16 @@ jobs:
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned. `latest` made drift detection non-deterministic — newer
+          # CLI versions apply newer Supabase Storage extension migrations
+          # (e.g., adding `metadata` to storage.s3_multipart_uploads, the
+          # `allow_*_operation` helpers) which silently inflate the
+          # generated types diff and turn green PRs red without any code
+          # change.
+          #
+          # Bump this version deliberately and regenerate types in the
+          # same PR. Match it locally with: `npx supabase@<ver> start`.
+          version: 2.78.1
 
       - name: Start Supabase
         run: supabase start
