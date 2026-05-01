@@ -3,10 +3,8 @@
 import type { ORDER_STATUS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
-import { NumberInput } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
-import { Check, CheckCircle, X } from 'lucide-react';
+import { CheckCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -20,8 +18,12 @@ import { useAuth } from '@/hooks/use-auth';
 import { useCanMutate } from '@/hooks/use-can-mutate';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { ItemPaymentForm } from './payment/item-payment-form';
+import { OrderSummary } from './payment/order-summary';
 import { PartialPaymentForm } from './payment/partial-payment-form';
+import { PaymentFooter } from './payment/payment-footer';
+import { PaymentMethodSelector } from './payment/payment-method-selector';
 import { PaymentModeSelector } from './payment/payment-mode-selector';
+import { TipInput } from './payment/tip-input';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
   menu_item?: Database['public']['Tables']['menu_items']['Row'];
@@ -270,7 +272,6 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Fully Paid / Zero Total Message */}
           {(isFullyPaid || isZeroTotal) && (
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-center gap-2 text-green-700">
@@ -283,57 +284,17 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
             </div>
           )}
 
-          {/* Order Summary */}
-          <div className="mb-6">
-            {orderTax > 0 && (
-              <>
-                <div className="flex justify-between items-center text-sm text-gray-600 mb-1">
-                  <span>{t('subtotal', { ns: 'common' })}</span>
-                  <span>{formatPrice(orderSubtotal)}</span>
-                </div>
-                {(order?.discount_amount ?? 0) > 0 && (
-                  <div className="flex justify-between items-center text-sm text-red-600 mb-1">
-                    <span>
-                      {t('orders.discount')} (
-                      {order?.discount_type === 'percentage'
-                        ? `${order?.discount_value}%`
-                        : formatPrice(order?.discount_value ?? 0)}
-                      )
-                    </span>
-                    <span>-{formatPrice(order?.discount_amount ?? 0)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
-                  <span>{t('orders.tax')}</span>
-                  <span>{formatPrice(orderTax)}</span>
-                </div>
-              </>
-            )}
-            <div
-              className={`flex justify-between items-center text-sm font-medium mb-2 ${orderTax > 0 ? 'pt-2 border-t' : ''}`}
-            >
-              <span>{t('payment.orderTotal')}</span>
-              <span>{formatPrice(orderTotal)}</span>
-            </div>
-            {remainingBalance !== undefined && remainingBalance < orderTotal && (
-              <>
-                <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
-                  <span>{t('payment.alreadyPaid')}</span>
-                  <span className="font-medium text-green-600">
-                    {formatPrice(orderTotal - remainingBalance)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center font-medium">
-                  <span>{t('payment.remainingBalance')}</span>
-                  <span className={isFullyPaid ? 'text-green-600' : 'text-orange-600'}>
-                    {formatPrice(remainingBalance)}
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
+          <OrderSummary
+            order={order}
+            orderSubtotal={orderSubtotal}
+            orderTax={orderTax}
+            orderTotal={orderTotal}
+            remainingBalance={remainingBalance}
+            isFullyPaid={isFullyPaid}
+            formatPrice={formatPrice}
+            t={t}
+          />
 
-          {/* Payment Mode Selection */}
           <PaymentModeSelector
             paymentMode={paymentMode}
             onModeChange={setPaymentMode}
@@ -343,7 +304,6 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
             t={t}
           />
 
-          {/* Partial Amount Input */}
           {paymentMode === 'partial' && (
             <PartialPaymentForm
               partialAmount={partialAmount}
@@ -356,7 +316,6 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
             />
           )}
 
-          {/* Item Selection with Quantity Controls */}
           {paymentMode === 'items' && (
             <ItemPaymentForm
               unpaidItems={unpaidItems}
@@ -369,108 +328,41 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
             />
           )}
 
-          {/* Payment Method */}
           {!isFullyPaid && !isZeroTotal && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('payment.paymentMethod')}
-              </label>
-              <div className="flex gap-2">
-                {(['cash', 'card', 'digital'] as const).map((method) => (
-                  <button
-                    key={method}
-                    type="button"
-                    onClick={() => setPaymentMethod(method)}
-                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                      paymentMethod === method
-                        ? 'bg-blue-100 border-blue-500 text-blue-700'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {t(method, { ns: 'common' })}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <PaymentMethodSelector
+              paymentMethod={paymentMethod}
+              onMethodChange={setPaymentMethod}
+              t={t}
+            />
           )}
 
-          {/* Tip Input - only shown when tips are enabled */}
           {cafeSettings?.tips_enabled && !isFullyPaid && !isZeroTotal && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('payment.addTip')}
-              </label>
-              <NumberInput
-                value={tipAmount}
-                onChange={setTipAmount}
-                min={0}
-                step={0.01}
-                placeholder="0.00"
-                prefix={cafeSettings.currency_symbol}
-              />
-              {parseFloat(tipAmount) > 0 && (
-                <div className="mt-2 text-sm text-green-600">
-                  {t('orders.tip')}: {formatPrice(parseFloat(tipAmount))}
-                </div>
-              )}
-            </div>
+            <TipInput
+              tipAmount={tipAmount}
+              onTipChange={setTipAmount}
+              currencySymbol={cafeSettings.currency_symbol}
+              formatPrice={formatPrice}
+              t={t}
+            />
           )}
         </div>
 
-        <div className="border-t p-6">
-          {/* Payment Summary with Tip */}
-          <div className="space-y-2 mb-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">{t('payment.paymentType')}</span>
-              <span className="font-medium">{formatPrice(getPaymentAmount())}</span>
-            </div>
-            {cafeSettings?.tips_enabled && parseFloat(tipAmount) > 0 && (
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">{t('orders.tip')}</span>
-                <span className="font-medium text-green-600">
-                  {formatPrice(parseFloat(tipAmount))}
-                </span>
-              </div>
-            )}
-            <div className="flex justify-between items-center pt-2 border-t">
-              <span className="text-lg font-medium">{t('payment.totalToCollect')}</span>
-              <span
-                className={`text-2xl font-bold ${isFullyPaid ? 'text-green-600' : 'text-blue-600'}`}
-              >
-                {formatPrice(getPaymentAmount() + (parseFloat(tipAmount) || 0))}
-              </span>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={onClose} disabled={loading} className="flex-1">
-              {t('cancel', { ns: 'common' })}
-            </Button>
-            {isFullyPaid || isZeroTotal ? (
-              <Button
-                onClick={handleCompleteOrder}
-                disabled={loading || !canMutate}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                {loading ? t('payment.completing') : t('payment.completeOrder')}
-              </Button>
-            ) : (
-              <Button
-                onClick={handlePayment}
-                disabled={
-                  getPaymentAmount() <= 0 ||
-                  getPaymentAmount() > (remainingBalance ?? orderTotal) + 0.01 ||
-                  loading ||
-                  !staff?.id ||
-                  !canMutate
-                }
-                className="flex-1"
-              >
-                {loading ? t('payment.processing') : t('payment.processPaymentBtn')}
-              </Button>
-            )}
-          </div>
-        </div>
+        <PaymentFooter
+          paymentAmount={getPaymentAmount()}
+          remainingBalance={remainingBalance}
+          orderTotal={orderTotal}
+          tipAmount={tipAmount}
+          tipsEnabled={!!cafeSettings?.tips_enabled}
+          isFullyPaid={isFullyPaid}
+          isZeroTotal={isZeroTotal}
+          loading={loading}
+          canPay={!!staff?.id && canMutate}
+          onCancel={onClose}
+          onPay={handlePayment}
+          onCompleteOrder={handleCompleteOrder}
+          formatPrice={formatPrice}
+          t={t}
+        />
       </div>
     </div>
   );
