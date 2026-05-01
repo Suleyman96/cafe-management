@@ -87,3 +87,29 @@ UPDATE menu_items SET allergens = ARRAY['shellfish'] WHERE id IN (
 UPDATE menu_items SET allergens = ARRAY['soy'] WHERE id = '40000000-0000-0000-0000-000000000013';
 
 UPDATE menu_items SET allergens = ARRAY['gluten'] WHERE id = '40000000-0000-0000-0000-000000000016';
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Tenant 2 (cross-tenant isolation fixture)
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Used by apps/mobile/maestro/tenant-switch.yaml to prove that signing out of
+-- tenant 1 and signing into tenant 2 wipes the React Query cache. Distinctive
+-- rows (table_number='T2-ONLY', restaurant_name='Test Tenant Two') would be
+-- visible if cache leaked across the tenant transition. Auth user for
+-- admin2@test.com is provisioned by scripts/create-admin-user.sh — this file
+-- only seeds the staff/tenant rows.
+
+INSERT INTO tenants (id, name, slug, plan) VALUES
+('00000000-0000-0000-0000-000000000002', 'Test Tenant Two', 'tenant-two', 'pro')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO staff (id, tenant_id, email, full_name, role, auth_user_id, is_active) VALUES
+('10000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000002', 'admin2@test.com', 'Admin Two', 'admin', null, true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO cafe_settings (tenant_id, restaurant_name) VALUES
+('00000000-0000-0000-0000-000000000002', 'Test Tenant Two')
+ON CONFLICT (tenant_id) DO NOTHING;
+
+INSERT INTO tables (id, tenant_id, table_number, qr_code, capacity, location, status, is_active) VALUES
+('20000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000002', 'T2-ONLY', 'qr_token_tenant2_only', 4, 'Tenant-2-Only', 'free', true)
+ON CONFLICT (id) DO NOTHING;
