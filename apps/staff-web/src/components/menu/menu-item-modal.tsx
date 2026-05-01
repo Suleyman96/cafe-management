@@ -9,7 +9,10 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateMenuItem, useUpdateMenuItem } from '@/hooks';
 import { supabase } from '@/lib/supabase/client';
+import { validateImageFile } from '@/lib/uploads/validate-image';
 import { useAuthStore } from '@/store/auth-store';
+
+const MENU_IMAGE_MAX_SIZE_MB = 5;
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -154,16 +157,27 @@ export function MenuItemModal({ item, categories, menuItems = [], onClose }: Men
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    const validation = await validateImageFile(file, { maxSizeMB: MENU_IMAGE_MAX_SIZE_MB });
+    if (!validation.ok) {
+      e.target.value = '';
+      if (validation.error.kind === 'too_large') {
+        toast.error(t('imageUpload.tooLarge', { size: MENU_IMAGE_MAX_SIZE_MB }));
+      } else {
+        toast.error(t('imageUpload.invalidType'));
+      }
+      return;
     }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const toggleAllergen = (allergen: string) => {

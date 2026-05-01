@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
+import { validateImageFile } from '@/lib/uploads/validate-image';
 import { useAuthStore } from '@/store/auth-store';
 
 interface ImageUploadProps {
@@ -45,16 +46,13 @@ export function ImageUpload({
 
   const handleFile = useCallback(
     async (file: File) => {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error(t('imageUpload.invalidType'));
-        return;
-      }
-
-      // Validate file size
-      const maxSize = maxSizeMB * 1024 * 1024;
-      if (file.size > maxSize) {
-        toast.error(t('imageUpload.tooLarge', { size: maxSizeMB }));
+      const validation = await validateImageFile(file, { maxSizeMB });
+      if (!validation.ok) {
+        if (validation.error.kind === 'too_large') {
+          toast.error(t('imageUpload.tooLarge', { size: maxSizeMB }));
+        } else {
+          toast.error(t('imageUpload.invalidType'));
+        }
         return;
       }
 
