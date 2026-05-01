@@ -18,7 +18,9 @@ create_user() {
   local email="$1"
   local full_name="$2"
 
-  echo "Creating user ($email / test1234)..."
+  # All status output goes to stderr — only the final UUID may go to stdout
+  # because the caller does `ADMIN_ID=$(create_user ...)` and captures stdout.
+  echo "Creating user ($email / test1234)..." >&2
 
   local response
   response=$(curl -s -X POST "${SUPABASE_URL}/auth/v1/admin/users" \
@@ -37,14 +39,14 @@ create_user() {
 
   if [ -z "$user_id" ]; then
     if echo "$response" | grep -q "already been registered"; then
-      echo "User already exists. Fetching existing user..."
+      echo "User already exists. Fetching existing user..." >&2
       response=$(curl -s -X GET "${SUPABASE_URL}/auth/v1/admin/users?email=${email}" \
         -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
         -H "apikey: ${ANON_KEY}")
       user_id=$(echo "$response" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
     else
-      echo "Error creating user $email:"
-      echo "$response"
+      echo "Error creating user $email:" >&2
+      echo "$response" >&2
       exit 1
     fi
   fi
