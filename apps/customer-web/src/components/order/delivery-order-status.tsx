@@ -76,7 +76,9 @@ export function DeliveryOrderStatus({ orderId, accessToken }: DeliveryOrderStatu
           </div>
           <div className="flex items-center justify-between mt-2">
             <span className="text-sm text-muted-foreground">{t('deliveryStatus.labelPlaced')}</span>
-            <span className="font-medium">{order.created_at ? timeAgo(order.created_at, t) : '—'}</span>
+            <span className="font-medium">
+              {order.created_at ? timeAgo(order.created_at, t) : '—'}
+            </span>
           </div>
         </div>
 

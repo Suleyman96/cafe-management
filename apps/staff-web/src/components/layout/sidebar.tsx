@@ -421,7 +421,10 @@ function MyTasksIndicator({ staffId }: { staffId: string }) {
 
   const priorityOrder: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
   const displayTasks = [...activeTasks]
-    .sort((a, b) => (priorityOrder[a.priority ?? 'normal'] ?? 3) - (priorityOrder[b.priority ?? 'normal'] ?? 3))
+    .sort(
+      (a, b) =>
+        (priorityOrder[a.priority ?? 'normal'] ?? 3) - (priorityOrder[b.priority ?? 'normal'] ?? 3),
+    )
     .slice(0, 3);
 
   const isOverdue = (task: { due_date: string | null }) => task.due_date && task.due_date < today;

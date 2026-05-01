@@ -308,7 +308,9 @@ export default function TasksPage() {
               }`}
             >
               <div className="flex items-start gap-3">
-                <div className="mt-0.5">{(task.status && STATUS_ICONS[task.status]) || STATUS_ICONS.pending}</div>
+                <div className="mt-0.5">
+                  {(task.status && STATUS_ICONS[task.status]) || STATUS_ICONS.pending}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-medium text-gray-900">{task.title}</h3>
