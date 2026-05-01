@@ -2000,6 +2000,7 @@ export type Database = {
         }[]
       }
       current_tenant_id: { Args: never; Returns: string }
+      current_tenant_id_text: { Args: never; Returns: string }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       decrypt_pii: { Args: { ciphertext: string }; Returns: string }
       encrypt_pii: { Args: { plaintext: string }; Returns: string }
