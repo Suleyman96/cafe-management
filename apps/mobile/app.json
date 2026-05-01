@@ -15,7 +15,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gustri.app",
-      "associatedDomains": ["applinks:app.gustri.com"]
+      "associatedDomains": ["applinks:app.gustri.com"],
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {

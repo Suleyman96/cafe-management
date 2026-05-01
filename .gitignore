@@ -18,6 +18,7 @@ build/
 *.mobileprovision
 *.orig.*
 web-build/
+apps/mobile/google-service-account.json
 
 # Environment files
 .env
