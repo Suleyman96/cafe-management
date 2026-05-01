@@ -80,9 +80,8 @@ export const useAuthStore = create<AuthStore>()(
         set({ staff });
 
         try {
-          // Plan moved off `tenants.*` (M4 — column leak). Use the JWT-aware RPC.
-          const plan = await db.tenants.getCurrentPlan();
-          set({ tenantPlan: (plan as PlanName) ?? null });
+          const tenant = await db.tenants.getCurrent();
+          set({ tenantPlan: (tenant.plan as PlanName) ?? null });
         } catch (err) {
           Sentry.addBreadcrumb({
             category: 'auth',

@@ -14,7 +14,7 @@
     }
   },
   "files": {
-    "includes": ["**", "!.claude/", "!packages/database/src/types/generated.ts"]
+    "includes": ["**", "!.claude/"]
   },
   "formatter": {
     "indentStyle": "space",

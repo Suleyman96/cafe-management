@@ -8,12 +8,12 @@ vi.mock('@/lib/session-stamp', () => ({
   clearSessionStamp: vi.fn(),
 }));
 
-const tenantsGetCurrentPlan = vi.fn();
+const tenantsGetCurrent = vi.fn();
 
 vi.mock('@/lib/supabase', () => ({
   db: {
     tenants: {
-      getCurrentPlan: (...args: unknown[]) => tenantsGetCurrentPlan(...args),
+      getCurrent: (...args: unknown[]) => tenantsGetCurrent(...args),
     },
   },
 }));
@@ -30,7 +30,7 @@ const STORAGE_KEY = 'gustri-auth-store';
 describe('useAuthStore.loadSession', () => {
   beforeEach(async () => {
     useAuthStore.setState({ staff: null, tenantPlan: null, isLoading: true });
-    tenantsGetCurrentPlan.mockReset();
+    tenantsGetCurrent.mockReset();
     await SecureStore.deleteItemAsync(STORAGE_KEY);
   });
 
@@ -39,20 +39,19 @@ describe('useAuthStore.loadSession', () => {
     await useAuthStore.getState().loadSession(null);
     expect(useAuthStore.getState().staff).toBeNull();
     expect(useAuthStore.getState().tenantPlan).toBeNull();
-    expect(tenantsGetCurrentPlan).not.toHaveBeenCalled();
+    expect(tenantsGetCurrent).not.toHaveBeenCalled();
   });
 
   it('sets staff and fetches tenantPlan once when called with a staff', async () => {
-    // getCurrentPlan returns the plan string directly (RPC), not a row.
-    tenantsGetCurrentPlan.mockResolvedValueOnce('pro');
+    tenantsGetCurrent.mockResolvedValueOnce({ plan: 'pro' });
     await useAuthStore.getState().loadSession(STAFF);
     expect(useAuthStore.getState().staff).toBe(STAFF);
     expect(useAuthStore.getState().tenantPlan).toBe('pro');
-    expect(tenantsGetCurrentPlan).toHaveBeenCalledTimes(1);
+    expect(tenantsGetCurrent).toHaveBeenCalledTimes(1);
   });
 
   it('leaves tenantPlan null when the fetch fails (does not throw)', async () => {
-    tenantsGetCurrentPlan.mockRejectedValueOnce(new Error('network'));
+    tenantsGetCurrent.mockRejectedValueOnce(new Error('network'));
     await useAuthStore.getState().loadSession(STAFF);
     expect(useAuthStore.getState().staff).toBe(STAFF);
     expect(useAuthStore.getState().tenantPlan).toBeNull();
@@ -63,7 +62,7 @@ describe('useAuthStore persistence', () => {
   beforeEach(async () => {
     await SecureStore.deleteItemAsync(STORAGE_KEY);
     useAuthStore.setState({ staff: null, tenantPlan: null, isLoading: true });
-    tenantsGetCurrentPlan.mockReset();
+    tenantsGetCurrent.mockReset();
   });
 
   async function waitForPersistedWrite() {
