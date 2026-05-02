@@ -1,42 +1,29 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Waiter Call', () => {
-  test('table page shows call waiter button', async ({ page }) => {
+  test('table page shows call staff FAB', async ({ page }) => {
     await page.goto('/table/T01');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.locator('body')).toBeVisible();
-
-    // Look for call waiter button by text or data-testid
-    const callButton = page.locator(
-      'button:has-text("waiter"), button:has-text("call"), [data-testid="call-waiter"]',
-    );
-    if ((await callButton.count()) > 0) {
-      await expect(callButton.first()).toBeVisible();
-    }
+    const fab = page.getByTestId('call-staff-fab');
+    await expect(fab).toBeVisible({ timeout: 10000 });
+    await expect(fab).toBeEnabled({ timeout: 10000 });
   });
 
-  test('call waiter modal opens and shows reason options', async ({ page }) => {
+  test('clicking call staff FAB triggers a success toast', async ({ page }) => {
     await page.goto('/table/T01');
     await page.waitForLoadState('networkidle');
 
-    // Find and click the call waiter button
-    const callButton = page.locator(
-      'button:has-text("waiter"), button:has-text("call"), [data-testid="call-waiter"]',
-    );
+    const fab = page.getByTestId('call-staff-fab');
+    // Wait for the table to resolve so the FAB is enabled (handler bails
+    // early when actualTableId is empty).
+    await expect(fab).toBeEnabled({ timeout: 10000 });
+    await fab.click();
 
-    if ((await callButton.count()) > 0) {
-      await callButton.first().click();
-
-      // Modal should appear with reason options
-      const modal = page.locator('[role="dialog"], .fixed');
-      if ((await modal.count()) > 0) {
-        await expect(modal.first()).toBeVisible();
-
-        // Should show at least one reason button (assistance, bill, etc.)
-        const reasonButtons = modal.locator('button');
-        expect(await reasonButtons.count()).toBeGreaterThanOrEqual(2);
-      }
-    }
+    // sonner renders success toasts with role="status"; the i18n key
+    // resolves to "Staff has been notified!" in en or "スタッフに通知されました！"
+    // in ja depending on cafe settings load order. Match either.
+    const toast = page.getByText(/staff has been notified|スタッフに通知されました/i);
+    await expect(toast.first()).toBeVisible({ timeout: 10000 });
   });
 });
