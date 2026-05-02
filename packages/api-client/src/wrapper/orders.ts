@@ -210,8 +210,29 @@ export function createOrdersWrapper(ctx: WrapperContext) {
 
     create: async (orderData: OrderInsert) => {
       assertInsertTenantMatches(orderData, ctx);
+      // Totals are derived server-side. The existing AFTER INSERT trigger on
+      // order_items recomputes subtotal/tax/total once items land, so any
+      // client-supplied values would be either ignored (after items) or
+      // misleading (orders with no items). Strip them here so the wrapper
+      // can't be used to spoof revenue, even if a caller forgets.
+      const {
+        subtotal: _s,
+        tax: _t,
+        total: _tot,
+        ...safeOrderData
+      } = orderData as OrderInsert & {
+        subtotal?: unknown;
+        tax?: unknown;
+        total?: unknown;
+      };
+      const insertPayload = {
+        ...safeOrderData,
+        subtotal: 0,
+        tax: 0,
+        total: 0,
+      } as OrderInsert;
       const data = await dedupeInsert<unknown>(orderData.client_request_id, {
-        insert: () => ctx.anyClient.from('orders').insert(orderData).select().single(),
+        insert: () => ctx.anyClient.from('orders').insert(insertPayload).select().single(),
         refetch: () =>
           applyTenantScope(
             ctx.anyClient

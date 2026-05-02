@@ -106,9 +106,9 @@ export function CreateTakeoutModal({
     setIsSubmitting(true);
 
     try {
-      const { subtotal, tax, total } = calculateTotal();
-
-      // Create takeout order via hook
+      // Totals are computed display-only (`calculateTotal()` is read in
+      // render). They are NOT sent to the server — totals are derived
+      // server-side from order_items via the recompute trigger.
       const newOrder = await createOrder.mutateAsync({
         table_id: null,
         order_type: 'takeout',
@@ -117,9 +117,6 @@ export function CreateTakeoutModal({
         customer_notes: customerNotes.trim() || null,
         assigned_waiter_id: staffId,
         status: 'new',
-        subtotal,
-        tax,
-        total,
       } as Partial<OrdersInsert> as OrdersInsert);
 
       // Add order items via hook

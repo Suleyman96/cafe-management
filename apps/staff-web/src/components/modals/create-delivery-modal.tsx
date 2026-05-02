@@ -118,7 +118,10 @@ export function CreateDeliveryModal({
 
     setIsSubmitting(true);
     try {
-      const { subtotal, tax, total, deliveryFee: fee } = calculateTotal();
+      // Totals are display-only — server derives them from order_items via
+      // the recompute trigger. We still send `delivery_fee` because the
+      // recompute reads it back off the order row to compute total.
+      const { deliveryFee: fee } = calculateTotal();
 
       const newOrder = await createOrder.mutateAsync({
         table_id: null,
@@ -130,9 +133,6 @@ export function CreateDeliveryModal({
         delivery_fee: fee,
         assigned_waiter_id: staffId,
         status: 'new',
-        subtotal,
-        tax,
-        total,
       } as Partial<OrdersInsert> as OrdersInsert);
 
       const orderItems = selectedItems.map((item) => ({

@@ -152,7 +152,8 @@ export default function TableDetailPage() {
 
     setSubmitting(true);
     try {
-      // First create the order
+      // First create the order. Totals are derived server-side once items
+      // land — clients no longer send subtotal/tax/total.
       const newOrder = await createOrder.mutateAsync({
         table_id: tableId,
         order_type: 'dine_in',
@@ -162,9 +163,6 @@ export default function TableDetailPage() {
         customer_notes: orderNotes.trim() || null,
         customer_name: null,
         customer_phone: null,
-        subtotal: 0,
-        tax: 0,
-        total: 0,
       } as Partial<OrdersInsert> as OrdersInsert);
 
       // Then add the items

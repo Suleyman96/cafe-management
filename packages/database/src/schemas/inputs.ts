@@ -34,9 +34,10 @@ export const OrderCreateInputSchema = z.object({
   delivery_fee: z.number().nonnegative().optional(),
   delivery_notes: z.string().max(2000).nullable().optional(),
   estimated_delivery_time: z.string().max(50).nullable().optional(),
-  subtotal: z.number().nonnegative().optional(),
-  tax: z.number().nonnegative().optional(),
-  total: z.number().nonnegative().optional(),
+  // subtotal/tax/total are intentionally NOT validated here — they are
+  // derived server-side. The order is inserted with zeros and the
+  // `recalculate_on_item_insert` trigger on `order_items` rewrites them
+  // when items land. Anything a client sends in these fields is ignored.
   client_request_id: z.string().uuid().optional(),
 });
 

@@ -95,6 +95,42 @@ describe('OrdersWrapper', () => {
     expect(result).toEqual(validOrder);
   });
 
+  // C2 — revenue-theft fix: any client-supplied totals MUST be replaced with
+  // zeros at the wrapper boundary. The DB-level recompute trigger rewrites
+  // them once items land, but a row with no items would otherwise persist
+  // whatever the caller sent. Don't trust the wire.
+  it('create overwrites client-supplied subtotal/tax/total with zeros', async () => {
+    const createCtx = createMockContext({
+      responses: {
+        orders: { data: validOrder, error: null },
+      },
+    });
+    const createOrders = createOrdersWrapper(createCtx);
+    await createOrders.create(
+      buildOrderInsert({
+        status: 'new',
+        source: 'customer',
+        table_id: validOrder.table_id,
+        // Spoofed by a malicious client — wrapper must drop these.
+        subtotal: 0.01,
+        tax: 0.01,
+        total: 0.01,
+      } as Parameters<typeof buildOrderInsert>[0] & {
+        subtotal: number;
+        tax: number;
+        total: number;
+      }),
+    );
+    const insertCall = createCtx
+      .getCalls()
+      .find((c: { table: string; method: string; args: unknown[] }) => c.method === 'insert');
+    expect(insertCall).toBeDefined();
+    const payload = insertCall!.args[0] as Record<string, unknown>;
+    expect(payload.subtotal).toBe(0);
+    expect(payload.tax).toBe(0);
+    expect(payload.total).toBe(0);
+  });
+
   it('updateStatus calls update with correct status', async () => {
     const updateCtx = createMockContext({
       responses: {

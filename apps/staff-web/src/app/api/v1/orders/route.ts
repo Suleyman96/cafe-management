@@ -24,12 +24,16 @@ const CreateOrderSchema = z.object({
   delivery_notes: z.string().optional().nullable(),
   delivery_fee: z.number().optional().nullable(),
   delivery_customer_id: z.string().uuid().optional().nullable(),
-  subtotal: z.number().optional().nullable(),
-  tax: z.number().optional().nullable(),
-  total: z.number().optional().nullable(),
   status: z.string().optional(),
   client_request_id: z.string().uuid().optional(),
 });
+
+// `subtotal`, `tax`, `total` are intentionally NOT in the schema. Totals are
+// derived server-side: the order is inserted with zero totals, and the
+// existing `recalculate_on_item_insert` trigger on `order_items` rewrites
+// them once items land. Accepting client-supplied totals would let a
+// malicious caller post real items with a $0.01 total and pocket the
+// cash difference.
 
 export async function POST(request: NextRequest) {
   try {

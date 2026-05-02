@@ -68,9 +68,29 @@ export async function createOrder(supabaseAdmin: SupabaseClient, params: CreateO
         }
       }
 
+      // Strip any client-supplied totals. They are derived server-side —
+      // the trigger on order_items rewrites them once items are inserted.
+      // Accepting them here would re-open the C2 revenue-theft path.
+      const {
+        subtotal: _s,
+        tax: _t,
+        total: _tot,
+        ...safeOrderData
+      } = orderData as Record<string, unknown> & {
+        subtotal?: unknown;
+        tax?: unknown;
+        total?: unknown;
+      };
+
       const { data, error } = await supabaseAdmin
         .from('orders')
-        .insert({ ...orderData, tenant_id: tenantId })
+        .insert({
+          ...safeOrderData,
+          tenant_id: tenantId,
+          subtotal: 0,
+          tax: 0,
+          total: 0,
+        })
         .select()
         .single();
 
