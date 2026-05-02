@@ -36,26 +36,29 @@ describe('useOrder', () => {
 });
 
 describe('useCreateOrder', () => {
-  it('calls apiRoutes.customerOrders.create with correct shape', async () => {
+  it('calls apiRoutes.customerOrders.create with correct shape (no tenant_id — derived server-side, C1)', async () => {
     const { result } = renderHookWithProviders(() => useCreateOrder());
 
-    await result.current.mutateAsync({ tableId: 'table-1', notes: 'No ice', tenantId: 'tenant-1' });
+    await result.current.mutateAsync({ tableId: 'table-1', notes: 'No ice' });
 
     expect(apiRoutes.customerOrders.create).toHaveBeenCalledWith(
       expect.objectContaining({
         table_id: 'table-1',
-        tenant_id: 'tenant-1',
         order_type: 'dine_in',
         customer_notes: 'No ice',
       }),
     );
+    // C1: tenant_id must NOT be sent in the body — staff-web derives it
+    // from the table row.
+    const payload = (apiRoutes.customerOrders.create as any).mock.calls[0][0];
+    expect(payload).not.toHaveProperty('tenant_id');
   });
 
   it('invalidates ORDER query key scoped to tableId', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useCreateOrder());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    await result.current.mutateAsync({ tableId: 'table-1', tenantId: 'tenant-1' });
+    await result.current.mutateAsync({ tableId: 'table-1' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual([QUERY_KEYS.ORDER, 'table-1']);

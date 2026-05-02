@@ -21,7 +21,7 @@ export function DeliveryCartScreen() {
   const router = useRouter();
   const { t } = useTranslation('customer');
   const { items, updateQuantity, removeItem, clearCart, getTotal } = useCartStore();
-  const { customerName, customerPhone, deliveryAddress, deliveryNotes, setLastOrderId } =
+  const { customerName, customerPhone, deliveryAddress, deliveryNotes, qrToken, setLastOrderId } =
     useDeliveryStore();
   const [orderNotes, setOrderNotes] = useState('');
   const {
@@ -60,8 +60,13 @@ export function DeliveryCartScreen() {
     }
 
     try {
-      const tenantId = settings?.tenant_id;
-      if (!tenantId) throw new Error('Missing tenant context');
+      // C1: tenant binding is derived server-side from `qrToken`. The
+      // bearer secret is captured on the delivery landing page from
+      // `?token=…` and persisted in the delivery store.
+      if (!qrToken) {
+        toast.error(t('deliveryCart.missingQrToken'));
+        return;
+      }
 
       const order = await createDeliveryOrder.mutateAsync({
         customerName,
@@ -70,8 +75,13 @@ export function DeliveryCartScreen() {
         deliveryNotes,
         deliveryFee,
         orderNotes,
-        tenantId,
+        qrToken,
       });
+
+      // The items route still needs a tenant scope; derive it from the
+      // persisted order rather than recomputing it client-side.
+      const tenantId = order.tenant_id;
+      if (!tenantId) throw new Error('Missing tenant context');
 
       await addDeliveryOrderItems.mutateAsync({
         orderId: order.id,

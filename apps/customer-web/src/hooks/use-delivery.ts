@@ -83,12 +83,14 @@ export function useCreateDeliveryOrder() {
       deliveryNotes: string;
       deliveryFee: number;
       orderNotes?: string;
-      tenantId: string;
+      qrToken: string;
     }): Promise<Order> => {
+      // Tenant is derived server-side from `qr_token` (C1) — no
+      // `tenant_id` in the body. The token is the bearer secret printed
+      // on the cafe's delivery QR / shared link.
       const { order } = await apiRoutes.customerOrders.create({
-        table_id: null,
-        tenant_id: data.tenantId,
         order_type: 'delivery',
+        qr_token: data.qrToken,
         source: 'customer',
         customer_notes: data.orderNotes,
         delivery_address: data.deliveryAddress,

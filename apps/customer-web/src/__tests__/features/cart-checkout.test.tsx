@@ -121,7 +121,7 @@ describe('CartScreen — checkout flow', () => {
 
     // Mock order creation via API route
     (apiRoutes.customerOrders.create as any).mockResolvedValueOnce({
-      order: { id: 'order-1', status: 'pending_approval' },
+      order: { id: 'order-1', status: 'pending_approval', tenant_id: 'tenant-1' },
     });
 
     // Mock order items creation via API route
@@ -232,7 +232,7 @@ describe('CartScreen — checkout flow', () => {
 
     // Mock successful order creation
     (apiRoutes.customerOrders.create as any).mockResolvedValueOnce({
-      order: { id: 'order-1', status: 'pending_approval' },
+      order: { id: 'order-1', status: 'pending_approval', tenant_id: 'tenant-1' },
     });
     (apiRoutes.customerOrders.addItems as any).mockResolvedValueOnce({ items: [] });
 

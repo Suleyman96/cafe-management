@@ -962,6 +962,54 @@ export type Database = {
           },
         ]
       }
+      qr_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          kind: string
+          revoked_at: string | null
+          table_id: string | null
+          tenant_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kind: string
+          revoked_at?: string | null
+          table_id?: string | null
+          tenant_id: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          revoked_at?: string | null
+          table_id?: string | null
+          tenant_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_tokens_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_tokens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       refunds: {
         Row: {
           amount: number

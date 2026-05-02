@@ -7,7 +7,12 @@ interface DeliveryStore {
   deliveryAddress: string;
   deliveryNotes: string;
   lastOrderId: string | null;
+  // Bearer secret from the delivery QR URL (?token=…). Required by the
+  // staff-web `/api/v1/customer/orders` route to derive the tenant for
+  // delivery orders (C1 — see qr_tokens migration).
+  qrToken: string | null;
   setCustomerInfo: (name: string, phone: string, address: string, notes: string) => void;
+  setQrToken: (token: string | null) => void;
   setLastOrderId: (id: string) => void;
   clearDeliveryInfo: () => void;
 }
@@ -20,6 +25,7 @@ export const useDeliveryStore = create<DeliveryStore>()(
       deliveryAddress: '',
       deliveryNotes: '',
       lastOrderId: null,
+      qrToken: null,
 
       setCustomerInfo: (name, phone, address, notes) =>
         set({
@@ -28,6 +34,8 @@ export const useDeliveryStore = create<DeliveryStore>()(
           deliveryAddress: address,
           deliveryNotes: notes,
         }),
+
+      setQrToken: (token) => set({ qrToken: token }),
 
       setLastOrderId: (id) => set({ lastOrderId: id }),
 
@@ -38,6 +46,7 @@ export const useDeliveryStore = create<DeliveryStore>()(
           deliveryAddress: '',
           deliveryNotes: '',
           lastOrderId: null,
+          qrToken: null,
         }),
     }),
     {

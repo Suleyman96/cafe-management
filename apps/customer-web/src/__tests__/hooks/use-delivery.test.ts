@@ -45,7 +45,7 @@ describe('useDeliveryOrder', () => {
 });
 
 describe('useCreateDeliveryOrder', () => {
-  it('calls apiRoutes.customerOrders.create with delivery-specific fields', async () => {
+  it('calls apiRoutes.customerOrders.create with delivery-specific fields and qr_token (C1)', async () => {
     const { result } = renderHookWithProviders(() => useCreateDeliveryOrder());
 
     await result.current.mutateAsync({
@@ -55,13 +55,12 @@ describe('useCreateDeliveryOrder', () => {
       deliveryNotes: 'Ring the bell',
       deliveryFee: 5,
       orderNotes: 'Extra napkins',
-      tenantId: 'tenant-1',
+      qrToken: 'tkn_legit',
     });
 
     expect(apiRoutes.customerOrders.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        table_id: null,
-        tenant_id: 'tenant-1',
+        qr_token: 'tkn_legit',
         order_type: 'delivery',
         source: 'customer',
         delivery_address: '123 Main St',
@@ -71,6 +70,10 @@ describe('useCreateDeliveryOrder', () => {
         customer_notes: 'Extra napkins',
       }),
     );
+    // C1: tenant_id must NOT be sent in the body — staff-web derives it
+    // from the qr_token row.
+    const payload = (apiRoutes.customerOrders.create as any).mock.calls[0][0];
+    expect(payload).not.toHaveProperty('tenant_id');
   });
 
   it('passes undefined orderNotes as undefined', async () => {
@@ -82,12 +85,12 @@ describe('useCreateDeliveryOrder', () => {
       deliveryAddress: '123 Main St',
       deliveryNotes: '',
       deliveryFee: 0,
-      tenantId: 'tenant-1',
+      qrToken: 'tkn_legit',
     });
 
     expect(apiRoutes.customerOrders.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        tenant_id: 'tenant-1',
+        qr_token: 'tkn_legit',
         order_type: 'delivery',
       }),
     );
@@ -103,7 +106,7 @@ describe('useCreateDeliveryOrder', () => {
       deliveryAddress: '123 Main St',
       deliveryNotes: '',
       deliveryFee: 0,
-      tenantId: 'tenant-1',
+      qrToken: 'tkn_legit',
     });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);

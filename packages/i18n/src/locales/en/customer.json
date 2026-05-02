@@ -99,6 +99,7 @@
   "deliveryCart.placeOrder": "Place Delivery Order \u00b7 {{price}}",
   "deliveryCart.orderSuccess": "Delivery order placed!",
   "deliveryCart.orderError": "Failed to place order. Please try again.",
+  "deliveryCart.missingQrToken": "Open this page from the cafe's delivery QR link to place an order.",
 
   "orderStatus.noOrderTitle": "No Active Order",
   "orderStatus.noOrderSubtext": "You don't have any active orders yet.",

@@ -1,24 +1,36 @@
 /**
- * Server-side dedupe for the customer-facing order routes.
+ * Server-side dedupe + tenant-binding for the customer-facing order routes.
  *
- * Mirrors the `client_request_id` contract from migration 20260428000002:
- * a paused-then-replayed customer order must NOT create a duplicate row,
- * and the per-item batch insert must short-circuit when any item id is
- * already on disk.
+ * Two contracts under test:
+ *  1. C1 tenant-spoofing fix — the service derives `tenant_id` from the
+ *     `tables` row (dine_in) or the `qr_tokens` row (takeout/delivery)
+ *     and ignores anything the body claims. A missing/expired/revoked
+ *     token rejects with the typed error the route translates to 400.
+ *  2. `client_request_id` dedupe contract from migration 20260428000002 —
+ *     a paused-then-replayed customer order must NOT create a duplicate
+ *     row, and the per-item batch insert short-circuits when any item
+ *     id is already on disk.
  */
 
+import { NotFoundError, ValidationError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it, vi } from 'vitest';
 import { addCustomerOrderItems, createCustomerOrder } from '@/lib/services/customer-order-service';
 
 const TENANT = '11111111-1111-4111-8111-111111111111';
+const TENANT_OTHER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const TABLE = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const CRID = '22222222-2222-4222-8222-222222222222';
 const CRID_ITEM_A = '33333333-3333-4333-8333-333333333333';
 const CRID_ITEM_B = '44444444-4444-4444-8444-444444444444';
+const QR_TOKEN_VALID = 'tkn_valid_1234567890';
+const QR_TOKEN_REVOKED = 'tkn_revoked_xxx';
+const QR_TOKEN_EXPIRED = 'tkn_expired_xxx';
 
 interface QueuedResponse {
   data: unknown;
   error: unknown;
+  count?: number;
 }
 
 function buildClient(plan: Record<string, QueuedResponse[]>): SupabaseClient {
@@ -63,17 +75,224 @@ function buildClient(plan: Record<string, QueuedResponse[]>): SupabaseClient {
   } as unknown as SupabaseClient;
 }
 
+describe('createCustomerOrder — tenant binding (C1)', () => {
+  it('dine_in: derives tenant from the table row, ignores the body', async () => {
+    // Body would have spoofed tenant=OTHER, but the table belongs to TENANT.
+    // The service must reach into `tables` first and use its tenant_id.
+    const fresh = { id: 'order-fresh', tenant_id: TENANT };
+    const client = buildClient({
+      tables: [{ data: { id: TABLE, tenant_id: TENANT }, error: null }],
+      tenants: [{ data: { plan: 'pro' }, error: null }],
+      orders: [
+        { data: null, error: null, count: 0 } as QueuedResponse, // monthly-count check
+        { data: fresh, error: null }, // insert
+      ],
+    });
+
+    const result = await createCustomerOrder(client, {
+      orderData: {
+        order_type: 'dine_in',
+        table_id: TABLE,
+      },
+    });
+
+    expect(result.order).toEqual(fresh);
+  });
+
+  it('dine_in: rejects when the table_id does not exist', async () => {
+    const client = buildClient({
+      tables: [{ data: null, error: null }],
+    });
+
+    await expect(
+      createCustomerOrder(client, {
+        orderData: {
+          order_type: 'dine_in',
+          table_id: '99999999-9999-4999-8999-999999999999',
+        },
+      }),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('takeout: a missing qr_token is not even constructable — service rejects on lookup miss', async () => {
+    // The route's zod schema rejects missing qr_token at the boundary.
+    // At the service layer, an empty string makes the lookup miss.
+    const client = buildClient({
+      qr_tokens: [{ data: null, error: null }],
+    });
+
+    await expect(
+      createCustomerOrder(client, {
+        orderData: {
+          order_type: 'takeout',
+          qr_token: 'does-not-exist',
+        },
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('takeout: revoked qr_token rejected', async () => {
+    const client = buildClient({
+      qr_tokens: [
+        {
+          data: {
+            tenant_id: TENANT,
+            table_id: null,
+            kind: 'takeout',
+            expires_at: null,
+            revoked_at: new Date('2026-04-01').toISOString(),
+          },
+          error: null,
+        },
+      ],
+    });
+
+    await expect(
+      createCustomerOrder(client, {
+        orderData: {
+          order_type: 'takeout',
+          qr_token: QR_TOKEN_REVOKED,
+        },
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('takeout: expired qr_token rejected', async () => {
+    const client = buildClient({
+      qr_tokens: [
+        {
+          data: {
+            tenant_id: TENANT,
+            table_id: null,
+            kind: 'takeout',
+            expires_at: new Date('2026-04-01').toISOString(),
+            revoked_at: null,
+          },
+          error: null,
+        },
+      ],
+    });
+
+    await expect(
+      createCustomerOrder(client, {
+        orderData: {
+          order_type: 'takeout',
+          qr_token: QR_TOKEN_EXPIRED,
+        },
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('takeout: token kind mismatch rejected', async () => {
+    // A delivery-kind token used for a takeout request — wrong scope.
+    const client = buildClient({
+      qr_tokens: [
+        {
+          data: {
+            tenant_id: TENANT,
+            table_id: null,
+            kind: 'delivery',
+            expires_at: null,
+            revoked_at: null,
+          },
+          error: null,
+        },
+      ],
+    });
+
+    await expect(
+      createCustomerOrder(client, {
+        orderData: {
+          order_type: 'takeout',
+          qr_token: QR_TOKEN_VALID,
+        },
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('takeout: valid qr_token resolves to the bound tenant', async () => {
+    const fresh = { id: 'order-takeout', tenant_id: TENANT };
+    const client = buildClient({
+      qr_tokens: [
+        {
+          data: {
+            tenant_id: TENANT,
+            table_id: null,
+            kind: 'takeout',
+            expires_at: null,
+            revoked_at: null,
+          },
+          error: null,
+        },
+      ],
+      tenants: [{ data: { plan: 'pro' }, error: null }],
+      orders: [
+        { data: null, error: null, count: 0 } as QueuedResponse,
+        { data: fresh, error: null },
+      ],
+    });
+
+    const result = await createCustomerOrder(client, {
+      orderData: {
+        order_type: 'takeout',
+        qr_token: QR_TOKEN_VALID,
+      },
+    });
+
+    expect(result.order).toEqual(fresh);
+  });
+
+  it('delivery: valid qr_token + delivery fields resolves to bound tenant', async () => {
+    // Even though the test body could try to lie about tenant elsewhere,
+    // the discriminated-union schema in route.ts means tenant_id can't
+    // be in the body at all. The service path here is the same as
+    // takeout — the difference is the persisted columns.
+    const fresh = { id: 'order-delivery', tenant_id: TENANT_OTHER };
+    const client = buildClient({
+      qr_tokens: [
+        {
+          data: {
+            tenant_id: TENANT_OTHER,
+            table_id: null,
+            kind: 'delivery',
+            expires_at: null,
+            revoked_at: null,
+          },
+          error: null,
+        },
+      ],
+      tenants: [{ data: { plan: 'pro' }, error: null }],
+      orders: [
+        { data: null, error: null, count: 0 } as QueuedResponse,
+        { data: fresh, error: null },
+      ],
+    });
+
+    const result = await createCustomerOrder(client, {
+      orderData: {
+        order_type: 'delivery',
+        qr_token: QR_TOKEN_VALID,
+        delivery_address: '1 Main St',
+        delivery_phone: '+15551234567',
+      },
+    });
+
+    expect(result.order).toEqual(fresh);
+  });
+});
+
 describe('createCustomerOrder — dedupe', () => {
   it('returns the existing row with deduped=true on replay', async () => {
     const persisted = { id: 'order-A', tenant_id: TENANT, client_request_id: CRID };
     const client = buildClient({
+      tables: [{ data: { id: TABLE, tenant_id: TENANT }, error: null }],
       orders: [{ data: persisted, error: null }],
     });
 
     const result = await createCustomerOrder(client, {
       orderData: {
-        tenant_id: TENANT,
         order_type: 'dine_in',
+        table_id: TABLE,
         client_request_id: CRID,
       },
     });
@@ -85,6 +304,18 @@ describe('createCustomerOrder — dedupe', () => {
   it('runs plan check + insert on the fresh path when no replay exists', async () => {
     const fresh = { id: 'order-fresh', tenant_id: TENANT, client_request_id: CRID };
     const client = buildClient({
+      qr_tokens: [
+        {
+          data: {
+            tenant_id: TENANT,
+            table_id: null,
+            kind: 'takeout',
+            expires_at: null,
+            revoked_at: null,
+          },
+          error: null,
+        },
+      ],
       orders: [
         { data: null, error: null }, // dedupe lookup → no replay
         { data: null, error: null, count: 0 } as QueuedResponse, // monthly-count check
@@ -95,8 +326,8 @@ describe('createCustomerOrder — dedupe', () => {
 
     const result = await createCustomerOrder(client, {
       orderData: {
-        tenant_id: TENANT,
         order_type: 'takeout',
+        qr_token: QR_TOKEN_VALID,
         client_request_id: CRID,
       },
     });
@@ -174,6 +405,18 @@ describe('createCustomerOrder — no dedupe id', () => {
   it('runs the insert path directly', async () => {
     const fresh = { id: 'order-fresh-2', tenant_id: TENANT };
     const client = buildClient({
+      qr_tokens: [
+        {
+          data: {
+            tenant_id: TENANT,
+            table_id: null,
+            kind: 'takeout',
+            expires_at: null,
+            revoked_at: null,
+          },
+          error: null,
+        },
+      ],
       orders: [
         { data: null, error: null, count: 0 } as QueuedResponse, // monthly-count check
         { data: fresh, error: null }, // insert
@@ -182,7 +425,10 @@ describe('createCustomerOrder — no dedupe id', () => {
     });
 
     const result = await createCustomerOrder(client, {
-      orderData: { tenant_id: TENANT, order_type: 'takeout' },
+      orderData: {
+        order_type: 'takeout',
+        qr_token: QR_TOKEN_VALID,
+      },
     });
     expect(result.order).toEqual(fresh);
     expect(result.deduped).toBe(false);
@@ -190,12 +436,24 @@ describe('createCustomerOrder — no dedupe id', () => {
 
   it('rejects free-tier customer orders with plan_required (QR ordering off)', async () => {
     const client = buildClient({
+      qr_tokens: [
+        {
+          data: {
+            tenant_id: TENANT,
+            table_id: null,
+            kind: 'takeout',
+            expires_at: null,
+            revoked_at: null,
+          },
+          error: null,
+        },
+      ],
       tenants: [{ data: { plan: 'free' }, error: null }],
     });
 
     await expect(
       createCustomerOrder(client, {
-        orderData: { tenant_id: TENANT, order_type: 'takeout' },
+        orderData: { order_type: 'takeout', qr_token: QR_TOKEN_VALID },
       }),
     ).rejects.toThrow(/plan_required/);
   });

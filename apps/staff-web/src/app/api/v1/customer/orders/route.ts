@@ -1,4 +1,3 @@
-import { OrderTypeSchema } from '@gustri/database';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
@@ -10,22 +9,46 @@ import { createCustomerOrder } from '@/lib/services/customer-order-service';
 
 export const dynamic = 'force-dynamic';
 
-const CreateCustomerOrderSchema = z.object({
-  table_id: z.string().uuid().optional().nullable(),
-  tenant_id: z.string().uuid(),
-  order_type: OrderTypeSchema,
+// Tenant binding is derived server-side (C1). Clients send `table_id`
+// (dine_in) or `qr_token` (takeout/delivery); the service resolves the
+// tenant from those and IGNORES anything the body claims about
+// `tenant_id`. The discriminated union below means a takeout/delivery
+// payload missing `qr_token` fails validation here, not deep in the
+// service — so the unauthenticated tenant-spoofing path is a 400, not
+// a misrouted insert.
+const BaseFields = {
   source: z.string().optional(),
   customer_notes: z.string().optional().nullable(),
-  delivery_address: z.string().optional().nullable(),
-  delivery_phone: z
-    .string()
-    .regex(/^[+\d\s\-()]{7,20}$/, 'Invalid phone format')
-    .optional()
-    .nullable(),
-  delivery_customer_name: z.string().optional().nullable(),
-  delivery_fee: z.number().optional().nullable(),
   client_request_id: z.string().uuid().optional(),
+} as const;
+
+const DineInSchema = z.object({
+  ...BaseFields,
+  order_type: z.literal('dine_in'),
+  table_id: z.string().uuid(),
 });
+
+const TakeoutSchema = z.object({
+  ...BaseFields,
+  order_type: z.literal('takeout'),
+  qr_token: z.string().min(1),
+});
+
+const DeliverySchema = z.object({
+  ...BaseFields,
+  order_type: z.literal('delivery'),
+  qr_token: z.string().min(1),
+  delivery_address: z.string().min(1),
+  delivery_phone: z.string().regex(/^[+\d\s\-()]{7,20}$/, 'Invalid phone format'),
+  delivery_customer_name: z.string().optional().nullable(),
+  delivery_fee: z.number().min(0).optional().nullable(),
+});
+
+const CreateCustomerOrderSchema = z.discriminatedUnion('order_type', [
+  DineInSchema,
+  TakeoutSchema,
+  DeliverySchema,
+]);
 
 export async function POST(request: NextRequest) {
   try {

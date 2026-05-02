@@ -1,20 +1,39 @@
-import { PLAN_LIMITS, type PlanName } from '@gustri/core';
+import { NotFoundError, PLAN_LIMITS, type PlanName, ValidationError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findOrCreateByClientRequestId } from '@/lib/api/dedupe';
 
+type DineInOrderInput = {
+  order_type: 'dine_in';
+  table_id: string;
+  source?: string;
+  customer_notes?: string | null;
+  client_request_id?: string;
+};
+
+type TakeoutOrderInput = {
+  order_type: 'takeout';
+  qr_token: string;
+  source?: string;
+  customer_notes?: string | null;
+  client_request_id?: string;
+};
+
+type DeliveryOrderInput = {
+  order_type: 'delivery';
+  qr_token: string;
+  source?: string;
+  customer_notes?: string | null;
+  delivery_address: string;
+  delivery_phone: string;
+  delivery_customer_name?: string | null;
+  delivery_fee?: number | null;
+  client_request_id?: string;
+};
+
+export type CustomerOrderInput = DineInOrderInput | TakeoutOrderInput | DeliveryOrderInput;
+
 interface CreateCustomerOrderParams {
-  orderData: {
-    table_id?: string | null;
-    tenant_id: string;
-    order_type: string;
-    source?: string;
-    customer_notes?: string | null;
-    delivery_address?: string | null;
-    delivery_phone?: string | null;
-    delivery_customer_name?: string | null;
-    delivery_fee?: number | null;
-    client_request_id?: string;
-  };
+  orderData: CustomerOrderInput;
 }
 
 interface AddCustomerOrderItemsParams {
@@ -31,8 +50,59 @@ interface AddCustomerOrderItemsParams {
 }
 
 /**
+ * Resolve the tenant_id a customer-web caller is acting on behalf of.
+ *
+ * Never trusts the request body — that's the C1 vulnerability we're
+ * closing. For dine_in we read it off the table row; for takeout/delivery
+ * we look up the qr_token row in `qr_tokens`. A failed resolution throws
+ * `NotFoundError` / `ValidationError` so the route returns 4xx rather
+ * than 500.
+ */
+async function resolveTenantId(
+  supabaseAdmin: SupabaseClient,
+  orderData: CustomerOrderInput,
+): Promise<{ tenantId: string; tableId: string | null }> {
+  if (orderData.order_type === 'dine_in') {
+    const { data: table, error } = await supabaseAdmin
+      .from('tables')
+      .select('id, tenant_id')
+      .eq('id', orderData.table_id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!table) throw new NotFoundError('Table');
+    return { tenantId: table.tenant_id as string, tableId: table.id as string };
+  }
+
+  const { data: tokenRow, error } = await supabaseAdmin
+    .from('qr_tokens')
+    .select('tenant_id, table_id, kind, expires_at, revoked_at')
+    .eq('token', orderData.qr_token)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!tokenRow) throw new ValidationError('invalid_qr_token');
+
+  if (tokenRow.revoked_at !== null) {
+    throw new ValidationError('invalid_qr_token');
+  }
+  if (tokenRow.expires_at !== null && new Date(tokenRow.expires_at as string) <= new Date()) {
+    throw new ValidationError('invalid_qr_token');
+  }
+  if (tokenRow.kind !== orderData.order_type) {
+    throw new ValidationError('invalid_qr_token');
+  }
+
+  return {
+    tenantId: tokenRow.tenant_id as string,
+    tableId: (tokenRow.table_id as string | null) ?? null,
+  };
+}
+
+/**
  * Create an order from the customer-facing app.
- * Validates tenant plan limits using tenant_id from the request body.
+ *
+ * Tenant binding is derived server-side from `table_id` (dine_in) or
+ * `qr_token` (takeout/delivery). The body cannot influence the tenant
+ * the order belongs to — that's the whole point of the C1 fix.
  *
  * Idempotent on `client_request_id` when supplied: a customer who taps
  * "place order" twice (or whose connection drops mid-request and retries)
@@ -47,7 +117,8 @@ export async function createCustomerOrder(
   params: CreateCustomerOrderParams,
 ) {
   const { orderData } = params;
-  const tenantId = orderData.tenant_id;
+
+  const { tenantId, tableId } = await resolveTenantId(supabaseAdmin, orderData);
 
   const result = await findOrCreateByClientRequestId<Record<string, unknown>>(supabaseAdmin, {
     table: 'orders',
@@ -99,31 +170,34 @@ export async function createCustomerOrder(
         }
       }
 
-      // Validate table exists if dine_in
-      if (orderData.order_type === 'dine_in' && orderData.table_id) {
-        const { data: table, error: tableError } = await supabaseAdmin
-          .from('tables')
-          .select('id, tenant_id')
-          .eq('id', orderData.table_id)
-          .eq('tenant_id', tenantId)
-          .single();
+      const insertRow: Record<string, unknown> = {
+        tenant_id: tenantId,
+        order_type: orderData.order_type,
+        source: orderData.source || 'customer',
+        customer_notes: orderData.customer_notes ?? null,
+        client_request_id: orderData.client_request_id ?? null,
+        status: 'pending_approval',
+        subtotal: 0,
+        tax: 0,
+        total: 0,
+      };
 
-        if (tableError || !table) {
-          throw new Error('Table not found');
-        }
+      if (orderData.order_type === 'dine_in') {
+        insertRow.table_id = tableId;
+      } else if (orderData.order_type === 'delivery') {
+        insertRow.delivery_address = orderData.delivery_address;
+        insertRow.delivery_phone = orderData.delivery_phone;
+        insertRow.delivery_customer_name = orderData.delivery_customer_name ?? null;
+        insertRow.delivery_fee = orderData.delivery_fee ?? null;
+        if (tableId) insertRow.table_id = tableId;
+      } else if (tableId) {
+        // takeout token may carry a table_id (e.g. counter station) — preserve it
+        insertRow.table_id = tableId;
       }
 
       const { data: order, error: createError } = await supabaseAdmin
         .from('orders')
-        .insert({
-          ...orderData,
-          tenant_id: tenantId,
-          source: orderData.source || 'customer',
-          status: 'pending_approval',
-          subtotal: 0,
-          tax: 0,
-          total: 0,
-        })
+        .insert(insertRow)
         .select()
         .single();
 

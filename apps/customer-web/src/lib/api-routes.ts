@@ -51,19 +51,39 @@ async function apiFetch<T>(path: string, init: RequestInit): Promise<T> {
  * Typed client for calling staff-web API routes.
  * Used for mutations that require server-side validation (plan limits, etc.).
  */
-export const apiRoutes = {
-  customerOrders: {
-    create: (data: {
-      table_id?: string | null;
-      tenant_id: string;
-      order_type: string;
+// Tenant binding is derived server-side (C1). The client sends `table_id`
+// (dine_in) or `qr_token` (takeout/delivery) and the staff-web route
+// resolves the tenant from those — never from the request body.
+type CreateCustomerOrderPayload =
+  | {
+      order_type: 'dine_in';
+      table_id: string;
       source?: string;
       customer_notes?: string | null;
-      delivery_address?: string | null;
-      delivery_phone?: string | null;
+      client_request_id?: string;
+    }
+  | {
+      order_type: 'takeout';
+      qr_token: string;
+      source?: string;
+      customer_notes?: string | null;
+      client_request_id?: string;
+    }
+  | {
+      order_type: 'delivery';
+      qr_token: string;
+      source?: string;
+      customer_notes?: string | null;
+      delivery_address: string;
+      delivery_phone: string;
       delivery_customer_name?: string | null;
       delivery_fee?: number | null;
-    }) =>
+      client_request_id?: string;
+    };
+
+export const apiRoutes = {
+  customerOrders: {
+    create: (data: CreateCustomerOrderPayload) =>
       apiFetch<{ order: OrderRow }>('/api/v1/customer/orders', {
         method: 'POST',
         body: JSON.stringify(data),

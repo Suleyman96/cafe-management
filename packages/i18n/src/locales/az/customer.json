@@ -45,6 +45,7 @@
   "deliveryCart.minimumDelivery": "Minimum çatdırılma sifarişi: {{amount}}",
   "deliveryCart.minimumDeliveryToast": "Minimum çatdırılma sifarişi {{amount}}",
   "deliveryCart.notesPlaceholder": "Məs., soğansız, artıq sous...",
+  "deliveryCart.missingQrToken": "Sifariş vermək üçün bu səhifəni kafenin çatdırılma QR linkindən açın.",
   "deliveryCart.orderError": "Sifariş vermək mümkün olmadı. Yenidən cəhd edin.",
   "deliveryCart.orderNotes": "Sifariş qeydləri (istəyə bağlı)",
   "deliveryCart.orderNotesPlaceholder": "Sifarişiniz üçün xüsusi istəklər...",

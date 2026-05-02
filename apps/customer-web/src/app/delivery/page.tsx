@@ -3,17 +3,47 @@
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import { MapPin, Phone, Truck, User } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useDeliveryStore } from '@/store/delivery-store';
 
+// Next.js 14 requires a Suspense boundary around any client component
+// that calls `useSearchParams()` so the static prerender can bail out
+// cleanly. Wrapping at the page level keeps the rest of the form
+// component unchanged.
 export default function DeliveryPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner fullScreen />}>
+      <DeliveryPageInner />
+    </Suspense>
+  );
+}
+
+function DeliveryPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useTranslation('customer');
   const { data: settings, isLoading } = useCafeSettings();
-  const { customerName, customerPhone, deliveryAddress, deliveryNotes, setCustomerInfo } =
-    useDeliveryStore();
+  const {
+    customerName,
+    customerPhone,
+    deliveryAddress,
+    deliveryNotes,
+    setCustomerInfo,
+    setQrToken,
+    qrToken,
+  } = useDeliveryStore();
+
+  // Capture the delivery QR token from the landing URL (?token=…) and
+  // persist it for the cart screen. The staff-web order route requires
+  // this to derive the tenant — without it, the POST is rejected (C1).
+  useEffect(() => {
+    const tokenFromUrl = searchParams?.get('token');
+    if (tokenFromUrl && tokenFromUrl !== qrToken) {
+      setQrToken(tokenFromUrl);
+    }
+  }, [searchParams, qrToken, setQrToken]);
 
   const [name, setName] = useState(customerName);
   const [phone, setPhone] = useState(customerPhone);

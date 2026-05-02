@@ -45,19 +45,24 @@ export function usePlaceOrder({
     }
 
     try {
-      const tenantId = table?.tenant_id;
-      if (!tenantId) throw new Error('Missing tenant context');
-
+      // The dine_in path no longer sends `tenant_id` in the create body
+      // (C1) — staff-web derives it from `table_id`. The items route
+      // still needs a tenant scope; derive it from the persisted order
+      // itself rather than trusting the table row we read on the
+      // client.
       let orderId = existingOrder?.id;
+      let tenantId = existingOrder?.tenant_id;
 
       if (!orderId) {
         const newOrder = await createOrder.mutateAsync({
           tableId: actualTableId,
           notes: orderNotes,
-          tenantId,
         });
         orderId = newOrder.id;
+        tenantId = newOrder.tenant_id;
       }
+
+      if (!tenantId) throw new Error('Missing tenant context');
 
       await addOrderItems.mutateAsync({
         orderId,

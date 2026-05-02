@@ -79,19 +79,12 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      tableId,
-      notes,
-      tenantId,
-    }: {
-      tableId: string;
-      notes?: string;
-      tenantId: string;
-    }): Promise<Order> => {
+    mutationFn: async ({ tableId, notes }: { tableId: string; notes?: string }): Promise<Order> => {
+      // Tenant is derived server-side from `table_id` (C1) — no
+      // `tenant_id` in the body.
       const { order } = await apiRoutes.customerOrders.create({
-        table_id: tableId,
-        tenant_id: tenantId,
         order_type: 'dine_in',
+        table_id: tableId,
         customer_notes: notes,
       });
       return order as Order;
