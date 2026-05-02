@@ -46,8 +46,21 @@ export function handleSupabaseError(error: unknown): AppError {
     return new AuthorizationError(err.message || 'Insufficient privileges');
   }
 
-  // PostgreSQL: CHECK constraint violation
+  // PostgreSQL: CHECK constraint violation. The validate_payment_amount /
+  // validate_refund_amount triggers RAISE with ERRCODE = 'check_violation' and
+  // a sentinel message (e.g. 'payment_exceeds_remaining'). Map those to a
+  // ConflictError so callers get a stable, machine-readable code rather than a
+  // generic ValidationError.
   if (err.code === '23514') {
+    const sentinel = err.message?.trim();
+    if (
+      sentinel === 'payment_exceeds_remaining' ||
+      sentinel === 'refund_exceeds_available' ||
+      sentinel === 'payment_tenant_mismatch' ||
+      sentinel === 'refund_tenant_mismatch'
+    ) {
+      return new ConflictError(sentinel);
+    }
     return new ValidationError(err.message || 'Value violates constraint');
   }
 

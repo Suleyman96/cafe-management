@@ -1,3 +1,4 @@
+import { handleSupabaseError } from '@gustri/api-client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findOrCreateByClientRequestId } from '@/lib/api/dedupe';
 
@@ -70,7 +71,12 @@ export async function createPayment(supabaseAdmin: SupabaseClient, params: Creat
         .select(PAYMENT_SELECT)
         .single();
 
-      if (createError) throw createError;
+      // The validate_payment_amount trigger is the authority. The pre-check
+      // above gives us a friendlier client error in the common case, but the
+      // trigger is what survives a concurrent insert that wins the race.
+      // Map its check_violation back to a typed AppError so handleRouteError
+      // returns a proper 409 with the sentinel code instead of a 500.
+      if (createError) throw handleSupabaseError(createError);
       return payment;
     },
   });

@@ -50,6 +50,17 @@ describe('handleSupabaseError', () => {
     expect(error).toBeInstanceOf(ValidationError);
   });
 
+  it.each([
+    'payment_exceeds_remaining',
+    'refund_exceeds_available',
+    'payment_tenant_mismatch',
+    'refund_tenant_mismatch',
+  ])('maps 23514 with sentinel %s to ConflictError', (sentinel) => {
+    const error = handleSupabaseError({ code: '23514', message: sentinel });
+    expect(error).toBeInstanceOf(ConflictError);
+    expect(error.message).toBe(sentinel);
+  });
+
   it('maps status 404 to NotFoundError', () => {
     const error = handleSupabaseError({ status: 404 });
     expect(error).toBeInstanceOf(NotFoundError);
