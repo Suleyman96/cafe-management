@@ -1,9 +1,9 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useCreatePayment, useOrderPayments } from '@/hooks/use-payments';
 import { apiRoutes } from '@/lib/api-routes';
-import { createWrapper, renderHookWithProviders } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useOrderPayments', () => {
   it('calls db.payments.findByOrderId', () => {
@@ -25,9 +25,9 @@ describe('useCreatePayment', () => {
     });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['payments', orderId]);
-    expect(keys).toContainEqual(['orders']);
-    expect(keys).toContainEqual(['order', orderId]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'payments', orderId));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'orders'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'order', orderId));
   });
 });
 
@@ -81,8 +81,8 @@ describe('useCreatePayment - QUERY_KEYS', () => {
     });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.PAYMENTS, orderId]);
-    expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(keys).toContainEqual([QUERY_KEYS.ORDER, orderId]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.PAYMENTS, orderId));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, orderId));
   });
 });

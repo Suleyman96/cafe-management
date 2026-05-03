@@ -14,6 +14,13 @@ vi.mock('@/hooks', () => ({
   useAuth: () => ({ staff: mockAdminStaff }),
 }));
 
+// `useCanPerform` reads `useAuthStore` directly rather than going through
+// `useAuth`, so it bypasses the mock above. Mock it explicitly so the
+// admin-only "recurring" checkbox renders for this test's admin context.
+vi.mock('@/hooks/use-can-perform', () => ({
+  useCanPerform: () => true,
+}));
+
 vi.mock('@/components/ui/button', () => ({
   Button: (props: any) => <button {...props} />,
 }));

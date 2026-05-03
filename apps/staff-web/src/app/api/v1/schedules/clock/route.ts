@@ -10,6 +10,11 @@ export const dynamic = 'force-dynamic';
  * POST /api/schedules/clock
  * Handles clock-in (start shift) and clock-out (end shift) for any staff member.
  * Body: { scheduleId: string, action: 'clock_in' | 'clock_out' }
+ *
+ * Dedupe: not needed — the state-machine guards (`status !== 'scheduled'` for
+ * clock_in, `status !== 'in_progress'` for clock_out) reject replays after
+ * the first commit with a 400. A replayed clock_in lands on a row already in
+ * `in_progress`/`completed` and short-circuits.
  */
 export async function POST(request: NextRequest) {
   try {

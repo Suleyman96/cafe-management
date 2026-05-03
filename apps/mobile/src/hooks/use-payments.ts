@@ -4,7 +4,7 @@ export { useOrderPayments } from '@gustri/queries';
 // Local hook — uses apiRoutes for payment creation
 import { validateOrThrow } from '@gustri/core';
 import { type OrderPaymentCreateInput, OrderPaymentCreateInputSchema } from '@gustri/database';
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
@@ -12,6 +12,7 @@ import { hapticSuccess } from '@/lib/haptics';
 import { getOrCreateClientRequestId } from '@/lib/idempotency';
 
 export function useCreatePayment() {
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -49,9 +50,13 @@ export function useCreatePayment() {
     },
     onSuccess: (_data, variables) => {
       hapticSuccess();
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PAYMENTS, variables.order_id] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.order_id] });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, variables.order_id),
+      });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.ORDER, variables.order_id),
+      });
     },
     onError: (error: Error) => {
       Sentry.captureException(error, { extra: { context: 'createPayment' } });

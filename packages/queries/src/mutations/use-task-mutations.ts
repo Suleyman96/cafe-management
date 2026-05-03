@@ -2,11 +2,12 @@ import type { TaskInsert, TaskUpdate } from '@gustri/database';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrCreateClientRequestId } from '../idempotency';
 import { invalidateTasks } from '../invalidation';
-import { useDb } from '../provider';
+import { useDb, useTenantId } from '../provider';
 import type { MutationCallbacks } from './types';
 
 export function useCreateTask(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     onMutate: (data: TaskInsert) => {
@@ -20,7 +21,7 @@ export function useCreateTask(options?: MutationCallbacks) {
       return task;
     },
     onSuccess: () => {
-      invalidateTasks(queryClient);
+      invalidateTasks(queryClient, tenantId);
     },
     onError: options?.onError,
   });
@@ -28,6 +29,7 @@ export function useCreateTask(options?: MutationCallbacks) {
 
 export function useUpdateTask(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<TaskUpdate> }) => {
@@ -38,7 +40,7 @@ export function useUpdateTask(options?: MutationCallbacks) {
       return task;
     },
     onSuccess: () => {
-      invalidateTasks(queryClient);
+      invalidateTasks(queryClient, tenantId);
     },
     onError: options?.onError,
   });
@@ -46,11 +48,12 @@ export function useUpdateTask(options?: MutationCallbacks) {
 
 export function useDeleteTask(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => db.tasks.delete(id),
     onSuccess: () => {
-      invalidateTasks(queryClient);
+      invalidateTasks(queryClient, tenantId);
     },
     onError: options?.onError,
   });
@@ -58,11 +61,12 @@ export function useDeleteTask(options?: MutationCallbacks) {
 
 export function useMarkTaskInProgress(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => db.tasks.markInProgress(id),
     onSuccess: () => {
-      invalidateTasks(queryClient);
+      invalidateTasks(queryClient, tenantId);
     },
     onError: options?.onError,
   });
@@ -70,11 +74,12 @@ export function useMarkTaskInProgress(options?: MutationCallbacks) {
 
 export function useMarkTaskCompleted(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => db.tasks.markCompleted(id),
     onSuccess: () => {
-      invalidateTasks(queryClient);
+      invalidateTasks(queryClient, tenantId);
     },
     onError: options?.onError,
   });
@@ -82,11 +87,12 @@ export function useMarkTaskCompleted(options?: MutationCallbacks) {
 
 export function useMarkTaskCancelled(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => db.tasks.markCancelled(id),
     onSuccess: () => {
-      invalidateTasks(queryClient);
+      invalidateTasks(queryClient, tenantId);
     },
     onError: options?.onError,
   });
@@ -94,11 +100,12 @@ export function useMarkTaskCancelled(options?: MutationCallbacks) {
 
 export function useGenerateRecurringTasks(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (date: string) => db.tasks.generateRecurringTasks(date),
     onSuccess: () => {
-      invalidateTasks(queryClient);
+      invalidateTasks(queryClient, tenantId);
     },
     onError: options?.onError,
   });

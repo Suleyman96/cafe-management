@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -10,7 +10,7 @@ import {
   useTodaysTasks,
 } from '@/hooks/use-tasks';
 import { getLocalDateString } from '@/lib/date-utils';
-import { createWrapper, renderHookWithProviders } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('Task management workflow', () => {
   it('useGenerateRecurringTasks sends correct date to DB', async () => {
@@ -47,7 +47,7 @@ describe('Task management workflow', () => {
     } as any);
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.TASKS]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TASKS));
   });
 
   it('useMarkTaskCompleted calls db.tasks.markCompleted with id', async () => {
@@ -65,7 +65,7 @@ describe('Task management workflow', () => {
 
     expect(mockDb.tasks.delete).toHaveBeenCalledWith('task-1');
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.TASKS]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TASKS));
   });
 
   it('useTodaysTasks returns fetched data', async () => {

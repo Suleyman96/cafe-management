@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/auth-store';
 
 type RealtimeTable = {
   table: string;
-  queryKeys: string[][];
+  queryKeys: ReadonlyArray<ReadonlyArray<unknown>>;
   filter?: string;
 };
 
@@ -87,6 +87,10 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
           () => {
             // Guard: skip invalidation if component has unmounted
             if (cancelledRef.current) return;
+            // Informational only — reconnect catch-up is driven by the
+            // SUBSCRIBED-after-retry signal in the subscribe callback below.
+            // Kept so we can wire per-table `since=` filtering once Supabase
+            // Realtime exposes it.
             lastEventAtRef.current = Date.now();
             for (const key of queryKeys) {
               pendingKeysRef.current.add(JSON.stringify(key));
@@ -102,6 +106,13 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
         subscribedRef.current = status === 'SUBSCRIBED';
 
         if (status === 'SUBSCRIBED') {
+          // Catch-up on reconnect: any postgres_changes events emitted while
+          // the WS was down were dropped (Supabase Realtime has no replay).
+          // After a successful resubscribe, refetch the affected query keys
+          // so the UI is consistent with the DB. Only run on reconnect, not
+          // the first SUBSCRIBED — avoids an extra fetch on every mount.
+          const isReconnect = retryCountRef.current > 0;
+          if (isReconnect) invalidateAll();
           retryCountRef.current = 0;
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           subscribedRef.current = false;
@@ -162,7 +173,7 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
       channelRegistry.unregister(channelName);
       if (currentChannel) supabase.removeChannel(currentChannel);
     };
-  }, [channelName, tenantId, scheduleFlush]);
+  }, [channelName, tenantId, scheduleFlush, invalidateAll]);
 
   // Safety-net fallback: poll at a long interval when the WS may be down
   useEffect(() => {

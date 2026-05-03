@@ -3,23 +3,25 @@
  */
 
 import type { Database } from '@gustri/database';
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
 
 type CustomerFeedback = Database['public']['Tables']['customer_feedback']['Row'];
 
 export function useFeedback(status?: 'pending' | 'acknowledged') {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: [QUERY_KEYS.FEEDBACK, status],
+    queryKey: tenantKey(tenantId, QUERY_KEYS.FEEDBACK, status),
     queryFn: async (): Promise<CustomerFeedback[]> =>
       db.feedback.findAll(status ? { status } : undefined),
   });
 }
 
 export function usePendingFeedbackCount() {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: [QUERY_KEYS.FEEDBACK, 'count', 'pending'],
+    queryKey: tenantKey(tenantId, QUERY_KEYS.FEEDBACK, 'count', 'pending'),
     queryFn: async (): Promise<number> => db.feedback.getPendingCount(),
     refetchInterval: 30000,
   });
@@ -27,12 +29,13 @@ export function usePendingFeedbackCount() {
 
 export function useMarkFeedbackRead() {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
     mutationFn: ({ feedbackId, staffId }: { feedbackId: string; staffId: string }) =>
       db.feedback.markRead(feedbackId, staffId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.FEEDBACK] });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.FEEDBACK) });
     },
   });
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { QUERY_KEYS } from '../../keys';
+import { QUERY_KEYS, tenantKey } from '../../keys';
 import {
   useCreateSchedule,
   useDeleteSchedule,
@@ -7,7 +7,7 @@ import {
   useMarkScheduleInProgress,
   useUpdateSchedule,
 } from '../../mutations/use-schedule-mutations';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 function getInvalidatedKeys(spy: ReturnType<typeof vi.spyOn>) {
   return spy.mock.calls.map((c: any) => (c[0] as any).queryKey);
@@ -25,7 +25,7 @@ describe('useCreateSchedule', () => {
     const { result, queryClient } = renderHookWithProviders(() => useCreateSchedule());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({} as any);
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.SCHEDULES]);
+    expect(getInvalidatedKeys(spy)).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.SCHEDULES));
   });
 });
 

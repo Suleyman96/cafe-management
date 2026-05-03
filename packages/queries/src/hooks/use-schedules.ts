@@ -1,12 +1,13 @@
 import type { StaffSchedule } from '@gustri/database';
 import { useQuery } from '@tanstack/react-query';
-import { QUERY_KEYS } from '../keys';
-import { useDb } from '../provider';
+import { QUERY_KEYS, tenantKey } from '../keys';
+import { useDb, useTenantId } from '../provider';
 
 export function useSchedulesByDate(date: string, options?: { enabled?: boolean }) {
   const db = useDb();
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: [QUERY_KEYS.SCHEDULES, date],
+    queryKey: tenantKey(tenantId, QUERY_KEYS.SCHEDULES, date),
     queryFn: () => db.schedules.findByDate(date) as Promise<StaffSchedule[]>,
     enabled: !!date && (options?.enabled ?? true),
   });
@@ -18,8 +19,9 @@ export function useSchedulesByDateRange(
   options?: { enabled?: boolean },
 ) {
   const db = useDb();
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: [QUERY_KEYS.SCHEDULES, startDate, endDate],
+    queryKey: tenantKey(tenantId, QUERY_KEYS.SCHEDULES, startDate, endDate),
     queryFn: () => db.schedules.findByDateRange(startDate, endDate) as Promise<StaffSchedule[]>,
     enabled: !!startDate && !!endDate && (options?.enabled ?? true),
   });
@@ -32,8 +34,9 @@ export function useMySchedule(
   options?: { enabled?: boolean },
 ) {
   const db = useDb();
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: [QUERY_KEYS.MY_SCHEDULE, staffId, startDate, endDate],
+    queryKey: tenantKey(tenantId, QUERY_KEYS.MY_SCHEDULE, staffId, startDate, endDate),
     queryFn: () =>
       db.schedules.findByStaffRange(staffId, startDate, endDate) as Promise<StaffSchedule[]>,
     enabled: !!staffId && !!startDate && !!endDate && (options?.enabled ?? true),
@@ -42,9 +45,10 @@ export function useMySchedule(
 
 export function useMyScheduleToday(staffId: string, options?: { enabled?: boolean }) {
   const db = useDb();
+  const tenantId = useTenantId();
   const today = new Date().toLocaleDateString('en-CA');
   return useQuery({
-    queryKey: [QUERY_KEYS.MY_SCHEDULE, staffId, 'today'],
+    queryKey: tenantKey(tenantId, QUERY_KEYS.MY_SCHEDULE, staffId, 'today'),
     queryFn: () => db.schedules.findByStaffAndDate(staffId, today) as Promise<StaffSchedule[]>,
     enabled: !!staffId && (options?.enabled ?? true),
   });

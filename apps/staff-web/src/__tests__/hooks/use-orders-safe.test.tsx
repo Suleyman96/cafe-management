@@ -1,7 +1,8 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import type { SupabaseWrapper } from '@gustri/api-client';
+import { DbProvider, QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
-import { createElement, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useActiveOrders,
@@ -18,7 +19,13 @@ import {
 } from '@/hooks/use-orders-safe';
 import { apiRoutes } from '@/lib/api-routes';
 import { db } from '@/lib/supabase/wrapped-client';
-import { createWrapper, renderHookWithProviders, waitFor } from '../helpers/test-utils';
+import { createMockDb } from '../helpers/mock-db';
+import {
+  createWrapper,
+  renderHookWithProviders,
+  TEST_TENANT_ID,
+  waitFor,
+} from '../helpers/test-utils';
 
 // --- Hooks from @gustri/queries (use useDb → mockDb from provider) ---
 
@@ -77,7 +84,7 @@ describe('useUpdateOrderStatus', () => {
     const { result, queryClient } = renderHookWithProviders(() => useUpdateOrderStatus());
     // Seed previousOrder so the mutation captures oldStatus="new" (non-terminal)
     // and the smart helper can decide whether to refetch TABLES.
-    queryClient.setQueryData([QUERY_KEYS.ORDER, 'o1'], {
+    queryClient.setQueryData(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, 'o1'), {
       id: 'o1',
       status: 'new',
       order_type: 'dine_in',
@@ -87,16 +94,16 @@ describe('useUpdateOrderStatus', () => {
     await result.current.mutateAsync({ orderId: 'o1', status: 'PREPARING' });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS));
     // new → preparing is not a terminal-state crossing, so TABLES must NOT
     // be refetched (kitchen toggles would otherwise spam table queries).
-    expect(invalidatedKeys).not.toContainEqual([QUERY_KEYS.TABLES]);
+    expect(invalidatedKeys).not.toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
   });
 
   it('invalidates TABLES on a terminal transition (preparing → closed)', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useUpdateOrderStatus());
-    queryClient.setQueryData([QUERY_KEYS.ORDER, 'o1'], {
+    queryClient.setQueryData(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, 'o1'), {
       id: 'o1',
       status: 'preparing',
       order_type: 'dine_in',
@@ -106,10 +113,10 @@ describe('useUpdateOrderStatus', () => {
     await result.current.mutateAsync({ orderId: 'o1', status: 'CLOSED' });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS));
     // closing the order frees the table — TABLES must refetch.
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
   });
 
   it('calls updateStatus with correct status value and a fresh client_request_id', async () => {
@@ -135,8 +142,14 @@ describe('useUpdateOrderStatus', () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, gcTime: 60_000 }, mutations: { retry: false } },
     });
-    const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(QueryClientProvider, { client: queryClient }, children);
+    const mockDb = createMockDb() as unknown as SupabaseWrapper;
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <DbProvider db={mockDb} tenantId={TEST_TENANT_ID}>
+          {children}
+        </DbProvider>
+      </QueryClientProvider>
+    );
     const { result } = renderHook(() => useUpdateOrderStatus(), { wrapper });
 
     const seedOrder = {
@@ -145,9 +158,9 @@ describe('useUpdateOrderStatus', () => {
       order_type: 'dine_in',
       delivery_fee: 10,
     } as any;
-    queryClient.setQueryData([QUERY_KEYS.ORDERS], [seedOrder]);
-    queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], [seedOrder]);
-    queryClient.setQueryData([QUERY_KEYS.ORDER, 'o1'], seedOrder);
+    queryClient.setQueryData(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS), [seedOrder]);
+    queryClient.setQueryData(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS), [seedOrder]);
+    queryClient.setQueryData(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, 'o1'), seedOrder);
 
     // Defer the rejection so we can sequence: onMutate → realtime → reject.
     let rejectMutation!: (e: Error) => void;
@@ -163,15 +176,15 @@ describe('useUpdateOrderStatus', () => {
 
     // Wait for the optimistic patch to land (signals onMutate is complete).
     await waitFor(() => {
-      const list = queryClient.getQueryData<any[]>([QUERY_KEYS.ORDERS]);
+      const list = queryClient.getQueryData<any[]>(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
       expect(list?.[0]?.status).toBe('preparing');
     });
 
     // Realtime update arrives mid-flight: same order, different field.
-    queryClient.setQueryData<any[]>([QUERY_KEYS.ORDERS], (old) =>
+    queryClient.setQueryData<any[]>(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS), (old) =>
       old?.map((o) => (o.id === 'o1' ? { ...o, delivery_fee: 20 } : o)),
     );
-    queryClient.setQueryData<any[]>([QUERY_KEYS.ACTIVE_ORDERS], (old) =>
+    queryClient.setQueryData<any[]>(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS), (old) =>
       old?.map((o) => (o.id === 'o1' ? { ...o, delivery_fee: 20 } : o)),
     );
 
@@ -180,8 +193,14 @@ describe('useUpdateOrderStatus', () => {
 
     // Realtime field must survive — the old snapshot rollback would have
     // reverted delivery_fee back to 10.
-    expect(queryClient.getQueryData<any[]>([QUERY_KEYS.ORDERS])?.[0]?.delivery_fee).toBe(20);
-    expect(queryClient.getQueryData<any[]>([QUERY_KEYS.ACTIVE_ORDERS])?.[0]?.delivery_fee).toBe(20);
+    expect(
+      queryClient.getQueryData<any[]>(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS))?.[0]
+        ?.delivery_fee,
+    ).toBe(20);
+    expect(
+      queryClient.getQueryData<any[]>(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS))?.[0]
+        ?.delivery_fee,
+    ).toBe(20);
   });
 
   it('rapid double-fire produces a single in-flight DB call (variables.orderId latches the row)', async () => {
@@ -214,8 +233,8 @@ describe('useCreateOrder', () => {
     await result.current.mutateAsync({} as any);
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
   });
 
   it('calls apiRoutes.orders.create with order data', async () => {
@@ -230,7 +249,7 @@ describe('useCreateOrder', () => {
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({} as any);
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS));
   });
 });
 
@@ -244,8 +263,8 @@ describe('useAddOrderItems', () => {
     await result.current.mutateAsync([{ order_id: 'o1', menu_item_id: 'm1', quantity: 1 }] as any);
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS));
   });
 });
 
@@ -257,8 +276,8 @@ describe('useAssignWaiter', () => {
     await result.current.mutateAsync({ orderId: 'o1', waiterId: 'w1' });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS));
   });
 });
 
@@ -270,9 +289,9 @@ describe('useCancelOrder', () => {
     await result.current.mutateAsync({ orderId: 'o1', reason: 'test' });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
   });
 
   it('calls cancelOrder with correct args', async () => {
@@ -290,8 +309,8 @@ describe('useUpdateOrderItemStatus', () => {
     await result.current.mutateAsync({ itemId: 'i1', status: 'preparing' as any });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS));
   });
 
   it('preserves concurrent realtime updates when the mutation fails (no stale rollback)', async () => {
@@ -300,8 +319,14 @@ describe('useUpdateOrderItemStatus', () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, gcTime: 60_000 }, mutations: { retry: false } },
     });
-    const wrapper = ({ children }: { children: ReactNode }) =>
-      createElement(QueryClientProvider, { client: queryClient }, children);
+    const mockDb = createMockDb() as unknown as SupabaseWrapper;
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <DbProvider db={mockDb} tenantId={TEST_TENANT_ID}>
+          {children}
+        </DbProvider>
+      </QueryClientProvider>
+    );
     const { result } = renderHook(() => useUpdateOrderItemStatus(), { wrapper });
 
     const seedOrder = {
@@ -310,8 +335,8 @@ describe('useUpdateOrderItemStatus', () => {
       delivery_fee: 10,
       order_items: [{ id: 'i1', status: 'pending' }],
     } as any;
-    queryClient.setQueryData([QUERY_KEYS.ORDERS], [seedOrder]);
-    queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], [seedOrder]);
+    queryClient.setQueryData(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS), [seedOrder]);
+    queryClient.setQueryData(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS), [seedOrder]);
 
     let rejectMutation!: (e: Error) => void;
     (db.orderItems.updateStatus as any).mockReturnValueOnce(
@@ -325,22 +350,28 @@ describe('useUpdateOrderItemStatus', () => {
       .catch(() => {});
 
     await waitFor(() => {
-      const list = queryClient.getQueryData<any[]>([QUERY_KEYS.ORDERS]);
+      const list = queryClient.getQueryData<any[]>(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
       expect(list?.[0]?.order_items?.[0]?.status).toBe('preparing');
     });
 
-    queryClient.setQueryData<any[]>([QUERY_KEYS.ORDERS], (old) =>
+    queryClient.setQueryData<any[]>(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS), (old) =>
       old?.map((o) => (o.id === 'o1' ? { ...o, delivery_fee: 20 } : o)),
     );
-    queryClient.setQueryData<any[]>([QUERY_KEYS.ACTIVE_ORDERS], (old) =>
+    queryClient.setQueryData<any[]>(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS), (old) =>
       old?.map((o) => (o.id === 'o1' ? { ...o, delivery_fee: 20 } : o)),
     );
 
     rejectMutation(new Error('Network'));
     await promise;
 
-    expect(queryClient.getQueryData<any[]>([QUERY_KEYS.ORDERS])?.[0]?.delivery_fee).toBe(20);
-    expect(queryClient.getQueryData<any[]>([QUERY_KEYS.ACTIVE_ORDERS])?.[0]?.delivery_fee).toBe(20);
+    expect(
+      queryClient.getQueryData<any[]>(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS))?.[0]
+        ?.delivery_fee,
+    ).toBe(20);
+    expect(
+      queryClient.getQueryData<any[]>(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS))?.[0]
+        ?.delivery_fee,
+    ).toBe(20);
   });
 });
 
@@ -352,8 +383,8 @@ describe('useDeleteOrderItem', () => {
     await result.current.mutateAsync('item-1');
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS));
   });
 });
 
@@ -365,8 +396,8 @@ describe('useUpdateOrderNotes', () => {
     await result.current.mutateAsync({ orderId: 'o1', notes: { customer_notes: 'test' } });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDER, 'o1']);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, 'o1'));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS));
   });
 });

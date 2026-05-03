@@ -1,7 +1,7 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import { useCafeSettings, useUpdateCafeSettings } from '@/hooks/use-settings-safe';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useCafeSettings', () => {
   it('calls db.settings.get', () => {
@@ -18,6 +18,6 @@ describe('useUpdateCafeSettings', () => {
     await result.current.mutateAsync({ cafe_name: 'Updated Cafe' } as any);
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.CAFE_SETTINGS]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.CAFE_SETTINGS));
   });
 });

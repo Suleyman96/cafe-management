@@ -6,8 +6,10 @@
 import type { Database } from '@gustri/database';
 import {
   QUERY_KEYS,
+  tenantKey,
   useOrderPayments as useOrderPaymentsShared,
   useOrderRemainingBalance as useOrderRemainingBalanceShared,
+  useTenantId,
 } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
@@ -21,6 +23,7 @@ export { useOrderPayments, useOrderRemainingBalance, usePaymentsByStaff } from '
 // Local: uses apiRoutes for server-side balance validation
 export function useCreatePayment() {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
     mutationFn: (payment: PaymentInsert) => {
@@ -29,14 +32,22 @@ export function useCreatePayment() {
       return apiRoutes.payments.create(order_id, rest);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS, variables.order_id] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.order_id] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PAYMENTS, variables.order_id] });
       queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.PAYMENTS, 'remaining_balance', variables.order_id],
+        queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS, variables.order_id),
       });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PAYMENTS_BY_STAFF] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.ORDER, variables.order_id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, variables.order_id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, 'remaining_balance', variables.order_id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS_BY_STAFF),
+      });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) });
     },
   });
 }

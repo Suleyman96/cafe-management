@@ -9,6 +9,7 @@ import {
 } from '@gustri/core';
 import type { Database, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { Button, getOrderStatusColor, LoadingSpinner } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -84,6 +85,7 @@ export default function TableDetailPage() {
   const taxMultiplier = useTaxMultiplier();
   const { data: activeCallsForTable } = useActiveCallsForTable(tableId);
   const resolveWaiterCall = useResolveWaiterCall();
+  const tenantId = useTenantId();
 
   const handleResolveCalls = useCallback(async () => {
     if (!activeCallsForTable) return;
@@ -190,8 +192,17 @@ export default function TableDetailPage() {
 
   // Real-time: invalidate queries on DB changes
   useRealtimeSync(`table-${tableId}`, [
-    { table: 'orders', queryKeys: [['orders'], ['active_orders']] },
-    { table: 'order_items', queryKeys: [['orders']] },
+    {
+      table: 'orders',
+      queryKeys: [
+        tenantKey(tenantId, QUERY_KEYS.ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS),
+      ],
+    },
+    {
+      table: 'order_items',
+      queryKeys: [tenantKey(tenantId, QUERY_KEYS.ORDERS)],
+    },
   ]);
 
   // Filter menu items by category

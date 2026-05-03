@@ -1,3 +1,4 @@
+import { tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useCancelOrder,
@@ -5,7 +6,7 @@ import {
   useMarkDelivered,
   useMarkOutForDelivery,
 } from '@/hooks/use-delivery';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useDeliveryOrders', () => {
   it('calls db.orders.findDeliveryOrders', () => {
@@ -22,8 +23,8 @@ describe('useMarkOutForDelivery', () => {
     await result.current.mutateAsync({ orderId: 'o1', deliveryPersonId: 'dp1' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['delivery_orders']);
-    expect(keys).toContainEqual(['orders']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'delivery_orders'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'orders'));
   });
 });
 
@@ -35,8 +36,8 @@ describe('useMarkDelivered', () => {
     await result.current.mutateAsync('o1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['delivery_orders']);
-    expect(keys).toContainEqual(['orders']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'delivery_orders'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'orders'));
   });
 });
 
@@ -48,7 +49,7 @@ describe('useCancelOrder', () => {
     await result.current.mutateAsync({ orderId: 'o1', reason: 'test' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['delivery_orders']);
-    expect(keys).toContainEqual(['orders']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'delivery_orders'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'orders'));
   });
 });

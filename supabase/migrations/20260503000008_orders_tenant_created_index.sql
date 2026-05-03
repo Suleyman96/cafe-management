@@ -1,0 +1,33 @@
+-- Migration: Composite index on orders(tenant_id, created_at DESC).
+--
+-- Root cause being fixed:
+--   The staff dashboard fetches the last 30 days of orders with
+--     SELECT ... FROM orders
+--     WHERE tenant_id = $1 AND created_at >= now() - interval '30 days'
+--     ORDER BY created_at DESC
+--   The existing `idx_orders_tenant` is single-column, so this query does
+--   a tenant filter via index then a re-sort. `idx_orders_tenant_status`
+--   is composite but starts with status; the planner can't use it when
+--   status is unfiltered. The dashboard query therefore degrades to
+--   tenant-scan + sort as the orders table grows.
+--
+-- Fix:
+--   Add `(tenant_id, created_at DESC)` so the dashboard query becomes a
+--   straight index range scan with no sort step.
+--
+-- NOTE on CONCURRENTLY:
+--   We omit CONCURRENTLY here for the same reason 20260428000002 calls
+--   out: the Supabase CLI runs migrations inside a pipelined transaction
+--   (see `db reset`), and CREATE INDEX CONCURRENTLY is forbidden in a
+--   transaction block. The brief AccessShareLock on `orders` during
+--   index build is acceptable in dev/CI. For production rollout against
+--   a populated `orders` table, build the index manually outside any
+--   transaction, e.g.:
+--     CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_orders_tenant_created_at
+--       ON public.orders (tenant_id, created_at DESC);
+--   then verify it exists before merging this migration to the prod
+--   branch — the IF NOT EXISTS guard makes the migration a no-op when
+--   the index has already been built out-of-band.
+
+CREATE INDEX IF NOT EXISTS idx_orders_tenant_created_at
+  ON public.orders (tenant_id, created_at DESC);

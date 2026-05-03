@@ -153,7 +153,10 @@ findActiveByTable(tableId: string): Promise<OrderRow | null>
 getActiveOrders(): Promise<OrderRow[]>
 // All orders with status in: pending_approval, new, preparing, ready, served, out_for_delivery
 
-assignWaiter(orderId: string, waiterId: string | null): Promise<OrderRow>
+// Note: waiter assignment is admin-only and goes through
+// `POST /api/v1/orders/[id]/assign` (not the wrapper). See
+// `apps/staff-web/src/lib/api-routes.ts` and the matching route handler.
+
 cancelOrder(orderId: string, reason: string, tableId?: string | null): Promise<OrderRow>
 // Sets status to 'cancelled', stores reason in internal_notes, frees table if no other active orders
 
@@ -222,7 +225,8 @@ const order = await db.orders.create({
 });
 
 await db.orders.updateStatus(order.id, 'preparing');
-await db.orders.assignWaiter(order.id, 'staff-uuid');
+// Reassign via the admin-only route, not the wrapper.
+await apiRoutes.orders.assignWaiter(order.id, 'staff-uuid');
 
 // Delivery
 const deliveryOrders = await db.orders.findDeliveryOrders();

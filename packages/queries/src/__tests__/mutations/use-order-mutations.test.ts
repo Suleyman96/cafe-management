@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { QUERY_KEYS } from '../../keys';
+import { QUERY_KEYS, tenantKey } from '../../keys';
 import {
   useAddOrderItems,
   useAssignDeliveryPerson,
-  useAssignWaiter,
   useCancelOrder,
   useCancelOrderItem,
   useCleanupEmptyOrders,
@@ -15,7 +14,7 @@ import {
   useUpdateOrderNotes,
   useUpdateOrderStatus,
 } from '../../mutations/use-order-mutations';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 function getInvalidatedKeys(spy: ReturnType<typeof vi.spyOn>) {
   return spy.mock.calls.map((c: any) => (c[0] as any).queryKey);
@@ -35,9 +34,9 @@ describe('useUpdateOrderStatus', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({ id: 'o1', status: 'preparing' });
     const keys = getInvalidatedKeys(spy);
-    expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(keys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
-    expect(keys).not.toContainEqual([QUERY_KEYS.TABLES]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS));
+    expect(keys).not.toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
   });
 
   it('invalidates TABLES when the new status is terminal (closed)', async () => {
@@ -45,7 +44,7 @@ describe('useUpdateOrderStatus', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({ id: 'o1', status: 'closed' });
     const keys = getInvalidatedKeys(spy);
-    expect(keys).toContainEqual([QUERY_KEYS.TABLES]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
   });
 
   it('propagates errors to caller', async () => {
@@ -66,26 +65,11 @@ describe('useUpdateOrderStatus', () => {
   });
 });
 
-describe('useAssignWaiter', () => {
-  it('calls db.orders.assignWaiter with correct args', async () => {
-    const { result, mockDb } = renderHookWithProviders(() => useAssignWaiter());
-    await result.current.mutateAsync({ orderId: 'o1', waiterId: 's1' });
-    expect(mockDb.orders.assignWaiter).toHaveBeenCalledWith('o1', 's1');
-  });
-
-  it('supports unassigning (waiterId=null)', async () => {
-    const { result, mockDb } = renderHookWithProviders(() => useAssignWaiter());
-    await result.current.mutateAsync({ orderId: 'o1', waiterId: null });
-    expect(mockDb.orders.assignWaiter).toHaveBeenCalledWith('o1', null);
-  });
-
-  it('invalidates orders on success', async () => {
-    const { result, queryClient } = renderHookWithProviders(() => useAssignWaiter());
-    const spy = vi.spyOn(queryClient, 'invalidateQueries');
-    await result.current.mutateAsync({ orderId: 'o1', waiterId: 's1' });
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.ORDERS]);
-  });
-});
+// Note: `useAssignWaiter` was moved out of @gustri/queries — assignment is now
+// admin-gated via `/api/v1/orders/[id]/assign`, so the hook lives in the
+// staff-web app where `apiRoutes` is available. Mobile doesn't expose a
+// reassign UI today; if it ever does, promote the hook back here once a
+// per-app override pattern is in place.
 
 describe('useCancelOrder', () => {
   it('forwards orderId, reason, and tableId', async () => {
@@ -105,8 +89,8 @@ describe('useCancelOrder', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({ orderId: 'o1', reason: 'r' });
     const keys = getInvalidatedKeys(spy);
-    expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(keys).toContainEqual([QUERY_KEYS.TABLES]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
   });
 });
 
@@ -122,7 +106,9 @@ describe('useUpdateOrderNotes', () => {
     const { result, queryClient } = renderHookWithProviders(() => useUpdateOrderNotes());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({ orderId: 'o-xyz', notes: {} });
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.ORDER, 'o-xyz']);
+    expect(getInvalidatedKeys(spy)).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, 'o-xyz'),
+    );
   });
 });
 
@@ -138,7 +124,7 @@ describe('useCleanupEmptyOrders', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync(undefined);
     const keys = getInvalidatedKeys(spy);
-    expect(keys).toContainEqual([QUERY_KEYS.TABLES]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
   });
 });
 
@@ -154,7 +140,7 @@ describe('useAddOrderItems', () => {
     const { result, queryClient } = renderHookWithProviders(() => useAddOrderItems());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync([] as any);
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.ORDERS]);
+    expect(getInvalidatedKeys(spy)).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
   });
 
   it('propagates create errors', async () => {
@@ -220,9 +206,9 @@ describe('delivery mutations', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({ orderId: 'o1', deliveryPersonId: 'd1' });
     const keys = getInvalidatedKeys(spy);
-    expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(keys).toContainEqual([QUERY_KEYS.DELIVERY_ORDERS]);
-    expect(keys).not.toContainEqual([QUERY_KEYS.TABLES]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.DELIVERY_ORDERS));
+    expect(keys).not.toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
   });
 
   it('useMarkDelivered forwards orderId', async () => {

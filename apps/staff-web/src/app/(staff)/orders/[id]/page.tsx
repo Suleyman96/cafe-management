@@ -3,7 +3,7 @@
 import { formatTime, type ORDER_STATUS, ORDER_STATUS_KEYS } from '@gustri/core';
 import type { Database, OrderItemStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { Button, getOrderStatusColor, LoadingSpinner, ORDER_ITEM_STATUS_BADGES } from '@gustri/ui';
 import {
   ArrowLeft,
@@ -41,9 +41,9 @@ import {
   useUpdateOrderItemStatus,
   useUpdateOrderStatus,
 } from '@/hooks';
-import { useAuth } from '@/hooks/use-auth';
-import { useCanMutate } from '@/hooks/use-can-mutate';
+import { useCanPerform } from '@/hooks/use-can-perform';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { useIsOnline } from '@/hooks/use-is-online';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 import { ORDER_ITEM_STATUS_ICONS } from '@/lib/enum-icons';
 
@@ -95,10 +95,10 @@ export default function OrderDetailPage() {
   const markDelivered = useMarkDelivered();
   const { data: staffList } = useStaff();
   const { data: refundsData } = useOrderRefunds(orderId);
-  const { staff: currentStaff } = useAuth();
-  const canDiscount = currentStaff?.role === 'admin' || currentStaff?.role === 'owner';
-  const canRefund = currentStaff?.role === 'admin' || currentStaff?.role === 'owner';
-  const canMutate = useCanMutate();
+  const canDiscount = useCanPerform('apply_discount');
+  const canRefund = useCanPerform('issue_refund');
+  const canMutate = useIsOnline();
+  const tenantId = useTenantId();
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
@@ -107,18 +107,22 @@ export default function OrderDetailPage() {
 
   // Real-time subscription via shared hook
   useRealtimeSync(`order-detail-${orderId}`, [
-    { table: 'orders', filter: `id=eq.${orderId}`, queryKeys: [[QUERY_KEYS.ORDER, orderId]] },
+    {
+      table: 'orders',
+      filter: `id=eq.${orderId}`,
+      queryKeys: [tenantKey(tenantId, QUERY_KEYS.ORDER, orderId)],
+    },
     {
       table: 'order_items',
       filter: `order_id=eq.${orderId}`,
-      queryKeys: [[QUERY_KEYS.ORDER, orderId]],
+      queryKeys: [tenantKey(tenantId, QUERY_KEYS.ORDER, orderId)],
     },
     {
       table: 'order_payments',
       filter: `order_id=eq.${orderId}`,
       queryKeys: [
-        [QUERY_KEYS.ORDER, orderId],
-        [QUERY_KEYS.PAYMENTS, orderId],
+        tenantKey(tenantId, QUERY_KEYS.ORDER, orderId),
+        tenantKey(tenantId, QUERY_KEYS.PAYMENTS, orderId),
       ],
     },
   ]);

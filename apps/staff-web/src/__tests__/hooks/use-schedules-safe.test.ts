@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import {
   useCreateSchedule,
   useDeleteSchedule,
@@ -8,7 +8,7 @@ import {
   useSchedulesByDateRange,
   useUpdateSchedule,
 } from '@/hooks/use-schedules-safe';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useSchedulesByDate', () => {
   it('calls db.schedules.findByDate with the date', () => {
@@ -92,8 +92,8 @@ describe('useCreateSchedule', () => {
     await result.current.mutateAsync({ staff_id: 's1', date: '2024-01-15' } as any);
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.SCHEDULES]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.MY_SCHEDULE]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.SCHEDULES));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.MY_SCHEDULE));
   });
 });
 
@@ -112,8 +112,8 @@ describe('useUpdateSchedule', () => {
     await result.current.mutateAsync({ id: 'sched-1', data: {} } as any);
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.SCHEDULES]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.MY_SCHEDULE]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.SCHEDULES));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.MY_SCHEDULE));
   });
 });
 
@@ -131,7 +131,7 @@ describe('useDeleteSchedule', () => {
     await result.current.mutateAsync('sched-1');
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.SCHEDULES]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.MY_SCHEDULE]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.SCHEDULES));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.MY_SCHEDULE));
   });
 });

@@ -125,6 +125,52 @@ describe('useRealtimeSync', () => {
     vi.useRealTimers();
   });
 
+  it('refetches affected query keys on reconnect (catch-up after CHANNEL_ERROR)', () => {
+    vi.useFakeTimers();
+
+    // Capture the subscribe-status callback so we can drive the lifecycle.
+    const subscribeCallbacks: Array<(status: string) => void> = [];
+    const channelMock: { on: ReturnType<typeof vi.fn>; subscribe: ReturnType<typeof vi.fn> } = {
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn(),
+    };
+    channelMock.subscribe.mockImplementation((cb) => {
+      subscribeCallbacks.push(cb);
+      return channelMock;
+    });
+    (supabase.channel as ReturnType<typeof vi.fn>).mockReturnValue(channelMock);
+
+    const reconnectTables = [
+      { table: 'orders', queryKeys: [['orders'], ['active-orders']] },
+      { table: 'order_items', queryKeys: [['order-items']] },
+    ];
+    const { wrapper, queryClient } = createWrapper();
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync('reconnect-channel', reconnectTables), { wrapper });
+
+    // First SUBSCRIBED (fresh subscribe — retryCount = 0). No catch-up.
+    subscribeCallbacks[0]('SUBSCRIBED');
+    expect(invalidateSpy).not.toHaveBeenCalled();
+
+    // Channel drops, hook schedules a reconnect with backoff.
+    subscribeCallbacks[0]('CHANNEL_ERROR');
+    vi.advanceTimersByTime(2_000); // pass the first backoff window
+
+    // The reconnect creates a new channel and registers its own subscribe cb.
+    expect(subscribeCallbacks.length).toBeGreaterThanOrEqual(2);
+
+    // Second SUBSCRIBED — this is a reconnect (retryCount > 0). Catch-up fires.
+    subscribeCallbacks[subscribeCallbacks.length - 1]('SUBSCRIBED');
+
+    // Every queryKey across the registered tables should be invalidated once.
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['orders'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['active-orders'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['order-items'] });
+
+    vi.useRealTimers();
+  });
+
   it('clears the pending flush timer on unmount so no late invalidation fires', () => {
     vi.useFakeTimers();
 

@@ -1,6 +1,7 @@
+import { tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import { useFeedback, useMarkFeedbackRead, usePendingFeedbackCount } from '@/hooks/use-feedback';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useFeedback', () => {
   it('calls db.feedback.findAll', () => {
@@ -29,6 +30,6 @@ describe('useMarkFeedbackRead', () => {
     await result.current.mutateAsync({ id: 'f1', staffId: 's1' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['feedback']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'feedback'));
   });
 });

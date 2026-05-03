@@ -7,11 +7,11 @@
  *    (missing remaining-balance invalidation was a bug that caused stale payment data)
  */
 
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import { useApplyDiscount } from '@/hooks/use-discount-safe';
 import { apiRoutes } from '@/lib/api-routes';
-import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID, waitFor } from '../helpers/test-utils';
 
 describe('useApplyDiscount', () => {
   it('calls apiRoutes.discounts.apply with correct params', async () => {
@@ -49,14 +49,18 @@ describe('useApplyDiscount', () => {
       const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
 
       // Must invalidate general orders list
-      expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
+      expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
 
       // Must invalidate specific order
-      expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDER, 'order-1']);
+      expect(invalidatedKeys).toContainEqual(
+        tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, 'order-1'),
+      );
 
       // CRITICAL: Must invalidate remaining balance so payment modal gets fresh data
       // This was a bug — missing this invalidation caused "fully paid" false positives
-      expect(invalidatedKeys).toContainEqual([QUERY_KEYS.PAYMENTS, 'remaining_balance', 'order-1']);
+      expect(invalidatedKeys).toContainEqual(
+        tenantKey(TEST_TENANT_ID, QUERY_KEYS.PAYMENTS, 'remaining_balance', 'order-1'),
+      );
     });
   });
 

@@ -82,16 +82,3 @@ export async function findOrCreateByClientRequestId<TRow>(
     throw err;
   }
 }
-
-/**
- * Inspect a thrown error for the Postgres unique-violation code, looking
- * one level into wrapped messages because some services throw new Error()
- * and lose the `.code` property. Service code that wraps errors should
- * preserve the original instead of re-throwing — but until we audit every
- * service, this fallback covers the legacy paths.
- */
-export function isClientRequestIdConflict(err: unknown): boolean {
-  if (isUniqueViolation(err)) return true;
-  const message = (err as { message?: string } | null)?.message ?? '';
-  return message.includes('client_request_id') && message.includes('duplicate');
-}

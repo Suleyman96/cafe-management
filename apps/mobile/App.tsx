@@ -142,6 +142,21 @@ if (__DEV__) {
   }
 }
 
+/**
+ * Reads the current staff's tenant id from the auth store and feeds it
+ * into `<DbProvider>` so every shared hook tenant-scopes its query key.
+ * The bound id flows reactively through Zustand — when the user signs in
+ * or out, this re-renders and DbProvider's context updates.
+ */
+function TenantBoundDbProvider({ children }: { children: React.ReactNode }) {
+  const tenantId = useAuthStore((s) => s.staff?.tenant_id ?? null);
+  return (
+    <DbProvider db={db} tenantId={tenantId}>
+      {children}
+    </DbProvider>
+  );
+}
+
 function App() {
   const setIsLoading = useAuthStore((s) => s.setIsLoading);
   const loadSession = useAuthStore((s) => s.loadSession);
@@ -413,7 +428,7 @@ function App() {
             })();
           }}
         >
-          <DbProvider db={db}>
+          <TenantBoundDbProvider>
             <PaperProvider theme={lightTheme}>
               <SnackbarProvider>
                 <NavigationContainer ref={navigationRef} linking={linkingConfig}>
@@ -424,7 +439,7 @@ function App() {
                 </NavigationContainer>
               </SnackbarProvider>
             </PaperProvider>
-          </DbProvider>
+          </TenantBoundDbProvider>
         </PersistQueryClientProvider>
       </I18nextProvider>
     </SafeAreaProvider>

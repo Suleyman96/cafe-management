@@ -248,37 +248,12 @@ export const TIME_ELAPSED_THRESHOLDS = {
 } as const;
 
 /**
- * Per-role cap on discount magnitude (as a fraction of order subtotal).
- *
- * `discount-service.ts` enforces this server-side before applying any
- * `percentage`/`fixed` discount; mobile mirrors it as a UX courtesy. A
- * waiter applying a 99% "fixed" discount is economically a refund, which
- * already requires admin role — so the cap closes the parallel hole on the
- * discount path.
- *
- *  - waiter:  10% — service recovery (cold coffee, slow kitchen)
- *  - kitchen:  0% — no discount authority
- *  - admin: 100% — owner/admin can comp the entire order
- *  - owner: 100% — same
- *
- * Tenants with a stricter policy can override via
- * `tenant_settings.max_discount_percent_<role>` (added in a follow-up
- * migration). Until then this hard table is the floor.
+ * Threshold above which a discount additionally requires a non-trivial
+ * `discount_reason`. The discount endpoint is admin-only, so this is a
+ * forensic-quality gate rather than an authorization gate — large comps
+ * must carry a reason so finance reconciliation has context.
  */
-export const DISCOUNT_CAPS_BY_ROLE: Record<string, number> = {
-  waiter: 0.1,
-  kitchen: 0,
-  admin: 1.0,
-  owner: 1.0,
-};
-
-/** Threshold above which a discount writes a financial_audit_log entry. */
 export const DISCOUNT_AUDIT_THRESHOLD = 0.2;
-
-export function getDiscountCapForRole(role: string | null | undefined): number {
-  if (role && role in DISCOUNT_CAPS_BY_ROLE) return DISCOUNT_CAPS_BY_ROLE[role]!;
-  return 0;
-}
 
 /**
  * Auto-logout window per role. Shared devices in the kitchen / waiter station

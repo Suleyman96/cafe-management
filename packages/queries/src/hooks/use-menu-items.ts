@@ -1,7 +1,7 @@
 import type { MenuItemWithCategory } from '@gustri/database';
 import { useQuery } from '@tanstack/react-query';
-import { QUERY_KEYS } from '../keys';
-import { useDb } from '../provider';
+import { QUERY_KEYS, tenantKey } from '../keys';
+import { useDb, useTenantId } from '../provider';
 
 export function useMenuItems(options?: {
   categoryId?: string;
@@ -11,6 +11,7 @@ export function useMenuItems(options?: {
   enabled?: boolean;
 }) {
   const db = useDb();
+  const tenantId = useTenantId();
   const initialData = options?.initialData;
   const enabled = options?.enabled ?? true;
   let filterOptions:
@@ -21,7 +22,7 @@ export function useMenuItems(options?: {
     filterOptions = Object.keys(rest).length > 0 ? rest : undefined;
   }
   return useQuery({
-    queryKey: [QUERY_KEYS.MENU_ITEMS, filterOptions],
+    queryKey: tenantKey(tenantId, QUERY_KEYS.MENU_ITEMS, filterOptions),
     queryFn: () => db.menuItems.findAll(filterOptions) as Promise<MenuItemWithCategory[]>,
     staleTime: 5 * 60 * 1000,
     enabled,
@@ -36,8 +37,9 @@ export function useMenuItemsPaginated(
   options?: { enabled?: boolean },
 ) {
   const db = useDb();
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: [QUERY_KEYS.MENU_ITEMS, 'paginated', page, pageSize, categoryId],
+    queryKey: tenantKey(tenantId, QUERY_KEYS.MENU_ITEMS, 'paginated', page, pageSize, categoryId),
     queryFn: () => db.menuItems.findAllPaginated({ page, pageSize, categoryId }),
     enabled: options?.enabled ?? true,
   });
@@ -45,8 +47,9 @@ export function useMenuItemsPaginated(
 
 export function useMenuItem(id: string, options?: { enabled?: boolean }) {
   const db = useDb();
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: [QUERY_KEYS.MENU_ITEM, id],
+    queryKey: tenantKey(tenantId, QUERY_KEYS.MENU_ITEM, id),
     queryFn: () => db.menuItems.findById(id) as Promise<MenuItemWithCategory>,
     enabled: !!id && (options?.enabled ?? true),
   });

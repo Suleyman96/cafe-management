@@ -1,12 +1,17 @@
 /**
- * Discount-service clamp guard.
+ * Discount-service guards.
  *
  * The pre-fix `applyDiscount` skipped all validation when
  * `discount_type === 'none'`, persisting whatever `discount_value` the caller
  * sent — including negative numbers. If the type was later flipped back to
  * 'fixed' without explicitly clearing the value, that stale negative would
- * activate. This test pins the contract: when type is 'none', the value
+ * activate. The clamp tests pin the contract: when type is 'none', the value
  * written to the DB is always 0 regardless of input.
+ *
+ * The reason-required tests pin the forensic gate: discounts at or above
+ * `DISCOUNT_AUDIT_THRESHOLD` must carry a non-trivial reason. Authorization
+ * itself lives at the route boundary (`verifyAdmin`); this service no
+ * longer takes a `callerRole` and admin/owner is assumed.
  */
 
 import { ValidationError } from '@gustri/core';
@@ -96,7 +101,6 @@ describe('applyDiscount — clamps value to 0 when type is "none"', () => {
       discountReason: null,
       discountAppliedBy: STAFF_ID,
       tenantId: TENANT,
-      callerRole: 'admin',
     });
 
     const updates = (client as unknown as { __updates: CapturedUpdate[] }).__updates;
@@ -135,7 +139,6 @@ describe('applyDiscount — clamps value to 0 when type is "none"', () => {
       discountReason: null,
       discountAppliedBy: STAFF_ID,
       tenantId: TENANT,
-      callerRole: 'admin',
     });
 
     const updates = (client as unknown as { __updates: CapturedUpdate[] }).__updates;
@@ -161,7 +164,6 @@ describe('applyDiscount — large-discount reason requirement', () => {
         discountReason: '',
         discountAppliedBy: STAFF_ID,
         tenantId: TENANT,
-        callerRole: 'admin',
       });
     } catch (err) {
       caught = err;
@@ -193,7 +195,6 @@ describe('applyDiscount — large-discount reason requirement', () => {
         discountReason: '   ok ', // trims to 'ok' (2 chars)
         discountAppliedBy: STAFF_ID,
         tenantId: TENANT,
-        callerRole: 'admin',
       }),
     ).rejects.toBeInstanceOf(ValidationError);
   });
@@ -228,13 +229,13 @@ describe('applyDiscount — large-discount reason requirement', () => {
       discountReason: 'Customer complaint - cold food',
       discountAppliedBy: STAFF_ID,
       tenantId: TENANT,
-      callerRole: 'admin',
     });
 
-    expect(result).toMatchObject({
+    expect(result.order).toMatchObject({
       discount_type: 'percentage',
       discount_value: 30,
     });
+    expect(result.deduped).toBe(false);
 
     const updates = (client as unknown as { __updates: CapturedUpdate[] }).__updates;
     const orderUpdate = updates.find((u) => u.table === 'orders');
@@ -272,7 +273,6 @@ describe('applyDiscount — large-discount reason requirement', () => {
         discountReason: null,
         discountAppliedBy: STAFF_ID,
         tenantId: TENANT,
-        callerRole: 'waiter',
       }),
     ).resolves.toBeDefined();
   });

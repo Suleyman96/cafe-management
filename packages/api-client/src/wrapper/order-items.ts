@@ -10,6 +10,7 @@
 import { isOrderItem, isOrderItemArray } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
 import { dedupeInsertMany } from './_dedupe';
+import { rpc } from './rpc-typed';
 import type { OrderItemInsert, OrderItemRow, WrapperContext } from './types';
 
 export function createOrderItemsWrapper(ctx: WrapperContext) {
@@ -51,51 +52,23 @@ export function createOrderItemsWrapper(ctx: WrapperContext) {
      * - Omit `cancelQty` (or pass `0`/`undefined`) for a full cancel:
      *   sets `status: 'cancelled'`. Item still appears on the order with
      *   strikethrough on the UI.
-     * - Pass `cancelQty < quantity` for a partial cancel: reduces
-     *   `quantity` in-place. The item stays in its current status; only
-     *   the quantity changes. The kitchen display will reflect the new
-     *   quantity.
-     * - Pass `cancelQty >= quantity` for an effective full cancel: sets
-     *   `status: 'cancelled'` (NOT a quantity change). This branch exists
-     *   so callers can pass the slider value directly without clamping.
+     * - Pass `0 < cancelQty < quantity` for a partial cancel: reduces
+     *   `quantity` in-place via the `cancel_order_item_qty` RPC, which
+     *   takes a row-level lock to avoid lost-update races between
+     *   concurrent partial-cancels or partial-cancel + status update.
+     * - Pass `cancelQty >= quantity` for an effective full cancel: the
+     *   RPC clamps server-side and sets `status: 'cancelled'`. Callers
+     *   may pass slider values directly without local clamping.
      *
-     * Each branch is a separate Supabase round-trip — no transaction. If
-     * the partial branch's update fails after the read, the item is
-     * unchanged. Order totals are recalculated by an `order_items` trigger
-     * after the write completes.
+     * Order totals are recalculated by an `order_items` trigger after
+     * the write completes.
      */
     cancel: async (id: string, cancelQty?: number) => {
       if (cancelQty !== undefined && cancelQty > 0) {
-        // Partial cancel: fetch current item, reduce quantity, or cancel if all
-        const { data: current, error: fetchError } = await ctx.anyClient
-          .from('order_items')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (fetchError) throw handleSupabaseError(fetchError);
-        if (!current) throw new Error('Order item not found');
-        const currentItem = current as OrderItemRow;
-
-        if (cancelQty >= currentItem.quantity) {
-          const { data, error } = await ctx.anyClient
-            .from('order_items')
-            .update({ status: 'cancelled' })
-            .eq('id', id)
-            .select()
-            .single();
-          if (error) throw handleSupabaseError(error);
-          if (!isOrderItem(data)) throw new Error('Invalid order item data');
-          return data as OrderItemRow;
-        }
-
-        const { data, error } = await ctx.anyClient
-          .from('order_items')
-          .update({ quantity: currentItem.quantity - cancelQty })
-          .eq('id', id)
-          .select()
-          .single();
-        if (error) throw handleSupabaseError(error);
+        const data = await rpc(ctx, 'cancel_order_item_qty', {
+          p_order_item_id: id,
+          p_cancel_qty: cancelQty,
+        });
         if (!isOrderItem(data)) throw new Error('Invalid order item data');
         return data as OrderItemRow;
       }

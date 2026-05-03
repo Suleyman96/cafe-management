@@ -1,6 +1,7 @@
+import { tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import { useAddOrderItems, useCreateOrder } from '@/hooks/use-create-order';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useCreateOrder', () => {
   it('invalidates orders and tables on success', async () => {
@@ -15,8 +16,8 @@ describe('useCreateOrder', () => {
     });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['orders']);
-    expect(keys).toContainEqual(['tables']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'orders'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'tables'));
   });
 });
 
@@ -28,6 +29,6 @@ describe('useAddOrderItems', () => {
     await result.current.mutateAsync([]);
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['orders']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'orders'));
   });
 });

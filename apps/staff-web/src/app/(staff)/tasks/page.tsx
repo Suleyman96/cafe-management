@@ -37,6 +37,7 @@ import {
   useTasks,
   useTodaysTasks,
 } from '@/hooks';
+import { useCanPerform } from '@/hooks/use-can-perform';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
 
@@ -59,7 +60,7 @@ type TabView = 'today' | 'all' | 'my' | 'templates';
 export default function TasksPage() {
   const { t } = useTranslation('staff');
   const { staff } = useAuth();
-  const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
+  const isAdmin = useCanPerform('manage_tasks');
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = (searchParams.get('tab') as TabView) || 'today';

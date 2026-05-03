@@ -2096,6 +2096,29 @@ export type Database = {
         Args: { order_uuid: string }
         Returns: undefined
       }
+      cancel_order_item_qty: {
+        Args: { p_cancel_qty: number; p_order_item_id: string }
+        Returns: {
+          client_request_id: string | null
+          created_at: string | null
+          id: string
+          item_name: string
+          item_price: number
+          menu_item_id: string
+          notes: string | null
+          order_id: string
+          quantity: number
+          status: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "order_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cleanup_empty_orders: {
         Args: { p_older_than_minutes?: number }
         Returns: {

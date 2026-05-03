@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -12,7 +12,12 @@ import {
   useUpdateStockItem,
 } from '@/hooks/use-stock-safe';
 import { apiRoutes } from '@/lib/api-routes';
-import { createWrapper, renderHookWithProviders, waitFor } from '../helpers/test-utils';
+import {
+  createWrapper,
+  renderHookWithProviders,
+  TEST_TENANT_ID,
+  waitFor,
+} from '../helpers/test-utils';
 
 describe('useStockItems', () => {
   it('calls db.stockItems.findAll', () => {
@@ -81,8 +86,8 @@ describe('useCreateStockItem', () => {
     await result.current.mutateAsync({ name: 'Tomatoes' } as any);
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.LOW_STOCK_COUNT]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STOCK_ITEMS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.LOW_STOCK_COUNT));
   });
 });
 
@@ -94,8 +99,8 @@ describe('useUpdateStockItem', () => {
     await result.current.mutateAsync({ id: 's1', updates: { name: 'Updated' } });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.LOW_STOCK_COUNT]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STOCK_ITEMS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.LOW_STOCK_COUNT));
   });
 });
 
@@ -107,8 +112,8 @@ describe('useDeleteStockItem', () => {
     await result.current.mutateAsync('s1');
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.LOW_STOCK_COUNT]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STOCK_ITEMS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.LOW_STOCK_COUNT));
   });
 });
 
@@ -123,9 +128,9 @@ describe('useAdjustStock', () => {
     });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STOCK_MOVEMENTS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.LOW_STOCK_COUNT]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STOCK_ITEMS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STOCK_MOVEMENTS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.LOW_STOCK_COUNT));
   });
 
   it('calls apiRoutes.stock.adjust with correct args', async () => {

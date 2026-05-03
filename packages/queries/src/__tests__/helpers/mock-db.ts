@@ -13,7 +13,7 @@ function mockResource(...methods: string[]) {
   return resource;
 }
 
-export function createMockDb() {
+export function createMockDb(): Record<string, any> {
   return {
     tables: mockResource(
       'findAll',
@@ -32,7 +32,6 @@ export function createMockDb() {
       'updateStatus',
       'findActiveByTable',
       'getActiveOrders',
-      'assignWaiter',
       'cancelOrder',
       'updateNotes',
       'cleanupEmptyOrders',
@@ -154,6 +153,12 @@ export function createMockDb() {
     ),
     views: mockResource('getSalesSummary', 'getOrderPaymentSummary'),
     realtime: mockResource('subscribeToTables', 'subscribeToOrders', 'subscribeToWaiterCalls'),
+    // Tenant context shims so DbProvider's `db.getTenantId()` fallback path
+    // doesn't blow up when tests omit the `tenantId` prop. Default to null —
+    // tests that exercise tenant-scoping pass tenantId explicitly via the
+    // wrapper.
+    getTenantId: vi.fn().mockReturnValue(null),
+    setTenantContext: vi.fn(),
   };
 }
 

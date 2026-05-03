@@ -3,6 +3,7 @@
 import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import type { OrderWithDetails, Table, WaiterCalls } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import { Plus, RefreshCw, UtensilsCrossed } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -18,7 +19,7 @@ import {
   useTables,
   useWaiterCalls,
 } from '@/hooks';
-import { useAuth } from '@/hooks/use-auth';
+import { useCanPerform } from '@/hooks/use-can-perform';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
@@ -29,7 +30,6 @@ const EMPTY_CALLS: WaiterCalls[] = [];
 
 export default function TablesPage() {
   const { t } = useTranslation('staff');
-  const { staff } = useAuth();
   const {
     data: tables,
     isLoading: tablesLoading,
@@ -54,8 +54,9 @@ export default function TablesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const cleanupEmptyOrders = useCleanupEmptyOrders();
-  const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
+  const isAdmin = useCanPerform('manage_tables');
   const formatPrice = useFormatPrice();
+  const tenantId = useTenantId();
 
   // Cleanup stale empty orders on page load (run once)
   const didCleanup = useRef(false);
@@ -68,10 +69,29 @@ export default function TablesPage() {
 
   // Real-time: invalidate queries on DB changes
   useRealtimeSync('tables-realtime', [
-    { table: 'tables', queryKeys: [['tables']] },
-    { table: 'orders', queryKeys: [['tables'], ['orders'], ['active_orders']] },
-    { table: 'order_items', queryKeys: [['tables'], ['orders']] },
-    { table: 'waiter_calls', queryKeys: [['tables'], ['waiter_calls']] },
+    {
+      table: 'tables',
+      queryKeys: [tenantKey(tenantId, QUERY_KEYS.TABLES)],
+    },
+    {
+      table: 'orders',
+      queryKeys: [
+        tenantKey(tenantId, QUERY_KEYS.TABLES),
+        tenantKey(tenantId, QUERY_KEYS.ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS),
+      ],
+    },
+    {
+      table: 'order_items',
+      queryKeys: [tenantKey(tenantId, QUERY_KEYS.TABLES), tenantKey(tenantId, QUERY_KEYS.ORDERS)],
+    },
+    {
+      table: 'waiter_calls',
+      queryKeys: [
+        tenantKey(tenantId, QUERY_KEYS.TABLES),
+        tenantKey(tenantId, QUERY_KEYS.WAITER_CALLS),
+      ],
+    },
   ]);
 
   // Close menu when clicking outside

@@ -9,6 +9,7 @@ import {
 } from '@gustri/core';
 import type { OrderItemStatus, OrderStatus, OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { LoadingSpinner, ORDER_ITEM_STATUS_BADGES } from '@gustri/ui';
 import {
   AlertCircle,
@@ -23,8 +24,9 @@ import {
   UtensilsCrossed,
   XCircle,
 } from 'lucide-react';
-import { useEffect, useReducer, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { ElapsedTime } from '@/components/kitchen/elapsed-time';
 import { useCancelOrder, useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 import { ORDER_ITEM_STATUS_ICONS } from '@/lib/enum-icons';
@@ -45,15 +47,11 @@ export default function KitchenDisplayPage() {
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const cancelOrder = useCancelOrder();
-  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
   const [rejectingOrder, setRejectingOrder] = useState<OrderWithDetails | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const tenantId = useTenantId();
 
-  // Force re-render every minute to refresh elapsed times
-  useEffect(() => {
-    const interval = setInterval(forceUpdate, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  // Elapsed-time tick lives in the <ElapsedTime> leaf — no parent rerender.
 
   // Check if all non-cancelled items in an order are served
   const allItemsServed = (order: OrderWithDetails) => {
@@ -96,8 +94,17 @@ export default function KitchenDisplayPage() {
 
   // Real-time: invalidate queries on DB changes
   useRealtimeSync('kitchen-realtime', [
-    { table: 'orders', queryKeys: [['orders'], ['active_orders']] },
-    { table: 'order_items', queryKeys: [['orders']] },
+    {
+      table: 'orders',
+      queryKeys: [
+        tenantKey(tenantId, QUERY_KEYS.ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS),
+      ],
+    },
+    {
+      table: 'order_items',
+      queryKeys: [tenantKey(tenantId, QUERY_KEYS.ORDERS)],
+    },
   ]);
 
   // Calculate elapsed time
@@ -394,7 +401,6 @@ export default function KitchenDisplayPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             {pendingApprovalOrders.map((order) => {
-              const elapsedMinutes = calculateElapsedTime(order.created_at);
               const itemCount =
                 order.order_items?.filter((i) => i.status !== 'cancelled').length || 0;
 
@@ -421,7 +427,9 @@ export default function KitchenDisplayPage() {
                   {/* Timer */}
                   <div className="flex items-center gap-1.5 mb-2 px-2 py-1 rounded-lg bg-white/10">
                     <Timer className="h-4 w-4 text-amber-400" />
-                    <span className="text-base font-bold text-amber-300">{elapsedMinutes}</span>
+                    <span className="text-base font-bold text-amber-300">
+                      <ElapsedTime since={order.created_at} />
+                    </span>
                     <span className="text-xs text-amber-400">{t('kitchen.min')}</span>
                     <span className="ml-auto text-xs text-gray-400">
                       {t('kitchen.itemCount', { count: itemCount })}
@@ -514,7 +522,10 @@ export default function KitchenDisplayPage() {
                 </div>
               </div>
 
-              {/* Timer - Compact */}
+              {/* Timer - Compact. Threshold-driven background and URGENT badge are
+                  computed at parent render time from `order.created_at`; they refresh
+                  on the next data event (item/order status change) rather than on a
+                  60s force-rerender. The numeric minutes tick inside <ElapsedTime>. */}
               <div
                 className={`flex items-center gap-1 sm:gap-2 mb-2 sm:mb-3 px-2 py-1 sm:py-1.5 rounded-lg ${
                   elapsedMinutes > TIME_ELAPSED_THRESHOLDS.CRITICAL
@@ -528,7 +539,7 @@ export default function KitchenDisplayPage() {
               >
                 <Timer className={`h-4 sm:h-5 w-4 sm:w-5 ${timeColor}`} />
                 <span className={`text-lg sm:text-xl font-bold ${timeColor}`}>
-                  {elapsedMinutes}
+                  <ElapsedTime since={order.created_at} />
                 </span>
                 <span className={`text-xs sm:text-sm ${timeColor}`}>{t('kitchen.min')}</span>
                 {elapsedMinutes > TIME_ELAPSED_THRESHOLDS.ELEVATED && (

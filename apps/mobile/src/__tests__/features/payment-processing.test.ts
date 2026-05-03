@@ -1,9 +1,9 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useCreatePayment, useOrderPayments } from '@/hooks/use-payments';
 import { apiRoutes } from '@/lib/api-routes';
-import { createWrapper, renderHookWithProviders } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 const ORDER_UUID = '00000000-0000-0000-0000-0000000000a1';
 
@@ -40,9 +40,9 @@ describe('Payment processing correctness', () => {
     });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.PAYMENTS, ORDER_UUID]);
-    expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(keys).toContainEqual([QUERY_KEYS.ORDER, ORDER_UUID]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.PAYMENTS, ORDER_UUID));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, ORDER_UUID));
   });
 
   it('useOrderPayments is disabled when orderId is empty', () => {

@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { BaseModal } from '@/components/ui/base-modal';
 import { useAuth, useCreateTask, useStaff, useUpdateTask } from '@/hooks';
+import { useCanPerform } from '@/hooks/use-can-perform';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
 
@@ -42,7 +43,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
   const updateTask = useUpdateTask();
   const { data: staffList = [], isLoading: staffLoading } = useStaff();
   const { staff } = useAuth();
-  const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
+  const isAdmin = useCanPerform('manage_tasks');
 
   const [formData, setFormData] = useState({
     title: task?.title || '',

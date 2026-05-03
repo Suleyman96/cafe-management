@@ -5,6 +5,10 @@ import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 
 export const dynamic = 'force-dynamic';
 
+// Dedupe: not needed — the `run_data_retention` RPC operates on time-windowed
+// rows (delete-where-expired). A replay finds nothing left to delete and
+// returns the same shape. Caller is an internal scheduler / admin one-shot.
+
 export async function POST(request: NextRequest) {
   try {
     const adminOrError = await verifyAdmin(request);

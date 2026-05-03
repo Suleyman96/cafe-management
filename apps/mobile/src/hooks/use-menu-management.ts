@@ -1,5 +1,5 @@
 import type { CategoriesUpdate, MenuItemsUpdate } from '@gustri/database';
-import { QUERY_KEYS, useDb } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey, useDb, useTenantId } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 
@@ -16,27 +16,29 @@ export {
 
 export function useUpdateMenuItem() {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: MUTATION_KEYS.UPDATE_MENU_ITEM,
     mutationFn: ({ id, data }: { id: string; data: MenuItemsUpdate }) =>
       db.menuItems.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.MENU_ITEMS) });
     },
   });
 }
 
 export function useUpdateCategory() {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: MUTATION_KEYS.UPDATE_CATEGORY,
     mutationFn: ({ id, data }: { id: string; data: CategoriesUpdate }) =>
       db.categories.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENU_ITEMS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CATEGORIES] });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.MENU_ITEMS) });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.CATEGORIES) });
     },
   });
 }

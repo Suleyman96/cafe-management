@@ -2,14 +2,15 @@
  * Type-Safe Refund Hooks
  */
 
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
 import { db } from '@/lib/supabase/wrapped-client';
 
 export function useOrderRefunds(orderId: string) {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: [QUERY_KEYS.PAYMENTS, 'refunds', orderId],
+    queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, 'refunds', orderId),
     queryFn: () => db.refunds.findByOrderId(orderId),
     enabled: !!orderId,
   });
@@ -17,6 +18,7 @@ export function useOrderRefunds(orderId: string) {
 
 export function useCreateRefund() {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
   return useMutation({
     mutationFn: (params: {
       order_id: string;
@@ -36,14 +38,18 @@ export function useCreateRefund() {
         notes: params.notes,
       }),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.order_id] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PAYMENTS, variables.order_id] });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) });
       queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.PAYMENTS, 'refunds', variables.order_id],
+        queryKey: tenantKey(tenantId, QUERY_KEYS.ORDER, variables.order_id),
       });
       queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.PAYMENTS, 'remaining_balance', variables.order_id],
+        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, variables.order_id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, 'refunds', variables.order_id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, 'remaining_balance', variables.order_id),
       });
     },
   });

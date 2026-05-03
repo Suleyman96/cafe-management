@@ -18,9 +18,11 @@ import '@/lib/i18n';
 import { channelRegistry } from '@/lib/realtime/channel-registry';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/wrapped-client';
+import { useAuthStore } from '@/store/auth-store';
 
 /**
- * Rebinds Supabase Realtime channels on JWT refresh.
+ * Rebinds Supabase Realtime channels on JWT refresh AND wipes the React
+ * Query cache on auth boundary changes (sign-out, tenant change).
  *
  * Realtime opens its websocket with the JWT it had at subscribe-time and
  * never re-authenticates when supabase-js refreshes the token (~55 min).
@@ -28,18 +30,44 @@ import { db } from '@/lib/supabase/wrapped-client';
  * stall until the safety-net poll catches up. Listening for
  * TOKEN_REFRESHED / SIGNED_IN and resubscribing every active channel
  * keeps the websocket bound to a fresh token.
+ *
+ * Cache lifecycle (audit fix CRIT-1 + CRIT-2):
+ * - SIGNED_OUT → `queryClient.clear()` BEFORE any subsequent navigation so
+ *   the next tenant can't see the previous tenant's cached rows during
+ *   the gcTime window (5 min default).
+ * - SIGNED_IN with a different tenant id than the previously seen one →
+ *   also `queryClient.clear()` so a switch-tenant flow on the same tab
+ *   gets a clean slate before the first refetch fires.
  */
 function RealtimeAuthBridge() {
+  const queryClient = useQueryClient();
+  const lastTenantIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+        // Compare new tenant against the one bound to the wrapper. The
+        // wrapper context is set in `loadStaffAndSetup` before the first
+        // post-login fetch, so by the time we observe SIGNED_IN here it
+        // already reflects the new tenant.
+        const currentTenantId = db.getTenantId();
+        if (
+          lastTenantIdRef.current !== null &&
+          currentTenantId !== null &&
+          lastTenantIdRef.current !== currentTenantId
+        ) {
+          queryClient.clear();
+        }
+        lastTenantIdRef.current = currentTenantId;
         channelRegistry.resubscribeAll();
       } else if (event === 'SIGNED_OUT') {
+        queryClient.clear();
+        lastTenantIdRef.current = null;
         channelRegistry.teardownAll();
       }
     });
     return () => data.subscription.unsubscribe();
-  }, []);
+  }, [queryClient]);
 
   return null;
 }
@@ -58,6 +86,21 @@ function RouteChangeHandler() {
   }, [pathname, queryClient]);
 
   return null;
+}
+
+/**
+ * Reads the current staff's tenant id from the auth store and feeds it
+ * into `<DbProvider>` so every shared hook tenant-scopes its query key.
+ * Reactivity flows through the Zustand selector — when the user signs in
+ * or out, this re-renders and DbProvider's context updates.
+ */
+function TenantBoundDbProvider({ children }: { children: React.ReactNode }) {
+  const tenantId = useAuthStore((s) => s.staff?.tenant_id ?? null);
+  return (
+    <DbProvider db={db} tenantId={tenantId}>
+      {children}
+    </DbProvider>
+  );
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -88,13 +131,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
-        <DbProvider db={db}>
+        <TenantBoundDbProvider>
           <RealtimeAuthBridge />
           <RouteChangeHandler />
           {children}
           <Toaster position="bottom-right" />
           <ReactQueryDevtools initialIsOpen={false} />
-        </DbProvider>
+        </TenantBoundDbProvider>
       </QueryClientProvider>
     </I18nextProvider>
   );

@@ -15,8 +15,8 @@ import {
   useUpdateOrderStatus,
 } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
-import { useCanMutate } from '@/hooks/use-can-mutate';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { useIsOnline } from '@/hooks/use-is-online';
 import { ItemPaymentForm } from './payment/item-payment-form';
 import { OrderSummary } from './payment/order-summary';
 import { PartialPaymentForm } from './payment/partial-payment-form';
@@ -51,7 +51,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   const { data: existingPayments } = useOrderPayments(order?.id || '');
   const formatPrice = useFormatPrice();
   const { data: cafeSettings } = useCafeSettings();
-  const canMutate = useCanMutate();
+  const isOnline = useIsOnline();
 
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('full');
   const [partialAmount, setPartialAmount] = useState<string>('');
@@ -356,7 +356,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
           isFullyPaid={isFullyPaid}
           isZeroTotal={isZeroTotal}
           loading={loading}
-          canPay={!!staff?.id && canMutate}
+          canPay={!!staff?.id && isOnline}
           onCancel={onClose}
           onPay={handlePayment}
           onCompleteOrder={handleCompleteOrder}

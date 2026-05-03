@@ -9,6 +9,9 @@ import { requirePlanAtLeast } from '@/lib/api/verify-plan';
 
 export const dynamic = 'force-dynamic';
 
+// Dedupe: not needed — UPDATE writes absolute settings values, so replays
+// converge on the same row state and emit no audit/log side effects.
+
 const UpdateSettingsSchema = z
   .object({
     restaurant_name: z.string().optional(),

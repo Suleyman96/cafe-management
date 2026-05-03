@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useAcknowledgeWaiterCall,
@@ -6,7 +6,7 @@ import {
   useResolveWaiterCall,
   useWaiterCalls,
 } from '@/hooks/use-waiter-calls-safe';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useWaiterCalls', () => {
   it('calls db.waiterCalls.findAll', () => {
@@ -35,8 +35,10 @@ describe('useAcknowledgeWaiterCall', () => {
     await result.current.mutateAsync({ callId: 'c1', staffId: 's1' });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WAITER_CALLS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WAITER_CALLS_COUNT]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.WAITER_CALLS));
+    expect(invalidatedKeys).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.WAITER_CALLS_COUNT),
+    );
   });
 });
 
@@ -48,7 +50,9 @@ describe('useResolveWaiterCall', () => {
     await result.current.mutateAsync({ callId: 'c1', notes: 'Resolved' });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WAITER_CALLS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.WAITER_CALLS_COUNT]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.WAITER_CALLS));
+    expect(invalidatedKeys).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.WAITER_CALLS_COUNT),
+    );
   });
 });

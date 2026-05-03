@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useFeedback,
@@ -6,7 +6,7 @@ import {
   usePendingFeedbackCount,
 } from '@/hooks/use-feedback-safe';
 import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useFeedback', () => {
   it('calls db.feedback.findAll', () => {
@@ -35,6 +35,6 @@ describe('useMarkFeedbackRead', () => {
     await result.current.mutateAsync({ feedbackId: 'f1', staffId: 's1' });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.FEEDBACK]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.FEEDBACK));
   });
 });

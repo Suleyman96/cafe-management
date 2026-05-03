@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import {
   AlertCircle,
@@ -27,6 +28,7 @@ export default function WaiterCallsPage() {
   const acknowledgeCall = useAcknowledgeWaiterCall();
   const resolveCall = useResolveWaiterCall();
   const [filter, setFilter] = useState<FilterStatus>('pending');
+  const tenantId = useTenantId();
 
   // Filter calls based on status
   const filteredCalls = waiterCalls?.filter((call) => {
@@ -36,7 +38,13 @@ export default function WaiterCallsPage() {
 
   // Real-time: invalidate queries on DB changes
   useRealtimeSync('waiter-calls-realtime', [
-    { table: 'waiter_calls', queryKeys: [['waiter_calls'], ['waiter_calls_count']] },
+    {
+      table: 'waiter_calls',
+      queryKeys: [
+        tenantKey(tenantId, QUERY_KEYS.WAITER_CALLS),
+        tenantKey(tenantId, QUERY_KEYS.WAITER_CALLS_COUNT),
+      ],
+    },
   ]);
 
   // Get icon for call type

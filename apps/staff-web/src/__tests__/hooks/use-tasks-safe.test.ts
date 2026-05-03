@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useCreateTask,
@@ -15,7 +15,7 @@ import {
   useTodaysTasks,
   useUpdateTask,
 } from '@/hooks/use-tasks-safe';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useTasks', () => {
   it('calls db.tasks.findAll', () => {
@@ -83,8 +83,10 @@ describe('useCreateTask', () => {
     await result.current.mutateAsync({ title: 'Test task' } as any);
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TASKS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.OVERDUE_TASKS_COUNT]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TASKS));
+    expect(invalidatedKeys).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.OVERDUE_TASKS_COUNT),
+    );
   });
 });
 
@@ -96,8 +98,10 @@ describe('useUpdateTask', () => {
     await result.current.mutateAsync({ id: 'task-1', updates: { title: 'Updated' } as any });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TASKS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.OVERDUE_TASKS_COUNT]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TASKS));
+    expect(invalidatedKeys).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.OVERDUE_TASKS_COUNT),
+    );
   });
 });
 
@@ -109,8 +113,10 @@ describe('useDeleteTask', () => {
     await result.current.mutateAsync('task-1');
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TASKS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.OVERDUE_TASKS_COUNT]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TASKS));
+    expect(invalidatedKeys).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.OVERDUE_TASKS_COUNT),
+    );
   });
 });
 
@@ -122,7 +128,7 @@ describe('useMarkTaskInProgress', () => {
     await result.current.mutateAsync('task-1');
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TASKS]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TASKS));
   });
 });
 
@@ -134,8 +140,10 @@ describe('useMarkTaskCompleted', () => {
     await result.current.mutateAsync('task-1');
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TASKS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.OVERDUE_TASKS_COUNT]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TASKS));
+    expect(invalidatedKeys).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.OVERDUE_TASKS_COUNT),
+    );
   });
 });
 
@@ -147,8 +155,10 @@ describe('useMarkTaskCancelled', () => {
     await result.current.mutateAsync('task-1');
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TASKS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.OVERDUE_TASKS_COUNT]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TASKS));
+    expect(invalidatedKeys).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.OVERDUE_TASKS_COUNT),
+    );
   });
 });
 
@@ -160,7 +170,9 @@ describe('useGenerateRecurringTasks', () => {
     await result.current.mutateAsync('2026-02-25');
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TASKS]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.OVERDUE_TASKS_COUNT]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TASKS));
+    expect(invalidatedKeys).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.OVERDUE_TASKS_COUNT),
+    );
   });
 });

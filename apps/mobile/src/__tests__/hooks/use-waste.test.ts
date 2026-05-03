@@ -1,3 +1,4 @@
+import { tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useCreateWasteLog,
@@ -5,7 +6,7 @@ import {
   useWasteLogs,
   useWasteMonthlySummary,
 } from '@/hooks/use-waste';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useWasteLogs', () => {
   it('calls db.waste.findAll', () => {
@@ -35,8 +36,8 @@ describe('useCreateWasteLog', () => {
     await result.current.mutateAsync({ item_name: 'Milk', quantity: 2 });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['waste_logs']);
-    expect(keys).toContainEqual(['waste_summary']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'waste_logs'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'waste_summary'));
   });
 });
 
@@ -48,7 +49,7 @@ describe('useDeleteWasteLog', () => {
     await result.current.mutateAsync('w1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['waste_logs']);
-    expect(keys).toContainEqual(['waste_summary']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'waste_logs'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'waste_summary'));
   });
 });

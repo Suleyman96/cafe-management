@@ -2,12 +2,13 @@
  * Type-Safe Discount Hooks
  */
 
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
 
 export function useApplyDiscount() {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
   return useMutation({
     mutationFn: (params: {
       orderId: string;
@@ -23,10 +24,12 @@ export function useApplyDiscount() {
         discount_applied_by: params.discount_applied_by,
       }),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.orderId] });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) });
       queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.PAYMENTS, 'remaining_balance', variables.orderId],
+        queryKey: tenantKey(tenantId, QUERY_KEYS.ORDER, variables.orderId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, 'remaining_balance', variables.orderId),
       });
     },
   });

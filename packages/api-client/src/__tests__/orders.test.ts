@@ -224,6 +224,49 @@ describe('OrderItemsWrapper', () => {
     const result = await items.updateStatus(validOrderItem.id, 'ready');
     expect(result.status).toBe('ready');
   });
+
+  // Partial-cancel must go through the cancel_order_item_qty RPC (not a
+  // client-side SELECT → mutate → UPDATE) so the read-modify-write is
+  // atomic under concurrency. Migration 20260503000007.
+  it('cancel with partial qty calls cancel_order_item_qty RPC, not SELECT/UPDATE', async () => {
+    const reduced = { ...validOrderItem, quantity: 1 };
+    const ctx = createMockContext({
+      rpcResponses: {
+        cancel_order_item_qty: { data: reduced, error: null },
+      },
+    });
+    const items = createOrderItemsWrapper(ctx);
+
+    const result = await items.cancel(validOrderItem.id, 1);
+
+    expect(result.quantity).toBe(1);
+    const calls = ctx.getCalls() as Array<{ table: string; method: string; args: unknown[] }>;
+    const rpcCall = calls.find((c) => c.method === 'cancel_order_item_qty');
+    expect(rpcCall).toBeDefined();
+    expect(rpcCall!.args[0]).toEqual({
+      p_order_item_id: validOrderItem.id,
+      p_cancel_qty: 1,
+    });
+    // No SELECT or UPDATE on order_items — the lost-update path is gone.
+    expect(calls.find((c) => c.table === 'order_items')).toBeUndefined();
+  });
+
+  it('cancel without qty falls back to a single UPDATE (full cancel)', async () => {
+    const cancelled = { ...validOrderItem, status: 'cancelled' as const };
+    const ctx = createMockContext({
+      responses: {
+        order_items: { data: cancelled, error: null },
+      },
+    });
+    const items = createOrderItemsWrapper(ctx);
+
+    const result = await items.cancel(validOrderItem.id);
+
+    expect(result.status).toBe('cancelled');
+    const calls = ctx.getCalls() as Array<{ table: string; method: string; args: unknown[] }>;
+    expect(calls.find((c) => c.method === 'update')).toBeDefined();
+    expect(calls.find((c) => c.method === 'cancel_order_item_qty')).toBeUndefined();
+  });
 });
 
 describe('OrdersWrapper error type verification', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { QUERY_KEYS } from '../../keys';
+import { QUERY_KEYS, tenantKey } from '../../keys';
 import {
   useCreateTask,
   useDeleteTask,
@@ -9,7 +9,7 @@ import {
   useMarkTaskInProgress,
   useUpdateTask,
 } from '../../mutations/use-task-mutations';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 function getInvalidatedKeys(spy: ReturnType<typeof vi.spyOn>) {
   return spy.mock.calls.map((c: any) => (c[0] as any).queryKey);
@@ -39,7 +39,7 @@ describe('useCreateTask', () => {
     const { result, queryClient } = renderHookWithProviders(() => useCreateTask());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({} as any);
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.TASKS]);
+    expect(getInvalidatedKeys(spy)).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TASKS));
   });
 });
 

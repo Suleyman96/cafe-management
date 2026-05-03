@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -11,7 +11,12 @@ import {
   useStaffMember,
   useUpdateStaff,
 } from '@/hooks/use-staff-safe';
-import { createWrapper, renderHookWithProviders, waitFor } from '../helpers/test-utils';
+import {
+  createWrapper,
+  renderHookWithProviders,
+  TEST_TENANT_ID,
+  waitFor,
+} from '../helpers/test-utils';
 
 describe('useStaff', () => {
   it('calls db.staff.findAll with no args when no role given', () => {
@@ -90,7 +95,7 @@ describe('useCreateStaff', () => {
     await result.current.mutateAsync({ full_name: 'New Staff', role: 'waiter' } as any);
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STAFF]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STAFF));
   });
 
   it('calls db.staff.create with staff data', async () => {
@@ -109,7 +114,7 @@ describe('useUpdateStaff', () => {
     await result.current.mutateAsync({ id: 's1', updates: { full_name: 'Updated' } as any });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STAFF]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STAFF));
   });
 
   it('calls db.staff.update with id and updates', async () => {
@@ -127,7 +132,7 @@ describe('useDeleteStaff', () => {
     await result.current.mutateAsync('s1');
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.STAFF]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STAFF));
   });
 
   it('calls db.staff.delete with id', async () => {

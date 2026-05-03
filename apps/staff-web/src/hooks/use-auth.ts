@@ -3,6 +3,7 @@
 import type { PlanName } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import * as Sentry from '@sentry/nextjs';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef } from 'react';
 import { loadAndSwitchLanguage } from '@/lib/i18n';
@@ -148,13 +149,19 @@ export function useAuth() {
   routerRef.current = router;
 
   const { staff, isLoading, setStaff, setTenantPlan, setIsLoading, clearAuth } = useAuthStore();
+  const queryClient = useQueryClient();
 
   const stableLogout = useCallback(async () => {
     await supabase.auth.signOut();
     db.setTenantContext(null);
+    // Belt-and-braces: RealtimeAuthBridge also clears the cache on
+    // SIGNED_OUT, but onAuthStateChange fires asynchronously. Wiping
+    // here too guarantees no stale tenant data lingers between the
+    // signOut() resolve and the bridge handler running.
+    queryClient.clear();
     clearAuth();
     routerRef.current.push('/login');
-  }, [clearAuth]);
+  }, [clearAuth, queryClient]);
 
   useEffect(() => {
     let cancelled = false;

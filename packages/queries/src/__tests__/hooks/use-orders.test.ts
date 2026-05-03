@@ -7,8 +7,8 @@ import {
   useOrders,
   useTakeoutOrders,
 } from '../../hooks/use-orders';
-import { QUERY_KEYS } from '../../keys';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { QUERY_KEYS, tenantKey } from '../../keys';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useOrders', () => {
   it('calls db.orders.findAll', () => {
@@ -47,7 +47,9 @@ describe('useActiveOrders', () => {
     const { mockDb, queryClient } = renderHookWithProviders(() => useActiveOrders());
     await waitFor(() => expect(mockDb.orders.getActiveOrders).toHaveBeenCalled());
     expect(
-      queryClient.getQueryCache().findAll({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] }),
+      queryClient
+        .getQueryCache()
+        .findAll({ queryKey: tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS) }),
     ).toHaveLength(1);
   });
 });

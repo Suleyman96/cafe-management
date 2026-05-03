@@ -1,6 +1,6 @@
 import { validateOrThrow } from '@gustri/core';
 import { StockAdjustInputSchema, type StockItemUpdate } from '@gustri/database';
-import { QUERY_KEYS, useDb } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey, useDb, useTenantId } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
@@ -28,14 +28,15 @@ export function useStockMovements(stockItemId: string | undefined) {
 // Local mutation — mobile consumers use { id, data } instead of { id, updates }
 export function useUpdateStockItem() {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: MUTATION_KEYS.UPDATE_STOCK_ITEM,
     mutationFn: ({ id, data }: { id: string; data: StockItemUpdate }) =>
       db.stockItems.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.LOW_STOCK_COUNT] });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.STOCK_ITEMS) });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.LOW_STOCK_COUNT) });
     },
   });
 }
@@ -51,6 +52,7 @@ export function useStockTotalValue() {
 }
 
 export function useAdjustStock() {
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -102,8 +104,8 @@ export function useAdjustStock() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_ITEMS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.STOCK_MOVEMENTS] });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.STOCK_ITEMS) });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.STOCK_MOVEMENTS) });
     },
     onError: (error: Error) => {
       Sentry.captureException(error, { extra: { context: 'adjustStock' } });

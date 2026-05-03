@@ -4,7 +4,7 @@
  */
 
 import type { OrderWithItems } from '@gustri/database';
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
 
@@ -17,8 +17,9 @@ interface TransferTableData {
 }
 
 export function useOrderTransferHistory(orderId: string) {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: ['table_transfers', orderId],
+    queryKey: tenantKey(tenantId, 'table_transfers', orderId),
     queryFn: async () => {
       // Get order details which includes transfer history
       const order = (await db.orders.findById(orderId)) as OrderWithItems;
@@ -30,23 +31,33 @@ export function useOrderTransferHistory(orderId: string) {
 
 export function useTransferTable() {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
     mutationFn: (params: TransferTableData) => db.rpc.transferTable(params),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLE, variables.fromTableId] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLE, variables.toTableId] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS, variables.orderId] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.orderId] });
-      queryClient.invalidateQueries({ queryKey: ['table_transfers'] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.TABLES) });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.TABLE, variables.fromTableId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.TABLE, variables.toTableId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS, variables.orderId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.ORDER, variables.orderId),
+      });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, 'table_transfers') });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) });
     },
   });
 }
 
 export function useTransferOrderItems() {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
     mutationFn: (params: {
@@ -57,11 +68,11 @@ export function useTransferOrderItems() {
       reason?: string;
     }) => db.rpc.transferOrderItems(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
-      queryClient.invalidateQueries({ queryKey: ['table_transfers'] });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.TABLES) });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDER) });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS) });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, 'table_transfers') });
     },
   });
 }

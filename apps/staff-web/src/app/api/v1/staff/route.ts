@@ -34,6 +34,13 @@ async function findAuthUserByEmail(supabaseAdmin: SupabaseClient, email: string)
 
 export const dynamic = 'force-dynamic';
 
+// Dedupe: not applied. Mobile does not call this route — staff CRUD is web-only
+// per the Mobile Parity rule, and the web UI doesn't replay through a persister.
+// Concurrency is bounded by the UNIQUE constraint on `staff.email` and the
+// service-role auth-user lookup that reuses an existing auth user when one is
+// found, so a duplicate POST collapses on the second insert with a 23505 error
+// rather than creating two rows.
+
 export async function POST(request: NextRequest) {
   try {
     const ip = getRateLimitIdentifier(request);

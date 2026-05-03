@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { useCategories } from '../../hooks/use-categories';
 import { useMenuItem, useMenuItems, useMenuItemsPaginated } from '../../hooks/use-menu-items';
-import { QUERY_KEYS } from '../../keys';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { QUERY_KEYS, tenantKey } from '../../keys';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useMenuItems', () => {
   it('calls db.menuItems.findAll with no filters by default', () => {
@@ -16,8 +16,12 @@ describe('useMenuItems', () => {
       useMenuItems({ initialData, categoryId: 'c1' }),
     );
     // Query key should only contain the filter, not initialData
-    const query = queryClient.getQueryCache().findAll({ queryKey: [QUERY_KEYS.MENU_ITEMS] })[0];
-    expect(query?.queryKey).toEqual([QUERY_KEYS.MENU_ITEMS, { categoryId: 'c1' }]);
+    const query = queryClient
+      .getQueryCache()
+      .findAll({ queryKey: tenantKey(TEST_TENANT_ID, QUERY_KEYS.MENU_ITEMS) })[0];
+    expect(query?.queryKey).toEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.MENU_ITEMS, { categoryId: 'c1' }),
+    );
   });
 
   it('returns initialData immediately', () => {
@@ -62,8 +66,12 @@ describe('useCategories', () => {
     const { queryClient } = renderHookWithProviders(() =>
       useCategories({ initialData, isActive: true }),
     );
-    const query = queryClient.getQueryCache().findAll({ queryKey: [QUERY_KEYS.CATEGORIES] })[0];
-    expect(query?.queryKey).toEqual([QUERY_KEYS.CATEGORIES, { isActive: true }]);
+    const query = queryClient
+      .getQueryCache()
+      .findAll({ queryKey: tenantKey(TEST_TENANT_ID, QUERY_KEYS.CATEGORIES) })[0];
+    expect(query?.queryKey).toEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.CATEGORIES, { isActive: true }),
+    );
   });
 
   it('returns initialData immediately', () => {

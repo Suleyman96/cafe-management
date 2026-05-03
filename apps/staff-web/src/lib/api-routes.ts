@@ -42,6 +42,11 @@ export const apiRoutes = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    assignWaiter: (orderId: string, waiterId: string | null) =>
+      apiFetch<{ order: OrderRow }>(`/api/v1/orders/${orderId}/assign`, {
+        method: 'POST',
+        body: JSON.stringify({ waiter_id: waiterId }),
+      }),
   },
 
   discounts: {
@@ -52,9 +57,10 @@ export const apiRoutes = {
         discount_value: number;
         discount_reason?: string | null;
         discount_applied_by: string;
+        client_request_id?: string;
       },
     ) =>
-      apiFetch<{ success: true }>(`/api/v1/orders/${orderId}/discount`, {
+      apiFetch<{ success: true; deduped?: boolean }>(`/api/v1/orders/${orderId}/discount`, {
         method: 'POST',
         body: JSON.stringify(discount),
       }),

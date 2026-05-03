@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -8,7 +8,12 @@ import {
   usePaymentsByStaff,
 } from '@/hooks/use-payments-safe';
 import { apiRoutes } from '@/lib/api-routes';
-import { createWrapper, renderHookWithProviders, waitFor } from '../helpers/test-utils';
+import {
+  createWrapper,
+  renderHookWithProviders,
+  TEST_TENANT_ID,
+  waitFor,
+} from '../helpers/test-utils';
 
 describe('usePaymentsByStaff', () => {
   it('calls findByReceivedBy with staffId and limit', () => {
@@ -62,13 +67,15 @@ describe('useCreatePayment', () => {
     await result.current.mutateAsync({ order_id: 'o1', amount: 50, payment_method: 'cash' } as any);
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS, 'o1']);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDER, 'o1']);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.PAYMENTS, 'o1']);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.PAYMENTS_BY_STAFF]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS, 'o1'));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, 'o1'));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.PAYMENTS, 'o1'));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.PAYMENTS_BY_STAFF));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
     // CRITICAL: Must invalidate remaining balance so payment modal shows updated amount
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.PAYMENTS, 'remaining_balance', 'o1']);
+    expect(invalidatedKeys).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.PAYMENTS, 'remaining_balance', 'o1'),
+    );
   });
 
   it('calls apiRoutes.payments.create with order id and payment data', async () => {

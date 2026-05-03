@@ -9,12 +9,12 @@ import { BrandingSettingsTab } from '@/components/settings/branding-settings-tab
 import { ContactSettingsTab } from '@/components/settings/contact-settings-tab';
 import { GeneralSettingsTab } from '@/components/settings/general-settings-tab';
 import { useCafeSettings, useUpdateCafeSettings } from '@/hooks';
-import { useAuth } from '@/hooks/use-auth';
+import { useCanPerform } from '@/hooks/use-can-perform';
 import type { CafeSettingsFormData } from '@/types/settings';
 
 export default function CafeSettingsPage() {
   const { t } = useTranslation('staff');
-  const { staff } = useAuth();
+  const canEditSettings = useCanPerform('edit_settings');
   const { data: settings, isLoading } = useCafeSettings();
   const updateSettings = useUpdateCafeSettings();
 
@@ -102,8 +102,7 @@ export default function CafeSettingsPage() {
     }
   }, [settings]);
 
-  // Check if user is admin
-  if (staff?.role !== 'admin' && staff?.role !== 'owner') {
+  if (!canEditSettings) {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">

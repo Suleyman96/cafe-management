@@ -3,6 +3,7 @@
 import { ACTIVE_TAKEOUT_STATUSES, ORDER_STATUS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import { Package, Plus, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -43,12 +44,32 @@ export default function TakeoutPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const tenantId = useTenantId();
 
   // Real-time: invalidate queries on DB changes
   useRealtimeSync('takeout-orders-realtime', [
-    { table: 'orders', queryKeys: [['takeout_orders'], ['orders'], ['active_orders']] },
-    { table: 'order_items', queryKeys: [['takeout_orders'], ['orders']] },
-    { table: 'order_payments', queryKeys: [['takeout_orders'], ['payments']] },
+    {
+      table: 'orders',
+      queryKeys: [
+        tenantKey(tenantId, QUERY_KEYS.TAKEOUT_ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS),
+      ],
+    },
+    {
+      table: 'order_items',
+      queryKeys: [
+        tenantKey(tenantId, QUERY_KEYS.TAKEOUT_ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.ORDERS),
+      ],
+    },
+    {
+      table: 'order_payments',
+      queryKeys: [
+        tenantKey(tenantId, QUERY_KEYS.TAKEOUT_ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.PAYMENTS),
+      ],
+    },
   ]);
 
   const handleStatusUpdate = useCallback(

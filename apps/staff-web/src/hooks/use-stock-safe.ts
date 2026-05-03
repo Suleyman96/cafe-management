@@ -3,6 +3,7 @@
  * Re-exports from @gustri/queries, with local override for apiRoutes mutation
  */
 
+import { useTenantId } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
 import { invalidateStock } from '@/lib/query-helpers';
@@ -21,6 +22,7 @@ export {
 // Local: uses apiRoutes for server-side stock adjustment
 export function useAdjustStock() {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
     mutationFn: ({
@@ -42,7 +44,7 @@ export function useAdjustStock() {
         performed_by: data.performedBy || '',
       }),
     onSuccess: () => {
-      invalidateStock(queryClient, true);
+      invalidateStock(queryClient, tenantId, true);
     },
   });
 }

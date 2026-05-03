@@ -146,6 +146,18 @@ When adding a feature, work through this in order:
 - **Promotion to `@gustri/queries`.** When a *second* app needs the same
   hook with the same shape, move it to `@gustri/queries` and accept
   per-app overrides via callbacks/options rather than forking.
+- **Authorization vs connectivity gates.** Use `useIsOnline()` from
+  `apps/staff-web/src/hooks/use-is-online.ts` to gate buttons that
+  shouldn't queue mutations while disconnected — it is a *connectivity*
+  signal, not an authz signal. Use `useCanPerform(action)` from
+  `apps/staff-web/src/hooks/use-can-perform.ts` to decide whether the
+  current user is permitted to perform an action. Inline expressions like
+  `staff?.role === 'admin' || staff?.role === 'owner'` are forbidden in
+  new code — they make policy changes a grep-and-pray exercise. Combine
+  the two when both apply: `disabled={!isOnline || !canPerform('apply_discount')}`.
+  Server-side authorization is still the source of truth (`verifyAdmin`
+  in `/api/v1/*`, RLS for direct-wrapper writes); these hooks only decide
+  whether the UI offers the control.
 
 ### Components
 - Organized by feature: `components/orders/`, `components/modals/`, `components/auth/`

@@ -3,6 +3,7 @@
 import { ACTIVE_DELIVERY_STATUSES, ORDER_STATUS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import { Plus, Search, Truck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -56,11 +57,25 @@ export default function DeliveryPage() {
     });
   const [cancelOrderTarget, setCancelOrderTarget] = useState<OrderWithDetails | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const tenantId = useTenantId();
 
   // Real-time: invalidate queries on DB changes
   useRealtimeSync('delivery-orders-realtime', [
-    { table: 'orders', queryKeys: [['delivery_orders'], ['orders'], ['active_orders']] },
-    { table: 'order_items', queryKeys: [['delivery_orders'], ['orders']] },
+    {
+      table: 'orders',
+      queryKeys: [
+        tenantKey(tenantId, QUERY_KEYS.DELIVERY_ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS),
+      ],
+    },
+    {
+      table: 'order_items',
+      queryKeys: [
+        tenantKey(tenantId, QUERY_KEYS.DELIVERY_ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.ORDERS),
+      ],
+    },
   ]);
 
   const handleStatusUpdate = useCallback(

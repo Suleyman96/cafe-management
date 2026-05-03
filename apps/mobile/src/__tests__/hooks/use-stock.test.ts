@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -11,7 +11,7 @@ import {
   useStockTotalValue,
   useUpdateStockItem,
 } from '@/hooks/use-stock';
-import { createWrapper, renderHookWithProviders } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useStockItems', () => {
   it('calls db.stockItems.findAll', () => {
@@ -63,8 +63,8 @@ describe('useAdjustStock', () => {
     });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['stock_items']);
-    expect(keys).toContainEqual(['stock_movements']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'stock_items'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'stock_movements'));
   });
 });
 
@@ -76,7 +76,7 @@ describe('useCreateStockItem', () => {
     await result.current.mutateAsync({ name: 'Coffee beans' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['stock_items']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'stock_items'));
   });
 });
 
@@ -88,7 +88,7 @@ describe('useUpdateStockItem', () => {
     await result.current.mutateAsync({ id: 'item-1', data: { name: 'Updated' } });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['stock_items']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'stock_items'));
   });
 });
 
@@ -100,7 +100,7 @@ describe('useDeleteStockItem', () => {
     await result.current.mutateAsync('item-1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['stock_items']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'stock_items'));
   });
 });
 
@@ -134,8 +134,8 @@ describe('useAdjustStock - QUERY_KEYS', () => {
     });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
-    expect(keys).toContainEqual([QUERY_KEYS.STOCK_MOVEMENTS]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STOCK_ITEMS));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STOCK_MOVEMENTS));
   });
 });
 
@@ -147,7 +147,7 @@ describe('useCreateStockItem - QUERY_KEYS', () => {
     await result.current.mutateAsync({ name: 'Coffee beans' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STOCK_ITEMS));
   });
 });
 
@@ -159,7 +159,7 @@ describe('useUpdateStockItem - QUERY_KEYS', () => {
     await result.current.mutateAsync({ id: 'item-1', data: { name: 'Updated' } });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STOCK_ITEMS));
   });
 });
 
@@ -171,6 +171,6 @@ describe('useDeleteStockItem - QUERY_KEYS', () => {
     await result.current.mutateAsync('item-1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STOCK_ITEMS));
   });
 });

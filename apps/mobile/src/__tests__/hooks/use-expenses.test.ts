@@ -1,3 +1,4 @@
+import { tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useCreateExpense,
@@ -6,7 +7,7 @@ import {
   useExpenseMonthlySummary,
   useExpenses,
 } from '@/hooks/use-expenses';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useExpenses', () => {
   it('calls db.expenses.findAll', () => {
@@ -43,8 +44,8 @@ describe('useCreateExpense', () => {
     await result.current.mutateAsync({ description: 'Office supplies', amount: 50 });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['expenses']);
-    expect(keys).toContainEqual(['expense_monthly_summary']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'expenses'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'expense_monthly_summary'));
   });
 });
 
@@ -56,7 +57,7 @@ describe('useDeleteExpense', () => {
     await result.current.mutateAsync('e1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['expenses']);
-    expect(keys).toContainEqual(['expense_monthly_summary']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'expenses'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'expense_monthly_summary'));
   });
 });

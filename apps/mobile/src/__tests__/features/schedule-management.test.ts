@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -8,7 +8,7 @@ import {
   useMarkScheduleInProgress,
   useSchedulesByDateRange,
 } from '@/hooks/use-schedules';
-import { createWrapper, renderHookWithProviders } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('Schedule management workflow', () => {
   it('useSchedulesByDateRange passes date strings to db', () => {
@@ -41,7 +41,7 @@ describe('Schedule management workflow', () => {
     } as any);
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.SCHEDULES]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.SCHEDULES));
   });
 
   it('useMarkScheduleInProgress sends id + actualStart ISO string', async () => {
@@ -78,7 +78,7 @@ describe('Schedule management workflow', () => {
 
     expect(mockDb.schedules.delete).toHaveBeenCalledWith('sched-1');
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.SCHEDULES]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.SCHEDULES));
   });
 
   it('getWeekDates returns 7 dates starting from Monday', () => {

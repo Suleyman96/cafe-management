@@ -9,7 +9,9 @@ import type { Database } from '@gustri/database';
 import {
   getOrCreateClientRequestId,
   QUERY_KEYS,
+  tenantKey,
   useOrders as useOrdersShared,
+  useTenantId,
 } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
@@ -25,7 +27,6 @@ type OrderInsert = Database['public']['Tables']['orders']['Insert'];
 export {
   useActiveOrders,
   useAddOrderItems,
-  useAssignWaiter,
   useCancelOrder,
   useCleanupEmptyOrders,
   useDeleteOrderItem,
@@ -34,9 +35,28 @@ export {
   useUpdateOrderNotes,
 } from '@gustri/queries';
 
+// Local: assignment is admin-only and goes through `/api/v1/orders/[id]/assign`,
+// not the wrapper. Pre-fix, assigning was a direct UPDATE that any active
+// staff could trigger; we now route through `verifyAdmin`. Mobile doesn't
+// expose a reassign UI today, so the hook is staff-web-local rather than in
+// `@gustri/queries`.
+export function useAssignWaiter() {
+  const queryClient = useQueryClient();
+  const tenantId = useTenantId();
+
+  return useMutation({
+    mutationFn: ({ orderId, waiterId }: { orderId: string; waiterId: string | null }) =>
+      apiRoutes.orders.assignWaiter(orderId, waiterId),
+    onSuccess: () => {
+      invalidateOrders(queryClient, tenantId);
+    },
+  });
+}
+
 // Local override: different param shape ({ itemId } vs shared { id })
 export function useCancelOrderItem() {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
     mutationFn: ({ itemId, cancelQty }: { itemId: string; cancelQty?: number }) =>
@@ -44,7 +64,7 @@ export function useCancelOrderItem() {
     onSuccess: () => {
       // Item-level cancel — order may flip to empty/cancelled but TABLES/DELIVERY/TAKEOUT
       // shape doesn't shift on item changes. Refetch only ORDERS.
-      invalidateOrders(queryClient);
+      invalidateOrders(queryClient, tenantId);
     },
   });
 }
@@ -52,6 +72,7 @@ export function useCancelOrderItem() {
 // Local override: optimistic updates for order status changes
 export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
     mutationFn: ({ orderId, status }: { orderId: string; status: keyof typeof ORDER_STATUS }) => {
@@ -64,14 +85,16 @@ export function useUpdateOrderStatus() {
     },
     onMutate: async ({ orderId, status }) => {
       const statusValue = ORDER_STATUS[status] as OrderStatus;
-      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+      await queryClient.cancelQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) });
+      await queryClient.cancelQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS) });
 
       // Capture pre-mutation order so we can pass {oldStatus, oldType} to
       // invalidateOrdersAndTables in onSettled. Without this the helper
       // can't tell whether the transition crossed a terminal state and
       // would invalidate TABLES on every kitchen toggle.
-      const previousOrder = queryClient.getQueryData<OrderWithDetails>([QUERY_KEYS.ORDER, orderId]);
+      const previousOrder = queryClient.getQueryData<OrderWithDetails>(
+        tenantKey(tenantId, QUERY_KEYS.ORDER, orderId),
+      );
 
       // Optimistic patch on the affected row only. We deliberately do NOT
       // snapshot the full list for rollback — restoring a pre-mutation list
@@ -82,14 +105,14 @@ export function useUpdateOrderStatus() {
       const updateList = (old: OrderWithDetails[] | undefined) =>
         old?.map((o) => (o.id === orderId ? { ...o, status: statusValue } : o));
 
-      queryClient.setQueryData([QUERY_KEYS.ORDERS], updateList);
-      queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], updateList);
+      queryClient.setQueryData(tenantKey(tenantId, QUERY_KEYS.ORDERS), updateList);
+      queryClient.setQueryData(tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS), updateList);
 
       return { previousOrder };
     },
     onSettled: (_data, _err, { orderId, status }, context) => {
       const statusValue = ORDER_STATUS[status] as OrderStatus;
-      invalidateOrdersAndTables(queryClient, {
+      invalidateOrdersAndTables(queryClient, tenantId, {
         orderId,
         oldStatus: context?.previousOrder?.status,
         newStatus: statusValue,
@@ -102,6 +125,7 @@ export function useUpdateOrderStatus() {
 // Local override: optimistic updates for order item status changes
 export function useUpdateOrderItemStatus() {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   type OrderItemStatus = Database['public']['Tables']['order_items']['Row']['status'];
 
@@ -110,8 +134,8 @@ export function useUpdateOrderItemStatus() {
       return db.orderItems.updateStatus(itemId, status);
     },
     onMutate: async ({ itemId, status }) => {
-      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
+      await queryClient.cancelQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) });
+      await queryClient.cancelQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS) });
 
       // Optimistic patch only — see useUpdateOrderStatus for the rationale.
       // No full-list snapshot: a rollback would lose any realtime changes
@@ -124,13 +148,13 @@ export function useUpdateOrderItemStatus() {
           ),
         }));
 
-      queryClient.setQueryData([QUERY_KEYS.ORDERS], updateList);
-      queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], updateList);
+      queryClient.setQueryData(tenantKey(tenantId, QUERY_KEYS.ORDERS), updateList);
+      queryClient.setQueryData(tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS), updateList);
     },
     onSettled: () => {
       // Item status changes don't move the order between terminal states —
       // tables, delivery and takeout shapes are unaffected. Refetch only ORDERS.
-      invalidateOrders(queryClient);
+      invalidateOrders(queryClient, tenantId);
     },
   });
 }
@@ -138,6 +162,7 @@ export function useUpdateOrderItemStatus() {
 // Local: uses apiRoutes for server-side plan limit enforcement
 export function useCreateOrder() {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
     mutationFn: async (orderData: OrderInsert) => {
@@ -146,14 +171,16 @@ export function useCreateOrder() {
       return order;
     },
     onSuccess: (createdOrder) => {
-      invalidateOrdersAndTables(queryClient, {
+      invalidateOrdersAndTables(queryClient, tenantId, {
         isCreation: true,
         newType: createdOrder.order_type,
         newStatus: createdOrder.status,
       });
       // Plan-cap widget — kept unconditional; gating on near-cap requires
       // plan-aware logic that doesn't belong in a write hook.
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MONTHLY_ORDER_COUNT] });
+      queryClient.invalidateQueries({
+        queryKey: tenantKey(tenantId, QUERY_KEYS.MONTHLY_ORDER_COUNT),
+      });
     },
   });
 }

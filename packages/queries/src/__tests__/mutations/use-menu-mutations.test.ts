@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { QUERY_KEYS } from '../../keys';
+import { QUERY_KEYS, tenantKey } from '../../keys';
 import {
   useCreateCategory,
   useCreateMenuItem,
@@ -9,7 +9,7 @@ import {
   useUpdateCategory,
   useUpdateMenuItem,
 } from '../../mutations/use-menu-mutations';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 function getInvalidatedKeys(spy: ReturnType<typeof vi.spyOn>) {
   return spy.mock.calls.map((c: any) => (c[0] as any).queryKey);
@@ -27,7 +27,9 @@ describe('useCreateMenuItem', () => {
     const { result, queryClient } = renderHookWithProviders(() => useCreateMenuItem());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({} as any);
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.MENU_ITEMS]);
+    expect(getInvalidatedKeys(spy)).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.MENU_ITEMS),
+    );
   });
 
   it('propagates errors', async () => {
@@ -49,7 +51,9 @@ describe('useUpdateMenuItem', () => {
     const { result, queryClient } = renderHookWithProviders(() => useUpdateMenuItem());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({ id: 'm1', updates: {} });
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.MENU_ITEMS]);
+    expect(getInvalidatedKeys(spy)).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.MENU_ITEMS),
+    );
   });
 });
 
@@ -82,8 +86,8 @@ describe('useCreateCategory', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({} as any);
     const keys = getInvalidatedKeys(spy);
-    expect(keys).toContainEqual([QUERY_KEYS.CATEGORIES]);
-    expect(keys).toContainEqual([QUERY_KEYS.MENU_ITEMS]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.CATEGORIES));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.MENU_ITEMS));
   });
 });
 
@@ -107,7 +111,7 @@ describe('useDeleteCategory', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync('c1');
     const keys = getInvalidatedKeys(spy);
-    expect(keys).toContainEqual([QUERY_KEYS.CATEGORIES]);
-    expect(keys).toContainEqual([QUERY_KEYS.MENU_ITEMS]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.CATEGORIES));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.MENU_ITEMS));
   });
 });

@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { QUERY_KEYS } from '../../keys';
+import { QUERY_KEYS, tenantKey } from '../../keys';
 import {
   useCreateStockItem,
   useDeleteStockItem,
   useUpdateStockItem,
 } from '../../mutations/use-stock-mutations';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 function getInvalidatedKeys(spy: ReturnType<typeof vi.spyOn>) {
   return spy.mock.calls.map((c: any) => (c[0] as any).queryKey);
@@ -24,8 +24,8 @@ describe('useCreateStockItem', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({} as any);
     const keys = getInvalidatedKeys(spy);
-    expect(keys).toContainEqual([QUERY_KEYS.STOCK_ITEMS]);
-    expect(keys).toContainEqual([QUERY_KEYS.LOW_STOCK_COUNT]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STOCK_ITEMS));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.LOW_STOCK_COUNT));
   });
 });
 

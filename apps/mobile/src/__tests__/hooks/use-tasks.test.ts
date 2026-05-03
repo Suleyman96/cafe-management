@@ -1,3 +1,4 @@
+import { tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useCreateTask,
@@ -12,7 +13,7 @@ import {
   useTasks,
   useTodaysTasks,
 } from '@/hooks/use-tasks';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useTodaysTasks', () => {
   it('calls db.tasks.getTodaysTasks', () => {
@@ -68,7 +69,7 @@ describe('useCreateTask', () => {
     await result.current.mutateAsync({ title: 'Test task' } as any);
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['tasks']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'tasks'));
   });
 });
 
@@ -80,7 +81,7 @@ describe('useDeleteTask', () => {
     await result.current.mutateAsync('task-1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['tasks']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'tasks'));
   });
 });
 
@@ -92,7 +93,7 @@ describe('useMarkTaskInProgress', () => {
     await result.current.mutateAsync('task-1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['tasks']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'tasks'));
   });
 });
 
@@ -104,7 +105,7 @@ describe('useMarkTaskCompleted', () => {
     await result.current.mutateAsync('task-1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['tasks']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'tasks'));
   });
 });
 
@@ -116,7 +117,7 @@ describe('useMarkTaskCancelled', () => {
     await result.current.mutateAsync('task-1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['tasks']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'tasks'));
   });
 });
 
@@ -128,6 +129,6 @@ describe('useGenerateRecurringTasks', () => {
     await result.current.mutateAsync('2026-03-19');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['tasks']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'tasks'));
   });
 });

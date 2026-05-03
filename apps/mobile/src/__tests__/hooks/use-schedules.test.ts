@@ -1,3 +1,4 @@
+import { tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useCreateSchedule,
@@ -8,7 +9,7 @@ import {
   useSchedulesByDateRange,
   useUpdateSchedule,
 } from '@/hooks/use-schedules';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useSchedulesByDateRange', () => {
   it('calls db.schedules.findByDateRange', () => {
@@ -34,7 +35,7 @@ describe('useCreateSchedule', () => {
     await result.current.mutateAsync({ staff_id: 's1', date: '2026-03-20' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['schedules']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'schedules'));
   });
 });
 
@@ -46,7 +47,7 @@ describe('useUpdateSchedule', () => {
     await result.current.mutateAsync({ id: 'sch1', data: { notes: 'Updated' } });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['schedules']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'schedules'));
   });
 });
 
@@ -58,7 +59,7 @@ describe('useDeleteSchedule', () => {
     await result.current.mutateAsync('sch1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['schedules']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'schedules'));
   });
 });
 
@@ -70,7 +71,7 @@ describe('useMarkScheduleInProgress', () => {
     await result.current.mutateAsync({ id: 'sch1', actualStart: '2026-03-19T09:00:00' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['schedules']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'schedules'));
   });
 });
 
@@ -82,6 +83,6 @@ describe('useMarkScheduleCompleted', () => {
     await result.current.mutateAsync({ id: 'sch1', actualEnd: '2026-03-19T17:00:00' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['schedules']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'schedules'));
   });
 });

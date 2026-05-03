@@ -3,6 +3,7 @@
 import { ORDER_STATUS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import { ClipboardList, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -70,6 +71,7 @@ export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTableFilter, setSelectedTableFilter] = useState<string>('all');
   const [cancelOrderTarget, setCancelOrderTarget] = useState<OrderWithDetails | null>(null);
+  const tenantId = useTenantId();
 
   // Get table filter from URL params
   useEffect(() => {
@@ -82,9 +84,21 @@ export default function OrdersPage() {
 
   // Real-time: invalidate queries on DB changes
   useRealtimeSync('orders-realtime', [
-    { table: 'orders', queryKeys: [['orders'], ['active_orders']] },
-    { table: 'order_items', queryKeys: [['orders']] },
-    { table: 'order_payments', queryKeys: [['orders'], ['payments']] },
+    {
+      table: 'orders',
+      queryKeys: [
+        tenantKey(tenantId, QUERY_KEYS.ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS),
+      ],
+    },
+    {
+      table: 'order_items',
+      queryKeys: [tenantKey(tenantId, QUERY_KEYS.ORDERS)],
+    },
+    {
+      table: 'order_payments',
+      queryKeys: [tenantKey(tenantId, QUERY_KEYS.ORDERS), tenantKey(tenantId, QUERY_KEYS.PAYMENTS)],
+    },
   ]);
 
   // Keep latest orders in a ref so handleStatusUpdate can be a stable callback —

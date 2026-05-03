@@ -1,9 +1,23 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { postLoginSideEffects, useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/wrapped-client';
 import { useAuthStore } from '@/store/auth-store';
 import { mockAdminStaff } from '../helpers/mock-auth';
+
+// `useAuth` calls `useQueryClient()` (added so `stableLogout` can wipe the
+// React Query cache as part of the audit fix for cross-tenant cache bleed).
+// Wrap every `renderHook(() => useAuth(), { wrapper: makeAuthWrapper() })` in a QueryClientProvider.
+function makeAuthWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+}
 
 // Override next/navigation mock with stable references to prevent
 // infinite re-renders (useAuth depends on router.push in useEffect deps)
@@ -144,7 +158,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      renderHook(() => useAuth());
+      renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       await waitFor(() => {
         expect(useAuthStore.getState().isLoading).toBe(false);
@@ -161,7 +175,7 @@ describe('useAuth', () => {
         .mockResolvedValueOnce(validSession);
       (db.staff.findByAuthId as any).mockResolvedValueOnce(mockAdminStaff);
 
-      renderHook(() => useAuth());
+      renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       await waitFor(() => {
         expect(useAuthStore.getState().staff).toEqual(mockAdminStaff);
@@ -177,7 +191,7 @@ describe('useAuth', () => {
       });
       (db.staff.findByAuthId as any).mockRejectedValueOnce(new Error('Not found'));
 
-      renderHook(() => useAuth());
+      renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       await waitFor(() => {
         expect(supabase.auth.signOut).toHaveBeenCalled();
@@ -193,7 +207,7 @@ describe('useAuth', () => {
         error: new Error('Session error'),
       });
 
-      renderHook(() => useAuth());
+      renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       await waitFor(() => {
         expect(useAuthStore.getState().isLoading).toBe(false);
@@ -210,7 +224,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      renderHook(() => useAuth());
+      renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       await waitFor(() => {
         expect(supabase.auth.getSession).toHaveBeenCalled();
@@ -230,7 +244,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       expect(result.current.isAuthenticated).toBe(true);
       expect(result.current.staff).toEqual(mockAdminStaff);
@@ -240,7 +254,7 @@ describe('useAuth', () => {
     it('returns isAuthenticated false when staff is null', () => {
       useAuthStore.setState({ staff: null, isLoading: false });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       expect(result.current.isAuthenticated).toBe(false);
     });
@@ -255,7 +269,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       await act(async () => {
         await result.current.logout();
@@ -269,7 +283,7 @@ describe('useAuth', () => {
     it('does not crash when called while already logged out', async () => {
       useAuthStore.setState({ staff: null, isLoading: false });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       await act(async () => {
         await result.current.logout();
@@ -289,7 +303,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      renderHook(() => useAuth());
+      renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       await waitFor(() => {
         expect(supabase.auth.onAuthStateChange).toHaveBeenCalled();
@@ -306,7 +320,7 @@ describe('useAuth', () => {
         data: { subscription: { unsubscribe } },
       });
 
-      const { unmount } = renderHook(() => useAuth());
+      const { unmount } = renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       await waitFor(() => {
         expect(useAuthStore.getState().isLoading).toBe(false);
@@ -327,8 +341,8 @@ describe('useAuth', () => {
         }),
       );
 
-      renderHook(() => useAuth());
-      renderHook(() => useAuth());
+      renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
+      renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       // Only one getSession call because the flag blocks the second instance
       expect(supabase.auth.getSession).toHaveBeenCalledTimes(1);
@@ -344,7 +358,7 @@ describe('useAuth', () => {
       // First mount: getSession rejects
       (supabase.auth.getSession as any).mockRejectedValueOnce(new Error('Network error'));
 
-      const { unmount } = renderHook(() => useAuth());
+      const { unmount } = renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       // Wait for check to complete (finally block resets flag)
       await waitFor(() => {
@@ -362,7 +376,7 @@ describe('useAuth', () => {
         error: null,
       });
 
-      renderHook(() => useAuth());
+      renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       await waitFor(() => {
         expect(supabase.auth.getSession).toHaveBeenCalledTimes(2);
@@ -382,7 +396,7 @@ describe('useAuth', () => {
         },
       );
 
-      renderHook(() => useAuth());
+      renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
 
       // Wait for initial session check to complete
       await waitFor(() => {

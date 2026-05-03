@@ -394,19 +394,6 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       return mapDecryptedPiiArray(data || []);
     },
 
-    assignWaiter: async (orderId: string, waiterId: string | null) => {
-      const { data, error } = await ctx.anyClient
-        .from('orders')
-        .update({ assigned_waiter_id: waiterId })
-        .eq('id', orderId)
-        .select()
-        .single();
-
-      if (error) throw handleSupabaseError(error);
-      if (!isOrder(data)) throw new Error('Invalid order data');
-      return data as OrderRow;
-    },
-
     cancelOrder: async (orderId: string, reason: string, tableId?: string | null) => {
       // Update order status to cancelled and store reason in internal_notes
       const { data, error } = await ctx.anyClient

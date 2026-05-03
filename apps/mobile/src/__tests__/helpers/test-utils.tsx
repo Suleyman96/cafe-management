@@ -51,13 +51,17 @@ export function createWrapper() {
   return {
     wrapper: ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>
-        <DbProvider db={mockDb}>{children}</DbProvider>
+        <DbProvider db={mockDb} tenantId={TEST_TENANT_ID}>
+          {children}
+        </DbProvider>
       </QueryClientProvider>
     ),
     queryClient,
     mockDb,
   };
 }
+
+export { TEST_TENANT_ID };
 
 export function renderHookWithProviders<T>(hook: () => T) {
   const { wrapper, queryClient, mockDb } = createWrapper();

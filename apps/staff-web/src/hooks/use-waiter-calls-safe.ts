@@ -6,6 +6,7 @@
 import {
   invalidateWaiterCalls,
   useDb,
+  useTenantId,
   useWaiterCalls as useWaiterCallsShared,
 } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,24 +17,26 @@ export { usePendingWaiterCallsCount, useWaiterCalls } from '@gustri/queries';
 // Local mutations — staff-web consumers use { callId } param shape
 export function useAcknowledgeWaiterCall() {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ callId, staffId }: { callId: string; staffId: string }) =>
       db.waiterCalls.acknowledge(callId, staffId),
     onSuccess: () => {
-      invalidateWaiterCalls(queryClient);
+      invalidateWaiterCalls(queryClient, tenantId);
     },
   });
 }
 
 export function useResolveWaiterCall() {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ callId, notes }: { callId: string; notes?: string }) =>
       db.waiterCalls.resolve(callId, notes),
     onSuccess: () => {
-      invalidateWaiterCalls(queryClient);
+      invalidateWaiterCalls(queryClient, tenantId);
     },
   });
 }

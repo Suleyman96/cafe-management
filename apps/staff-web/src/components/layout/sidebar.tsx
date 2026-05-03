@@ -3,7 +3,7 @@
 import type { PlanName } from '@gustri/core';
 import { getLocalDateString, PLAN_ORDER } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
-import { invalidateSchedules } from '@gustri/queries';
+import { invalidateSchedules, useTenantId } from '@gustri/queries';
 import { GustriIcon, GustriLogo, getRoleBadgeColor } from '@gustri/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -36,6 +36,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
+import { useCanPerform } from '@/hooks/use-can-perform';
 import { usePendingApprovalCount } from '@/hooks/use-orders-safe';
 import { useMyScheduleToday } from '@/hooks/use-schedules-safe';
 import { useCafeSettings } from '@/hooks/use-settings-safe';
@@ -163,7 +164,11 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
   const tenantPlan = useTenantPlan();
 
   const isOwner = staff?.role === 'owner';
-  const isAdmin = staff?.role === 'admin' || isOwner;
+  // Sidebar uses `manage_staff` as a stand-in for "admin tier UI" — both
+  // admin and owner pass this check, matching the prior `role === 'admin'
+  // || isOwner` semantics. Inline role expressions are banned in new code;
+  // see CLAUDE.md "Authorization vs connectivity gates".
+  const isAdmin = useCanPerform('manage_staff');
 
   const filterItems = (items: NavItem[]) =>
     items.filter((item) => {
@@ -486,6 +491,7 @@ function TodayShiftIndicator({ staffId }: { staffId: string }) {
   const { data: todaySchedules, refetch } = useMyScheduleToday(staffId);
   const { t } = useTranslation('nav');
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
   const [clockingOut, setClockingOut] = useState<string | null>(null);
 
   if (!todaySchedules || todaySchedules.length === 0) return null;
@@ -509,7 +515,7 @@ function TodayShiftIndicator({ staffId }: { staffId: string }) {
 
       if (res.ok) {
         toast.success(t('clockedOut'));
-        invalidateSchedules(queryClient);
+        invalidateSchedules(queryClient, tenantId);
         refetch();
       } else {
         const data = await res.json();

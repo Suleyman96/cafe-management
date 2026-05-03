@@ -1,8 +1,8 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import { useOrderTransferHistory, useTransferTable } from '@/hooks/use-table-transfers-safe';
 import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useOrderTransferHistory', () => {
   it('calls db.orders.findById to get transfer history', () => {
@@ -31,11 +31,11 @@ describe('useTransferTable', () => {
     });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLE, 't1']);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLE, 't2']);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDER, 'o1']);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
-    expect(invalidatedKeys).toContainEqual(['table_transfers']);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLE, 't1'));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLE, 't2'));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, 'o1'));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, 'table_transfers'));
   });
 });

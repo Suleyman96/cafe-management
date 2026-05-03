@@ -4,7 +4,7 @@
  */
 
 import type { StaffScheduleUpdate } from '@gustri/database';
-import { invalidateSchedules, useDb } from '@gustri/queries';
+import { invalidateSchedules, useDb, useTenantId } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export {
@@ -19,12 +19,13 @@ export {
 // Local mutation — staff-web consumers use { id, data } param shape
 export function useUpdateSchedule() {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: StaffScheduleUpdate }) =>
       db.schedules.update(id, data),
     onSuccess: () => {
-      invalidateSchedules(queryClient);
+      invalidateSchedules(queryClient, tenantId);
     },
   });
 }

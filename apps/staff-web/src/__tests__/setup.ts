@@ -187,6 +187,7 @@ vi.mock('@/lib/api-routes', () => ({
       create: vi
         .fn()
         .mockResolvedValue({ order: { id: 'new-order', status: 'new', order_type: 'dine_in' } }),
+      assignWaiter: vi.fn().mockResolvedValue({ order: { id: 'o1', assigned_waiter_id: 'w1' } }),
     },
     discounts: {
       apply: vi.fn().mockResolvedValue({ success: true }),

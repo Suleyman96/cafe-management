@@ -35,7 +35,6 @@ export function createMockDb() {
       'updateStatus',
       'findActiveByTable',
       'getActiveOrders',
-      'assignWaiter',
       'cancelOrder',
       'updateNotes',
       'applyDiscount',

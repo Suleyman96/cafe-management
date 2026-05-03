@@ -105,12 +105,12 @@ export {
   refetchWaste,
 } from './invalidation';
 // Centralized query keys
-export { QUERY_KEYS } from './keys';
+export { NO_TENANT_KEY_SEGMENT, QUERY_KEYS, tenantKey } from './keys';
 // Centralized mutation keys (mobile persister + web mutations)
 export { MUTATION_KEYS, type MutationKey, type MutationKeyName } from './mutation-keys';
 // Mutation types
 export type { MutationCallbacks } from './mutations/types';
-export { DbProvider, REALTIME_INVALIDATE_DEBOUNCE_MS, useDb } from './provider';
+export { DbProvider, REALTIME_INVALIDATE_DEBOUNCE_MS, useDb, useTenantId } from './provider';
 
 // ─── Mutations ──────────────────────────────────────────────────────────────
 
@@ -146,7 +146,6 @@ export {
 export {
   useAddOrderItems,
   useAssignDeliveryPerson,
-  useAssignWaiter,
   useCancelOrder,
   useCancelOrderItem,
   useCleanupEmptyOrders,

@@ -1,3 +1,4 @@
+import { tenantKey } from '@gustri/queries';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useCreateCategory,
@@ -8,7 +9,7 @@ import {
   useUpdateCategory,
   useUpdateMenuItem,
 } from '@/hooks/use-menu-management';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useCreateMenuItem', () => {
   it('invalidates menu-items on success', async () => {
@@ -18,7 +19,7 @@ describe('useCreateMenuItem', () => {
     await result.current.mutateAsync({ name: 'Espresso', price: 3 });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['menu_items']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'menu_items'));
   });
 });
 
@@ -30,7 +31,7 @@ describe('useUpdateMenuItem', () => {
     await result.current.mutateAsync({ id: 'm1', data: { name: 'Updated' } });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['menu_items']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'menu_items'));
   });
 });
 
@@ -42,7 +43,7 @@ describe('useDeleteMenuItem', () => {
     await result.current.mutateAsync('m1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['menu_items']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'menu_items'));
   });
 });
 
@@ -54,7 +55,7 @@ describe('useToggleMenuItemAvailability', () => {
     await result.current.mutateAsync('m1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['menu_items']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'menu_items'));
   });
 });
 
@@ -66,7 +67,7 @@ describe('useCreateCategory', () => {
     await result.current.mutateAsync({ name: 'Beverages' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['categories']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'categories'));
   });
 });
 
@@ -78,7 +79,7 @@ describe('useUpdateCategory', () => {
     await result.current.mutateAsync({ id: 'c1', data: { name: 'Updated' } });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['categories']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'categories'));
   });
 });
 
@@ -90,7 +91,7 @@ describe('useDeleteCategory', () => {
     await result.current.mutateAsync('c1');
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual(['categories']);
-    expect(keys).toContainEqual(['menu_items']);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'categories'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'menu_items'));
   });
 });

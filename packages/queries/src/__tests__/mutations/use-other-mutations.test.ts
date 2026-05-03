@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { QUERY_KEYS } from '../../keys';
+import { QUERY_KEYS, tenantKey } from '../../keys';
 import {
   useCreateDeliveryCustomer,
   useDeleteDeliveryCustomer,
@@ -25,7 +25,7 @@ import {
   useDeleteWasteLog,
   useUpdateWasteLog,
 } from '../../mutations/use-waste-mutations';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 function getInvalidatedKeys(spy: ReturnType<typeof vi.spyOn>) {
   return spy.mock.calls.map((c: any) => (c[0] as any).queryKey);
@@ -45,7 +45,9 @@ describe('useUpdateCafeSettings', () => {
     const { result, queryClient } = renderHookWithProviders(() => useUpdateCafeSettings());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({} as any);
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.CAFE_SETTINGS]);
+    expect(getInvalidatedKeys(spy)).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.CAFE_SETTINGS),
+    );
   });
 });
 
@@ -62,7 +64,7 @@ describe('useMarkFeedbackRead', () => {
     const { result, queryClient } = renderHookWithProviders(() => useMarkFeedbackRead());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({ id: 'f1', staffId: 's1' });
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.FEEDBACK]);
+    expect(getInvalidatedKeys(spy)).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.FEEDBACK));
   });
 });
 
@@ -79,7 +81,9 @@ describe('useAcknowledgeWaiterCall', () => {
     const { result, queryClient } = renderHookWithProviders(() => useAcknowledgeWaiterCall());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({ id: 'wc1', staffId: 's1' });
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.WAITER_CALLS]);
+    expect(getInvalidatedKeys(spy)).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.WAITER_CALLS),
+    );
   });
 });
 
@@ -112,8 +116,8 @@ describe('expense mutations', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({} as any);
     const keys = getInvalidatedKeys(spy);
-    expect(keys).toContainEqual([QUERY_KEYS.EXPENSES]);
-    expect(keys).toContainEqual([QUERY_KEYS.EXPENSE_CATEGORIES]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.EXPENSES));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.EXPENSE_CATEGORIES));
   });
 
   it('useUpdateExpense forwards id + updates', async () => {
@@ -161,8 +165,8 @@ describe('waste mutations', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({} as any);
     const keys = getInvalidatedKeys(spy);
-    expect(keys).toContainEqual([QUERY_KEYS.WASTE_LOGS]);
-    expect(keys).toContainEqual([QUERY_KEYS.WASTE_SUMMARY]);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.WASTE_LOGS));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.WASTE_SUMMARY));
   });
 
   it('useUpdateWasteLog forwards id + updates', async () => {
@@ -192,7 +196,9 @@ describe('delivery customer mutations', () => {
     const { result, queryClient } = renderHookWithProviders(() => useCreateDeliveryCustomer());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({ name: '', phone: '', address: '', notes: null });
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.DELIVERY_CUSTOMERS]);
+    expect(getInvalidatedKeys(spy)).toContainEqual(
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.DELIVERY_CUSTOMERS),
+    );
   });
 
   it('useUpdateDeliveryCustomer forwards id + updates', async () => {

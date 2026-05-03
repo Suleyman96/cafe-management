@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { QUERY_KEYS } from '../../keys';
+import { QUERY_KEYS, tenantKey } from '../../keys';
 import {
   useCreateStaff,
   useDeleteStaff,
   useUpdateStaff,
 } from '../../mutations/use-staff-mutations';
-import { renderHookWithProviders } from '../helpers/test-utils';
+import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 function getInvalidatedKeys(spy: ReturnType<typeof vi.spyOn>) {
   return spy.mock.calls.map((c: any) => (c[0] as any).queryKey);
@@ -23,7 +23,7 @@ describe('useCreateStaff', () => {
     const { result, queryClient } = renderHookWithProviders(() => useCreateStaff());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({} as any);
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.STAFF]);
+    expect(getInvalidatedKeys(spy)).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STAFF));
   });
 
   it('propagates errors', async () => {
@@ -44,7 +44,7 @@ describe('useUpdateStaff', () => {
     const { result, queryClient } = renderHookWithProviders(() => useUpdateStaff());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync({ id: 's1', updates: {} as any });
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.STAFF]);
+    expect(getInvalidatedKeys(spy)).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STAFF));
   });
 });
 
@@ -59,6 +59,6 @@ describe('useDeleteStaff', () => {
     const { result, queryClient } = renderHookWithProviders(() => useDeleteStaff());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync('s1');
-    expect(getInvalidatedKeys(spy)).toContainEqual([QUERY_KEYS.STAFF]);
+    expect(getInvalidatedKeys(spy)).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STAFF));
   });
 });

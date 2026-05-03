@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -11,7 +11,12 @@ import {
   useUpdateTableStatus,
 } from '@/hooks/use-tables-safe';
 import { db } from '@/lib/supabase/wrapped-client';
-import { createWrapper, renderHookWithProviders, waitFor } from '../helpers/test-utils';
+import {
+  createWrapper,
+  renderHookWithProviders,
+  TEST_TENANT_ID,
+  waitFor,
+} from '../helpers/test-utils';
 
 // --- Hooks from @gustri/queries (use useDb → mockDb from provider) ---
 
@@ -76,8 +81,8 @@ describe('useUpdateTableStatus', () => {
     await result.current.mutateAsync({ tableId: 't1', status: 'occupied' as any });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
   });
 
   it('calls updateStatus with correct args', async () => {
@@ -95,7 +100,7 @@ describe('useCreateTable', () => {
     await result.current.mutateAsync({ table_number: '5', capacity: 4, status: 'free' } as any);
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
   });
 
   it('calls create with table data', async () => {
@@ -116,7 +121,7 @@ describe('useUpdateTable', () => {
     await result.current.mutateAsync({ id: 't1', updates: { capacity: 6 } as any });
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
   });
 });
 
@@ -128,7 +133,7 @@ describe('useDeleteTable', () => {
     await result.current.mutateAsync('t1');
 
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
   });
 
   it('invalidates TABLES on delete', async () => {
@@ -136,6 +141,6 @@ describe('useDeleteTable', () => {
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
     await result.current.mutateAsync('t1');
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
+    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
   });
 });

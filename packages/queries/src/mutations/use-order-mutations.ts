@@ -2,8 +2,8 @@ import type { Order, OrderItem, OrderItemsInsert } from '@gustri/database';
 import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrCreateClientRequestId } from '../idempotency';
 import { invalidateOrders, invalidateOrdersAndTables } from '../invalidation';
-import { QUERY_KEYS } from '../keys';
-import { useDb } from '../provider';
+import { QUERY_KEYS, tenantKey } from '../keys';
+import { useDb, useTenantId } from '../provider';
 import type { MutationCallbacks } from './types';
 
 /**
@@ -11,20 +11,27 @@ import type { MutationCallbacks } from './types';
  * scoped invalidator. When the order isn't cached (e.g. cache cold) we
  * return undefineds and the helper invalidates conservatively.
  */
-function peekOrder(qc: QueryClient, orderId: string): Pick<Order, 'status' | 'order_type'> | null {
-  const cached = qc.getQueryData<Pick<Order, 'status' | 'order_type'>>([QUERY_KEYS.ORDER, orderId]);
+function peekOrder(
+  qc: QueryClient,
+  tenantId: string | null,
+  orderId: string,
+): Pick<Order, 'status' | 'order_type'> | null {
+  const cached = qc.getQueryData<Pick<Order, 'status' | 'order_type'>>(
+    tenantKey(tenantId, QUERY_KEYS.ORDER, orderId),
+  );
   return cached ?? null;
 }
 
 export function useUpdateOrderStatus(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: Order['status'] }) =>
       db.orders.updateStatus(id, status),
     onSuccess: (_data, { id, status }) => {
-      const prev = peekOrder(queryClient, id);
-      invalidateOrdersAndTables(queryClient, {
+      const prev = peekOrder(queryClient, tenantId, id);
+      invalidateOrdersAndTables(queryClient, tenantId, {
         orderId: id,
         oldStatus: prev?.status,
         newStatus: status,
@@ -35,21 +42,9 @@ export function useUpdateOrderStatus(options?: MutationCallbacks) {
   });
 }
 
-export function useAssignWaiter(options?: MutationCallbacks) {
-  const db = useDb();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ orderId, waiterId }: { orderId: string; waiterId: string | null }) =>
-      db.orders.assignWaiter(orderId, waiterId),
-    onSuccess: () => {
-      invalidateOrders(queryClient);
-    },
-    onError: options?.onError,
-  });
-}
-
 export function useCancelOrder(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -62,8 +57,8 @@ export function useCancelOrder(options?: MutationCallbacks) {
       tableId?: string | null;
     }) => db.orders.cancelOrder(orderId, reason, tableId),
     onSuccess: (_data, { orderId }) => {
-      const prev = peekOrder(queryClient, orderId);
-      invalidateOrdersAndTables(queryClient, {
+      const prev = peekOrder(queryClient, tenantId, orderId);
+      invalidateOrdersAndTables(queryClient, tenantId, {
         orderId,
         oldStatus: prev?.status,
         newStatus: 'cancelled',
@@ -76,6 +71,7 @@ export function useCancelOrder(options?: MutationCallbacks) {
 
 export function useUpdateOrderNotes(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -86,7 +82,7 @@ export function useUpdateOrderNotes(options?: MutationCallbacks) {
       notes: { customer_notes?: string | null; internal_notes?: string | null };
     }) => db.orders.updateNotes(orderId, notes),
     onSuccess: (_, { orderId }) => {
-      invalidateOrders(queryClient, orderId);
+      invalidateOrders(queryClient, tenantId, orderId);
     },
     onError: options?.onError,
   });
@@ -94,13 +90,14 @@ export function useUpdateOrderNotes(options?: MutationCallbacks) {
 
 export function useCleanupEmptyOrders(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (olderThanMinutes?: number) => db.orders.cleanupEmptyOrders(olderThanMinutes),
     onSuccess: () => {
       // Bulk cleanup — no per-order transition info available. Pass {} so
       // the helper falls through to its conservative pre-M6 superset.
-      invalidateOrdersAndTables(queryClient, {});
+      invalidateOrdersAndTables(queryClient, tenantId, {});
     },
     onError: options?.onError,
   });
@@ -108,6 +105,7 @@ export function useCleanupEmptyOrders(options?: MutationCallbacks) {
 
 export function useAddOrderItems(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     // Stamp a distinct `client_request_id` per item — the unique index is
@@ -122,7 +120,7 @@ export function useAddOrderItems(options?: MutationCallbacks) {
     },
     mutationFn: (items: OrderItemsInsert[]) => db.orderItems.create(items),
     onSuccess: () => {
-      invalidateOrders(queryClient);
+      invalidateOrders(queryClient, tenantId);
     },
     onError: options?.onError,
   });
@@ -130,12 +128,13 @@ export function useAddOrderItems(options?: MutationCallbacks) {
 
 export function useUpdateOrderItemStatus(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: OrderItem['status'] }) =>
       db.orderItems.updateStatus(id, status),
     onSuccess: () => {
-      invalidateOrders(queryClient);
+      invalidateOrders(queryClient, tenantId);
     },
     onError: options?.onError,
   });
@@ -143,11 +142,12 @@ export function useUpdateOrderItemStatus(options?: MutationCallbacks) {
 
 export function useDeleteOrderItem(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => db.orderItems.delete(id),
     onSuccess: () => {
-      invalidateOrders(queryClient);
+      invalidateOrders(queryClient, tenantId);
     },
     onError: options?.onError,
   });
@@ -155,12 +155,13 @@ export function useDeleteOrderItem(options?: MutationCallbacks) {
 
 export function useCancelOrderItem(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, cancelQty }: { id: string; cancelQty?: number }) =>
       db.orderItems.cancel(id, cancelQty),
     onSuccess: () => {
-      invalidateOrders(queryClient);
+      invalidateOrders(queryClient, tenantId);
     },
     onError: options?.onError,
   });
@@ -170,12 +171,13 @@ export function useCancelOrderItem(options?: MutationCallbacks) {
 
 export function useAssignDeliveryPerson(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ orderId, staffId }: { orderId: string; staffId: string }) =>
       db.orders.assignDeliveryPerson(orderId, staffId),
     onSuccess: () => {
-      invalidateOrders(queryClient);
+      invalidateOrders(queryClient, tenantId);
     },
     onError: options?.onError,
   });
@@ -183,12 +185,13 @@ export function useAssignDeliveryPerson(options?: MutationCallbacks) {
 
 export function useUpdateDeliveryFee(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ orderId, fee }: { orderId: string; fee: number }) =>
       db.orders.updateDeliveryFee(orderId, fee),
     onSuccess: () => {
-      invalidateOrders(queryClient);
+      invalidateOrders(queryClient, tenantId);
     },
     onError: options?.onError,
   });
@@ -196,13 +199,14 @@ export function useUpdateDeliveryFee(options?: MutationCallbacks) {
 
 export function useMarkOutForDelivery(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ orderId, deliveryPersonId }: { orderId: string; deliveryPersonId: string }) =>
       db.orders.markOutForDelivery(orderId, deliveryPersonId),
     onSuccess: (_data, { orderId }) => {
-      const prev = peekOrder(queryClient, orderId);
-      invalidateOrdersAndTables(queryClient, {
+      const prev = peekOrder(queryClient, tenantId, orderId);
+      invalidateOrdersAndTables(queryClient, tenantId, {
         orderId,
         oldStatus: prev?.status,
         newStatus: 'out_for_delivery',
@@ -216,12 +220,13 @@ export function useMarkOutForDelivery(options?: MutationCallbacks) {
 
 export function useMarkDelivered(options?: MutationCallbacks) {
   const db = useDb();
+  const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (orderId: string) => db.orders.markDelivered(orderId),
     onSuccess: (_data, orderId) => {
-      const prev = peekOrder(queryClient, orderId);
-      invalidateOrdersAndTables(queryClient, {
+      const prev = peekOrder(queryClient, tenantId, orderId);
+      invalidateOrdersAndTables(queryClient, tenantId, {
         orderId,
         oldStatus: prev?.status,
         newStatus: 'delivered',
