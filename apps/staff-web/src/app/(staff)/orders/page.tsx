@@ -5,7 +5,7 @@ import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import { ClipboardList, Search } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { CancelOrderModal } from '@/components/modals/cancel-order-modal';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
@@ -43,9 +43,24 @@ export default function OrdersPage() {
     error,
     refetch,
   } = useOrders({ created_after: recentWindowStart });
-  const updateOrderStatus = useUpdateOrderStatus();
-  const markOutForDelivery = useMarkOutForDelivery();
-  const markDelivered = useMarkDelivered();
+  const updateOrderStatusMutation = useUpdateOrderStatus();
+  const { mutateAsync: updateOrderStatusAsync } = updateOrderStatusMutation;
+  const markOutForDeliveryMutation = useMarkOutForDelivery();
+  const { mutateAsync: markOutForDeliveryAsync } = markOutForDeliveryMutation;
+  const markDeliveredMutation = useMarkDelivered();
+  const { mutateAsync: markDeliveredAsync } = markDeliveredMutation;
+  // Aggregate pending state across the three mutations a row can trigger.
+  // Whichever fired most recently owns `variables.orderId`; we disable that
+  // row's status buttons so a triple-click produces 1 PATCH, not 3.
+  const isStatusUpdatePending =
+    updateOrderStatusMutation.isPending ||
+    markOutForDeliveryMutation.isPending ||
+    markDeliveredMutation.isPending;
+  const pendingOrderId =
+    (updateOrderStatusMutation.isPending && updateOrderStatusMutation.variables?.orderId) ||
+    (markOutForDeliveryMutation.isPending && markOutForDeliveryMutation.variables?.orderId) ||
+    (markDeliveredMutation.isPending && markDeliveredMutation.variables) ||
+    null;
   const formatPrice = useFormatPrice();
 
   const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null);
@@ -72,39 +87,51 @@ export default function OrdersPage() {
     { table: 'order_payments', queryKeys: [['orders'], ['payments']] },
   ]);
 
-  // Handle status update — uses delivery-specific hooks for delivery orders
-  const handleStatusUpdate = async (orderId: string, newStatus: OrderStatus) => {
-    try {
-      const order = orders?.find((o) => o.id === orderId);
-      const isDelivery = order?.order_type === 'delivery';
+  // Keep latest orders in a ref so handleStatusUpdate can be a stable callback —
+  // re-creating it on every refetch would invalidate every memoized OrderListCard.
+  const ordersRef = useRef(orders);
+  ordersRef.current = orders;
 
-      if (isDelivery && newStatus === 'out_for_delivery') {
-        if (!order.delivery_person_id) {
-          toast.error(t('delivery.assignDriverFirst'));
-          return;
+  const handleStatusUpdate = useCallback(
+    async (orderId: string, newStatus: OrderStatus) => {
+      try {
+        const order = ordersRef.current?.find((o) => o.id === orderId);
+        const isDelivery = order?.order_type === 'delivery';
+
+        if (isDelivery && newStatus === 'out_for_delivery') {
+          if (!order.delivery_person_id) {
+            toast.error(t('delivery.assignDriverFirst'));
+            return;
+          }
+          await markOutForDeliveryAsync({
+            orderId,
+            deliveryPersonId: order.delivery_person_id,
+          });
+        } else if (isDelivery && newStatus === 'delivered') {
+          await markDeliveredAsync(orderId);
+        } else {
+          const statusKey = Object.entries(ORDER_STATUS).find(
+            ([_, value]) => value === newStatus,
+          )?.[0];
+          if (!statusKey) throw new Error('Invalid status');
+
+          await updateOrderStatusAsync({
+            orderId,
+            status: statusKey as keyof typeof ORDER_STATUS,
+          });
         }
-        await markOutForDelivery.mutateAsync({
-          orderId,
-          deliveryPersonId: order.delivery_person_id,
-        });
-      } else if (isDelivery && newStatus === 'delivered') {
-        await markDelivered.mutateAsync(orderId);
-      } else {
-        const statusKey = Object.entries(ORDER_STATUS).find(
-          ([_, value]) => value === newStatus,
-        )?.[0];
-        if (!statusKey) throw new Error('Invalid status');
-
-        await updateOrderStatus.mutateAsync({
-          orderId,
-          status: statusKey as keyof typeof ORDER_STATUS,
-        });
+        toast.success(`${t('orders.statusUpdated')} ${newStatus}`);
+      } catch (_error) {
+        toast.error(t('delivery.failedUpdate'));
       }
-      toast.success(`${t('orders.statusUpdated')} ${newStatus}`);
-    } catch (_error) {
-      toast.error(t('delivery.failedUpdate'));
-    }
-  };
+    },
+    [markOutForDeliveryAsync, markDeliveredAsync, updateOrderStatusAsync, t],
+  );
+
+  const handleOpenPayment = useCallback((o: OrderWithDetails) => {
+    setSelectedOrder(o);
+    setIsPaymentModalOpen(true);
+  }, []);
 
   // Filter orders
   const filteredOrders = orders?.filter((order) => {
@@ -227,11 +254,10 @@ export default function OrdersPage() {
               order={order}
               formatPrice={formatPrice}
               onStatusUpdate={handleStatusUpdate}
-              onOpenPayment={(o) => {
-                setSelectedOrder(o);
-                setIsPaymentModalOpen(true);
-              }}
+              onOpenPayment={handleOpenPayment}
               onOpenCancel={setCancelOrderTarget}
+              isStatusUpdatePending={isStatusUpdatePending}
+              pendingOrderId={pendingOrderId}
             />
           ))
         )}

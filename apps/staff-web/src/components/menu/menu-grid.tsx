@@ -79,9 +79,9 @@ export function MenuGrid({
               key={item.id}
               item={item}
               categoryIcon={item.category_id ? categoryMap.get(item.category_id) : undefined}
-              onEdit={() => onEditItem(item)}
-              onDelete={() => onDeleteItem(item.id)}
-              onToggleAvailability={() => onToggleAvailability(item.id, item.is_available)}
+              onEdit={onEditItem}
+              onDelete={onDeleteItem}
+              onToggleAvailability={onToggleAvailability}
               t={t}
             />
           ))}

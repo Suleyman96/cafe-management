@@ -6,7 +6,11 @@
 
 import { ORDER_STATUS } from '@gustri/core';
 import type { Database } from '@gustri/database';
-import { QUERY_KEYS, useOrders as useOrdersShared } from '@gustri/queries';
+import {
+  getOrCreateClientRequestId,
+  QUERY_KEYS,
+  useOrders as useOrdersShared,
+} from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
 import { invalidateOrders, invalidateOrdersAndTables } from '@/lib/query-helpers';
@@ -52,36 +56,36 @@ export function useUpdateOrderStatus() {
   return useMutation({
     mutationFn: ({ orderId, status }: { orderId: string; status: keyof typeof ORDER_STATUS }) => {
       const statusValue = ORDER_STATUS[status] as OrderStatus;
-      return db.orders.updateStatus(orderId, statusValue);
+      // Mint a fresh idempotency key per attempt. The wrapper is idempotent
+      // via a conditional UPDATE, so this key is currently unused server-side
+      // but reserved for a future status-update audit log.
+      const clientRequestId = getOrCreateClientRequestId();
+      return db.orders.updateStatus(orderId, statusValue, { clientRequestId });
     },
     onMutate: async ({ orderId, status }) => {
       const statusValue = ORDER_STATUS[status] as OrderStatus;
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ORDERS] });
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
 
-      const previousOrders = queryClient.getQueryData([QUERY_KEYS.ORDERS]);
-      const previousActive = queryClient.getQueryData([QUERY_KEYS.ACTIVE_ORDERS]);
       // Capture pre-mutation order so we can pass {oldStatus, oldType} to
       // invalidateOrdersAndTables in onSettled. Without this the helper
       // can't tell whether the transition crossed a terminal state and
       // would invalidate TABLES on every kitchen toggle.
       const previousOrder = queryClient.getQueryData<OrderWithDetails>([QUERY_KEYS.ORDER, orderId]);
 
+      // Optimistic patch on the affected row only. We deliberately do NOT
+      // snapshot the full list for rollback — restoring a pre-mutation list
+      // on error would clobber any realtime updates (delivery_fee,
+      // customer_notes, item-level changes) that landed between onMutate and
+      // onError. On error we leave the optimistic patch in place; onSettled's
+      // invalidate refetches truth from the server. (Audit plan Option A.)
       const updateList = (old: OrderWithDetails[] | undefined) =>
         old?.map((o) => (o.id === orderId ? { ...o, status: statusValue } : o));
 
       queryClient.setQueryData([QUERY_KEYS.ORDERS], updateList);
       queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], updateList);
 
-      return { previousOrders, previousActive, previousOrder };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previousOrders) {
-        queryClient.setQueryData([QUERY_KEYS.ORDERS], context.previousOrders);
-      }
-      if (context?.previousActive) {
-        queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], context.previousActive);
-      }
+      return { previousOrder };
     },
     onSettled: (_data, _err, { orderId, status }, context) => {
       const statusValue = ORDER_STATUS[status] as OrderStatus;
@@ -109,9 +113,9 @@ export function useUpdateOrderItemStatus() {
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ORDERS] });
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
 
-      const previousOrders = queryClient.getQueryData([QUERY_KEYS.ORDERS]);
-      const previousActive = queryClient.getQueryData([QUERY_KEYS.ACTIVE_ORDERS]);
-
+      // Optimistic patch only — see useUpdateOrderStatus for the rationale.
+      // No full-list snapshot: a rollback would lose any realtime changes
+      // that arrive mid-flight. onSettled's invalidate converges on truth.
       const updateList = (old: OrderWithDetails[] | undefined) =>
         old?.map((order) => ({
           ...order,
@@ -122,16 +126,6 @@ export function useUpdateOrderItemStatus() {
 
       queryClient.setQueryData([QUERY_KEYS.ORDERS], updateList);
       queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], updateList);
-
-      return { previousOrders, previousActive };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previousOrders) {
-        queryClient.setQueryData([QUERY_KEYS.ORDERS], context.previousOrders);
-      }
-      if (context?.previousActive) {
-        queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], context.previousActive);
-      }
     },
     onSettled: () => {
       // Item status changes don't move the order between terminal states —
@@ -151,10 +145,14 @@ export function useCreateOrder() {
       const { order } = await apiRoutes.orders.create(orderData);
       return order;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
+    onSuccess: (createdOrder) => {
+      invalidateOrdersAndTables(queryClient, {
+        isCreation: true,
+        newType: createdOrder.order_type,
+        newStatus: createdOrder.status,
+      });
+      // Plan-cap widget — kept unconditional; gating on near-cap requires
+      // plan-aware logic that doesn't belong in a write hook.
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MONTHLY_ORDER_COUNT] });
     },
   });

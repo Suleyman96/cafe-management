@@ -1,8 +1,8 @@
 'use client';
 
-import type { Database } from '@gustri/database';
+import type { Database, TableStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button, TABLE_STATUS_BADGES } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
 import { ArrowRight, Loader2, Minus, Plus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -135,28 +135,13 @@ export function ItemTransferModal({
   if (!isOpen || !order) return null;
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'free':
-        return (
-          <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
-            {t('tables.free')}
-          </span>
-        );
-      case 'reserved':
-        return (
-          <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
-            {t('tables.reserved')}
-          </span>
-        );
-      case 'occupied':
-        return (
-          <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">
-            {t('tables.occupied')}
-          </span>
-        );
-      default:
-        return null;
-    }
+    const config = TABLE_STATUS_BADGES[status as TableStatus];
+    if (!config) return null;
+    return (
+      <span className={`text-xs px-2 py-0.5 ${config.bg} ${config.text} rounded-full`}>
+        {t(config.labelKey)}
+      </span>
+    );
   };
 
   return (

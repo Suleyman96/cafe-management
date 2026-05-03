@@ -2,6 +2,7 @@
 
 import type { Database } from '@gustri/database';
 import { Clock, Pencil, Trash2 } from 'lucide-react';
+import { memo } from 'react';
 import { useTaxMultiplier } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
 
@@ -10,13 +11,13 @@ type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 interface MenuItemCardProps {
   item: MenuItem;
   categoryIcon?: string;
-  onEdit: () => void;
-  onDelete: () => void;
-  onToggleAvailability: () => void;
+  onEdit: (item: MenuItem) => void;
+  onDelete: (id: string) => void;
+  onToggleAvailability: (id: string, currentAvailable: boolean) => void;
   t: (key: string, opts?: Record<string, string | number>) => string;
 }
 
-export function MenuItemCard({
+function MenuItemCardImpl({
   item,
   categoryIcon,
   onEdit,
@@ -136,7 +137,7 @@ export function MenuItemCard({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onToggleAvailability();
+              onToggleAvailability(item.id, item.is_available);
             }}
             className="flex items-center gap-1.5 text-xs font-medium transition-colors"
             title={item.is_available ? t('menu.markUnavailable') : t('menu.markAvailable')}
@@ -162,7 +163,7 @@ export function MenuItemCard({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onEdit();
+                onEdit(item);
               }}
               className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
               title={t('edit', { ns: 'common' })}
@@ -172,7 +173,7 @@ export function MenuItemCard({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onDelete();
+                onDelete(item.id);
               }}
               className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
               title={t('delete', { ns: 'common' })}
@@ -185,6 +186,8 @@ export function MenuItemCard({
     </div>
   );
 }
+
+export const MenuItemCard = memo(MenuItemCardImpl);
 
 export function MenuItemSkeletonCard() {
   return (

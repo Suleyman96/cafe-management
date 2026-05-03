@@ -476,6 +476,7 @@
   "orders.discountApplied": "İndirim uygulandı",
   "orders.discountExceedsSubtotal": "İndirim %100'ü aşamaz",
   "orders.discountReason": "Sebep (isteğe bağlı)",
+  "orders.discountReasonRequired": "Büyük indirimler için sebep gereklidir (en az 5 karakter)",
   "orders.discountRemoved": "İndirim kaldırıldı",
   "orders.discountType": "İndirim Türü",
   "orders.discountValue": "İndirim Değeri",

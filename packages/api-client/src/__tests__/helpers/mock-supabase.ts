@@ -25,6 +25,8 @@ function createChainableQuery(
     'in',
     'is',
     'or',
+    'ilike',
+    'like',
     'gt',
     'gte',
     'lt',
@@ -100,7 +102,10 @@ export function createMockSupabase(config: MockSupabaseConfig = {}) {
     channel: (name: string) => {
       calls.push({ table: '__channel', method: 'channel', args: [name] });
       const channelObj: Record<string, any> = {
-        on: (..._args: any[]) => channelObj,
+        on: (...args: any[]) => {
+          calls.push({ table: '__channel', method: 'on', args });
+          return channelObj;
+        },
         subscribe: (cb?: (status: string) => void) => {
           if (cb) cb('SUBSCRIBED');
           return channelObj;

@@ -151,3 +151,16 @@ export function formatTime(dateString: string | Date): string {
   const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
   return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
+
+// ─── Exhaustiveness ─────────────────────────────────────────────
+
+/**
+ * Compile-time exhaustiveness guard. Place at the `default:` arm of a switch
+ * (or any branch that should be unreachable) to make TypeScript fail when a
+ * new enum variant is added without a corresponding case. Throws at runtime
+ * if reached, so a stale build deployed against newer data still produces a
+ * loud, traceable error rather than silently returning undefined.
+ */
+export function assertUnreachable(x: never): never {
+  throw new Error(`Unreachable: ${JSON.stringify(x)}`);
+}

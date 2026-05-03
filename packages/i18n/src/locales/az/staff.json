@@ -476,6 +476,7 @@
   "orders.discountApplied": "Endirim tətbiq edildi",
   "orders.discountExceedsSubtotal": "Endirim 100%-i keçə bilməz",
   "orders.discountReason": "Səbəb (isteğe bağlı)",
+  "orders.discountReasonRequired": "Böyük endirimlər üçün səbəb tələb olunur (ən azı 5 simvol)",
   "orders.discountRemoved": "Endirim silindi",
   "orders.discountType": "Endirim növü",
   "orders.discountValue": "Endirim dəyəri",

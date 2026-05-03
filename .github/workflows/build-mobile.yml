@@ -10,15 +10,6 @@ on:
       - 'packages/api-client/**'
       - 'packages/queries/**'
       - 'packages/i18n/**'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'apps/mobile/**'
-      - 'packages/core/**'
-      - 'packages/database/**'
-      - 'packages/api-client/**'
-      - 'packages/queries/**'
-      - 'packages/i18n/**'
   workflow_dispatch:
 
 concurrency:
@@ -26,78 +17,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-preview:
-    name: EAS Build (Preview)
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    # The post-build step writes a comment on the PR with the EAS build URL.
-    # Default GITHUB_TOKEN is read-only for issues/PRs, so the github-script
-    # call returned 403 "Resource not accessible by integration" until these
-    # were granted. `contents: read` keeps `actions/checkout` working.
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Build preview APK
-        id: eas-build
-        working-directory: apps/mobile
-        run: |
-          # `--json` writes JSON to stdout; progress + warnings ("No environment
-          # variables…", "Created update channel…") go to stderr. Capture stdout
-          # only — mixing them feeds non-JSON to jq and the parser explodes on
-          # the leading "✔ …" lines.
-          set -o pipefail
-          BUILD_OUTPUT=$(eas build --profile preview --platform android --non-interactive --no-wait --json)
-          echo "$BUILD_OUTPUT"
-
-          BUILD_ID=$(echo "$BUILD_OUTPUT" | jq -r '.[0].id // empty')
-          OWNER=$(echo "$BUILD_OUTPUT" | jq -r '.[0].project.ownerAccount.name // empty')
-          SLUG=$(echo "$BUILD_OUTPUT"  | jq -r '.[0].project.slug // empty')
-          if [ -n "$BUILD_ID" ] && [ -n "$OWNER" ] && [ -n "$SLUG" ]; then
-            BUILD_URL="https://expo.dev/accounts/$OWNER/projects/$SLUG/builds/$BUILD_ID"
-          else
-            BUILD_URL=""
-          fi
-          echo "build_url=$BUILD_URL" >> "$GITHUB_OUTPUT"
-
-      - name: Comment build URL on PR
-        # Skip on fork PRs (token is read-only regardless of permissions block).
-        if: steps.eas-build.outputs.build_url != '' && github.event.pull_request.head.repo.full_name == github.repository
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `📱 **EAS Preview Build started**\n\n[View build details](${process.env.BUILD_URL})\n\nProfile: \`preview\` | Platform: Android (APK)`
-            })
-        env:
-          BUILD_URL: ${{ steps.eas-build.outputs.build_url }}
-
   build-production:
     name: EAS Build (Production)
     runs-on: ubuntu-latest

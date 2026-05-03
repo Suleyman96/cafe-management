@@ -83,6 +83,8 @@ export {
   useWasteLogs,
   useWasteMonthlySummary,
 } from './hooks/use-waste';
+// Idempotency helpers
+export { getOrCreateClientRequestId, randomUUIDv4 } from './idempotency';
 // Invalidation helpers
 export type { OrderTransition } from './invalidation';
 export {
@@ -108,7 +110,7 @@ export { QUERY_KEYS } from './keys';
 export { MUTATION_KEYS, type MutationKey, type MutationKeyName } from './mutation-keys';
 // Mutation types
 export type { MutationCallbacks } from './mutations/types';
-export { DbProvider, useDb } from './provider';
+export { DbProvider, REALTIME_INVALIDATE_DEBOUNCE_MS, useDb } from './provider';
 
 // ─── Mutations ──────────────────────────────────────────────────────────────
 

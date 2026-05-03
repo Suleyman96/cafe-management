@@ -1,24 +1,24 @@
 'use client';
 
 import { calculateOrderTotal, formatElapsedTime } from '@gustri/core';
+import type { OrderStatus, TableStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button, ORDER_STATUS_BADGES, TABLE_STATUS_BADGES } from '@gustri/ui';
 import {
   AlertCircle,
   CheckCircle,
-  ChefHat,
   Clock,
   Edit2,
-  Hourglass,
   Loader2,
   MoreVertical,
   Package,
   Trash2,
   UserCheck,
   Users,
-  UtensilsCrossed,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { memo } from 'react';
+import { ORDER_STATUS_ICONS } from '@/lib/enum-icons';
 import type { OrderWithDetails, Tables, WaiterCalls } from '@/types';
 
 interface TableCardProps {
@@ -35,14 +35,18 @@ interface TableCardProps {
   formatPrice: (amount: number) => string;
 }
 
-// Get effective status based on item statuses
-const getEffectiveOrderStatus = (order: OrderWithDetails) => {
+// `partially_ready` is a derived UI state — not a real `OrderStatus` enum
+// value — used when some items are ready but others are still pending. The
+// badge map below carries it alongside the real statuses.
+type EffectiveOrderStatus = OrderStatus | 'partially_ready';
+
+const getEffectiveOrderStatus = (order: OrderWithDetails): EffectiveOrderStatus => {
   if (!order?.order_items || order.order_items.length === 0) {
-    return order.status;
+    return order.status as OrderStatus;
   }
 
   const items = order.order_items.filter((item) => item.status !== 'cancelled');
-  if (items.length === 0) return order.status;
+  if (items.length === 0) return order.status as OrderStatus;
 
   const allServed = items.every((item) => item.status === 'served');
   const allReady = items.every((item) => item.status === 'ready' || item.status === 'served');
@@ -53,7 +57,24 @@ const getEffectiveOrderStatus = (order: OrderWithDetails) => {
   if (allReady) return 'ready';
   if (anyReady) return 'partially_ready';
   if (anyPreparing) return 'preparing';
-  return order.status;
+  return order.status as OrderStatus;
+};
+
+// Card background per *effective* status — uses lighter shades than the
+// inline status badge for a softer card surface. Keys cover every real
+// `OrderStatus` plus the derived `partially_ready` so a new variant fails
+// type-check.
+const TABLE_CARD_STATUS_STYLES: Record<EffectiveOrderStatus, string> = {
+  pending_approval: 'bg-amber-50 border-amber-300',
+  new: 'bg-blue-50 border-blue-400',
+  preparing: 'bg-yellow-50 border-yellow-400',
+  ready: 'bg-green-50 border-green-400',
+  partially_ready: 'bg-lime-50 border-lime-400',
+  served: 'bg-purple-50 border-purple-400',
+  out_for_delivery: 'bg-violet-50 border-violet-300',
+  delivered: 'bg-emerald-50 border-emerald-300',
+  closed: 'bg-gray-100 border-gray-300',
+  cancelled: 'bg-red-50 border-red-300',
 };
 
 // Get table card background based on status and orders
@@ -71,18 +92,12 @@ const getTableCardStyle = (table: Tables, activeOrders: OrderWithDetails[]) => {
     if (activeOrders.length > 1) {
       return 'bg-amber-50 border-amber-400';
     }
-    const effectiveStatus = getEffectiveOrderStatus(activeOrders[0]);
-    if (effectiveStatus === 'served') return 'bg-purple-50 border-purple-400';
-    if (effectiveStatus === 'ready') return 'bg-green-50 border-green-400';
-    if (effectiveStatus === 'partially_ready') return 'bg-lime-50 border-lime-400';
-    if (effectiveStatus === 'preparing') return 'bg-yellow-50 border-yellow-400';
-    if (effectiveStatus === 'new') return 'bg-blue-50 border-blue-400';
-    return 'bg-orange-50 border-orange-300';
+    return TABLE_CARD_STATUS_STYLES[getEffectiveOrderStatus(activeOrders[0])];
   }
   return 'bg-white border-gray-200 hover:border-gray-400 hover:shadow-md';
 };
 
-export function TableCard({
+function TableCardImpl({
   table,
   activeOrders,
   activeCalls,
@@ -110,66 +125,34 @@ export function TableCard({
     return count + (order.order_items?.filter((item) => item.status !== 'cancelled').length || 0);
   }, 0);
 
-  // Get order status badge styling
-  const getOrderStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending_approval':
-        return {
-          bg: 'bg-amber-100',
-          text: 'text-amber-800',
-          border: 'border-amber-400',
-          icon: <Hourglass className="h-3.5 w-3.5" />,
-          label: `⏳ ${t('orders.pendingApproval')}`,
-        };
-      case 'new':
-        return {
-          bg: 'bg-blue-100',
-          text: 'text-blue-800',
-          border: 'border-blue-300',
-          icon: <AlertCircle className="h-3.5 w-3.5" />,
-          label: t('orders.new'),
-        };
-      case 'preparing':
-        return {
-          bg: 'bg-yellow-100',
-          text: 'text-yellow-800',
-          border: 'border-yellow-300',
-          icon: <ChefHat className="h-3.5 w-3.5" />,
-          label: t('orders.preparing'),
-        };
-      case 'ready':
-        return {
-          bg: 'bg-green-100',
-          text: 'text-green-800',
-          border: 'border-green-300',
-          icon: <CheckCircle className="h-3.5 w-3.5" />,
-          label: t('orders.ready'),
-        };
-      case 'served':
-        return {
-          bg: 'bg-purple-100',
-          text: 'text-purple-800',
-          border: 'border-purple-300',
-          icon: <UtensilsCrossed className="h-3.5 w-3.5" />,
-          label: t('orders.served'),
-        };
-      case 'partially_ready':
-        return {
-          bg: 'bg-lime-100',
-          text: 'text-lime-800',
-          border: 'border-lime-400',
-          icon: <CheckCircle className="h-3.5 w-3.5" />,
-          label: t('orders.ready'),
-        };
-      default:
-        return {
-          bg: 'bg-gray-100',
-          text: 'text-gray-800',
-          border: 'border-gray-300',
-          icon: null,
-          label: status,
-        };
+  // Get order status badge styling — `partially_ready` is the only key that
+  // isn't a real `OrderStatus`; everything else flows through the shared map.
+  const PARTIALLY_READY_BADGE = {
+    bg: 'bg-lime-100',
+    text: 'text-lime-800',
+    border: 'border-lime-400',
+  } as const;
+
+  const getOrderStatusBadge = (status: EffectiveOrderStatus) => {
+    if (status === 'partially_ready') {
+      return {
+        bg: PARTIALLY_READY_BADGE.bg,
+        text: PARTIALLY_READY_BADGE.text,
+        border: PARTIALLY_READY_BADGE.border,
+        icon: <CheckCircle className="h-3.5 w-3.5" />,
+        label: t('orders.ready'),
+      };
     }
+    const config = ORDER_STATUS_BADGES[status];
+    const Icon = ORDER_STATUS_ICONS[status];
+    const labelText = t(config.labelKey);
+    return {
+      bg: config.bg,
+      text: config.text,
+      border: config.border ?? 'border-gray-300',
+      icon: Icon ? <Icon className="h-3.5 w-3.5" /> : null,
+      label: status === 'pending_approval' ? `⏳ ${labelText}` : labelText,
+    };
   };
 
   return (
@@ -234,15 +217,14 @@ export function TableCard({
           <h3 className="text-xl sm:text-2xl font-bold text-gray-800">{table.table_number}</h3>
           <div className="flex items-center gap-2 mt-1">
             <span
-              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                table.status === 'free'
-                  ? 'bg-gray-100 text-gray-600'
-                  : table.status === 'occupied'
-                    ? 'bg-orange-100 text-orange-700'
-                    : table.status === 'reserved'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-gray-200 text-gray-600'
-              }`}
+              className={`text-xs px-2 py-0.5 rounded-full font-medium ${(() => {
+                const cfg = TABLE_STATUS_BADGES[table.status as TableStatus];
+                // table-card uses a slightly muted "free" tone (gray rather
+                // than the badge map's green) since "free" is the resting
+                // state and shouldn't draw the eye.
+                if (table.status === 'free') return 'bg-gray-100 text-gray-600';
+                return cfg ? `${cfg.bg} ${cfg.text}` : 'bg-gray-200 text-gray-600';
+              })()}`}
             >
               {t(`tables.${table.status}`)}
             </span>
@@ -378,3 +360,5 @@ export function TableCard({
     </div>
   );
 }
+
+export const TableCard = memo(TableCardImpl);

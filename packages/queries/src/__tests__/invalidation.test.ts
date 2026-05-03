@@ -122,6 +122,50 @@ describe('invalidateOrdersAndTables', () => {
     expect(keys).not.toContainEqual([QUERY_KEYS.TAKEOUT_ORDERS]);
   });
 
+  it('invalidates TABLES on dine-in order creation (claims a table)', () => {
+    const { qc, spy } = createMockQueryClient();
+    invalidateOrdersAndTables(qc, {
+      isCreation: true,
+      newStatus: 'new',
+      newType: 'dine_in',
+    });
+    const keys = getInvalidatedKeys(spy);
+
+    expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
+    expect(keys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+    expect(keys).toContainEqual([QUERY_KEYS.TABLES]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.DELIVERY_ORDERS]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.TAKEOUT_ORDERS]);
+  });
+
+  it('does NOT invalidate TABLES on takeout order creation', () => {
+    const { qc, spy } = createMockQueryClient();
+    invalidateOrdersAndTables(qc, {
+      isCreation: true,
+      newStatus: 'new',
+      newType: 'takeout',
+    });
+    const keys = getInvalidatedKeys(spy);
+
+    expect(keys).toContainEqual([QUERY_KEYS.TAKEOUT_ORDERS]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.TABLES]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.DELIVERY_ORDERS]);
+  });
+
+  it('does NOT invalidate TABLES on delivery order creation', () => {
+    const { qc, spy } = createMockQueryClient();
+    invalidateOrdersAndTables(qc, {
+      isCreation: true,
+      newStatus: 'new',
+      newType: 'delivery',
+    });
+    const keys = getInvalidatedKeys(spy);
+
+    expect(keys).toContainEqual([QUERY_KEYS.DELIVERY_ORDERS]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.TABLES]);
+    expect(keys).not.toContainEqual([QUERY_KEYS.TAKEOUT_ORDERS]);
+  });
+
   it('invalidates TAKEOUT_ORDERS only when type === takeout', () => {
     const { qc, spy } = createMockQueryClient();
     invalidateOrdersAndTables(qc, {

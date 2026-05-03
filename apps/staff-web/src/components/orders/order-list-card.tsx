@@ -17,6 +17,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { memo } from 'react';
 import type { OrderWithDetails } from '@/types';
 
 type OrderStatus =
@@ -35,6 +36,13 @@ interface OrderListCardProps {
   onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void;
   onOpenPayment: (order: OrderWithDetails) => void;
   onOpenCancel: (order: OrderWithDetails) => void;
+  /**
+   * True while a status-update mutation is in flight in the parent.
+   * When `pendingOrderId === order.id`, the row's status buttons are
+   * disabled to prevent rapid-click duplicate updates.
+   */
+  isStatusUpdatePending?: boolean;
+  pendingOrderId?: string | null;
 }
 
 const calculatePaidAmount = (
@@ -44,12 +52,14 @@ const calculatePaidAmount = (
   return order.order_payments.reduce((sum, payment) => sum + payment.amount, 0);
 };
 
-export function OrderListCard({
+function OrderListCardImpl({
   order,
   formatPrice,
   onStatusUpdate,
   onOpenPayment,
   onOpenCancel,
+  isStatusUpdatePending = false,
+  pendingOrderId = null,
 }: OrderListCardProps) {
   const { t } = useTranslation('staff');
   const router = useRouter();
@@ -59,6 +69,7 @@ export function OrderListCard({
   const remaining = total - paid;
   const isFullyPaid = remaining === 0 && total > 0;
   const hasItems = order.order_items?.some((item) => item.status !== 'cancelled') ?? false;
+  const isThisRowPending = isStatusUpdatePending && pendingOrderId === order.id;
 
   const isTakeout =
     order.order_type === 'takeout' || (!order.table && order.order_type !== 'delivery');
@@ -179,6 +190,7 @@ export function OrderListCard({
             <Button
               size="sm"
               className="bg-green-600 hover:bg-green-700"
+              disabled={isThisRowPending}
               onClick={() => onStatusUpdate(order.id, 'new')}
             >
               <ThumbsUp className="h-4 w-4 mr-1" />
@@ -196,7 +208,7 @@ export function OrderListCard({
           <Button
             size="sm"
             variant="outline"
-            disabled={!hasItems}
+            disabled={!hasItems || isThisRowPending}
             onClick={() => onStatusUpdate(order.id, 'preparing')}
           >
             <ChefHat className="h-4 w-4 mr-1" />
@@ -207,7 +219,7 @@ export function OrderListCard({
           <Button
             size="sm"
             variant="outline"
-            disabled={!hasItems}
+            disabled={!hasItems || isThisRowPending}
             onClick={() => onStatusUpdate(order.id, 'ready')}
           >
             <CheckCircle className="h-4 w-4 mr-1" />
@@ -218,7 +230,7 @@ export function OrderListCard({
           <Button
             size="sm"
             variant="outline"
-            disabled={!hasItems}
+            disabled={!hasItems || isThisRowPending}
             onClick={() => onStatusUpdate(order.id, 'served')}
           >
             <CheckCircle className="h-4 w-4 mr-1" />
@@ -228,7 +240,7 @@ export function OrderListCard({
         {order.status === 'ready' && isDelivery && (
           <Button
             size="sm"
-            disabled={!hasItems}
+            disabled={!hasItems || isThisRowPending}
             className="bg-purple-600 hover:bg-purple-700 text-white"
             onClick={() => onStatusUpdate(order.id, 'out_for_delivery')}
           >
@@ -239,7 +251,7 @@ export function OrderListCard({
         {order.status === 'out_for_delivery' && isDelivery && (
           <Button
             size="sm"
-            disabled={!hasItems}
+            disabled={!hasItems || isThisRowPending}
             className="bg-green-600 hover:bg-green-700 text-white"
             onClick={() => onStatusUpdate(order.id, 'delivered')}
           >
@@ -273,3 +285,5 @@ export function OrderListCard({
     </div>
   );
 }
+
+export const OrderListCard = memo(OrderListCardImpl);

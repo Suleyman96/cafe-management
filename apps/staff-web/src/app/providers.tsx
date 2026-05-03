@@ -15,7 +15,34 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 import '@/lib/i18n';
+import { channelRegistry } from '@/lib/realtime/channel-registry';
+import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/wrapped-client';
+
+/**
+ * Rebinds Supabase Realtime channels on JWT refresh.
+ *
+ * Realtime opens its websocket with the JWT it had at subscribe-time and
+ * never re-authenticates when supabase-js refreshes the token (~55 min).
+ * The connection then drops silently and consumers (e.g. kitchen view)
+ * stall until the safety-net poll catches up. Listening for
+ * TOKEN_REFRESHED / SIGNED_IN and resubscribing every active channel
+ * keeps the websocket bound to a fresh token.
+ */
+function RealtimeAuthBridge() {
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+        channelRegistry.resubscribeAll();
+      } else if (event === 'SIGNED_OUT') {
+        channelRegistry.teardownAll();
+      }
+    });
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  return null;
+}
 
 /** Cancel in-flight queries when route changes to free browser connections. */
 function RouteChangeHandler() {
@@ -62,6 +89,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
         <DbProvider db={db}>
+          <RealtimeAuthBridge />
           <RouteChangeHandler />
           {children}
           <Toaster position="bottom-right" />

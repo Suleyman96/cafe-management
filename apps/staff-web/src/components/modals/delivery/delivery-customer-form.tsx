@@ -7,10 +7,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchDeliveryCustomers } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
 
+// Search results never carry the plaintext phone — column-level grants on
+// `delivery_customers` hide ciphertext from non-admin sessions, and the
+// hash-based `find_delivery_customer_by_phone` RPC returns the row without
+// it. The form treats `phone` as something the waiter types in this
+// session, not something we autofill from the directory.
 interface DeliveryCustomer {
   id: string;
   name: string;
-  phone: string;
   address: string;
   notes: string | null;
   order_count: number;
@@ -63,7 +67,6 @@ export function DeliveryCustomerForm({
     onCustomerChange({
       customerId: c.id,
       name: c.name,
-      phone: c.phone,
       address: c.address,
       notes: c.notes || '',
     });
@@ -130,18 +133,15 @@ export function DeliveryCustomerForm({
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="font-medium text-sm">{c.name}</div>
-                          <div className="text-xs text-gray-500">{c.phone}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xs text-gray-400 line-clamp-1 max-w-[150px]">
+                          <div className="text-xs text-gray-400 line-clamp-1 max-w-[220px]">
                             {c.address}
                           </div>
-                          {c.order_count > 0 && (
-                            <div className="text-xs text-purple-600">
-                              {t('delivery.customerOrders', { count: c.order_count })}
-                            </div>
-                          )}
                         </div>
+                        {c.order_count > 0 && (
+                          <div className="text-xs text-purple-600">
+                            {t('delivery.customerOrders', { count: c.order_count })}
+                          </div>
+                        )}
                       </div>
                     </button>
                   ))

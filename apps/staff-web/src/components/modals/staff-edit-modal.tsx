@@ -6,7 +6,7 @@ import { Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/modals/confirm-dialog';
-import { useUpdateStaff } from '@/hooks';
+import { useStaffMember, useUpdateStaff } from '@/hooks';
 import { supabase } from '@/lib/supabase/client';
 
 type StaffRole = 'waiter' | 'admin' | 'kitchen' | 'owner';
@@ -27,9 +27,13 @@ export function StaffEditModal({
   onSuccess,
 }: StaffEditModalProps) {
   const { t } = useTranslation('staff');
+  // List view fetches a narrow projection (no phone); pull the detail row so
+  // the form initializes with the real phone value rather than blanking it.
+  const { data: detail } = useStaffMember(staff.id);
   const [fullName, setFullName] = useState(staff.full_name || '');
   const [role, setRole] = useState<StaffRole>(staff.role || 'waiter');
-  const [phone, setPhone] = useState(staff.phone || '');
+  const [phone, setPhone] = useState('');
+  const [phoneInitialized, setPhoneInitialized] = useState(false);
   const [isActive, setIsActive] = useState(staff.is_active ?? true);
   const [loading, setLoading] = useState(false);
 
@@ -73,9 +77,19 @@ export function StaffEditModal({
   useEffect(() => {
     setFullName(staff.full_name || '');
     setRole(staff.role || 'waiter');
-    setPhone(staff.phone || '');
     setIsActive(staff.is_active ?? true);
+    setPhoneInitialized(false);
+    setPhone('');
   }, [staff]);
+
+  // Initialize phone once the detail fetch resolves (list view doesn't
+  // include phone). Skip after first init so admin edits aren't clobbered.
+  useEffect(() => {
+    if (!phoneInitialized && detail) {
+      setPhone(detail.phone || '');
+      setPhoneInitialized(true);
+    }
+  }, [detail, phoneInitialized]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,8 +1,10 @@
 'use client';
 
-import type { Database } from '@gustri/database';
+import type { Database, OrderItemStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { AlertCircle, CheckCircle, ChefHat, UtensilsCrossed, X, XCircle } from 'lucide-react';
+import { ORDER_ITEM_STATUS_BADGES } from '@gustri/ui';
+import { CheckCircle, UtensilsCrossed, X } from 'lucide-react';
+import { ORDER_ITEM_STATUS_ICONS } from '@/lib/enum-icons';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'];
 
@@ -13,49 +15,30 @@ interface OrderItemsListProps {
   formatPrice: (amount: number) => string;
 }
 
+// `pending` reads its label from the `common` namespace here (vs `staff` in
+// the badge map) to match the shared "Pending" copy used elsewhere on the
+// table view.
+const ITEM_LIST_LABEL_OVERRIDES: Partial<Record<OrderItemStatus, { key: string; ns?: string }>> = {
+  pending: { key: 'pending', ns: 'common' },
+};
+
 function getItemStatusBadge(
   status: string,
   t: (key: string, opts?: Record<string, string | number>) => string,
 ) {
-  switch (status) {
-    case 'pending':
-      return {
-        bg: 'bg-gray-100',
-        text: 'text-gray-700',
-        icon: <AlertCircle className="h-3 w-3" />,
-        label: t('pending', { ns: 'common' }),
-      };
-    case 'preparing':
-      return {
-        bg: 'bg-yellow-100',
-        text: 'text-yellow-800',
-        icon: <ChefHat className="h-3 w-3" />,
-        label: t('orders.preparing'),
-      };
-    case 'ready':
-      return {
-        bg: 'bg-green-100',
-        text: 'text-green-800',
-        icon: <CheckCircle className="h-3 w-3" />,
-        label: t('orders.ready'),
-      };
-    case 'served':
-      return {
-        bg: 'bg-purple-100',
-        text: 'text-purple-800',
-        icon: <UtensilsCrossed className="h-3 w-3" />,
-        label: t('orders.served'),
-      };
-    case 'cancelled':
-      return {
-        bg: 'bg-red-100',
-        text: 'text-red-700',
-        icon: <XCircle className="h-3 w-3" />,
-        label: t('orders.cancelled'),
-      };
-    default:
-      return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, label: status };
-  }
+  const config = ORDER_ITEM_STATUS_BADGES[status as OrderItemStatus];
+  const Icon = ORDER_ITEM_STATUS_ICONS[status as OrderItemStatus];
+  if (!config) return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, label: status };
+  const override = ITEM_LIST_LABEL_OVERRIDES[status as OrderItemStatus];
+  const label = override
+    ? t(override.key, override.ns ? { ns: override.ns } : undefined)
+    : t(config.labelKey);
+  return {
+    bg: config.bg,
+    text: config.text,
+    icon: Icon ? <Icon className="h-3 w-3" /> : null,
+    label,
+  };
 }
 
 export function OrderItemsList({

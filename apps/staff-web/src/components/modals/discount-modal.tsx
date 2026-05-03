@@ -71,7 +71,8 @@ export function DiscountModal({
       onSuccess();
       onClose();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to apply discount';
+      const raw = error instanceof Error ? error.message : 'Failed to apply discount';
+      const message = raw === 'discount_reason_required' ? t('orders.discountReasonRequired') : raw;
       toast.error(message);
     } finally {
       setLoading(false);

@@ -304,6 +304,18 @@ WHERE NOT EXISTS (
 
 ## Prompt 5 — C5: Pass `p_tenant_id` explicitly in reports wrapper
 
+> **SUPERSEDED (2026-05-03).** This prompt is obsolete. Migration
+> [20260430000002_multitenant_security_hardening.sql](../supabase/migrations/20260430000002_multitenant_security_hardening.sql)
+> took the stronger approach: it DROPped the `(UUID, TIMESTAMPTZ, TIMESTAMPTZ)`
+> overloads and recreated all five report functions with signature `(p_from, p_to)`
+> only, deriving the tenant from `current_tenant_id()` server-side and raising
+> `'No tenant context'` if the session is unbound. Callers can no longer pass a
+> tenant id at all — which is safer than asking them to pass the right one. The
+> wrapper in [packages/api-client/src/wrapper/reports.ts](../packages/api-client/src/wrapper/reports.ts)
+> and the comment in [packages/queries/src/hooks/use-reports.ts](../packages/queries/src/hooks/use-reports.ts)
+> already match the current schema. No action required. Original prompt left
+> below for historical context.
+
 ```
 You are fixing a CRITICAL bug where reports RPC calls omit the required
 `p_tenant_id` parameter. Either reports are silently broken in production or

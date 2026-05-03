@@ -49,6 +49,7 @@ function createSequencedMockClient(responsesByTable: Record<string, MockResponse
           'update',
           'delete',
           'eq',
+          'neq',
           'in',
           'order',
           'limit',
@@ -153,6 +154,59 @@ describe('Wrapper idempotency — orders.create', () => {
         client_request_id: '00000000-0000-0000-0000-0000000000a3',
       } as never),
     ).rejects.toThrow();
+  });
+});
+
+describe('Wrapper idempotency — orders.updateStatus', () => {
+  it('returns the existing row when the conditional UPDATE matches zero rows (replay)', async () => {
+    // The wrapper's UPDATE filters with `.neq('status', target)`. A second
+    // call after the first commits sees the row at the target status, so
+    // the UPDATE matches zero rows. The wrapper then re-SELECTs and
+    // returns the existing row — replays look identical to the first
+    // attempt to callers.
+    const id = '00000000-0000-0000-0000-0000000000c1';
+    const ready = buildOrder({ id, status: 'ready' });
+
+    const { client } = createSequencedMockClient({
+      order_items: [
+        // empty-items guard query for `ready` advance — return one item
+        { data: [{ id: 'i1' }], error: null },
+      ],
+      orders: [
+        // Conditional UPDATE: zero rows touched (status already 'ready').
+        { data: null, error: null },
+        // Refetch returns the row at its current status.
+        { data: ready, error: null },
+      ],
+    });
+
+    const ctx = { client: client as never, anyClient: client as never };
+    const wrapper = createOrdersWrapper(ctx);
+
+    const result = await wrapper.updateStatus(id, 'ready', {
+      clientRequestId: '00000000-0000-0000-0000-0000000000c2',
+    });
+
+    expect(result).toEqual(ready);
+  });
+
+  it('returns the freshly-updated row on the first transition', async () => {
+    const id = '00000000-0000-0000-0000-0000000000c3';
+    const updated = buildOrder({ id, status: 'ready' });
+
+    const { client } = createSequencedMockClient({
+      order_items: [{ data: [{ id: 'i1' }], error: null }],
+      orders: [
+        // Conditional UPDATE matches one row, returns the new shape.
+        { data: updated, error: null },
+      ],
+    });
+
+    const ctx = { client: client as never, anyClient: client as never };
+    const wrapper = createOrdersWrapper(ctx);
+
+    const result = await wrapper.updateStatus(id, 'ready');
+    expect(result).toEqual(updated);
   });
 });
 

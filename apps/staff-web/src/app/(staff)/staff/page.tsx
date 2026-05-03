@@ -1,14 +1,16 @@
 'use client';
 
+import type { UserRole } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, getRoleBadgeColor, LoadingSpinner } from '@gustri/ui';
-import { ChefHat, Edit2, Plus, Search, Shield, User, UserCheck, UserX } from 'lucide-react';
+import { Edit2, Plus, Search, UserCheck, UserX } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { StaffCreateModal } from '@/components/modals/staff-create-modal';
 import { StaffEditModal } from '@/components/modals/staff-edit-modal';
 import { useStaff } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
+import { USER_ROLE_ICONS } from '@/lib/enum-icons';
 import type { Staff } from '@/types';
 
 export default function StaffPage() {
@@ -35,14 +37,8 @@ export default function StaffPage() {
   }
 
   const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return <Shield className="h-4 w-4" />;
-      case 'kitchen':
-        return <ChefHat className="h-4 w-4" />;
-      default:
-        return <User className="h-4 w-4" />;
-    }
+    const Icon = USER_ROLE_ICONS[role as UserRole];
+    return Icon ? <Icon className="h-4 w-4" /> : null;
   };
 
   // Filter staff
@@ -115,9 +111,6 @@ export default function StaffPage() {
               <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t('status', { ns: 'common' })}
               </th>
-              <th className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t('phone', { ns: 'common' })}
-              </th>
               <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t('actions', { ns: 'common' })}
               </th>
@@ -170,9 +163,6 @@ export default function StaffPage() {
                     </span>
                   )}
                 </td>
-                <td className="hidden md:table-cell px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                  {staff.phone || '-'}
-                </td>
                 <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right text-sm font-medium">
                   <Button
                     variant="outline"
@@ -191,7 +181,7 @@ export default function StaffPage() {
             ))}
             {filteredStaff?.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
+                <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-500">
                   {t('staffMgmt.noStaff')}
                 </td>
               </tr>

@@ -312,14 +312,17 @@ export function isTask(value: unknown): value is Task {
   );
 }
 
-// Delivery customer type guards
+// Delivery customer type guards.
+// `phone` is intentionally NOT a structural check: the base table holds it
+// as ciphertext (decrypted via the gated view) and column-level grants
+// hide it from non-admin sessions, so reads can legitimately omit a
+// phone field. See migrations/20260503000005_encrypt_delivery_customer_phone.sql.
 export function isDeliveryCustomer(value: unknown): value is DeliveryCustomer {
   return (
     typeof value === 'object' &&
     value !== null &&
     'id' in value &&
-    'phone' in value &&
-    'address' in value &&
+    'name' in value &&
     'order_count' in value
   );
 }

@@ -10,6 +10,13 @@
  * `subscribe(callback)` status events fall back to the raw `supabase`
  * client (CLAUDE.md Exception 1). The wrapper covers the common
  * "subscribe to a table, invalidate cache" pattern.
+ *
+ * Tenant safety: `tenantId` is REQUIRED on every subscribe call and is
+ * compiled into the postgres_changes filter as `tenant_id=eq.<id>`. If a
+ * caller genuinely needs a cross-tenant subscription (e.g. an internal
+ * audit listener running with elevated privileges), use `subscribeUnsafe`,
+ * which is intentionally named to make the omission visible at the call
+ * site and in code review.
  */
 
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
@@ -20,6 +27,8 @@ type PostgresChangeCallback = (
 ) => void;
 
 type SubscribeStatusCallback = (status: string, err?: Error) => void;
+
+type RealtimeTable = 'tables' | 'orders' | 'waiter_calls';
 
 /**
  * Domain-level subscription handle. Hides `RealtimeChannel` from
@@ -59,74 +68,79 @@ function toSubscription(ctx: WrapperContext, channel: RealtimeChannel): Subscrip
 
 export interface RealtimeSubscribeOptions {
   callback: PostgresChangeCallback;
-  tenantId?: string;
+  tenantId: string;
+  onError?: SubscribeStatusCallback;
+}
+
+export interface RealtimeSubscribeUnsafeOptions {
+  callback: PostgresChangeCallback;
   onError?: SubscribeStatusCallback;
 }
 
 export function createRealtimeWrapper(ctx: WrapperContext) {
-  function buildFilter(tenantId?: string) {
-    return tenantId ? `tenant_id=eq.${tenantId}` : undefined;
+  function assertTenantId(tenantId: string): void {
+    if (!tenantId || typeof tenantId !== 'string') {
+      throw new Error(
+        'realtime.subscribe: tenantId is required. Use subscribeUnsafe for cross-tenant subscriptions.',
+      );
+    }
   }
 
-  function normalizeOptions(
-    callbackOrOptions: PostgresChangeCallback | RealtimeSubscribeOptions,
-    onError?: SubscribeStatusCallback,
-  ): RealtimeSubscribeOptions {
-    return typeof callbackOrOptions === 'function'
-      ? { callback: callbackOrOptions, onError }
-      : callbackOrOptions;
+  function buildSubscription(
+    table: RealtimeTable,
+    channelName: string,
+    opts: RealtimeSubscribeOptions,
+  ): Subscription {
+    assertTenantId(opts.tenantId);
+    const channel = ctx.client.channel(channelName).on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table,
+        filter: `tenant_id=eq.${opts.tenantId}`,
+      },
+      opts.callback,
+    );
+    subscribeWithErrorHandler(channel, opts.onError);
+    return toSubscription(ctx, channel);
+  }
+
+  function buildUnsafeSubscription(
+    table: RealtimeTable,
+    channelName: string,
+    opts: RealtimeSubscribeUnsafeOptions,
+  ): Subscription {
+    const channel = ctx.client
+      .channel(channelName)
+      .on('postgres_changes', { event: '*', schema: 'public', table }, opts.callback);
+    subscribeWithErrorHandler(channel, opts.onError);
+    return toSubscription(ctx, channel);
   }
 
   return {
-    subscribeToTables: (
-      callbackOrOptions: PostgresChangeCallback | RealtimeSubscribeOptions,
-      onError?: SubscribeStatusCallback,
-    ): Subscription => {
-      const opts = normalizeOptions(callbackOrOptions, onError);
-      const filter = buildFilter(opts.tenantId);
-      const channel = ctx.client
-        .channel('tables-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'tables', filter },
-          opts.callback,
-        );
-      subscribeWithErrorHandler(channel, opts.onError);
-      return toSubscription(ctx, channel);
-    },
+    subscribeToTables: (opts: RealtimeSubscribeOptions): Subscription =>
+      buildSubscription('tables', 'tables-changes', opts),
 
-    subscribeToOrders: (
-      callbackOrOptions: PostgresChangeCallback | RealtimeSubscribeOptions,
-      onError?: SubscribeStatusCallback,
-    ): Subscription => {
-      const opts = normalizeOptions(callbackOrOptions, onError);
-      const filter = buildFilter(opts.tenantId);
-      const channel = ctx.client
-        .channel('orders-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'orders', filter },
-          opts.callback,
-        );
-      subscribeWithErrorHandler(channel, opts.onError);
-      return toSubscription(ctx, channel);
-    },
+    subscribeToOrders: (opts: RealtimeSubscribeOptions): Subscription =>
+      buildSubscription('orders', 'orders-changes', opts),
 
-    subscribeToWaiterCalls: (
-      callbackOrOptions: PostgresChangeCallback | RealtimeSubscribeOptions,
-      onError?: SubscribeStatusCallback,
-    ): Subscription => {
-      const opts = normalizeOptions(callbackOrOptions, onError);
-      const filter = buildFilter(opts.tenantId);
-      const channel = ctx.client
-        .channel('waiter-calls-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'waiter_calls', filter },
-          opts.callback,
-        );
-      subscribeWithErrorHandler(channel, opts.onError);
-      return toSubscription(ctx, channel);
+    subscribeToWaiterCalls: (opts: RealtimeSubscribeOptions): Subscription =>
+      buildSubscription('waiter_calls', 'waiter-calls-changes', opts),
+
+    /**
+     * Cross-tenant subscription escape hatch. Skips the `tenant_id` filter
+     * entirely. Intended only for internal/elevated-privilege contexts
+     * (e.g. backend audit listeners). Avoid in app code — RLS still
+     * applies, but the firehose volume is not what client UIs want.
+     */
+    subscribeUnsafe: {
+      tables: (opts: RealtimeSubscribeUnsafeOptions): Subscription =>
+        buildUnsafeSubscription('tables', 'tables-changes-unsafe', opts),
+      orders: (opts: RealtimeSubscribeUnsafeOptions): Subscription =>
+        buildUnsafeSubscription('orders', 'orders-changes-unsafe', opts),
+      waiterCalls: (opts: RealtimeSubscribeUnsafeOptions): Subscription =>
+        buildUnsafeSubscription('waiter_calls', 'waiter-calls-changes-unsafe', opts),
     },
   };
 }

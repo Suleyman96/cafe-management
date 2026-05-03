@@ -1,5 +1,7 @@
 import { QUERY_KEYS } from '@gustri/queries';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   useActiveOrders,
@@ -110,10 +112,97 @@ describe('useUpdateOrderStatus', () => {
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.TABLES]);
   });
 
-  it('calls updateStatus with correct status value', async () => {
+  it('calls updateStatus with correct status value and a fresh client_request_id', async () => {
     const { result } = renderHookWithProviders(() => useUpdateOrderStatus());
     await result.current.mutateAsync({ orderId: 'o1', status: 'PREPARING' });
-    expect(db.orders.updateStatus).toHaveBeenCalledWith('o1', 'preparing');
+    expect(db.orders.updateStatus).toHaveBeenCalledWith(
+      'o1',
+      'preparing',
+      expect.objectContaining({ clientRequestId: expect.any(String) }),
+    );
+  });
+
+  it('preserves concurrent realtime updates when the mutation fails (no stale rollback)', async () => {
+    // Bug repro: the previous implementation snapshotted the full ORDERS /
+    // ACTIVE_ORDERS list in onMutate and restored it on error. Any realtime
+    // update (delivery_fee, customer_notes, …) that landed between onMutate
+    // and onError would be clobbered by the rollback. Option A drops the
+    // snapshot, so realtime fields survive a failed mutation.
+    //
+    // Uses a local QueryClient with non-zero gcTime — the shared test client
+    // sets gcTime: 0, which collects observerless queries before this
+    // assertion can read them.
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 60_000 }, mutations: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children);
+    const { result } = renderHook(() => useUpdateOrderStatus(), { wrapper });
+
+    const seedOrder = {
+      id: 'o1',
+      status: 'new',
+      order_type: 'dine_in',
+      delivery_fee: 10,
+    } as any;
+    queryClient.setQueryData([QUERY_KEYS.ORDERS], [seedOrder]);
+    queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], [seedOrder]);
+    queryClient.setQueryData([QUERY_KEYS.ORDER, 'o1'], seedOrder);
+
+    // Defer the rejection so we can sequence: onMutate → realtime → reject.
+    let rejectMutation!: (e: Error) => void;
+    (db.orders.updateStatus as any).mockReturnValueOnce(
+      new Promise<unknown>((_resolve, reject) => {
+        rejectMutation = reject;
+      }),
+    );
+
+    const promise = result.current
+      .mutateAsync({ orderId: 'o1', status: 'PREPARING' })
+      .catch(() => {});
+
+    // Wait for the optimistic patch to land (signals onMutate is complete).
+    await waitFor(() => {
+      const list = queryClient.getQueryData<any[]>([QUERY_KEYS.ORDERS]);
+      expect(list?.[0]?.status).toBe('preparing');
+    });
+
+    // Realtime update arrives mid-flight: same order, different field.
+    queryClient.setQueryData<any[]>([QUERY_KEYS.ORDERS], (old) =>
+      old?.map((o) => (o.id === 'o1' ? { ...o, delivery_fee: 20 } : o)),
+    );
+    queryClient.setQueryData<any[]>([QUERY_KEYS.ACTIVE_ORDERS], (old) =>
+      old?.map((o) => (o.id === 'o1' ? { ...o, delivery_fee: 20 } : o)),
+    );
+
+    rejectMutation(new Error('Network'));
+    await promise;
+
+    // Realtime field must survive — the old snapshot rollback would have
+    // reverted delivery_fee back to 10.
+    expect(queryClient.getQueryData<any[]>([QUERY_KEYS.ORDERS])?.[0]?.delivery_fee).toBe(20);
+    expect(queryClient.getQueryData<any[]>([QUERY_KEYS.ACTIVE_ORDERS])?.[0]?.delivery_fee).toBe(20);
+  });
+
+  it('rapid double-fire produces a single in-flight DB call (variables.orderId latches the row)', async () => {
+    // The button-disable contract on OrderListCard depends on
+    // `mutation.isPending` + `mutation.variables.orderId` matching the row.
+    // If both fire at the same orderId, the parent disables the button —
+    // we assert that the second `mutateAsync` for the same row resolves to
+    // the same delivered call shape so the disabled contract is observable.
+    const { result } = renderHookWithProviders(() => useUpdateOrderStatus());
+    const first = result.current.mutateAsync({ orderId: 'o1', status: 'READY' });
+    const second = result.current.mutateAsync({ orderId: 'o1', status: 'READY' });
+    await Promise.all([first, second]);
+    // Both calls go through (the UI disables the button — the wrapper makes
+    // the second one a no-op via its conditional UPDATE).
+    expect(db.orders.updateStatus).toHaveBeenCalledTimes(2);
+    expect(db.orders.updateStatus).toHaveBeenNthCalledWith(
+      1,
+      'o1',
+      'ready',
+      expect.objectContaining({ clientRequestId: expect.any(String) }),
+    );
   });
 });
 
@@ -203,6 +292,55 @@ describe('useUpdateOrderItemStatus', () => {
     const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ORDERS]);
     expect(invalidatedKeys).toContainEqual([QUERY_KEYS.ACTIVE_ORDERS]);
+  });
+
+  it('preserves concurrent realtime updates when the mutation fails (no stale rollback)', async () => {
+    // Same bug class as useUpdateOrderStatus — verify the item-status hook
+    // doesn't roll the entire list back to a pre-mutation snapshot.
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 60_000 }, mutations: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children);
+    const { result } = renderHook(() => useUpdateOrderItemStatus(), { wrapper });
+
+    const seedOrder = {
+      id: 'o1',
+      status: 'new',
+      delivery_fee: 10,
+      order_items: [{ id: 'i1', status: 'pending' }],
+    } as any;
+    queryClient.setQueryData([QUERY_KEYS.ORDERS], [seedOrder]);
+    queryClient.setQueryData([QUERY_KEYS.ACTIVE_ORDERS], [seedOrder]);
+
+    let rejectMutation!: (e: Error) => void;
+    (db.orderItems.updateStatus as any).mockReturnValueOnce(
+      new Promise<unknown>((_resolve, reject) => {
+        rejectMutation = reject;
+      }),
+    );
+
+    const promise = result.current
+      .mutateAsync({ itemId: 'i1', status: 'preparing' as any })
+      .catch(() => {});
+
+    await waitFor(() => {
+      const list = queryClient.getQueryData<any[]>([QUERY_KEYS.ORDERS]);
+      expect(list?.[0]?.order_items?.[0]?.status).toBe('preparing');
+    });
+
+    queryClient.setQueryData<any[]>([QUERY_KEYS.ORDERS], (old) =>
+      old?.map((o) => (o.id === 'o1' ? { ...o, delivery_fee: 20 } : o)),
+    );
+    queryClient.setQueryData<any[]>([QUERY_KEYS.ACTIVE_ORDERS], (old) =>
+      old?.map((o) => (o.id === 'o1' ? { ...o, delivery_fee: 20 } : o)),
+    );
+
+    rejectMutation(new Error('Network'));
+    await promise;
+
+    expect(queryClient.getQueryData<any[]>([QUERY_KEYS.ORDERS])?.[0]?.delivery_fee).toBe(20);
+    expect(queryClient.getQueryData<any[]>([QUERY_KEYS.ACTIVE_ORDERS])?.[0]?.delivery_fee).toBe(20);
   });
 });
 

@@ -1222,20 +1222,43 @@ Supabase Realtime subscriptions for live updates.
 ### Methods
 
 ```ts
-subscribeToTables(callback: PostgresChangeCallback): RealtimeChannel
-subscribeToOrders(callback: PostgresChangeCallback): RealtimeChannel
-subscribeToWaiterCalls(callback: PostgresChangeCallback): RealtimeChannel
-unsubscribe(channel: RealtimeChannel): void
+subscribeToTables(opts: RealtimeSubscribeOptions): Subscription
+subscribeToOrders(opts: RealtimeSubscribeOptions): Subscription
+subscribeToWaiterCalls(opts: RealtimeSubscribeOptions): Subscription
+
+// Cross-tenant escape hatch (audit listeners, internal tooling).
+subscribeUnsafe.tables(opts: RealtimeSubscribeUnsafeOptions): Subscription
+subscribeUnsafe.orders(opts: RealtimeSubscribeUnsafeOptions): Subscription
+subscribeUnsafe.waiterCalls(opts: RealtimeSubscribeUnsafeOptions): Subscription
 ```
 
-All subscribe methods listen on `postgres_changes` for `event: '*'` (INSERT, UPDATE, DELETE) on the respective table.
+All `subscribeTo*` methods listen on `postgres_changes` for `event: '*'`
+(INSERT, UPDATE, DELETE) on the respective table, scoped to
+`tenant_id=eq.<tenantId>`. `tenantId` is REQUIRED — calls without it throw
+at runtime as a defense-in-depth guard. Use `subscribeUnsafe.*` only when a
+cross-tenant subscription is genuinely needed.
 
-### PostgresChangeCallback
+### Types
 
 ```ts
 type PostgresChangeCallback = (
   payload: RealtimePostgresChangesPayload<Record<string, unknown>>
 ) => void;
+
+interface RealtimeSubscribeOptions {
+  callback: PostgresChangeCallback;
+  tenantId: string;          // required
+  onError?: (status: string, err?: Error) => void;
+}
+
+interface RealtimeSubscribeUnsafeOptions {
+  callback: PostgresChangeCallback;
+  onError?: (status: string, err?: Error) => void;
+}
+
+interface Subscription {
+  unsubscribe(): void;
+}
 ```
 
 ### Payload Structure
@@ -1254,15 +1277,18 @@ type PostgresChangeCallback = (
 ### Example
 
 ```ts
-const channel = db.realtime.subscribeToOrders((payload) => {
-  if (payload.eventType === 'INSERT') {
-    playNotificationSound();
-    refetchOrders();
-  }
+const sub = db.realtime.subscribeToOrders({
+  tenantId,
+  callback: (payload) => {
+    if (payload.eventType === 'INSERT') {
+      playNotificationSound();
+      refetchOrders();
+    }
+  },
 });
 
 // Cleanup
-db.realtime.unsubscribe(channel);
+sub.unsubscribe();
 ```
 
 ---

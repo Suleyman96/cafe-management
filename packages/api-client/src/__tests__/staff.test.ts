@@ -214,4 +214,36 @@ describe('StaffWrapper', () => {
     const wrapper = createStaffWrapper(ctx);
     await expect(wrapper.findAll()).rejects.toThrow('Invalid staff data');
   });
+
+  it('findAll requests an explicit projection without auth_user_id', async () => {
+    const listRow = {
+      id: 'list-1',
+      email: 'l@cafe.com',
+      full_name: 'Lister',
+      role: 'waiter',
+      is_active: true,
+      created_at: '2026-05-03T00:00:00Z',
+      updated_at: '2026-05-03T00:00:00Z',
+    };
+    const listCtx = createMockContext({
+      responses: { staff: { data: [listRow], error: null } },
+    });
+    const listStaff = createStaffWrapper(listCtx);
+    const result = await listStaff.findAll();
+
+    // The wrapper must request a literal column list — never `*` — and the
+    // returned row must omit `auth_user_id` so we don't leak it to clients.
+    const selectArgs = listCtx
+      .getCalls()
+      .filter(
+        (c: { table: string; method: string }) => c.table === 'staff' && c.method === 'select',
+      )
+      .map((c: { args: unknown[] }) => c.args[0] as string);
+    expect(selectArgs.length).toBeGreaterThan(0);
+    for (const arg of selectArgs) {
+      expect(arg).not.toBe('*');
+      expect(arg).not.toMatch(/auth_user_id/);
+    }
+    expect(result[0]).not.toHaveProperty('auth_user_id');
+  });
 });

@@ -326,7 +326,8 @@ export type Database = {
           name: string
           notes: string | null
           order_count: number
-          phone: string
+          phone: string | null
+          phone_hash: string | null
           tenant_id: string
           updated_at: string
         }
@@ -338,7 +339,8 @@ export type Database = {
           name: string
           notes?: string | null
           order_count?: number
-          phone: string
+          phone?: string | null
+          phone_hash?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -350,7 +352,8 @@ export type Database = {
           name?: string
           notes?: string | null
           order_count?: number
-          phone?: string
+          phone?: string | null
+          phone_hash?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -476,6 +479,7 @@ export type Database = {
         Row: {
           action: string
           created_at: string
+          details: Json | null
           id: string
           new_discount_amount: number | null
           new_subtotal: number | null
@@ -486,12 +490,14 @@ export type Database = {
           old_tax: number | null
           old_total: number | null
           order_id: string
+          staff_id: string | null
           tenant_id: string
           triggered_by: string | null
         }
         Insert: {
           action: string
           created_at?: string
+          details?: Json | null
           id?: string
           new_discount_amount?: number | null
           new_subtotal?: number | null
@@ -502,12 +508,14 @@ export type Database = {
           old_tax?: number | null
           old_total?: number | null
           order_id: string
+          staff_id?: string | null
           tenant_id: string
           triggered_by?: string | null
         }
         Update: {
           action?: string
           created_at?: string
+          details?: Json | null
           id?: string
           new_discount_amount?: number | null
           new_subtotal?: number | null
@@ -518,6 +526,7 @@ export type Database = {
           old_tax?: number | null
           old_total?: number | null
           order_id?: string
+          staff_id?: string | null
           tenant_id?: string
           triggered_by?: string | null
         }
@@ -1855,6 +1864,53 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_customers_decrypted: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          decrypted_phone: string | null
+          id: string | null
+          last_order_at: string | null
+          name: string | null
+          notes: string | null
+          order_count: number | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          decrypted_phone?: never
+          id?: string | null
+          last_order_at?: string | null
+          name?: string | null
+          notes?: string | null
+          order_count?: number | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          decrypted_phone?: never
+          id?: string | null
+          last_order_at?: string | null
+          name?: string | null
+          notes?: string | null
+          order_count?: number | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_customers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_payment_summary: {
         Row: {
           order_id: string | null
@@ -2053,6 +2109,17 @@ export type Database = {
       decrypt_pii: { Args: { ciphertext: string }; Returns: string }
       encrypt_pii: { Args: { plaintext: string }; Returns: string }
       finalize_audit_entry: { Args: { p_order_id: string }; Returns: undefined }
+      find_delivery_customer_by_phone: {
+        Args: { p_phone: string }
+        Returns: {
+          address: string
+          id: string
+          last_order_at: string
+          name: string
+          notes: string
+          order_count: number
+        }[]
+      }
       generate_order_number: { Args: never; Returns: string }
       get_active_order_for_table: {
         Args: { p_table_id: string }
@@ -2167,6 +2234,7 @@ export type Database = {
           waste_reason: string
         }[]
       }
+      hash_phone: { Args: { plaintext: string }; Returns: string }
       is_active_staff: { Args: never; Returns: boolean }
       log_order_financial_change: {
         Args: { p_action: string; p_order_id: string; p_triggered_by: string }

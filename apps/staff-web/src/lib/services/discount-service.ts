@@ -1,4 +1,9 @@
-import { AuthorizationError, DISCOUNT_AUDIT_THRESHOLD, getDiscountCapForRole } from '@gustri/core';
+import {
+  AuthorizationError,
+  DISCOUNT_AUDIT_THRESHOLD,
+  getDiscountCapForRole,
+  ValidationError,
+} from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -33,15 +38,8 @@ interface ApplyDiscountParams {
 }
 
 export async function applyDiscount(supabaseAdmin: SupabaseClient, params: ApplyDiscountParams) {
-  const {
-    orderId,
-    discountType,
-    discountValue,
-    discountReason,
-    discountAppliedBy,
-    tenantId,
-    callerRole,
-  } = params;
+  const { orderId, discountType, discountReason, discountAppliedBy, tenantId, callerRole } = params;
+  let { discountValue } = params;
 
   // Verify the order belongs to this tenant
   const { data: order, error: orderError } = await supabaseAdmin
@@ -57,9 +55,11 @@ export async function applyDiscount(supabaseAdmin: SupabaseClient, params: Apply
 
   const subtotal = Number(order.subtotal) || 0;
 
-  // Validate discount shape
+  // Validate discount shape. Clamp to 0 when removing — a negative value left
+  // by a buggy/malicious client would otherwise persist and re-activate if the
+  // type is later flipped back to 'fixed' without clearing the value.
   if (discountType === 'none') {
-    // Removing discount — no further validation needed
+    discountValue = 0;
   } else if (discountType === 'percentage') {
     if (discountValue <= 0 || discountValue > 100) {
       throw new Error('Percentage discount must be between 0 and 100');
@@ -88,6 +88,18 @@ export async function applyDiscount(supabaseAdmin: SupabaseClient, params: Apply
       throw new AuthorizationError(
         `Discount cap exceeded for role "${callerRole}" (cap ${(cap * 100).toFixed(0)}%, requested ${(requestedFraction * 100).toFixed(1)}%)`,
       );
+    }
+
+    // Above the audit threshold a financial_audit_log row is written below;
+    // require a non-trivial reason so the audit trail is forensically usable.
+    if (requestedFraction >= DISCOUNT_AUDIT_THRESHOLD) {
+      if (!discountReason || discountReason.trim().length < 5) {
+        throw new ValidationError('discount_reason_required', {
+          fieldErrors: {
+            discount_reason: 'Reason required for large discounts (≥5 chars)',
+          },
+        });
+      }
     }
   }
 

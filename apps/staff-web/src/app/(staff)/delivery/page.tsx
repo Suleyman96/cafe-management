@@ -38,9 +38,9 @@ export default function DeliveryPage() {
   const { staff } = useAuth();
   const { data: orders, isLoading: loading, error, refetch } = useDeliveryOrders();
   const { data: menuItems } = useMenuItems();
-  const updateOrderStatus = useUpdateOrderStatus();
-  const markOutForDelivery = useMarkOutForDelivery();
-  const markDelivered = useMarkDelivered();
+  const { mutateAsync: updateOrderStatusAsync } = useUpdateOrderStatus();
+  const { mutateAsync: markOutForDeliveryAsync } = useMarkOutForDelivery();
+  const { mutateAsync: markDeliveredAsync } = useMarkDelivered();
   const formatPrice = useFormatPrice();
 
   const deliverySearchFields = useCallback(
@@ -63,42 +63,53 @@ export default function DeliveryPage() {
     { table: 'order_items', queryKeys: [['delivery_orders'], ['orders']] },
   ]);
 
-  const handleStatusUpdate = async (orderId: string, newStatus: DeliveryStatus) => {
-    try {
-      const statusKey = Object.entries(ORDER_STATUS).find(([_, value]) => value === newStatus)?.[0];
-      if (!statusKey) throw new Error('Invalid status');
+  const handleStatusUpdate = useCallback(
+    async (orderId: string, newStatus: DeliveryStatus) => {
+      try {
+        const statusKey = Object.entries(ORDER_STATUS).find(
+          ([_, value]) => value === newStatus,
+        )?.[0];
+        if (!statusKey) throw new Error('Invalid status');
 
-      await updateOrderStatus.mutateAsync({
-        orderId,
-        status: statusKey as keyof typeof ORDER_STATUS,
-      });
-      toast.success(`${t('orders.statusUpdated')} ${newStatus.replace(/_/g, ' ')}`);
-    } catch (_error) {
-      toast.error(t('delivery.failedUpdate'));
-    }
-  };
+        await updateOrderStatusAsync({
+          orderId,
+          status: statusKey as keyof typeof ORDER_STATUS,
+        });
+        toast.success(`${t('orders.statusUpdated')} ${newStatus.replace(/_/g, ' ')}`);
+      } catch (_error) {
+        toast.error(t('delivery.failedUpdate'));
+      }
+    },
+    [updateOrderStatusAsync, t],
+  );
 
-  const handleMarkOutForDelivery = async (orderId: string, deliveryPersonId?: string | null) => {
-    if (!deliveryPersonId) {
-      toast.error(t('delivery.failedUpdate'));
-      return;
-    }
-    try {
-      await markOutForDelivery.mutateAsync({ orderId, deliveryPersonId });
-      toast.success(t('delivery.outForDelivery'));
-    } catch (_error) {
-      toast.error(t('delivery.failedUpdate'));
-    }
-  };
+  const handleMarkOutForDelivery = useCallback(
+    async (orderId: string, deliveryPersonId?: string | null) => {
+      if (!deliveryPersonId) {
+        toast.error(t('delivery.failedUpdate'));
+        return;
+      }
+      try {
+        await markOutForDeliveryAsync({ orderId, deliveryPersonId });
+        toast.success(t('delivery.outForDelivery'));
+      } catch (_error) {
+        toast.error(t('delivery.failedUpdate'));
+      }
+    },
+    [markOutForDeliveryAsync, t],
+  );
 
-  const handleMarkDelivered = async (orderId: string) => {
-    try {
-      await markDelivered.mutateAsync(orderId);
-      toast.success(t('delivery.markDelivered'));
-    } catch (_error) {
-      toast.error(t('delivery.failedUpdate'));
-    }
-  };
+  const handleMarkDelivered = useCallback(
+    async (orderId: string) => {
+      try {
+        await markDeliveredAsync(orderId);
+        toast.success(t('delivery.markDelivered'));
+      } catch (_error) {
+        toast.error(t('delivery.failedUpdate'));
+      }
+    },
+    [markDeliveredAsync, t],
+  );
 
   if (loading) {
     return (

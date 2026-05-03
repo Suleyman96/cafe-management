@@ -1,22 +1,20 @@
 'use client';
 
 import { getLocalDateString } from '@gustri/core';
+import type { OrderStatus, UserRole } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button, getRoleBadgeColor, LoadingSpinner } from '@gustri/ui';
+import { Button, getRoleBadgeColor, LoadingSpinner, ORDER_STATUS_BADGES } from '@gustri/ui';
 import {
   ArrowLeft,
   Calendar,
-  ChefHat,
   Clock,
   CreditCard,
   Edit2,
   Key,
   Mail,
   Phone,
-  Shield,
   ShoppingBag,
   TrendingUp,
-  User,
   UserCheck,
   UserX,
 } from 'lucide-react';
@@ -28,6 +26,7 @@ import { StaffResetPasswordModal } from '@/components/modals/staff-reset-passwor
 import { useMySchedule, useOrders, usePaymentsByStaff, useStaffMember } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { USER_ROLE_ICONS } from '@/lib/enum-icons';
 
 import type { StaffSchedule } from '@/types';
 
@@ -175,26 +174,13 @@ export default function StaffDetailPage() {
   const member = staffMember;
 
   const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return <Shield className="h-5 w-5" />;
-      case 'kitchen':
-        return <ChefHat className="h-5 w-5" />;
-      default:
-        return <User className="h-5 w-5" />;
-    }
+    const Icon = USER_ROLE_ICONS[role as UserRole];
+    return Icon ? <Icon className="h-5 w-5" /> : null;
   };
 
   const getStatusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      preparing: 'bg-blue-100 text-blue-800',
-      ready: 'bg-green-100 text-green-800',
-      served: 'bg-indigo-100 text-indigo-800',
-      closed: 'bg-gray-100 text-gray-800',
-      cancelled: 'bg-red-100 text-red-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    const config = ORDER_STATUS_BADGES[status as OrderStatus];
+    return config ? `${config.bg} ${config.text}` : 'bg-gray-100 text-gray-800';
   };
 
   return (

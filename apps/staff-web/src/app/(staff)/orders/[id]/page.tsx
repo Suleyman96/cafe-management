@@ -1,16 +1,14 @@
 'use client';
 
 import { formatTime, type ORDER_STATUS, ORDER_STATUS_KEYS } from '@gustri/core';
-import type { Database } from '@gustri/database';
+import type { Database, OrderItemStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS } from '@gustri/queries';
-import { Button, getOrderStatusColor, LoadingSpinner } from '@gustri/ui';
+import { Button, getOrderStatusColor, LoadingSpinner, ORDER_ITEM_STATUS_BADGES } from '@gustri/ui';
 import {
-  AlertCircle,
   ArrowLeft,
   ArrowRight,
   CheckCircle,
-  ChefHat,
   ChevronDown,
   Clock,
   FileText,
@@ -19,10 +17,9 @@ import {
   RefreshCw,
   Truck,
   User,
-  UtensilsCrossed,
-  XCircle,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { DiscountModal } from '@/components/modals/discount-modal';
@@ -48,6 +45,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useCanMutate } from '@/hooks/use-can-mutate';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
+import { ORDER_ITEM_STATUS_ICONS } from '@/lib/enum-icons';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
   menu_item?: Database['public']['Tables']['menu_items']['Row'];
@@ -159,59 +157,31 @@ export default function OrderDetailPage() {
     });
   };
 
-  // Get item status badge
+  // Get item status badge — typed lookup; missing variants fail compile.
   const getItemStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return {
-          bg: 'bg-gray-100',
-          text: 'text-gray-700',
-          icon: <AlertCircle className="h-3 w-3" />,
-          label: t('orders.pending'),
-        };
-      case 'preparing':
-        return {
-          bg: 'bg-yellow-100',
-          text: 'text-yellow-800',
-          icon: <ChefHat className="h-3 w-3" />,
-          label: t('orders.preparing'),
-        };
-      case 'ready':
-        return {
-          bg: 'bg-green-100',
-          text: 'text-green-800',
-          icon: <CheckCircle className="h-3 w-3" />,
-          label: t('orders.ready'),
-        };
-      case 'served':
-        return {
-          bg: 'bg-purple-100',
-          text: 'text-purple-800',
-          icon: <UtensilsCrossed className="h-3 w-3" />,
-          label: t('orders.served'),
-        };
-      case 'cancelled':
-        return {
-          bg: 'bg-red-100',
-          text: 'text-red-700',
-          icon: <XCircle className="h-3 w-3" />,
-          label: t('orders.cancelled'),
-        };
-      default:
-        return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, label: status };
-    }
+    const config = ORDER_ITEM_STATUS_BADGES[status as OrderItemStatus];
+    const Icon = ORDER_ITEM_STATUS_ICONS[status as OrderItemStatus];
+    if (!config) return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, label: status };
+    return {
+      bg: config.bg,
+      text: config.text,
+      icon: Icon ? <Icon className="h-3 w-3" /> : null,
+      label: t(config.labelKey),
+    };
   };
 
-  const itemStatusOptions = [
-    { value: 'pending', label: t('orders.pending'), icon: <AlertCircle className="h-3.5 w-3.5" /> },
-    { value: 'preparing', label: t('orders.preparing'), icon: <ChefHat className="h-3.5 w-3.5" /> },
-    { value: 'ready', label: t('orders.ready'), icon: <CheckCircle className="h-3.5 w-3.5" /> },
-    {
-      value: 'served',
-      label: t('orders.served'),
-      icon: <UtensilsCrossed className="h-3.5 w-3.5" />,
-    },
-  ];
+  const itemStatusOptions: Array<{
+    value: OrderItemStatus;
+    label: string;
+    icon: ReactNode;
+  }> = (['pending', 'preparing', 'ready', 'served'] as const).map((value) => {
+    const Icon = ORDER_ITEM_STATUS_ICONS[value];
+    return {
+      value,
+      label: t(ORDER_ITEM_STATUS_BADGES[value].labelKey),
+      icon: <Icon className="h-3.5 w-3.5" />,
+    };
+  });
 
   const handleItemStatusUpdate = async (itemId: string, newStatus: string) => {
     try {

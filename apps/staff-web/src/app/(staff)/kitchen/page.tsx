@@ -7,9 +7,9 @@ import {
   ORDER_STATUS_KEYS,
   TIME_ELAPSED_THRESHOLDS,
 } from '@gustri/core';
-import type { OrderWithDetails } from '@gustri/database';
+import type { OrderItemStatus, OrderStatus, OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { LoadingSpinner } from '@gustri/ui';
+import { LoadingSpinner, ORDER_ITEM_STATUS_BADGES } from '@gustri/ui';
 import {
   AlertCircle,
   CheckCircle,
@@ -27,6 +27,7 @@ import { useEffect, useReducer, useState } from 'react';
 import { toast } from 'sonner';
 import { useCancelOrder, useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
+import { ORDER_ITEM_STATUS_ICONS } from '@/lib/enum-icons';
 
 export default function KitchenDisplayPage() {
   const { t } = useTranslation('staff');
@@ -136,34 +137,31 @@ export default function KitchenDisplayPage() {
     return orderId.slice(-4).toUpperCase();
   };
 
-  // Get status label
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'new':
-        return t('kitchen.newStatus');
-      case 'preparing':
-        return t('kitchen.cookingStatus');
-      case 'ready':
-        return t('kitchen.readyStatus');
-      default: {
-        const key = ORDER_STATUS_KEYS[status];
-        return key ? t(key) : status;
-      }
-    }
+  // Kitchen-specific overrides — high-contrast colors for visibility on the
+  // dark kitchen display, and dedicated label keys ("Cooking" not "Preparing").
+  // Only the three active kitchen states get an override; everything else falls
+  // back to the shared `ORDER_STATUS_KEYS` and the gray default.
+  const KITCHEN_STATUS_LABEL_KEYS: Partial<Record<OrderStatus, string>> = {
+    new: 'kitchen.newStatus',
+    preparing: 'kitchen.cookingStatus',
+    ready: 'kitchen.readyStatus',
   };
 
-  // Get status badge color
+  const KITCHEN_STATUS_BADGE_COLORS: Partial<Record<OrderStatus, string>> = {
+    new: 'bg-blue-600 text-white',
+    preparing: 'bg-yellow-500 text-black',
+    ready: 'bg-green-600 text-white',
+  };
+
+  const getStatusLabel = (status: string) => {
+    const kitchenKey = KITCHEN_STATUS_LABEL_KEYS[status as OrderStatus];
+    if (kitchenKey) return t(kitchenKey);
+    const key = ORDER_STATUS_KEYS[status];
+    return key ? t(key) : status;
+  };
+
   const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'new':
-        return 'bg-blue-600 text-white';
-      case 'preparing':
-        return 'bg-yellow-500 text-black';
-      case 'ready':
-        return 'bg-green-600 text-white';
-      default:
-        return 'bg-gray-500 text-white';
-    }
+    return KITCHEN_STATUS_BADGE_COLORS[status as OrderStatus] ?? 'bg-gray-500 text-white';
   };
 
   // Handle status update — also updates all item statuses to stay in sync
@@ -237,50 +235,39 @@ export default function KitchenDisplayPage() {
     }
   };
 
-  // Get item status style for kitchen
+  // Item-status display in the kitchen overrides two labels (pending →
+  // common.pending, preparing → kitchen.cooking) but otherwise mirrors the
+  // shared `ORDER_ITEM_STATUS_BADGES` colors and icons.
+  const KITCHEN_ITEM_LABEL_OVERRIDES: Partial<
+    Record<OrderItemStatus, { key: string; ns?: string }>
+  > = {
+    pending: { key: 'pending', ns: 'common' },
+    preparing: { key: 'kitchen.cooking' },
+  };
+
   const getItemStatusStyle = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return {
-          bg: 'bg-gray-100',
-          border: 'border-gray-300',
-          text: 'text-gray-700',
-          icon: <AlertCircle className="h-4 w-4" />,
-          label: t('pending', { ns: 'common' }),
-        };
-      case 'preparing':
-        return {
-          bg: 'bg-yellow-100',
-          border: 'border-yellow-400',
-          text: 'text-yellow-800',
-          icon: <ChefHat className="h-4 w-4" />,
-          label: t('kitchen.cooking'),
-        };
-      case 'ready':
-        return {
-          bg: 'bg-green-100',
-          border: 'border-green-400',
-          text: 'text-green-800',
-          icon: <CheckCircle className="h-4 w-4" />,
-          label: t('orders.ready'),
-        };
-      case 'served':
-        return {
-          bg: 'bg-purple-100',
-          border: 'border-purple-400',
-          text: 'text-purple-800',
-          icon: <UtensilsCrossed className="h-4 w-4" />,
-          label: t('orders.served'),
-        };
-      default:
-        return {
-          bg: 'bg-gray-100',
-          border: 'border-gray-300',
-          text: 'text-gray-700',
-          icon: null,
-          label: status,
-        };
+    const config = ORDER_ITEM_STATUS_BADGES[status as OrderItemStatus];
+    const Icon = ORDER_ITEM_STATUS_ICONS[status as OrderItemStatus];
+    if (!config) {
+      return {
+        bg: 'bg-gray-100',
+        border: 'border-gray-300',
+        text: 'text-gray-700',
+        icon: null,
+        label: status,
+      };
     }
+    const override = KITCHEN_ITEM_LABEL_OVERRIDES[status as OrderItemStatus];
+    const label = override
+      ? t(override.key, override.ns ? { ns: override.ns } : undefined)
+      : t(config.labelKey);
+    return {
+      bg: config.bg,
+      border: config.border ?? 'border-gray-300',
+      text: config.text,
+      icon: Icon ? <Icon className="h-4 w-4" /> : null,
+      label,
+    };
   };
 
   // Handle item status update - also auto-update order status if needed

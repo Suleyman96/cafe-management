@@ -3,7 +3,7 @@
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import * as Sentry from '@sentry/nextjs';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CategoryModal } from '@/components/menu/category-modal';
 import { MenuGrid } from '@/components/menu/menu-grid';
@@ -101,37 +101,44 @@ export default function MenuPage() {
     }
   };
 
-  const handleToggleAvailability = async (id: string, currentAvailable: boolean) => {
-    try {
-      await toggleAvailability.mutateAsync({ id, currentAvailable });
-    } catch (error) {
-      Sentry.captureException(error);
-      toast.error(t('menu.failedToggleAvailability'));
-    }
-  };
+  const { mutateAsync: toggleAvailabilityAsync } = toggleAvailability;
+  const handleToggleAvailability = useCallback(
+    async (id: string, currentAvailable: boolean) => {
+      try {
+        await toggleAvailabilityAsync({ id, currentAvailable });
+      } catch (error) {
+        Sentry.captureException(error);
+        toast.error(t('menu.failedToggleAvailability'));
+      }
+    },
+    [toggleAvailabilityAsync, t],
+  );
 
-  const getCategoryItemCount = (categoryId: string) =>
-    menuItems.filter((item: MenuItem) => item.category_id === categoryId).length;
+  const getCategoryItemCount = useCallback(
+    (categoryId: string) =>
+      menuItems.filter((item: MenuItem) => item.category_id === categoryId).length,
+    [menuItems],
+  );
 
-  const openAddCategory = () => {
+  const openAddCategory = useCallback(() => {
     setEditingCategory(null);
     setShowCategoryModal(true);
-  };
+  }, []);
 
-  const openAddMenuItem = () => {
+  const openAddMenuItem = useCallback(() => {
     setEditingItem(null);
     setShowItemModal(true);
-  };
+  }, []);
 
-  const openEditItem = (item: MenuItem) => {
+  const openEditItem = useCallback((item: MenuItem) => {
     setEditingItem(item);
     setShowItemModal(true);
-  };
+  }, []);
 
-  const openEditCategory = (category: Category) => {
+  const openEditCategory = useCallback((category: Category) => {
     setEditingCategory(category);
     setShowCategoryModal(true);
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -184,7 +184,9 @@ vi.mock('@/lib/supabase/wrapped-client', () => ({
 vi.mock('@/lib/api-routes', () => ({
   apiRoutes: {
     orders: {
-      create: vi.fn().mockResolvedValue({ order: { id: 'new-order', status: 'new' } }),
+      create: vi
+        .fn()
+        .mockResolvedValue({ order: { id: 'new-order', status: 'new', order_type: 'dine_in' } }),
     },
     discounts: {
       apply: vi.fn().mockResolvedValue({ success: true }),

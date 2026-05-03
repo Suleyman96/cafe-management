@@ -484,6 +484,7 @@
   "orders.discountApplied": "Discount applied",
   "orders.discountExceedsSubtotal": "Discount cannot exceed 100%",
   "orders.discountReason": "Reason (optional)",
+  "orders.discountReasonRequired": "Reason required for large discounts (at least 5 characters)",
   "orders.discountRemoved": "Discount removed",
   "orders.discountType": "Discount Type",
   "orders.discountValue": "Discount Value",

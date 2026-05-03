@@ -14,8 +14,9 @@ import { QUERY_KEYS } from './keys';
  * that genuinely don't have the info — bulk cleanups, etc. — stay safe.
  *
  * When fields ARE provided, the helper scopes the invalidation:
- * - TABLES: only when the transition crosses a terminal state
- *   ({@link TERMINAL_ORDER_STATUSES}).
+ * - TABLES: when the transition crosses a terminal state
+ *   ({@link TERMINAL_ORDER_STATUSES}), or when `isCreation` is true and
+ *   the new type is `dine_in` (a freshly-created dine-in order claims a table).
  * - DELIVERY_ORDERS: only when status touches the delivery flow or
  *   type === 'delivery'.
  * - TAKEOUT_ORDERS: only when type === 'takeout'.
@@ -26,6 +27,8 @@ export interface OrderTransition {
   oldType?: Order['order_type'];
   newType?: Order['order_type'];
   orderId?: string;
+  /** True when the transition is a freshly-created order (no prior state). */
+  isCreation?: boolean;
 }
 
 const TERMINAL_ORDER_STATUSES: ReadonlySet<Order['status']> = new Set([
@@ -68,12 +71,13 @@ export function invalidateOrders(qc: QueryClient, orderId?: string) {
  * conservative.
  */
 export function invalidateOrdersAndTables(qc: QueryClient, transition: OrderTransition = {}) {
-  const { oldStatus, newStatus, oldType, newType, orderId } = transition;
+  const { oldStatus, newStatus, oldType, newType, orderId, isCreation } = transition;
   const allUnknown =
     oldStatus === undefined &&
     newStatus === undefined &&
     oldType === undefined &&
-    newType === undefined;
+    newType === undefined &&
+    !isCreation;
 
   if (orderId) {
     qc.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, orderId] });
@@ -81,11 +85,15 @@ export function invalidateOrdersAndTables(qc: QueryClient, transition: OrderTran
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
   qc.invalidateQueries({ queryKey: [QUERY_KEYS.ACTIVE_ORDERS] });
 
-  // TABLES: invalidate when the order entered or left a terminal state.
-  // Crossing closed↔!closed (or cancelled↔!cancelled) frees or claims a table.
+  // TABLES: invalidate when the order entered or left a terminal state, or
+  // when a fresh dine-in order is created (claims a table). Crossing
+  // closed↔!closed (or cancelled↔!cancelled) frees or claims a table.
   const wasTerminal = oldStatus !== undefined && TERMINAL_ORDER_STATUSES.has(oldStatus);
   const isTerminal = newStatus !== undefined && TERMINAL_ORDER_STATUSES.has(newStatus);
-  const tablesNeeded = allUnknown || wasTerminal !== isTerminal;
+  // On creation the type defaults to dine_in if unknown — the conservative
+  // assumption is that an unidentified new order may claim a table.
+  const isCreatingDineIn = isCreation === true && newType !== 'takeout' && newType !== 'delivery';
+  const tablesNeeded = allUnknown || wasTerminal !== isTerminal || isCreatingDineIn;
   if (tablesNeeded) {
     qc.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
   }

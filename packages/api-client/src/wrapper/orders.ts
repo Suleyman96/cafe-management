@@ -258,10 +258,20 @@ export function createOrdersWrapper(ctx: WrapperContext) {
      *   `served`, `out_for_delivery`, `delivered` require at least one
      *   non-cancelled item. Throws otherwise.
      *
+     * Idempotency: a second call that targets the same status as the row's
+     * current value is a no-op — the conditional `.neq('status', status)`
+     * filter updates zero rows on replay, and the wrapper re-SELECTs the
+     * already-correct row. `clientRequestId` is accepted for future
+     * server-side audit-log dedupe; today it is not consumed.
+     *
      * Validate at the call site if you need a friendlier UX (the thrown
      * `AppError` is catchable but the message is operator-facing).
      */
-    updateStatus: async (id: string, status: OrderRow['status']) => {
+    updateStatus: async (
+      id: string,
+      status: OrderRow['status'],
+      _options?: { clientRequestId?: string },
+    ) => {
       // Prevent "served" status on delivery and takeout orders
       if (status === 'served') {
         const { data: order, error: fetchError } = await ctx.anyClient
@@ -306,16 +316,35 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         }
       }
 
+      // Conditional update: only writes rows whose current status differs
+      // from the target. A rapid replay (or a second click that races past
+      // the disabled-button guard) updates zero rows; we then re-SELECT so
+      // callers always get the current row shape.
       const { data, error } = await ctx.anyClient
         .from('orders')
         .update({ status })
         .eq('id', id)
+        .neq('status', status)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw handleSupabaseError(error);
-      if (!isOrder(data)) throw new Error('Invalid order data');
-      return data as OrderRow;
+
+      if (data) {
+        if (!isOrder(data)) throw new Error('Invalid order data');
+        return data as OrderRow;
+      }
+
+      // Update touched zero rows — either the row already had `status`
+      // (idempotent replay) or RLS hid it. Re-SELECT to disambiguate.
+      const { data: existing, error: refetchError } = await ctx.anyClient
+        .from('orders')
+        .select()
+        .eq('id', id)
+        .single();
+      if (refetchError) throw handleSupabaseError(refetchError);
+      if (!isOrder(existing)) throw new Error('Invalid order data');
+      return existing as OrderRow;
     },
 
     findActiveByTable: async (tableId: string) => {

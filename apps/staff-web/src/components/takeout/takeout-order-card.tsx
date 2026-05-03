@@ -16,6 +16,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { memo } from 'react';
 
 const calculatePaidAmount = (order: OrderWithDetails) => {
   const payments = (order as OrderWithDetails & { order_payments?: { amount: number }[] })
@@ -34,7 +35,7 @@ interface TakeoutOrderCardProps {
   onOpenCancel: (order: OrderWithDetails) => void;
 }
 
-export function TakeoutOrderCard({
+function TakeoutOrderCardImpl({
   order,
   formatPrice,
   onStatusUpdate,
@@ -178,3 +179,5 @@ export function TakeoutOrderCard({
     </div>
   );
 }
+
+export const TakeoutOrderCard = memo(TakeoutOrderCardImpl);

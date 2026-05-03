@@ -476,6 +476,7 @@
   "orders.discountApplied": "Скидка применена",
   "orders.discountExceedsSubtotal": "Скидка не может превышать 100%",
   "orders.discountReason": "Причина (необязательно)",
+  "orders.discountReasonRequired": "Для крупных скидок требуется причина (минимум 5 символов)",
   "orders.discountRemoved": "Скидка удалена",
   "orders.discountType": "Тип скидки",
   "orders.discountValue": "Значение скидки",

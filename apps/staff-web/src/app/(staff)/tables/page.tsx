@@ -1,11 +1,11 @@
 'use client';
 
 import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
-import type { Table } from '@gustri/database';
+import type { OrderWithDetails, Table, WaiterCalls } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import { Plus, RefreshCw, UtensilsCrossed } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { TableModal } from '@/components/modals/table-modal';
@@ -21,6 +21,11 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
+
+// Module-level stable empty arrays — sharing one reference per render keeps
+// memoized TableCards from re-rendering on tables with no orders/calls.
+const EMPTY_ORDERS: OrderWithDetails[] = [];
+const EMPTY_CALLS: WaiterCalls[] = [];
 
 export default function TablesPage() {
   const { t } = useTranslation('staff');
@@ -81,33 +86,74 @@ export default function TablesPage() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  // Get all active orders for a table (including pending_approval)
-  const getActiveOrdersForTable = (tableId: string) => {
-    return (
-      orders?.filter(
-        (order) =>
-          order.table_id === tableId &&
-          (ACTIVE_ORDER_STATUSES as readonly string[]).includes(order.status),
-      ) || []
-    );
-  };
+  // Bucket orders/calls by table_id once per data change so each TableCard receives
+  // referentially stable arrays — recomputing inline per render would defeat memo().
+  const ordersByTable = useMemo(() => {
+    const map = new Map<string, OrderWithDetails[]>();
+    if (!orders) return map;
+    for (const order of orders) {
+      if (!order.table_id) continue;
+      if (!(ACTIVE_ORDER_STATUSES as readonly string[]).includes(order.status)) continue;
+      const list = map.get(order.table_id);
+      if (list) list.push(order);
+      else map.set(order.table_id, [order]);
+    }
+    return map;
+  }, [orders]);
 
-  // Get active waiter calls for a table
-  const getActiveCallsForTable = (tableId: string) => {
-    return (
-      waiterCalls?.filter((call) => call.table_id === tableId && call.status === 'pending') || []
-    );
-  };
+  const callsByTable = useMemo(() => {
+    const map = new Map<string, WaiterCalls[]>();
+    if (!waiterCalls) return map;
+    for (const call of waiterCalls) {
+      if (!call.table_id || call.status !== 'pending') continue;
+      const list = map.get(call.table_id);
+      if (list) list.push(call);
+      else map.set(call.table_id, [call]);
+    }
+    return map;
+  }, [waiterCalls]);
+
+  const getActiveOrdersForTable = useCallback(
+    (tableId: string) => ordersByTable.get(tableId) ?? EMPTY_ORDERS,
+    [ordersByTable],
+  );
+
+  const getActiveCallsForTable = useCallback(
+    (tableId: string) => callsByTable.get(tableId) ?? EMPTY_CALLS,
+    [callsByTable],
+  );
 
   // Handle delete table — open confirmation modal
-  const handleDeleteTable = (table: Table) => {
-    const activeOrders = getActiveOrdersForTable(table.id);
-    if (activeOrders.length > 0) {
-      toast.error(t('tables.cannotDeleteActiveOrder'));
-      return;
-    }
-    setDeleteConfirmTable(table);
-  };
+  const handleDeleteTable = useCallback(
+    (table: Table) => {
+      const activeOrders = getActiveOrdersForTable(table.id);
+      if (activeOrders.length > 0) {
+        toast.error(t('tables.cannotDeleteActiveOrder'));
+        return;
+      }
+      setDeleteConfirmTable(table);
+    },
+    [getActiveOrdersForTable, t],
+  );
+
+  const handleEditTable = useCallback((table: Table) => {
+    setEditingTable(table);
+    setIsTableModalOpen(true);
+    setTableMenuOpen(null);
+  }, []);
+
+  const handleDeleteTableMenu = useCallback(
+    (table: Table) => {
+      handleDeleteTable(table);
+      setTableMenuOpen(null);
+    },
+    [handleDeleteTable],
+  );
+
+  const handleTransferTable = useCallback((table: Table) => {
+    setSelectedTable(table);
+    setIsTransferModalOpen(true);
+  }, []);
 
   const confirmDeleteTable = async () => {
     if (!deleteConfirmTable) return;
@@ -197,19 +243,9 @@ export default function TablesPage() {
                 creatingOrderForTable={null}
                 tableMenuOpen={tableMenuOpen}
                 onTableMenuToggle={setTableMenuOpen}
-                onEditTable={(t) => {
-                  setEditingTable(t);
-                  setIsTableModalOpen(true);
-                  setTableMenuOpen(null);
-                }}
-                onDeleteTable={(t) => {
-                  handleDeleteTable(t);
-                  setTableMenuOpen(null);
-                }}
-                onTransferTable={(t) => {
-                  setSelectedTable(t);
-                  setIsTransferModalOpen(true);
-                }}
+                onEditTable={handleEditTable}
+                onDeleteTable={handleDeleteTableMenu}
+                onTransferTable={handleTransferTable}
                 formatPrice={formatPrice}
               />
             );

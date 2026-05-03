@@ -17,6 +17,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { memo } from 'react';
 
 type DeliveryOrder = OrderWithDetails & {
   delivery_person?: { full_name: string } | null;
@@ -40,7 +41,7 @@ interface DeliveryOrderCardProps {
   onOpenCancel: (order: DeliveryOrder) => void;
 }
 
-export function DeliveryOrderCard({
+function DeliveryOrderCardImpl({
   order,
   formatPrice,
   onStatusUpdate,
@@ -205,3 +206,5 @@ export function DeliveryOrderCard({
     </div>
   );
 }
+
+export const DeliveryOrderCard = memo(DeliveryOrderCardImpl);

@@ -26,7 +26,7 @@ export default function TakeoutPage() {
   const { staff } = useAuth();
   const { data: orders, isLoading: loading, error, refetch } = useTakeoutOrders();
   const { data: menuItems } = useMenuItems();
-  const updateOrderStatus = useUpdateOrderStatus();
+  const { mutateAsync: updateOrderStatusAsync } = useUpdateOrderStatus();
   const formatPrice = useFormatPrice();
 
   const takeoutSearchFields = useCallback(
@@ -51,20 +51,30 @@ export default function TakeoutPage() {
     { table: 'order_payments', queryKeys: [['takeout_orders'], ['payments']] },
   ]);
 
-  const handleStatusUpdate = async (orderId: string, newStatus: TakeoutStatus) => {
-    try {
-      const statusKey = Object.entries(ORDER_STATUS).find(([_, value]) => value === newStatus)?.[0];
-      if (!statusKey) throw new Error('Invalid status');
+  const handleStatusUpdate = useCallback(
+    async (orderId: string, newStatus: TakeoutStatus) => {
+      try {
+        const statusKey = Object.entries(ORDER_STATUS).find(
+          ([_, value]) => value === newStatus,
+        )?.[0];
+        if (!statusKey) throw new Error('Invalid status');
 
-      await updateOrderStatus.mutateAsync({
-        orderId,
-        status: statusKey as keyof typeof ORDER_STATUS,
-      });
-      toast.success(`${t('orders.statusUpdated')} ${newStatus.replace(/_/g, ' ')}`);
-    } catch (_error) {
-      toast.error(t('takeout.failedUpdate'));
-    }
-  };
+        await updateOrderStatusAsync({
+          orderId,
+          status: statusKey as keyof typeof ORDER_STATUS,
+        });
+        toast.success(`${t('orders.statusUpdated')} ${newStatus.replace(/_/g, ' ')}`);
+      } catch (_error) {
+        toast.error(t('takeout.failedUpdate'));
+      }
+    },
+    [updateOrderStatusAsync, t],
+  );
+
+  const handleOpenPayment = useCallback((o: OrderWithDetails) => {
+    setSelectedOrder(o);
+    setIsPaymentModalOpen(true);
+  }, []);
 
   if (loading) {
     return (
@@ -155,10 +165,7 @@ export default function TakeoutPage() {
             order={order}
             formatPrice={formatPrice}
             onStatusUpdate={handleStatusUpdate}
-            onOpenPayment={(o) => {
-              setSelectedOrder(o);
-              setIsPaymentModalOpen(true);
-            }}
+            onOpenPayment={handleOpenPayment}
             onOpenCancel={setCancelOrderTarget}
           />
         ))}

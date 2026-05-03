@@ -7,12 +7,17 @@ import { handleSupabaseError } from '../errors';
 import { applyTenantScope, assertInsertTenantMatches } from './_tenant-scope';
 import type { StaffInsert, StaffRow, StaffUpdate, WrapperContext } from './types';
 
+// Explicit projections — keep `auth_user_id` server-side only.
+const STAFF_LIST_SELECT = 'id, email, full_name, role, is_active, created_at, updated_at' as const;
+const STAFF_DETAIL_SELECT =
+  'id, email, full_name, role, is_active, phone, preferred_language, created_at, updated_at, last_login_at, tenant_id' as const;
+
 export function createStaffWrapper(ctx: WrapperContext) {
   return {
     findAll: async (options?: { role?: StaffRow['role']; limit?: number }) => {
       const limit = options?.limit ?? 200;
       let query = applyTenantScope(
-        ctx.client.from('staff').select('*').order('full_name').limit(limit),
+        ctx.client.from('staff').select(STAFF_LIST_SELECT).order('full_name').limit(limit),
         ctx,
       );
 
@@ -30,7 +35,7 @@ export function createStaffWrapper(ctx: WrapperContext) {
 
     findById: async (id: string) => {
       const { data, error } = await applyTenantScope(
-        ctx.client.from('staff').select('*').eq('id', id),
+        ctx.client.from('staff').select(STAFF_DETAIL_SELECT).eq('id', id),
         ctx,
       ).single();
 
@@ -41,7 +46,7 @@ export function createStaffWrapper(ctx: WrapperContext) {
 
     findByEmail: async (email: string) => {
       const { data, error } = await applyTenantScope(
-        ctx.client.from('staff').select('*').eq('email', email),
+        ctx.client.from('staff').select(STAFF_DETAIL_SELECT).eq('email', email),
         ctx,
       ).single();
 
@@ -52,9 +57,14 @@ export function createStaffWrapper(ctx: WrapperContext) {
 
     findByAuthId: async (authUserId: string) => {
       // Login flow: tenant context is bound from auth.uid() lookup, so this
-      // call resolves before setTenantContext() — must allow null.
+      // call resolves before setTenantContext() — must allow null. Detail
+      // projection includes tenant_id so the caller can bind context.
       const { data, error } = await applyTenantScope(
-        ctx.client.from('staff').select('*').eq('auth_user_id', authUserId).eq('is_active', true),
+        ctx.client
+          .from('staff')
+          .select(STAFF_DETAIL_SELECT)
+          .eq('auth_user_id', authUserId)
+          .eq('is_active', true),
         ctx,
         { allowNull: true },
       ).single();
@@ -66,7 +76,11 @@ export function createStaffWrapper(ctx: WrapperContext) {
 
     create: async (staffData: StaffInsert) => {
       assertInsertTenantMatches(staffData, ctx);
-      const { data, error } = await ctx.anyClient.from('staff').insert(staffData).select().single();
+      const { data, error } = await ctx.anyClient
+        .from('staff')
+        .insert(staffData)
+        .select(STAFF_DETAIL_SELECT)
+        .single();
 
       if (error) throw handleSupabaseError(error);
       if (!isStaff(data)) throw new Error('Invalid staff data');
@@ -78,7 +92,7 @@ export function createStaffWrapper(ctx: WrapperContext) {
         .from('staff')
         .update(updates)
         .eq('id', id)
-        .select()
+        .select(STAFF_DETAIL_SELECT)
         .single();
 
       if (error) throw handleSupabaseError(error);
@@ -96,7 +110,7 @@ export function createStaffWrapper(ctx: WrapperContext) {
       const { data, error } = await applyTenantScope(
         ctx.client
           .from('staff')
-          .select('*')
+          .select(STAFF_LIST_SELECT)
           .eq('role', 'waiter')
           .eq('is_active', true)
           .order('full_name')
