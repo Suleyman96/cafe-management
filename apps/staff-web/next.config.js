@@ -79,5 +79,8 @@ module.exports = withSentryConfig(withBundleAnalyzer(nextConfig), {
   project: process.env.SENTRY_PROJECT,
   silent: !process.env.CI,
   widenClientFileUpload: true,
-  disableLogger: true,
+  // Replaces the deprecated `disableLogger: true`. Strips Sentry's debug
+  // `console.*` calls from the production bundle via webpack treeshake
+  // rather than via a Sentry-specific flag that's slated for removal.
+  webpack: { treeshake: { removeDebugLogging: true } },
 });

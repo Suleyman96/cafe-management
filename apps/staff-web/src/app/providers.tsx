@@ -124,6 +124,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
             refetchOnReconnect: true,
             retry: 1,
           },
+          // Money mutations must never auto-retry — even idempotent ones
+          // are risky at the React Query layer because a paused-then-fired
+          // retry can fire after the user thinks the click failed and tried
+          // a different action. `retry: 0` keeps retries strictly user-driven.
+          // Forms reuse a stable `client_request_id` across user retries via
+          // `useStableClientRequestId` so the server dedupes via its
+          // (tenant_id, client_request_id) unique indexes.
+          // `networkMode: 'online'` is the default in v5 but pinned here so
+          // an upstream change can't silently switch to 'always' (which
+          // would let mutations fire while offline against a stale token).
+          mutations: {
+            retry: 0,
+            networkMode: 'online',
+          },
         },
       }),
   );

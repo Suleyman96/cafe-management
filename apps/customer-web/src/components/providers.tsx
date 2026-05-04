@@ -61,6 +61,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
             refetchOnWindowFocus: true,
             retry: 1,
           },
+          // Money mutations (delivery order create + add items) must never
+          // auto-retry. Retries are user-driven and reuse a stable
+          // `client_request_id` so the server dedupes via its
+          // (tenant_id, client_request_id) unique indexes. `networkMode`
+          // pinned to 'online' so an upstream change can't switch to
+          // 'always' and queue a write against a stale token.
+          mutations: {
+            retry: 0,
+            networkMode: 'online',
+          },
         },
       }),
   );

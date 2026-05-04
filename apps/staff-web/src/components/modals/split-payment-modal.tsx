@@ -3,6 +3,7 @@
 import type { ORDER_STATUS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { useStableClientRequestId } from '@gustri/queries';
 import * as Sentry from '@sentry/nextjs';
 import { CheckCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -52,6 +53,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   const formatPrice = useFormatPrice();
   const { data: cafeSettings } = useCafeSettings();
   const isOnline = useIsOnline();
+  const idempotencyKey = useStableClientRequestId();
 
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('full');
   const [partialAmount, setPartialAmount] = useState<string>('');
@@ -61,7 +63,12 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   );
   const [tipAmount, setTipAmount] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'digital'>('cash');
-  const [loading, setLoading] = useState(false);
+
+  // `loading` derives from in-flight mutations rather than a separate state
+  // flag — `retry: 0` flips `isPending` back to false on error so the user
+  // can retry; the retry reuses `idempotencyKey.get()` so the server
+  // dedupes via `(tenant_id, client_request_id)` on `order_payments`.
+  const loading = createPayment.isPending || updateOrderStatus.isPending;
 
   // Reset selection state when modal opens to clear stale data from previous sessions
   useEffect(() => {
@@ -71,8 +78,12 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
       setSelectedItemQuantities(new Map());
       setTipAmount('');
       setPaymentMethod('cash');
+      // New modal session = new logical submit cycle. Forget any key
+      // bound to a prior order so a successful close → reopen on the
+      // same order doesn't replay last session's request id.
+      idempotencyKey.reset();
     }
-  }, [isOpen]);
+  }, [isOpen, idempotencyKey]);
 
   // Collect item IDs that have already been fully paid via specific_items payments
   const paidItemIds = new Set<string>();
@@ -200,7 +211,6 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
       }
     }
 
-    setLoading(true);
     try {
       await createPayment.mutateAsync({
         order_id: order?.id || '',
@@ -211,14 +221,14 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
         payment_method: paymentMethod,
         order_item_ids: orderItemIds,
         notes: null,
+        client_request_id: idempotencyKey.get(),
       });
+      idempotencyKey.reset();
       onSuccess();
     } catch (error: unknown) {
       Sentry.captureException(error);
       const message = error instanceof Error ? error.message : t('payment.paymentFailed');
       toast.error(message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -240,7 +250,6 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   const handleCompleteOrder = async () => {
     if (!order?.id) return;
 
-    setLoading(true);
     try {
       await updateOrderStatus.mutateAsync({
         orderId: order.id,
@@ -250,8 +259,6 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
     } catch (error) {
       Sentry.captureException(error);
       toast.error(t('payment.completeFailed'));
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -3,12 +3,14 @@
 import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
 import type { MenuItem, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { randomUUIDv4, useStableClientRequestId } from '@gustri/queries';
 import { Button } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useAddOrderItems, useCafeSettings, useCreateOrder, useTaxMultiplier } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { useIsOnline } from '@/hooks/use-is-online';
 
 interface CreateTakeoutModalProps {
   staffId: string;
@@ -37,12 +39,26 @@ export function CreateTakeoutModal({
   const [customerNotes, setCustomerNotes] = useState('');
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: cafeSettings } = useCafeSettings();
   const formatPrice = useFormatPrice();
   const taxMultiplier = useTaxMultiplier();
   const createOrder = useCreateOrder();
   const addOrderItems = useAddOrderItems();
+  const isOnline = useIsOnline();
+  const orderIdempotencyKey = useStableClientRequestId();
+  // See create-delivery-modal for the per-line keying rationale: the
+  // batch insert uses a per-row partial unique index, so each line needs
+  // its own key for `dedupeInsertMany` to refetch existing rows on retry.
+  const itemIdempotencyKeysRef = useRef<Map<string, string>>(new Map());
+  const getItemIdempotencyKey = useCallback((menuItemId: string) => {
+    let key = itemIdempotencyKeysRef.current.get(menuItemId);
+    if (!key) {
+      key = randomUUIDv4();
+      itemIdempotencyKeysRef.current.set(menuItemId, key);
+    }
+    return key;
+  }, []);
+  const isSubmitting = createOrder.isPending || addOrderItems.isPending;
 
   // Filter menu items by search
   const filteredItems = menuItems.filter((item) =>
@@ -103,8 +119,6 @@ export function CreateTakeoutModal({
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
       // Totals are computed display-only (`calculateTotal()` is read in
       // render). They are NOT sent to the server — totals are derived
@@ -117,6 +131,7 @@ export function CreateTakeoutModal({
         customer_notes: customerNotes.trim() || null,
         assigned_waiter_id: staffId,
         status: 'new',
+        client_request_id: orderIdempotencyKey.get(),
       } as Partial<OrdersInsert> as OrdersInsert);
 
       // Add order items via hook
@@ -128,9 +143,13 @@ export function CreateTakeoutModal({
         quantity: item.quantity,
         notes: item.notes || null,
         status: 'pending' as const,
+        client_request_id: getItemIdempotencyKey(item.menuItem.id),
       }));
 
       await addOrderItems.mutateAsync(orderItems);
+
+      orderIdempotencyKey.reset();
+      itemIdempotencyKeysRef.current.clear();
 
       // Reset form
       setCustomerName('');
@@ -144,8 +163,6 @@ export function CreateTakeoutModal({
     } catch (error) {
       Sentry.captureException(error);
       toast.error(t('orders.failedCreateTakeout'));
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -369,6 +386,7 @@ export function CreateTakeoutModal({
               onClick={handleSubmit}
               disabled={
                 isSubmitting ||
+                !isOnline ||
                 !customerName.trim() ||
                 !customerPhone.trim() ||
                 selectedItems.length === 0

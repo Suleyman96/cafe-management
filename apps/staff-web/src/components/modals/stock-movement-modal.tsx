@@ -2,11 +2,14 @@
 
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { useStableClientRequestId } from '@gustri/queries';
 import { Button } from '@gustri/ui';
 import { NumberInput } from '@gustri/ui-web';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAdjustStock, useAuth } from '@/hooks';
+import { useCanPerform } from '@/hooks/use-can-perform';
+import { useIsOnline } from '@/hooks/use-is-online';
 
 type StockItem = Database['public']['Tables']['stock_items']['Row'];
 
@@ -20,12 +23,17 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
   const { t } = useTranslation('staff');
   const adjustStock = useAdjustStock();
   const { staff } = useAuth();
+  const isOnline = useIsOnline();
+  const canManageStock = useCanPerform('manage_stock');
+  const idempotencyKey = useStableClientRequestId();
 
   const [formData, setFormData] = useState({
     type: defaultType as 'in' | 'out' | 'adjustment',
     quantity: '',
     reason: '',
   });
+
+  const submitDisabled = adjustStock.isPending || !isOnline || !canManageStock;
 
   const getNewQuantity = () => {
     const qty = Number.parseFloat(formData.quantity) || 0;
@@ -58,8 +66,10 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
           quantity: qty,
           reason: formData.reason || undefined,
           performedBy: staff?.id,
+          client_request_id: idempotencyKey.get(),
         },
       });
+      idempotencyKey.reset();
       toast.success(t('stock.adjusted'), { id: toastId });
       onClose();
     } catch (error: unknown) {
@@ -186,11 +196,17 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={adjustStock.isPending}
+              className="flex-1"
+            >
               {t('cancel', { ns: 'common' })}
             </Button>
-            <Button type="submit" className="flex-1">
-              {t('confirm', { ns: 'common' })}
+            <Button type="submit" disabled={submitDisabled} className="flex-1">
+              {adjustStock.isPending ? t('stock.adjusting') : t('confirm', { ns: 'common' })}
             </Button>
           </div>
         </form>

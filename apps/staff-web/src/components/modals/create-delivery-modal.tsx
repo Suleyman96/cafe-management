@@ -3,10 +3,11 @@
 import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
 import type { MenuItem, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { randomUUIDv4, useStableClientRequestId } from '@gustri/queries';
 import { Button } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
 import { Truck } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { BaseModal } from '@/components/ui/base-modal';
 import {
@@ -18,6 +19,7 @@ import {
   useTaxMultiplier,
 } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { useIsOnline } from '@/hooks/use-is-online';
 import { DeliveryCustomerForm } from './delivery/delivery-customer-form';
 import { MenuItemPicker } from './delivery/menu-item-picker';
 import { type SelectedItem, SelectedItemsList } from './delivery/selected-items-list';
@@ -45,6 +47,23 @@ export function CreateDeliveryModal({
   const taxMultiplier = useTaxMultiplier();
   const createDeliveryCustomer = useCreateDeliveryCustomer();
   const incrementOrderCount = useIncrementDeliveryCustomerOrderCount();
+  const isOnline = useIsOnline();
+  const orderIdempotencyKey = useStableClientRequestId();
+  // Per-line idempotency keys keyed by menu_item.id. The order-create
+  // step is one logical click so a single key suffices, but item insert
+  // is a batch with a per-row partial unique index — sharing a key
+  // across rows would self-conflict. Stamping a stable key per line
+  // means a retry-after-items-failure deduplicates each row individually
+  // via `dedupeInsertMany`.
+  const itemIdempotencyKeysRef = useRef<Map<string, string>>(new Map());
+  const getItemIdempotencyKey = useCallback((menuItemId: string) => {
+    let key = itemIdempotencyKeysRef.current.get(menuItemId);
+    if (!key) {
+      key = randomUUIDv4();
+      itemIdempotencyKeysRef.current.set(menuItemId, key);
+    }
+    return key;
+  }, []);
 
   const [customer, setCustomer] = useState({
     customerId: null as string | null,
@@ -56,7 +75,7 @@ export function CreateDeliveryModal({
   });
   const [deliveryFee, setDeliveryFee] = useState('0');
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmitting = createOrder.isPending || addOrderItems.isPending;
 
   useEffect(() => {
     if (settings?.delivery_fee_default != null) {
@@ -116,7 +135,6 @@ export function CreateDeliveryModal({
       return;
     }
 
-    setIsSubmitting(true);
     try {
       // Totals are display-only — server derives them from order_items via
       // the recompute trigger. We still send `delivery_fee` because the
@@ -133,6 +151,7 @@ export function CreateDeliveryModal({
         delivery_fee: fee,
         assigned_waiter_id: staffId,
         status: 'new',
+        client_request_id: orderIdempotencyKey.get(),
       } as Partial<OrdersInsert> as OrdersInsert);
 
       const orderItems = selectedItems.map((item) => ({
@@ -143,6 +162,7 @@ export function CreateDeliveryModal({
         quantity: item.quantity,
         notes: item.notes || null,
         status: 'pending' as const,
+        client_request_id: getItemIdempotencyKey(item.menuItem.id),
       }));
 
       await addOrderItems.mutateAsync(orderItems);
@@ -157,6 +177,9 @@ export function CreateDeliveryModal({
           notes: customer.notes.trim() || null,
         });
       }
+
+      orderIdempotencyKey.reset();
+      itemIdempotencyKeysRef.current.clear();
 
       // Reset form
       setCustomer({
@@ -175,8 +198,6 @@ export function CreateDeliveryModal({
     } catch (error) {
       Sentry.captureException(error);
       toast.error(t('orders.failedCreateOrder'));
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -198,6 +219,7 @@ export function CreateDeliveryModal({
             onClick={handleSubmit}
             disabled={
               isSubmitting ||
+              !isOnline ||
               !customer.name.trim() ||
               !customer.phone.trim() ||
               !customer.address.trim() ||

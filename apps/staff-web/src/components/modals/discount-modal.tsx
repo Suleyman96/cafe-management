@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { useStableClientRequestId } from '@gustri/queries';
 import { Button } from '@gustri/ui';
 import { NumberInput } from '@gustri/ui-web';
 import { Percent, X } from 'lucide-react';
@@ -8,7 +9,9 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useApplyDiscount } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
+import { useCanPerform } from '@/hooks/use-can-perform';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { useIsOnline } from '@/hooks/use-is-online';
 
 interface DiscountModalProps {
   isOpen: boolean;
@@ -33,6 +36,17 @@ export function DiscountModal({
   const { staff } = useAuth();
   const formatPrice = useFormatPrice();
   const applyDiscount = useApplyDiscount();
+  const isOnline = useIsOnline();
+  const canApplyDiscount = useCanPerform('apply_discount');
+  // Apply and remove are logically distinct mutations even though they
+  // share the `useApplyDiscount` hook (remove sends `discount_type:'none'`,
+  // value `0`). The server dedupes per `(tenant_id, order_id, action,
+  // client_request_id)` and treats both as `action='discount_applied'`,
+  // so reusing the same key across paths would let an apply-then-remove
+  // double-tap return the apply result and silently keep the discount.
+  // Two refs — one per path — each reset on its own success.
+  const applyIdempotencyKey = useStableClientRequestId();
+  const removeIdempotencyKey = useStableClientRequestId();
 
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>(
     currentDiscountType === 'none' ? 'percentage' : (currentDiscountType as 'percentage' | 'fixed'),
@@ -41,9 +55,15 @@ export function DiscountModal({
     currentDiscountValue > 0 ? currentDiscountValue.toString() : '',
   );
   const [reason, setReason] = useState('');
-  const [loading, setLoading] = useState(false);
 
   const parsedValue = parseFloat(discountValue) || 0;
+  // The same `idempotencyKey` covers both apply and remove because either
+  // is a single user-driven submit cycle and the modal closes on success;
+  // a retry of either path reuses the same key so the server (which
+  // dedupes via the partial unique index from migration 20260504000002)
+  // returns the same audit row instead of writing a duplicate.
+  const isPending = applyDiscount.isPending;
+  const baseDisabled = isPending || !isOnline || !canApplyDiscount;
 
   // Calculate preview
   const discountAmount =
@@ -58,7 +78,6 @@ export function DiscountModal({
       return;
     }
 
-    setLoading(true);
     try {
       await applyDiscount.mutateAsync({
         orderId,
@@ -66,7 +85,9 @@ export function DiscountModal({
         discount_value: parsedValue,
         discount_reason: reason || null,
         discount_applied_by: staff.id,
+        client_request_id: applyIdempotencyKey.get(),
       });
+      applyIdempotencyKey.reset();
       toast.success(t('orders.discountApplied'));
       onSuccess();
       onClose();
@@ -74,14 +95,11 @@ export function DiscountModal({
       const raw = error instanceof Error ? error.message : 'Failed to apply discount';
       const message = raw === 'discount_reason_required' ? t('orders.discountReasonRequired') : raw;
       toast.error(message);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleRemove = async () => {
     if (!staff?.id) return;
-    setLoading(true);
     try {
       await applyDiscount.mutateAsync({
         orderId,
@@ -89,15 +107,15 @@ export function DiscountModal({
         discount_value: 0,
         discount_reason: null,
         discount_applied_by: staff.id,
+        client_request_id: removeIdempotencyKey.get(),
       });
+      removeIdempotencyKey.reset();
       toast.success(t('orders.discountRemoved'));
       onSuccess();
       onClose();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to remove discount';
       toast.error(message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -201,17 +219,21 @@ export function DiscountModal({
             <Button
               variant="outline"
               onClick={handleRemove}
-              disabled={loading}
+              disabled={baseDisabled}
               className="text-red-600"
             >
               {t('orders.removeDiscount')}
             </Button>
           )}
-          <Button variant="outline" onClick={onClose} disabled={loading} className="flex-1">
+          <Button variant="outline" onClick={onClose} disabled={isPending} className="flex-1">
             {t('cancel', { ns: 'common' })}
           </Button>
-          <Button onClick={handleApply} disabled={parsedValue <= 0 || loading} className="flex-1">
-            {loading ? t('payment.processing') : t('orders.addDiscount')}
+          <Button
+            onClick={handleApply}
+            disabled={parsedValue <= 0 || baseDisabled}
+            className="flex-1"
+          >
+            {isPending ? t('payment.processing') : t('orders.addDiscount')}
           </Button>
         </div>
       </div>

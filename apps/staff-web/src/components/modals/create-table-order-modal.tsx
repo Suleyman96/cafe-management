@@ -2,12 +2,14 @@
 
 import type { OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { useStableClientRequestId } from '@gustri/queries';
 import { Button } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
 import { UtensilsCrossed, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateOrder } from '@/hooks';
+import { useIsOnline } from '@/hooks/use-is-online';
 
 interface CreateTableOrderModalProps {
   isOpen: boolean;
@@ -27,19 +29,22 @@ export function CreateTableOrderModal({
 }: CreateTableOrderModalProps) {
   const { t } = useTranslation('staff');
   const createOrder = useCreateOrder();
+  const isOnline = useIsOnline();
+  const idempotencyKey = useStableClientRequestId();
 
   const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(false);
+  const loading = createOrder.isPending;
 
   const handleCreate = async () => {
-    setLoading(true);
     try {
       const result = await createOrder.mutateAsync({
         table_id: table.id,
         order_type: 'dine_in',
         status: 'new',
         internal_notes: notes.trim() || null,
+        client_request_id: idempotencyKey.get(),
       } as OrdersInsert);
+      idempotencyKey.reset();
       onSuccess(result.id);
 
       // Reset form
@@ -47,8 +52,6 @@ export function CreateTableOrderModal({
     } catch (error) {
       Sentry.captureException(error);
       toast.error(t('orders.failedCreateOrder'));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -92,7 +95,12 @@ export function CreateTableOrderModal({
           <Button variant="outline" onClick={onClose} disabled={loading} className="flex-1">
             {t('cancel', { ns: 'common' })}
           </Button>
-          <Button type="button" onClick={handleCreate} disabled={loading} className="flex-1">
+          <Button
+            type="button"
+            onClick={handleCreate}
+            disabled={loading || !isOnline}
+            className="flex-1"
+          >
             {loading ? t('orders.creating') : t('orders.createOrder')}
           </Button>
         </div>

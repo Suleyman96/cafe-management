@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { useStableClientRequestId } from '@gustri/queries';
 import { Button } from '@gustri/ui';
 import { NumberInput } from '@gustri/ui-web';
 import { X } from 'lucide-react';
@@ -8,7 +9,9 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateRefund } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
+import { useCanPerform } from '@/hooks/use-can-perform';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { useIsOnline } from '@/hooks/use-is-online';
 
 interface RefundModalProps {
   isOpen: boolean;
@@ -31,14 +34,27 @@ export function RefundModal({
   const { staff } = useAuth();
   const formatPrice = useFormatPrice();
   const createRefund = useCreateRefund();
+  const isOnline = useIsOnline();
+  const canIssueRefund = useCanPerform('issue_refund');
+  const idempotencyKey = useStableClientRequestId();
 
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const [refundMethod, setRefundMethod] = useState<'cash' | 'card' | 'digital'>('cash');
-  const [loading, setLoading] = useState(false);
 
   const available = totalPaid - totalRefunded;
   const parsedAmount = parseFloat(amount) || 0;
+  // `isPending` covers the in-flight mutation. With `retry: 0` (Blocker 2)
+  // a failure flips this back to false instantly, so the user can retry —
+  // and the retry reuses `idempotencyKey.get()` so the server dedupes via
+  // the (tenant_id, client_request_id) partial unique index on `refunds`.
+  const submitDisabled =
+    parsedAmount <= 0 ||
+    !reason.trim() ||
+    parsedAmount > available ||
+    createRefund.isPending ||
+    !isOnline ||
+    !canIssueRefund;
 
   const handleFullRefund = () => {
     setAmount(available.toFixed(2));
@@ -51,7 +67,6 @@ export function RefundModal({
       return;
     }
 
-    setLoading(true);
     try {
       await createRefund.mutateAsync({
         order_id: orderId,
@@ -59,15 +74,15 @@ export function RefundModal({
         amount: parsedAmount,
         reason: reason.trim(),
         refund_method: refundMethod,
+        client_request_id: idempotencyKey.get(),
       });
+      idempotencyKey.reset();
       toast.success(t('orders.refundProcessed'));
       onSuccess();
       onClose();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to process refund';
       toast.error(message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -171,16 +186,21 @@ export function RefundModal({
         </div>
 
         <div className="border-t p-6 flex gap-3">
-          <Button variant="outline" onClick={onClose} disabled={loading} className="flex-1">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={createRefund.isPending}
+            className="flex-1"
+          >
             {t('cancel', { ns: 'common' })}
           </Button>
           <Button
             variant="destructive"
             onClick={handleSubmit}
-            disabled={parsedAmount <= 0 || !reason.trim() || parsedAmount > available || loading}
+            disabled={submitDisabled}
             className="flex-1"
           >
-            {loading ? t('payment.processing') : t('orders.processRefund')}
+            {createRefund.isPending ? t('payment.processing') : t('orders.processRefund')}
           </Button>
         </div>
       </div>

@@ -1,3 +1,6 @@
+// Sentry browser bootstrap. Renamed from `sentry.client.config.ts`
+// (the legacy filename Sentry deprecated and Turbopack will not load
+// — see https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation-client).
 import * as Sentry from '@sentry/nextjs';
 
 Sentry.init({

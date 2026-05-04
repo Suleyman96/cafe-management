@@ -1,11 +1,12 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { randomUUIDv4, useStableClientRequestId } from '@gustri/queries';
 import { Button } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
 import { ArrowLeft, Edit3, MapPin, Phone, Truck, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useCartItemNotes } from '@/hooks/use-cart-item-notes';
 import { useAddDeliveryOrderItems, useCreateDeliveryOrder } from '@/hooks/use-delivery';
@@ -38,6 +39,22 @@ export function DeliveryCartScreen() {
   const { data: settings } = useCafeSettings();
   const formatPrice = useFormatPrice();
   const taxMultiplier = useTaxMultiplier();
+  // Stable idempotency keys so a user-driven retry of the same submit
+  // (after a network error) reuses the prior `client_request_id` and the
+  // server dedupes via the `(tenant_id, client_request_id)` partial
+  // unique indexes on `orders` and `order_items`. Without this, every
+  // retry would mint fresh keys and the server would create a duplicate
+  // delivery order.
+  const orderIdempotencyKey = useStableClientRequestId();
+  const itemIdempotencyKeysRef = useRef<Map<string, string>>(new Map());
+  const getItemIdempotencyKey = useCallback((menuItemId: string) => {
+    let key = itemIdempotencyKeysRef.current.get(menuItemId);
+    if (!key) {
+      key = randomUUIDv4();
+      itemIdempotencyKeysRef.current.set(menuItemId, key);
+    }
+    return key;
+  }, []);
 
   const cartSubtotal = getTotal();
   const deliveryFee = settings?.delivery_fee_default ?? 0;
@@ -76,6 +93,7 @@ export function DeliveryCartScreen() {
         deliveryFee,
         orderNotes,
         qrToken,
+        client_request_id: orderIdempotencyKey.get(),
       });
 
       // The items route still needs a tenant scope; derive it from the
@@ -92,8 +110,12 @@ export function DeliveryCartScreen() {
           item_price: item.menuItem.price,
           quantity: item.quantity,
           notes: item.notes,
+          client_request_id: getItemIdempotencyKey(item.menuItem.id),
         })),
       });
+
+      orderIdempotencyKey.reset();
+      itemIdempotencyKeysRef.current.clear();
 
       setLastOrderId(order.id);
       toast.success(t('deliveryCart.orderSuccess'));

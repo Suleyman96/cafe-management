@@ -5,7 +5,7 @@ Source: final pre-release audit, 2026-05-04. Ordered by deploy sequence (DB firs
 | # | Title | Status |
 |---|---|---|
 | 1 | `client_request_id` required on money mutations | **DONE** — see PR linked from this branch |
-| 2 | Disable retry on money mutations + protect submit buttons | TODO |
+| 2 | Disable retry on money mutations + protect submit buttons | **DONE** — see PR linked from this branch |
 | 3 | `ON DELETE RESTRICT` on financial tables + archival path | TODO |
 | 4 | Realtime reconnect on `visibilitychange` / `online` | TODO |
 | 5 | Cross-tab cache & auth sync via `BroadcastChannel` | TODO |
@@ -80,29 +80,62 @@ return useMutation({
 
 ---
 
-## Blocker 2 — Disable retry on money mutations + protect submit buttons
+## Blocker 2 — Disable retry on money mutations + protect submit buttons ✅
+
+**Status:** Implemented on this branch.
 
 **Goal:** No automatic retry of payments/refunds/discounts at the React Query layer. Manual retries only, with idempotency.
 
-### Files
-- `apps/staff-web/src/app/providers.tsx:106-129` — set `defaultOptions.mutations.retry: 0`, `networkMode: 'online'`
-- All money-mutation hooks already set `retry: 0` after Blocker 1; verify after defaults change
-- All payment/refund/discount forms — disable submit while `mutation.isPending`; gate via `useIsOnline()` + `useCanPerform(action)`
+### Files touched
 
-### Pattern — retry-on-error must reuse same `client_request_id`
+**Global mutation defaults:**
+- `apps/staff-web/src/app/providers.tsx` — `defaultOptions.mutations: { retry: 0, networkMode: 'online' }`
+- `apps/customer-web/src/components/providers.tsx` — same defaults applied for delivery flow
+
+**Shared hook (new):**
+- `packages/queries/src/use-stable-client-request-id.ts` — `useStableClientRequestId()` exposes `{ get(), reset() }` for per-form key reuse across user-driven retries
+- `packages/queries/src/index.ts` — export `useStableClientRequestId` and `StableClientRequestId` type
+
+**Forms — added `mutation.isPending`, `useIsOnline()`, `useCanPerform(action)` gates and stable-key wiring:**
+- `apps/staff-web/src/components/modals/refund-modal.tsx` — gates on `issue_refund`
+- `apps/staff-web/src/components/modals/discount-modal.tsx` — gates on `apply_discount`. Apply and remove each get their *own* stable key — both paths emit `action='discount_applied'` server-side, so a shared key would let an apply-then-remove double-tap dedupe to the apply result and silently keep the discount
+- `apps/staff-web/src/components/modals/split-payment-modal.tsx` — drops manual `loading` state in favor of `createPayment.isPending || updateOrderStatus.isPending`; resets key on modal open
+- `apps/staff-web/src/components/modals/create-table-order-modal.tsx` — `useCreateOrder` + `isOnline` gate
+- `apps/staff-web/src/components/modals/create-delivery-modal.tsx` — order key + per-line item keys (Map by `menu_item.id`) so the `addOrderItems` batch dedupes on retry via `dedupeInsertMany`
+- `apps/staff-web/src/components/orders/create-takeout-modal.tsx` — same dual-key pattern
+- `apps/staff-web/src/components/modals/stock-movement-modal.tsx` — gates on `manage_stock`
+- `apps/customer-web/src/components/cart/delivery-cart-screen.tsx` — order + per-line item keys (no auth gate; customer flow)
+
+**Tests:**
+- `packages/queries/src/__tests__/use-stable-client-request-id.test.ts` — 5 unit tests: stable across re-renders, mints fresh after reset, lazy mint, function ref stability
+- `apps/staff-web/src/__tests__/components/modals/refund-modal.test.tsx` — 5 component tests covering the three plan scenarios + isPending + canPerform
+
+### Pattern
+
 ```ts
-const clientRequestIdRef = useRef<string | null>(null);
-const submit = () => {
-  clientRequestIdRef.current ??= newClientRequestId();
-  mutate({ ...form, client_request_id: clientRequestIdRef.current });
-};
-const onSuccess = () => { clientRequestIdRef.current = null; };
+// new shared hook in @gustri/queries
+const idempotencyKey = useStableClientRequestId();
+
+// stamp on submit; reset on success
+await mutation.mutateAsync({ ...form, client_request_id: idempotencyKey.get() });
+idempotencyKey.reset();
+
+// disable while in-flight, offline, or unauthorized
+disabled={mutation.isPending || !isOnline || !canPerform('issue_refund')}
 ```
 
-### Tests
-- Component: simulate timeout → `mutationFn` called exactly once
-- Component: simulate offline → button disabled; mutation never fires
-- Component: retry-on-error path reuses the same `client_request_id`
+For batch inserts (`addOrderItems`, `addDeliveryOrderItems`) the hook stamps a *distinct* key per row (the partial unique index is per-row), so order-create modals also keep a `Map<menu_item_id, key>` ref alongside the single order key — both reset together on success.
+
+### Tests verified
+- Component: timeout → `mutationFn` called exactly once (no auto-retry)
+- Component: offline → submit disabled, mutation never fires
+- Component: retry-on-error path reuses the same `client_request_id` (UUID v4 regex match + equality across attempts)
+- Component: missing `issue_refund` permission → submit disabled
+- Component: `isPending` → submit disabled with "Processing…" label
+
+### Risks / rollout
+- The global `mutations: { retry: 0 }` default flips behavior for *all* mutations app-wide, not just money ones. Read mutations (e.g. table status flips, schedule updates) lose their implicit "retry once" safety net — but those mutations are idempotent on the server side and the user can re-tap. If a non-money mutation regresses on flaky networks, override per-hook with `retry: 1`.
+- `networkMode: 'online'` is the v5 default — pinning it makes the choice explicit so an upstream change to `'always'` can't silently let writes fire against a stale token while offline.
 
 ---
 

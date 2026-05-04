@@ -111,6 +111,10 @@ export { MUTATION_KEYS, type MutationKey, type MutationKeyName } from './mutatio
 // Mutation types
 export type { MutationCallbacks } from './mutations/types';
 export { DbProvider, REALTIME_INVALIDATE_DEBOUNCE_MS, useDb, useTenantId } from './provider';
+export {
+  type StableClientRequestId,
+  useStableClientRequestId,
+} from './use-stable-client-request-id';
 
 // ─── Mutations ──────────────────────────────────────────────────────────────
 
