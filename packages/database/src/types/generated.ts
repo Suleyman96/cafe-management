@@ -493,6 +493,7 @@ export type Database = {
           staff_id: string | null
           tenant_id: string
           triggered_by: string | null
+          triggered_by_request_id: string | null
         }
         Insert: {
           action: string
@@ -511,6 +512,7 @@ export type Database = {
           staff_id?: string | null
           tenant_id: string
           triggered_by?: string | null
+          triggered_by_request_id?: string | null
         }
         Update: {
           action?: string
@@ -529,6 +531,7 @@ export type Database = {
           staff_id?: string | null
           tenant_id?: string
           triggered_by?: string | null
+          triggered_by_request_id?: string | null
         }
         Relationships: [
           {
@@ -2125,6 +2128,18 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      apply_discount_with_audit: {
+        Args: {
+          p_client_request_id: string
+          p_discount_applied_by: string
+          p_discount_reason: string
+          p_discount_type: string
+          p_discount_value: number
+          p_order_id: string
+          p_tenant_id: string
+        }
+        Returns: Json
+      }
       calculate_order_total: {
         Args: { order_uuid: string }
         Returns: undefined
@@ -2158,6 +2173,20 @@ export type Database = {
           cancelled_order_id: string
           freed_table_id: string
         }[]
+      }
+      create_refund_with_audit: {
+        Args: {
+          p_amount: number
+          p_client_request_id: string
+          p_notes: string
+          p_order_id: string
+          p_order_item_ids: string[]
+          p_processed_by: string
+          p_reason: string
+          p_refund_method: string
+          p_tenant_id: string
+        }
+        Returns: Json
       }
       current_tenant_id: { Args: never; Returns: string }
       current_tenant_id_text: { Args: never; Returns: string }

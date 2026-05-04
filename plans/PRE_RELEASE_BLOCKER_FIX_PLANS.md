@@ -9,7 +9,7 @@ Source: final pre-release audit, 2026-05-04. Ordered by deploy sequence (DB firs
 | 3 | `ON DELETE RESTRICT` on financial tables + archival path | TODO |
 | 4 | Realtime reconnect on `visibilitychange` / `online` | TODO |
 | 5 | Cross-tab cache & auth sync via `BroadcastChannel` | TODO |
-| 6 | Atomic mutation + audit insert via single Postgres RPC | TODO |
+| 6 | Atomic mutation + audit insert via single Postgres RPC | **DONE** — see PR linked from this branch |
 | 7 | `/api/v1/health` + observability hooks | TODO |
 
 ---

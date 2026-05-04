@@ -1,3 +1,4 @@
+import { handleSupabaseError } from '@gustri/api-client';
 import { DISCOUNT_AUDIT_THRESHOLD, ValidationError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -11,27 +12,32 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * hid the button from non-admins. Centralizing the gate at the route
  * removes that schism.
  *
- * Idempotency: the discount UPDATE itself writes absolute values
- * (`discount_type`, `discount_value`) — not deltas — so re-applying with
- * the same payload yields the same order state. The audit log INSERT,
- * however, is not naturally idempotent. To dedupe:
- *   1. We stamp `client_request_id` into `details` and look it up on
- *      subsequent calls — fast path for sequential retries.
- *   2. The audit table carries a partial unique index on
- *      (tenant_id, action='discount_applied', client_request_id) — see
- *      migration 20260504000002. Two concurrent replays that both miss the
- *      lookup serialize on the index: one wins, the other gets 23505
- *      (unique_violation), which we catch and treat as a successful dedupe.
- *      Same pattern as stock-service's stock_movements constraint.
+ * Atomicity (Blocker 6, pre-release audit). The pre-fix flow ran the
+ * orders UPDATE and the `discount_applied` financial_audit_log INSERT
+ * as two separate Supabase round trips (and therefore two separate
+ * transactions). If the audit INSERT failed, the discount was already
+ * committed and an operator-visible `console.warn` was the only trace.
+ * The new `apply_discount_with_audit` Postgres function (migration
+ * 20260505000003) executes both writes in one transaction. A failed
+ * audit insert now rolls back the UPDATE, eliminating the "best-effort
+ * logging" branch entirely.
  *
- * Audit trail: EVERY non-zero discount writes a `financial_audit_log`
- * row. Even a 5%-off concession is finance-relevant; the prior threshold
- * gate hid small comps from reconciliation. Discounts above
- * `DISCOUNT_AUDIT_THRESHOLD` additionally require a non-trivial reason
- * (≥5 chars) so large comps are forensically usable.
+ * Idempotency. The audit table carries a partial unique index on
+ *   (tenant_id, action='discount_applied', client_request_id) — see
+ * migration 20260504000002. The RPC's pre-INSERT lookup short-circuits
+ * sequential retries; concurrent replays serialize on the order-row
+ * lock and the loser sees the winner's audit row on its retry. A 23505
+ * unique violation (the rare double-miss path) is mapped here to a
+ * deduped result via a follow-up SELECT.
  *
- * Sanity caps stay (percentage 0-100, fixed ≤ subtotal) — these are
- * shape guards, not authorization decisions.
+ * Validation split. Sanity caps (percentage 0–100, fixed ≤ subtotal,
+ * large-discount reason requirement) STAY in this service — the route's
+ * Zod schema already validates shape, but the order-context-dependent
+ * checks (subtotal upper bound, fraction-vs-threshold) need an order
+ * read and produce structured `fieldErrors` for UI feedback. The RPC
+ * only enforces shape-of-last-resort (discount_type membership, value
+ * sign) so an internal caller bypassing the service can't write
+ * nonsense.
  */
 
 const PG_UNIQUE_VIOLATION = '23505';
@@ -50,14 +56,29 @@ interface ApplyDiscountParams {
   tenantId: string;
 }
 
-async function fetchOrder(supabaseAdmin: SupabaseClient, orderId: string) {
+interface OrderRow {
+  id: string;
+  subtotal: number | string;
+  tax: number | string;
+  total: number | string;
+  discount_type: string;
+  discount_value: number | string;
+  discount_amount: number | string;
+}
+
+interface RpcResponse {
+  order: OrderRow;
+  deduped: boolean;
+}
+
+async function fetchOrderForRefetch(supabaseAdmin: SupabaseClient, orderId: string) {
   const { data, error } = await supabaseAdmin
     .from('orders')
     .select('id, subtotal, tax, total, discount_type, discount_value, discount_amount')
     .eq('id', orderId)
     .single();
-  if (error) throw new Error(error.message);
-  return data;
+  if (error) throw handleSupabaseError(error);
+  return data as OrderRow;
 }
 
 export async function applyDiscount(supabaseAdmin: SupabaseClient, params: ApplyDiscountParams) {
@@ -65,9 +86,8 @@ export async function applyDiscount(supabaseAdmin: SupabaseClient, params: Apply
     params;
   let { discountValue } = params;
 
-  // Blocker 1: discounts must carry a client_request_id. The route schema
-  // rejects missing keys at the edge; this throw is defense-in-depth for
-  // any future internal caller that bypasses the route.
+  // Defense-in-depth (Blocker 1). The route schema rejects missing keys;
+  // this throw is for any future internal caller that bypasses the route.
   if (!clientRequestId) {
     throw new ValidationError('client_request_id is required', {
       fieldErrors: {
@@ -76,26 +96,11 @@ export async function applyDiscount(supabaseAdmin: SupabaseClient, params: Apply
     });
   }
 
-  // Replay short-circuit: if a prior call with the same client_request_id
-  // already wrote a `discount_applied` audit row, the discount UPDATE has
-  // already run (or, since the UPDATE is idempotent on absolute values, is
-  // safe to skip). Returning early avoids a duplicate audit entry.
-  if (clientRequestId) {
-    const { data: existingAudit, error: auditLookupError } = await supabaseAdmin
-      .from('financial_audit_log')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('order_id', orderId)
-      .eq('action', 'discount_applied')
-      .eq('details->>client_request_id', clientRequestId)
-      .maybeSingle();
-    if (auditLookupError) throw new Error(auditLookupError.message);
-    if (existingAudit) {
-      return { order: await fetchOrder(supabaseAdmin, orderId), deduped: true };
-    }
-  }
-
-  // Verify the order belongs to this tenant
+  // Read the order's subtotal first — sanity caps below depend on it,
+  // and the dedupe lookup happens inside the RPC. We also use this
+  // SELECT as the tenant-scope check: cross-tenant order ids resolve
+  // to NotFoundError here so the route returns a clean 404, before any
+  // RPC round trip.
   const { data: order, error: orderError } = await supabaseAdmin
     .from('orders')
     .select('id, subtotal, tenant_id')
@@ -104,16 +109,17 @@ export async function applyDiscount(supabaseAdmin: SupabaseClient, params: Apply
     .single();
 
   if (orderError || !order) {
-    throw new Error('Order not found');
+    throw handleSupabaseError(orderError ?? { code: 'PGRST116', message: 'Order' });
   }
 
   const subtotal = Number(order.subtotal) || 0;
 
-  // Validate discount shape. Clamp to 0 when removing — a negative value left
-  // by a buggy/malicious client would otherwise persist and re-activate if the
-  // type is later flipped back to 'fixed' without clearing the value.
-  // Sanity-cap violations are caller errors (400), not server errors (500),
-  // so throw `ValidationError` which the route's `handleRouteError` maps to 400.
+  // Validate discount shape. Clamp to 0 when removing — a negative value
+  // left by a buggy/malicious client would otherwise persist and
+  // re-activate if the type is later flipped back to 'fixed' without
+  // clearing the value. Sanity-cap violations are caller errors (400),
+  // not server errors (500), so throw `ValidationError` which the
+  // route's `handleRouteError` maps to 400.
   if (discountType === 'none') {
     discountValue = 0;
   } else if (discountType === 'percentage') {
@@ -156,73 +162,27 @@ export async function applyDiscount(supabaseAdmin: SupabaseClient, params: Apply
     }
   }
 
-  // Apply discount — the DB trigger recalculate_on_discount_change handles totals.
-  // Don't chain .select() to avoid PostgREST "Cannot coerce" errors
-  // from the AFTER trigger updating the same row.
-  const { error: updateError } = await supabaseAdmin
-    .from('orders')
-    .update({
-      discount_type: discountType,
-      discount_value: discountValue,
-      discount_reason: discountReason || null,
-      discount_applied_by: discountAppliedBy,
-    })
-    .eq('id', orderId);
+  const { data, error } = await supabaseAdmin.rpc('apply_discount_with_audit', {
+    p_order_id: orderId,
+    p_tenant_id: tenantId,
+    p_discount_type: discountType,
+    p_discount_value: discountValue,
+    p_discount_reason: discountReason ?? null,
+    p_discount_applied_by: discountAppliedBy,
+    p_client_request_id: clientRequestId,
+  });
 
-  if (updateError) {
-    throw new Error(updateError.message);
-  }
-
-  // Fetch the updated order after the trigger has recalculated totals
-  const { data: updatedOrder, error: fetchError } = await supabaseAdmin
-    .from('orders')
-    .select('id, subtotal, tax, total, discount_type, discount_value, discount_amount')
-    .eq('id', orderId)
-    .single();
-
-  if (fetchError) {
-    throw new Error(fetchError.message);
-  }
-
-  // Audit-log every non-zero discount. The discount UPDATE has already
-  // committed at this point; the audit insert is the dedupe anchor.
-  //
-  // Two failure modes are treated differently:
-  //   1. Unique-violation on the partial index keyed by
-  //      (tenant_id, 'discount_applied', client_request_id) — a concurrent
-  //      replay won the race and already wrote the audit row. Treat as
-  //      successful dedupe, return early with the freshly-fetched order.
-  //   2. Anything else (table missing, RLS hiccup, etc.) — best-effort:
-  //      the discount itself is already applied, log for triage but never
-  //      roll back the discount.
-  let deduped = false;
-  if (discountType !== 'none' && subtotal > 0) {
-    const fraction = discountType === 'percentage' ? discountValue / 100 : discountValue / subtotal;
-    const discountAmount = Number(updatedOrder?.discount_amount ?? 0);
-    const { error: auditError } = await supabaseAdmin.from('financial_audit_log').insert({
-      tenant_id: tenantId,
-      staff_id: discountAppliedBy,
-      order_id: orderId,
-      action: 'discount_applied',
-      details: {
-        discount_type: discountType,
-        discount_value: discountValue,
-        discount_amount: discountAmount,
-        reason: discountReason ?? null,
-        fraction,
-        ...(clientRequestId ? { client_request_id: clientRequestId } : {}),
-      },
-    });
-
-    if (auditError) {
-      if (isUniqueViolation(auditError) && clientRequestId) {
-        deduped = true;
-      } else {
-        // Non-fatal — surface for triage but never break the discount path.
-        console.warn('[discount-service] financial_audit_log insert failed', auditError);
-      }
+  if (error) {
+    // Concurrent dedupe race: the RPC's lookup missed but the partial
+    // unique index rejected the audit insert. The other replay's UPDATE
+    // is already committed — refetch and return as deduped.
+    if (isUniqueViolation(error)) {
+      const refetched = await fetchOrderForRefetch(supabaseAdmin, orderId);
+      return { order: refetched, deduped: true };
     }
+    throw handleSupabaseError(error);
   }
 
-  return { order: updatedOrder, deduped };
+  const response = data as RpcResponse;
+  return { order: response.order, deduped: response.deduped };
 }

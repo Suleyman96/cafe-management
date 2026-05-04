@@ -34,6 +34,18 @@ describe('handleSupabaseError', () => {
     expect(error).toBeInstanceOf(NotFoundError);
   });
 
+  it('maps P0002 (no_data_found) to NotFoundError with the RPC sentinel message preserved', () => {
+    // NotFoundError's constructor wraps `resource` as `${resource} not found`,
+    // so the assertion checks the sentinel survives the wrap rather than
+    // matching equality.
+    const error = handleSupabaseError({
+      code: 'P0002',
+      message: 'order_not_found_in_tenant',
+    });
+    expect(error).toBeInstanceOf(NotFoundError);
+    expect(error.message).toContain('order_not_found_in_tenant');
+  });
+
   it('maps 42501 to AuthorizationError', () => {
     const error = handleSupabaseError({
       code: '42501',

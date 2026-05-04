@@ -41,6 +41,14 @@ export function handleSupabaseError(error: unknown): AppError {
     return new NotFoundError(err.details || 'Resource');
   }
 
+  // PL/pgSQL `RAISE EXCEPTION ... USING ERRCODE = 'no_data_found'`. RPCs use
+  // this to signal "row not found" with a custom message (e.g.
+  // `order_not_found_in_tenant`, `order_item not found`). Keep the message —
+  // call sites use it for sentinel matching — and surface as a 404.
+  if (err.code === 'P0002') {
+    return new NotFoundError(err.message || 'Resource');
+  }
+
   // PostgreSQL: RLS or insufficient privilege
   if (err.code === '42501') {
     return new AuthorizationError(err.message || 'Insufficient privileges');

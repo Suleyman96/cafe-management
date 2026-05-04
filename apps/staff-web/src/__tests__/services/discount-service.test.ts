@@ -1,20 +1,28 @@
 /**
  * Discount-service guards.
  *
- * The pre-fix `applyDiscount` skipped all validation when
- * `discount_type === 'none'`, persisting whatever `discount_value` the caller
- * sent — including negative numbers. If the type was later flipped back to
- * 'fixed' without explicitly clearing the value, that stale negative would
- * activate. The clamp tests pin the contract: when type is 'none', the value
- * written to the DB is always 0 regardless of input.
+ * Pre-Blocker-6, `applyDiscount` ran the orders UPDATE and the
+ * `discount_applied` financial_audit_log INSERT as two separate Supabase
+ * round trips, so a failed audit insert would leave the discount applied
+ * but uncatalogued (with a `console.warn` "best-effort" branch as the
+ * only trace). Blocker 6 moves both writes into a single Postgres
+ * function `apply_discount_with_audit` so the pair commits atomically.
  *
- * The reason-required tests pin the forensic gate: discounts at or above
- * `DISCOUNT_AUDIT_THRESHOLD` must carry a non-trivial reason. Authorization
- * itself lives at the route boundary (`verifyAdmin`); this service no
- * longer takes a `callerRole` and admin/owner is assumed.
+ * What stayed in the service:
+ *  • Sanity caps (percentage 0–100, fixed ≤ subtotal, large-discount
+ *    reason requirement) — they need an order read for context and
+ *    produce structured `fieldErrors` for the UI.
+ *  • Clamp-to-0 when type='none' so a stale UI value can't reactivate.
+ *  • client_request_id required check (Blocker 1, defense-in-depth).
+ *  • Tenant scope check (cross-tenant order_id → 404).
+ *
+ * What moved to the RPC: dedupe lookup, order lock, UPDATE, audit
+ * INSERT — all atomic.
+ *
+ * Authorization is enforced at the route boundary (`verifyAdmin`).
  */
 
-import { ValidationError } from '@gustri/core';
+import { NotFoundError, ValidationError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
 import { applyDiscount } from '@/lib/services/discount-service';
@@ -29,153 +37,75 @@ interface QueuedResponse {
   error: unknown;
 }
 
-interface CapturedUpdate {
-  table: string;
-  payload: Record<string, unknown>;
+interface CapturedRpc {
+  name: string;
+  args: Record<string, unknown>;
 }
 
-interface CapturedInsert {
-  table: string;
-  payload: Record<string, unknown>;
-}
+function buildClient(plan: {
+  rpc?: Record<string, QueuedResponse[]>;
+  table?: Record<string, QueuedResponse[]>;
+}) {
+  const rpcCursor: Record<string, number> = {};
+  const tableCursor: Record<string, number> = {};
+  const rpcCalls: CapturedRpc[] = [];
 
-function buildClient(plan: Record<string, QueuedResponse[]>) {
-  const cursor: Record<string, number> = {};
-  const updates: CapturedUpdate[] = [];
-  const inserts: CapturedInsert[] = [];
+  function nextRpc(name: string): QueuedResponse {
+    const queue = plan.rpc?.[name] ?? [];
+    const i = rpcCursor[name] ?? 0;
+    rpcCursor[name] = i + 1;
+    return queue[i] ?? { data: null, error: { message: `unexpected rpc ${name}[${i}]` } };
+  }
 
-  function next(table: string): QueuedResponse {
-    const queue = plan[table] ?? [];
-    const i = cursor[table] ?? 0;
-    cursor[table] = i + 1;
+  function nextTable(table: string): QueuedResponse {
+    const queue = plan.table?.[table] ?? [];
+    const i = tableCursor[table] ?? 0;
+    tableCursor[table] = i + 1;
     return queue[i] ?? { data: null, error: { message: `unexpected ${table}[${i}]` } };
   }
 
   const client = {
+    rpc: (name: string, args: Record<string, unknown>) => {
+      rpcCalls.push({ name, args });
+      return Promise.resolve(nextRpc(name));
+    },
     from: (table: string) => {
       const builder: Record<string, unknown> = {};
       const chain =
         () =>
         (..._args: unknown[]) =>
           builder;
-      for (const m of ['select', 'delete', 'eq', 'in', 'gte', 'order', 'limit']) {
+      for (const m of ['select', 'eq', 'in', 'gte', 'order', 'limit']) {
         builder[m] = chain();
       }
-      builder.update = (payload: Record<string, unknown>) => {
-        updates.push({ table, payload });
-        return builder;
-      };
-      builder.insert = (payload: Record<string, unknown>) => {
-        inserts.push({ table, payload });
-        return builder;
-      };
-      builder.maybeSingle = () => Promise.resolve(next(table));
-      builder.single = () => Promise.resolve(next(table));
-      // biome-ignore lint/suspicious/noThenProperty: required to mock the supabase builder shape
-      builder.then = (resolve: (v: QueuedResponse) => unknown) => resolve(next(table));
+      builder.single = () => Promise.resolve(nextTable(table));
+      builder.maybeSingle = () => Promise.resolve(nextTable(table));
       return builder;
     },
-  } as unknown as SupabaseClient & {
-    __updates: CapturedUpdate[];
-    __inserts: CapturedInsert[];
-  };
+  } as unknown as SupabaseClient & { __rpcCalls: CapturedRpc[] };
 
-  (client as unknown as { __updates: CapturedUpdate[]; __inserts: CapturedInsert[] }).__updates =
-    updates;
-  (client as unknown as { __updates: CapturedUpdate[]; __inserts: CapturedInsert[] }).__inserts =
-    inserts;
+  (client as unknown as { __rpcCalls: CapturedRpc[] }).__rpcCalls = rpcCalls;
   return client;
 }
 
-describe('applyDiscount — clamps value to 0 when type is "none"', () => {
-  it('persists discount_value === 0 even when caller sent a negative value', async () => {
-    const client = buildClient({
-      // dedupe-lookup miss — clientRequestId is now required
-      financial_audit_log: [{ data: null, error: null }],
-      orders: [
-        // 1) tenant verification SELECT
-        { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
-        // 2) UPDATE thenable
-        { data: null, error: null },
-        // 3) post-trigger fetch SELECT
-        {
-          data: {
-            id: ORDER_ID,
-            subtotal: 100,
-            tax: 18,
-            total: 118,
-            discount_type: 'none',
-            discount_value: 0,
-            discount_amount: 0,
-          },
-          error: null,
-        },
-      ],
-    });
+const ORDER_AFTER_DISCOUNT = {
+  id: ORDER_ID,
+  subtotal: 100,
+  tax: 9,
+  total: 99,
+  discount_type: 'percentage',
+  discount_value: 10,
+  discount_amount: 10,
+};
 
-    await applyDiscount(client, {
-      orderId: ORDER_ID,
-      discountType: 'none',
-      discountValue: -1000,
-      discountReason: null,
-      discountAppliedBy: STAFF_ID,
-      tenantId: TENANT,
-      clientRequestId: CRID,
-    });
-
-    const updates = (client as unknown as { __updates: CapturedUpdate[] }).__updates;
-    const orderUpdate = updates.find((u) => u.table === 'orders');
-    expect(orderUpdate).toBeDefined();
-    expect(orderUpdate!.payload.discount_type).toBe('none');
-    expect(orderUpdate!.payload.discount_value).toBe(0);
-  });
-
-  it('persists discount_value === 0 even when caller sent a positive value with type "none"', async () => {
-    // A clear-discount call that accidentally carries the previous value
-    // must still write 0 — guards against stale-state UI bugs.
-    const client = buildClient({
-      financial_audit_log: [{ data: null, error: null }], // dedupe lookup miss
-      orders: [
-        { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
-        { data: null, error: null },
-        {
-          data: {
-            id: ORDER_ID,
-            subtotal: 100,
-            tax: 18,
-            total: 118,
-            discount_type: 'none',
-            discount_value: 0,
-            discount_amount: 0,
-          },
-          error: null,
-        },
-      ],
-    });
-
-    await applyDiscount(client, {
-      orderId: ORDER_ID,
-      discountType: 'none',
-      discountValue: 25,
-      discountReason: null,
-      discountAppliedBy: STAFF_ID,
-      tenantId: TENANT,
-      clientRequestId: CRID,
-    });
-
-    const updates = (client as unknown as { __updates: CapturedUpdate[] }).__updates;
-    const orderUpdate = updates.find((u) => u.table === 'orders');
-    expect(orderUpdate!.payload.discount_value).toBe(0);
-  });
-});
-
-describe('applyDiscount — large-discount reason requirement', () => {
+describe('applyDiscount — sanity validation runs before the RPC', () => {
   it('rejects when fraction >= DISCOUNT_AUDIT_THRESHOLD and reason is empty', async () => {
-    // Only the dedupe lookup + tenant-verification SELECT are needed —
-    // the service throws before issuing the UPDATE.
+    // Service issues only the tenant-scope SELECT before throwing.
+    // No RPC round trip should happen.
     const client = buildClient({
-      financial_audit_log: [{ data: null, error: null }],
-      orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+      table: {
+        orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+      },
     });
 
     let caught: unknown;
@@ -201,15 +131,15 @@ describe('applyDiscount — large-discount reason requirement', () => {
       fieldErrors: { discount_reason: expect.any(String) },
     });
 
-    // No UPDATE should have been issued.
-    const updates = (client as unknown as { __updates: CapturedUpdate[] }).__updates;
-    expect(updates.find((u) => u.table === 'orders')).toBeUndefined();
+    const calls = (client as unknown as { __rpcCalls: CapturedRpc[] }).__rpcCalls;
+    expect(calls).toHaveLength(0);
   });
 
   it('rejects when reason is shorter than 5 characters (after trim)', async () => {
     const client = buildClient({
-      financial_audit_log: [{ data: null, error: null }],
-      orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+      table: {
+        orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+      },
     });
 
     await expect(
@@ -225,31 +155,103 @@ describe('applyDiscount — large-discount reason requirement', () => {
     ).rejects.toBeInstanceOf(ValidationError);
   });
 
-  it('accepts a large discount when a sufficient reason is provided', async () => {
+  it('rejects with ValidationError when no clientRequestId is supplied', async () => {
+    const client = buildClient({});
+
+    await expect(
+      applyDiscount(client, {
+        orderId: ORDER_ID,
+        discountType: 'percentage',
+        discountValue: 10,
+        discountReason: null,
+        discountAppliedBy: STAFF_ID,
+        tenantId: TENANT,
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+
+    const calls = (client as unknown as { __rpcCalls: CapturedRpc[] }).__rpcCalls;
+    expect(calls).toHaveLength(0);
+  });
+});
+
+describe('applyDiscount — RPC happy path', () => {
+  it('clamps discount_value to 0 when type is "none" before invoking the RPC', async () => {
+    // Even when caller sends a negative discount_value, type='none' must
+    // forward 0 to the RPC. Defense against a stale UI flipping back to
+    // 'fixed' later and reactivating the negative.
     const client = buildClient({
-      financial_audit_log: [
-        { data: null, error: null }, // dedupe lookup miss
-        { data: null, error: null }, // audit INSERT
-      ],
-      orders: [
-        // 1) tenant verification SELECT
-        { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
-        // 2) UPDATE thenable
-        { data: null, error: null },
-        // 3) post-trigger fetch SELECT
-        {
-          data: {
-            id: ORDER_ID,
-            subtotal: 100,
-            tax: 18,
-            total: 88,
-            discount_type: 'percentage',
-            discount_value: 30,
-            discount_amount: 30,
+      table: {
+        orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+      },
+      rpc: {
+        apply_discount_with_audit: [
+          {
+            data: {
+              order: {
+                id: ORDER_ID,
+                subtotal: 100,
+                tax: 18,
+                total: 118,
+                discount_type: 'none',
+                discount_value: 0,
+                discount_amount: 0,
+              },
+              deduped: false,
+            },
+            error: null,
           },
-          error: null,
-        },
-      ],
+        ],
+      },
+    });
+
+    await applyDiscount(client, {
+      orderId: ORDER_ID,
+      discountType: 'none',
+      discountValue: -1000,
+      discountReason: null,
+      discountAppliedBy: STAFF_ID,
+      tenantId: TENANT,
+      clientRequestId: CRID,
+    });
+
+    const calls = (client as unknown as { __rpcCalls: CapturedRpc[] }).__rpcCalls;
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({
+      name: 'apply_discount_with_audit',
+      args: {
+        p_order_id: ORDER_ID,
+        p_tenant_id: TENANT,
+        p_discount_type: 'none',
+        p_discount_value: 0,
+        p_client_request_id: CRID,
+      },
+    });
+  });
+
+  it('forwards a valid large discount with reason and returns the updated order', async () => {
+    const client = buildClient({
+      table: {
+        orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+      },
+      rpc: {
+        apply_discount_with_audit: [
+          {
+            data: {
+              order: {
+                id: ORDER_ID,
+                subtotal: 100,
+                tax: 18,
+                total: 88,
+                discount_type: 'percentage',
+                discount_value: 30,
+                discount_amount: 30,
+              },
+              deduped: false,
+            },
+            error: null,
+          },
+        ],
+      },
     });
 
     const result = await applyDiscount(client, {
@@ -262,56 +264,69 @@ describe('applyDiscount — large-discount reason requirement', () => {
       clientRequestId: CRID,
     });
 
+    expect(result.deduped).toBe(false);
     expect(result.order).toMatchObject({
       discount_type: 'percentage',
       discount_value: 30,
     });
-    expect(result.deduped).toBe(false);
 
-    const updates = (client as unknown as { __updates: CapturedUpdate[] }).__updates;
-    const orderUpdate = updates.find((u) => u.table === 'orders');
-    expect(orderUpdate).toBeDefined();
-    expect(orderUpdate!.payload.discount_type).toBe('percentage');
-    expect(orderUpdate!.payload.discount_value).toBe(30);
-    expect(orderUpdate!.payload.discount_reason).toBe('Customer complaint - cold food');
+    const calls = (client as unknown as { __rpcCalls: CapturedRpc[] }).__rpcCalls;
+    expect(calls[0].args).toMatchObject({
+      p_discount_reason: 'Customer complaint - cold food',
+    });
   });
 
-  it('treats a 23505 unique-violation on the audit insert as a successful dedupe', async () => {
-    // Concurrency scenario: replay #1 already wrote the audit row with the
-    // same client_request_id. Replay #2 misses the pre-INSERT lookup (the
-    // race window) and tries to insert. The partial unique index from
-    // migration 20260504000002 rejects it. The service must catch 23505
-    // and return deduped=true rather than surfacing a 5xx to the caller.
+  it('returns deduped=true when the RPC reports a replay short-circuit', async () => {
     const client = buildClient({
-      orders: [
-        // 1) tenant verification SELECT
-        { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
-        // 2) UPDATE thenable
-        { data: null, error: null },
-        // 3) post-trigger fetch SELECT (returns the discount applied by the
-        //    other concurrent request — UPDATE is idempotent on absolute
-        //    values so the row reflects the agreed-upon state).
-        {
-          data: {
-            id: ORDER_ID,
-            subtotal: 100,
-            tax: 9,
-            total: 99,
-            discount_type: 'percentage',
-            discount_value: 10,
-            discount_amount: 10,
-          },
-          error: null,
-        },
-      ],
-      financial_audit_log: [
-        // 1) lookup MISSES (race window — the other replay hasn't inserted yet
-        //    when we read).
-        { data: null, error: null },
-        // 2) INSERT loses the race — the other replay's row was committed
-        //    between our lookup and our insert.
-        { data: null, error: { code: '23505', message: 'duplicate key value' } },
-      ],
+      table: {
+        orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+      },
+      rpc: {
+        apply_discount_with_audit: [
+          { data: { order: ORDER_AFTER_DISCOUNT, deduped: true }, error: null },
+        ],
+      },
+    });
+
+    const result = await applyDiscount(client, {
+      orderId: ORDER_ID,
+      discountType: 'percentage',
+      discountValue: 10,
+      discountReason: null,
+      discountAppliedBy: STAFF_ID,
+      tenantId: TENANT,
+      clientRequestId: CRID,
+    });
+
+    expect(result.deduped).toBe(true);
+    expect(result.order).toMatchObject({ discount_type: 'percentage', discount_value: 10 });
+  });
+});
+
+describe('applyDiscount — concurrent dedupe race recovery', () => {
+  it('refetches and returns deduped=true on 23505 from the RPC (audit-index race-loser path)', async () => {
+    // Two replays both miss the RPC's pre-INSERT lookup. One wins on the
+    // partial unique index for `discount_applied`; the loser raises
+    // 23505. The service catches it, refetches the order, and returns
+    // deduped=true rather than surfacing a 5xx. Because the audit INSERT
+    // and the orders UPDATE share a transaction inside the RPC, the
+    // loser's UPDATE is rolled back too — the refetched row reflects the
+    // winner's commit, which (UPDATE being idempotent on absolute
+    // values) is the correct shared state.
+    const client = buildClient({
+      table: {
+        orders: [
+          // 1) tenant verification SELECT
+          { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
+          // 2) refetch after 23505
+          { data: ORDER_AFTER_DISCOUNT, error: null },
+        ],
+      },
+      rpc: {
+        apply_discount_with_audit: [
+          { data: null, error: { code: '23505', message: 'duplicate key value' } },
+        ],
+      },
     });
 
     const result = await applyDiscount(client, {
@@ -331,77 +346,116 @@ describe('applyDiscount — large-discount reason requirement', () => {
     });
   });
 
-  it('treats a non-unique-violation audit error as best-effort and still returns the order', async () => {
-    // Audit log misconfiguration (RLS hiccup, table missing, etc.) must
-    // not block the discount path — the discount itself is already applied.
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
+  it('propagates a non-unique-violation RPC error as a typed AppError (no best-effort branch)', async () => {
+    // The pre-Blocker-6 service had a `console.warn` "best-effort"
+    // branch that swallowed non-23505 audit errors and returned the
+    // (already-applied) discount. With the RPC, the audit INSERT and
+    // orders UPDATE are atomic — any RPC error means *neither* committed,
+    // so we must propagate the error so the route returns a non-200 and
+    // the caller can retry safely.
     const client = buildClient({
-      orders: [
-        { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
-        { data: null, error: null },
-        {
-          data: {
-            id: ORDER_ID,
-            subtotal: 100,
-            tax: 9,
-            total: 99,
-            discount_type: 'percentage',
-            discount_value: 10,
-            discount_amount: 10,
-          },
-          error: null,
-        },
-      ],
-      financial_audit_log: [
-        { data: null, error: null }, // dedupe lookup miss
-        // INSERT fails with a non-23505 error.
-        { data: null, error: { code: '42501', message: 'permission denied' } },
-      ],
+      table: {
+        orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+      },
+      rpc: {
+        apply_discount_with_audit: [
+          { data: null, error: { code: '42501', message: 'permission denied' } },
+        ],
+      },
     });
 
-    const result = await applyDiscount(client, {
-      orderId: ORDER_ID,
-      discountType: 'percentage',
-      discountValue: 10,
-      discountReason: null,
-      discountAppliedBy: STAFF_ID,
-      tenantId: TENANT,
-      clientRequestId: CRID,
+    let caught: unknown;
+    try {
+      await applyDiscount(client, {
+        orderId: ORDER_ID,
+        discountType: 'percentage',
+        discountValue: 10,
+        discountReason: null,
+        discountAppliedBy: STAFF_ID,
+        tenantId: TENANT,
+        clientRequestId: CRID,
+      });
+    } catch (err) {
+      caught = err;
+    }
+
+    // 42501 → AuthorizationError(403) via handleSupabaseError.
+    expect(caught).toBeDefined();
+    expect((caught as { statusCode?: number }).statusCode).toBe(403);
+  });
+});
+
+describe('applyDiscount — order existence and tenant scope', () => {
+  it('throws NotFoundError when the order is missing in the caller’s tenant', async () => {
+    // .single() with 0 rows returns PGRST116, which handleSupabaseError
+    // maps to NotFoundError. No RPC round trip.
+    const client = buildClient({
+      table: {
+        orders: [{ data: null, error: { code: 'PGRST116', message: 'no rows' } }],
+      },
     });
 
-    expect(result.deduped).toBe(false);
-    expect(result.order).toBeDefined();
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[discount-service] financial_audit_log insert failed',
-      expect.objectContaining({ code: '42501' }),
-    );
+    let caught: unknown;
+    try {
+      await applyDiscount(client, {
+        orderId: ORDER_ID,
+        discountType: 'percentage',
+        discountValue: 10,
+        discountReason: null,
+        discountAppliedBy: STAFF_ID,
+        tenantId: TENANT,
+        clientRequestId: CRID,
+      });
+    } catch (err) {
+      caught = err;
+    }
 
-    warnSpy.mockRestore();
+    expect(caught).toBeInstanceOf(NotFoundError);
+    expect((caught as NotFoundError).statusCode).toBe(404);
+
+    const calls = (client as unknown as { __rpcCalls: CapturedRpc[] }).__rpcCalls;
+    expect(calls).toHaveLength(0);
+  });
+
+  it('translates RPC trigger sentinels to typed errors (refund_exceeds is for refunds; here the equivalent is order_not_found_in_tenant)', async () => {
+    // This mirrors the analogous P0002 path on the refund RPC — included
+    // so the discount RPC also has a contract test for the no_data_found
+    // branch (e.g. concurrent close between the service's SELECT and the
+    // RPC's lock acquire).
+    const client = buildClient({
+      table: {
+        orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+      },
+      rpc: {
+        apply_discount_with_audit: [
+          { data: null, error: { code: 'P0002', message: 'order_not_found_in_tenant' } },
+        ],
+      },
+    });
+
+    await expect(
+      applyDiscount(client, {
+        orderId: ORDER_ID,
+        discountType: 'percentage',
+        discountValue: 10,
+        discountReason: null,
+        discountAppliedBy: STAFF_ID,
+        tenantId: TENANT,
+        clientRequestId: CRID,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('does not require a reason when fraction is below the threshold', async () => {
     const client = buildClient({
-      financial_audit_log: [
-        { data: null, error: null }, // dedupe lookup miss
-        { data: null, error: null }, // audit INSERT success
-      ],
-      orders: [
-        { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
-        { data: null, error: null },
-        {
-          data: {
-            id: ORDER_ID,
-            subtotal: 100,
-            tax: 18,
-            total: 108,
-            discount_type: 'percentage',
-            discount_value: 10,
-            discount_amount: 10,
-          },
-          error: null,
-        },
-      ],
+      table: {
+        orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+      },
+      rpc: {
+        apply_discount_with_audit: [
+          { data: { order: ORDER_AFTER_DISCOUNT, deduped: false }, error: null },
+        ],
+      },
     });
 
     await expect(
@@ -415,21 +469,5 @@ describe('applyDiscount — large-discount reason requirement', () => {
         clientRequestId: CRID,
       }),
     ).resolves.toBeDefined();
-  });
-
-  // Blocker 1: defense-in-depth assertion at the service layer.
-  it('rejects with ValidationError when no clientRequestId is supplied', async () => {
-    const client = buildClient({});
-
-    await expect(
-      applyDiscount(client, {
-        orderId: ORDER_ID,
-        discountType: 'percentage',
-        discountValue: 10,
-        discountReason: null,
-        discountAppliedBy: STAFF_ID,
-        tenantId: TENANT,
-      }),
-    ).rejects.toBeInstanceOf(ValidationError);
   });
 });

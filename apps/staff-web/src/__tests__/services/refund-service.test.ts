@@ -1,28 +1,24 @@
 /**
  * Refund-service guards.
  *
- * The pre-fix `createRefund` performed two un-locked SELECTs (`order_payments`
- * and `refunds`) and compared the available balance against the requested
- * amount before inserting. Under READ COMMITTED a concurrent payment between
- * those reads could let the comparison pass while the BEFORE-INSERT trigger
- * `validate_refund_amount` correctly rejected the row, surfacing a 5xx
- * instead of a typed 409. The pre-check was dropped — the trigger is the
- * sole authority on balance — and these tests pin the post-drop contract:
+ * The pre-fix `createRefund` did the dedupe lookup and the refund INSERT
+ * as two separate Supabase round trips (two transactions), with a JS-side
+ * `findOrCreateByClientRequestId` helper handling the 23505 race-recovery
+ * branch. Blocker 6 moves the lookup, order lock, INSERT, and audit-row
+ * write into a single Postgres function `create_refund_with_audit` so
+ * the four steps commit together. These tests pin the post-RPC contract:
  *
- *   1. The service no longer issues `order_payments` / pre-check `refunds`
- *      SELECTs in the create path.
- *   2. A trigger-raised `refund_exceeds_available` (ERRCODE='check_violation',
- *      code='23514') becomes a typed `ConflictError(409)` via
- *      `handleSupabaseError`, not a generic 5xx.
- *   3. A 23505 unique-violation (concurrent replay) bubbles raw so the
- *      `findOrCreateByClientRequestId` helper can recover by refetching the
- *      race winner. Wrapping into ConflictError would erase the PG code and
- *      defeat the dedupe race-recovery.
- *   4. An order missing in the caller's tenant returns NotFoundError (404)
- *      via the PGRST116 path, not a downstream trigger rejection.
+ *   1. The service issues exactly one `client.rpc('create_refund_with_audit', …)`
+ *      call and returns the unwrapped jsonb response.
+ *   2. The trigger-raised `refund_exceeds_available` (ERRCODE='check_violation',
+ *      code='23514') still maps to a typed `ConflictError(409)` via
+ *      `handleSupabaseError`.
+ *   3. A 23505 unique-violation (concurrent replay losing the index race)
+ *      is followed by a refetch and returned as `deduped: true`.
+ *   4. P0002 `order_not_found_in_tenant` from the RPC maps to NotFoundError(404).
+ *   5. Missing `client_request_id` raises ValidationError (Blocker 1).
  *
- * Authorization is enforced at the route boundary (`verifyAdmin`); this
- * service no longer reads `callerRole` and admin/owner is assumed.
+ * Authorization is enforced at the route boundary (`verifyAdmin`).
  */
 
 import { ConflictError, NotFoundError, ValidationError } from '@gustri/core';
@@ -41,51 +37,74 @@ interface QueuedResponse {
   error: unknown;
 }
 
-interface CapturedInsert {
-  table: string;
-  payload: Record<string, unknown>;
+interface CapturedRpc {
+  name: string;
+  args: Record<string, unknown>;
 }
 
-function buildClient(plan: Record<string, QueuedResponse[]>) {
-  const cursor: Record<string, number> = {};
-  const inserts: CapturedInsert[] = [];
-  const tableHits: string[] = [];
+interface CapturedTableHit {
+  table: string;
+  op: 'select';
+}
 
-  function next(table: string): QueuedResponse {
-    const queue = plan[table] ?? [];
-    const i = cursor[table] ?? 0;
-    cursor[table] = i + 1;
+/**
+ * Test client with two queues:
+ *   - rpc[name]: queue of {data, error} for client.rpc(name, args) calls.
+ *   - table[name]: queue of {data, error} for client.from(name).select().…
+ *     terminator calls (.single() / .maybeSingle()).
+ *
+ * Captures every rpc call (name + args) and every from('…') hit so tests
+ * can assert call shape.
+ */
+function buildClient(plan: {
+  rpc?: Record<string, QueuedResponse[]>;
+  table?: Record<string, QueuedResponse[]>;
+}) {
+  const rpcCursor: Record<string, number> = {};
+  const tableCursor: Record<string, number> = {};
+  const rpcCalls: CapturedRpc[] = [];
+  const tableHits: CapturedTableHit[] = [];
+
+  function nextRpc(name: string): QueuedResponse {
+    const queue = plan.rpc?.[name] ?? [];
+    const i = rpcCursor[name] ?? 0;
+    rpcCursor[name] = i + 1;
+    return queue[i] ?? { data: null, error: { message: `unexpected rpc ${name}[${i}]` } };
+  }
+
+  function nextTable(table: string): QueuedResponse {
+    const queue = plan.table?.[table] ?? [];
+    const i = tableCursor[table] ?? 0;
+    tableCursor[table] = i + 1;
     return queue[i] ?? { data: null, error: { message: `unexpected ${table}[${i}]` } };
   }
 
   const client = {
+    rpc: (name: string, args: Record<string, unknown>) => {
+      rpcCalls.push({ name, args });
+      return Promise.resolve(nextRpc(name));
+    },
     from: (table: string) => {
-      tableHits.push(table);
+      tableHits.push({ table, op: 'select' });
       const builder: Record<string, unknown> = {};
       const chain =
         () =>
         (..._args: unknown[]) =>
           builder;
-      for (const m of ['select', 'delete', 'eq', 'in', 'gte', 'order', 'limit']) {
+      for (const m of ['select', 'eq', 'in', 'gte', 'order', 'limit']) {
         builder[m] = chain();
       }
-      builder.insert = (payload: Record<string, unknown>) => {
-        inserts.push({ table, payload });
-        return builder;
-      };
-      builder.maybeSingle = () => Promise.resolve(next(table));
-      builder.single = () => Promise.resolve(next(table));
-      // biome-ignore lint/suspicious/noThenProperty: required to mock the supabase builder shape
-      builder.then = (resolve: (v: QueuedResponse) => unknown) => resolve(next(table));
+      builder.single = () => Promise.resolve(nextTable(table));
+      builder.maybeSingle = () => Promise.resolve(nextTable(table));
       return builder;
     },
   } as unknown as SupabaseClient & {
-    __inserts: CapturedInsert[];
-    __tableHits: string[];
+    __rpcCalls: CapturedRpc[];
+    __tableHits: CapturedTableHit[];
   };
 
-  (client as unknown as { __inserts: CapturedInsert[] }).__inserts = inserts;
-  (client as unknown as { __tableHits: string[] }).__tableHits = tableHits;
+  (client as unknown as { __rpcCalls: CapturedRpc[] }).__rpcCalls = rpcCalls;
+  (client as unknown as { __tableHits: CapturedTableHit[] }).__tableHits = tableHits;
   return client;
 }
 
@@ -108,36 +127,12 @@ const REFUND_INPUT = {
   client_request_id: CRID,
 };
 
-describe('createRefund — drops pre-check and trusts the trigger', () => {
-  it('does not query order_payments in the create path', async () => {
+describe('createRefund — RPC happy path', () => {
+  it('invokes create_refund_with_audit with the mapped argument names and returns the joined refund', async () => {
     const client = buildClient({
-      orders: [{ data: { id: ORDER_ID }, error: null }],
-      refunds: [
-        { data: null, error: null }, // dedupe lookup miss
-        { data: REFUND_ROW, error: null }, // INSERT success
-      ],
-    });
-
-    await createRefund(client, {
-      orderId: ORDER_ID,
-      refundData: REFUND_INPUT,
-      tenantId: TENANT,
-    });
-
-    const tableHits = (client as unknown as { __tableHits: string[] }).__tableHits;
-    expect(tableHits).not.toContain('order_payments');
-    // Two `refunds` hits — the dedupe lookup + the INSERT. Still no
-    // pre-check SELECT against `order_payments`.
-    expect(tableHits.filter((t) => t === 'refunds')).toHaveLength(2);
-  });
-
-  it('returns the inserted refund row on success', async () => {
-    const client = buildClient({
-      orders: [{ data: { id: ORDER_ID }, error: null }],
-      refunds: [
-        { data: null, error: null }, // dedupe lookup miss
-        { data: REFUND_ROW, error: null }, // INSERT success
-      ],
+      rpc: {
+        create_refund_with_audit: [{ data: { refund: REFUND_ROW, deduped: false }, error: null }],
+      },
     });
 
     const result = await createRefund(client, {
@@ -149,34 +144,61 @@ describe('createRefund — drops pre-check and trusts the trigger', () => {
     expect(result.deduped).toBe(false);
     expect(result.refund).toMatchObject({ id: REFUND_ID, amount: 30 });
 
-    const inserts = (client as unknown as { __inserts: CapturedInsert[] }).__inserts;
-    const refundInsert = inserts.find((i) => i.table === 'refunds');
-    expect(refundInsert).toBeDefined();
-    expect(refundInsert!.payload).toMatchObject({
-      order_id: ORDER_ID,
-      tenant_id: TENANT,
-      amount: 30,
-      reason: 'Customer complaint',
-      refund_method: 'cash',
+    const calls = (client as unknown as { __rpcCalls: CapturedRpc[] }).__rpcCalls;
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({
+      name: 'create_refund_with_audit',
+      args: {
+        p_order_id: ORDER_ID,
+        p_tenant_id: TENANT,
+        p_amount: 30,
+        p_reason: 'Customer complaint',
+        p_refund_method: 'cash',
+        p_processed_by: STAFF_ID,
+        p_client_request_id: CRID,
+      },
     });
+
+    // No direct from('refunds') / from('orders') round trips — the RPC
+    // does the lookup, lock, INSERT, and audit row write in one call.
+    const tableHits = (client as unknown as { __tableHits: CapturedTableHit[] }).__tableHits;
+    expect(tableHits).toHaveLength(0);
+  });
+
+  it('returns deduped=true when the RPC reports a replay short-circuit', async () => {
+    const client = buildClient({
+      rpc: {
+        create_refund_with_audit: [{ data: { refund: REFUND_ROW, deduped: true }, error: null }],
+      },
+    });
+
+    const result = await createRefund(client, {
+      orderId: ORDER_ID,
+      refundData: { ...REFUND_INPUT, client_request_id: 'req-replay-1' },
+      tenantId: TENANT,
+    });
+
+    expect(result.deduped).toBe(true);
+    expect(result.refund).toMatchObject({ id: REFUND_ID });
   });
 });
 
 describe('createRefund — trigger-rejected balance maps to ConflictError(409)', () => {
   it('translates check_violation `refund_exceeds_available` to a typed ConflictError', async () => {
     // The BEFORE-INSERT trigger raises `refund_exceeds_available` with
-    // ERRCODE='check_violation' (PG code 23514) when paid - refunded < amount.
-    // `handleSupabaseError` must turn that into ConflictError so the route
-    // returns 409 with the sentinel as the error code, not a generic 500.
+    // ERRCODE='check_violation' (PG code 23514). The error propagates
+    // through the RPC to the client; `handleSupabaseError` maps it to
+    // ConflictError so the route returns 409 with the sentinel as the
+    // error code.
     const client = buildClient({
-      orders: [{ data: { id: ORDER_ID }, error: null }],
-      refunds: [
-        { data: null, error: null }, // dedupe lookup miss
-        {
-          data: null,
-          error: { code: '23514', message: 'refund_exceeds_available' },
-        },
-      ],
+      rpc: {
+        create_refund_with_audit: [
+          {
+            data: null,
+            error: { code: '23514', message: 'refund_exceeds_available' },
+          },
+        ],
+      },
     });
 
     let caught: unknown;
@@ -198,14 +220,14 @@ describe('createRefund — trigger-rejected balance maps to ConflictError(409)',
 
   it('translates check_violation `refund_tenant_mismatch` to a typed ConflictError', async () => {
     const client = buildClient({
-      orders: [{ data: { id: ORDER_ID }, error: null }],
-      refunds: [
-        { data: null, error: null }, // dedupe lookup miss
-        {
-          data: null,
-          error: { code: '23514', message: 'refund_tenant_mismatch' },
-        },
-      ],
+      rpc: {
+        create_refund_with_audit: [
+          {
+            data: null,
+            error: { code: '23514', message: 'refund_tenant_mismatch' },
+          },
+        ],
+      },
     });
 
     await expect(
@@ -219,13 +241,19 @@ describe('createRefund — trigger-rejected balance maps to ConflictError(409)',
 });
 
 describe('createRefund — order existence and tenant scope', () => {
-  it('throws NotFoundError when the order is missing in the caller’s tenant', async () => {
-    // .single() with 0 rows returns PGRST116, which handleSupabaseError maps
-    // to NotFoundError. Cross-tenant access surfaces as 404 (not-found in
-    // this tenant) instead of leaking existence via 403.
+  it('throws NotFoundError when the RPC raises P0002 `order_not_found_in_tenant`', async () => {
+    // The RPC does the order lookup + tenant verification under FOR UPDATE
+    // and raises `RAISE EXCEPTION ... USING ERRCODE = 'no_data_found'`
+    // (PG code P0002) when the order is missing or in a different tenant.
+    // handleSupabaseError maps P0002 to NotFoundError so the route returns
+    // 404 — cross-tenant access surfaces as not-found rather than leaking
+    // existence via 403.
     const client = buildClient({
-      refunds: [{ data: null, error: null }], // dedupe lookup miss
-      orders: [{ data: null, error: { code: 'PGRST116', message: 'no rows' } }],
+      rpc: {
+        create_refund_with_audit: [
+          { data: null, error: { code: 'P0002', message: 'order_not_found_in_tenant' } },
+        ],
+      },
     });
 
     let caught: unknown;
@@ -241,10 +269,6 @@ describe('createRefund — order existence and tenant scope', () => {
 
     expect(caught).toBeInstanceOf(NotFoundError);
     expect((caught as NotFoundError).statusCode).toBe(404);
-
-    // No INSERT should have been attempted.
-    const inserts = (client as unknown as { __inserts: CapturedInsert[] }).__inserts;
-    expect(inserts.find((i) => i.table === 'refunds')).toBeUndefined();
   });
 });
 
@@ -262,54 +286,29 @@ describe('createRefund — client_request_id is required (Blocker 1)', () => {
         tenantId: TENANT,
       }),
     ).rejects.toBeInstanceOf(ValidationError);
+
+    // Should not have invoked the RPC at all — defense-in-depth fires
+    // before any round trip.
+    const calls = (client as unknown as { __rpcCalls: CapturedRpc[] }).__rpcCalls;
+    expect(calls).toHaveLength(0);
   });
 });
 
-describe('createRefund — client_request_id dedupe', () => {
-  it('short-circuits and returns deduped=true when the client_request_id is already inserted', async () => {
-    // A prior call with the same client_request_id already wrote a refund.
-    // The helper finds it via the partial-unique index lookup and returns
-    // early — no order verification, no INSERT, no audit-log re-entry.
+describe('createRefund — concurrent dedupe race recovery', () => {
+  it('refetches the winning row when the RPC returns 23505 (race-loser path)', async () => {
+    // Concurrency scenario: two replays land between the RPC's pre-INSERT
+    // lookup and its INSERT. One wins on the (tenant_id, client_request_id)
+    // unique index; the loser receives 23505. The service refetches by
+    // request_id and returns the winner's row as deduped.
     const client = buildClient({
-      refunds: [{ data: REFUND_ROW, error: null }],
-    });
-
-    const result = await createRefund(client, {
-      orderId: ORDER_ID,
-      refundData: { ...REFUND_INPUT, client_request_id: 'req-replay-1' },
-      tenantId: TENANT,
-    });
-
-    expect(result.deduped).toBe(true);
-    expect(result.refund).toMatchObject({ id: REFUND_ID });
-
-    const tableHits = (client as unknown as { __tableHits: string[] }).__tableHits;
-    expect(tableHits).not.toContain('orders');
-    const inserts = (client as unknown as { __inserts: CapturedInsert[] }).__inserts;
-    expect(inserts.find((i) => i.table === 'refunds')).toBeUndefined();
-  });
-
-  it('treats a 23505 unique-violation on the INSERT as a successful dedupe race', async () => {
-    // Concurrency scenario: replay #1 commits with client_request_id=X.
-    // Replay #2 misses the pre-INSERT lookup (race window) and tries to
-    // insert. The partial unique index on (tenant_id, client_request_id)
-    // rejects it with 23505. The helper must catch the raw PG code, refetch
-    // the race winner, and return deduped=true rather than surface a 409.
-    //
-    // The service deliberately does NOT wrap 23505 into ConflictError —
-    // doing so would change err.code to 'CONFLICT' and defeat the helper's
-    // race-recovery branch.
-    const client = buildClient({
-      orders: [{ data: { id: ORDER_ID }, error: null }],
-      refunds: [
-        // 1) dedupe lookup misses — race window
-        { data: null, error: null },
-        // 2) INSERT loses the race — the other replay's row was committed
-        //    between our lookup and our insert
-        { data: null, error: { code: '23505', message: 'duplicate key value' } },
-        // 3) helper's race-recovery refetch returns the winner
-        { data: REFUND_ROW, error: null },
-      ],
+      rpc: {
+        create_refund_with_audit: [
+          { data: null, error: { code: '23505', message: 'duplicate key value' } },
+        ],
+      },
+      table: {
+        refunds: [{ data: REFUND_ROW, error: null }],
+      },
     });
 
     const result = await createRefund(client, {
@@ -320,5 +319,8 @@ describe('createRefund — client_request_id dedupe', () => {
 
     expect(result.deduped).toBe(true);
     expect(result.refund).toMatchObject({ id: REFUND_ID });
+
+    const tableHits = (client as unknown as { __tableHits: CapturedTableHit[] }).__tableHits;
+    expect(tableHits.map((h) => h.table)).toContain('refunds');
   });
 });

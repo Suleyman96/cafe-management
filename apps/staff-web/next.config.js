@@ -3,8 +3,20 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
 
+// Build identifier — set by Vercel; falls back to 'dev' for local builds.
+// Exposed to the client via NEXT_PUBLIC_BUILD_SHA so the running tab can
+// compare against /api/v1/health and detect a deploy that landed while
+// the user kept the page open. Also pinned as Next's generateBuildId so
+// _next asset URLs match the SHA, which lets the service worker scope its
+// cache by deploy and purge on activate.
+const COMMIT_SHA = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT_SHA ?? 'dev';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_SHA: COMMIT_SHA,
+  },
+  generateBuildId: async () => COMMIT_SHA,
   images: {
     remotePatterns: [
       {

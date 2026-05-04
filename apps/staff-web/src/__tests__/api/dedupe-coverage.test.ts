@@ -8,9 +8,12 @@
  * the dedupe anchor is already present and returns the prior result.
  *
  * For the discount path the dedupe anchor is the
- * `financial_audit_log.details.client_request_id` JSON field; the discount
- * UPDATE itself is idempotent on absolute values, so the audit-log entry is
- * the only side effect that must run at most once.
+ * `financial_audit_log.details.client_request_id` JSON field, enforced by
+ * the partial unique index `uq_financial_audit_discount_client_request`
+ * (migration 20260504000002). Blocker 6 (migration 20260505000004) moved
+ * the discount UPDATE and the audit INSERT into a single Postgres function
+ * `apply_discount_with_audit`, so these tests now stub the RPC instead of
+ * the table-builder chain.
  */
 
 import { ValidationError } from '@gustri/core';
@@ -28,79 +31,85 @@ interface QueuedResponse {
   error: unknown;
 }
 
-function buildClient(plan: Record<string, QueuedResponse[]>) {
-  const cursor: Record<string, number> = {};
-  const inserts: Array<{ table: string; payload: Record<string, unknown> }> = [];
-  const updates: Array<{ table: string; payload: Record<string, unknown> }> = [];
+interface CapturedRpc {
+  name: string;
+  args: Record<string, unknown>;
+}
 
-  function next(table: string): QueuedResponse {
-    const queue = plan[table] ?? [];
-    const i = cursor[table] ?? 0;
-    cursor[table] = i + 1;
+function buildClient(plan: {
+  rpc?: Record<string, QueuedResponse[]>;
+  table?: Record<string, QueuedResponse[]>;
+}) {
+  const rpcCursor: Record<string, number> = {};
+  const tableCursor: Record<string, number> = {};
+  const rpcCalls: CapturedRpc[] = [];
+
+  function nextRpc(name: string): QueuedResponse {
+    const queue = plan.rpc?.[name] ?? [];
+    const i = rpcCursor[name] ?? 0;
+    rpcCursor[name] = i + 1;
+    return queue[i] ?? { data: null, error: { message: `unexpected rpc ${name}[${i}]` } };
+  }
+
+  function nextTable(table: string): QueuedResponse {
+    const queue = plan.table?.[table] ?? [];
+    const i = tableCursor[table] ?? 0;
+    tableCursor[table] = i + 1;
     return queue[i] ?? { data: null, error: { message: `unexpected ${table}[${i}]` } };
   }
 
   const client = {
+    rpc: (name: string, args: Record<string, unknown>) => {
+      rpcCalls.push({ name, args });
+      return Promise.resolve(nextRpc(name));
+    },
     from: (table: string) => {
       const builder: Record<string, unknown> = {};
       const chain =
         () =>
         (..._args: unknown[]) =>
           builder;
-      for (const m of ['select', 'delete', 'eq', 'in', 'gte', 'order', 'limit']) {
+      for (const m of ['select', 'eq', 'in', 'gte', 'order', 'limit']) {
         builder[m] = chain();
       }
-      builder.update = (payload: Record<string, unknown>) => {
-        updates.push({ table, payload });
-        return builder;
-      };
-      builder.insert = (payload: Record<string, unknown>) => {
-        inserts.push({ table, payload });
-        return builder;
-      };
-      builder.maybeSingle = () => Promise.resolve(next(table));
-      builder.single = () => Promise.resolve(next(table));
-      // biome-ignore lint/suspicious/noThenProperty: required to mock the supabase builder shape
-      builder.then = (resolve: (v: QueuedResponse) => unknown) => resolve(next(table));
+      builder.single = () => Promise.resolve(nextTable(table));
+      builder.maybeSingle = () => Promise.resolve(nextTable(table));
       return builder;
     },
   } as unknown as SupabaseClient;
 
-  return { client, inserts, updates };
+  return { client, rpcCalls };
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe('discount-service — dedupe via financial_audit_log.client_request_id', () => {
-  it('first call applies discount and writes audit log with client_request_id stamped', async () => {
-    const { client, inserts, updates } = buildClient({
-      // 1) lookup audit_log → no prior row
-      financial_audit_log: [
-        { data: null, error: null },
-        // 2) audit insert thenable
-        { data: null, error: null },
-      ],
-      orders: [
-        // tenant verification SELECT
-        { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
-        // UPDATE thenable
-        { data: null, error: null },
-        // post-trigger fetch SELECT
-        {
-          data: {
-            id: ORDER_ID,
-            subtotal: 100,
-            tax: 18,
-            total: 108,
-            discount_type: 'percentage',
-            discount_value: 10,
-            discount_amount: 10,
+describe('discount-service — dedupe via apply_discount_with_audit RPC', () => {
+  it('forwards client_request_id into the RPC args on first call', async () => {
+    const { client, rpcCalls } = buildClient({
+      table: {
+        orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+      },
+      rpc: {
+        apply_discount_with_audit: [
+          {
+            data: {
+              order: {
+                id: ORDER_ID,
+                subtotal: 100,
+                tax: 18,
+                total: 108,
+                discount_type: 'percentage',
+                discount_value: 10,
+                discount_amount: 10,
+              },
+              deduped: false,
+            },
+            error: null,
           },
-          error: null,
-        },
-      ],
+        ],
+      },
     });
 
     const result = await applyDiscount(client, {
@@ -114,37 +123,42 @@ describe('discount-service — dedupe via financial_audit_log.client_request_id'
     });
 
     expect(result.deduped).toBe(false);
-    expect(updates.find((u) => u.table === 'orders')).toBeDefined();
-    const auditInsert = inserts.find((i) => i.table === 'financial_audit_log');
-    expect(auditInsert).toBeDefined();
-    const details = auditInsert!.payload.details as Record<string, unknown>;
-    expect(details.client_request_id).toBe(CLIENT_REQUEST_ID);
+    expect(rpcCalls).toHaveLength(1);
+    expect(rpcCalls[0]).toMatchObject({
+      name: 'apply_discount_with_audit',
+      args: { p_client_request_id: CLIENT_REQUEST_ID, p_order_id: ORDER_ID, p_tenant_id: TENANT },
+    });
   });
 
-  it('replayed call short-circuits — no UPDATE, no audit insert, returns deduped=true', async () => {
-    const { client, inserts, updates } = buildClient({
-      // lookup audit_log returns the prior row
-      financial_audit_log: [
-        {
-          data: { id: 'audit-1' },
-          error: null,
-        },
-      ],
-      // The replay path calls fetchOrder() which hits orders.single() once.
-      orders: [
-        {
-          data: {
-            id: ORDER_ID,
-            subtotal: 100,
-            tax: 18,
-            total: 108,
-            discount_type: 'percentage',
-            discount_value: 10,
-            discount_amount: 10,
+  it('returns deduped=true when the RPC reports a replay short-circuit', async () => {
+    // The RPC's pre-INSERT lookup on the partial unique index
+    // (tenant_id, action='discount_applied', client_request_id) finds
+    // the prior audit row and returns the current order with
+    // deduped=true — no second UPDATE, no second audit insert, all in
+    // a single Postgres call.
+    const { client } = buildClient({
+      table: {
+        orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+      },
+      rpc: {
+        apply_discount_with_audit: [
+          {
+            data: {
+              order: {
+                id: ORDER_ID,
+                subtotal: 100,
+                tax: 18,
+                total: 108,
+                discount_type: 'percentage',
+                discount_value: 10,
+                discount_amount: 10,
+              },
+              deduped: true,
+            },
+            error: null,
           },
-          error: null,
-        },
-      ],
+        ],
+      },
     });
 
     const result = await applyDiscount(client, {
@@ -159,9 +173,6 @@ describe('discount-service — dedupe via financial_audit_log.client_request_id'
 
     expect(result.deduped).toBe(true);
     expect(result.order).toMatchObject({ id: ORDER_ID, discount_value: 10 });
-    // No second audit log row, no second UPDATE.
-    expect(updates.find((u) => u.table === 'orders')).toBeUndefined();
-    expect(inserts.find((i) => i.table === 'financial_audit_log')).toBeUndefined();
   });
 
   it('omitting client_request_id rejects with ValidationError (Blocker 1)', async () => {
@@ -170,8 +181,10 @@ describe('discount-service — dedupe via financial_audit_log.client_request_id'
     // financial-audit-log-anchored and a missing key is a programmer
     // error, not a fallback. The route schema also rejects, but we keep
     // a unit assertion at the service layer for defense-in-depth.
-    const { client } = buildClient({
-      orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+    const { client, rpcCalls } = buildClient({
+      table: {
+        orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
+      },
     });
 
     await expect(
@@ -184,5 +197,7 @@ describe('discount-service — dedupe via financial_audit_log.client_request_id'
         tenantId: TENANT,
       }),
     ).rejects.toBeInstanceOf(ValidationError);
+
+    expect(rpcCalls).toHaveLength(0);
   });
 });
