@@ -1229,5 +1229,8 @@
   "weekdays.sun": "Paz",
   "weekdays.thu": "Per",
   "weekdays.tue": "Sal",
-  "weekdays.wed": "Çar"
+  "weekdays.wed": "Çar",
+  "updateAvailable.title": "Yeni sürüm mevcut",
+  "updateAvailable.description": "En son sürümü yüklemek için sayfayı yenileyin. Kaydedilmemiş değişiklikler kaybolabilir.",
+  "updateAvailable.refresh": "Yenile"
 }

@@ -1,4 +1,11 @@
-const CACHE_NAME = 'gustri-v2';
+// Cache name is scoped by build SHA so each deploy gets its own cache,
+// and the activate handler purges caches from prior deploys. The
+// `__BUILD_SHA__` literal is replaced at build time by
+// `scripts/inject-sw-version.mjs`; if that script doesn't run (e.g. dev
+// `pnpm dev` serves the file as-is), the literal stays and we fall back
+// to a stable name so the SW still works locally.
+const RAW_BUILD_SHA = '__BUILD_SHA__';
+const CACHE_NAME = RAW_BUILD_SHA === '__BUILD_SHA__' ? 'gustri-dev' : `gustri-${RAW_BUILD_SHA}`;
 const STATIC_ASSETS = ['/manifest.json'];
 
 // Install event - cache only truly static assets

@@ -62,10 +62,21 @@ function RealtimeAuthBridge() {
         }
         lastTenantIdRef.current = currentTenantId;
         channelRegistry.resubscribeAll();
+
+        // Sentry context (Blocker 7). Tenant + user tags let issue lists
+        // group by tenant for "is this tenant having a bad time" triage,
+        // and let us mute noise from a single tenant without dropping
+        // the rest. Pulled from the auth store rather than the JWT
+        // because the store is the source of truth post-login.
+        const staff = useAuthStore.getState().staff;
+        Sentry.setTag('tenant_id', staff?.tenant_id ?? 'unauth');
+        Sentry.setUser(staff ? { id: staff.id, role: staff.role } : null);
       } else if (event === 'SIGNED_OUT') {
         queryClient.clear();
         lastTenantIdRef.current = null;
         channelRegistry.teardownAll();
+        Sentry.setTag('tenant_id', 'unauth');
+        Sentry.setUser(null);
       }
     });
     return () => data.subscription.unsubscribe();

@@ -40,7 +40,13 @@ export async function middleware(request: NextRequest) {
 
     // Customer-facing endpoints are intentionally unauthenticated (QR code ordering).
     // Individual route handlers validate tenant/table relationships.
-    const isPublicApi = pathname.startsWith('/api/v1/customer/') || pathname === '/api/health';
+    // /api/v1/health is unauthenticated by design (Blocker 7) — uptime
+    // monitors can't carry credentials, and the response carries only
+    // booleans + the build SHA, no tenant data.
+    const isPublicApi =
+      pathname.startsWith('/api/v1/customer/') ||
+      pathname === '/api/health' ||
+      pathname === '/api/v1/health';
     if (isPublicApi) {
       const response = NextResponse.next();
       for (const [key, value] of Object.entries(corsHeaders)) {

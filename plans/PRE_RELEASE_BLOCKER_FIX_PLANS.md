@@ -6,11 +6,11 @@ Source: final pre-release audit, 2026-05-04. Ordered by deploy sequence (DB firs
 |---|---|---|
 | 1 | `client_request_id` required on money mutations | **DONE** — see PR linked from this branch |
 | 2 | Disable retry on money mutations + protect submit buttons | **DONE** — see PR linked from this branch |
-| 3 | `ON DELETE RESTRICT` on financial tables + archival path | TODO |
-| 4 | Realtime reconnect on `visibilitychange` / `online` | TODO |
-| 5 | Cross-tab cache & auth sync via `BroadcastChannel` | TODO |
-| 6 | Atomic mutation + audit insert via single Postgres RPC | **DONE** — see PR linked from this branch |
-| 7 | `/api/v1/health` + observability hooks | TODO |
+| 3 | `ON DELETE RESTRICT` on financial tables + archival path | **DONE** — merged via PR #93 |
+| 4 | Realtime reconnect on `visibilitychange` / `online` | **DONE** — `LifecycleBridge` wired in `providers.tsx` |
+| 5 | Cross-tab cache & auth sync via `BroadcastChannel` | **DONE** — `CrossTabBridge` + `cross-tab.ts` wired in `providers.tsx` |
+| 6 | Atomic mutation + audit insert via single Postgres RPC | **DONE** — branch `blocker-5`, commit `eb9c75a` |
+| 7 | `/api/v1/health` + observability hooks | **DONE** — branch `blocker-5` |
 
 ---
 
@@ -306,7 +306,9 @@ function invalidateAndBroadcast(queryClient, keys: unknown[][]) {
 
 ---
 
-## Blocker 6 — Atomic mutation + audit insert via single Postgres RPC
+## Blocker 6 — Atomic mutation + audit insert via single Postgres RPC ✅
+
+**Status:** Implemented on branch `blocker-5` (commit `eb9c75a`). RPCs `create_refund_with_audit` (mig 20260505000002+3) and `apply_discount_with_audit` (mig 20260505000004+5) consolidate dedupe lookup, order lock, mutation, and audit row writes into single transactions. Payment audit atomicity restored via the rewritten `update_order_payment_status` trigger (mig 20260505000006). Services in `apps/staff-web/src/lib/services/{refund,discount}-service.ts` swapped to `client.rpc(...)` calls; the `console.warn` "best-effort" branch in `discount-service.ts` is gone. P0002 (`no_data_found`) added to `handleSupabaseError` in `packages/api-client/src/errors.ts`. Verified with 21 staff-web vitest cases + 28 api-client cases + smoke against local Postgres.
 
 **Goal:** Refunds, discounts, payments either commit *with* their audit row or not at all. No best-effort logging.
 
@@ -376,7 +378,9 @@ CREATE UNIQUE INDEX CONCURRENTLY financial_audit_log_payment_unique
 
 ---
 
-## Blocker 7 — `/api/v1/health` + observability hooks
+## Blocker 7 — `/api/v1/health` + observability hooks ✅
+
+**Status:** Implemented on branch `blocker-5`. `/api/v1/health` route added with db + optional redis probes (`apps/staff-web/src/app/api/v1/health/route.ts`); middleware exempts it from JWT auth. Build SHA pipeline wired in `next.config.js` (`NEXT_PUBLIC_BUILD_SHA` + `generateBuildId`), service worker (`public/sw.js`), and CI-only postbuild injector (`scripts/inject-sw-version.mjs`). Sentry `build_sha` tag set in `instrumentation-client.ts` + `sentry.server.config.ts`; `tenant_id` and user tags set in `RealtimeAuthBridge`. Production boot guard added to `instrumentation.ts` requiring Upstash env when `NEXT_PUBLIC_SENTRY_DSN` is set. Version-skew detector polls `/api/v1/health` from `connection-provider.tsx` and surfaces a sticky toast on SHA mismatch (i18n keys in en/az/ru/tr). Verified with 9 health-route vitest cases + local curl smoke.
 
 **Goal:** External uptime monitor + deploy verifier + version-skew detector.
 

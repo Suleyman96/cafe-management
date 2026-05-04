@@ -1229,5 +1229,8 @@
   "weekdays.sun": "Вс",
   "weekdays.thu": "Чт",
   "weekdays.tue": "Вт",
-  "weekdays.wed": "Ср"
+  "weekdays.wed": "Ср",
+  "updateAvailable.title": "Доступна новая версия",
+  "updateAvailable.description": "Обновите страницу, чтобы загрузить последнюю версию. Несохранённые изменения могут быть потеряны.",
+  "updateAvailable.refresh": "Обновить"
 }

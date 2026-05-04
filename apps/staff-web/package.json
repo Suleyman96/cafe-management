@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
+    "postbuild": "node scripts/inject-sw-version.mjs",
     "start": "next start",
     "lint": "biome check ./src",
     "type-check": "tsc --noEmit",

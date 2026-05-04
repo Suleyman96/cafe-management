@@ -1257,5 +1257,8 @@
   "waste.wasteLogUpdated": "Waste log updated!",
   "waste.wasteLogged": "Waste logged",
   "waste.wasteReason": "Reason",
-  "waste.whatWasWasted": "What was wasted?"
+  "waste.whatWasWasted": "What was wasted?",
+  "updateAvailable.title": "New version available",
+  "updateAvailable.description": "Refresh to load the latest version. Unsaved changes may be lost.",
+  "updateAvailable.refresh": "Refresh"
 }

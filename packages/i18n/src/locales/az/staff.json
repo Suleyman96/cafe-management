@@ -1228,5 +1228,8 @@
   "weekdays.sun": "B.",
   "weekdays.thu": "C.a.",
   "weekdays.tue": "Ç.a.",
-  "weekdays.wed": "Ç."
+  "weekdays.wed": "Ç.",
+  "updateAvailable.title": "Yeni versiya mövcuddur",
+  "updateAvailable.description": "Ən son versiyanı yükləmək üçün yeniləyin. Yadda saxlanılmamış dəyişikliklər itə bilər.",
+  "updateAvailable.refresh": "Yenilə"
 }

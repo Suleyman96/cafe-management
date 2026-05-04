@@ -11,3 +11,9 @@ Sentry.init({
   replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 1.0,
 });
+
+// Stamp build_sha on every event so Sentry issues group by deploy.
+// Set after init so it sticks on the global scope. Tenant/user tags
+// are set in RealtimeAuthBridge (apps/staff-web/src/app/providers.tsx)
+// because those depend on auth state, not boot state.
+Sentry.setTag('build_sha', process.env.NEXT_PUBLIC_BUILD_SHA ?? 'unknown');

@@ -12,6 +12,7 @@
  * Run: pnpm test:rls
  */
 
+import type { Database } from '@gustri/database';
 import { createClient } from '@supabase/supabase-js';
 import { beforeAll, describe, expect, test } from 'vitest';
 
@@ -19,8 +20,11 @@ const SUPABASE_URL = 'http://127.0.0.1:54321';
 const ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
-// Anonymous client — no auth
-const anonClient = createClient(SUPABASE_URL, ANON_KEY);
+// Anonymous client — no auth. Typed with `<Database>` so PostgREST can
+// infer column types on `.insert(...)`, `.update(...)`, etc; without it
+// every column narrows to `never` and tests that probe specific fields
+// fail to compile (the bug fixed alongside this file's RLS sweep).
+const anonClient = createClient<Database>(SUPABASE_URL, ANON_KEY);
 
 describe('RLS Policies — Anonymous Access', () => {
   test('can read menu items (intentionally public)', async () => {
@@ -175,8 +179,8 @@ const SERVICE_ROLE_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
 
 describe('RLS Policies — Cross-tenant write isolation', () => {
-  let tenant1Client: ReturnType<typeof createClient>;
-  let serviceClient: ReturnType<typeof createClient>;
+  let tenant1Client: ReturnType<typeof createClient<Database>>;
+  let serviceClient: ReturnType<typeof createClient<Database>>;
   let tenant2Fixtures: {
     categoryId: string;
     menuItemId: string;
@@ -191,35 +195,54 @@ describe('RLS Policies — Cross-tenant write isolation', () => {
 
   beforeAll(async () => {
     // Tenant 1 admin client — JWT-bound, RLS-policy-evaluated.
-    const { data, error } = await createClient(SUPABASE_URL, ANON_KEY).auth.signInWithPassword({
+    const { data, error } = await createClient<Database>(
+      SUPABASE_URL,
+      ANON_KEY,
+    ).auth.signInWithPassword({
       email: 'admin@test.com',
       password: 'test1234',
     });
     if (error || !data.session) {
       throw new Error(`Tenant 1 admin sign-in failed: ${error?.message ?? 'no session'}`);
     }
-    tenant1Client = createClient(SUPABASE_URL, ANON_KEY, {
+    tenant1Client = createClient<Database>(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: `Bearer ${data.session.access_token}` } },
     });
 
     // Service-role client bypasses RLS — used only to seed tenant 2 fixtures
     // for UPDATE/DELETE probes. Probes themselves use tenant1Client.
-    serviceClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    serviceClient = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     // Seed minimum tenant 2 fixtures so UPDATE/DELETE probes have rows to
     // target. INSERT probes don't need fixtures. Each insert is best-effort
     // and ON CONFLICT DO NOTHING-equivalent via consistent UUIDs.
+    //
+    // `table` is typed as `keyof Database['public']['Tables']` so `from()`
+    // accepts it. The row insert itself is cast to `never` because each
+    // table has a different Insert type and the helper is deliberately
+    // dynamic — every caller knows which row shape its target table needs.
+    type SeedTable = keyof Database['public']['Tables'];
     const seed = async <T extends { id: string }>(
-      table: string,
+      table: SeedTable,
       row: Record<string, unknown>,
     ): Promise<T> => {
-      const result = await serviceClient.from(table).insert(row).select('id').single();
+      const result = await serviceClient
+        .from(table)
+        .insert(row as never)
+        .select('id')
+        .single();
       if (result.error || !result.data) {
         throw new Error(
           `Failed to seed tenant 2 ${table}: ${result.error?.message ?? 'no data returned'}`,
         );
       }
-      return result.data as T;
+      // PostgREST's typed builder can't statically resolve `select('id')`
+      // against a union of all tables (it'd need to prove `id` exists on
+      // every table — which it does in our schema, but the typings don't
+      // know that), so the inferred return is a SelectQueryError union.
+      // Cast through `unknown` since the runtime check above (`!result.data`)
+      // already rules out the error case before we reach this line.
+      return result.data as unknown as T;
     };
 
     const cat = await seed<{ id: string }>('categories', {
@@ -303,7 +326,10 @@ describe('RLS Policies — Cross-tenant write isolation', () => {
   // the WITH CHECK rejects cross-tenant inserts — i.e. each policy must
   // self-fence on tenant_id.
 
-  type InsertProbe = { table: string; row: Record<string, unknown> };
+  type InsertProbe = {
+    table: keyof Database['public']['Tables'];
+    row: Record<string, unknown>;
+  };
   const insertProbes: InsertProbe[] = [
     { table: 'cafe_settings', row: { tenant_id: TENANT_2, restaurant_name: 'Cross-tenant probe' } },
     { table: 'categories', row: { tenant_id: TENANT_2, name: 'Cross-tenant probe' } },
@@ -346,8 +372,9 @@ describe('RLS Policies — Cross-tenant write isolation', () => {
 
   for (const probe of insertProbes) {
     test(`admin@tenant1 cannot INSERT into ${probe.table} with tenant_id = tenant2`, async () => {
-      const { data, error } = await (tenant1Client.from(probe.table) as any)
-        .insert(probe.row)
+      const { data, error } = await tenant1Client
+        .from(probe.table)
+        .insert(probe.row as never)
         .select();
       const insertedRows = data ?? [];
       // RLS WITH CHECK should reject — either by error or by zero rows
