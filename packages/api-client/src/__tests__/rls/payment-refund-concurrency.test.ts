@@ -82,9 +82,11 @@ beforeAll(() => {
 
 afterAll(async () => {
   if (createdOrderIds.length === 0) return;
-  // Cascade: delete refunds + payments first, then orders.
+  // Financial children are ON DELETE RESTRICT (20260505000001) — clear them
+  // explicitly before deleting orders.
   await svc.from('refunds').delete().in('order_id', createdOrderIds);
   await svc.from('order_payments').delete().in('order_id', createdOrderIds);
+  await svc.from('financial_audit_log').delete().in('order_id', createdOrderIds);
   await svc.from('orders').delete().in('id', createdOrderIds);
 });
 

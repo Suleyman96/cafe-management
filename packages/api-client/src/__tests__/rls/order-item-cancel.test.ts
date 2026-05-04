@@ -104,7 +104,11 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (createdOrderIds.length === 0) return;
+  // order_items DELETE fires the recalculate trigger which writes audit
+  // rows; financial_audit_log → orders is now ON DELETE RESTRICT
+  // (20260505000001) so clear it before deleting orders.
   await svc.from('order_items').delete().in('order_id', createdOrderIds);
+  await svc.from('financial_audit_log').delete().in('order_id', createdOrderIds);
   await svc.from('orders').delete().in('id', createdOrderIds);
 });
 

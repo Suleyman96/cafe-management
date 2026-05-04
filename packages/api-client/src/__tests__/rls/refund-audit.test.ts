@@ -69,8 +69,11 @@ beforeAll(() => {
 
 afterAll(async () => {
   if (createdOrderIds.length === 0) return;
+  // Financial children are ON DELETE RESTRICT (20260505000001) — clear
+  // financial_audit_log explicitly too.
   await svc.from('refunds').delete().in('order_id', createdOrderIds);
   await svc.from('order_payments').delete().in('order_id', createdOrderIds);
+  await svc.from('financial_audit_log').delete().in('order_id', createdOrderIds);
   await svc.from('orders').delete().in('id', createdOrderIds);
 });
 

@@ -16,6 +16,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 import '@/lib/i18n';
 import { channelRegistry } from '@/lib/realtime/channel-registry';
+import { onCrossTab, postCrossTab } from '@/lib/realtime/cross-tab';
+import { LifecycleBridge } from '@/lib/realtime/lifecycle-bridge';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/wrapped-client';
 import { useAuthStore } from '@/store/auth-store';
@@ -72,6 +74,47 @@ function RealtimeAuthBridge() {
   return null;
 }
 
+/**
+ * Bridges BroadcastChannel messages from sibling tabs into the local React
+ * Query cache + supabase auth state.
+ *
+ * - `mutation-success` from another tab → invalidate every active query so
+ *   our cache catches the change. Coarse on purpose: avoids drift between
+ *   sender and receiver about exactly which keys to refetch and matches
+ *   how realtime already converges (refetch from DB, never patch from a
+ *   payload).
+ * - `signed-out` → wipe cache and call `supabase.auth.signOut()`. The
+ *   resulting SIGNED_OUT event flows through `useAuth()` and redirects to
+ *   /login. We DO NOT broadcast this back; postCrossTab from this handler
+ *   would create an N-tab fanout amplification.
+ * - `tenant-changed` → wipe cache. The receiving tab's existing
+ *   onAuthStateChange hook will pick up the new session and reload staff.
+ */
+function CrossTabBridge() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    return onCrossTab((msg) => {
+      switch (msg.kind) {
+        case 'mutation-success':
+          queryClient.invalidateQueries();
+          break;
+        case 'signed-out':
+          queryClient.clear();
+          // Local-only sign-out — never re-broadcast or we'll storm sibling
+          // tabs that are themselves about to broadcast their own signed-out.
+          supabase.auth.signOut().catch(() => {});
+          break;
+        case 'tenant-changed':
+          queryClient.clear();
+          break;
+      }
+    });
+  }, [queryClient]);
+
+  return null;
+}
+
 /** Cancel in-flight queries when route changes to free browser connections. */
 function RouteChangeHandler() {
   const pathname = usePathname();
@@ -114,6 +157,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
               toast.error(isAppError(error) ? error.message : 'An unexpected error occurred');
             }
           },
+          // Every successful mutation pings sibling tabs to refetch. The
+          // originating tab still runs its own fine-grained `onSuccess`
+          // invalidations for snappy local UX; the broadcast is the
+          // coarse-grained backstop that keeps two tabs of the same staff
+          // session converged on payments / order status / table state.
+          onSuccess: () => {
+            postCrossTab({ kind: 'mutation-success' });
+          },
         }),
         defaultOptions: {
           queries: {
@@ -147,6 +198,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <TenantBoundDbProvider>
           <RealtimeAuthBridge />
+          <LifecycleBridge />
+          <CrossTabBridge />
           <RouteChangeHandler />
           {children}
           <Toaster position="bottom-right" />

@@ -216,6 +216,86 @@ describe('useRealtimeSync', () => {
     vi.useRealTimers();
   });
 
+  it('heartbeat watchdog forces resubscribe after 5 min of silence while subscribed', () => {
+    vi.useFakeTimers();
+
+    const subscribeCallbacks: Array<(status: string) => void> = [];
+    const channelMock: { on: ReturnType<typeof vi.fn>; subscribe: ReturnType<typeof vi.fn> } = {
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn(),
+    };
+    channelMock.subscribe.mockImplementation((cb) => {
+      subscribeCallbacks.push(cb);
+      return channelMock;
+    });
+    (supabase.channel as ReturnType<typeof vi.fn>).mockReturnValue(channelMock);
+
+    const { wrapper } = createWrapper();
+    renderHook(() => useRealtimeSync('hb-channel', tables), { wrapper });
+
+    const channelMockFn = supabase.channel as ReturnType<typeof vi.fn>;
+    expect(channelMockFn).toHaveBeenCalledTimes(1);
+
+    // Mark subscribed and stamp lastEventAt by simulating SUBSCRIBED.
+    subscribeCallbacks[0]('SUBSCRIBED');
+
+    // 4 min of silence — under threshold, no resubscribe.
+    vi.advanceTimersByTime(4 * 60_000);
+    expect(channelMockFn).toHaveBeenCalledTimes(1);
+
+    // Cross the 5 min mark; the next 30s heartbeat tick forces resubscribe.
+    vi.advanceTimersByTime(90_000);
+    expect(channelMockFn).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
+
+  it('foreground fallback poll uses a 30s cadence; switches to 120s when hidden', () => {
+    vi.useFakeTimers();
+    const visibilityState = { value: 'visible' as 'visible' | 'hidden' };
+    Object.defineProperty(document, 'hidden', {
+      configurable: true,
+      get: () => visibilityState.value === 'hidden',
+    });
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => visibilityState.value,
+    });
+
+    const subscribeCallbacks: Array<(status: string) => void> = [];
+    const channelMock: { on: ReturnType<typeof vi.fn>; subscribe: ReturnType<typeof vi.fn> } = {
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn(),
+    };
+    channelMock.subscribe.mockImplementation((cb) => {
+      subscribeCallbacks.push(cb);
+      return channelMock;
+    });
+    (supabase.channel as ReturnType<typeof vi.fn>).mockReturnValue(channelMock);
+
+    const { wrapper, queryClient } = createWrapper();
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync('vis-channel', tables), { wrapper });
+
+    // We never SUBSCRIBE — subscribedRef stays false so the fallback fires.
+    // Foreground cadence is 30s.
+    vi.advanceTimersByTime(30_000);
+    expect(invalidateSpy).toHaveBeenCalledTimes(1);
+
+    // Going hidden swaps cadence to 120s. Wait 60s — no extra fire.
+    visibilityState.value = 'hidden';
+    document.dispatchEvent(new Event('visibilitychange'));
+    vi.advanceTimersByTime(60_000);
+    expect(invalidateSpy).toHaveBeenCalledTimes(1);
+
+    // Cross the 120s boundary from the visibility flip — fires once.
+    vi.advanceTimersByTime(60_000);
+    expect(invalidateSpy).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
+
   it('clears the pending flush timer on unmount so no late invalidation fires', () => {
     vi.useFakeTimers();
 

@@ -2316,10 +2316,12 @@ export type Database = {
           p_waste_retention_months?: number
         }
         Returns: {
+          audit_archived: number
           items_archived: number
           orders_archived: number
           payments_archived: number
           pii_anonymized: number
+          refunds_archived: number
           waiter_calls_deleted: number
           waste_logs_deleted: number
         }[]

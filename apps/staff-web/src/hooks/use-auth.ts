@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef } from 'react';
 import { loadAndSwitchLanguage } from '@/lib/i18n';
+import { postCrossTab } from '@/lib/realtime/cross-tab';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/wrapped-client';
 import { useAuthStore } from '@/store/auth-store';
@@ -160,6 +161,11 @@ export function useAuth() {
     // signOut() resolve and the bridge handler running.
     queryClient.clear();
     clearAuth();
+    // Tell sibling tabs to sign out too. The receiving CrossTabBridge
+    // calls supabase.auth.signOut() locally — without this, a logout in
+    // tab A leaves tab B authenticated until its session expires or it
+    // hits a 401 on the next request.
+    postCrossTab({ kind: 'signed-out' });
     routerRef.current.push('/login');
   }, [clearAuth, queryClient]);
 

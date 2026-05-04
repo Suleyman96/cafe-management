@@ -16,6 +16,17 @@ type RealtimeTable = {
 const MAX_BACKOFF_MS = 30_000;
 const MAX_RETRIES = 10;
 
+// Heartbeat watchdog: a channel can claim SUBSCRIBED but stop receiving
+// messages (load balancer drops, NAT timeout, server restart). If we go
+// 5 min without an event while supposedly subscribed, force a resubscribe.
+const HEARTBEAT_INTERVAL_MS = 30_000;
+const STALE_EVENT_THRESHOLD_MS = 5 * 60_000;
+
+// Visibility-aware fallback cadence. Foreground tabs get a tighter poll so
+// the kitchen doesn't sit on stale data; background tabs keep the original
+// 2-min cadence to spare battery on tablets that get pocketed.
+const FOREGROUND_FALLBACK_MS = 30_000;
+
 /**
  * Subscribes to Supabase Realtime for a set of tables and
  * invalidates the corresponding React Query caches on changes.
@@ -123,6 +134,10 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
         subscribedRef.current = status === 'SUBSCRIBED';
 
         if (status === 'SUBSCRIBED') {
+          // Stamp the heartbeat baseline. Without this, the watchdog can't
+          // distinguish "subscribed but server gone quiet" from "subscribed,
+          // never seen any traffic" on a low-volume tenant.
+          lastEventAtRef.current = Date.now();
           // Catch-up on reconnect: any postgres_changes events emitted while
           // the WS was down were dropped (Supabase Realtime has no replay).
           // After a successful resubscribe, refetch the affected query keys
@@ -154,21 +169,26 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
 
     currentChannel = createChannel();
 
+    const forceResubscribe = () => {
+      if (cancelledRef.current) return;
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+      if (currentChannel) supabase.removeChannel(currentChannel);
+      retryCountRef.current = 0;
+      subscribedRef.current = false;
+      // Reset the heartbeat clock so the watchdog doesn't re-fire on the
+      // freshly created channel before it's had a chance to receive anything.
+      lastEventAtRef.current = Date.now();
+      currentChannel = createChannel();
+    };
+
     // Register with the auth-aware registry. On TOKEN_REFRESHED the bridge
     // calls resubscribe(), which tears down the stale-token channel and
     // recreates it so the new JWT is bound to the websocket frame.
     channelRegistry.register(uniqueChannelName, {
-      resubscribe: () => {
-        if (cancelledRef.current) return;
-        if (retryTimerRef.current) {
-          clearTimeout(retryTimerRef.current);
-          retryTimerRef.current = null;
-        }
-        if (currentChannel) supabase.removeChannel(currentChannel);
-        retryCountRef.current = 0;
-        subscribedRef.current = false;
-        currentChannel = createChannel();
-      },
+      resubscribe: forceResubscribe,
       teardown: () => {
         if (currentChannel) {
           supabase.removeChannel(currentChannel);
@@ -177,6 +197,21 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
         subscribedRef.current = false;
       },
     });
+
+    // Heartbeat watchdog: a channel can stay SUBSCRIBED locally while the
+    // server stops delivering (LB drop, NAT timeout, partial outage). If we
+    // haven't seen any event in 5 min while subscribed, force a resubscribe
+    // so we re-bind the WS rather than waiting for an error event that
+    // never comes.
+    const heartbeatTimer = setInterval(() => {
+      if (cancelledRef.current) return;
+      if (!subscribedRef.current) return;
+      const lastAt = lastEventAtRef.current;
+      if (lastAt === null) return;
+      if (Date.now() - lastAt > STALE_EVENT_THRESHOLD_MS) {
+        forceResubscribe();
+      }
+    }, HEARTBEAT_INTERVAL_MS);
 
     return () => {
       cancelledRef.current = true;
@@ -187,20 +222,43 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
         flushTimerRef.current = null;
       }
       pendingKeysRef.current.clear();
+      clearInterval(heartbeatTimer);
       channelRegistry.unregister(uniqueChannelName);
       if (currentChannel) supabase.removeChannel(currentChannel);
     };
   }, [uniqueChannelName, tenantId, scheduleFlush, invalidateAll]);
 
-  // Safety-net fallback: poll at a long interval when the WS may be down
+  // Safety-net fallback: poll when the WS is down. Foreground tabs get a
+  // tighter cadence (30s) so the kitchen doesn't sit on stale data while a
+  // human is watching; background tabs keep the original FALLBACK (120s)
+  // to spare tablet battery.
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (!subscribedRef.current) {
-        invalidateAll();
-      }
-    }, REFRESH_INTERVALS.FALLBACK);
+    if (typeof document === 'undefined') {
+      const interval = setInterval(() => {
+        if (!subscribedRef.current) invalidateAll();
+      }, REFRESH_INTERVALS.FALLBACK);
+      return () => clearInterval(interval);
+    }
 
-    return () => clearInterval(interval);
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const start = () => {
+      if (timer !== null) clearInterval(timer);
+      const delay = document.hidden ? REFRESH_INTERVALS.FALLBACK : FOREGROUND_FALLBACK_MS;
+      timer = setInterval(() => {
+        if (!subscribedRef.current) invalidateAll();
+      }, delay);
+    };
+
+    const onVisibilityChange = () => start();
+
+    start();
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      if (timer !== null) clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [invalidateAll]);
 
   return { lastEventAtRef };
