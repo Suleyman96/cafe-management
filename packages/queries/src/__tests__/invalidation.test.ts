@@ -1,10 +1,14 @@
 import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  invalidateExpenses,
+  invalidateMenuAndCategories,
   invalidateOrders,
   invalidateOrdersAndTables,
   invalidateStock,
+  invalidateTasks,
   invalidateWaiterCalls,
+  invalidateWaste,
 } from '../invalidation';
 import { QUERY_KEYS, tenantKey } from '../keys';
 import { TEST_TENANT_ID } from './helpers/test-utils';
@@ -193,6 +197,14 @@ describe('invalidateStock', () => {
     expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.LOW_STOCK_COUNT));
   });
 
+  it('invalidates the stock item detail key (prefix-match)', () => {
+    const { qc, spy } = createMockQueryClient();
+    invalidateStock(qc, TEST_TENANT_ID);
+    const keys = getInvalidatedKeys(spy);
+
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.STOCK_ITEM));
+  });
+
   it('includes movements when requested', () => {
     const { qc, spy } = createMockQueryClient();
     invalidateStock(qc, TEST_TENANT_ID, true);
@@ -208,6 +220,56 @@ describe('invalidateStock', () => {
 
     const movementKeys = keys.filter((k: string[]) => k[0] === QUERY_KEYS.STOCK_MOVEMENTS);
     expect(movementKeys).toHaveLength(0);
+  });
+});
+
+describe('invalidateMenuAndCategories', () => {
+  it('invalidates list, categories, and detail key (prefix-match)', () => {
+    const { qc, spy } = createMockQueryClient();
+    invalidateMenuAndCategories(qc, TEST_TENANT_ID);
+    const keys = getInvalidatedKeys(spy);
+
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.CATEGORIES));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.MENU_ITEMS));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.MENU_ITEM));
+  });
+});
+
+describe('invalidateExpenses', () => {
+  it('invalidates list, monthly summary, categories, and detail key (prefix-match)', () => {
+    const { qc, spy } = createMockQueryClient();
+    invalidateExpenses(qc, TEST_TENANT_ID);
+    const keys = getInvalidatedKeys(spy);
+
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.EXPENSES));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.EXPENSE));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.EXPENSE_CATEGORIES));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY));
+  });
+});
+
+describe('invalidateTasks', () => {
+  it('invalidates list, count keys, and detail key (prefix-match)', () => {
+    const { qc, spy } = createMockQueryClient();
+    invalidateTasks(qc, TEST_TENANT_ID);
+    const keys = getInvalidatedKeys(spy);
+
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TASKS));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TASK));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.OVERDUE_TASKS_COUNT));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.OPEN_TASKS_COUNT));
+  });
+});
+
+describe('invalidateWaste', () => {
+  it('invalidates list, summary, and detail key (prefix-match)', () => {
+    const { qc, spy } = createMockQueryClient();
+    invalidateWaste(qc, TEST_TENANT_ID);
+    const keys = getInvalidatedKeys(spy);
+
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.WASTE_LOGS));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.WASTE_LOG));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.WASTE_SUMMARY));
   });
 });
 

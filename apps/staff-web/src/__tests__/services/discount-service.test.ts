@@ -33,9 +33,15 @@ interface CapturedUpdate {
   payload: Record<string, unknown>;
 }
 
+interface CapturedInsert {
+  table: string;
+  payload: Record<string, unknown>;
+}
+
 function buildClient(plan: Record<string, QueuedResponse[]>) {
   const cursor: Record<string, number> = {};
   const updates: CapturedUpdate[] = [];
+  const inserts: CapturedInsert[] = [];
 
   function next(table: string): QueuedResponse {
     const queue = plan[table] ?? [];
@@ -51,11 +57,15 @@ function buildClient(plan: Record<string, QueuedResponse[]>) {
         () =>
         (..._args: unknown[]) =>
           builder;
-      for (const m of ['select', 'insert', 'delete', 'eq', 'in', 'gte', 'order', 'limit']) {
+      for (const m of ['select', 'delete', 'eq', 'in', 'gte', 'order', 'limit']) {
         builder[m] = chain();
       }
       builder.update = (payload: Record<string, unknown>) => {
         updates.push({ table, payload });
+        return builder;
+      };
+      builder.insert = (payload: Record<string, unknown>) => {
+        inserts.push({ table, payload });
         return builder;
       };
       builder.maybeSingle = () => Promise.resolve(next(table));
@@ -64,9 +74,15 @@ function buildClient(plan: Record<string, QueuedResponse[]>) {
       builder.then = (resolve: (v: QueuedResponse) => unknown) => resolve(next(table));
       return builder;
     },
-  } as unknown as SupabaseClient & { __updates: CapturedUpdate[] };
+  } as unknown as SupabaseClient & {
+    __updates: CapturedUpdate[];
+    __inserts: CapturedInsert[];
+  };
 
-  (client as unknown as { __updates: CapturedUpdate[] }).__updates = updates;
+  (client as unknown as { __updates: CapturedUpdate[]; __inserts: CapturedInsert[] }).__updates =
+    updates;
+  (client as unknown as { __updates: CapturedUpdate[]; __inserts: CapturedInsert[] }).__inserts =
+    inserts;
   return client;
 }
 
@@ -243,6 +259,108 @@ describe('applyDiscount — large-discount reason requirement', () => {
     expect(orderUpdate!.payload.discount_type).toBe('percentage');
     expect(orderUpdate!.payload.discount_value).toBe(30);
     expect(orderUpdate!.payload.discount_reason).toBe('Customer complaint - cold food');
+  });
+
+  it('treats a 23505 unique-violation on the audit insert as a successful dedupe', async () => {
+    // Concurrency scenario: replay #1 already wrote the audit row with the
+    // same client_request_id. Replay #2 misses the pre-INSERT lookup (the
+    // race window) and tries to insert. The partial unique index from
+    // migration 20260504000002 rejects it. The service must catch 23505
+    // and return deduped=true rather than surfacing a 5xx to the caller.
+    const client = buildClient({
+      orders: [
+        // 1) tenant verification SELECT
+        { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
+        // 2) UPDATE thenable
+        { data: null, error: null },
+        // 3) post-trigger fetch SELECT (returns the discount applied by the
+        //    other concurrent request — UPDATE is idempotent on absolute
+        //    values so the row reflects the agreed-upon state).
+        {
+          data: {
+            id: ORDER_ID,
+            subtotal: 100,
+            tax: 9,
+            total: 99,
+            discount_type: 'percentage',
+            discount_value: 10,
+            discount_amount: 10,
+          },
+          error: null,
+        },
+      ],
+      financial_audit_log: [
+        // 1) lookup MISSES (race window — the other replay hasn't inserted yet
+        //    when we read).
+        { data: null, error: null },
+        // 2) INSERT loses the race — the other replay's row was committed
+        //    between our lookup and our insert.
+        { data: null, error: { code: '23505', message: 'duplicate key value' } },
+      ],
+    });
+
+    const result = await applyDiscount(client, {
+      orderId: ORDER_ID,
+      discountType: 'percentage',
+      discountValue: 10,
+      discountReason: null,
+      discountAppliedBy: STAFF_ID,
+      tenantId: TENANT,
+      clientRequestId: 'req-concurrent-replay',
+    });
+
+    expect(result.deduped).toBe(true);
+    expect(result.order).toMatchObject({
+      discount_type: 'percentage',
+      discount_value: 10,
+    });
+  });
+
+  it('treats a non-unique-violation audit error as best-effort and still returns the order', async () => {
+    // Audit log misconfiguration (RLS hiccup, table missing, etc.) must
+    // not block the discount path — the discount itself is already applied.
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const client = buildClient({
+      orders: [
+        { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
+        { data: null, error: null },
+        {
+          data: {
+            id: ORDER_ID,
+            subtotal: 100,
+            tax: 9,
+            total: 99,
+            discount_type: 'percentage',
+            discount_value: 10,
+            discount_amount: 10,
+          },
+          error: null,
+        },
+      ],
+      financial_audit_log: [
+        // INSERT fails with a non-23505 error.
+        { data: null, error: { code: '42501', message: 'permission denied' } },
+      ],
+    });
+
+    const result = await applyDiscount(client, {
+      orderId: ORDER_ID,
+      discountType: 'percentage',
+      discountValue: 10,
+      discountReason: null,
+      discountAppliedBy: STAFF_ID,
+      tenantId: TENANT,
+    });
+
+    expect(result.deduped).toBe(false);
+    expect(result.order).toBeDefined();
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[discount-service] financial_audit_log insert failed',
+      expect.objectContaining({ code: '42501' }),
+    );
+
+    warnSpy.mockRestore();
   });
 
   it('does not require a reason when fraction is below the threshold', async () => {

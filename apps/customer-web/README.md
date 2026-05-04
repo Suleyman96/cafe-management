@@ -137,6 +137,30 @@ The app uses Supabase Realtime for live updates:
 - Item preparation status
 - Waiter responses
 
+### Cross-tenant isolation: safe-by-UUID
+
+Customer-web's `postgres_changes` subscriptions run with the anon JWT, and
+Supabase Realtime's filter syntax accepts ONE column predicate per `.on()`
+call (no `AND`). To stay tenant-isolated at the broadcast layer without
+moving to private channels, every realtime filter in
+[`src/hooks/`](./src/hooks/) keys on a UUID column (`id`, `order_id`,
+`table_id`). UUIDs are globally unique, so a client on tenant A cannot
+guess a UUID belonging to tenant B and silently subscribe to its events.
+
+This is **defense-in-depth**, not the only line of defense — RLS still
+gates row reads — but realtime payloads include the row, so the broadcast
+filter is the load-bearing layer for presence isolation.
+
+A guard test in
+[`src/__tests__/lint/realtime-filter-guard.test.ts`](./src/__tests__/lint/realtime-filter-guard.test.ts)
+fails CI if any new `postgres_changes` filter omits both `id=eq.` and
+`tenant_id=eq.`. If a filter genuinely needs to key on a non-UUID column
+(`status`, `priority`, etc.), that's a redesign — see the option-3
+private-channels plan in
+[`plans/realtime-cache-audit-remaining-prompts.md`](../../plans/realtime-cache-audit-remaining-prompts.md)
+— not a `tenant_id=eq.${tenantId}` widening, which would exceed the
+`eventsPerSecond: 10` budget on busy tenants.
+
 ## Performance Optimization
 
 - Server-side rendering for initial load

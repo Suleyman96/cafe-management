@@ -7,6 +7,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { Bell, BellOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { channelRegistry } from '@/lib/realtime/channel-registry';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -165,18 +166,37 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  // Consolidated realtime subscription with retry + exponential backoff
+  // Consolidated realtime subscription with retry + exponential backoff.
+  //
+  // Registers with `channelRegistry` so the global RealtimeAuthBridge can
+  // resubscribe this channel on TOKEN_REFRESHED. Without that, the websocket
+  // keeps the JWT it was opened with, the connection silently dies after
+  // ~55 min, and the staff kitchen view stops receiving new-order /
+  // waiter-call alerts (the 120s safety poll keeps data fresh, but audio
+  // alerts and the immediacy contract degrade silently).
+  //
+  // The registry key is also UUID-suffixed so two tabs of the same user
+  // (e.g. dashboard + kitchen) don't trample each other's entries — same
+  // multi-tab safety pattern as `useRealtimeSync`.
   useEffect(() => {
     if (!tenantId) return;
 
+    const suffix =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const registryKey = `notify-all:${suffix}`;
+
     let currentChannel: RealtimeChannel | null = null;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
 
     function setupChannel() {
+      if (cancelled) return;
       Sentry.addBreadcrumb({ category: 'realtime', message: 'Setting up notifications channel' });
 
       const channel = supabase
-        .channel('notify-all')
+        .channel(registryKey)
         .on(
           'postgres_changes',
           {
@@ -257,6 +277,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           },
         )
         .subscribe((status) => {
+          if (cancelled) return;
           Sentry.addBreadcrumb({
             category: 'realtime',
             message: `notifications channel: ${status}`,
@@ -268,6 +289,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
             setRealtimeConnected(false);
             supabase.removeChannel(channel);
+            if (currentChannel === channel) currentChannel = null;
 
             if (retryCountRef.current >= MAX_RETRIES) {
               Sentry.captureMessage(
@@ -290,8 +312,39 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     setupChannel();
 
+    // Auth-aware rebind: TOKEN_REFRESHED tears down the stale-JWT channel and
+    // recreates it so the new token is bound to the new websocket frame.
+    channelRegistry.register(registryKey, {
+      resubscribe: () => {
+        if (cancelled) return;
+        if (retryTimer) {
+          clearTimeout(retryTimer);
+          retryTimer = null;
+        }
+        if (currentChannel) {
+          supabase.removeChannel(currentChannel);
+          currentChannel = null;
+        }
+        retryCountRef.current = 0;
+        setupChannel();
+      },
+      teardown: () => {
+        if (retryTimer) {
+          clearTimeout(retryTimer);
+          retryTimer = null;
+        }
+        if (currentChannel) {
+          supabase.removeChannel(currentChannel);
+          currentChannel = null;
+        }
+        setRealtimeConnected(false);
+      },
+    });
+
     return () => {
+      cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
+      channelRegistry.unregister(registryKey);
       if (currentChannel) supabase.removeChannel(currentChannel);
     };
   }, [playSound, t, tenantId]);

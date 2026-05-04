@@ -10,9 +10,7 @@ const SAFE_ERRORS: Record<string, { message: string; status: number }> = {
   'plan allows': { message: 'Order limit reached for your plan', status: 403 },
   plan_required: { message: 'plan_required', status: 403 },
   'exceeds remaining': { message: 'Payment amount exceeds remaining balance', status: 422 },
-  'exceeds available': { message: 'Refund amount exceeds available balance', status: 422 },
   payment_exceeds_remaining: { message: 'payment_exceeds_remaining', status: 409 },
-  refund_exceeds_available: { message: 'refund_exceeds_available', status: 409 },
   'order limit reached': { message: 'Monthly order limit reached for your plan', status: 403 },
   'table limit reached': { message: 'Table limit reached for your plan', status: 403 },
 };

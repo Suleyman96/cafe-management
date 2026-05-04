@@ -147,6 +147,7 @@ export function invalidateTakeoutOrders(qc: QueryClient, tenantId: TenantId) {
 
 export function invalidateStock(qc: QueryClient, tenantId: TenantId, includeMovements = false) {
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.STOCK_ITEMS) });
+  qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.STOCK_ITEM) });
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.LOW_STOCK_COUNT) });
   if (includeMovements) {
     qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.STOCK_MOVEMENTS) });
@@ -165,6 +166,7 @@ export function refetchStock(qc: QueryClient, tenantId: TenantId, includeMovemen
 
 export function invalidateExpenses(qc: QueryClient, tenantId: TenantId) {
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.EXPENSES) });
+  qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.EXPENSE) });
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.EXPENSE_CATEGORIES) });
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.EXPENSE_MONTHLY_SUMMARY) });
 }
@@ -178,6 +180,7 @@ export function refetchExpenses(qc: QueryClient, tenantId: TenantId) {
 
 export function invalidateWaste(qc: QueryClient, tenantId: TenantId) {
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.WASTE_LOGS) });
+  qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.WASTE_LOG) });
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.WASTE_SUMMARY) });
 }
 
@@ -190,6 +193,7 @@ export function refetchWaste(qc: QueryClient, tenantId: TenantId) {
 
 export function invalidateTasks(qc: QueryClient, tenantId: TenantId) {
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.TASKS) });
+  qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.TASK) });
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.OVERDUE_TASKS_COUNT) });
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.OPEN_TASKS_COUNT) });
 }
@@ -219,4 +223,5 @@ export function invalidateWaiterCalls(qc: QueryClient, tenantId: TenantId) {
 export function invalidateMenuAndCategories(qc: QueryClient, tenantId: TenantId) {
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.CATEGORIES) });
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.MENU_ITEMS) });
+  qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.MENU_ITEM) });
 }

@@ -29,6 +29,12 @@ const MAX_RETRIES = 10;
  * - Auth-aware resubscribe via `channelRegistry`. The realtime channel
  *   keeps the JWT it was opened with; without rebinding on TOKEN_REFRESHED
  *   the connection silently dies after ~55 min.
+ *
+ * Multi-tab safety: the supplied `channelName` is suffixed with a per-mount
+ * UUID before being passed to `supabase.channel(...)` and registered. Two
+ * tabs of the same user opening the same view (e.g. dashboard + kitchen)
+ * therefore get distinct channel objects on the shared supabase client and
+ * don't trample each other's subscriptions on unmount.
  */
 export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
   const queryClient = useQueryClient();
@@ -40,6 +46,17 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
   const retryCountRef = useRef(0);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastEventAtRef = useRef<number | null>(null);
+  // Stable per-mount unique channel id. `channelName` stays as the human
+  // label; `uniqueChannelName` is what actually opens/registers the channel.
+  const uniqueChannelNameRef = useRef<string | null>(null);
+  if (uniqueChannelNameRef.current === null) {
+    const suffix =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    uniqueChannelNameRef.current = `${channelName}:${suffix}`;
+  }
+  const uniqueChannelName = uniqueChannelNameRef.current;
 
   // Coalesce realtime-driven invalidations: bursts of events on the same
   // query key produce a single refetch on the trailing edge instead of one
@@ -76,7 +93,7 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
     let currentChannel: RealtimeChannel | null = null;
 
     function createChannel(): RealtimeChannel {
-      let channel = supabase.channel(channelName);
+      let channel = supabase.channel(uniqueChannelName);
 
       for (const { table, queryKeys, filter } of tablesRef.current) {
         // Use explicit filter if provided, otherwise scope by tenant_id
@@ -140,7 +157,7 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
     // Register with the auth-aware registry. On TOKEN_REFRESHED the bridge
     // calls resubscribe(), which tears down the stale-token channel and
     // recreates it so the new JWT is bound to the websocket frame.
-    channelRegistry.register(channelName, {
+    channelRegistry.register(uniqueChannelName, {
       resubscribe: () => {
         if (cancelledRef.current) return;
         if (retryTimerRef.current) {
@@ -170,10 +187,10 @@ export function useRealtimeSync(channelName: string, tables: RealtimeTable[]) {
         flushTimerRef.current = null;
       }
       pendingKeysRef.current.clear();
-      channelRegistry.unregister(channelName);
+      channelRegistry.unregister(uniqueChannelName);
       if (currentChannel) supabase.removeChannel(currentChannel);
     };
-  }, [channelName, tenantId, scheduleFlush, invalidateAll]);
+  }, [uniqueChannelName, tenantId, scheduleFlush, invalidateAll]);
 
   // Safety-net fallback: poll at a long interval when the WS may be down
   useEffect(() => {

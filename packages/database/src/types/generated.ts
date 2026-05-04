@@ -2092,6 +2092,39 @@ export type Database = {
       }
     }
     Functions: {
+      adjust_stock_atomic: {
+        Args: {
+          p_client_request_id: string
+          p_movement_type: string
+          p_performed_by: string
+          p_quantity_change: number
+          p_reason: string
+          p_stock_item_id: string
+          p_tenant_id: string
+        }
+        Returns: {
+          category: string
+          cost_price: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          minimum_stock_level: number
+          name: string
+          notes: string | null
+          quantity: number
+          supplier_name: string | null
+          tenant_id: string
+          unit: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "stock_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       calculate_order_total: {
         Args: { order_uuid: string }
         Returns: undefined

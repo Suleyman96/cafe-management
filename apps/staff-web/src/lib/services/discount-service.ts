@@ -14,15 +14,15 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * Idempotency: the discount UPDATE itself writes absolute values
  * (`discount_type`, `discount_value`) — not deltas — so re-applying with
  * the same payload yields the same order state. The audit log INSERT,
- * however, is NOT idempotent: a replayed mutation would produce a second
- * `discount_applied` row, polluting reconciliation. To dedupe we stamp
- * `client_request_id` into `details` on the audit row and look it up on
- * subsequent calls; if found, we short-circuit and return the current
- * order without re-applying or re-logging. There is no unique constraint
- * on the audit table — concurrent replays can in theory both miss the
- * lookup and both insert — but since the discount UPDATE is idempotent,
- * the worst case is two audit rows with the same client_request_id
- * (rare, and a unique index can be added later without breaking anything).
+ * however, is not naturally idempotent. To dedupe:
+ *   1. We stamp `client_request_id` into `details` and look it up on
+ *      subsequent calls — fast path for sequential retries.
+ *   2. The audit table carries a partial unique index on
+ *      (tenant_id, action='discount_applied', client_request_id) — see
+ *      migration 20260504000002. Two concurrent replays that both miss the
+ *      lookup serialize on the index: one wins, the other gets 23505
+ *      (unique_violation), which we catch and treat as a successful dedupe.
+ *      Same pattern as stock-service's stock_movements constraint.
  *
  * Audit trail: EVERY non-zero discount writes a `financial_audit_log`
  * row. Even a 5%-off concession is finance-relevant; the prior threshold
@@ -33,6 +33,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * Sanity caps stay (percentage 0-100, fixed ≤ subtotal) — these are
  * shape guards, not authorization decisions.
  */
+
+const PG_UNIQUE_VIOLATION = '23505';
+
+function isUniqueViolation(err: unknown): boolean {
+  return (err as { code?: string } | null)?.code === PG_UNIQUE_VIOLATION;
+}
 
 interface ApplyDiscountParams {
   orderId: string;
@@ -167,32 +173,45 @@ export async function applyDiscount(supabaseAdmin: SupabaseClient, params: Apply
     throw new Error(fetchError.message);
   }
 
-  // Audit-log every non-zero discount. Best-effort: if the insert fails
-  // (table missing, RLS hiccup) the discount itself is already applied —
-  // log to console and Sentry but never roll back the discount.
+  // Audit-log every non-zero discount. The discount UPDATE has already
+  // committed at this point; the audit insert is the dedupe anchor.
+  //
+  // Two failure modes are treated differently:
+  //   1. Unique-violation on the partial index keyed by
+  //      (tenant_id, 'discount_applied', client_request_id) — a concurrent
+  //      replay won the race and already wrote the audit row. Treat as
+  //      successful dedupe, return early with the freshly-fetched order.
+  //   2. Anything else (table missing, RLS hiccup, etc.) — best-effort:
+  //      the discount itself is already applied, log for triage but never
+  //      roll back the discount.
+  let deduped = false;
   if (discountType !== 'none' && subtotal > 0) {
     const fraction = discountType === 'percentage' ? discountValue / 100 : discountValue / subtotal;
     const discountAmount = Number(updatedOrder?.discount_amount ?? 0);
-    try {
-      await supabaseAdmin.from('financial_audit_log').insert({
-        tenant_id: tenantId,
-        staff_id: discountAppliedBy,
-        order_id: orderId,
-        action: 'discount_applied',
-        details: {
-          discount_type: discountType,
-          discount_value: discountValue,
-          discount_amount: discountAmount,
-          reason: discountReason ?? null,
-          fraction,
-          ...(clientRequestId ? { client_request_id: clientRequestId } : {}),
-        },
-      });
-    } catch (err) {
-      // Non-fatal — surface for triage but never break the discount path.
-      console.warn('[discount-service] financial_audit_log insert failed', err);
+    const { error: auditError } = await supabaseAdmin.from('financial_audit_log').insert({
+      tenant_id: tenantId,
+      staff_id: discountAppliedBy,
+      order_id: orderId,
+      action: 'discount_applied',
+      details: {
+        discount_type: discountType,
+        discount_value: discountValue,
+        discount_amount: discountAmount,
+        reason: discountReason ?? null,
+        fraction,
+        ...(clientRequestId ? { client_request_id: clientRequestId } : {}),
+      },
+    });
+
+    if (auditError) {
+      if (isUniqueViolation(auditError) && clientRequestId) {
+        deduped = true;
+      } else {
+        // Non-fatal — surface for triage but never break the discount path.
+        console.warn('[discount-service] financial_audit_log insert failed', auditError);
+      }
     }
   }
 
-  return { order: updatedOrder, deduped: false };
+  return { order: updatedOrder, deduped };
 }

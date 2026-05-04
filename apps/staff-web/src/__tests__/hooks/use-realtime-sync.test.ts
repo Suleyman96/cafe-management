@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
@@ -23,6 +25,31 @@ beforeEach(() => {
   });
 });
 
+describe('useRealtimeSync — cache write strategy guard', () => {
+  // Pinned by ADR docs/adr/0001-realtime-cache-version-strategy.md.
+  //
+  // The realtime path must NEVER call queryClient.setQueryData from a
+  // postgres_changes handler. Refetches are the source of truth; payload
+  // writes from realtime would let an out-of-order event overwrite fresher
+  // cache state.
+  //
+  // If the next change adds payload-shaped writes (e.g. via a
+  // `mergeIfNewer(prev, next)` helper) without first revising the ADR, this
+  // test fails and forces the conversation. To consciously change the
+  // strategy: update the ADR, then update this test to allow setQueryData
+  // alongside the new ordering rule.
+  it('does not call setQueryData anywhere in the hook source', () => {
+    const hookPath = resolve(__dirname, '../../hooks/use-realtime-sync.ts');
+    const source = readFileSync(hookPath, 'utf8');
+
+    // Strip line/block comments before scanning so a comment that mentions
+    // `setQueryData` (e.g. an ADR back-reference) doesn't trip the guard.
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+
+    expect(code).not.toMatch(/\bsetQueryData\b/);
+  });
+});
+
 describe('useRealtimeSync', () => {
   const tables = [{ table: 'orders', queryKeys: [['orders']] }];
 
@@ -31,7 +58,25 @@ describe('useRealtimeSync', () => {
     renderHook(() => useRealtimeSync('test-channel', tables), { wrapper });
 
     expect(channelRegistry.size()).toBe(1);
-    expect(supabase.channel).toHaveBeenCalledWith('test-channel');
+    // Channel name is suffixed with a per-mount UUID so multi-tab opens of
+    // the same logical channel don't collide on the shared supabase client.
+    expect(supabase.channel).toHaveBeenCalledWith(expect.stringMatching(/^test-channel:/));
+  });
+
+  it('produces distinct channel names per hook instance (multi-tab safety)', () => {
+    const { wrapper } = createWrapper();
+    renderHook(() => useRealtimeSync('shared-channel', tables), { wrapper });
+    renderHook(() => useRealtimeSync('shared-channel', tables), { wrapper });
+
+    // Two mounts of the same logical channel name produce two distinct
+    // suffixed names — the registry holds both, neither overwrites the other.
+    expect(channelRegistry.size()).toBe(2);
+    const channelMock = supabase.channel as ReturnType<typeof vi.fn>;
+    const names = channelMock.mock.calls.map((c) => c[0] as string);
+    expect(names).toHaveLength(2);
+    expect(names[0]).not.toBe(names[1]);
+    expect(names[0]).toMatch(/^shared-channel:/);
+    expect(names[1]).toMatch(/^shared-channel:/);
   });
 
   it('unregisters and removes the channel on unmount', () => {
