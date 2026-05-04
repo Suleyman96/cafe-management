@@ -69,6 +69,8 @@ function buildClient(plan: Record<string, QueuedResponse[]>) {
   return client;
 }
 
+const CRID = '88888888-8888-4888-8888-888888888888';
+
 describe('createOrder service — totals are derived server-side (C2)', () => {
   it('overwrites client-supplied subtotal/tax/total with zeros on insert', async () => {
     // Even if the route's schema were bypassed, the service must scrub
@@ -78,6 +80,7 @@ describe('createOrder service — totals are derived server-side (C2)', () => {
     const client = buildClient({
       tenants: [{ data: { plan: 'pro' }, error: null }],
       orders: [
+        { data: null, error: null }, // dedupe lookup miss (Blocker 1)
         { data: null, error: null, count: 0 } as QueuedResponse, // monthly-count
         { data: fresh, error: null }, // insert
       ],
@@ -91,6 +94,7 @@ describe('createOrder service — totals are derived server-side (C2)', () => {
         subtotal: 0.01,
         tax: 0.01,
         total: 0.01,
+        client_request_id: CRID,
       } as Record<string, unknown>,
       tenantId: TENANT,
     });
@@ -111,6 +115,7 @@ describe('createOrder service — totals are derived server-side (C2)', () => {
     const client = buildClient({
       tenants: [{ data: { plan: 'pro' }, error: null }],
       orders: [
+        { data: null, error: null }, // dedupe lookup miss (Blocker 1)
         { data: null, error: null, count: 0 } as QueuedResponse,
         { data: fresh, error: null },
       ],
@@ -120,6 +125,7 @@ describe('createOrder service — totals are derived server-side (C2)', () => {
       orderData: {
         order_type: 'dine_in',
         table_id: 'tbl-1',
+        client_request_id: CRID,
       },
       tenantId: TENANT,
     });

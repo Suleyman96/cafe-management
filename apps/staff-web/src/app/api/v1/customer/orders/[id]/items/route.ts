@@ -19,7 +19,11 @@ const AddItemsSchema = z.object({
         quantity: z.number().int().positive(),
         notes: z.string().optional().nullable(),
         tenant_id: z.string().uuid(),
-        client_request_id: z.string().uuid().optional(),
+        // Required per-item (Blocker 1): the wrapper stamps every row so
+        // a paused-then-replayed cart submission dedupes against the
+        // (tenant_id, client_request_id) partial-unique index instead of
+        // creating duplicate order_items rows.
+        client_request_id: z.string().uuid(),
       }),
     )
     .min(1),

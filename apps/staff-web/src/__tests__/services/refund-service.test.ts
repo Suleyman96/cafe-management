@@ -25,7 +25,7 @@
  * service no longer reads `callerRole` and admin/owner is assumed.
  */
 
-import { ConflictError, NotFoundError } from '@gustri/core';
+import { ConflictError, NotFoundError, ValidationError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
 import { createRefund } from '@/lib/services/refund-service';
@@ -34,6 +34,7 @@ const TENANT = '11111111-1111-4111-8111-111111111111';
 const ORDER_ID = '22222222-2222-4222-8222-222222222222';
 const STAFF_ID = '33333333-3333-4333-8333-333333333333';
 const REFUND_ID = '44444444-4444-4444-8444-444444444444';
+const CRID = '55555555-5555-4555-8555-555555555555';
 
 interface QueuedResponse {
   data: unknown;
@@ -104,13 +105,17 @@ const REFUND_INPUT = {
   reason: 'Customer complaint',
   refund_method: 'cash',
   processed_by: STAFF_ID,
+  client_request_id: CRID,
 };
 
 describe('createRefund — drops pre-check and trusts the trigger', () => {
   it('does not query order_payments in the create path', async () => {
     const client = buildClient({
       orders: [{ data: { id: ORDER_ID }, error: null }],
-      refunds: [{ data: REFUND_ROW, error: null }],
+      refunds: [
+        { data: null, error: null }, // dedupe lookup miss
+        { data: REFUND_ROW, error: null }, // INSERT success
+      ],
     });
 
     await createRefund(client, {
@@ -121,14 +126,18 @@ describe('createRefund — drops pre-check and trusts the trigger', () => {
 
     const tableHits = (client as unknown as { __tableHits: string[] }).__tableHits;
     expect(tableHits).not.toContain('order_payments');
-    // Single `refunds` hit for the INSERT — no pre-check SELECT.
-    expect(tableHits.filter((t) => t === 'refunds')).toHaveLength(1);
+    // Two `refunds` hits — the dedupe lookup + the INSERT. Still no
+    // pre-check SELECT against `order_payments`.
+    expect(tableHits.filter((t) => t === 'refunds')).toHaveLength(2);
   });
 
   it('returns the inserted refund row on success', async () => {
     const client = buildClient({
       orders: [{ data: { id: ORDER_ID }, error: null }],
-      refunds: [{ data: REFUND_ROW, error: null }],
+      refunds: [
+        { data: null, error: null }, // dedupe lookup miss
+        { data: REFUND_ROW, error: null }, // INSERT success
+      ],
     });
 
     const result = await createRefund(client, {
@@ -162,6 +171,7 @@ describe('createRefund — trigger-rejected balance maps to ConflictError(409)',
     const client = buildClient({
       orders: [{ data: { id: ORDER_ID }, error: null }],
       refunds: [
+        { data: null, error: null }, // dedupe lookup miss
         {
           data: null,
           error: { code: '23514', message: 'refund_exceeds_available' },
@@ -190,6 +200,7 @@ describe('createRefund — trigger-rejected balance maps to ConflictError(409)',
     const client = buildClient({
       orders: [{ data: { id: ORDER_ID }, error: null }],
       refunds: [
+        { data: null, error: null }, // dedupe lookup miss
         {
           data: null,
           error: { code: '23514', message: 'refund_tenant_mismatch' },
@@ -213,6 +224,7 @@ describe('createRefund — order existence and tenant scope', () => {
     // to NotFoundError. Cross-tenant access surfaces as 404 (not-found in
     // this tenant) instead of leaking existence via 403.
     const client = buildClient({
+      refunds: [{ data: null, error: null }], // dedupe lookup miss
       orders: [{ data: null, error: { code: 'PGRST116', message: 'no rows' } }],
     });
 
@@ -233,6 +245,23 @@ describe('createRefund — order existence and tenant scope', () => {
     // No INSERT should have been attempted.
     const inserts = (client as unknown as { __inserts: CapturedInsert[] }).__inserts;
     expect(inserts.find((i) => i.table === 'refunds')).toBeUndefined();
+  });
+});
+
+describe('createRefund — client_request_id is required (Blocker 1)', () => {
+  it('rejects with ValidationError when no client_request_id is supplied', async () => {
+    const client = buildClient({});
+
+    const { client_request_id: _omit, ...rest } = REFUND_INPUT;
+    void _omit;
+
+    await expect(
+      createRefund(client, {
+        orderId: ORDER_ID,
+        refundData: rest,
+        tenantId: TENANT,
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
   });
 });
 

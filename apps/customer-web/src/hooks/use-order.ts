@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { getOrCreateClientRequestId, QUERY_KEYS } from '@gustri/queries';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
@@ -79,13 +79,32 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ tableId, notes }: { tableId: string; notes?: string }): Promise<Order> => {
+    // `retry: 0` so a network blip doesn't post a second kitchen ticket.
+    // The server still dedupes via `client_request_id` if a user-driven
+    // retry happens.
+    retry: 0,
+    onMutate: (variables: { tableId: string; notes?: string; client_request_id?: string }) => {
+      // Stamp once per logical user action; React Query reuses the same
+      // variables object across retries, so the id stays stable.
+      variables.client_request_id = getOrCreateClientRequestId(variables.client_request_id);
+    },
+    mutationFn: async ({
+      tableId,
+      notes,
+      client_request_id,
+    }: {
+      tableId: string;
+      notes?: string;
+      client_request_id?: string;
+    }): Promise<Order> => {
       // Tenant is derived server-side from `table_id` (C1) — no
-      // `tenant_id` in the body.
+      // `tenant_id` in the body. `client_request_id` is required by the
+      // server schema (Blocker 1).
       const { order } = await apiRoutes.customerOrders.create({
         order_type: 'dine_in',
         table_id: tableId,
         customer_notes: notes,
+        client_request_id: getOrCreateClientRequestId(client_request_id),
       });
       return order as Order;
     },
@@ -125,31 +144,44 @@ export function useCancelOrderItem() {
   });
 }
 
+type AddOrderItemsVariables = {
+  orderId: string;
+  items: Array<{
+    menu_item_id: string;
+    item_name: string;
+    item_price: number;
+    quantity: number;
+    notes?: string;
+    client_request_id?: string;
+  }>;
+  tenantId: string;
+};
+
 export function useAddOrderItems() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // `retry: 0` — items are inserted with a per-row unique index on
+    // `(tenant_id, client_request_id)`. The hook stamps each item's id
+    // exactly once so a user-driven retry dedupes server-side.
+    retry: 0,
+    onMutate: (variables: AddOrderItemsVariables) => {
+      for (const item of variables.items) {
+        item.client_request_id = getOrCreateClientRequestId(item.client_request_id);
+      }
+    },
     mutationFn: async ({
       orderId,
       items,
       tenantId,
-    }: {
-      orderId: string;
-      items: Array<{
-        menu_item_id: string;
-        item_name: string;
-        item_price: number;
-        quantity: number;
-        notes?: string;
-      }>;
-      tenantId: string;
-    }): Promise<OrderItem[]> => {
+    }: AddOrderItemsVariables): Promise<OrderItem[]> => {
       const { items: createdItems } = await apiRoutes.customerOrders.addItems(
         orderId,
         items.map((item) => ({
           ...item,
           notes: item.notes ?? null,
           tenant_id: tenantId,
+          client_request_id: getOrCreateClientRequestId(item.client_request_id),
         })),
       );
       return createdItems as OrderItem[];

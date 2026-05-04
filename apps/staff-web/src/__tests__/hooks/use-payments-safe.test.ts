@@ -82,10 +82,17 @@ describe('useCreatePayment', () => {
     const paymentData = { order_id: 'o1', amount: 50, payment_method: 'cash' } as any;
     const { result } = renderHookWithProviders(() => useCreatePayment());
     await result.current.mutateAsync(paymentData);
-    // The hook destructures order_id and passes the rest to apiRoutes
-    expect(apiRoutes.payments.create).toHaveBeenCalledWith('o1', {
-      amount: 50,
-      payment_method: 'cash',
-    });
+    // The hook destructures order_id and passes the rest to apiRoutes,
+    // plus stamps `client_request_id` (Blocker 1) so retries dedupe.
+    expect(apiRoutes.payments.create).toHaveBeenCalledWith(
+      'o1',
+      expect.objectContaining({
+        amount: 50,
+        payment_method: 'cash',
+        client_request_id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        ),
+      }),
+    );
   });
 });

@@ -33,11 +33,17 @@ async function apiFetch<T>(url: string, init: RequestInit): Promise<T> {
 
 /**
  * Typed client-side wrappers for server API routes.
- * Progressively replaces direct Supabase calls for write operations.
+ *
+ * Money mutations (orders, payments, refunds, discounts, stock) require a
+ * `client_request_id` (UUID v4). Hooks generate the id once per logical
+ * user action in `onMutate` so React Query retries reuse it; the server's
+ * `(tenant_id, client_request_id)` partial-unique index turns a retried
+ * POST into a no-op that returns the original row instead of a duplicate
+ * commit. See `apps/staff-web/src/lib/api/dedupe.ts` for the server side.
  */
 export const apiRoutes = {
   orders: {
-    create: (data: OrderInsert) =>
+    create: (data: OrderInsert & { client_request_id: string }) =>
       apiFetch<{ order: OrderRow }>('/api/v1/orders', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -57,7 +63,7 @@ export const apiRoutes = {
         discount_value: number;
         discount_reason?: string | null;
         discount_applied_by: string;
-        client_request_id?: string;
+        client_request_id: string;
       },
     ) =>
       apiFetch<{ success: true; deduped?: boolean }>(`/api/v1/orders/${orderId}/discount`, {
@@ -67,7 +73,10 @@ export const apiRoutes = {
   },
 
   payments: {
-    create: (orderId: string, data: Omit<OrderPaymentInsert, 'order_id'>) =>
+    create: (
+      orderId: string,
+      data: Omit<OrderPaymentInsert, 'order_id'> & { client_request_id: string },
+    ) =>
       apiFetch<{ payment: Record<string, unknown> }>(`/api/v1/orders/${orderId}/payments`, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -84,6 +93,7 @@ export const apiRoutes = {
         processed_by: string;
         order_item_ids?: string[] | null;
         notes?: string | null;
+        client_request_id: string;
       },
     ) =>
       apiFetch<{ refund: Record<string, unknown> }>(`/api/v1/orders/${orderId}/refunds`, {
@@ -100,6 +110,7 @@ export const apiRoutes = {
         quantity_change: number;
         reason: string;
         performed_by: string;
+        client_request_id: string;
       },
     ) =>
       apiFetch<{ stockItem: Record<string, unknown> }>(`/api/v1/stock/${stockItemId}/adjust`, {

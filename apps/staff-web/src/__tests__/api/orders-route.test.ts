@@ -51,6 +51,8 @@ beforeEach(() => {
   });
 });
 
+const CRID = '33333333-3333-4333-8333-333333333333';
+
 describe('POST /api/v1/orders — totals are stripped (C2)', () => {
   it('strips subtotal/tax/total from a takeout payload before reaching the service', async () => {
     // Attacker-shaped body: real items would be added later but the order
@@ -64,6 +66,7 @@ describe('POST /api/v1/orders — totals are stripped (C2)', () => {
         subtotal: 0.01,
         tax: 0,
         total: 0.01,
+        client_request_id: CRID,
       }),
     );
 
@@ -83,6 +86,7 @@ describe('POST /api/v1/orders — totals are stripped (C2)', () => {
       buildRequest({
         order_type: 'dine_in',
         table_id: '22222222-2222-4222-8222-222222222222',
+        client_request_id: CRID,
       }),
     );
 
@@ -94,5 +98,23 @@ describe('POST /api/v1/orders — totals are stripped (C2)', () => {
     expect(callArg.orderData).not.toHaveProperty('subtotal');
     expect(callArg.orderData).not.toHaveProperty('tax');
     expect(callArg.orderData).not.toHaveProperty('total');
+  });
+
+  it('rejects with 400 when client_request_id is missing (Blocker 1)', async () => {
+    const res = await POST(
+      buildRequest({
+        order_type: 'dine_in',
+        table_id: '22222222-2222-4222-8222-222222222222',
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(createOrderMock).not.toHaveBeenCalled();
+    const body = (await res.json()) as {
+      error: string;
+      details?: { fieldErrors?: Record<string, string[]> };
+    };
+    expect(body.error).toBe('Validation failed');
+    expect(body.details?.fieldErrors?.client_request_id).toBeDefined();
   });
 });

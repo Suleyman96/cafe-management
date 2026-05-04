@@ -1,3 +1,4 @@
+import { ValidationError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -17,8 +18,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  *  2. Otherwise, run `create()` (the full service body, side effects + insert).
  *  3. On `23505` (a concurrent replay landed first), re-lookup and return.
  *
- * Skip the helper (call `create()` directly) when no `client_request_id`
- * is present — server-originated and legacy callers don't get dedupe.
+ * Mandatory key (Blocker 1, pre-release audit): a missing
+ * `clientRequestId` raises `ValidationError` so the route returns a typed
+ * 400 instead of silently bypassing dedupe. Route Zod schemas enforce the
+ * same constraint at the edge — this throw is defense-in-depth for any
+ * future internal caller that might bypass the route layer.
  */
 
 const PG_UNIQUE_VIOLATION = '23505';
@@ -46,7 +50,11 @@ export async function findOrCreateByClientRequestId<TRow>(
   const { table, tenantId, clientRequestId, selectShape, create } = args;
 
   if (!clientRequestId) {
-    return { row: await create(), deduped: false };
+    throw new ValidationError('client_request_id is required', {
+      fieldErrors: {
+        client_request_id: 'A UUID v4 client_request_id is required for this mutation',
+      },
+    });
   }
 
   const { data: existing, error: lookupError } = await client

@@ -38,7 +38,10 @@ export const OrderCreateInputSchema = z.object({
   // derived server-side. The order is inserted with zeros and the
   // `recalculate_on_item_insert` trigger on `order_items` rewrites them
   // when items land. Anything a client sends in these fields is ignored.
-  client_request_id: z.string().uuid().optional(),
+  // Required (Blocker 1, pre-release audit): every order create must
+  // carry a UUID v4 idempotency key so a retried POST hits the server
+  // dedupe path instead of producing duplicate kitchen tickets.
+  client_request_id: z.string().uuid(),
 });
 
 export type OrderCreateInput = z.infer<typeof OrderCreateInputSchema>;
@@ -54,7 +57,9 @@ export const OrderPaymentCreateInputSchema = z.object({
   received_by: z.string().optional(),
   order_item_ids: z.array(z.string().uuid()).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
-  client_request_id: z.string().uuid().optional(),
+  // Required (Blocker 1): payments are the highest-risk replay path —
+  // a missing key would let a network-retried POST double-charge.
+  client_request_id: z.string().uuid(),
 });
 
 export type OrderPaymentCreateInput = z.infer<typeof OrderPaymentCreateInputSchema>;
@@ -68,7 +73,9 @@ export const StockAdjustInputSchema = z
     quantity: z.number().refine((v) => v !== 0, { message: 'Quantity change must be non-zero' }),
     reason: z.string().max(255).optional(),
     performedBy: z.string().optional(),
-    clientRequestId: z.string().uuid().optional(),
+    // Required (Blocker 1): stock movements must dedupe on replay so a
+    // retried adjustment doesn't double-deduct inventory.
+    clientRequestId: z.string().uuid(),
   })
   .superRefine((val, ctx) => {
     if (val.type === 'in' && val.quantity < 0) {

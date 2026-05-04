@@ -1,4 +1,4 @@
-import { QUERY_KEYS } from '@gustri/queries';
+import { getOrCreateClientRequestId, QUERY_KEYS } from '@gustri/queries';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
@@ -72,22 +72,30 @@ export function useDeliveryOrder(orderId: string, accessToken?: string) {
   return query;
 }
 
+type CreateDeliveryOrderVariables = {
+  customerName: string;
+  customerPhone: string;
+  deliveryAddress: string;
+  deliveryNotes: string;
+  deliveryFee: number;
+  orderNotes?: string;
+  qrToken: string;
+  client_request_id?: string;
+};
+
 export function useCreateDeliveryOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: {
-      customerName: string;
-      customerPhone: string;
-      deliveryAddress: string;
-      deliveryNotes: string;
-      deliveryFee: number;
-      orderNotes?: string;
-      qrToken: string;
-    }): Promise<Order> => {
+    // `retry: 0` so a network blip doesn't post a duplicate delivery order.
+    retry: 0,
+    onMutate: (variables: CreateDeliveryOrderVariables) => {
+      variables.client_request_id = getOrCreateClientRequestId(variables.client_request_id);
+    },
+    mutationFn: async (data: CreateDeliveryOrderVariables): Promise<Order> => {
       // Tenant is derived server-side from `qr_token` (C1) — no
-      // `tenant_id` in the body. The token is the bearer secret printed
-      // on the cafe's delivery QR / shared link.
+      // `tenant_id` in the body. `client_request_id` is required by the
+      // server schema (Blocker 1).
       const { order } = await apiRoutes.customerOrders.create({
         order_type: 'delivery',
         qr_token: data.qrToken,
@@ -97,6 +105,7 @@ export function useCreateDeliveryOrder() {
         delivery_phone: data.customerPhone,
         delivery_customer_name: data.customerName,
         delivery_fee: data.deliveryFee,
+        client_request_id: getOrCreateClientRequestId(data.client_request_id),
       });
       return order as Order;
     },
@@ -106,31 +115,41 @@ export function useCreateDeliveryOrder() {
   });
 }
 
+type AddDeliveryOrderItemsVariables = {
+  orderId: string;
+  items: Array<{
+    menu_item_id: string;
+    item_name: string;
+    item_price: number;
+    quantity: number;
+    notes?: string;
+    client_request_id?: string;
+  }>;
+  tenantId: string;
+};
+
 export function useAddDeliveryOrderItems() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    retry: 0,
+    onMutate: (variables: AddDeliveryOrderItemsVariables) => {
+      for (const item of variables.items) {
+        item.client_request_id = getOrCreateClientRequestId(item.client_request_id);
+      }
+    },
     mutationFn: async ({
       orderId,
       items,
       tenantId,
-    }: {
-      orderId: string;
-      items: Array<{
-        menu_item_id: string;
-        item_name: string;
-        item_price: number;
-        quantity: number;
-        notes?: string;
-      }>;
-      tenantId: string;
-    }): Promise<OrderItem[]> => {
+    }: AddDeliveryOrderItemsVariables): Promise<OrderItem[]> => {
       const { items: createdItems } = await apiRoutes.customerOrders.addItems(
         orderId,
         items.map((item) => ({
           ...item,
           notes: item.notes ?? null,
           tenant_id: tenantId,
+          client_request_id: getOrCreateClientRequestId(item.client_request_id),
         })),
       );
       return createdItems as OrderItem[];

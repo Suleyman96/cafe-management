@@ -84,6 +84,7 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
       tables: [{ data: { id: TABLE, tenant_id: TENANT }, error: null }],
       tenants: [{ data: { plan: 'pro' }, error: null }],
       orders: [
+        { data: null, error: null }, // dedupe lookup → no replay
         { data: null, error: null, count: 0 } as QueuedResponse, // monthly-count check
         { data: fresh, error: null }, // insert
       ],
@@ -93,6 +94,7 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
       orderData: {
         order_type: 'dine_in',
         table_id: TABLE,
+        client_request_id: CRID,
       },
     });
 
@@ -109,6 +111,7 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
         orderData: {
           order_type: 'dine_in',
           table_id: '99999999-9999-4999-8999-999999999999',
+          client_request_id: CRID,
         },
       }),
     ).rejects.toBeInstanceOf(NotFoundError);
@@ -126,6 +129,7 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
         orderData: {
           order_type: 'takeout',
           qr_token: 'does-not-exist',
+          client_request_id: CRID,
         },
       }),
     ).rejects.toBeInstanceOf(ValidationError);
@@ -152,6 +156,7 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
         orderData: {
           order_type: 'takeout',
           qr_token: QR_TOKEN_REVOKED,
+          client_request_id: CRID,
         },
       }),
     ).rejects.toBeInstanceOf(ValidationError);
@@ -178,6 +183,7 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
         orderData: {
           order_type: 'takeout',
           qr_token: QR_TOKEN_EXPIRED,
+          client_request_id: CRID,
         },
       }),
     ).rejects.toBeInstanceOf(ValidationError);
@@ -205,6 +211,7 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
         orderData: {
           order_type: 'takeout',
           qr_token: QR_TOKEN_VALID,
+          client_request_id: CRID,
         },
       }),
     ).rejects.toBeInstanceOf(ValidationError);
@@ -227,6 +234,7 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
       ],
       tenants: [{ data: { plan: 'pro' }, error: null }],
       orders: [
+        { data: null, error: null }, // dedupe lookup → no replay
         { data: null, error: null, count: 0 } as QueuedResponse,
         { data: fresh, error: null },
       ],
@@ -236,6 +244,7 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
       orderData: {
         order_type: 'takeout',
         qr_token: QR_TOKEN_VALID,
+        client_request_id: CRID,
       },
     });
 
@@ -263,6 +272,7 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
       ],
       tenants: [{ data: { plan: 'pro' }, error: null }],
       orders: [
+        { data: null, error: null }, // dedupe lookup → no replay
         { data: null, error: null, count: 0 } as QueuedResponse,
         { data: fresh, error: null },
       ],
@@ -274,6 +284,7 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
         qr_token: QR_TOKEN_VALID,
         delivery_address: '1 Main St',
         delivery_phone: '+15551234567',
+        client_request_id: CRID,
       },
     });
 
@@ -398,12 +409,11 @@ describe('addCustomerOrderItems — dedupe', () => {
   });
 });
 
-// Defensive: a smoke test to make sure the service stays unfrozen when no
-// dedupe id is supplied (legacy/server-originated callers). This is the
-// same contract the wrapper variants honor.
-describe('createCustomerOrder — no dedupe id', () => {
-  it('runs the insert path directly', async () => {
-    const fresh = { id: 'order-fresh-2', tenant_id: TENANT };
+// Blocker 1: customer-facing routes also enforce client_request_id. The
+// service must reject a missing key with ValidationError so the route
+// returns a typed 400 instead of bypassing dedupe.
+describe('createCustomerOrder — client_request_id is required', () => {
+  it('rejects with ValidationError when no client_request_id is supplied', async () => {
     const client = buildClient({
       qr_tokens: [
         {
@@ -417,43 +427,40 @@ describe('createCustomerOrder — no dedupe id', () => {
           error: null,
         },
       ],
-      orders: [
-        { data: null, error: null, count: 0 } as QueuedResponse, // monthly-count check
-        { data: fresh, error: null }, // insert
-      ],
-      tenants: [{ data: { plan: 'standard' }, error: null }],
-    });
-
-    const result = await createCustomerOrder(client, {
-      orderData: {
-        order_type: 'takeout',
-        qr_token: QR_TOKEN_VALID,
-      },
-    });
-    expect(result.order).toEqual(fresh);
-    expect(result.deduped).toBe(false);
-  });
-
-  it('rejects free-tier customer orders with plan_required (QR ordering off)', async () => {
-    const client = buildClient({
-      qr_tokens: [
-        {
-          data: {
-            tenant_id: TENANT,
-            table_id: null,
-            kind: 'takeout',
-            expires_at: null,
-            revoked_at: null,
-          },
-          error: null,
-        },
-      ],
-      tenants: [{ data: { plan: 'free' }, error: null }],
     });
 
     await expect(
       createCustomerOrder(client, {
         orderData: { order_type: 'takeout', qr_token: QR_TOKEN_VALID },
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('plan-gating still runs once a key is supplied', async () => {
+    const client = buildClient({
+      qr_tokens: [
+        {
+          data: {
+            tenant_id: TENANT,
+            table_id: null,
+            kind: 'takeout',
+            expires_at: null,
+            revoked_at: null,
+          },
+          error: null,
+        },
+      ],
+      orders: [{ data: null, error: null }], // dedupe lookup → no replay
+      tenants: [{ data: { plan: 'free' }, error: null }],
+    });
+
+    await expect(
+      createCustomerOrder(client, {
+        orderData: {
+          order_type: 'takeout',
+          qr_token: QR_TOKEN_VALID,
+          client_request_id: CRID,
+        },
       }),
     ).rejects.toThrow(/plan_required/);
   });

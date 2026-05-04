@@ -37,6 +37,7 @@ const { POST } = await import('@/app/api/v1/orders/[id]/discount/route');
 const TENANT = '11111111-1111-4111-8111-111111111111';
 const ORDER_ID = '22222222-2222-4222-8222-222222222222';
 const STAFF_ID = '33333333-3333-4333-8333-333333333333';
+const CRID = '44444444-4444-4444-8444-444444444444';
 
 function buildRequest(body: Record<string, unknown>): NextRequest {
   return {
@@ -110,6 +111,7 @@ describe('POST /api/v1/orders/[id]/discount — admin-only authz', () => {
         discount_value: 10,
         discount_reason: 'birthday',
         discount_applied_by: STAFF_ID,
+        client_request_id: CRID,
       }),
       { params },
     );
@@ -120,6 +122,7 @@ describe('POST /api/v1/orders/[id]/discount — admin-only authz', () => {
     expect(call.tenantId).toBe(TENANT);
     expect(call.discountType).toBe('percentage');
     expect(call.discountValue).toBe(10);
+    expect(call.clientRequestId).toBe(CRID);
     // The service no longer accepts callerRole — the route must not forward it.
     expect(call).not.toHaveProperty('callerRole');
   });
@@ -139,6 +142,7 @@ describe('POST /api/v1/orders/[id]/discount — admin-only authz', () => {
         discount_value: 150,
         discount_reason: 'over the top',
         discount_applied_by: STAFF_ID,
+        client_request_id: CRID,
       }),
       { params },
     );

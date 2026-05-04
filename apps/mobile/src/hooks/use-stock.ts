@@ -100,7 +100,10 @@ export function useAdjustStock() {
         quantity_change: input.quantity,
         reason: input.reason ?? '',
         performed_by: input.performedBy ?? '',
-        client_request_id: input.clientRequestId,
+        // Schema is `required` post-Blocker-1; `validateOrThrow` above
+        // would have rejected an unstamped input. Kept as a stamp here
+        // for defense in depth in case the validate step is ever removed.
+        client_request_id: getOrCreateClientRequestId(input.clientRequestId),
       });
     },
     onSuccess: () => {

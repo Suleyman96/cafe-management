@@ -65,6 +65,17 @@ export async function applyDiscount(supabaseAdmin: SupabaseClient, params: Apply
     params;
   let { discountValue } = params;
 
+  // Blocker 1: discounts must carry a client_request_id. The route schema
+  // rejects missing keys at the edge; this throw is defense-in-depth for
+  // any future internal caller that bypasses the route.
+  if (!clientRequestId) {
+    throw new ValidationError('client_request_id is required', {
+      fieldErrors: {
+        client_request_id: 'A UUID v4 client_request_id is required for this mutation',
+      },
+    });
+  }
+
   // Replay short-circuit: if a prior call with the same client_request_id
   // already wrote a `discount_applied` audit row, the discount UPDATE has
   // already run (or, since the UPDATE is idempotent on absolute values, is

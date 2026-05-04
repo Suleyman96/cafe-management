@@ -11,6 +11,14 @@ import { apiRoutes } from '@/lib/api-routes';
 import { hapticSuccess } from '@/lib/haptics';
 import { getOrCreateClientRequestId } from '@/lib/idempotency';
 
+// Callers don't need to pre-stamp `client_request_id` — the hook does it
+// in `onMutate` so React Query retries reuse the same id. The schema
+// (and server route) require the field, but accepting it as optional at
+// the hook boundary keeps screens free of idempotency boilerplate.
+type CreatePaymentInput = Omit<OrderPaymentCreateInput, 'client_request_id'> & {
+  client_request_id?: string;
+};
+
 export function useCreatePayment() {
   const tenantId = useTenantId();
   const queryClient = useQueryClient();
@@ -27,13 +35,17 @@ export function useCreatePayment() {
     // double-charging.
     networkMode: 'always',
     retry: 0,
-    onMutate: (input: OrderPaymentCreateInput) => {
+    onMutate: (input: CreatePaymentInput) => {
       input.client_request_id = getOrCreateClientRequestId(input.client_request_id);
     },
-    mutationFn: async (input: OrderPaymentCreateInput) => {
+    mutationFn: async (input: CreatePaymentInput) => {
+      const stamped = {
+        ...input,
+        client_request_id: getOrCreateClientRequestId(input.client_request_id),
+      };
       const payment = validateOrThrow(
         OrderPaymentCreateInputSchema,
-        input,
+        stamped,
         'Invalid payment payload',
       );
       const { payment: created } = await apiRoutes.payments.create(payment.order_id, {

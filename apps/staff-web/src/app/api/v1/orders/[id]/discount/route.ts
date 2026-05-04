@@ -15,7 +15,9 @@ const ApplyDiscountSchema = z.object({
   discount_value: z.number().min(0),
   discount_reason: z.string().optional().nullable(),
   discount_applied_by: z.string().uuid(),
-  client_request_id: z.string().uuid().optional(),
+  // Required (Blocker 1): discount apply writes a financial_audit_log row
+  // and must dedupe on replay so retries don't double-stamp the comp.
+  client_request_id: z.string().uuid(),
 });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

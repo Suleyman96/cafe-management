@@ -16,7 +16,10 @@ const CreateRefundSchema = z.object({
   processed_by: z.string().uuid(),
   order_item_ids: z.array(z.string().uuid()).optional().nullable(),
   notes: z.string().optional().nullable(),
-  client_request_id: z.string().uuid().optional(),
+  // Required (Blocker 1): refunds must dedupe on retry. The trigger-based
+  // balance check already serializes correctly, but without a key a
+  // dropped-response replay would issue a second refund row.
+  client_request_id: z.string().uuid(),
 });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

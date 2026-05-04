@@ -26,12 +26,19 @@ describe('useApplyDiscount', () => {
 
     await result.current.mutateAsync(params);
 
-    expect(apiRoutes.discounts.apply).toHaveBeenCalledWith('order-1', {
-      discount_type: 'percentage',
-      discount_value: 10,
-      discount_reason: 'loyal customer',
-      discount_applied_by: 'staff-1',
-    });
+    expect(apiRoutes.discounts.apply).toHaveBeenCalledWith(
+      'order-1',
+      expect.objectContaining({
+        discount_type: 'percentage',
+        discount_value: 10,
+        discount_reason: 'loyal customer',
+        discount_applied_by: 'staff-1',
+        // Hook stamps a UUID v4 on the variables (Blocker 1).
+        client_request_id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        ),
+      }),
+    );
   });
 
   it('invalidates orders, order, AND remaining balance queries on success', async () => {
@@ -74,11 +81,17 @@ describe('useApplyDiscount', () => {
       discount_applied_by: 'staff-1',
     });
 
-    expect(apiRoutes.discounts.apply).toHaveBeenCalledWith('order-1', {
-      discount_type: 'none',
-      discount_value: 0,
-      discount_reason: undefined,
-      discount_applied_by: 'staff-1',
-    });
+    expect(apiRoutes.discounts.apply).toHaveBeenCalledWith(
+      'order-1',
+      expect.objectContaining({
+        discount_type: 'none',
+        discount_value: 0,
+        discount_reason: undefined,
+        discount_applied_by: 'staff-1',
+        client_request_id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        ),
+      }),
+    );
   });
 });

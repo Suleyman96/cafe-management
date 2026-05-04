@@ -19,7 +19,9 @@ const CreatePaymentSchema = z.object({
   tip_amount: z.number().min(0).optional().default(0),
   notes: z.string().optional().nullable(),
   item_ids: z.array(z.string().uuid()).optional().nullable(),
-  client_request_id: z.string().uuid().optional(),
+  // Required (Blocker 1): payment routes are the highest-risk replay path.
+  // A missing key forces a 400 instead of a duplicate charge.
+  client_request_id: z.string().uuid(),
 });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

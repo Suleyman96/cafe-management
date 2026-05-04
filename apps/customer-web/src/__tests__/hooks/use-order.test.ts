@@ -122,23 +122,30 @@ describe('useAddOrderItems', () => {
       ],
     });
 
+    // Hook stamps a per-item `client_request_id` (Blocker 1) so React
+    // Query retries dedupe against the partial-unique index.
+    const uuidV4 = expect.stringMatching(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
     expect(apiRoutes.customerOrders.addItems).toHaveBeenCalledWith('order-1', [
-      {
+      expect.objectContaining({
         menu_item_id: 'm1',
         item_name: 'Coffee',
         item_price: 5,
         quantity: 1,
         notes: null,
         tenant_id: 'tenant-1',
-      },
-      {
+        client_request_id: uuidV4,
+      }),
+      expect.objectContaining({
         menu_item_id: 'm2',
         item_name: 'Tea',
         item_price: 3,
         quantity: 2,
         notes: 'Hot',
         tenant_id: 'tenant-1',
-      },
+        client_request_id: uuidV4,
+      }),
     ]);
   });
 

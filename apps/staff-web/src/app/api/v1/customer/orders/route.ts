@@ -19,7 +19,11 @@ export const dynamic = 'force-dynamic';
 const BaseFields = {
   source: z.string().optional(),
   customer_notes: z.string().optional().nullable(),
-  client_request_id: z.string().uuid().optional(),
+  // Required (Blocker 1): a customer tapping "place order" twice on a
+  // flaky connection can otherwise post duplicate kitchen tickets. The
+  // customer-web wrapper stamps a fresh UUID per mutation lifecycle so
+  // React Query retries reuse it.
+  client_request_id: z.string().uuid(),
 } as const;
 
 const DineInSchema = z.object({

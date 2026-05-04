@@ -102,12 +102,13 @@ describe('POST /api/v1/customer/orders — schema gate (C1)', () => {
 
     // Attacker-shaped body: includes `tenant_id` alongside the legitimate
     // `qr_token`. The schema strips unknown keys — the service receives
-    // only the union members.
+    // only the union members. `client_request_id` is now required (Blocker 1).
     const res = await POST(
       buildRequest({
         order_type: 'takeout',
         qr_token: 'tkn_legit',
         tenant_id: '99999999-9999-4999-8999-999999999999',
+        client_request_id: '55555555-5555-4555-8555-555555555555',
       }),
     );
 
@@ -118,5 +119,18 @@ describe('POST /api/v1/customer/orders — schema gate (C1)', () => {
     };
     expect(callArg.orderData).not.toHaveProperty('tenant_id');
     expect(callArg.orderData.qr_token).toBe('tkn_legit');
+    expect(callArg.orderData.client_request_id).toBe('55555555-5555-4555-8555-555555555555');
+  });
+
+  it('rejects a valid-looking takeout payload that omits client_request_id (Blocker 1)', async () => {
+    const res = await POST(
+      buildRequest({
+        order_type: 'takeout',
+        qr_token: 'tkn_legit',
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(createCustomerOrderMock).not.toHaveBeenCalled();
   });
 });

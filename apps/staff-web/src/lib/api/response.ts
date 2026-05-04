@@ -9,8 +9,13 @@ export function jsonOk<T>(data: T, status = 200) {
   return NextResponse.json(data, { status });
 }
 
-export function jsonError(message: string, status = 400) {
-  return NextResponse.json({ error: message }, { status });
+/**
+ * Generic error response. Pass `details` to surface structured field-level
+ * errors (e.g. Zod's flattened fieldErrors) so clients can detect specific
+ * conditions like a missing `client_request_id`.
+ */
+export function jsonError(message: string, status = 400, details?: Record<string, unknown>) {
+  return NextResponse.json(details ? { error: message, details } : { error: message }, { status });
 }
 
 export function jsonRateLimited(resetAt: number) {

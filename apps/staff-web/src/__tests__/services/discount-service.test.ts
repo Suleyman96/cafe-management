@@ -22,6 +22,7 @@ import { applyDiscount } from '@/lib/services/discount-service';
 const TENANT = '11111111-1111-4111-8111-111111111111';
 const ORDER_ID = '22222222-2222-4222-8222-222222222222';
 const STAFF_ID = '33333333-3333-4333-8333-333333333333';
+const CRID = '99999999-9999-4999-8999-999999999999';
 
 interface QueuedResponse {
   data: unknown;
@@ -89,6 +90,8 @@ function buildClient(plan: Record<string, QueuedResponse[]>) {
 describe('applyDiscount — clamps value to 0 when type is "none"', () => {
   it('persists discount_value === 0 even when caller sent a negative value', async () => {
     const client = buildClient({
+      // dedupe-lookup miss — clientRequestId is now required
+      financial_audit_log: [{ data: null, error: null }],
       orders: [
         // 1) tenant verification SELECT
         { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
@@ -117,6 +120,7 @@ describe('applyDiscount — clamps value to 0 when type is "none"', () => {
       discountReason: null,
       discountAppliedBy: STAFF_ID,
       tenantId: TENANT,
+      clientRequestId: CRID,
     });
 
     const updates = (client as unknown as { __updates: CapturedUpdate[] }).__updates;
@@ -130,6 +134,7 @@ describe('applyDiscount — clamps value to 0 when type is "none"', () => {
     // A clear-discount call that accidentally carries the previous value
     // must still write 0 — guards against stale-state UI bugs.
     const client = buildClient({
+      financial_audit_log: [{ data: null, error: null }], // dedupe lookup miss
       orders: [
         { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
         { data: null, error: null },
@@ -155,6 +160,7 @@ describe('applyDiscount — clamps value to 0 when type is "none"', () => {
       discountReason: null,
       discountAppliedBy: STAFF_ID,
       tenantId: TENANT,
+      clientRequestId: CRID,
     });
 
     const updates = (client as unknown as { __updates: CapturedUpdate[] }).__updates;
@@ -165,9 +171,10 @@ describe('applyDiscount — clamps value to 0 when type is "none"', () => {
 
 describe('applyDiscount — large-discount reason requirement', () => {
   it('rejects when fraction >= DISCOUNT_AUDIT_THRESHOLD and reason is empty', async () => {
-    // Only the tenant-verification SELECT is needed — the service should throw
-    // before issuing the UPDATE.
+    // Only the dedupe lookup + tenant-verification SELECT are needed —
+    // the service throws before issuing the UPDATE.
     const client = buildClient({
+      financial_audit_log: [{ data: null, error: null }],
       orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
     });
 
@@ -180,6 +187,7 @@ describe('applyDiscount — large-discount reason requirement', () => {
         discountReason: '',
         discountAppliedBy: STAFF_ID,
         tenantId: TENANT,
+        clientRequestId: CRID,
       });
     } catch (err) {
       caught = err;
@@ -200,6 +208,7 @@ describe('applyDiscount — large-discount reason requirement', () => {
 
   it('rejects when reason is shorter than 5 characters (after trim)', async () => {
     const client = buildClient({
+      financial_audit_log: [{ data: null, error: null }],
       orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
     });
 
@@ -211,12 +220,17 @@ describe('applyDiscount — large-discount reason requirement', () => {
         discountReason: '   ok ', // trims to 'ok' (2 chars)
         discountAppliedBy: STAFF_ID,
         tenantId: TENANT,
+        clientRequestId: CRID,
       }),
     ).rejects.toBeInstanceOf(ValidationError);
   });
 
   it('accepts a large discount when a sufficient reason is provided', async () => {
     const client = buildClient({
+      financial_audit_log: [
+        { data: null, error: null }, // dedupe lookup miss
+        { data: null, error: null }, // audit INSERT
+      ],
       orders: [
         // 1) tenant verification SELECT
         { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
@@ -245,6 +259,7 @@ describe('applyDiscount — large-discount reason requirement', () => {
       discountReason: 'Customer complaint - cold food',
       discountAppliedBy: STAFF_ID,
       tenantId: TENANT,
+      clientRequestId: CRID,
     });
 
     expect(result.order).toMatchObject({
@@ -339,6 +354,7 @@ describe('applyDiscount — large-discount reason requirement', () => {
         },
       ],
       financial_audit_log: [
+        { data: null, error: null }, // dedupe lookup miss
         // INSERT fails with a non-23505 error.
         { data: null, error: { code: '42501', message: 'permission denied' } },
       ],
@@ -351,6 +367,7 @@ describe('applyDiscount — large-discount reason requirement', () => {
       discountReason: null,
       discountAppliedBy: STAFF_ID,
       tenantId: TENANT,
+      clientRequestId: CRID,
     });
 
     expect(result.deduped).toBe(false);
@@ -365,6 +382,10 @@ describe('applyDiscount — large-discount reason requirement', () => {
 
   it('does not require a reason when fraction is below the threshold', async () => {
     const client = buildClient({
+      financial_audit_log: [
+        { data: null, error: null }, // dedupe lookup miss
+        { data: null, error: null }, // audit INSERT success
+      ],
       orders: [
         { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
         { data: null, error: null },
@@ -391,7 +412,24 @@ describe('applyDiscount — large-discount reason requirement', () => {
         discountReason: null,
         discountAppliedBy: STAFF_ID,
         tenantId: TENANT,
+        clientRequestId: CRID,
       }),
     ).resolves.toBeDefined();
+  });
+
+  // Blocker 1: defense-in-depth assertion at the service layer.
+  it('rejects with ValidationError when no clientRequestId is supplied', async () => {
+    const client = buildClient({});
+
+    await expect(
+      applyDiscount(client, {
+        orderId: ORDER_ID,
+        discountType: 'percentage',
+        discountValue: 10,
+        discountReason: null,
+        discountAppliedBy: STAFF_ID,
+        tenantId: TENANT,
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
   });
 });

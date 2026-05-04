@@ -25,7 +25,11 @@ const CreateOrderSchema = z.object({
   delivery_fee: z.number().optional().nullable(),
   delivery_customer_id: z.string().uuid().optional().nullable(),
   status: z.string().optional(),
-  client_request_id: z.string().uuid().optional(),
+  // Required (Blocker 1): every order create must carry a UUID v4 so a
+  // network-retried POST hits the (tenant_id, client_request_id) dedupe
+  // path instead of producing a duplicate ticket. Hooks generate the id
+  // in `onMutate` so React Query retries reuse it.
+  client_request_id: z.string().uuid(),
 });
 
 // `subtotal`, `tax`, `total` are intentionally NOT in the schema. Totals are

@@ -165,9 +165,26 @@ export function useCreateOrder() {
   const tenantId = useTenantId();
 
   return useMutation({
+    // `retry: 0` — order create is multi-table-transaction-heavy on the
+    // server (plan check + insert + trigger fan-out). User-driven retries
+    // reuse the same client_request_id (stamped below) so the server
+    // dedupes via the (tenant_id, client_request_id) unique index.
+    retry: 0,
+    onMutate: (orderData: OrderInsert) => {
+      orderData.client_request_id = getOrCreateClientRequestId(orderData.client_request_id);
+    },
     mutationFn: async (orderData: OrderInsert) => {
-      // Plan limit is now enforced server-side in the API route
-      const { order } = await apiRoutes.orders.create(orderData);
+      // Plan limit is enforced server-side in the API route.
+      // `client_request_id` is required by the route schema (Blocker 1).
+      // `onMutate` above stamped the field; mint here too as a safety net
+      // for unit tests that bypass `onMutate`. `getOrCreateClientRequestId`
+      // is idempotent on a populated value so this is a no-op in the
+      // hot path.
+      const clientRequestId = getOrCreateClientRequestId(orderData.client_request_id);
+      const { order } = await apiRoutes.orders.create({
+        ...orderData,
+        client_request_id: clientRequestId,
+      });
       return order;
     },
     onSuccess: (createdOrder) => {

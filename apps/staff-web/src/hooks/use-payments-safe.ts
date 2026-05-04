@@ -5,6 +5,7 @@
 
 import type { Database } from '@gustri/database';
 import {
+  getOrCreateClientRequestId,
   QUERY_KEYS,
   tenantKey,
   useOrderPayments as useOrderPaymentsShared,
@@ -14,7 +15,9 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
 
-type PaymentInsert = Database['public']['Tables']['order_payments']['Insert'];
+type PaymentInsert = Database['public']['Tables']['order_payments']['Insert'] & {
+  client_request_id?: string;
+};
 type Payment = Database['public']['Tables']['order_payments']['Row'];
 
 // Re-export shared read hooks
@@ -26,10 +29,23 @@ export function useCreatePayment() {
   const tenantId = useTenantId();
 
   return useMutation({
+    // Payments are the highest-risk replay path — `retry: 0` keeps an
+    // automatic React Query retry from double-charging. A user-driven
+    // retry reuses the same `client_request_id` (stamped onto variables
+    // by `onMutate` below) so the server dedupes via the
+    // `(tenant_id, client_request_id)` unique index.
+    retry: 0,
+    onMutate: (payment: PaymentInsert) => {
+      payment.client_request_id = getOrCreateClientRequestId(payment.client_request_id);
+    },
     mutationFn: (payment: PaymentInsert) => {
-      const { order_id, ...rest } = payment;
-      // Balance validation is now enforced server-side in the API route
-      return apiRoutes.payments.create(order_id, rest);
+      const { order_id, client_request_id, ...rest } = payment;
+      // Balance validation is enforced server-side in the API route.
+      // `client_request_id` is required by the route schema (Blocker 1).
+      return apiRoutes.payments.create(order_id, {
+        ...rest,
+        client_request_id: client_request_id as string,
+      });
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({

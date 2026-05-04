@@ -13,6 +13,7 @@
  * the only side effect that must run at most once.
  */
 
+import { ValidationError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyDiscount } from '@/lib/services/discount-service';
@@ -163,41 +164,25 @@ describe('discount-service — dedupe via financial_audit_log.client_request_id'
     expect(inserts.find((i) => i.table === 'financial_audit_log')).toBeUndefined();
   });
 
-  it('omitting client_request_id skips the lookup and runs the full apply path', async () => {
-    const { client, inserts } = buildClient({
-      orders: [
-        { data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null },
-        { data: null, error: null },
-        {
-          data: {
-            id: ORDER_ID,
-            subtotal: 100,
-            tax: 18,
-            total: 108,
-            discount_type: 'percentage',
-            discount_value: 10,
-            discount_amount: 10,
-          },
-          error: null,
-        },
-      ],
-      financial_audit_log: [{ data: null, error: null }],
+  it('omitting client_request_id rejects with ValidationError (Blocker 1)', async () => {
+    // Pre-Blocker-1 the service quietly skipped dedupe when no key was
+    // supplied. Now the call MUST carry a key — discounts are
+    // financial-audit-log-anchored and a missing key is a programmer
+    // error, not a fallback. The route schema also rejects, but we keep
+    // a unit assertion at the service layer for defense-in-depth.
+    const { client } = buildClient({
+      orders: [{ data: { id: ORDER_ID, subtotal: 100, tenant_id: TENANT }, error: null }],
     });
 
-    const result = await applyDiscount(client, {
-      orderId: ORDER_ID,
-      discountType: 'percentage',
-      discountValue: 10,
-      discountReason: null,
-      discountAppliedBy: STAFF_ID,
-      tenantId: TENANT,
-    });
-
-    expect(result.deduped).toBe(false);
-    const auditInsert = inserts.find((i) => i.table === 'financial_audit_log');
-    expect(auditInsert).toBeDefined();
-    const details = auditInsert!.payload.details as Record<string, unknown>;
-    // Without an incoming client_request_id, the audit row stays clean.
-    expect(details.client_request_id).toBeUndefined();
+    await expect(
+      applyDiscount(client, {
+        orderId: ORDER_ID,
+        discountType: 'percentage',
+        discountValue: 10,
+        discountReason: null,
+        discountAppliedBy: STAFF_ID,
+        tenantId: TENANT,
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
   });
 });

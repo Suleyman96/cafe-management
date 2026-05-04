@@ -15,7 +15,9 @@ const AdjustStockSchema = z.object({
   quantity_change: z.number().positive(),
   reason: z.string().optional(),
   performed_by: z.string().optional(),
-  client_request_id: z.string().uuid().optional(),
+  // Required (Blocker 1): stock adjustments mutate inventory and must
+  // dedupe on replay so a retry doesn't double-deduct the count.
+  client_request_id: z.string().uuid(),
 });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

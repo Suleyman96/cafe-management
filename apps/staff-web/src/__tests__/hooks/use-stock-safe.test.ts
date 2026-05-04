@@ -137,11 +137,18 @@ describe('useAdjustStock', () => {
     const { result } = renderHookWithProviders(() => useAdjustStock());
     const data = { id: 'si1', data: { type: 'in' as const, quantity: 10, reason: 'restock' } };
     await result.current.mutateAsync(data);
-    expect(apiRoutes.stock.adjust).toHaveBeenCalledWith('si1', {
-      movement_type: 'in',
-      quantity_change: 10,
-      reason: 'restock',
-      performed_by: '',
-    });
+    expect(apiRoutes.stock.adjust).toHaveBeenCalledWith(
+      'si1',
+      expect.objectContaining({
+        movement_type: 'in',
+        quantity_change: 10,
+        reason: 'restock',
+        performed_by: '',
+        // Hook stamps a UUID v4 on the variables (Blocker 1).
+        client_request_id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        ),
+      }),
+    );
   });
 });
