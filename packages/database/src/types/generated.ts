@@ -1504,6 +1504,9 @@ export type Database = {
           notes: string | null
           occupied_at: string | null
           qr_code: string
+          qr_code_expires_at: string | null
+          qr_code_revoked_at: string | null
+          qr_code_rotated_at: string | null
           status: string
           table_number: string
           tenant_id: string
@@ -1519,6 +1522,9 @@ export type Database = {
           notes?: string | null
           occupied_at?: string | null
           qr_code: string
+          qr_code_expires_at?: string | null
+          qr_code_revoked_at?: string | null
+          qr_code_rotated_at?: string | null
           status?: string
           table_number: string
           tenant_id?: string
@@ -1534,6 +1540,9 @@ export type Database = {
           notes?: string | null
           occupied_at?: string | null
           qr_code?: string
+          qr_code_expires_at?: string | null
+          qr_code_revoked_at?: string | null
+          qr_code_rotated_at?: string | null
           status?: string
           table_number?: string
           tenant_id?: string

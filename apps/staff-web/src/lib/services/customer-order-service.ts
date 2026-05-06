@@ -63,13 +63,32 @@ async function resolveTenantId(
   orderData: CustomerOrderInput,
 ): Promise<{ tenantId: string; tableId: string | null }> {
   if (orderData.order_type === 'dine_in') {
+    // Pre-PR4 this only resolved tenant. PR4 also checks the QR-rotation
+    // columns (added in 20260507000003) so a customer who scraped a
+    // table_id during one visit can't keep submitting orders after
+    // their QR code has been rotated or expired by an admin. The
+    // wrapper-side `set_table_context` enforces the same checks for
+    // the read path; this is the matching write-path enforcement.
+    //
+    // We swallow nothing — `qr_token_revoked` / `qr_token_expired`
+    // surface as ValidationError to the route layer (mirroring the
+    // sentinel-shaped exceptions raised by `set_table_context`).
     const { data: table, error } = await supabaseAdmin
       .from('tables')
-      .select('id, tenant_id')
+      .select('id, tenant_id, qr_code_revoked_at, qr_code_expires_at')
       .eq('id', orderData.table_id)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!table) throw new NotFoundError('Table');
+    if (table.qr_code_revoked_at !== null) {
+      throw new ValidationError('qr_token_revoked');
+    }
+    if (
+      table.qr_code_expires_at !== null &&
+      new Date(table.qr_code_expires_at as string) <= new Date()
+    ) {
+      throw new ValidationError('qr_token_expired');
+    }
     return { tenantId: table.tenant_id as string, tableId: table.id as string };
   }
 

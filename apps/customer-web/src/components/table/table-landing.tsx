@@ -41,6 +41,14 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
   const { data: settings } = useCafeSettings();
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const [tenantPlan, setTenantPlan] = useState<string | null>(null);
+  // H2 — when the QR has been rotated, expired, or revoked,
+  // `set_table_context` raises a sentinel-shaped error
+  // (`invalid_qr_token` / `qr_token_expired` / `qr_token_revoked`).
+  // We collapse all three into a single "QR is no longer valid" UI
+  // since the customer's required action is identical: ask staff for
+  // a fresh code. Differentiating the three at the UI layer would
+  // burn 3 × 20 locale entries for negligible UX gain.
+  const [qrTokenError, setQrTokenError] = useState(false);
 
   const actualTableId = table?.id || '';
   const { data: activeOrder, isLoading: orderLoading } = useOrder(actualTableId);
@@ -61,7 +69,22 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             });
         })
         .catch((err: unknown) => {
-          Sentry.captureException(err);
+          // The three QR-failure sentinels look identical at the UI
+          // layer — surface the existing "Invalid Table" screen so
+          // the customer is prompted to ask staff for a new code.
+          // Anything else is an unexpected error and goes to Sentry
+          // without a UI change (so a transient network blip on the
+          // RPC doesn't block a customer with an otherwise-valid QR).
+          const message = err instanceof Error ? err.message : String(err);
+          if (
+            message === 'invalid_qr_token' ||
+            message === 'qr_token_expired' ||
+            message === 'qr_token_revoked'
+          ) {
+            setQrTokenError(true);
+          } else {
+            Sentry.captureException(err);
+          }
         });
     }
   }, [token]);
@@ -100,7 +123,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
     }
   };
 
-  if (error || !table) {
+  if (error || !table || qrTokenError) {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-[#0a0a0a] p-4">
         <h1 className="text-2xl font-bold text-red-400">{t('table.invalidTitle')}</h1>

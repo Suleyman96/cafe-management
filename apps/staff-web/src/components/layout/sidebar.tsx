@@ -45,6 +45,8 @@ import { useMyTasks, useOverdueTasksCount } from '@/hooks/use-tasks-safe';
 import { useTenantPlan } from '@/hooks/use-tenant-plan';
 import { supabase } from '@/lib/supabase/client';
 
+const SIDEBAR_GROUPS_STORAGE_KEY = 'gustri:sidebar:collapsedGroups';
+
 type NavItem = {
   href: string;
   labelKey: string;
@@ -164,6 +166,9 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
   const { t: tRoles } = useTranslation('roles');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  // Avoid clobbering localStorage with the initial {} before the load effect
+  // runs. Save only writes after the first load tick has completed.
+  const collapsedGroupsLoadedRef = useRef(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { data: overdueCount = 0 } = useOverdueTasksCount();
   const pendingApprovalCount = usePendingApprovalCount();
@@ -216,6 +221,35 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
   const toggleGroup = (groupKey: string) => {
     setCollapsedGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }));
   };
+
+  // Persist collapsed-group preferences across page reloads.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(SIDEBAR_GROUPS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          setCollapsedGroups(parsed as Record<string, boolean>);
+        }
+      }
+    } catch {
+      // Storage unavailable (private mode, quota, JSON corrupt) — fall back
+      // to in-memory state. Sidebar still works, just doesn't persist.
+    }
+    collapsedGroupsLoadedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!collapsedGroupsLoadedRef.current) return;
+    try {
+      window.localStorage.setItem(
+        SIDEBAR_GROUPS_STORAGE_KEY,
+        JSON.stringify(collapsedGroups),
+      );
+    } catch {
+      // Storage write failed — preferences are session-only this run.
+    }
+  }, [collapsedGroups]);
 
   // Close user menu when clicking outside
   useEffect(() => {

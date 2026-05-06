@@ -6,25 +6,22 @@ import * as Sentry from '@sentry/nextjs';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { db } from '@/lib/supabase';
+import { apiRoutes } from '@/lib/api-routes';
 
 type FeedbackType = 'complaint' | 'praise';
 
 interface FeedbackFormProps {
   tableId: string;
-  tenantId: string;
+  // `tenantId` is no longer used — the server resolves the tenant from
+  // `tableId` (H1). Kept on the prop signature for now to avoid
+  // touching every call site in this PR; remove in a follow-up.
+  tenantId?: string;
   orderId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-export function FeedbackForm({
-  tableId,
-  tenantId,
-  orderId,
-  onSuccess,
-  onCancel,
-}: FeedbackFormProps) {
+export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: FeedbackFormProps) {
   const { t } = useTranslation('customer');
   const [feedbackType, setFeedbackType] = useState<FeedbackType | null>(null);
   const [message, setMessage] = useState('');
@@ -41,11 +38,15 @@ export function FeedbackForm({
   }, []);
 
   const createFeedbackMutation = useMutation({
+    // `retry: 0` so a network blip can't post duplicate complaints — the
+    // feedback table doesn't carry a `client_request_id` column today,
+    // so the API path can't dedupe server-side. The Upstash limiter on
+    // `/api/v1/customer/feedback` (3 / 5 min / IP) caps the worst case.
+    retry: 0,
     mutationFn: (data: { feedback_type: FeedbackType; message: string }) =>
-      db.feedback.create({
+      apiRoutes.customerFeedback.create({
         table_id: tableId,
-        tenant_id: tenantId,
-        order_id: orderId || null,
+        order_id: orderId ?? null,
         feedback_type: data.feedback_type,
         message: data.message,
       }),

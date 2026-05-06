@@ -3,10 +3,12 @@
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
 import { NumberInput } from '@gustri/ui-web';
-import { X } from 'lucide-react';
+import * as Sentry from '@sentry/nextjs';
+import { RefreshCw, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateTable, useUpdateTable } from '@/hooks';
+import { apiRoutes } from '@/lib/api-routes';
 import type { Tables } from '@/types';
 
 interface TableModalProps {
@@ -27,6 +29,7 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
   const [status, setStatus] = useState<'free' | 'occupied' | 'reserved' | 'closed'>('free');
   const [isActive, setIsActive] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [rotating, setRotating] = useState(false);
 
   const isEditing = !!table;
 
@@ -47,6 +50,30 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
       setIsActive(true);
     }
   }, [table]);
+
+  const handleRotateQr = async () => {
+    if (!table) return;
+    // window.confirm is the simplest "are you sure" gate that doesn't need
+    // a separate modal. The Rotate-QR action is destructive (existing
+    // printed stickers stop working immediately) so requiring an explicit
+    // confirm matters more than the prettier UX.
+    if (!window.confirm(t('tables.rotateQrConfirm'))) return;
+
+    setRotating(true);
+    try {
+      await apiRoutes.tables.rotateQr(table.id);
+      toast.success(t('tables.rotateQrSuccess'));
+      // Bubble up so the parent refetches the list and picks up the new
+      // qr_code value for any subsequent print/preview UI.
+      onSuccess();
+    } catch (err) {
+      Sentry.captureException(err);
+      const message = err instanceof Error ? err.message : t('tables.rotateQrFailed');
+      toast.error(message);
+    } finally {
+      setRotating(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,17 +204,32 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
             </label>
           </div>
 
+          {isEditing && (
+            <div className="border-t pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRotateQr}
+                disabled={loading || rotating}
+                className="w-full flex items-center justify-center gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
+              >
+                <RefreshCw className={`h-4 w-4 ${rotating ? 'animate-spin' : ''}`} />
+                {t('tables.rotateQr')}
+              </Button>
+            </div>
+          )}
+
           <div className="flex gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={loading}
+              disabled={loading || rotating}
               className="flex-1"
             >
               {t('cancel', { ns: 'common' })}
             </Button>
-            <Button type="submit" disabled={loading} className="flex-1">
+            <Button type="submit" disabled={loading || rotating} className="flex-1">
               {loading
                 ? isEditing
                   ? `${t('save', { ns: 'common' })}...`

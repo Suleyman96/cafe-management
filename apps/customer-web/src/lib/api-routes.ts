@@ -4,6 +4,8 @@ import { getOrCreateClientRequestId } from '@gustri/queries';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
+type WaiterCallRow = Database['public']['Tables']['waiter_calls']['Row'];
+type CustomerFeedbackRow = Database['public']['Tables']['customer_feedback']['Row'];
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -103,6 +105,22 @@ type AddCustomerOrderItem = {
   client_request_id?: string;
 };
 
+type CreateWaiterCallPayload = {
+  table_id: string;
+  call_type: 'assistance' | 'bill' | 'complaint' | 'question' | 'emergency';
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  reason?: string | null;
+  notes?: string | null;
+  client_request_id?: string;
+};
+
+type CreateFeedbackPayload = {
+  table_id: string;
+  order_id?: string | null;
+  feedback_type: 'complaint' | 'praise';
+  message: string;
+};
+
 export const apiRoutes = {
   customerOrders: {
     create: (data: CreateCustomerOrderPayload) =>
@@ -123,6 +141,29 @@ export const apiRoutes = {
             client_request_id: getOrCreateClientRequestId(item.client_request_id),
           })),
         }),
+      }),
+  },
+
+  // H1 — both endpoints replace direct `db.waiterCalls.create` /
+  // `db.feedback.create` calls so the Upstash limiter on the staff-web
+  // edge gates them. Without this, the customer-web build is the only
+  // throttle and a forked client (or a bare `curl`) bypasses it.
+  customerWaiterCalls: {
+    create: (data: CreateWaiterCallPayload) =>
+      apiFetch<{ waiter_call: WaiterCallRow }>('/api/v1/customer/waiter-calls', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...data,
+          client_request_id: getOrCreateClientRequestId(data.client_request_id),
+        }),
+      }),
+  },
+
+  customerFeedback: {
+    create: (data: CreateFeedbackPayload) =>
+      apiFetch<{ feedback: CustomerFeedbackRow }>('/api/v1/customer/feedback', {
+        method: 'POST',
+        body: JSON.stringify(data),
       }),
   },
 };

@@ -57,7 +57,6 @@ export default function TableLayout({
         callType: 'assistance',
         reason: t('callStaff.reason.assistance'),
         priority: 'normal',
-        tenantId: table?.tenant_id || '',
       });
       toast.success(t('callStaff.toastSuccess'));
     } catch (error) {

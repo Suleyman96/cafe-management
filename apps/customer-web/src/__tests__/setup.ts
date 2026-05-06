@@ -23,6 +23,14 @@ vi.mock('@/lib/api-routes', () => ({
         .mockResolvedValue({ order: { id: 'test-order-id', status: 'pending_approval' } }),
       addItems: vi.fn().mockResolvedValue({ items: [] }),
     },
+    customerWaiterCalls: {
+      create: vi.fn().mockResolvedValue({ waiter_call: { id: 'test-call-id', status: 'pending' } }),
+    },
+    customerFeedback: {
+      create: vi
+        .fn()
+        .mockResolvedValue({ feedback: { id: 'test-feedback-id', status: 'pending' } }),
+    },
   },
 }));
 

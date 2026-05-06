@@ -47,6 +47,23 @@ const limiters = redis
         limiter: Ratelimit.slidingWindow(5, '300 s'),
         prefix: 'rl:staff-pin-verify',
       }),
+      // Customer-facing engagement writes (H1). The pre-PR3 path went
+      // straight to Supabase via the wrapper with no edge gate; an
+      // attacker holding a single QR-code value could spam thousands of
+      // pending calls per minute and overload the kitchen dashboard.
+      // Limits are generous so a real busy-table burst (a server
+      // tapping "call" multiple times during a rush) doesn't trip them
+      // — anything past these numbers is unambiguous abuse.
+      'waiter-call': new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(5, '60 s'),
+        prefix: 'rl:waiter-call',
+      }),
+      feedback: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(3, '300 s'),
+        prefix: 'rl:feedback',
+      }),
     }
   : null;
 
@@ -57,7 +74,9 @@ export type RateLimitCategory =
   | 'staff'
   | 'password-reset'
   | 'push-token-revoke'
-  | 'staff-pin-verify';
+  | 'staff-pin-verify'
+  | 'waiter-call'
+  | 'feedback';
 
 export async function rateLimit(
   category: RateLimitCategory,

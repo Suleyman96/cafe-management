@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase/client';
 type OrderInsert = Database['public']['Tables']['orders']['Insert'];
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderPaymentInsert = Database['public']['Tables']['order_payments']['Insert'];
+type TableRow = Database['public']['Tables']['tables']['Row'];
 
 /**
  * Get the current Supabase session token for Authorization header.
@@ -124,6 +125,17 @@ export const apiRoutes = {
       apiFetch<{ settings: Record<string, unknown> }>('/api/v1/settings', {
         method: 'PUT',
         body: JSON.stringify(data),
+      }),
+  },
+
+  // H2 — admin-only QR rotation. Generates a fresh qr_code, refreshes
+  // the expiry window, and clears any prior revoked_at. Old QR
+  // stickers stop working as soon as the response lands.
+  tables: {
+    rotateQr: (tableId: string, opts?: { expires_at?: string | null }) =>
+      apiFetch<{ table: TableRow }>(`/api/v1/admin/tables/${tableId}/rotate-qr`, {
+        method: 'POST',
+        body: JSON.stringify(opts ?? {}),
       }),
   },
 };

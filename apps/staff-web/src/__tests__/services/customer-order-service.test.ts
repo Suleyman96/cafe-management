@@ -81,7 +81,17 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
     // The service must reach into `tables` first and use its tenant_id.
     const fresh = { id: 'order-fresh', tenant_id: TENANT };
     const client = buildClient({
-      tables: [{ data: { id: TABLE, tenant_id: TENANT }, error: null }],
+      tables: [
+        {
+          data: {
+            id: TABLE,
+            tenant_id: TENANT,
+            qr_code_revoked_at: null,
+            qr_code_expires_at: null,
+          },
+          error: null,
+        },
+      ],
       tenants: [{ data: { plan: 'pro' }, error: null }],
       orders: [
         { data: null, error: null }, // dedupe lookup → no replay
@@ -115,6 +125,95 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
         },
       }),
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('dine_in: rejects when the table QR has been revoked (H2)', async () => {
+    // Admin rotated or revoked this table's QR; an attacker who scraped
+    // the table_id during an earlier visit can't keep submitting orders.
+    const client = buildClient({
+      tables: [
+        {
+          data: {
+            id: TABLE,
+            tenant_id: TENANT,
+            qr_code_revoked_at: new Date('2026-04-01').toISOString(),
+            qr_code_expires_at: null,
+          },
+          error: null,
+        },
+      ],
+    });
+
+    await expect(
+      createCustomerOrder(client, {
+        orderData: {
+          order_type: 'dine_in',
+          table_id: TABLE,
+          client_request_id: CRID,
+        },
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('dine_in: rejects when the table QR has expired (H2)', async () => {
+    const client = buildClient({
+      tables: [
+        {
+          data: {
+            id: TABLE,
+            tenant_id: TENANT,
+            qr_code_revoked_at: null,
+            qr_code_expires_at: new Date('2026-01-01').toISOString(),
+          },
+          error: null,
+        },
+      ],
+    });
+
+    await expect(
+      createCustomerOrder(client, {
+        orderData: {
+          order_type: 'dine_in',
+          table_id: TABLE,
+          client_request_id: CRID,
+        },
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('dine_in: accepts a future expires_at as still-valid (H2)', async () => {
+    // expires_at in the future = still valid. Same shape as the happy
+    // path; just proves the comparison is `<= now()`, not just "not null".
+    const fresh = { id: 'order-fresh', tenant_id: TENANT };
+    const client = buildClient({
+      tables: [
+        {
+          data: {
+            id: TABLE,
+            tenant_id: TENANT,
+            qr_code_revoked_at: null,
+            qr_code_expires_at: new Date(Date.now() + 86400_000).toISOString(),
+          },
+          error: null,
+        },
+      ],
+      tenants: [{ data: { plan: 'pro' }, error: null }],
+      orders: [
+        { data: null, error: null },
+        { data: null, error: null, count: 0 } as QueuedResponse,
+        { data: fresh, error: null },
+      ],
+    });
+
+    const result = await createCustomerOrder(client, {
+      orderData: {
+        order_type: 'dine_in',
+        table_id: TABLE,
+        client_request_id: CRID,
+      },
+    });
+
+    expect(result.order).toEqual(fresh);
   });
 
   it('takeout: a missing qr_token is not even constructable — service rejects on lookup miss', async () => {
@@ -296,7 +395,17 @@ describe('createCustomerOrder — dedupe', () => {
   it('returns the existing row with deduped=true on replay', async () => {
     const persisted = { id: 'order-A', tenant_id: TENANT, client_request_id: CRID };
     const client = buildClient({
-      tables: [{ data: { id: TABLE, tenant_id: TENANT }, error: null }],
+      tables: [
+        {
+          data: {
+            id: TABLE,
+            tenant_id: TENANT,
+            qr_code_revoked_at: null,
+            qr_code_expires_at: null,
+          },
+          error: null,
+        },
+      ],
       orders: [{ data: persisted, error: null }],
     });
 
