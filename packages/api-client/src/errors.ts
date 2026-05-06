@@ -15,6 +15,7 @@ import {
   getErrorMessage,
   NetworkError,
   NotFoundError,
+  RateLimitError,
   ValidationError,
 } from '@gustri/core';
 
@@ -45,7 +46,21 @@ export function handleSupabaseError(error: unknown): AppError {
   // this to signal "row not found" with a custom message (e.g.
   // `order_not_found_in_tenant`, `order_item not found`). Keep the message —
   // call sites use it for sentinel matching — and surface as a 404.
+  //
+  // Exception: the waiter-call acknowledge/resolve guard triggers
+  // (migration 20260506000001) reuse the same ERRCODE for a *conflict*
+  // semantic — two staff trying to claim the same buzz. Surface those as
+  // ConflictError so the staff-web safe hook can render the localized
+  // "already answered by X" toast instead of a generic "not found".
   if (err.code === 'P0002') {
+    const sentinel = err.message?.trim();
+    if (
+      sentinel === 'waiter_call_already_acknowledged' ||
+      sentinel === 'waiter_call_already_resolved' ||
+      sentinel === 'order_close_requires_payment_or_reason'
+    ) {
+      return new ConflictError(sentinel);
+    }
     return new NotFoundError(err.message || 'Resource');
   }
 
@@ -120,6 +135,9 @@ export function httpStatusToAppError(
   }
   if (status === 409) {
     return new ConflictError(message);
+  }
+  if (status === 429) {
+    return new RateLimitError('rate_limited');
   }
   if (status === 0 || status >= 500) {
     return new AppError(message, 'SERVER_ERROR', status || 500, details);

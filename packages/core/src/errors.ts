@@ -43,8 +43,8 @@ export class NotFoundError extends AppError {
 }
 
 export class ConflictError extends AppError {
-  constructor(message: string) {
-    super(message, 'CONFLICT', 409);
+  constructor(message: string, details?: Record<string, unknown>) {
+    super(message, 'CONFLICT', 409, details);
     this.name = 'ConflictError';
   }
 }
@@ -53,6 +53,13 @@ export class NetworkError extends AppError {
   constructor(message: string = 'Network error') {
     super(message, 'NETWORK_ERROR', 0);
     this.name = 'NetworkError';
+  }
+}
+
+export class RateLimitError extends AppError {
+  constructor(message: string = 'rate_limited') {
+    super(message, 'RATE_LIMITED', 429);
+    this.name = 'RateLimitError';
   }
 }
 

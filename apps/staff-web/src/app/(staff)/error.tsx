@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@gustri/i18n';
 import * as Sentry from '@sentry/nextjs';
 import Link from 'next/link';
 import { useEffect } from 'react';
@@ -11,6 +12,8 @@ export default function StaffError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useTranslation('common');
+
   useEffect(() => {
     Sentry.captureException(error);
   }, [error]);
@@ -33,22 +36,20 @@ export default function StaffError({
             />
           </svg>
         </div>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Something went wrong</h2>
-        <p className="mb-6 text-sm text-gray-500">
-          This page encountered an error. Your sidebar and navigation are still working.
-        </p>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('error.title')}</h2>
+        <p className="mb-6 text-sm text-gray-500">{t('error.pageMessage')}</p>
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={reset}
             className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary/90 transition-colors"
           >
-            Try again
+            {t('error.tryAgain')}
           </button>
           <Link
             href="/tables"
             className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            Go to Dashboard
+            {t('error.goToDashboard')}
           </Link>
         </div>
       </div>

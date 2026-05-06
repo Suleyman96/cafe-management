@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@gustri/i18n';
 import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 
@@ -10,6 +11,8 @@ export default function PageError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useTranslation('common');
+
   useEffect(() => {
     Sentry.captureException(error);
   }, [error]);
@@ -26,13 +29,13 @@ export default function PageError({
           />
         </svg>
       </div>
-      <h2 className="mb-2 text-lg font-semibold text-gray-900">Something went wrong</h2>
+      <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('error.title')}</h2>
       <p className="mb-4 text-sm text-gray-500">{error.message}</p>
       <button
         onClick={reset}
         className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary/90 transition-colors"
       >
-        Try again
+        {t('error.tryAgain')}
       </button>
     </div>
   );

@@ -1,0 +1,20 @@
+{
+  "payment_exceeds_remaining": "Ödeme tutarı kalan bakiyeyi aşıyor. Güncel toplamı görmek için siparişi yenileyin.",
+  "payment_tenant_mismatch": "Bu ödeme mevcut restorana ait değil.",
+  "payment_on_terminal_order": "Bu sipariş kapalı veya iptal edilmiş — başka ödeme eklenemez.",
+  "refund_exceeds_available": "İade tutarı bu sipariş için mevcut tutarı aşıyor.",
+  "refund_tenant_mismatch": "Bu iade mevcut restorana ait değil.",
+  "order_not_found": "Sipariş bulunamadı. Silinmiş olabilir.",
+  "order_not_found_in_tenant": "Bu sipariş mevcut restoranda bulunamadı.",
+  "order_item_tenant_mismatch": "Bu sipariş kalemi mevcut restorana ait değil.",
+  "waiter_call_already_acknowledged": "Bu çağrıya başka bir ekip üyesi zaten yanıt verdi.",
+  "waiter_call_already_resolved": "Bu çağrı başka bir ekip üyesi tarafından zaten çözüldü.",
+  "order_close_requires_payment_or_reason": "Sipariş ödenmemiş. Kapatmak için 'İkram' veya 'Ödeme yapmadan ayrıldı' gibi bir neden seçin.",
+  "discount_type_invalid": "Bu indirim türüne izin verilmiyor.",
+  "discount_value_invalid": "İndirim değeri izin verilen aralığın dışında.",
+  "menu_item_not_found_in_tenant": "Mevcut restoran için menü öğesi bulunamadı.",
+  "plan_required": "Bu işlem için planınızı yükseltmeniz gerekir.",
+  "client_outdated": "Uygulama güncel değil. Devam etmek için yeniden yükleyin.",
+  "version_conflict": "Başka bir cihaz bu siparişi az önce değiştirdi. Yenileyin ve tekrar deneyin.",
+  "rate_limited": "Çok fazla istek. Lütfen biraz bekleyip tekrar deneyin."
+}

@@ -22,6 +22,7 @@ import { useParams, useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { ConfirmCloseUnpaidModal } from '@/components/modals/confirm-close-unpaid-modal';
 import { DiscountModal } from '@/components/modals/discount-modal';
 import { RefundModal } from '@/components/modals/refund-modal';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
@@ -103,6 +104,7 @@ export default function OrderDetailPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
+  const [isCloseUnpaidModalOpen, setIsCloseUnpaidModalOpen] = useState(false);
   const [openItemMenu, setOpenItemMenu] = useState<string | null>(null);
 
   // Real-time subscription via shared hook
@@ -604,6 +606,7 @@ export default function OrderDetailPage() {
         canDiscount={canDiscount}
         onOpenRefund={() => setIsRefundModalOpen(true)}
         canRefund={canRefund && (payments?.length ?? 0) > 0}
+        onOpenCloseUnpaid={() => setIsCloseUnpaidModalOpen(true)}
       />
 
       <SplitPaymentModal
@@ -625,6 +628,15 @@ export default function OrderDetailPage() {
         currentDiscountType={order.discount_type || 'none'}
         currentDiscountValue={order.discount_value ?? 0}
         onSuccess={() => refetch()}
+        orderLabel={`#${order.id.slice(0, 8)}`}
+        orderContextLabel={
+          order.order_type === 'delivery'
+            ? t('orders.delivery')
+            : order.table
+              ? order.table.table_number
+              : t('orders.takeout')
+        }
+        customerName={order.customer_name ?? null}
       />
 
       <RefundModal
@@ -636,6 +648,33 @@ export default function OrderDetailPage() {
           (refundsData as Array<{ amount: number }>)?.reduce((sum, r) => sum + r.amount, 0) || 0
         }
         onSuccess={() => refetch()}
+        orderLabel={`#${order.id.slice(0, 8)}`}
+        orderContextLabel={
+          order.order_type === 'delivery'
+            ? t('orders.delivery')
+            : order.table
+              ? order.table.table_number
+              : t('orders.takeout')
+        }
+        customerName={order.customer_name ?? null}
+      />
+
+      <ConfirmCloseUnpaidModal
+        isOpen={isCloseUnpaidModalOpen}
+        orderId={order.id}
+        orderLabel={
+          order.order_type === 'delivery'
+            ? `${t('orders.delivery')} · #${order.id.slice(0, 8)}`
+            : order.table
+              ? `${order.table.table_number} · #${order.id.slice(0, 8)}`
+              : `${t('orders.takeout')} · #${order.id.slice(0, 8)}`
+        }
+        remainingAmount={remaining}
+        onClose={() => setIsCloseUnpaidModalOpen(false)}
+        onSuccess={() => {
+          setIsCloseUnpaidModalOpen(false);
+          refetch();
+        }}
       />
     </div>
   );

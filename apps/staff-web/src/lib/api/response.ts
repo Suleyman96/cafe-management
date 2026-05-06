@@ -20,7 +20,7 @@ export function jsonError(message: string, status = 400, details?: Record<string
 
 export function jsonRateLimited(resetAt: number) {
   return NextResponse.json(
-    { error: 'Too many requests' },
+    { error: 'rate_limited' },
     {
       status: 429,
       headers: { 'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)) },

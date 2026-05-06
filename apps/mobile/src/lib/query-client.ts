@@ -1,4 +1,5 @@
 import { isAppError, OFFLINE_SYNC_WINDOW_MS } from '@gustri/core';
+import { i18n, localizeErrorMessage } from '@gustri/i18n';
 import * as Sentry from '@sentry/react-native';
 import { MutationCache, QueryClient } from '@tanstack/react-query';
 import { showSnackbarGlobal } from '@/components/providers/SnackbarProvider';
@@ -33,8 +34,18 @@ const mutationCache = new MutationCache({
 
     Sentry.captureException(error, { tags });
 
-    const userMessage = isAppError(error) ? error.message : 'An unexpected error occurred';
-    showSnackbarGlobal(isSyncReplay ? `Failed to sync queued change: ${userMessage}` : userMessage);
+    const fallback = i18n.t('somethingWentWrong', {
+      ns: 'common',
+      defaultValue: 'An unexpected error occurred',
+    });
+    const userMessage = isAppError(error)
+      ? localizeErrorMessage(error.message, fallback)
+      : fallback;
+    const syncReplayPrefix = i18n.t('syncReplayFailedPrefix', {
+      ns: 'common',
+      defaultValue: 'Failed to sync queued change',
+    });
+    showSnackbarGlobal(isSyncReplay ? `${syncReplayPrefix}: ${userMessage}` : userMessage);
   },
 });
 

@@ -2,12 +2,20 @@
  * Orders wrapper module
  */
 
-import { isOrder } from '@gustri/core';
+import { ConflictError, isOrder } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
 import { dedupeInsert } from './_dedupe';
 import { applyTenantScope, assertInsertTenantMatches } from './_tenant-scope';
 import { rpc } from './rpc-typed';
 import type { OrderInsert, OrderRow, PaginatedResult, WrapperContext } from './types';
+
+/**
+ * Sentinel surfaced by mutating order methods when an `expectedVersion`
+ * does not match the row's current `version` column (migration
+ * 20260506000004). Localized in `packages/i18n/src/locales/*\/errors.json`
+ * and consumed by the staff-web hooks to render the conflict UI.
+ */
+export const ORDER_VERSION_CONFLICT = 'version_conflict';
 
 /**
  * The orders_decrypted view adds decrypted_* columns alongside the raw
@@ -34,6 +42,24 @@ function mapDecryptedPii<T extends Record<string, unknown>>(row: T): T {
 
 function mapDecryptedPiiArray<T extends Record<string, unknown>>(rows: T[]): T[] {
   return rows.map(mapDecryptedPii);
+}
+
+/**
+ * Refetch the current `version` of an order (or null when the row is hidden
+ * by RLS). Used to disambiguate a 0-row UPDATE between an idempotent replay
+ * and a real concurrency conflict, and to attach the fresh version to a
+ * thrown ConflictError so the UI can offer "Refresh / Override".
+ */
+async function fetchCurrentVersion(ctx: WrapperContext, id: string): Promise<number | null> {
+  const { data } = await ctx.anyClient.from('orders').select('version').eq('id', id).maybeSingle();
+  const v = (data as { version?: number } | null)?.version;
+  return typeof v === 'number' ? v : null;
+}
+
+function throwVersionConflict(currentVersion: number | null): never {
+  throw new ConflictError(ORDER_VERSION_CONFLICT, {
+    currentVersion: currentVersion ?? undefined,
+  });
 }
 
 export function createOrdersWrapper(ctx: WrapperContext) {
@@ -270,7 +296,7 @@ export function createOrdersWrapper(ctx: WrapperContext) {
     updateStatus: async (
       id: string,
       status: OrderRow['status'],
-      _options?: { clientRequestId?: string },
+      options?: { clientRequestId?: string; expectedVersion?: number },
     ) => {
       // Prevent "served" status on delivery and takeout orders
       if (status === 'served') {
@@ -320,13 +346,24 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       // from the target. A rapid replay (or a second click that races past
       // the disabled-button guard) updates zero rows; we then re-SELECT so
       // callers always get the current row shape.
-      const { data, error } = await ctx.anyClient
+      //
+      // When `expectedVersion` is supplied (Plan 8 feature flag
+      // `orders_optimistic_concurrency`), the same UPDATE also filters on
+      // `version = expectedVersion`. A 0-row result then has three causes:
+      //   1. The row's status already matches `status` (idempotent replay).
+      //   2. The row's version moved (concurrency conflict).
+      //   3. RLS hid the row.
+      // We refetch to disambiguate and surface ConflictError only for (2).
+      let updateQuery = ctx.anyClient
         .from('orders')
         .update({ status })
         .eq('id', id)
-        .neq('status', status)
-        .select()
-        .maybeSingle();
+        .neq('status', status);
+      if (options?.expectedVersion !== undefined) {
+        updateQuery = updateQuery.eq('version', options.expectedVersion);
+      }
+
+      const { data, error } = await updateQuery.select().maybeSingle();
 
       if (error) throw handleSupabaseError(error);
 
@@ -335,8 +372,8 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         return data as OrderRow;
       }
 
-      // Update touched zero rows — either the row already had `status`
-      // (idempotent replay) or RLS hid it. Re-SELECT to disambiguate.
+      // Update touched zero rows. Re-SELECT to disambiguate idempotent replay
+      // from a concurrency conflict.
       const { data: existing, error: refetchError } = await ctx.anyClient
         .from('orders')
         .select()
@@ -344,7 +381,123 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         .single();
       if (refetchError) throw handleSupabaseError(refetchError);
       if (!isOrder(existing)) throw new Error('Invalid order data');
-      return existing as OrderRow;
+
+      const existingRow = existing as OrderRow;
+      if (
+        options?.expectedVersion !== undefined &&
+        existingRow.status !== status &&
+        existingRow.version !== options.expectedVersion
+      ) {
+        throwVersionConflict(existingRow.version);
+      }
+      return existingRow;
+    },
+
+    /**
+     * Close an order — single dedicated path so the close-unpaid guard
+     * (migration 20260506000003) can categorize a write-off in the same
+     * UPDATE that flips status to `closed`.
+     *
+     * Behavior:
+     * - Without `forceCloseReason`: equivalent to `updateStatus(id, 'closed')`
+     *   plus the BEFORE UPDATE trigger that raises P0002
+     *   `order_close_requires_payment_or_reason` if the order still owes
+     *   money. handleSupabaseError maps that to ConflictError; the
+     *   staff-web hook surfaces the localized close-unpaid modal.
+     * - With `forceCloseReason`: the same UPDATE writes status + reason
+     *   atomically. The trigger sees a non-null reason and lets the
+     *   close through. The reason is the audit record for shift
+     *   reconciliation (Plan 14).
+     *
+     * Authorization is RLS-driven; only roles that can update orders may
+     * call this. The state-machine trigger (20260504000007) enforces
+     * "non-terminal -> closed" — calling close on an already-closed or
+     * cancelled order will reject server-side.
+     */
+    close: async (
+      id: string,
+      options?: { forceCloseReason?: string; expectedVersion?: number },
+    ) => {
+      const update: Record<string, unknown> = { status: 'closed' };
+      if (options?.forceCloseReason !== undefined) {
+        update.force_close_reason = options.forceCloseReason;
+      }
+
+      let updateQuery = ctx.anyClient
+        .from('orders')
+        .update(update)
+        .eq('id', id)
+        .neq('status', 'closed');
+      if (options?.expectedVersion !== undefined) {
+        updateQuery = updateQuery.eq('version', options.expectedVersion);
+      }
+
+      const { data, error } = await updateQuery.select().maybeSingle();
+
+      if (error) throw handleSupabaseError(error);
+
+      if (data) {
+        if (!isOrder(data)) throw new Error('Invalid order data');
+        return data as OrderRow;
+      }
+
+      // Already closed (idempotent) or version moved (conflict). Refetch.
+      const { data: existing, error: refetchError } = await ctx.anyClient
+        .from('orders')
+        .select()
+        .eq('id', id)
+        .single();
+      if (refetchError) throw handleSupabaseError(refetchError);
+      if (!isOrder(existing)) throw new Error('Invalid order data');
+
+      const existingRow = existing as OrderRow;
+      if (
+        options?.expectedVersion !== undefined &&
+        existingRow.status !== 'closed' &&
+        existingRow.version !== options.expectedVersion
+      ) {
+        throwVersionConflict(existingRow.version);
+      }
+      return existingRow;
+    },
+
+    /**
+     * Catchup query for realtime resubscribe.
+     *
+     * Supabase Realtime has no replay buffer: any postgres_changes events
+     * emitted while a client's WebSocket was down are gone. After a
+     * successful resubscribe, callers fetch every row that moved since the
+     * checkpoint and re-fire downstream behavior (cache invalidation +
+     * deduplicated audio for genuinely-new orders).
+     *
+     * Cap: `limit` defaults to 200. A long disconnect that produced more
+     * than 200 changed rows returns the most-recent 200; the caller should
+     * surface a "missed updates — refresh" hint when the cap is hit (the
+     * cache will catch up naturally on the next manual refresh / next
+     * fallback poll).
+     *
+     * The query orders by `updated_at DESC` so callers see newest changes
+     * first, which matters when the cap is exceeded — a stale 250-row
+     * window prefers fresh data over old data.
+     */
+    findChangedSince: async (
+      since: Date | string,
+      options?: { limit?: number },
+    ): Promise<OrderRow[]> => {
+      const sinceIso = typeof since === 'string' ? since : since.toISOString();
+      const limit = options?.limit ?? 200;
+      const { data, error } = await applyTenantScope(
+        ctx.anyClient
+          .from('orders_decrypted')
+          .select('*')
+          .gt('updated_at', sinceIso)
+          .order('updated_at', { ascending: false })
+          .limit(limit),
+        ctx,
+      );
+
+      if (error) throw handleSupabaseError(error);
+      return mapDecryptedPiiArray((data || []) as OrderRow[]);
     },
 
     findActiveByTable: async (tableId: string) => {
@@ -394,19 +547,35 @@ export function createOrdersWrapper(ctx: WrapperContext) {
       return mapDecryptedPiiArray(data || []);
     },
 
-    cancelOrder: async (orderId: string, reason: string, tableId?: string | null) => {
-      // Update order status to cancelled and store reason in internal_notes
-      const { data, error } = await ctx.anyClient
+    cancelOrder: async (
+      orderId: string,
+      reason: string,
+      tableId?: string | null,
+      options?: { expectedVersion?: number },
+    ) => {
+      // Update order status to cancelled and store reason in internal_notes.
+      // When expectedVersion is supplied, the .eq('version', …) filter
+      // surfaces a 0-row UPDATE which we map to ConflictError below.
+      let updateQuery = ctx.anyClient
         .from('orders')
         .update({
           status: 'cancelled',
           internal_notes: `Cancelled: ${reason}`,
         })
-        .eq('id', orderId)
-        .select()
-        .single();
+        .eq('id', orderId);
+      if (options?.expectedVersion !== undefined) {
+        updateQuery = updateQuery.eq('version', options.expectedVersion);
+      }
+
+      const { data, error } = await updateQuery.select().maybeSingle();
 
       if (error) throw handleSupabaseError(error);
+      if (!data) {
+        if (options?.expectedVersion !== undefined) {
+          throwVersionConflict(await fetchCurrentVersion(ctx, orderId));
+        }
+        throw new Error('Order not found or RLS denied');
+      }
       if (!isOrder(data)) throw new Error('Invalid order data');
 
       // If the order has a table, check if there are other active orders before setting it to free
@@ -468,9 +637,15 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         discount_reason?: string | null;
         discount_applied_by: string;
       },
+      options?: { expectedVersion?: number },
     ) => {
-      // Don't chain .select() — see JSDoc above.
-      const { error } = await ctx.anyClient
+      // Don't chain .select() — see JSDoc above. To detect a version
+      // conflict without breaking the recalculate-on-update trigger, we
+      // gate the UPDATE on `version = expectedVersion` and then sanity
+      // check by re-reading version from the refetched row: if the new
+      // version did not advance past `expectedVersion`, the UPDATE was
+      // a no-op (filtered by the version mismatch) — surface a conflict.
+      let updateQuery = ctx.anyClient
         .from('orders')
         .update({
           discount_type: discount.discount_type,
@@ -479,6 +654,11 @@ export function createOrdersWrapper(ctx: WrapperContext) {
           discount_applied_by: discount.discount_applied_by,
         })
         .eq('id', orderId);
+      if (options?.expectedVersion !== undefined) {
+        updateQuery = updateQuery.eq('version', options.expectedVersion);
+      }
+
+      const { error } = await updateQuery;
 
       if (error) throw handleSupabaseError(error);
 
@@ -490,7 +670,12 @@ export function createOrdersWrapper(ctx: WrapperContext) {
         .single();
 
       if (fetchError) throw handleSupabaseError(fetchError);
-      return mapDecryptedPii(data) as OrderRow;
+
+      const refreshed = mapDecryptedPii(data) as OrderRow;
+      if (options?.expectedVersion !== undefined && refreshed.version <= options.expectedVersion) {
+        throwVersionConflict(refreshed.version);
+      }
+      return refreshed;
     },
 
     // Takeout-specific methods

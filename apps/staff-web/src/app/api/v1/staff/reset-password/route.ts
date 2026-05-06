@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
 import { validatePassword } from '@/lib/api/password-validation';
 import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
+import { jsonRateLimited } from '@/lib/api/response';
 import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 
 const ResetPasswordSchema = z.object({
@@ -20,15 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     const ip = getRateLimitIdentifier(request);
     const { success, resetAt } = await rateLimit('password-reset', ip);
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        {
-          status: 429,
-          headers: { 'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)) },
-        },
-      );
-    }
+    if (!success) return jsonRateLimited(resetAt);
 
     // Verify caller is an authenticated admin
     const adminOrError = await verifyAdmin(request);

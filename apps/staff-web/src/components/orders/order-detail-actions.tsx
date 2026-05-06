@@ -2,7 +2,7 @@
 
 import type { ORDER_STATUS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui';
 import {
   AlertTriangle,
   CheckCircle,
@@ -15,6 +15,24 @@ import {
   Truck,
   XCircle,
 } from 'lucide-react';
+import { usePendingAction } from '@/hooks/use-pending-action';
+
+// Per-button pending keys. The connectivity gate (`canMutate`) is orthogonal
+// — it disables every button when offline; pending only locks the specific
+// action that's mid-flight.
+type ActionKey =
+  | 'approve'
+  | 'prepare'
+  | 'ready'
+  | 'serve'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'pay'
+  | 'close'
+  | 'closeUnpaid'
+  | 'discount'
+  | 'refund'
+  | 'cancel';
 
 interface OrderDetailActionsProps {
   order: {
@@ -25,13 +43,27 @@ interface OrderDetailActionsProps {
   };
   isFullyPaid: boolean;
   hasItems?: boolean;
+  /** Connectivity gate from `useIsOnline()` — disables all buttons when offline. */
   canMutate?: boolean;
-  onStatusUpdate: (status: keyof typeof ORDER_STATUS) => void;
+  // Async callback: the parent uses `mutateAsync`, so the returned promise
+  // resolves once the mutation settles. `run` awaits it to release the
+  // per-button pending lock on settle.
+  onStatusUpdate: (status: keyof typeof ORDER_STATUS) => Promise<unknown>;
   onOpenPayment: () => void;
   onOpenDiscount?: () => void;
   canDiscount?: boolean;
   onOpenRefund?: () => void;
   canRefund?: boolean;
+  /**
+   * Opens the "close unpaid" guard modal. Renders an amber warning-style
+   * button alongside the regular Pay flow when the order has reached a
+   * service state (served / ready / out_for_delivery / delivered) but
+   * the balance isn't settled. Required to surface the explicit
+   * write-off path (comp / walk-out / staff meal) that powers shift
+   * reconciliation. Optional so unrelated callers (e.g. order cards
+   * elsewhere) don't have to wire it.
+   */
+  onOpenCloseUnpaid?: () => void;
 }
 
 export function OrderDetailActions({
@@ -45,9 +77,26 @@ export function OrderDetailActions({
   canDiscount = false,
   onOpenRefund,
   canRefund = false,
+  onOpenCloseUnpaid,
 }: OrderDetailActionsProps) {
   const { t } = useTranslation('staff');
+  const { isPending, run } = usePendingAction<ActionKey>();
   const canAdvance = hasItems && canMutate;
+
+  const fireStatus = (key: ActionKey, status: keyof typeof ORDER_STATUS) =>
+    run(key, async () => {
+      await onStatusUpdate(status);
+    });
+
+  // Modal openers go through `run` too so a double-tap doesn't open twice
+  // before React commits the state that hides the button.
+  const openModal = (key: ActionKey, open: () => void) =>
+    run(key, async () => {
+      open();
+    });
+
+  const spinner = <LoadingSpinner size="sm" className="border-white/40 border-t-white" />;
+  const outlineSpinner = <LoadingSpinner size="sm" className="border-gray-300 border-t-gray-700" />;
 
   return (
     <div className="flex flex-wrap gap-2 sm:gap-3">
@@ -63,10 +112,10 @@ export function OrderDetailActions({
           <Button
             size="sm"
             className="bg-green-600 hover:bg-green-700 flex items-center gap-1 sm:gap-2"
-            onClick={() => onStatusUpdate('NEW')}
-            disabled={!canMutate}
+            onClick={() => fireStatus('approve', 'NEW')}
+            disabled={!canMutate || isPending('approve')}
           >
-            <ThumbsUp className="h-4 w-4" />
+            {isPending('approve') ? spinner : <ThumbsUp className="h-4 w-4" />}
             {t('approve', { ns: 'common' })}
           </Button>
           {order.source === 'customer' && (
@@ -80,33 +129,33 @@ export function OrderDetailActions({
       {order.status === 'new' && (
         <Button
           size="sm"
-          onClick={() => onStatusUpdate('PREPARING')}
-          disabled={!canAdvance}
+          onClick={() => fireStatus('prepare', 'PREPARING')}
+          disabled={!canAdvance || isPending('prepare')}
           className="flex items-center gap-1 sm:gap-2"
         >
-          <ChefHat className="h-4 w-4" />
+          {isPending('prepare') ? spinner : <ChefHat className="h-4 w-4" />}
           {t('orders.startPreparing')}
         </Button>
       )}
       {order.status === 'preparing' && (
         <Button
           size="sm"
-          onClick={() => onStatusUpdate('READY')}
-          disabled={!canAdvance}
+          onClick={() => fireStatus('ready', 'READY')}
+          disabled={!canAdvance || isPending('ready')}
           className="flex items-center gap-1 sm:gap-2"
         >
-          <CheckCircle className="h-4 w-4" />
+          {isPending('ready') ? spinner : <CheckCircle className="h-4 w-4" />}
           {t('orders.ready')}
         </Button>
       )}
       {order.status === 'ready' && order.order_type === 'dine_in' && (
         <Button
           size="sm"
-          onClick={() => onStatusUpdate('SERVED')}
-          disabled={!canAdvance}
+          onClick={() => fireStatus('serve', 'SERVED')}
+          disabled={!canAdvance || isPending('serve')}
           className="flex items-center gap-1 sm:gap-2"
         >
-          <CheckCircle className="h-4 w-4" />
+          {isPending('serve') ? spinner : <CheckCircle className="h-4 w-4" />}
           {t('orders.served')}
         </Button>
       )}
@@ -114,11 +163,11 @@ export function OrderDetailActions({
       {order.status === 'ready' && order.order_type === 'delivery' && (
         <Button
           size="sm"
-          onClick={() => onStatusUpdate('OUT_FOR_DELIVERY')}
-          disabled={!canAdvance}
+          onClick={() => fireStatus('out_for_delivery', 'OUT_FOR_DELIVERY')}
+          disabled={!canAdvance || isPending('out_for_delivery')}
           className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-1 sm:gap-2"
         >
-          <Truck className="h-4 w-4" />
+          {isPending('out_for_delivery') ? spinner : <Truck className="h-4 w-4" />}
           {t('orders.outForDelivery')}
         </Button>
       )}
@@ -126,11 +175,11 @@ export function OrderDetailActions({
       {order.status === 'out_for_delivery' && order.order_type === 'delivery' && (
         <Button
           size="sm"
-          onClick={() => onStatusUpdate('DELIVERED')}
-          disabled={!canAdvance}
+          onClick={() => fireStatus('delivered', 'DELIVERED')}
+          disabled={!canAdvance || isPending('delivered')}
           className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-1 sm:gap-2"
         >
-          <CheckCircle className="h-4 w-4" />
+          {isPending('delivered') ? spinner : <CheckCircle className="h-4 w-4" />}
           {t('orders.markDelivered')}
         </Button>
       )}
@@ -139,25 +188,49 @@ export function OrderDetailActions({
           <Button
             data-testid="payment-btn"
             size="sm"
-            onClick={onOpenPayment}
-            disabled={!canMutate}
+            onClick={() => openModal('pay', onOpenPayment)}
+            disabled={!canMutate || isPending('pay')}
             className="flex items-center gap-1 sm:gap-2"
           >
-            <CreditCard className="h-4 w-4" />
+            {isPending('pay') ? spinner : <CreditCard className="h-4 w-4" />}
             {t('orders.payment')}
           </Button>
         )}
       {isFullyPaid && order.status !== 'closed' && order.status !== 'cancelled' && (
         <Button
           size="sm"
-          onClick={() => onStatusUpdate('CLOSED')}
-          disabled={!canMutate}
+          onClick={() => fireStatus('close', 'CLOSED')}
+          disabled={!canMutate || isPending('close')}
           className="flex items-center gap-1 sm:gap-2"
         >
-          <CheckCircle className="h-4 w-4" />
+          {isPending('close') ? spinner : <CheckCircle className="h-4 w-4" />}
           {t('close', { ns: 'common' })}
         </Button>
       )}
+      {/* Close-unpaid guard: only surfaces when service has been performed
+          (post-`served` for dine-in, post-`ready` for non-dine-in) but the
+          balance isn't settled. Routes through the guard modal so the
+          write-off lands in `force_close_reason` for shift reconciliation.
+          Pre-service unpaid orders should be cancelled, not closed — that's
+          why we don't include `pending_approval` / `new` / `preparing`. */}
+      {!isFullyPaid &&
+        onOpenCloseUnpaid &&
+        ['served', 'ready', 'out_for_delivery', 'delivered'].includes(order.status) && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => openModal('closeUnpaid', onOpenCloseUnpaid)}
+            disabled={!canMutate || isPending('closeUnpaid')}
+            className="flex items-center gap-1 sm:gap-2 text-amber-700 border-amber-300 hover:bg-amber-50"
+          >
+            {isPending('closeUnpaid') ? (
+              <LoadingSpinner size="sm" className="border-amber-200 border-t-amber-700" />
+            ) : (
+              <AlertTriangle className="h-4 w-4" />
+            )}
+            {t('orders.closeUnpaid.button')}
+          </Button>
+        )}
       {canDiscount &&
         onOpenDiscount &&
         !isFullyPaid &&
@@ -165,10 +238,11 @@ export function OrderDetailActions({
           <Button
             size="sm"
             variant="outline"
-            onClick={onOpenDiscount}
+            onClick={() => openModal('discount', onOpenDiscount)}
+            disabled={isPending('discount')}
             className="flex items-center gap-1 sm:gap-2"
           >
-            <Percent className="h-4 w-4" />
+            {isPending('discount') ? outlineSpinner : <Percent className="h-4 w-4" />}
             {t('orders.addDiscount')}
           </Button>
         )}
@@ -176,10 +250,15 @@ export function OrderDetailActions({
         <Button
           size="sm"
           variant="outline"
-          onClick={onOpenRefund}
+          onClick={() => openModal('refund', onOpenRefund)}
+          disabled={isPending('refund')}
           className="flex items-center gap-1 sm:gap-2 text-red-600 border-red-200 hover:bg-red-50"
         >
-          <RotateCcw className="h-4 w-4" />
+          {isPending('refund') ? (
+            <LoadingSpinner size="sm" className="border-red-200 border-t-red-600" />
+          ) : (
+            <RotateCcw className="h-4 w-4" />
+          )}
           {t('orders.refund')}
         </Button>
       )}
@@ -189,10 +268,11 @@ export function OrderDetailActions({
         <Button
           size="sm"
           variant="destructive"
-          onClick={() => onStatusUpdate('CANCELLED')}
+          onClick={() => fireStatus('cancel', 'CANCELLED')}
+          disabled={isPending('cancel')}
           className="flex items-center gap-1 sm:gap-2"
         >
-          <XCircle className="h-4 w-4" />
+          {isPending('cancel') ? spinner : <XCircle className="h-4 w-4" />}
           {order.status === 'pending_approval'
             ? t('reject', { ns: 'common' })
             : t('cancel', { ns: 'common' })}

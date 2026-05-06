@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Package,
   Receipt,
+  Scale,
   Settings,
   Store,
   Trash2,
@@ -135,6 +136,12 @@ const navGroups: NavGroup[] = [
         ownerOnly: true,
       },
       {
+        href: '/reports/shift-reconciliation',
+        labelKey: 'reconciliation',
+        icon: <Scale className="h-5 w-5" />,
+        adminOnly: true,
+      },
+      {
         href: '/cafe-settings',
         labelKey: 'cafeSettings',
         icon: <Store className="h-5 w-5" />,
@@ -189,7 +196,13 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
     .filter((group) => group.items.length > 0);
 
   const isGroupCollapsed = (groupKey: string) => {
-    // Auto-expand if active page is in this group
+    // User toggle wins. Without this, the active-page auto-expand below
+    // re-expands the group on every render while the user is on one of
+    // its routes, making the chevron appear non-functional.
+    const userPref = collapsedGroups[groupKey];
+    if (userPref !== undefined) return userPref;
+
+    // Default: auto-expand groups containing the active route.
     const group = visibleGroups.find((g) => g.key === groupKey);
     if (group) {
       const hasActivePage = group.items.some(
@@ -197,7 +210,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
       );
       if (hasActivePage) return false;
     }
-    return collapsedGroups[groupKey] ?? false;
+    return false;
   };
 
   const toggleGroup = (groupKey: string) => {

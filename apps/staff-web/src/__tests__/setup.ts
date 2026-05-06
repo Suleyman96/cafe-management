@@ -127,6 +127,10 @@ vi.mock('@gustri/i18n', () => {
     'calls.resolve': 'Resolve',
     'calls.callAcknowledged': 'Call acknowledged',
     'calls.respondedBy': 'Responded by {{name}}',
+    'calls.alreadyAnsweredBy': 'Already answered by {{name}}',
+    'calls.alreadyAnsweredFallbackName': 'another team member',
+    'calls.failedAcknowledge': 'Failed to acknowledge call',
+    'calls.failedResolve': 'Failed to resolve call',
     'payment.processPaymentCash': 'Process Payment',
     'payment.paymentMethod': 'Payment Method',
     'payment.paymentType': 'Payment',
@@ -169,6 +173,16 @@ vi.mock('@gustri/i18n', () => {
       t: (key: string) => en[key] ?? key,
       i18n: { language: 'en', changeLanguage: vi.fn() },
     }),
+    useLocale: () => 'en',
+    // Match the real implementation's English branch closely enough that
+    // tests can assert on its output. Other locales fall back to a numeric
+    // string in the real helper too — the tests only exercise English.
+    numberToWords: (amount: number, _locale: string) => {
+      const abs = Math.abs(amount);
+      const whole = Math.floor(abs);
+      const cents = Math.round((abs - whole) * 100);
+      return `${whole} and ${String(cents).padStart(2, '0')}/100`;
+    },
     I18nextProvider: ({ children }: any) => children,
     Trans: ({ children }: any) => children,
   };

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { memo } from 'react';
+import { usePendingAction } from '@/hooks/use-pending-action';
 import { ORDER_STATUS_ICONS } from '@/lib/enum-icons';
 import type { OrderWithDetails, Tables, WaiterCalls } from '@/types';
 
@@ -112,6 +113,10 @@ function TableCardImpl({
 }: TableCardProps) {
   const { t } = useTranslation('staff');
   const router = useRouter();
+  // Per-button pending lock — protects against rapid taps queuing two
+  // transfer-modal opens or two delete confirms before React commits the
+  // first state change.
+  const { isPending, run } = usePendingAction<'transfer' | 'edit' | 'delete'>();
 
   const hasMultipleOrders = activeOrders.length > 1;
   const activeOrder: OrderWithDetails | undefined = activeOrders[0];
@@ -189,9 +194,12 @@ function TableCardImpl({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onEditTable(table);
+                  run('edit', async () => {
+                    onEditTable(table);
+                  });
                 }}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                disabled={isPending('edit')}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Edit2 className="h-4 w-4" />
                 {t('tables.edit')}
@@ -199,9 +207,12 @@ function TableCardImpl({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDeleteTable(table);
+                  run('delete', async () => {
+                    onDeleteTable(table);
+                  });
                 }}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 text-red-600 flex items-center gap-2"
+                disabled={isPending('delete')}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 text-red-600 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Trash2 className="h-4 w-4" />
                 {t('tables.delete')}
@@ -341,9 +352,12 @@ function TableCardImpl({
           <Button
             size="sm"
             variant="outline"
+            disabled={isPending('transfer')}
             onClick={(e) => {
               e.stopPropagation();
-              onTransferTable(table);
+              run('transfer', async () => {
+                onTransferTable(table);
+              });
             }}
             className="flex-1"
           >

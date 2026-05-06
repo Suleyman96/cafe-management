@@ -8,19 +8,27 @@ import type { SettingsSectionProps } from './ToggleRow';
 const SOCIAL_FIELDS = [
   {
     key: 'social_instagram',
-    label: 'Instagram',
-    placeholder: 'https://instagram.com/yourrestaurant',
+    labelKey: 'cafeSettings.instagram',
+    placeholderKey: 'instagramPlaceholder',
   },
-  { key: 'social_whatsapp', label: 'WhatsApp', placeholder: 'https://wa.me/XXXXXXXXXXXX' },
-  { key: 'social_tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@yourrestaurant' },
-  { key: 'social_telegram', label: 'Telegram', placeholder: 'https://t.me/yourrestaurant' },
-  { key: 'social_line', label: 'LINE', placeholder: 'https://line.me/R/ti/p/@yourrestaurant' },
+  {
+    key: 'social_whatsapp',
+    labelKey: 'cafeSettings.whatsapp',
+    placeholderKey: 'whatsappPlaceholder',
+  },
+  { key: 'social_tiktok', labelKey: 'cafeSettings.tiktok', placeholderKey: 'tiktokPlaceholder' },
+  {
+    key: 'social_telegram',
+    labelKey: 'cafeSettings.telegram',
+    placeholderKey: 'telegramPlaceholder',
+  },
+  { key: 'social_line', labelKey: 'cafeSettings.line', placeholderKey: 'linePlaceholder' },
   {
     key: 'location_maps_url',
-    label: 'Google Maps',
-    placeholder: 'https://g.page/yourrestaurant',
+    labelKey: 'cafeSettings.googleMaps',
+    placeholderKey: 'googleMapsPlaceholder',
   },
-];
+] as const;
 
 export function SocialMediaSection({ form, updateField }: SettingsSectionProps) {
   const { t } = useTranslation('staff');
@@ -36,12 +44,12 @@ export function SocialMediaSection({ form, updateField }: SettingsSectionProps) 
         {SOCIAL_FIELDS.map((field) => (
           <TextInput
             key={field.key}
-            label={field.label}
+            label={t(field.labelKey)}
             value={(form[field.key] as string) || ''}
             onChangeText={(v: string) => updateField(field.key, v || null)}
             mode="outlined"
             dense
-            placeholder={field.placeholder}
+            placeholder={t(field.placeholderKey, { ns: 'common' })}
             style={styles.input}
           />
         ))}

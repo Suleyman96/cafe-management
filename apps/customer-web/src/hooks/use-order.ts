@@ -26,49 +26,52 @@ export function useOrder(tableId: string) {
 
   const orderId = query.data?.id;
 
-  // Real-time subscription (needs raw supabase client for channel API)
+  // Real-time subscription (needs raw supabase client for channel API).
+  //
+  // Filtered by `id=eq.${orderId}`, NOT `table_id=eq.${tableId}`. A broader
+  // table-keyed filter would also broadcast events for *other* customers
+  // who shared this physical table earlier or later in the day — at a busy
+  // bar table that's 5+ short sessions per hour, each one's totals,
+  // statuses and customer_notes leak into every other tab still open on
+  // that tableId. Customer-initiated mutations already call
+  // `queryClient.invalidateQueries` on success, so the realtime path is
+  // only here to surface staff-side updates to *this* order; we don't need
+  // to listen for anyone else's. No channel is opened until the active
+  // order id resolves — there is nothing useful to subscribe to before
+  // that.
   useEffect(() => {
-    let channel: RealtimeChannel;
+    if (!orderId) return;
 
-    const setupSubscription = async () => {
-      const builder = supabase.channel(`orders:table_${tableId}`).on(
+    const channel: RealtimeChannel = supabase
+      .channel(`order:${orderId}`)
+      .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'orders',
-          filter: `table_id=eq.${tableId}`,
+          filter: `id=eq.${orderId}`,
         },
         () => {
           queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, tableId] });
         },
-      );
-
-      // Only subscribe to order_items when we have an active order to filter on
-      if (orderId) {
-        builder.on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'order_items',
-            filter: `order_id=eq.${orderId}`,
-          },
-          () => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, tableId] });
-          },
-        );
-      }
-
-      channel = builder.subscribe();
-    };
-
-    setupSubscription();
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'order_items',
+          filter: `order_id=eq.${orderId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, tableId] });
+        },
+      )
+      .subscribe();
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
+      supabase.removeChannel(channel);
     };
   }, [tableId, orderId, queryClient]);
 

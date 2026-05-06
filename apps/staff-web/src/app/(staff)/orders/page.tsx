@@ -8,6 +8,7 @@ import { Button, LoadingSpinner } from '@gustri/ui';
 import { ClipboardList, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { FreshnessIndicator } from '@/components/common/freshness-indicator';
 import { CancelOrderModal } from '@/components/modals/cancel-order-modal';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import { OrderListCard } from '@/components/orders/order-list-card';
@@ -44,24 +45,12 @@ export default function OrdersPage() {
     error,
     refetch,
   } = useOrders({ created_after: recentWindowStart });
-  const updateOrderStatusMutation = useUpdateOrderStatus();
-  const { mutateAsync: updateOrderStatusAsync } = updateOrderStatusMutation;
-  const markOutForDeliveryMutation = useMarkOutForDelivery();
-  const { mutateAsync: markOutForDeliveryAsync } = markOutForDeliveryMutation;
-  const markDeliveredMutation = useMarkDelivered();
-  const { mutateAsync: markDeliveredAsync } = markDeliveredMutation;
-  // Aggregate pending state across the three mutations a row can trigger.
-  // Whichever fired most recently owns `variables.orderId`; we disable that
-  // row's status buttons so a triple-click produces 1 PATCH, not 3.
-  const isStatusUpdatePending =
-    updateOrderStatusMutation.isPending ||
-    markOutForDeliveryMutation.isPending ||
-    markDeliveredMutation.isPending;
-  const pendingOrderId =
-    (updateOrderStatusMutation.isPending && updateOrderStatusMutation.variables?.orderId) ||
-    (markOutForDeliveryMutation.isPending && markOutForDeliveryMutation.variables?.orderId) ||
-    (markDeliveredMutation.isPending && markDeliveredMutation.variables) ||
-    null;
+  // Per-button pending state lives inside each OrderListCard via
+  // `usePendingAction`, so the row knows precisely which button is in flight
+  // (per-button granularity, not a single row-level lock).
+  const { mutateAsync: updateOrderStatusAsync } = useUpdateOrderStatus();
+  const { mutateAsync: markOutForDeliveryAsync } = useMarkOutForDelivery();
+  const { mutateAsync: markDeliveredAsync } = useMarkDelivered();
   const formatPrice = useFormatPrice();
 
   const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null);
@@ -83,7 +72,7 @@ export default function OrdersPage() {
   }, []);
 
   // Real-time: invalidate queries on DB changes
-  useRealtimeSync('orders-realtime', [
+  const { lastEventAtRef } = useRealtimeSync('orders-realtime', [
     {
       table: 'orders',
       queryKeys: [
@@ -186,7 +175,10 @@ export default function OrdersPage() {
   return (
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
       <div className="flex justify-between items-center mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold">{t('orders.title')}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl sm:text-2xl font-bold">{t('orders.title')}</h1>
+          <FreshnessIndicator lastEventAtRef={lastEventAtRef} />
+        </div>
       </div>
 
       {/* Filters */}
@@ -270,8 +262,6 @@ export default function OrdersPage() {
               onStatusUpdate={handleStatusUpdate}
               onOpenPayment={handleOpenPayment}
               onOpenCancel={setCancelOrderTarget}
-              isStatusUpdatePending={isStatusUpdatePending}
-              pendingOrderId={pendingOrderId}
             />
           ))
         )}

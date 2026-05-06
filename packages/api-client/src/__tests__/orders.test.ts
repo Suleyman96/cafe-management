@@ -189,6 +189,52 @@ describe('OrdersWrapper', () => {
     const errorOrders = createOrdersWrapper(errorCtx);
     await expect(errorOrders.findAll({ limit: 50 })).rejects.toThrow();
   });
+
+  // Plan 10 — replay-since-checkpoint catchup. Verifies the wrapper builds
+  // the right query: filter on `updated_at > since`, order by `updated_at`,
+  // capped at the supplied limit (default 200).
+  describe('findChangedSince (Plan 10 catchup)', () => {
+    type MockCall = { table: string; method: string; args: unknown[] };
+
+    it('filters on updated_at > since and applies the default 200 cap', async () => {
+      const ctx = createMockContext({
+        responses: { orders_decrypted: { data: [validOrder], error: null } },
+      });
+      const ordersW = createOrdersWrapper(ctx);
+      const since = new Date('2026-05-05T12:00:00.000Z');
+      const result = await ordersW.findChangedSince(since);
+      expect(result).toEqual([validOrder]);
+
+      const calls = ctx.getCalls() as MockCall[];
+      const gtCall = calls.find((c: MockCall) => c.method === 'gt');
+      const limitCall = calls.find((c: MockCall) => c.method === 'limit');
+      const orderCall = calls.find((c: MockCall) => c.method === 'order');
+      expect(gtCall?.args).toEqual(['updated_at', since.toISOString()]);
+      expect(limitCall?.args).toEqual([200]);
+      expect(orderCall?.args[0]).toBe('updated_at');
+    });
+
+    it('honors a custom limit', async () => {
+      const ctx = createMockContext({
+        responses: { orders_decrypted: { data: [validOrder], error: null } },
+      });
+      const ordersW = createOrdersWrapper(ctx);
+      await ordersW.findChangedSince(new Date('2026-05-05T12:00:00.000Z'), { limit: 50 });
+      const limitCall = (ctx.getCalls() as MockCall[]).find((c: MockCall) => c.method === 'limit');
+      expect(limitCall?.args).toEqual([50]);
+    });
+
+    it('accepts an ISO string and forwards it verbatim', async () => {
+      const ctx = createMockContext({
+        responses: { orders_decrypted: { data: [], error: null } },
+      });
+      const ordersW = createOrdersWrapper(ctx);
+      const sinceIso = '2026-05-05T12:00:00.000Z';
+      await ordersW.findChangedSince(sinceIso);
+      const gtCall = (ctx.getCalls() as MockCall[]).find((c: MockCall) => c.method === 'gt');
+      expect(gtCall?.args).toEqual(['updated_at', sinceIso]);
+    });
+  });
 });
 
 describe('OrderItemsWrapper', () => {

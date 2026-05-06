@@ -1,0 +1,20 @@
+{
+  "payment_exceeds_remaining": "Payment exceeds the remaining balance. Refresh the order to see the updated total.",
+  "payment_tenant_mismatch": "This payment doesn't belong to the current restaurant.",
+  "payment_on_terminal_order": "This order is closed or cancelled — no further payments can be added.",
+  "refund_exceeds_available": "Refund exceeds the amount available for this order.",
+  "refund_tenant_mismatch": "This refund doesn't belong to the current restaurant.",
+  "order_not_found": "Order not found. It may have been removed.",
+  "order_not_found_in_tenant": "This order can't be found for the current restaurant.",
+  "order_item_tenant_mismatch": "This order item doesn't belong to the current restaurant.",
+  "waiter_call_already_acknowledged": "This call was just answered by another team member.",
+  "waiter_call_already_resolved": "This call was just resolved by another team member.",
+  "order_close_requires_payment_or_reason": "Order is unpaid. Choose a reason such as 'Comp' or 'Walk-out' to close it.",
+  "discount_type_invalid": "That discount type isn't allowed.",
+  "discount_value_invalid": "The discount value is out of range.",
+  "menu_item_not_found_in_tenant": "Menu item not found for the current restaurant.",
+  "plan_required": "This action requires upgrading your plan.",
+  "client_outdated": "Your app is out of date. Please reload to continue.",
+  "version_conflict": "Another device just changed this order. Refresh and try again.",
+  "rate_limited": "Too many requests. Please wait a moment and try again."
+}

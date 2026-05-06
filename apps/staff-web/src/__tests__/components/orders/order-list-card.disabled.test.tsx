@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { OrderListCard } from '@/components/orders/order-list-card';
 import type { OrderWithDetails } from '@/types';
@@ -42,78 +41,75 @@ function makeOrder(overrides: Partial<OrderWithDetails> = {}): OrderWithDetails 
   } as OrderWithDetails;
 }
 
-describe('OrderListCard — pending mutation disables status buttons', () => {
-  it('disables the active status button when isStatusUpdatePending matches the row id', () => {
-    const formatPrice = (n: number) => `$${n.toFixed(2)}`;
-    const onStatusUpdate = vi.fn();
+describe('OrderListCard — per-button pending lock', () => {
+  it('rapid triple-click on the active status button fires onStatusUpdate exactly once until settle', async () => {
+    const user = userEvent.setup();
+    // Slow callback so the first click is still in flight when 2 + 3 fire.
+    let resolveFn: (() => void) | undefined;
+    const onStatusUpdate = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveFn = resolve;
+        }),
+    );
 
     render(
       <OrderListCard
         order={makeOrder()}
-        formatPrice={formatPrice}
+        formatPrice={(n: number) => `$${n.toFixed(2)}`}
         onStatusUpdate={onStatusUpdate}
         onOpenPayment={vi.fn()}
         onOpenCancel={vi.fn()}
-        isStatusUpdatePending={true}
-        pendingOrderId={'order-1'}
       />,
     );
 
     // For status="preparing" the active advance button is "Ready".
     const readyBtn = screen.getByRole('button', { name: /ready/i });
-    expect(readyBtn).toBeDisabled();
+
+    await user.click(readyBtn);
+    await user.click(readyBtn);
+    await user.click(readyBtn);
+
+    // The ref-based gate inside `usePendingAction` swallows the second and
+    // third clicks even before React commits the disabled state.
+    expect(onStatusUpdate).toHaveBeenCalledTimes(1);
+
+    // Settle the in-flight mutation; the button becomes clickable again.
+    resolveFn?.();
   });
 
-  it('does NOT disable the button when pendingOrderId points to a different row', () => {
+  it('does NOT lock unrelated buttons in the same row (per-button granularity)', async () => {
+    const user = userEvent.setup();
+    let resolveStatus: (() => void) | undefined;
+    const onStatusUpdate = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveStatus = resolve;
+        }),
+    );
+    const onOpenCancel = vi.fn();
+
     render(
       <OrderListCard
         order={makeOrder()}
-        formatPrice={(n) => `$${n.toFixed(2)}`}
-        onStatusUpdate={vi.fn()}
+        formatPrice={(n: number) => `$${n.toFixed(2)}`}
+        onStatusUpdate={onStatusUpdate}
         onOpenPayment={vi.fn()}
-        onOpenCancel={vi.fn()}
-        isStatusUpdatePending={true}
-        pendingOrderId={'some-other-order'}
+        onOpenCancel={onOpenCancel}
       />,
     );
 
-    expect(screen.getByRole('button', { name: /ready/i })).not.toBeDisabled();
-  });
+    const readyBtn = screen.getByRole('button', { name: /ready/i });
+    const cancelBtn = screen.getByRole('button', { name: /cancel/i });
 
-  it('rapid triple-click while pending fires onStatusUpdate exactly once', async () => {
-    const user = userEvent.setup();
-    const onStatusUpdate = vi.fn();
+    // Status mutation in flight — Ready is locked, Cancel is not.
+    await user.click(readyBtn);
+    expect(readyBtn).toBeDisabled();
+    expect(cancelBtn).not.toBeDisabled();
 
-    // Parent re-renders with pendingOrderId set after the first click.
-    // We simulate that by rendering a wrapper component that flips
-    // isStatusUpdatePending to true after the first invocation.
-    const Harness = () => {
-      const [pending, setPending] = useState(false);
-      return (
-        <OrderListCard
-          order={makeOrder()}
-          formatPrice={(n: number) => `$${n.toFixed(2)}`}
-          onStatusUpdate={(id, s) => {
-            onStatusUpdate(id, s);
-            setPending(true);
-          }}
-          onOpenPayment={vi.fn()}
-          onOpenCancel={vi.fn()}
-          isStatusUpdatePending={pending}
-          pendingOrderId={pending ? 'order-1' : null}
-        />
-      );
-    };
+    await user.click(cancelBtn);
+    expect(onOpenCancel).toHaveBeenCalledTimes(1);
 
-    render(<Harness />);
-    const btn = screen.getByRole('button', { name: /ready/i });
-
-    await user.click(btn);
-    await user.click(btn);
-    await user.click(btn);
-
-    // After the first click the button is disabled, so subsequent clicks
-    // are swallowed by the DOM and do not invoke the callback again.
-    expect(onStatusUpdate).toHaveBeenCalledTimes(1);
+    resolveStatus?.();
   });
 });

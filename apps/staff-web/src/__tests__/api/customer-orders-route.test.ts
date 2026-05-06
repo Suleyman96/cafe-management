@@ -134,3 +134,75 @@ describe('POST /api/v1/customer/orders — schema gate (C1)', () => {
     expect(createCustomerOrderMock).not.toHaveBeenCalled();
   });
 });
+
+describe('POST /api/v1/customer/orders — length caps (H3)', () => {
+  // Each test asserts the route rejects an oversized free-text payload at
+  // the schema gate, before the service layer is touched. The Postgres
+  // CHECK constraints in 20260507000001 are the second line of defense
+  // for direct-Supabase paths that bypass this route — they're tested
+  // separately at the wrapper layer.
+
+  it('rejects dine_in with customer_notes exceeding 2000 chars', async () => {
+    const res = await POST(
+      buildRequest({
+        order_type: 'dine_in',
+        table_id: '11111111-1111-4111-8111-111111111111',
+        client_request_id: '55555555-5555-4555-8555-555555555555',
+        customer_notes: 'x'.repeat(2001),
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(createCustomerOrderMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects delivery with delivery_address exceeding 500 chars', async () => {
+    const res = await POST(
+      buildRequest({
+        order_type: 'delivery',
+        qr_token: 'tkn_legit',
+        client_request_id: '55555555-5555-4555-8555-555555555555',
+        delivery_address: 'x'.repeat(501),
+        delivery_phone: '+15551234567',
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(createCustomerOrderMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects delivery with delivery_customer_name exceeding 100 chars', async () => {
+    const res = await POST(
+      buildRequest({
+        order_type: 'delivery',
+        qr_token: 'tkn_legit',
+        client_request_id: '55555555-5555-4555-8555-555555555555',
+        delivery_address: '1 Main St',
+        delivery_phone: '+15551234567',
+        delivery_customer_name: 'x'.repeat(101),
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(createCustomerOrderMock).not.toHaveBeenCalled();
+  });
+
+  it('accepts dine_in with customer_notes exactly at the 2000-char cap', async () => {
+    createCustomerOrderMock.mockResolvedValue({
+      order: { id: 'o1', tenant_id: 'derived-tenant' },
+      deduped: false,
+    });
+
+    const res = await POST(
+      buildRequest({
+        order_type: 'dine_in',
+        table_id: '11111111-1111-4111-8111-111111111111',
+        client_request_id: '55555555-5555-4555-8555-555555555555',
+        customer_notes: 'x'.repeat(2000),
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(createCustomerOrderMock).toHaveBeenCalledTimes(1);
+  });
+});

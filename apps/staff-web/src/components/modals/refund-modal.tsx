@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { useStableClientRequestId } from '@gustri/queries';
+import { useCafeSettings } from '@gustri/queries';
 import { Button } from '@gustri/ui';
 import { NumberInput } from '@gustri/ui-web';
 import { X } from 'lucide-react';
@@ -12,6 +12,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { useCanPerform } from '@/hooks/use-can-perform';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useIsOnline } from '@/hooks/use-is-online';
+import { usePersistentClientRequestId } from '@/hooks/use-persistent-client-request-id';
+import { ConfirmRefundModal } from './confirm-refund-modal';
 
 interface RefundModalProps {
   isOpen: boolean;
@@ -20,7 +22,15 @@ interface RefundModalProps {
   totalPaid: number;
   totalRefunded: number;
   onSuccess: () => void;
+  /** Order display id for the confirm summary (e.g. "#ab12cd34"). Optional for tests. */
+  orderLabel?: string;
+  /** Table number / takeout / delivery label for the confirm summary. */
+  orderContextLabel?: string;
+  /** Customer name for delivery / takeout orders. */
+  customerName?: string | null;
 }
+
+const DEFAULT_REFUND_THRESHOLD = 100;
 
 export function RefundModal({
   isOpen,
@@ -29,6 +39,9 @@ export function RefundModal({
   totalPaid,
   totalRefunded,
   onSuccess,
+  orderLabel,
+  orderContextLabel,
+  customerName,
 }: RefundModalProps) {
   const { t } = useTranslation('staff');
   const { staff } = useAuth();
@@ -36,34 +49,47 @@ export function RefundModal({
   const createRefund = useCreateRefund();
   const isOnline = useIsOnline();
   const canIssueRefund = useCanPerform('issue_refund');
-  const idempotencyKey = useStableClientRequestId();
+  // Keyed by order so a refund retry after error → modal close → reopen for
+  // the SAME order replays the same `client_request_id` and hits server-side
+  // dedupe on the (tenant_id, client_request_id) partial unique index.
+  const idempotencyKey = usePersistentClientRequestId(`refund:${orderId}`);
+  const { data: cafeSettings } = useCafeSettings();
+  const threshold = cafeSettings?.refund_type_to_confirm_threshold ?? DEFAULT_REFUND_THRESHOLD;
 
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const [refundMethod, setRefundMethod] = useState<'cash' | 'card' | 'digital'>('cash');
+  const [step, setStep] = useState<'form' | 'confirm'>('form');
 
   const available = totalPaid - totalRefunded;
   const parsedAmount = parseFloat(amount) || 0;
-  // `isPending` covers the in-flight mutation. With `retry: 0` (Blocker 2)
-  // a failure flips this back to false instantly, so the user can retry —
-  // and the retry reuses `idempotencyKey.get()` so the server dedupes via
-  // the (tenant_id, client_request_id) partial unique index on `refunds`.
-  const submitDisabled =
-    parsedAmount <= 0 ||
-    !reason.trim() ||
-    parsedAmount > available ||
-    createRefund.isPending ||
-    !isOnline ||
-    !canIssueRefund;
+  // The continue button only navigates to the confirm step — it never
+  // fires the mutation. `createRefund.isPending` is gated at the confirm
+  // CTA instead. With `retry: 0` (Blocker 2) a failure flips isPending
+  // back to false instantly, so the user can retry — and the retry
+  // reuses `idempotencyKey.get()` so the server dedupes via the
+  // (tenant_id, client_request_id) partial unique index on `refunds`.
+  const continueDisabled =
+    parsedAmount <= 0 || !reason.trim() || parsedAmount > available || !isOnline || !canIssueRefund;
 
   const handleFullRefund = () => {
     setAmount(available.toFixed(2));
   };
 
-  const handleSubmit = async () => {
+  const handleContinue = () => {
+    if (continueDisabled) return;
+    if (parsedAmount > available) {
+      toast.error(t('orders.refundExceedsAvailable'));
+      return;
+    }
+    setStep('confirm');
+  };
+
+  const handleConfirmedSubmit = async () => {
     if (parsedAmount <= 0 || !reason.trim() || !staff?.id) return;
     if (parsedAmount > available) {
       toast.error(t('orders.refundExceedsAvailable'));
+      setStep('form');
       return;
     }
 
@@ -79,21 +105,51 @@ export function RefundModal({
       idempotencyKey.reset();
       toast.success(t('orders.refundProcessed'));
       onSuccess();
-      onClose();
+      handleClose();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to process refund';
       toast.error(message);
+      // Stay on the confirm step so a retry reuses the same request id.
     }
   };
 
+  const handleClose = () => {
+    setStep('form');
+    onClose();
+  };
+
   if (!isOpen) return null;
+
+  if (step === 'confirm') {
+    const summary: { label: string; value: string }[] = [];
+    if (orderLabel) summary.push({ label: t('orders.orderId'), value: orderLabel });
+    if (orderContextLabel) summary.push({ label: t('orders.orderType'), value: orderContextLabel });
+    if (customerName) summary.push({ label: t('orders.customer'), value: customerName });
+    summary.push({ label: t('orders.refundMethod'), value: refundMethod });
+
+    return (
+      <ConfirmRefundModal
+        isOpen
+        intent="refund"
+        amount={parsedAmount}
+        amountFormatted={formatPrice(parsedAmount)}
+        threshold={threshold}
+        summary={summary}
+        reason={reason.trim()}
+        isPending={createRefund.isPending}
+        onBack={() => setStep('form')}
+        onCancel={handleClose}
+        onConfirm={handleConfirmedSubmit}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-md w-full">
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-lg font-bold">{t('orders.processRefund')}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -188,7 +244,7 @@ export function RefundModal({
         <div className="border-t p-6 flex gap-3">
           <Button
             variant="outline"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={createRefund.isPending}
             className="flex-1"
           >
@@ -196,11 +252,11 @@ export function RefundModal({
           </Button>
           <Button
             variant="destructive"
-            onClick={handleSubmit}
-            disabled={submitDisabled}
+            onClick={handleContinue}
+            disabled={continueDisabled}
             className="flex-1"
           >
-            {createRefund.isPending ? t('payment.processing') : t('orders.processRefund')}
+            {t('continue', { ns: 'common' })}
           </Button>
         </div>
       </div>

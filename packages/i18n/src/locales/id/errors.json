@@ -1,0 +1,20 @@
+{
+  "payment_exceeds_remaining": "Jumlah pembayaran melebihi sisa saldo. Segarkan pesanan untuk melihat total terbaru.",
+  "payment_tenant_mismatch": "Pembayaran ini bukan milik restoran saat ini.",
+  "payment_on_terminal_order": "Pesanan ini sudah ditutup atau dibatalkan — tidak ada pembayaran lain yang dapat ditambahkan.",
+  "refund_exceeds_available": "Jumlah pengembalian melebihi jumlah yang tersedia untuk pesanan ini.",
+  "refund_tenant_mismatch": "Pengembalian ini bukan milik restoran saat ini.",
+  "order_not_found": "Pesanan tidak ditemukan. Mungkin telah dihapus.",
+  "order_not_found_in_tenant": "Pesanan ini tidak ditemukan untuk restoran saat ini.",
+  "order_item_tenant_mismatch": "Item pesanan ini bukan milik restoran saat ini.",
+  "waiter_call_already_acknowledged": "Panggilan ini baru saja dijawab oleh anggota tim lain.",
+  "waiter_call_already_resolved": "Panggilan ini baru saja diselesaikan oleh anggota tim lain.",
+  "order_close_requires_payment_or_reason": "Pesanan belum dibayar. Pilih alasan seperti 'Gratis' atau 'Pergi tanpa membayar' untuk menutupnya.",
+  "discount_type_invalid": "Jenis diskon tersebut tidak diperbolehkan.",
+  "discount_value_invalid": "Nilai diskon di luar rentang yang diizinkan.",
+  "menu_item_not_found_in_tenant": "Item menu tidak ditemukan untuk restoran saat ini.",
+  "plan_required": "Tindakan ini memerlukan peningkatan paket Anda.",
+  "client_outdated": "Aplikasi Anda sudah usang. Silakan muat ulang untuk melanjutkan.",
+  "version_conflict": "Perangkat lain baru saja mengubah pesanan ini. Segarkan dan coba lagi.",
+  "rate_limited": "Terlalu banyak permintaan. Tunggu sebentar dan coba lagi."
+}

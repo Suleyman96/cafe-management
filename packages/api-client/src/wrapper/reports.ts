@@ -47,6 +47,54 @@ export interface StaffPerformanceRow {
   cancelled_orders: number;
 }
 
+// Plan 14 — end-of-shift reconciliation. Mirrors the JSONB shape returned by
+// the get_shift_reconciliation RPC. The DB function aggregates closed orders
+// + payments + refunds + comps in a single roundtrip; this typing pins down
+// what the page consumes so the JSON-from-RPC -> typed-prop transition stays
+// honest at compile time.
+export interface ShiftReconciliationSummary {
+  order_count: number;
+  expected_revenue: number;
+  payments_received: number;
+  tips_collected: number;
+  refunds_total: number;
+  refund_count: number;
+  comps_total: number;
+  comp_count: number;
+}
+
+export interface ShiftReconciliationByMethod {
+  payment_method: string;
+  amount: number;
+  tips: number;
+  payment_count: number;
+}
+
+export interface ShiftReconciliationPerStaff {
+  staff_id: string;
+  staff_name: string;
+  staff_role: string;
+  orders_handled: number;
+  revenue: number;
+  payment_count: number;
+  payments_collected: number;
+  refunds_processed: number;
+}
+
+export interface ShiftReconciliationCompRow {
+  reason: string;
+  comp_count: number;
+  amount: number;
+}
+
+export interface ShiftReconciliation {
+  summary: ShiftReconciliationSummary;
+  by_method: ShiftReconciliationByMethod[];
+  per_staff: ShiftReconciliationPerStaff[];
+  comps: ShiftReconciliationCompRow[];
+  range: { from: string; to: string };
+}
+
 export function createReportsWrapper(ctx: WrapperContext) {
   return {
     getRevenueSummary: async (from: string, to: string) => {
@@ -76,6 +124,32 @@ export function createReportsWrapper(ctx: WrapperContext) {
     getStaffPerformance: async (from: string, to: string) => {
       const data = await rpc(ctx, 'get_staff_performance', { p_from: from, p_to: to });
       return (data || []) as unknown as StaffPerformanceRow[];
+    },
+
+    getShiftReconciliation: async (from: string, to: string): Promise<ShiftReconciliation> => {
+      const data = await rpc(ctx, 'get_shift_reconciliation', { p_from: from, p_to: to });
+      // The RPC always returns an object shaped like ShiftReconciliation;
+      // empty ranges return zeroed counters, not null. We still guard
+      // because RPC return types come back as `Json` which permits null.
+      if (!data || typeof data !== 'object') {
+        return {
+          summary: {
+            order_count: 0,
+            expected_revenue: 0,
+            payments_received: 0,
+            tips_collected: 0,
+            refunds_total: 0,
+            refund_count: 0,
+            comps_total: 0,
+            comp_count: 0,
+          },
+          by_method: [],
+          per_staff: [],
+          comps: [],
+          range: { from, to },
+        };
+      }
+      return data as unknown as ShiftReconciliation;
     },
   };
 }

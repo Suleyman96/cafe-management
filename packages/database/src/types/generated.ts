@@ -59,11 +59,13 @@ export type Database = {
           feature_flags: Json
           hero_image_url: string | null
           id: string
+          idle_soft_lock_minutes: number
           location_maps_url: string | null
           minimum_delivery_amount: number | null
           minimum_order_amount: number
           prices_include_tax: boolean
           qr_ordering_enabled: boolean
+          refund_type_to_confirm_threshold: number
           restaurant_address: string | null
           restaurant_name: string
           show_tax_separately: boolean
@@ -102,11 +104,13 @@ export type Database = {
           feature_flags?: Json
           hero_image_url?: string | null
           id?: string
+          idle_soft_lock_minutes?: number
           location_maps_url?: string | null
           minimum_delivery_amount?: number | null
           minimum_order_amount?: number
           prices_include_tax?: boolean
           qr_ordering_enabled?: boolean
+          refund_type_to_confirm_threshold?: number
           restaurant_address?: string | null
           restaurant_name?: string
           show_tax_separately?: boolean
@@ -145,11 +149,13 @@ export type Database = {
           feature_flags?: Json
           hero_image_url?: string | null
           id?: string
+          idle_soft_lock_minutes?: number
           location_maps_url?: string | null
           minimum_delivery_amount?: number | null
           minimum_order_amount?: number
           prices_include_tax?: boolean
           qr_ordering_enabled?: boolean
+          refund_type_to_confirm_threshold?: number
           restaurant_address?: string | null
           restaurant_name?: string
           show_tax_separately?: boolean
@@ -842,6 +848,7 @@ export type Database = {
           discount_type: string | null
           discount_value: number | null
           estimated_delivery_time: string | null
+          force_close_reason: string | null
           id: string
           internal_notes: string | null
           order_number: string
@@ -859,6 +866,7 @@ export type Database = {
           tenant_id: string
           total: number
           updated_at: string | null
+          version: number
         }
         Insert: {
           assigned_waiter_id?: string | null
@@ -880,6 +888,7 @@ export type Database = {
           discount_type?: string | null
           discount_value?: number | null
           estimated_delivery_time?: string | null
+          force_close_reason?: string | null
           id?: string
           internal_notes?: string | null
           order_number: string
@@ -897,6 +906,7 @@ export type Database = {
           tenant_id?: string
           total?: number
           updated_at?: string | null
+          version?: number
         }
         Update: {
           assigned_waiter_id?: string | null
@@ -918,6 +928,7 @@ export type Database = {
           discount_type?: string | null
           discount_value?: number | null
           estimated_delivery_time?: string | null
+          force_close_reason?: string | null
           id?: string
           internal_notes?: string | null
           order_number?: string
@@ -935,6 +946,7 @@ export type Database = {
           tenant_id?: string
           total?: number
           updated_at?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -1117,6 +1129,8 @@ export type Database = {
           is_active: boolean | null
           last_login_at: string | null
           phone: string | null
+          pin_hash: string | null
+          pin_set_at: string | null
           preferred_language: string | null
           role: string
           tenant_id: string
@@ -1131,6 +1145,8 @@ export type Database = {
           is_active?: boolean | null
           last_login_at?: string | null
           phone?: string | null
+          pin_hash?: string | null
+          pin_set_at?: string | null
           preferred_language?: string | null
           role: string
           tenant_id?: string
@@ -1145,6 +1161,8 @@ export type Database = {
           is_active?: boolean | null
           last_login_at?: string | null
           phone?: string | null
+          pin_hash?: string | null
+          pin_set_at?: string | null
           preferred_language?: string | null
           role?: string
           tenant_id?: string
@@ -1707,6 +1725,7 @@ export type Database = {
       waiter_calls: {
         Row: {
           acknowledged_at: string | null
+          acknowledged_client_request_id: string | null
           call_type: string | null
           client_request_id: string | null
           created_at: string | null
@@ -1715,6 +1734,7 @@ export type Database = {
           priority: string | null
           reason: string | null
           resolved_at: string | null
+          resolved_client_request_id: string | null
           responded_by: string | null
           status: string
           table_id: string
@@ -1722,6 +1742,7 @@ export type Database = {
         }
         Insert: {
           acknowledged_at?: string | null
+          acknowledged_client_request_id?: string | null
           call_type?: string | null
           client_request_id?: string | null
           created_at?: string | null
@@ -1730,6 +1751,7 @@ export type Database = {
           priority?: string | null
           reason?: string | null
           resolved_at?: string | null
+          resolved_client_request_id?: string | null
           responded_by?: string | null
           status?: string
           table_id: string
@@ -1737,6 +1759,7 @@ export type Database = {
         }
         Update: {
           acknowledged_at?: string | null
+          acknowledged_client_request_id?: string | null
           call_type?: string | null
           client_request_id?: string | null
           created_at?: string | null
@@ -1745,6 +1768,7 @@ export type Database = {
           priority?: string | null
           reason?: string | null
           resolved_at?: string | null
+          resolved_client_request_id?: string | null
           responded_by?: string | null
           status?: string
           table_id?: string
@@ -2261,6 +2285,10 @@ export type Database = {
           total_items: number
           total_revenue: number
         }[]
+      }
+      get_shift_reconciliation: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
       }
       get_slow_queries: {
         Args: { p_limit?: number }

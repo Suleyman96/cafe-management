@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { useStableClientRequestId } from '@gustri/queries';
+import { useCafeSettings } from '@gustri/queries';
 import { Button } from '@gustri/ui';
 import { NumberInput } from '@gustri/ui-web';
 import { Percent, X } from 'lucide-react';
@@ -12,6 +12,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { useCanPerform } from '@/hooks/use-can-perform';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useIsOnline } from '@/hooks/use-is-online';
+import { usePersistentClientRequestId } from '@/hooks/use-persistent-client-request-id';
+import { ConfirmRefundModal } from './confirm-refund-modal';
 
 interface DiscountModalProps {
   isOpen: boolean;
@@ -21,7 +23,15 @@ interface DiscountModalProps {
   currentDiscountType?: 'none' | 'percentage' | 'fixed';
   currentDiscountValue?: number;
   onSuccess: () => void;
+  /** Order display id for the confirm summary (e.g. "#ab12cd34"). */
+  orderLabel?: string;
+  /** Table number / takeout / delivery label for the confirm summary. */
+  orderContextLabel?: string;
+  /** Customer name for delivery / takeout orders. */
+  customerName?: string | null;
 }
+
+const DEFAULT_REFUND_THRESHOLD = 100;
 
 export function DiscountModal({
   isOpen,
@@ -31,6 +41,9 @@ export function DiscountModal({
   currentDiscountType = 'none',
   currentDiscountValue = 0,
   onSuccess,
+  orderLabel,
+  orderContextLabel,
+  customerName,
 }: DiscountModalProps) {
   const { t } = useTranslation('staff');
   const { staff } = useAuth();
@@ -38,15 +51,22 @@ export function DiscountModal({
   const applyDiscount = useApplyDiscount();
   const isOnline = useIsOnline();
   const canApplyDiscount = useCanPerform('apply_discount');
+  const { data: cafeSettings } = useCafeSettings();
+  // The threshold is shared with refund: a tenant that wants to gate a
+  // £200 refund behind type-to-confirm equally wants to gate a £200
+  // discount override. Same column, same UX.
+  const threshold = cafeSettings?.refund_type_to_confirm_threshold ?? DEFAULT_REFUND_THRESHOLD;
   // Apply and remove are logically distinct mutations even though they
   // share the `useApplyDiscount` hook (remove sends `discount_type:'none'`,
   // value `0`). The server dedupes per `(tenant_id, order_id, action,
   // client_request_id)` and treats both as `action='discount_applied'`,
   // so reusing the same key across paths would let an apply-then-remove
   // double-tap return the apply result and silently keep the discount.
-  // Two refs — one per path — each reset on its own success.
-  const applyIdempotencyKey = useStableClientRequestId();
-  const removeIdempotencyKey = useStableClientRequestId();
+  // Two persistent keys — one per path — each reset on its own success.
+  // Persistence (sessionStorage) means a network error → modal close → reopen
+  // replays the same id and the server's idempotency catches the duplicate.
+  const applyIdempotencyKey = usePersistentClientRequestId(`discount:apply:${orderId}`);
+  const removeIdempotencyKey = usePersistentClientRequestId(`discount:remove:${orderId}`);
 
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>(
     currentDiscountType === 'none' ? 'percentage' : (currentDiscountType as 'percentage' | 'fixed'),
@@ -55,15 +75,15 @@ export function DiscountModal({
     currentDiscountValue > 0 ? currentDiscountValue.toString() : '',
   );
   const [reason, setReason] = useState('');
+  const [step, setStep] = useState<'form' | 'confirm'>('form');
 
   const parsedValue = parseFloat(discountValue) || 0;
-  // The same `idempotencyKey` covers both apply and remove because either
-  // is a single user-driven submit cycle and the modal closes on success;
-  // a retry of either path reuses the same key so the server (which
-  // dedupes via the partial unique index from migration 20260504000002)
-  // returns the same audit row instead of writing a duplicate.
   const isPending = applyDiscount.isPending;
-  const baseDisabled = isPending || !isOnline || !canApplyDiscount;
+  // Continue navigates to the confirm step; isPending gates the confirm
+  // CTA. Remove fires the mutation directly from step 1, so it still
+  // needs isPending.
+  const continueGateDisabled = !isOnline || !canApplyDiscount;
+  const removeDisabled = isPending || !isOnline || !canApplyDiscount;
 
   // Calculate preview
   const discountAmount =
@@ -71,10 +91,25 @@ export function DiscountModal({
       ? Math.min(orderSubtotal, (orderSubtotal * parsedValue) / 100)
       : Math.min(orderSubtotal, parsedValue);
 
-  const handleApply = async () => {
+  const handleClose = () => {
+    setStep('form');
+    onClose();
+  };
+
+  const handleContinue = () => {
+    if (parsedValue <= 0 || continueGateDisabled) return;
+    if (discountType === 'percentage' && parsedValue > 100) {
+      toast.error(t('orders.discountExceedsSubtotal'));
+      return;
+    }
+    setStep('confirm');
+  };
+
+  const handleConfirmedApply = async () => {
     if (parsedValue <= 0 || !staff?.id) return;
     if (discountType === 'percentage' && parsedValue > 100) {
       toast.error(t('orders.discountExceedsSubtotal'));
+      setStep('form');
       return;
     }
 
@@ -90,11 +125,12 @@ export function DiscountModal({
       applyIdempotencyKey.reset();
       toast.success(t('orders.discountApplied'));
       onSuccess();
-      onClose();
+      handleClose();
     } catch (error: unknown) {
       const raw = error instanceof Error ? error.message : 'Failed to apply discount';
       const message = raw === 'discount_reason_required' ? t('orders.discountReasonRequired') : raw;
       toast.error(message);
+      // Stay on the confirm step so a retry reuses the same request id.
     }
   };
 
@@ -112,7 +148,7 @@ export function DiscountModal({
       removeIdempotencyKey.reset();
       toast.success(t('orders.discountRemoved'));
       onSuccess();
-      onClose();
+      handleClose();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to remove discount';
       toast.error(message);
@@ -121,12 +157,46 @@ export function DiscountModal({
 
   if (!isOpen) return null;
 
+  if (step === 'confirm') {
+    const summary: { label: string; value: string }[] = [];
+    if (orderLabel) summary.push({ label: t('orders.orderId'), value: orderLabel });
+    if (orderContextLabel) summary.push({ label: t('orders.orderType'), value: orderContextLabel });
+    if (customerName) summary.push({ label: t('orders.customer'), value: customerName });
+    summary.push({
+      label: t('orders.discountType'),
+      value:
+        discountType === 'percentage'
+          ? `${parsedValue}% (${formatPrice(discountAmount)})`
+          : formatPrice(discountAmount),
+    });
+    summary.push({
+      label: t('subtotal', { ns: 'common' }),
+      value: `${formatPrice(orderSubtotal)} → ${formatPrice(orderSubtotal - discountAmount)}`,
+    });
+
+    return (
+      <ConfirmRefundModal
+        isOpen
+        intent="discount"
+        amount={discountAmount}
+        amountFormatted={formatPrice(discountAmount)}
+        threshold={threshold}
+        summary={summary}
+        reason={reason || null}
+        isPending={isPending}
+        onBack={() => setStep('form')}
+        onCancel={handleClose}
+        onConfirm={handleConfirmedApply}
+      />
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-md w-full">
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-lg font-bold">{t('orders.addDiscount')}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -219,21 +289,21 @@ export function DiscountModal({
             <Button
               variant="outline"
               onClick={handleRemove}
-              disabled={baseDisabled}
+              disabled={removeDisabled}
               className="text-red-600"
             >
               {t('orders.removeDiscount')}
             </Button>
           )}
-          <Button variant="outline" onClick={onClose} disabled={isPending} className="flex-1">
+          <Button variant="outline" onClick={handleClose} disabled={isPending} className="flex-1">
             {t('cancel', { ns: 'common' })}
           </Button>
           <Button
-            onClick={handleApply}
-            disabled={parsedValue <= 0 || baseDisabled}
+            onClick={handleContinue}
+            disabled={parsedValue <= 0 || continueGateDisabled}
             className="flex-1"
           >
-            {isPending ? t('payment.processing') : t('orders.addDiscount')}
+            {t('continue', { ns: 'common' })}
           </Button>
         </div>
       </div>

@@ -59,7 +59,17 @@ async function seedOrder(total: number): Promise<string> {
 }
 
 async function setOrderStatus(orderId: string, status: 'closed' | 'cancelled'): Promise<void> {
-  const { error } = await svc.from('orders').update({ status }).eq('id', orderId);
+  // The close-unpaid guard (migration 20260506000003) rejects status -> closed
+  // on orders with an unsettled balance unless force_close_reason rides on
+  // the same UPDATE. This helper exists purely to seed terminal-state
+  // fixtures, so we always supply a sentinel reason; production close paths
+  // either come from the orders wrapper (which prompts the operator) or land
+  // payment first.
+  const update: Record<string, unknown> = { status };
+  if (status === 'closed') {
+    update.force_close_reason = 'test_seed';
+  }
+  const { error } = await svc.from('orders').update(update).eq('id', orderId);
   if (error) throw new Error(`setOrderStatus failed: ${error.message}`);
 }
 

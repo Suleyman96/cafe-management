@@ -42,6 +42,11 @@ const limiters = redis
         limiter: Ratelimit.slidingWindow(10, '60 s'),
         prefix: 'rl:push-token-revoke',
       }),
+      'staff-pin-verify': new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(5, '300 s'),
+        prefix: 'rl:staff-pin-verify',
+      }),
     }
   : null;
 
@@ -51,7 +56,8 @@ export type RateLimitCategory =
   | 'discount'
   | 'staff'
   | 'password-reset'
-  | 'push-token-revoke';
+  | 'push-token-revoke'
+  | 'staff-pin-verify';
 
 export async function rateLimit(
   category: RateLimitCategory,

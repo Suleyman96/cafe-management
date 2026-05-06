@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Eye, EyeOff, Globe, Key, Mail, Shield, User } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { PinSettingsCard } from '@/components/auth/pin-settings-card';
 import { useAuth } from '@/hooks/use-auth';
 import { loadAndSwitchLanguage } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase/client';
@@ -237,6 +238,9 @@ export default function SettingsPage() {
               <p className="text-xs sm:text-sm text-gray-500">{t('settings.keepSecure')}</p>
             )}
           </div>
+
+          {/* Idle soft-lock PIN — feature-flagged; renders nothing if off */}
+          <PinSettingsCard />
         </div>
 
         {/* Right Column: Language */}

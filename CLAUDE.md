@@ -255,12 +255,31 @@ Read flags via the `useFeatureFlag(name)` hook. Default behavior when the flag i
 
 - **Every user-visible string** goes through `@gustri/i18n` keys. No hardcoded text in JSX, alerts, toasts, or error messages.
 - Locale coverage at PR time:
-  - **Required**: `en`, `az` (primary launch markets) — PR is blocked without these.
-  - **Required for staff UI**: `en`, `az`, `ru`, `tr`.
-  - **Customer-web**: aim for full 20-locale coverage; missing locales fall back to `en`.
+  - **Required for every user-visible string**: full 20-locale coverage across `ar`, `az`, `de`, `el`, `en`, `es`, `fa`, `fr`, `id`, `it`, `ja`, `ka`, `kk`, `ko`, `pt`, `ru`, `th`, `tr`, `uk`, `uz`. Applies to staff-web, customer-web, marketing, and mobile equally — there is no staff-only or launch-market subset.
+  - PR is blocked if any of the 20 locales is missing a new key. Missing locales fall back to `en` at runtime, but that fallback is a safety net, not a substitute for translating.
 - Use `useTranslation()` in components, `t()` in hooks/utilities. Never import locale JSON directly.
 - Numbers/dates/currencies go through formatters in `@gustri/i18n/formatters.ts`, not raw `toLocaleString`.
 - New keys: place under the most specific namespace; avoid generic top-level keys.
+
+### What is *not* a translatable string
+
+A few categories look like text but should stay literal across all locales. Don't extract them to keys:
+
+- **Format placeholders** — date masks (`YYYY-MM-DD`), number ranges (`1-31`), color hex (`#000000`). These are pattern hints, not language content. Keep inline.
+- **URL example placeholders** — `https://yourrestaurant.com`, `https://t.me/yourrestaurant`, etc. The "yourrestaurant" segment is a literal example, not English prose. Stored once in `common.json` (`websitePlaceholder`, `instagramPlaceholder`, …) with the same value across all 20 locales — extracted only so all consumers reuse the same example, not because the value translates.
+- **Brand names** — "gustri", "Stripe", "Apple", "Google", "Sentry". For social brands ("TikTok", "Telegram", "LINE", "Instagram", "WhatsApp") we *do* keep keys (`cafeSettings.tiktok`, …) so component code uses `t()` consistently — but the value is the brand name in every locale.
+
+### Plural-form support is `_one` / `_other` only
+
+i18next is configured without `keySeparator`, with EN-style plural rules. Languages that grammatically need richer plurals — Russian / Ukrainian / Arabic (`_few`, `_many`) — fall back to `_other` for non-1 counts. This is a known compromise; values for `_other` should read acceptably for the 5+ case (most common). Do NOT add `_few`/`_many` variants to a single locale — that creates drift vs the EN source and breaks the alignment audit. If proper CLDR pluralization is ever needed, change the i18next config first, then update all 19 locales together.
+
+### English fallback is OK for syntactically broken patterns
+
+For UI patterns like `"{prefix} gustri"` (used in `customer:tableLanding.poweredBy`), some languages have no clean prefix form — translating produces broken syntax (`"is supported gustri"`). Acceptable to use `"Powered by"` as the literal value in those locales (currently AZ, UZ, KO, KA, KK, FA, JA, IT, PT). Tech-savvy users recognize the English idiom; this is preferable to a syntactically wrong translation.
+
+### Server-side error messages must use sentinel codes
+
+API routes that return user-facing errors must emit snake_case sentinel codes (e.g. `{ error: 'rate_limited' }`), not English prose. Sentinels are listed in `packages/i18n/src/error-keys.ts` (`SENTINEL_ERROR_CODES`) and translated in `errors.json` per locale. Clients map them via `httpStatusToAppError` (in `@gustri/api-client`) → `localizeErrorMessage` (in mutation cache `onError`). Adding a new sentinel: append to `SENTINEL_ERROR_CODES` *and* add the key to all 20 `errors.json` files in the same PR.
 
 ## Database
 

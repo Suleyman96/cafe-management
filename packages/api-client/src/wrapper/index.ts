@@ -206,7 +206,7 @@ export type { ExpenseCategoriesWrapper, ExpensesWrapper } from './expenses';
 export type { FeedbackWrapper } from './feedback';
 export type { CategoriesWrapper, MenuItemsWrapper } from './menu';
 export type { OrderItemsWrapper } from './order-items';
-export type { OrdersWrapper } from './orders';
+export { ORDER_VERSION_CONFLICT, type OrdersWrapper } from './orders';
 export type { PaymentsWrapper } from './payments';
 export type { RealtimeWrapper } from './realtime';
 export type { RefundsWrapper } from './refunds';
@@ -214,6 +214,11 @@ export type {
   ExpenseSummaryRow,
   ReportsWrapper,
   RevenueSummaryRow,
+  ShiftReconciliation,
+  ShiftReconciliationByMethod,
+  ShiftReconciliationCompRow,
+  ShiftReconciliationPerStaff,
+  ShiftReconciliationSummary,
   StaffPerformanceRow,
   TopSoldItemRow,
   WasteSummaryRow,

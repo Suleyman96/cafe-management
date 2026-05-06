@@ -3,7 +3,6 @@
 import type { ORDER_STATUS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { useStableClientRequestId } from '@gustri/queries';
 import * as Sentry from '@sentry/nextjs';
 import { CheckCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -18,6 +17,7 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useIsOnline } from '@/hooks/use-is-online';
+import { usePersistentClientRequestId } from '@/hooks/use-persistent-client-request-id';
 import { ItemPaymentForm } from './payment/item-payment-form';
 import { OrderSummary } from './payment/order-summary';
 import { PartialPaymentForm } from './payment/partial-payment-form';
@@ -53,7 +53,11 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   const formatPrice = useFormatPrice();
   const { data: cafeSettings } = useCafeSettings();
   const isOnline = useIsOnline();
-  const idempotencyKey = useStableClientRequestId();
+  // Keyed by order so a payment retry after error → modal close → reopen
+  // for the SAME order reuses the same client_request_id and hits
+  // server-side dedupe on `(tenant_id, client_request_id)`. Reset only
+  // after a confirmed success (or the user starts an unrelated order).
+  const idempotencyKey = usePersistentClientRequestId(`payment:${order?.id ?? '_pending'}`);
 
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('full');
   const [partialAmount, setPartialAmount] = useState<string>('');
@@ -70,7 +74,12 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   // dedupes via `(tenant_id, client_request_id)` on `order_payments`.
   const loading = createPayment.isPending || updateOrderStatus.isPending;
 
-  // Reset selection state when modal opens to clear stale data from previous sessions
+  // Reset selection state when modal opens to clear stale data from previous sessions.
+  // The idempotency key is intentionally NOT reset here — same `(orderId)` reopen
+  // after an error must replay the same `client_request_id` so the server dedupes.
+  // It resets only on confirmed success (see handlePayment) or when the order itself
+  // changes (the persistent hook is keyed by orderId, so a different order gets a
+  // fresh id automatically).
   useEffect(() => {
     if (isOpen) {
       setPaymentMode('full');
@@ -78,12 +87,8 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
       setSelectedItemQuantities(new Map());
       setTipAmount('');
       setPaymentMethod('cash');
-      // New modal session = new logical submit cycle. Forget any key
-      // bound to a prior order so a successful close → reopen on the
-      // same order doesn't replay last session's request id.
-      idempotencyKey.reset();
     }
-  }, [isOpen, idempotencyKey]);
+  }, [isOpen]);
 
   // Collect item IDs that have already been fully paid via specific_items payments
   const paidItemIds = new Set<string>();

@@ -18,6 +18,7 @@ import {
   useUpdateOrderStatus,
 } from '@/hooks/use-orders-safe';
 import { apiRoutes } from '@/lib/api-routes';
+import { withOptimisticTtl } from '@/lib/optimistic-ttl';
 import { db } from '@/lib/supabase/wrapped-client';
 import { createMockDb } from '../helpers/mock-db';
 import {
@@ -26,6 +27,14 @@ import {
   TEST_TENANT_ID,
   waitFor,
 } from '../helpers/test-utils';
+
+// The TTL helper is mocked module-wide so we can assert the wiring without
+// running real timers. Default impl returns a no-op cancel; individual tests
+// override mockReturnValue when they want to assert cancel was invoked.
+vi.mock('@/lib/optimistic-ttl', () => ({
+  withOptimisticTtl: vi.fn(() => () => {}),
+}));
+const mockedWithOptimisticTtl = vi.mocked(withOptimisticTtl);
 
 // --- Hooks from @gustri/queries (use useDb → mockDb from provider) ---
 
@@ -295,9 +304,14 @@ describe('useCancelOrder', () => {
   });
 
   it('calls cancelOrder with correct args', async () => {
-    const { result, mockDb } = renderHookWithProviders(() => useCancelOrder());
+    const { result } = renderHookWithProviders(() => useCancelOrder());
     await result.current.mutateAsync({ orderId: 'o1', reason: 'test reason', tableId: 't1' });
-    expect(mockDb.orders.cancelOrder).toHaveBeenCalledWith('o1', 'test reason', 't1');
+    // Local override (Plan 8) — calls the directly imported `db` rather
+    // than the provider-injected `useDb()`, and routes through the
+    // wrapper's 4-arg signature `(orderId, reason, tableId, options?)`.
+    // `options` is undefined when the optimistic-concurrency feature
+    // flag is off (default in the test harness).
+    expect(db.orders.cancelOrder).toHaveBeenCalledWith('o1', 'test reason', 't1', undefined);
   });
 });
 
@@ -399,5 +413,85 @@ describe('useUpdateOrderNotes', () => {
     expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, 'o1'));
     expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
     expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS));
+  });
+});
+
+// --- Optimistic TTL wiring (Plan 7) ---
+//
+// The TTL revert exists for the case where onSettled never fires (silent
+// network drop, tab backgrounded mid-flight). Unit tests for the helper
+// itself live in `apps/staff-web/src/__tests__/lib/optimistic-ttl.test.ts`;
+// these integration tests assert the wiring: correct keys are scheduled,
+// and cancel runs on settle so the happy path doesn't double-invalidate.
+
+describe('useUpdateOrderStatus — optimistic TTL', () => {
+  it('schedules a TTL revert in onMutate against ORDERS and ACTIVE_ORDERS', async () => {
+    const cancel = vi.fn();
+    mockedWithOptimisticTtl.mockReturnValue(cancel);
+
+    const { result } = renderHookWithProviders(() => useUpdateOrderStatus());
+    await result.current.mutateAsync({ orderId: 'o1', status: 'PREPARING' });
+
+    expect(mockedWithOptimisticTtl).toHaveBeenCalledWith(expect.anything(), [
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS),
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS),
+    ]);
+  });
+
+  it('cancels the TTL on successful settle', async () => {
+    const cancel = vi.fn();
+    mockedWithOptimisticTtl.mockReturnValue(cancel);
+
+    const { result } = renderHookWithProviders(() => useUpdateOrderStatus());
+    await result.current.mutateAsync({ orderId: 'o1', status: 'PREPARING' });
+
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels the TTL even when the mutation rejects', async () => {
+    const cancel = vi.fn();
+    mockedWithOptimisticTtl.mockReturnValue(cancel);
+    (db.orders.updateStatus as any).mockRejectedValueOnce(new Error('boom'));
+
+    const { result } = renderHookWithProviders(() => useUpdateOrderStatus());
+    await result.current.mutateAsync({ orderId: 'o1', status: 'PREPARING' }).catch(() => {});
+
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useUpdateOrderItemStatus — optimistic TTL', () => {
+  it('schedules a TTL revert in onMutate against ORDERS and ACTIVE_ORDERS', async () => {
+    const cancel = vi.fn();
+    mockedWithOptimisticTtl.mockReturnValue(cancel);
+
+    const { result } = renderHookWithProviders(() => useUpdateOrderItemStatus());
+    await result.current.mutateAsync({ itemId: 'i1', status: 'preparing' as any });
+
+    expect(mockedWithOptimisticTtl).toHaveBeenCalledWith(expect.anything(), [
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS),
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS),
+    ]);
+  });
+
+  it('cancels the TTL on settle', async () => {
+    const cancel = vi.fn();
+    mockedWithOptimisticTtl.mockReturnValue(cancel);
+
+    const { result } = renderHookWithProviders(() => useUpdateOrderItemStatus());
+    await result.current.mutateAsync({ itemId: 'i1', status: 'preparing' as any });
+
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels the TTL when the mutation rejects', async () => {
+    const cancel = vi.fn();
+    mockedWithOptimisticTtl.mockReturnValue(cancel);
+    (db.orderItems.updateStatus as any).mockRejectedValueOnce(new Error('boom'));
+
+    const { result } = renderHookWithProviders(() => useUpdateOrderItemStatus());
+    await result.current.mutateAsync({ itemId: 'i1', status: 'preparing' as any }).catch(() => {});
+
+    expect(cancel).toHaveBeenCalledTimes(1);
   });
 });

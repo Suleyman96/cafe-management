@@ -1,3 +1,4 @@
+import { RateLimitError } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { getOrCreateClientRequestId } from '@gustri/queries';
 
@@ -18,7 +19,7 @@ function checkClientRateLimit(path: string, maxRequests: number, windowMs: numbe
   const recent = timestamps.filter((t) => now - t < windowMs);
 
   if (recent.length >= maxRequests) {
-    throw new Error('Too many requests. Please wait a moment and try again.');
+    throw new RateLimitError();
   }
 
   recent.push(now);

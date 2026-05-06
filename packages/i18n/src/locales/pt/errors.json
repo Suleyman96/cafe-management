@@ -1,0 +1,20 @@
+{
+  "payment_exceeds_remaining": "O pagamento excede o saldo restante. Atualize o pedido para ver o total atualizado.",
+  "payment_tenant_mismatch": "Este pagamento não pertence ao restaurante atual.",
+  "payment_on_terminal_order": "Este pedido está fechado ou cancelado — não é possível adicionar mais pagamentos.",
+  "refund_exceeds_available": "O reembolso excede o valor disponível para este pedido.",
+  "refund_tenant_mismatch": "Este reembolso não pertence ao restaurante atual.",
+  "order_not_found": "Pedido não encontrado. Pode ter sido removido.",
+  "order_not_found_in_tenant": "Este pedido não foi encontrado para o restaurante atual.",
+  "order_item_tenant_mismatch": "Este item do pedido não pertence ao restaurante atual.",
+  "waiter_call_already_acknowledged": "Outro membro da equipa acabou de atender esta chamada.",
+  "waiter_call_already_resolved": "Outro membro da equipa acabou de resolver esta chamada.",
+  "order_close_requires_payment_or_reason": "O pedido está por pagar. Escolha um motivo como 'Cortesia' ou 'Saiu sem pagar' para o fechar.",
+  "discount_type_invalid": "Esse tipo de desconto não é permitido.",
+  "discount_value_invalid": "O valor do desconto está fora do intervalo permitido.",
+  "menu_item_not_found_in_tenant": "Item do menu não encontrado para o restaurante atual.",
+  "plan_required": "Esta ação requer a atualização do seu plano.",
+  "client_outdated": "A sua aplicação está desatualizada. Recarregue para continuar.",
+  "version_conflict": "Outro dispositivo acabou de alterar este pedido. Atualize e tente novamente.",
+  "rate_limited": "Demasiadas solicitações. Aguarde um momento e tente novamente."
+}

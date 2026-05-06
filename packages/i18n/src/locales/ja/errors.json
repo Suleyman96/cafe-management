@@ -1,0 +1,20 @@
+{
+  "payment_exceeds_remaining": "支払金額が残額を超えています。注文を更新して最新の合計を確認してください。",
+  "payment_tenant_mismatch": "この支払いは現在のレストランのものではありません。",
+  "payment_on_terminal_order": "この注文は閉鎖またはキャンセルされており、これ以上の支払いは追加できません。",
+  "refund_exceeds_available": "返金額がこの注文で利用可能な金額を超えています。",
+  "refund_tenant_mismatch": "この返金は現在のレストランのものではありません。",
+  "order_not_found": "注文が見つかりません。削除された可能性があります。",
+  "order_not_found_in_tenant": "現在のレストランでこの注文が見つかりません。",
+  "order_item_tenant_mismatch": "この注文項目は現在のレストランのものではありません。",
+  "waiter_call_already_acknowledged": "この呼び出しは他のスタッフがすでに対応しました。",
+  "waiter_call_already_resolved": "この呼び出しは他のスタッフがすでに解決しました。",
+  "order_close_requires_payment_or_reason": "注文が未払いです。「サービス」や「無断退店」などの理由を選択してクローズしてください。",
+  "discount_type_invalid": "その割引タイプは許可されていません。",
+  "discount_value_invalid": "割引額が範囲外です。",
+  "menu_item_not_found_in_tenant": "現在のレストランのメニュー項目が見つかりません。",
+  "plan_required": "この操作にはプランのアップグレードが必要です。",
+  "client_outdated": "アプリが古いバージョンです。再読み込みして続行してください。",
+  "version_conflict": "別のデバイスがこの注文を変更しました。更新してからやり直してください。",
+  "rate_limited": "リクエストが多すぎます。少し待ってから再試行してください。"
+}

@@ -46,6 +46,24 @@ describe('handleSupabaseError', () => {
     expect(error.message).toContain('order_not_found_in_tenant');
   });
 
+  it('maps P0002 with waiter_call_already_acknowledged to ConflictError', () => {
+    const error = handleSupabaseError({
+      code: 'P0002',
+      message: 'waiter_call_already_acknowledged',
+    });
+    expect(error).toBeInstanceOf(ConflictError);
+    expect(error.message).toBe('waiter_call_already_acknowledged');
+  });
+
+  it('maps P0002 with waiter_call_already_resolved to ConflictError', () => {
+    const error = handleSupabaseError({
+      code: 'P0002',
+      message: 'waiter_call_already_resolved',
+    });
+    expect(error).toBeInstanceOf(ConflictError);
+    expect(error.message).toBe('waiter_call_already_resolved');
+  });
+
   it('maps 42501 to AuthorizationError', () => {
     const error = handleSupabaseError({
       code: '42501',

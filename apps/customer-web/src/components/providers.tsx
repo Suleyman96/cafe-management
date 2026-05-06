@@ -2,7 +2,7 @@
 
 import { isAppError } from '@gustri/core';
 import type { Language } from '@gustri/i18n';
-import { I18nextProvider, i18n } from '@gustri/i18n';
+import { I18nextProvider, i18n, localizeErrorMessage } from '@gustri/i18n';
 import { DbProvider } from '@gustri/queries';
 import * as Sentry from '@sentry/nextjs';
 import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -52,7 +52,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
           onError: (error, _variables, _context, mutation) => {
             if (mutation.options.onError) return;
             Sentry.captureException(error);
-            toast.error(isAppError(error) ? error.message : 'An unexpected error occurred');
+            const fallback = i18n.t('somethingWentWrong', {
+              ns: 'common',
+              defaultValue: 'An unexpected error occurred',
+            });
+            toast.error(
+              isAppError(error) ? localizeErrorMessage(error.message, fallback) : fallback,
+            );
           },
         }),
         defaultOptions: {

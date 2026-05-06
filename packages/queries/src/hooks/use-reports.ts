@@ -1,6 +1,11 @@
+import type { ShiftReconciliation } from '@gustri/api-client';
 import { useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from '../keys';
 import { useDb, useTenantId } from '../provider';
+
+// Re-exported so consumers (staff-web, mobile) can import the row shape from
+// @gustri/queries alongside the hook itself.
+export type { ShiftReconciliation } from '@gustri/api-client';
 
 // The RPCs derive tenant from the session via current_tenant_id(); the
 // `tenantId` param here doubles as an "auth ready" gate AND as the cache
@@ -62,5 +67,19 @@ export function useStaffPerformance(tenantId: string | undefined, from: string, 
     queryFn: () => db.reports.getStaffPerformance(from, to),
     enabled: !!tenantId && !!from && !!to,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useShiftReconciliation(tenantId: string | undefined, from: string, to: string) {
+  const db = useDb();
+  const ctxTenantId = useTenantId();
+  return useQuery<ShiftReconciliation>({
+    queryKey: tenantKey(ctxTenantId, QUERY_KEYS.REPORTS, 'shift-reconciliation', from, to),
+    queryFn: () => db.reports.getShiftReconciliation(from, to),
+    enabled: !!tenantId && !!from && !!to,
+    // Reconciliation is typically run once at end of shift; staleness <
+    // typical lookup interval, but short enough to pick up a late-arriving
+    // refund/payment without a manual refetch.
+    staleTime: 60 * 1000,
   });
 }

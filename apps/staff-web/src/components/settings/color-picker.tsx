@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@gustri/i18n';
 import { useEffect, useRef, useState } from 'react';
 
 interface ColorPickerProps {
@@ -28,6 +29,7 @@ export function ColorPicker({
   label,
   presets = DEFAULT_PRESETS,
 }: ColorPickerProps) {
+  const { t } = useTranslation('staff');
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState(value);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -98,14 +100,14 @@ export function ColorPicker({
               onChange(e.target.value);
             }}
             className="w-10 h-10 p-0 border-0 cursor-pointer rounded-lg overflow-hidden"
-            title="Pick color"
+            title={t('colorPicker.pickColor')}
           />
         </div>
 
         {/* Preset colors dropdown */}
         {isOpen && (
           <div className="absolute z-10 mt-2 p-3 bg-white border border-gray-200 rounded-lg shadow-lg">
-            <p className="text-xs text-gray-500 mb-2">Preset Colors</p>
+            <p className="text-xs text-gray-500 mb-2">{t('colorPicker.presets')}</p>
             <div className="grid grid-cols-5 gap-2">
               {presets.map((color) => (
                 <button

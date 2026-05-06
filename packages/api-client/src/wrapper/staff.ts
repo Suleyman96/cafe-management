@@ -7,10 +7,12 @@ import { handleSupabaseError } from '../errors';
 import { applyTenantScope, assertInsertTenantMatches } from './_tenant-scope';
 import type { StaffInsert, StaffRow, StaffUpdate, WrapperContext } from './types';
 
-// Explicit projections — keep `auth_user_id` server-side only.
+// Explicit projections — keep `auth_user_id` and `pin_hash` server-side only.
+// `pin_set_at` is exposed because the client-side soft-lock gate (Plan 13)
+// only mounts when the staff member already has a PIN configured.
 const STAFF_LIST_SELECT = 'id, email, full_name, role, is_active, created_at, updated_at' as const;
 const STAFF_DETAIL_SELECT =
-  'id, email, full_name, role, is_active, phone, preferred_language, created_at, updated_at, last_login_at, tenant_id' as const;
+  'id, email, full_name, role, is_active, phone, preferred_language, created_at, updated_at, last_login_at, tenant_id, pin_set_at' as const;
 
 export function createStaffWrapper(ctx: WrapperContext) {
   return {

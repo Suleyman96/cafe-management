@@ -37,6 +37,9 @@ export function handleRouteError(err: unknown) {
     }
   }
 
+  if (process.env.NODE_ENV !== 'production') {
+    console.error('[handleRouteError]', err);
+  }
   Sentry.captureException(err);
   return jsonError('An error occurred processing your request', 500);
 }

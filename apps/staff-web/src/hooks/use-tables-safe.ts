@@ -7,6 +7,7 @@ import { PLAN_LIMITS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { withOptimisticTtl } from '@/lib/optimistic-ttl';
 import { db } from '@/lib/supabase/wrapped-client';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -40,14 +41,23 @@ export function useUpdateTableStatus() {
         (old: TableRow[] | undefined) => old?.map((t) => (t.id === tableId ? { ...t, status } : t)),
       );
 
-      return { previousTables };
+      // Zombie-patch killer: if onSettled never fires (silent network drop,
+      // tab backgrounded mid-flight) the optimistic patch above is reverted
+      // by a forced invalidate after the TTL.
+      const cancelTtl = withOptimisticTtl(queryClient, [
+        tenantKey(tenantId, QUERY_KEYS.TABLES),
+        tenantKey(tenantId, QUERY_KEYS.ORDERS),
+      ]);
+
+      return { previousTables, cancelTtl };
     },
     onError: (_err, _vars, context) => {
       if (context?.previousTables) {
         queryClient.setQueryData(tenantKey(tenantId, QUERY_KEYS.TABLES), context.previousTables);
       }
     },
-    onSettled: () => {
+    onSettled: (_data, _err, _vars, context) => {
+      context?.cancelTtl?.();
       queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.TABLES) });
       queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) });
     },

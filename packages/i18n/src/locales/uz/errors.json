@@ -1,0 +1,20 @@
+{
+  "payment_exceeds_remaining": "To'lov summasi qoldiq summadan oshib ketdi. Yangilangan jami summani ko'rish uchun buyurtmani yangilang.",
+  "payment_tenant_mismatch": "Ushbu to'lov joriy restoranga tegishli emas.",
+  "payment_on_terminal_order": "Ushbu buyurtma yopilgan yoki bekor qilingan — qo'shimcha to'lov qo'shib bo'lmaydi.",
+  "refund_exceeds_available": "Qaytarish summasi ushbu buyurtma bo'yicha mavjud summadan oshib ketdi.",
+  "refund_tenant_mismatch": "Ushbu qaytarish joriy restoranga tegishli emas.",
+  "order_not_found": "Buyurtma topilmadi. O'chirilgan bo'lishi mumkin.",
+  "order_not_found_in_tenant": "Ushbu buyurtma joriy restoran uchun topilmadi.",
+  "order_item_tenant_mismatch": "Ushbu buyurtma elementi joriy restoranga tegishli emas.",
+  "waiter_call_already_acknowledged": "Ushbu chaqiruvga boshqa xodim allaqachon javob bergan.",
+  "waiter_call_already_resolved": "Ushbu chaqiruvni boshqa xodim allaqachon hal qilgan.",
+  "order_close_requires_payment_or_reason": "Buyurtma to'lanmagan. Yopish uchun 'Sovg'a' yoki 'To'lamasdan ketgan' kabi sababni tanlang.",
+  "discount_type_invalid": "Ushbu chegirma turiga ruxsat berilmagan.",
+  "discount_value_invalid": "Chegirma qiymati ruxsat etilgan diapazondan tashqarida.",
+  "menu_item_not_found_in_tenant": "Joriy restoran uchun menyu elementi topilmadi.",
+  "plan_required": "Ushbu amal uchun rejani yangilash kerak.",
+  "client_outdated": "Ilova eskirgan. Davom etish uchun qayta yuklang.",
+  "version_conflict": "Boshqa qurilma hozirgina ushbu buyurtmani o'zgartirdi. Yangilang va qayta urinib ko'ring.",
+  "rate_limited": "Juda ko‘p so‘rovlar. Iltimos, biroz kuting va qayta urinib ko‘ring."
+}

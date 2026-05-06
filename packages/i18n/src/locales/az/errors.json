@@ -1,0 +1,20 @@
+{
+  "payment_exceeds_remaining": "Ödəniş qalan məbləği aşır. Sifarişi yeniləyin və yenilənmiş cəmi yoxlayın.",
+  "payment_tenant_mismatch": "Bu ödəniş cari restorana aid deyil.",
+  "payment_on_terminal_order": "Bu sifariş bağlanıb və ya ləğv olunub — əlavə ödəniş etmək mümkün deyil.",
+  "refund_exceeds_available": "Geri qaytarılan məbləğ bu sifariş üçün mövcud məbləği aşır.",
+  "refund_tenant_mismatch": "Bu geri qaytarma cari restorana aid deyil.",
+  "order_not_found": "Sifariş tapılmadı. Silinmiş ola bilər.",
+  "order_not_found_in_tenant": "Cari restoran üçün bu sifariş tapılmadı.",
+  "order_item_tenant_mismatch": "Bu sifariş elementi cari restorana aid deyil.",
+  "waiter_call_already_acknowledged": "Bu çağırışa artıq başqa bir komanda üzvü cavab verdi.",
+  "waiter_call_already_resolved": "Bu çağırışı artıq başqa bir komanda üzvü həll etdi.",
+  "order_close_requires_payment_or_reason": "Sifariş ödənilməyib. Bağlamaq üçün 'Hədiyyə' və ya 'Çıxıb getmə' kimi səbəb seçin.",
+  "discount_type_invalid": "Bu endirim növünə icazə verilmir.",
+  "discount_value_invalid": "Endirim dəyəri icazə verilən diapazondan kənardır.",
+  "menu_item_not_found_in_tenant": "Cari restoran üçün menyu elementi tapılmadı.",
+  "plan_required": "Bu əməliyyat üçün planınızı yüksəltmək tələb olunur.",
+  "client_outdated": "Tətbiq köhnəlmişdir. Davam etmək üçün yeniləyin.",
+  "version_conflict": "Başqa bir cihaz indi bu sifarişi dəyişdi. Yeniləyin və yenidən cəhd edin.",
+  "rate_limited": "Çoxlu sorğu. Zəhmət olmasa bir az gözləyin və yenidən cəhd edin."
+}

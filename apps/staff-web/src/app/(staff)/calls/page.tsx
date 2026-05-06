@@ -17,6 +17,7 @@ import {
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAcknowledgeWaiterCall, useAuth, useResolveWaiterCall, useWaiterCalls } from '@/hooks';
+import { usePendingAction } from '@/hooks/use-pending-action';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 
 type FilterStatus = 'all' | 'pending' | 'acknowledged' | 'resolved';
@@ -29,6 +30,10 @@ export default function WaiterCallsPage() {
   const resolveCall = useResolveWaiterCall();
   const [filter, setFilter] = useState<FilterStatus>('pending');
   const tenantId = useTenantId();
+  // Per-call, per-button pending lock — keys: `ack:<callId>`, `resolve:<callId>`.
+  // Two waiters tapping "Acknowledge" on the same call get one network call,
+  // not two; their unrelated calls remain independently actionable.
+  const { isPending, run } = usePendingAction<string>();
 
   // Filter calls based on status
   const filteredCalls = waiterCalls?.filter((call) => {
@@ -115,25 +120,27 @@ export default function WaiterCallsPage() {
   };
 
   // Handle acknowledge call
-  const handleAcknowledge = async (callId: string) => {
-    if (!staff?.id) return;
-    try {
-      await acknowledgeCall.mutateAsync({ callId, staffId: staff.id });
-      toast.success(t('calls.callAcknowledged'));
-    } catch (_error) {
-      toast.error(t('calls.failedRespond'));
-    }
-  };
+  const handleAcknowledge = (callId: string) =>
+    run(`ack:${callId}`, async () => {
+      if (!staff?.id) return;
+      try {
+        await acknowledgeCall.mutateAsync({ callId, staffId: staff.id });
+        toast.success(t('calls.callAcknowledged'));
+      } catch (_error) {
+        toast.error(t('calls.failedRespond'));
+      }
+    });
 
   // Handle resolve call
-  const handleResolve = async (callId: string) => {
-    try {
-      await resolveCall.mutateAsync({ callId });
-      toast.success(t('calls.callCompleted'));
-    } catch (_error) {
-      toast.error(t('calls.failedRespond'));
-    }
-  };
+  const handleResolve = (callId: string) =>
+    run(`resolve:${callId}`, async () => {
+      try {
+        await resolveCall.mutateAsync({ callId });
+        toast.success(t('calls.callCompleted'));
+      } catch (_error) {
+        toast.error(t('calls.failedRespond'));
+      }
+    });
 
   if (loading) {
     return (
@@ -227,16 +234,16 @@ export default function WaiterCallsPage() {
           ) => {
             const callType = call.call_type || 'assistance';
             const isEmergency = callType === 'emergency';
-            const isPending = call.status === 'pending';
+            const isPendingStatus = call.status === 'pending';
             const isAcknowledged = call.status === 'acknowledged';
-            const isActive = isPending || isAcknowledged;
+            const isActive = isPendingStatus || isAcknowledged;
 
             return (
               <div
                 key={call.id}
                 className={`
                 border rounded-lg p-3 sm:p-4 transition-all bg-white
-                ${isPending && isEmergency ? 'ring-2 ring-red-500 animate-pulse' : ''}
+                ${isPendingStatus && isEmergency ? 'ring-2 ring-red-500 animate-pulse' : ''}
                 ${!isActive ? 'opacity-60' : ''}
               `}
               >
@@ -280,24 +287,42 @@ export default function WaiterCallsPage() {
                   </div>
 
                   <div className="flex gap-2 w-full sm:w-auto">
-                    {isPending && (
-                      <Button
-                        onClick={() => handleAcknowledge(call.id)}
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 sm:flex-none"
-                      >
-                        <Bell className="h-4 w-4 mr-1" />
+                    {isPending(`ack:${call.id}`) ? (
+                      <Button size="sm" variant="outline" disabled className="flex-1 sm:flex-none">
+                        <LoadingSpinner
+                          size="sm"
+                          className="h-4 w-4 mr-1 border-gray-300 border-t-gray-700"
+                        />
                         {t('calls.acknowledge')}
                       </Button>
+                    ) : (
+                      isPendingStatus && (
+                        <Button
+                          onClick={() => handleAcknowledge(call.id)}
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 sm:flex-none"
+                        >
+                          <Bell className="h-4 w-4 mr-1" />
+                          {t('calls.acknowledge')}
+                        </Button>
+                      )
                     )}
                     {isActive && (
                       <Button
                         onClick={() => handleResolve(call.id)}
                         size="sm"
+                        disabled={isPending(`resolve:${call.id}`)}
                         className="flex-1 sm:flex-none"
                       >
-                        <CheckCircle className="h-4 w-4 mr-1" />
+                        {isPending(`resolve:${call.id}`) ? (
+                          <LoadingSpinner
+                            size="sm"
+                            className="h-4 w-4 mr-1 border-white/40 border-t-white"
+                          />
+                        ) : (
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                        )}
                         {t('calls.resolve')}
                       </Button>
                     )}

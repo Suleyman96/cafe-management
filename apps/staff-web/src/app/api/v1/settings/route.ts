@@ -1,3 +1,4 @@
+import { handleSupabaseError } from '@gustri/api-client';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
@@ -71,9 +72,7 @@ export async function PUT(request: NextRequest) {
       .select()
       .single();
 
-    if (updateError) {
-      throw new Error(updateError.message);
-    }
+    if (updateError) throw handleSupabaseError(updateError);
 
     return jsonOk({ settings });
   } catch (err) {

@@ -30,23 +30,21 @@ export function GeneralSettingsTab({ formData, onChange }: SettingsTabProps) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Restaurant Address
+              {t('cafeSettings.restaurantAddress')}
             </label>
             <input
               type="text"
               value={formData.restaurant_address || ''}
               onChange={(e) => onChange('restaurant_address', e.target.value || null)}
-              placeholder="123 Main Street, City, Country"
+              placeholder={t('cafeSettings.restaurantAddressPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Default Menu Language
+              {t('cafeSettings.defaultMenuLanguage')}
             </label>
-            <p className="text-xs text-gray-500 mb-1">
-              Language shown to customers when they first scan the QR code
-            </p>
+            <p className="text-xs text-gray-500 mb-1">{t('cafeSettings.languageHint')}</p>
             <select
               value={formData.default_language}
               onChange={(e) => onChange('default_language', e.target.value)}

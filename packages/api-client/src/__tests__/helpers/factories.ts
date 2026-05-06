@@ -74,6 +74,8 @@ export function buildOrder(overrides?: Partial<OrderRow>): OrderRow {
     delivery_person_id: null,
     delivery_access_token: null,
     client_request_id: null,
+    force_close_reason: null,
+    version: 1,
     ...overrides,
   };
 }
@@ -150,6 +152,8 @@ export function buildStaff(overrides?: Partial<StaffRow>): StaffRow {
     last_login_at: null,
     auth_user_id: null,
     preferred_language: 'en',
+    pin_hash: null,
+    pin_set_at: null,
     ...overrides,
   };
 }
@@ -257,6 +261,8 @@ export function buildWaiterCall(overrides?: Partial<WaiterCallRow>): WaiterCallR
     resolved_at: null,
     notes: null,
     client_request_id: null,
+    acknowledged_client_request_id: null,
+    resolved_client_request_id: null,
     ...overrides,
   };
 }

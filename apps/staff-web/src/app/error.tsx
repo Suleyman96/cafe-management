@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@gustri/i18n';
 import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 
@@ -10,6 +11,8 @@ export default function RootError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useTranslation('common');
+
   useEffect(() => {
     Sentry.captureException(error);
   }, [error]);
@@ -32,15 +35,13 @@ export default function RootError({
             />
           </svg>
         </div>
-        <h2 className="mb-2 text-xl font-semibold text-gray-900">Something went wrong</h2>
-        <p className="mb-6 text-sm text-gray-500">
-          An unexpected error occurred. Please try again or contact support if the problem persists.
-        </p>
+        <h2 className="mb-2 text-xl font-semibold text-gray-900">{t('error.title')}</h2>
+        <p className="mb-6 text-sm text-gray-500">{t('error.message')}</p>
         <button
           onClick={reset}
           className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary/90 transition-colors"
         >
-          Try again
+          {t('error.tryAgain')}
         </button>
       </div>
     </div>

@@ -1,0 +1,20 @@
+{
+  "payment_exceeds_remaining": "Le paiement dépasse le solde restant. Actualisez la commande pour voir le total mis à jour.",
+  "payment_tenant_mismatch": "Ce paiement n'appartient pas au restaurant actuel.",
+  "payment_on_terminal_order": "Cette commande est clôturée ou annulée — aucun paiement supplémentaire ne peut être ajouté.",
+  "refund_exceeds_available": "Le remboursement dépasse le montant disponible pour cette commande.",
+  "refund_tenant_mismatch": "Ce remboursement n'appartient pas au restaurant actuel.",
+  "order_not_found": "Commande introuvable. Elle a peut-être été supprimée.",
+  "order_not_found_in_tenant": "Cette commande est introuvable pour le restaurant actuel.",
+  "order_item_tenant_mismatch": "Cet article de commande n'appartient pas au restaurant actuel.",
+  "waiter_call_already_acknowledged": "Cet appel vient d'être pris en charge par un autre membre de l'équipe.",
+  "waiter_call_already_resolved": "Cet appel vient d'être résolu par un autre membre de l'équipe.",
+  "order_close_requires_payment_or_reason": "La commande n'est pas payée. Choisissez un motif tel que 'Offert' ou 'Parti sans payer' pour la clôturer.",
+  "discount_type_invalid": "Ce type de remise n'est pas autorisé.",
+  "discount_value_invalid": "La valeur de la remise est hors plage autorisée.",
+  "menu_item_not_found_in_tenant": "Article du menu introuvable pour le restaurant actuel.",
+  "plan_required": "Cette action nécessite la mise à niveau de votre forfait.",
+  "client_outdated": "Votre application est obsolète. Veuillez la recharger pour continuer.",
+  "version_conflict": "Un autre appareil vient de modifier cette commande. Actualisez et réessayez.",
+  "rate_limited": "Trop de requêtes. Veuillez patienter un instant et réessayer."
+}

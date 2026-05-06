@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { DEFAULT_LANGUAGE } from './languages';
 
-export type I18nNamespace = 'common' | 'nav' | 'auth' | 'staff' | 'customer' | 'roles';
+export type I18nNamespace = 'common' | 'nav' | 'auth' | 'staff' | 'customer' | 'roles' | 'errors';
 
 export interface InitI18nOptions {
   lng?: string;

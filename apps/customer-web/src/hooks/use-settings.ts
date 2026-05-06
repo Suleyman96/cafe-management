@@ -59,6 +59,8 @@ const DEFAULT_SETTINGS: CafeSettings = {
   location_maps_url: null,
   default_language: 'en',
   feature_flags: {},
+  refund_type_to_confirm_threshold: 100,
+  idle_soft_lock_minutes: 60,
   created_at: '',
   updated_at: '',
 };

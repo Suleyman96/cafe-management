@@ -1,3 +1,4 @@
+import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { StatusBadge } from '@/components/ui';
@@ -27,9 +28,24 @@ export const TableCard = React.memo(function TableCard({
   currencySymbol,
   onPress,
 }: TableCardProps) {
+  const { t } = useTranslation('staff');
   const statusColors = TABLE_STATUS_COLORS[table.status];
   const backgroundColor = statusColors?.bg || COLORS.card;
   const borderColor = statusColors?.text || COLORS.border;
+
+  const a11yParts = [
+    t('tables.a11y.label', {
+      number: table.table_number,
+      status: t(`tables.${table.status}`, { defaultValue: table.status }),
+    }),
+  ];
+  if (activeOrderCount > 0) {
+    a11yParts.push(t('tables.a11y.activeOrders', { count: activeOrderCount }));
+  }
+  if (hasWaiterCall) {
+    a11yParts.push(t('tables.a11y.waiterCallPending'));
+  }
+  const accessibilityLabel = a11yParts.join(', ');
 
   return (
     <TouchableOpacity
@@ -37,11 +53,7 @@ export const TableCard = React.memo(function TableCard({
       onPress={() => onPress(table.id)}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={`Table ${table.table_number}, ${table.status}${
-        activeOrderCount > 0
-          ? `, ${activeOrderCount} active order${activeOrderCount > 1 ? 's' : ''}`
-          : ''
-      }${hasWaiterCall ? ', waiter call pending' : ''}`}
+      accessibilityLabel={accessibilityLabel}
     >
       <View style={styles.header}>
         <Text style={styles.tableNumber}>#{table.table_number}</Text>
@@ -59,7 +71,7 @@ export const TableCard = React.memo(function TableCard({
       {activeOrderCount > 0 && (
         <View style={styles.orderInfo}>
           <Text variant="bodySmall" style={styles.orderCount}>
-            {activeOrderCount} order{activeOrderCount > 1 ? 's' : ''}
+            {t('tables.orderCount', { count: activeOrderCount })}
           </Text>
           <Text variant="bodySmall" style={styles.orderTotal}>
             {currencySymbol}

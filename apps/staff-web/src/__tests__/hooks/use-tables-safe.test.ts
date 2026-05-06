@@ -10,6 +10,7 @@ import {
   useUpdateTable,
   useUpdateTableStatus,
 } from '@/hooks/use-tables-safe';
+import { withOptimisticTtl } from '@/lib/optimistic-ttl';
 import { db } from '@/lib/supabase/wrapped-client';
 import {
   createWrapper,
@@ -17,6 +18,12 @@ import {
   TEST_TENANT_ID,
   waitFor,
 } from '../helpers/test-utils';
+
+// See use-orders-safe.test.tsx for the rationale on this module-wide mock.
+vi.mock('@/lib/optimistic-ttl', () => ({
+  withOptimisticTtl: vi.fn(() => () => {}),
+}));
+const mockedWithOptimisticTtl = vi.mocked(withOptimisticTtl);
 
 // --- Hooks from @gustri/queries (use useDb → mockDb from provider) ---
 
@@ -89,6 +96,41 @@ describe('useUpdateTableStatus', () => {
     const { result } = renderHookWithProviders(() => useUpdateTableStatus());
     await result.current.mutateAsync({ tableId: 't1', status: 'occupied' as any });
     expect(db.tables.updateStatus).toHaveBeenCalledWith('t1', 'occupied');
+  });
+
+  // --- Optimistic TTL wiring (Plan 7) ---
+  it('schedules a TTL revert in onMutate against TABLES and ORDERS', async () => {
+    const cancel = vi.fn();
+    mockedWithOptimisticTtl.mockReturnValue(cancel);
+
+    const { result } = renderHookWithProviders(() => useUpdateTableStatus());
+    await result.current.mutateAsync({ tableId: 't1', status: 'occupied' as any });
+
+    expect(mockedWithOptimisticTtl).toHaveBeenCalledWith(expect.anything(), [
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES),
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS),
+    ]);
+  });
+
+  it('cancels the TTL on successful settle', async () => {
+    const cancel = vi.fn();
+    mockedWithOptimisticTtl.mockReturnValue(cancel);
+
+    const { result } = renderHookWithProviders(() => useUpdateTableStatus());
+    await result.current.mutateAsync({ tableId: 't1', status: 'occupied' as any });
+
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels the TTL when the mutation rejects', async () => {
+    const cancel = vi.fn();
+    mockedWithOptimisticTtl.mockReturnValue(cancel);
+    (db.tables.updateStatus as any).mockRejectedValueOnce(new Error('boom'));
+
+    const { result } = renderHookWithProviders(() => useUpdateTableStatus());
+    await result.current.mutateAsync({ tableId: 't1', status: 'occupied' as any }).catch(() => {});
+
+    expect(cancel).toHaveBeenCalledTimes(1);
   });
 });
 

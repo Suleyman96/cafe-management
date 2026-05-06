@@ -71,10 +71,30 @@ describe('useMarkFeedbackRead', () => {
 // ─── Waiter Calls ───────────────────────────────────────────────────────────
 
 describe('useAcknowledgeWaiterCall', () => {
-  it('calls acknowledge with id + staffId', async () => {
+  it('calls acknowledge with id + staffId + auto-stamped client_request_id', async () => {
     const { result, mockDb } = renderHookWithProviders(() => useAcknowledgeWaiterCall());
     await result.current.mutateAsync({ id: 'wc1', staffId: 's1' });
-    expect(mockDb.waiterCalls.acknowledge).toHaveBeenCalledWith('wc1', 's1');
+    expect(mockDb.waiterCalls.acknowledge).toHaveBeenCalledWith(
+      'wc1',
+      's1',
+      expect.objectContaining({ clientRequestId: expect.any(String) }),
+    );
+    const opts = (mockDb.waiterCalls.acknowledge as any).mock.calls[0][2];
+    expect(opts.clientRequestId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+  });
+
+  it('preserves caller-supplied client_request_id', async () => {
+    const { result, mockDb } = renderHookWithProviders(() => useAcknowledgeWaiterCall());
+    await result.current.mutateAsync({
+      id: 'wc1',
+      staffId: 's1',
+      clientRequestId: '11111111-1111-4111-8111-111111111111',
+    });
+    expect(mockDb.waiterCalls.acknowledge).toHaveBeenCalledWith('wc1', 's1', {
+      clientRequestId: '11111111-1111-4111-8111-111111111111',
+    });
   });
 
   it('invalidates waiter calls on success', async () => {
@@ -88,16 +108,22 @@ describe('useAcknowledgeWaiterCall', () => {
 });
 
 describe('useResolveWaiterCall', () => {
-  it('forwards id + optional notes', async () => {
+  it('forwards id + notes + auto-stamped client_request_id', async () => {
     const { result, mockDb } = renderHookWithProviders(() => useResolveWaiterCall());
     await result.current.mutateAsync({ id: 'wc1', notes: 'done' });
-    expect(mockDb.waiterCalls.resolve).toHaveBeenCalledWith('wc1', 'done');
+    expect(mockDb.waiterCalls.resolve).toHaveBeenCalledWith(
+      'wc1',
+      expect.objectContaining({ notes: 'done', clientRequestId: expect.any(String) }),
+    );
   });
 
   it('handles missing notes', async () => {
     const { result, mockDb } = renderHookWithProviders(() => useResolveWaiterCall());
     await result.current.mutateAsync({ id: 'wc1' });
-    expect(mockDb.waiterCalls.resolve).toHaveBeenCalledWith('wc1', undefined);
+    expect(mockDb.waiterCalls.resolve).toHaveBeenCalledWith(
+      'wc1',
+      expect.objectContaining({ notes: undefined, clientRequestId: expect.any(String) }),
+    );
   });
 });
 

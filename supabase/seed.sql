@@ -15,6 +15,34 @@ INSERT INTO staff (id, tenant_id, email, full_name, role, auth_user_id, is_activ
 ('10000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000001', 'kitchen@cafe.com', 'Chef Kenji', 'kitchen', null, true)
 ON CONFLICT (id) DO NOTHING;
 
+-- The handle_new_tenant_signup() trigger creates the per-tenant defaults
+-- (cafe_settings + task_categories + expense_categories) when a tenant is
+-- provisioned via auth signup. The seed bypasses that trigger by inserting
+-- tenants directly, so we replicate the same defaults here. Skipping any of
+-- them leaves the tenant in a state production never produces — e.g. the
+-- settings PUT updates 0 rows, or the tasks/expenses screens render empty
+-- category pickers.
+INSERT INTO cafe_settings (tenant_id, restaurant_name) VALUES
+('00000000-0000-0000-0000-000000000001', 'Default Restaurant')
+ON CONFLICT (tenant_id) DO NOTHING;
+
+INSERT INTO task_categories (id, tenant_id, name, icon, color) VALUES
+('50000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Opening',   '🌅', '#22c55e'),
+('50000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'Closing',   '🌙', '#6366f1'),
+('50000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'Cleaning',  '🧹', '#06b6d4'),
+('50000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000001', 'Inventory', '📦', '#f59e0b'),
+('50000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000001', 'General',   '📋', '#64748b')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO expense_categories (id, tenant_id, name, icon) VALUES
+('60000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Food & Ingredients', '🍕'),
+('60000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'Beverages',          '☕'),
+('60000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'Utilities',          '💡'),
+('60000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000001', 'Rent',               '🏠'),
+('60000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000001', 'Equipment',          '🔧'),
+('60000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000001', 'Other',              '📌')
+ON CONFLICT (id) DO NOTHING;
+
 -- Insert tables
 INSERT INTO tables (id, tenant_id, table_number, qr_code, capacity, location, status, is_active) VALUES
 ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'T01', 'qr_token_table_01', 4, 'Window', 'free', true),
@@ -109,6 +137,23 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO cafe_settings (tenant_id, restaurant_name) VALUES
 ('00000000-0000-0000-0000-000000000002', 'Test Tenant Two')
 ON CONFLICT (tenant_id) DO NOTHING;
+
+INSERT INTO task_categories (id, tenant_id, name, icon, color) VALUES
+('50000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000002', 'Opening',   '🌅', '#22c55e'),
+('50000000-0000-0000-0000-000000000102', '00000000-0000-0000-0000-000000000002', 'Closing',   '🌙', '#6366f1'),
+('50000000-0000-0000-0000-000000000103', '00000000-0000-0000-0000-000000000002', 'Cleaning',  '🧹', '#06b6d4'),
+('50000000-0000-0000-0000-000000000104', '00000000-0000-0000-0000-000000000002', 'Inventory', '📦', '#f59e0b'),
+('50000000-0000-0000-0000-000000000105', '00000000-0000-0000-0000-000000000002', 'General',   '📋', '#64748b')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO expense_categories (id, tenant_id, name, icon) VALUES
+('60000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000002', 'Food & Ingredients', '🍕'),
+('60000000-0000-0000-0000-000000000102', '00000000-0000-0000-0000-000000000002', 'Beverages',          '☕'),
+('60000000-0000-0000-0000-000000000103', '00000000-0000-0000-0000-000000000002', 'Utilities',          '💡'),
+('60000000-0000-0000-0000-000000000104', '00000000-0000-0000-0000-000000000002', 'Rent',               '🏠'),
+('60000000-0000-0000-0000-000000000105', '00000000-0000-0000-0000-000000000002', 'Equipment',          '🔧'),
+('60000000-0000-0000-0000-000000000106', '00000000-0000-0000-0000-000000000002', 'Other',              '📌')
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO tables (id, tenant_id, table_number, qr_code, capacity, location, status, is_active) VALUES
 ('20000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000002', 'T2-ONLY', 'qr_token_tenant2_only', 4, 'Tenant-2-Only', 'free', true)

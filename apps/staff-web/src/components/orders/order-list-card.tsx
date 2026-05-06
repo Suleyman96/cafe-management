@@ -2,7 +2,7 @@
 
 import { calculateOrderTotal, formatTime, ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
-import { Button, getOrderStatusColor } from '@gustri/ui';
+import { Button, getOrderStatusColor, LoadingSpinner } from '@gustri/ui';
 import {
   CheckCircle,
   ChefHat,
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { memo } from 'react';
+import { usePendingAction } from '@/hooks/use-pending-action';
 import type { OrderWithDetails } from '@/types';
 
 type OrderStatus =
@@ -30,19 +31,19 @@ type OrderStatus =
   | 'delivered'
   | 'cancelled';
 
+// Per-button keys scoped within this row. Multiple OrderListCard instances
+// each own their own pending state, so a status update on row A never
+// disables row B.
+type ActionKey = 'approve' | 'prepare' | 'ready' | 'serve' | 'deliver' | 'pay' | 'cancel';
+
 interface OrderListCardProps {
   order: OrderWithDetails;
   formatPrice: (amount: number) => string;
-  onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void;
+  // Async callback so the per-button pending lock releases on settle.
+  // Parents use `mutateAsync`, which returns a Promise.
+  onStatusUpdate: (orderId: string, newStatus: OrderStatus) => Promise<unknown>;
   onOpenPayment: (order: OrderWithDetails) => void;
   onOpenCancel: (order: OrderWithDetails) => void;
-  /**
-   * True while a status-update mutation is in flight in the parent.
-   * When `pendingOrderId === order.id`, the row's status buttons are
-   * disabled to prevent rapid-click duplicate updates.
-   */
-  isStatusUpdatePending?: boolean;
-  pendingOrderId?: string | null;
 }
 
 const calculatePaidAmount = (
@@ -58,22 +59,34 @@ function OrderListCardImpl({
   onStatusUpdate,
   onOpenPayment,
   onOpenCancel,
-  isStatusUpdatePending = false,
-  pendingOrderId = null,
 }: OrderListCardProps) {
   const { t } = useTranslation('staff');
   const router = useRouter();
+  const { isPending, run } = usePendingAction<ActionKey>();
 
   const total = calculateOrderTotal(order);
   const paid = calculatePaidAmount(order);
   const remaining = total - paid;
   const isFullyPaid = remaining === 0 && total > 0;
   const hasItems = order.order_items?.some((item) => item.status !== 'cancelled') ?? false;
-  const isThisRowPending = isStatusUpdatePending && pendingOrderId === order.id;
 
   const isTakeout =
     order.order_type === 'takeout' || (!order.table && order.order_type !== 'delivery');
   const isDelivery = order.order_type === 'delivery';
+
+  const fireStatus = (key: ActionKey, status: OrderStatus) =>
+    run(key, async () => {
+      await onStatusUpdate(order.id, status);
+    });
+
+  const openModal = (key: ActionKey, fn: () => void) =>
+    run(key, async () => {
+      fn();
+    });
+
+  const buttonSpinner = (
+    <LoadingSpinner size="sm" className="h-4 w-4 mr-1 border-current border-t-transparent" />
+  );
 
   return (
     <div
@@ -190,10 +203,10 @@ function OrderListCardImpl({
             <Button
               size="sm"
               className="bg-green-600 hover:bg-green-700"
-              disabled={isThisRowPending}
-              onClick={() => onStatusUpdate(order.id, 'new')}
+              disabled={isPending('approve')}
+              onClick={() => fireStatus('approve', 'new')}
             >
-              <ThumbsUp className="h-4 w-4 mr-1" />
+              {isPending('approve') ? buttonSpinner : <ThumbsUp className="h-4 w-4 mr-1" />}
               {t('approve', { ns: 'common' })}
             </Button>
             {order.source === 'customer' && (
@@ -208,10 +221,10 @@ function OrderListCardImpl({
           <Button
             size="sm"
             variant="outline"
-            disabled={!hasItems || isThisRowPending}
-            onClick={() => onStatusUpdate(order.id, 'preparing')}
+            disabled={!hasItems || isPending('prepare')}
+            onClick={() => fireStatus('prepare', 'preparing')}
           >
-            <ChefHat className="h-4 w-4 mr-1" />
+            {isPending('prepare') ? buttonSpinner : <ChefHat className="h-4 w-4 mr-1" />}
             {t('orders.startPreparing')}
           </Button>
         )}
@@ -219,10 +232,10 @@ function OrderListCardImpl({
           <Button
             size="sm"
             variant="outline"
-            disabled={!hasItems || isThisRowPending}
-            onClick={() => onStatusUpdate(order.id, 'ready')}
+            disabled={!hasItems || isPending('ready')}
+            onClick={() => fireStatus('ready', 'ready')}
           >
-            <CheckCircle className="h-4 w-4 mr-1" />
+            {isPending('ready') ? buttonSpinner : <CheckCircle className="h-4 w-4 mr-1" />}
             {t('orders.ready')}
           </Button>
         )}
@@ -230,52 +243,65 @@ function OrderListCardImpl({
           <Button
             size="sm"
             variant="outline"
-            disabled={!hasItems || isThisRowPending}
-            onClick={() => onStatusUpdate(order.id, 'served')}
+            disabled={!hasItems || isPending('serve')}
+            onClick={() => fireStatus('serve', 'served')}
           >
-            <CheckCircle className="h-4 w-4 mr-1" />
+            {isPending('serve') ? buttonSpinner : <CheckCircle className="h-4 w-4 mr-1" />}
             {t('orders.served')}
           </Button>
         )}
         {order.status === 'ready' && isDelivery && (
           <Button
             size="sm"
-            disabled={!hasItems || isThisRowPending}
+            disabled={!hasItems || isPending('deliver')}
             className="bg-purple-600 hover:bg-purple-700 text-white"
-            onClick={() => onStatusUpdate(order.id, 'out_for_delivery')}
+            onClick={() => fireStatus('deliver', 'out_for_delivery')}
           >
-            <Truck className="h-4 w-4 mr-1" />
+            {isPending('deliver') ? buttonSpinner : <Truck className="h-4 w-4 mr-1" />}
             {t('orders.outForDelivery')}
           </Button>
         )}
         {order.status === 'out_for_delivery' && isDelivery && (
           <Button
             size="sm"
-            disabled={!hasItems || isThisRowPending}
+            disabled={!hasItems || isPending('deliver')}
             className="bg-green-600 hover:bg-green-700 text-white"
-            onClick={() => onStatusUpdate(order.id, 'delivered')}
+            onClick={() => fireStatus('deliver', 'delivered')}
           >
-            <CheckCircle className="h-4 w-4 mr-1" />
+            {isPending('deliver') ? buttonSpinner : <CheckCircle className="h-4 w-4 mr-1" />}
             {t('orders.markDelivered')}
           </Button>
         )}
         {order.status === 'ready' && !order.table && !isDelivery && !isFullyPaid && (
-          <Button size="sm" onClick={() => onOpenPayment(order)}>
-            <CreditCard className="h-4 w-4 mr-1" />
+          <Button
+            size="sm"
+            disabled={isPending('pay')}
+            onClick={() => openModal('pay', () => onOpenPayment(order))}
+          >
+            {isPending('pay') ? buttonSpinner : <CreditCard className="h-4 w-4 mr-1" />}
             {t('orders.payment')}
           </Button>
         )}
         {order.status === 'served' && !isFullyPaid && (
-          <Button size="sm" onClick={() => onOpenPayment(order)}>
-            <CreditCard className="h-4 w-4 mr-1" />
+          <Button
+            size="sm"
+            disabled={isPending('pay')}
+            onClick={() => openModal('pay', () => onOpenPayment(order))}
+          >
+            {isPending('pay') ? buttonSpinner : <CreditCard className="h-4 w-4 mr-1" />}
             {t('orders.payment')}
           </Button>
         )}
         {['pending_approval', 'new', 'preparing', 'ready', 'served', 'out_for_delivery'].includes(
           order.status,
         ) && (
-          <Button size="sm" variant="destructive" onClick={() => onOpenCancel(order)}>
-            <XCircle className="h-4 w-4 mr-1" />
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={isPending('cancel')}
+            onClick={() => openModal('cancel', () => onOpenCancel(order))}
+          >
+            {isPending('cancel') ? buttonSpinner : <XCircle className="h-4 w-4 mr-1" />}
             {order.status === 'pending_approval'
               ? t('reject', { ns: 'common' })
               : t('cancel', { ns: 'common' })}

@@ -4,30 +4,72 @@
  * and app-specific mutations (apiRoutes).
  */
 
-import { ORDER_STATUS } from '@gustri/core';
+import { ORDER_VERSION_CONFLICT } from '@gustri/api-client';
+import { ConflictError, isAppError, ORDER_STATUS } from '@gustri/core';
 import type { Database } from '@gustri/database';
+import { localizeErrorMessage, useTranslation } from '@gustri/i18n';
 import {
   getOrCreateClientRequestId,
   QUERY_KEYS,
   tenantKey,
+  useFeatureFlag,
   useOrders as useOrdersShared,
   useTenantId,
 } from '@gustri/queries';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import * as Sentry from '@sentry/nextjs';
+import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { apiRoutes } from '@/lib/api-routes';
+import { withOptimisticTtl } from '@/lib/optimistic-ttl';
 import { invalidateOrders, invalidateOrdersAndTables } from '@/lib/query-helpers';
 import { db } from '@/lib/supabase/wrapped-client';
 import type { OrderWithDetails } from '@/types';
+
+const ORDERS_OPTIMISTIC_CONCURRENCY_FLAG = 'orders_optimistic_concurrency';
+
+/**
+ * Read the cached `version` for an order across the keys mutating hooks
+ * may have populated (single ORDER, ORDERS list, ACTIVE_ORDERS list).
+ * Returns `undefined` when no copy is in cache — callers omit
+ * `expectedVersion` in that case so the wrapper falls back to the
+ * version-naive UPDATE path (better than silently no-op'ing on a stale
+ * read of `0`).
+ */
+function readCachedOrderVersion(
+  qc: QueryClient,
+  tenantId: string | null,
+  orderId: string,
+): number | undefined {
+  const direct = qc.getQueryData<OrderWithDetails>(tenantKey(tenantId, QUERY_KEYS.ORDER, orderId));
+  if (typeof direct?.version === 'number') return direct.version;
+  const lists = [QUERY_KEYS.ORDERS, QUERY_KEYS.ACTIVE_ORDERS] as const;
+  for (const key of lists) {
+    const list = qc.getQueryData<OrderWithDetails[]>(tenantKey(tenantId, key));
+    const found = list?.find((o) => o.id === orderId);
+    if (typeof found?.version === 'number') return found.version;
+  }
+  return undefined;
+}
+
+/**
+ * Type guard: does this error represent a stale-version conflict from the
+ * orders wrapper (Plan 8)? Modals catch these to render a Refresh/Override
+ * banner rather than a generic toast.
+ */
+export function isOrderVersionConflict(error: unknown): error is ConflictError {
+  return error instanceof ConflictError && error.message === ORDER_VERSION_CONFLICT;
+}
 
 type OrderStatus = Database['public']['Tables']['orders']['Row']['status'];
 type OrderInsert = Database['public']['Tables']['orders']['Insert'];
 
 // Re-export shared read hooks
-// Re-export shared simple mutations
+// Re-export shared simple mutations.
+// Note: useCancelOrder is overridden locally below to support optimistic
+// concurrency (Plan 8); do NOT re-export the shared one here.
 export {
   useActiveOrders,
   useAddOrderItems,
-  useCancelOrder,
   useCleanupEmptyOrders,
   useDeleteOrderItem,
   useOrder,
@@ -69,10 +111,22 @@ export function useCancelOrderItem() {
   });
 }
 
-// Local override: optimistic updates for order status changes
+// Local override: optimistic updates for order status changes.
+//
+// Plan 8 — when feature flag `orders_optimistic_concurrency` is on, the
+// hook reads the cached `version` and forwards it as `expectedVersion`.
+// A concurrent web/mobile edit on a stale view trips the wrapper's
+// 0-row UPDATE detection and surfaces ConflictError(version_conflict),
+// which the global mutation cache localizes via `localizeErrorMessage`
+// ("Another device just changed this order. Refresh and try again.").
+// `onSettled` then refetches truth, so the kitchen view converges
+// without operator intervention. The plan calls this the "soft toast"
+// path — no explicit Refresh/Override modal for high-concurrency status
+// moves.
 export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
   const tenantId = useTenantId();
+  const versionCheckEnabled = useFeatureFlag(ORDERS_OPTIMISTIC_CONCURRENCY_FLAG);
 
   return useMutation({
     mutationFn: ({ orderId, status }: { orderId: string; status: keyof typeof ORDER_STATUS }) => {
@@ -81,7 +135,10 @@ export function useUpdateOrderStatus() {
       // via a conditional UPDATE, so this key is currently unused server-side
       // but reserved for a future status-update audit log.
       const clientRequestId = getOrCreateClientRequestId();
-      return db.orders.updateStatus(orderId, statusValue, { clientRequestId });
+      const expectedVersion = versionCheckEnabled
+        ? readCachedOrderVersion(queryClient, tenantId, orderId)
+        : undefined;
+      return db.orders.updateStatus(orderId, statusValue, { clientRequestId, expectedVersion });
     },
     onMutate: async ({ orderId, status }) => {
       const statusValue = ORDER_STATUS[status] as OrderStatus;
@@ -108,9 +165,18 @@ export function useUpdateOrderStatus() {
       queryClient.setQueryData(tenantKey(tenantId, QUERY_KEYS.ORDERS), updateList);
       queryClient.setQueryData(tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS), updateList);
 
-      return { previousOrder };
+      // Zombie-patch killer: if onSettled never fires (silent network drop,
+      // tab backgrounded mid-flight) the optimistic patch above is reverted
+      // by a forced invalidate after the TTL.
+      const cancelTtl = withOptimisticTtl(queryClient, [
+        tenantKey(tenantId, QUERY_KEYS.ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS),
+      ]);
+
+      return { previousOrder, cancelTtl };
     },
     onSettled: (_data, _err, { orderId, status }, context) => {
+      context?.cancelTtl?.();
       const statusValue = ORDER_STATUS[status] as OrderStatus;
       invalidateOrdersAndTables(queryClient, tenantId, {
         orderId,
@@ -118,6 +184,142 @@ export function useUpdateOrderStatus() {
         newStatus: statusValue,
         oldType: context?.previousOrder?.order_type,
       });
+    },
+  });
+}
+
+// Local: closing an order goes through the dedicated wrapper.close() so a
+// `force_close_reason` can ride on the same UPDATE that flips status. The
+// server-side guard trigger (migration 20260506000003) rejects the close
+// with ConflictError('order_close_requires_payment_or_reason') when the
+// order still owes money and no reason was provided — the UI catches that
+// and opens the close-unpaid modal.
+//
+// Plan 8 — close is a destructive action; when feature flag
+// `orders_optimistic_concurrency` is on, the hook gates the UPDATE on
+// `expectedVersion` from the cached order. On conflict the modal renders
+// an explicit Refresh / Override banner (`isOrderVersionConflict`); the
+// `override` flag re-issues the close without `expectedVersion` so the
+// operator can intentionally proceed past the staleness warning.
+const CLOSE_UNPAID_CONFLICT = 'order_close_requires_payment_or_reason';
+
+export function useCloseOrder() {
+  const queryClient = useQueryClient();
+  const tenantId = useTenantId();
+  const { t } = useTranslation('staff');
+  const versionCheckEnabled = useFeatureFlag(ORDERS_OPTIMISTIC_CONCURRENCY_FLAG);
+
+  return useMutation({
+    mutationFn: ({
+      orderId,
+      forceCloseReason,
+      override,
+    }: {
+      orderId: string;
+      forceCloseReason?: string;
+      /**
+       * When true, skip the `expectedVersion` check — used for the
+       * "Override" branch of the conflict banner. Server-side guards
+       * (close-unpaid, state machine) still apply.
+       */
+      override?: boolean;
+    }) => {
+      const expectedVersion =
+        versionCheckEnabled && !override
+          ? readCachedOrderVersion(queryClient, tenantId, orderId)
+          : undefined;
+      const opts: { forceCloseReason?: string; expectedVersion?: number } = {};
+      if (forceCloseReason !== undefined) opts.forceCloseReason = forceCloseReason;
+      if (expectedVersion !== undefined) opts.expectedVersion = expectedVersion;
+      return db.orders.close(orderId, Object.keys(opts).length === 0 ? undefined : opts);
+    },
+    onSettled: (_data, _err, { orderId }) => {
+      // Closing crosses a terminal-state boundary, so refetch tables too —
+      // the dine-in table flips to free when its last active order closes.
+      // We also invalidate on error so a version conflict path immediately
+      // hydrates the modal with the freshest version.
+      const previousOrder = queryClient.getQueryData<OrderWithDetails>(
+        tenantKey(tenantId, QUERY_KEYS.ORDER, orderId),
+      );
+      invalidateOrdersAndTables(queryClient, tenantId, {
+        orderId,
+        oldStatus: previousOrder?.status,
+        newStatus: 'closed',
+        oldType: previousOrder?.order_type,
+      });
+    },
+    // Owning onError takes us off the global mutation cache toast path, so
+    // we fully replicate it here: localized message for known sentinels,
+    // generic fallback otherwise. The version-conflict branch suppresses
+    // the toast — the calling modal renders the Refresh/Override banner
+    // off the mutation's `error` state instead.
+    onError: (error) => {
+      if (error instanceof ConflictError && error.message === CLOSE_UNPAID_CONFLICT) {
+        toast.error(t('orders.closeUnpaid.serverConflict'));
+        return;
+      }
+      if (isOrderVersionConflict(error)) {
+        // Modal-driven UI; do not double-up with a toast. The mutation's
+        // `error` carries the sentinel for the banner to detect.
+        return;
+      }
+      Sentry.captureException(error);
+      toast.error(isAppError(error) ? error.message : t('orders.failedUpdateStatus'));
+    },
+  });
+}
+
+/**
+ * Local override of the shared `useCancelOrder` so cancel — like close —
+ * can opt into the `expectedVersion` concurrency check (Plan 8). Same
+ * call shape as the shared hook plus an `override` flag for the conflict
+ * banner's "Override" path.
+ */
+export function useCancelOrder() {
+  const queryClient = useQueryClient();
+  const tenantId = useTenantId();
+  const versionCheckEnabled = useFeatureFlag(ORDERS_OPTIMISTIC_CONCURRENCY_FLAG);
+
+  return useMutation({
+    mutationFn: ({
+      orderId,
+      reason,
+      tableId,
+      override,
+    }: {
+      orderId: string;
+      reason: string;
+      tableId?: string | null;
+      override?: boolean;
+    }) => {
+      const expectedVersion =
+        versionCheckEnabled && !override
+          ? readCachedOrderVersion(queryClient, tenantId, orderId)
+          : undefined;
+      const opts = expectedVersion !== undefined ? { expectedVersion } : undefined;
+      return db.orders.cancelOrder(orderId, reason, tableId ?? null, opts);
+    },
+    onSettled: (_data, _err, { orderId }) => {
+      const previousOrder = queryClient.getQueryData<OrderWithDetails>(
+        tenantKey(tenantId, QUERY_KEYS.ORDER, orderId),
+      );
+      invalidateOrdersAndTables(queryClient, tenantId, {
+        orderId,
+        oldStatus: previousOrder?.status,
+        newStatus: 'cancelled',
+        oldType: previousOrder?.order_type,
+      });
+    },
+    onError: (error) => {
+      if (isOrderVersionConflict(error)) {
+        // Caller renders the Refresh/Override banner from mutation.error.
+        return;
+      }
+      // Defining onError opts this mutation out of the global mutationCache
+      // toast path (see app providers), so replicate localization locally.
+      Sentry.captureException(error);
+      const fallback = 'Failed to cancel';
+      toast.error(isAppError(error) ? localizeErrorMessage(error.message, fallback) : fallback);
     },
   });
 }
@@ -150,8 +352,17 @@ export function useUpdateOrderItemStatus() {
 
       queryClient.setQueryData(tenantKey(tenantId, QUERY_KEYS.ORDERS), updateList);
       queryClient.setQueryData(tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS), updateList);
+
+      // Zombie-patch killer — see useUpdateOrderStatus for rationale.
+      const cancelTtl = withOptimisticTtl(queryClient, [
+        tenantKey(tenantId, QUERY_KEYS.ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS),
+      ]);
+
+      return { cancelTtl };
     },
-    onSettled: () => {
+    onSettled: (_data, _err, _vars, context) => {
+      context?.cancelTtl?.();
       // Item status changes don't move the order between terminal states —
       // tables, delivery and takeout shapes are unaffected. Refetch only ORDERS.
       invalidateOrders(queryClient, tenantId);

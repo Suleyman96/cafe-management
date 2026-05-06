@@ -37,7 +37,7 @@ export function ContactSettingsTab({ formData, onChange }: SettingsTabProps) {
               type="url"
               value={formData.contact_website || ''}
               onChange={(e) => onChange('contact_website', e.target.value || null)}
-              placeholder="https://yourrestaurant.com"
+              placeholder={t('websitePlaceholder', { ns: 'common' })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -55,7 +55,7 @@ export function ContactSettingsTab({ formData, onChange }: SettingsTabProps) {
             label={t('cafeSettings.instagram')}
             value={formData.social_instagram}
             onChange={(v) => onChange('social_instagram', v)}
-            placeholder="https://instagram.com/yourrestaurant"
+            placeholder={t('instagramPlaceholder', { ns: 'common' })}
           />
           <SocialInput
             label={t('cafeSettings.whatsapp')}
@@ -64,28 +64,28 @@ export function ContactSettingsTab({ formData, onChange }: SettingsTabProps) {
             placeholder={t('whatsappPlaceholder', { ns: 'common' })}
           />
           <SocialInput
-            label="TikTok"
+            label={t('cafeSettings.tiktok')}
             value={formData.social_tiktok}
             onChange={(v) => onChange('social_tiktok', v)}
-            placeholder="https://tiktok.com/@yourrestaurant"
+            placeholder={t('tiktokPlaceholder', { ns: 'common' })}
           />
           <SocialInput
-            label="Telegram"
+            label={t('cafeSettings.telegram')}
             value={formData.social_telegram}
             onChange={(v) => onChange('social_telegram', v)}
-            placeholder="https://t.me/yourrestaurant"
+            placeholder={t('telegramPlaceholder', { ns: 'common' })}
           />
           <SocialInput
-            label="LINE"
+            label={t('cafeSettings.line')}
             value={formData.social_line}
             onChange={(v) => onChange('social_line', v)}
-            placeholder="https://line.me/R/ti/p/@yourrestaurant"
+            placeholder={t('linePlaceholder', { ns: 'common' })}
           />
           <SocialInput
             label={t('cafeSettings.googleMaps')}
             value={formData.location_maps_url}
             onChange={(v) => onChange('location_maps_url', v)}
-            placeholder="https://g.page/yourrestaurant"
+            placeholder={t('googleMapsPlaceholder', { ns: 'common' })}
           />
         </div>
       </div>

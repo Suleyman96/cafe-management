@@ -1,16 +1,15 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTranslation } from '@gustri/i18n';
+import { LANGUAGES, useTranslation } from '@gustri/i18n';
 import { StyleSheet, View } from 'react-native';
 import { Card, Chip, HelperText, Text } from 'react-native-paper';
 import { TextInput } from '@/lib/paper-compat';
 import type { SettingsSectionProps } from './ToggleRow';
 
-const LANGUAGE_OPTIONS = [
-  { code: 'ja', label: 'Japanese' },
-  { code: 'en', label: 'English' },
-  { code: 'ko', label: 'Korean' },
-  { code: 'ru', label: 'Russian' },
-];
+const SUPPORTED_LANGUAGE_CODES = ['ja', 'en', 'ko', 'ru'] as const;
+const LANGUAGE_OPTIONS = SUPPORTED_LANGUAGE_CODES.map((code) => {
+  const lang = LANGUAGES.find((l) => l.code === code);
+  return { code, label: lang?.nativeName ?? code };
+});
 
 export function RestaurantInfoSection({ form, updateField, fieldErrors }: SettingsSectionProps) {
   const { t } = useTranslation('staff');
@@ -44,7 +43,7 @@ export function RestaurantInfoSection({ form, updateField, fieldErrors }: Settin
           onChangeText={(v: string) => updateField('restaurant_address', v || null)}
           mode="outlined"
           dense
-          placeholder="123 Main Street, City, Country"
+          placeholder={t('cafeSettings.restaurantAddressPlaceholder')}
           error={!!fieldErrors?.restaurant_address}
           style={styles.input}
         />

@@ -16,9 +16,16 @@ export const dynamic = 'force-dynamic';
 // payload missing `qr_token` fails validation here, not deep in the
 // service — so the unauthenticated tenant-spoofing path is a 400, not
 // a misrouted insert.
+//
+// Length caps (H3): every customer-supplied free-text field has an
+// explicit `.max()`. Without these the wrapper accepts arbitrarily long
+// strings and an attacker can post a 50 MB `customer_notes` value as a
+// storage / realtime-fanout DoS. Numbers below mirror the staff-side
+// `OrderCreateInputSchema` in `@gustri/database/schemas/inputs` so a row
+// that survives the customer route also survives staff edits.
 const BaseFields = {
-  source: z.string().optional(),
-  customer_notes: z.string().optional().nullable(),
+  source: z.string().max(50).optional(),
+  customer_notes: z.string().max(2000).optional().nullable(),
   // Required (Blocker 1): a customer tapping "place order" twice on a
   // flaky connection can otherwise post duplicate kitchen tickets. The
   // customer-web wrapper stamps a fresh UUID per mutation lifecycle so
@@ -35,16 +42,16 @@ const DineInSchema = z.object({
 const TakeoutSchema = z.object({
   ...BaseFields,
   order_type: z.literal('takeout'),
-  qr_token: z.string().min(1),
+  qr_token: z.string().min(1).max(128),
 });
 
 const DeliverySchema = z.object({
   ...BaseFields,
   order_type: z.literal('delivery'),
-  qr_token: z.string().min(1),
-  delivery_address: z.string().min(1),
+  qr_token: z.string().min(1).max(128),
+  delivery_address: z.string().min(1).max(500),
   delivery_phone: z.string().regex(/^[+\d\s\-()]{7,20}$/, 'Invalid phone format'),
-  delivery_customer_name: z.string().optional().nullable(),
+  delivery_customer_name: z.string().max(100).optional().nullable(),
   delivery_fee: z.number().min(0).optional().nullable(),
 });
 

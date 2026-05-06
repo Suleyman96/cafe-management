@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
 import { validatePassword } from '@/lib/api/password-validation';
 import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
+import { jsonRateLimited } from '@/lib/api/response';
 import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 
 const CreateStaffSchema = z.object({
@@ -45,15 +46,7 @@ export async function POST(request: NextRequest) {
   try {
     const ip = getRateLimitIdentifier(request);
     const { success, resetAt } = await rateLimit('staff', ip);
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        {
-          status: 429,
-          headers: { 'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)) },
-        },
-      );
-    }
+    if (!success) return jsonRateLimited(resetAt);
 
     const adminOrError = await verifyAdmin(request);
     if (adminOrError instanceof NextResponse) return adminOrError;
@@ -140,15 +133,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const ip = getRateLimitIdentifier(request);
     const { success, resetAt } = await rateLimit('staff', ip);
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        {
-          status: 429,
-          headers: { 'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)) },
-        },
-      );
-    }
+    if (!success) return jsonRateLimited(resetAt);
 
     const adminOrError = await verifyAdmin(request);
     if (adminOrError instanceof NextResponse) return adminOrError;

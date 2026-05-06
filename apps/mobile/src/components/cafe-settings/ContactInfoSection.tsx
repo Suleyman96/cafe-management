@@ -37,7 +37,7 @@ export function ContactInfoSection({ form, updateField }: SettingsSectionProps) 
           mode="outlined"
           keyboardType="url"
           dense
-          placeholder="https://yourrestaurant.com"
+          placeholder={t('websitePlaceholder', { ns: 'common' })}
           style={styles.input}
         />
       </Card.Content>

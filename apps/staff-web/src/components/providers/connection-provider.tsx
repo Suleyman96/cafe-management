@@ -1,9 +1,12 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { useFeatureFlag } from '@gustri/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { setClientMustReload } from '@/lib/client-outdated-state';
+import { MustReloadOverlay } from './must-reload-overlay';
 
 type ConnectionStatus = 'connected' | 'degraded' | 'disconnected';
 
@@ -22,6 +25,16 @@ const DECAY_ON_SUCCESS = 2;
 // is also opportunistically driven by `online` events so a tab that wakes
 // from sleep checks immediately rather than waiting up to 5 min.
 const HEALTH_POLL_INTERVAL_MS = 5 * 60 * 1000;
+
+// Plan 11: a SHA mismatch that persists this long forces a hard-block
+// "Update required" overlay. A brief mismatch during a deploy is normal —
+// only sustained skew indicates the user has actually missed a deploy.
+const SKEW_HARD_BLOCK_MS = 2 * 60 * 1000;
+
+// Plan 11 feature flag (CLAUDE.md feature-flag rule). When OFF the toast-
+// only path stays in place; the overlay only ever renders for tenants that
+// have explicitly opted in.
+const CLIENT_OUTDATED_HARD_BLOCK_FLAG = 'client_outdated_hard_block';
 
 // Single in-flight toast — re-rendering / re-checking shouldn't stack
 // toasts. Lives at module scope so React Strict Mode's double-mount
@@ -63,6 +76,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
     <ConnectionContext.Provider value={status}>
       {status !== 'connected' && <ConnectionBanner status={status} />}
       <VersionSkewWatcher />
+      <MustReloadOverlay />
       {children}
     </ConnectionContext.Provider>
   );
@@ -106,12 +120,43 @@ function ConnectionBanner({ status }: { status: 'degraded' | 'disconnected' }) {
  */
 function VersionSkewWatcher() {
   const { t } = useTranslation('staff');
+  // Plan 11: per-tenant feature flag. When OFF, only the toast nudge fires
+  // (current behavior). When ON, sustained skew (>2 min) escalates to the
+  // full-screen MustReloadOverlay. Default-OFF lets us roll the toast path
+  // out first, then enable the hard-block per-tenant once telemetry is
+  // clean for an uneventful deploy cycle.
+  const hardBlockEnabled = useFeatureFlag(CLIENT_OUTDATED_HARD_BLOCK_FLAG);
+  const firstSkewAtRef = useRef<number | null>(null);
+  const hardBlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const localSha = process.env.NEXT_PUBLIC_BUILD_SHA;
     if (!localSha || localSha === 'dev') return;
 
     let cancelled = false;
+
+    function clearHardBlockTimer() {
+      if (hardBlockTimerRef.current) {
+        clearTimeout(hardBlockTimerRef.current);
+        hardBlockTimerRef.current = null;
+      }
+    }
+
+    function scheduleHardBlock() {
+      // Already armed — keep the existing deadline rather than restarting
+      // the clock on every successful poll. The first-detected skew is the
+      // one that matters; later polls just re-confirm.
+      if (!hardBlockEnabled) return;
+      if (hardBlockTimerRef.current) return;
+      const firstSkewAt = firstSkewAtRef.current;
+      if (firstSkewAt === null) return;
+      const elapsed = Date.now() - firstSkewAt;
+      const remaining = Math.max(0, SKEW_HARD_BLOCK_MS - elapsed);
+      hardBlockTimerRef.current = setTimeout(() => {
+        if (cancelled) return;
+        setClientMustReload(true);
+      }, remaining);
+    }
 
     async function check() {
       try {
@@ -121,7 +166,21 @@ function VersionSkewWatcher() {
         const body = (await res.json()) as { sha?: string } | null;
         const remoteSha = body?.sha;
         if (!remoteSha || remoteSha === 'unknown') return;
-        if (remoteSha === localSha) return;
+        if (remoteSha === localSha) {
+          // Server caught up to our build (rare, but possible if a deploy
+          // rolls back). Reset the skew clock — but DO NOT clear an
+          // already-triggered overlay; once we've blocked, the user must
+          // reload to be sure their bundle is consistent with whatever the
+          // server settled on.
+          firstSkewAtRef.current = null;
+          clearHardBlockTimer();
+          return;
+        }
+
+        if (firstSkewAtRef.current === null) {
+          firstSkewAtRef.current = Date.now();
+        }
+        scheduleHardBlock();
 
         if (versionMismatchToastId !== null) return;
         versionMismatchToastId = toast.message(t('updateAvailable.title'), {
@@ -145,9 +204,10 @@ function VersionSkewWatcher() {
     return () => {
       cancelled = true;
       clearInterval(interval);
+      clearHardBlockTimer();
       window.removeEventListener('online', onOnline);
     };
-  }, [t]);
+  }, [t, hardBlockEnabled]);
 
   return null;
 }

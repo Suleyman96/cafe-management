@@ -1,0 +1,20 @@
+{
+  "payment_exceeds_remaining": "Il pagamento supera il saldo residuo. Aggiorna l'ordine per vedere il totale aggiornato.",
+  "payment_tenant_mismatch": "Questo pagamento non appartiene al ristorante corrente.",
+  "payment_on_terminal_order": "Questo ordine è chiuso o annullato — non è possibile aggiungere altri pagamenti.",
+  "refund_exceeds_available": "Il rimborso supera l'importo disponibile per questo ordine.",
+  "refund_tenant_mismatch": "Questo rimborso non appartiene al ristorante corrente.",
+  "order_not_found": "Ordine non trovato. Potrebbe essere stato rimosso.",
+  "order_not_found_in_tenant": "Questo ordine non è stato trovato per il ristorante corrente.",
+  "order_item_tenant_mismatch": "Questo articolo dell'ordine non appartiene al ristorante corrente.",
+  "waiter_call_already_acknowledged": "Un altro membro del team ha appena risposto a questa chiamata.",
+  "waiter_call_already_resolved": "Un altro membro del team ha appena risolto questa chiamata.",
+  "order_close_requires_payment_or_reason": "L'ordine non è pagato. Scegli un motivo come 'Omaggio' o 'Andato via senza pagare' per chiuderlo.",
+  "discount_type_invalid": "Questo tipo di sconto non è consentito.",
+  "discount_value_invalid": "Il valore dello sconto è fuori dall'intervallo consentito.",
+  "menu_item_not_found_in_tenant": "Articolo del menu non trovato per il ristorante corrente.",
+  "plan_required": "Questa azione richiede l'aggiornamento del tuo piano.",
+  "client_outdated": "La tua app è obsoleta. Ricaricala per continuare.",
+  "version_conflict": "Un altro dispositivo ha appena modificato questo ordine. Aggiorna e riprova.",
+  "rate_limited": "Troppe richieste. Attendi un momento e riprova."
+}

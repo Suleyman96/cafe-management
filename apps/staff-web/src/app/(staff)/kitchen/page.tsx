@@ -26,8 +26,10 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { FreshnessIndicator } from '@/components/common/freshness-indicator';
 import { ElapsedTime } from '@/components/kitchen/elapsed-time';
 import { useCancelOrder, useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
+import { usePendingAction } from '@/hooks/use-pending-action';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 import { ORDER_ITEM_STATUS_ICONS } from '@/lib/enum-icons';
 
@@ -50,6 +52,11 @@ export default function KitchenDisplayPage() {
   const [rejectingOrder, setRejectingOrder] = useState<OrderWithDetails | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const tenantId = useTenantId();
+  // Per-button pending lock — keys are scoped per row/item (`order:<id>:<verb>`,
+  // `item:<id>:<status>`, `reject`) so one stuck mutation doesn't disable
+  // unrelated rows. The ref-based gate inside the hook collapses a triple-tap
+  // to a single in-flight call even before React re-renders.
+  const { isPending, run } = usePendingAction<string>();
 
   // Elapsed-time tick lives in the <ElapsedTime> leaf — no parent rerender.
 
@@ -93,7 +100,7 @@ export default function KitchenDisplayPage() {
   const readyCount = kitchenOrders?.filter((o) => o.status === 'ready').length || 0;
 
   // Real-time: invalidate queries on DB changes
-  useRealtimeSync('kitchen-realtime', [
+  const { lastEventAtRef } = useRealtimeSync('kitchen-realtime', [
     {
       table: 'orders',
       queryKeys: [
@@ -172,75 +179,77 @@ export default function KitchenDisplayPage() {
   };
 
   // Handle status update — also updates all item statuses to stay in sync
-  const handleStatusUpdate = async (
-    orderId: string,
-    newStatus: 'PREPARING' | 'READY' | 'SERVED',
-  ) => {
-    try {
-      const order = kitchenOrders?.find((o) => o.id === orderId);
+  const handleStatusUpdate = (orderId: string, newStatus: 'PREPARING' | 'READY' | 'SERVED') =>
+    run(`order:${orderId}:${newStatus}`, async () => {
+      try {
+        const order = kitchenOrders?.find((o) => o.id === orderId);
 
-      // Update all item statuses to match the order-level action
-      if (order?.order_items) {
-        const targetItemStatus =
-          newStatus === 'PREPARING' ? 'preparing' : newStatus === 'READY' ? 'ready' : 'served';
+        // Update all item statuses to match the order-level action
+        if (order?.order_items) {
+          const targetItemStatus =
+            newStatus === 'PREPARING' ? 'preparing' : newStatus === 'READY' ? 'ready' : 'served';
 
-        for (const item of order.order_items) {
-          // Skip items that are already at or past the target status, and skip cancelled
-          if (item.status === 'cancelled' || item.status === targetItemStatus) continue;
-          if (targetItemStatus === 'preparing' && item.status !== 'pending') continue;
-          if (
-            targetItemStatus === 'ready' &&
-            item.status !== 'pending' &&
-            item.status !== 'preparing'
-          )
-            continue;
+          for (const item of order.order_items) {
+            // Skip items that are already at or past the target status, and skip cancelled
+            if (item.status === 'cancelled' || item.status === targetItemStatus) continue;
+            if (targetItemStatus === 'preparing' && item.status !== 'pending') continue;
+            if (
+              targetItemStatus === 'ready' &&
+              item.status !== 'pending' &&
+              item.status !== 'preparing'
+            )
+              continue;
 
-          await updateItemStatus.mutateAsync({
-            itemId: item.id,
-            status: targetItemStatus as 'pending' | 'preparing' | 'ready' | 'served',
+            await updateItemStatus.mutateAsync({
+              itemId: item.id,
+              status: targetItemStatus as 'pending' | 'preparing' | 'ready' | 'served',
+            });
+          }
+        }
+
+        // Don't set delivery/takeout orders to "served" — they follow a different flow
+        if (
+          !(newStatus === 'SERVED' && order && (isDeliveryOrder(order) || isTakeoutOrder(order)))
+        ) {
+          await updateOrderStatus.mutateAsync({
+            orderId,
+            status: newStatus,
           });
         }
+        // Don't show toast in kitchen view to avoid distractions
+      } catch (_error) {
+        toast.error(t('orders.failedUpdateStatus'));
       }
-
-      // Don't set delivery/takeout orders to "served" — they follow a different flow
-      if (!(newStatus === 'SERVED' && order && (isDeliveryOrder(order) || isTakeoutOrder(order)))) {
-        await updateOrderStatus.mutateAsync({
-          orderId,
-          status: newStatus,
-        });
-      }
-      // Don't show toast in kitchen view to avoid distractions
-    } catch (_error) {
-      toast.error(t('orders.failedUpdateStatus'));
-    }
-  };
+    });
 
   // Handle QR order approval
-  const handleApproveOrder = async (orderId: string) => {
-    try {
-      await updateOrderStatus.mutateAsync({ orderId, status: 'NEW' });
-      toast.success(t('kitchen.orderApproved'));
-    } catch (_error) {
-      toast.error(t('orders.failedUpdateStatus'));
-    }
-  };
+  const handleApproveOrder = (orderId: string) =>
+    run(`order:${orderId}:APPROVE`, async () => {
+      try {
+        await updateOrderStatus.mutateAsync({ orderId, status: 'NEW' });
+        toast.success(t('kitchen.orderApproved'));
+      } catch (_error) {
+        toast.error(t('orders.failedUpdateStatus'));
+      }
+    });
 
   // Handle QR order rejection
-  const handleRejectOrder = async () => {
-    if (!rejectingOrder || !rejectReason.trim()) return;
-    try {
-      await cancelOrder.mutateAsync({
-        orderId: rejectingOrder.id,
-        reason: rejectReason,
-        tableId: rejectingOrder.table_id,
-      });
-      toast.success(t('kitchen.orderRejected'));
-      setRejectingOrder(null);
-      setRejectReason('');
-    } catch (_error) {
-      toast.error(t('orders.failedUpdateStatus'));
-    }
-  };
+  const handleRejectOrder = () =>
+    run('reject', async () => {
+      if (!rejectingOrder || !rejectReason.trim()) return;
+      try {
+        await cancelOrder.mutateAsync({
+          orderId: rejectingOrder.id,
+          reason: rejectReason,
+          tableId: rejectingOrder.table_id,
+        });
+        toast.success(t('kitchen.orderRejected'));
+        setRejectingOrder(null);
+        setRejectReason('');
+      } catch (_error) {
+        toast.error(t('orders.failedUpdateStatus'));
+      }
+    });
 
   // Item-status display in the kitchen overrides two labels (pending →
   // common.pending, preparing → kitchen.cooking) but otherwise mirrors the
@@ -278,65 +287,64 @@ export default function KitchenDisplayPage() {
   };
 
   // Handle item status update - also auto-update order status if needed
-  const handleItemStatusUpdate = async (
-    itemId: string,
-    newStatus: string,
-    order: OrderWithDetails,
-  ) => {
-    try {
-      // If order is still "new", automatically change to "preparing"
-      if (order.status === 'new') {
-        await updateOrderStatus.mutateAsync({
-          orderId: order.id,
-          status: 'PREPARING',
+  const handleItemStatusUpdate = (itemId: string, newStatus: string, order: OrderWithDetails) =>
+    run(`item:${itemId}:${newStatus}`, async () => {
+      try {
+        // If order is still "new", automatically change to "preparing"
+        if (order.status === 'new') {
+          await updateOrderStatus.mutateAsync({
+            orderId: order.id,
+            status: 'PREPARING',
+          });
+        }
+
+        await updateItemStatus.mutateAsync({
+          itemId,
+          status: newStatus as 'pending' | 'preparing' | 'ready' | 'served',
         });
-      }
 
-      await updateItemStatus.mutateAsync({
-        itemId,
-        status: newStatus as 'pending' | 'preparing' | 'ready' | 'served',
-      });
+        // Check if all items will be ready after this update
+        if (newStatus === 'ready' && order.status === 'preparing') {
+          const otherItems =
+            order.order_items?.filter(
+              (item) => item.id !== itemId && item.status !== 'cancelled',
+            ) || [];
+          const allOthersReady = otherItems.every(
+            (item) => item.status === 'ready' || item.status === 'served',
+          );
 
-      // Check if all items will be ready after this update
-      if (newStatus === 'ready' && order.status === 'preparing') {
-        const otherItems =
-          order.order_items?.filter((item) => item.id !== itemId && item.status !== 'cancelled') ||
-          [];
-        const allOthersReady = otherItems.every(
-          (item) => item.status === 'ready' || item.status === 'served',
-        );
-
-        // If all other items are ready/served, update order status to ready
-        if (allOthersReady) {
-          await updateOrderStatus.mutateAsync({
-            orderId: order.id,
-            status: 'READY',
-          });
+          // If all other items are ready/served, update order status to ready
+          if (allOthersReady) {
+            await updateOrderStatus.mutateAsync({
+              orderId: order.id,
+              status: 'READY',
+            });
+          }
         }
-      }
 
-      // Check if all items will be served after this update
-      if (newStatus === 'served' && order.status === 'ready') {
-        const otherItems =
-          order.order_items?.filter((item) => item.id !== itemId && item.status !== 'cancelled') ||
-          [];
-        const allOthersServed = otherItems.every((item) => item.status === 'served');
+        // Check if all items will be served after this update
+        if (newStatus === 'served' && order.status === 'ready') {
+          const otherItems =
+            order.order_items?.filter(
+              (item) => item.id !== itemId && item.status !== 'cancelled',
+            ) || [];
+          const allOthersServed = otherItems.every((item) => item.status === 'served');
 
-        // If all other items are served, update order status to served
-        // Skip for delivery/takeout orders — they follow different flows
-        if (allOthersServed && isDineInOrder(order)) {
-          await updateOrderStatus.mutateAsync({
-            orderId: order.id,
-            status: 'SERVED',
-          });
+          // If all other items are served, update order status to served
+          // Skip for delivery/takeout orders — they follow different flows
+          if (allOthersServed && isDineInOrder(order)) {
+            await updateOrderStatus.mutateAsync({
+              orderId: order.id,
+              status: 'SERVED',
+            });
+          }
         }
-      }
 
-      // No toast for kitchen - faster feedback via visual change
-    } catch (_error) {
-      toast.error(t('orders.failedUpdateStatus'));
-    }
-  };
+        // No toast for kitchen - faster feedback via visual change
+      } catch (_error) {
+        toast.error(t('orders.failedUpdateStatus'));
+      }
+    });
 
   if (loading) {
     return (
@@ -361,6 +369,10 @@ export default function KitchenDisplayPage() {
         <div className="flex items-center gap-2 sm:gap-4">
           <Utensils className="h-6 sm:h-10 w-6 sm:w-10 text-white" />
           <h1 className="text-xl sm:text-3xl font-bold text-white">{t('kitchen.title')}</h1>
+          <FreshnessIndicator
+            lastEventAtRef={lastEventAtRef}
+            className="bg-white/10 px-2 py-1 rounded-full"
+          />
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-6">
           {/* Status Summary */}
@@ -457,9 +469,14 @@ export default function KitchenDisplayPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleApproveOrder(order.id)}
-                      className="flex-1 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                      disabled={isPending(`order:${order.id}:APPROVE`)}
+                      className="flex-1 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-green-800/60 disabled:cursor-not-allowed text-white text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5"
                     >
-                      <CheckCircle className="h-4 w-4" />
+                      {isPending(`order:${order.id}:APPROVE`) ? (
+                        <LoadingSpinner size="sm" className="border-white/40 border-t-white" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4" />
+                      )}
                       {t('approve', { ns: 'common' })}
                     </button>
                     <button
@@ -595,18 +612,34 @@ export default function KitchenDisplayPage() {
                             {(item.status === 'pending' || item.status === 'preparing') && (
                               <button
                                 onClick={() => handleItemStatusUpdate(item.id, 'ready', order)}
-                                className="px-1.5 py-0.5 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-xs font-bold rounded transition-colors shadow flex items-center gap-0.5"
+                                disabled={isPending(`item:${item.id}:ready`)}
+                                className="px-1.5 py-0.5 bg-green-500 hover:bg-green-600 active:bg-green-700 disabled:bg-green-700/60 disabled:cursor-not-allowed text-white text-xs font-bold rounded transition-colors shadow flex items-center gap-0.5"
                               >
-                                <CheckCircle className="h-3 w-3" />
+                                {isPending(`item:${item.id}:ready`) ? (
+                                  <LoadingSpinner
+                                    size="sm"
+                                    className="h-3 w-3 border-white/40 border-t-white"
+                                  />
+                                ) : (
+                                  <CheckCircle className="h-3 w-3" />
+                                )}
                                 {t('orders.ready')}
                               </button>
                             )}
                             {item.status === 'ready' && (
                               <button
                                 onClick={() => handleItemStatusUpdate(item.id, 'served', order)}
-                                className="px-1.5 py-0.5 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-xs font-bold rounded transition-colors shadow flex items-center gap-0.5"
+                                disabled={isPending(`item:${item.id}:served`)}
+                                className="px-1.5 py-0.5 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 disabled:bg-purple-700/60 disabled:cursor-not-allowed text-white text-xs font-bold rounded transition-colors shadow flex items-center gap-0.5"
                               >
-                                <UtensilsCrossed className="h-3 w-3" />
+                                {isPending(`item:${item.id}:served`) ? (
+                                  <LoadingSpinner
+                                    size="sm"
+                                    className="h-3 w-3 border-white/40 border-t-white"
+                                  />
+                                ) : (
+                                  <UtensilsCrossed className="h-3 w-3" />
+                                )}
                                 {t('orders.served')}
                               </button>
                             )}
@@ -625,45 +658,67 @@ export default function KitchenDisplayPage() {
                 {order.status === 'new' && (
                   <button
                     onClick={() => handleStatusUpdate(order.id, 'PREPARING')}
-                    className="w-full py-2.5 bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 text-black text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
+                    disabled={isPending(`order:${order.id}:PREPARING`)}
+                    className="w-full py-2.5 bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 disabled:bg-yellow-700/60 disabled:cursor-not-allowed text-black text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
                   >
-                    <ChefHat className="h-5 w-5" />
+                    {isPending(`order:${order.id}:PREPARING`) ? (
+                      <LoadingSpinner size="sm" className="border-black/30 border-t-black" />
+                    ) : (
+                      <ChefHat className="h-5 w-5" />
+                    )}
                     {t('kitchen.startCooking')}
                   </button>
                 )}
                 {order.status === 'preparing' && (
                   <button
                     onClick={() => handleStatusUpdate(order.id, 'READY')}
-                    className="w-full py-2.5 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
+                    disabled={isPending(`order:${order.id}:READY`)}
+                    className="w-full py-2.5 bg-green-500 hover:bg-green-600 active:bg-green-700 disabled:bg-green-700/60 disabled:cursor-not-allowed text-white text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
                   >
-                    <CheckCircle className="h-5 w-5" />
+                    {isPending(`order:${order.id}:READY`) ? (
+                      <LoadingSpinner size="sm" className="border-white/40 border-t-white" />
+                    ) : (
+                      <CheckCircle className="h-5 w-5" />
+                    )}
                     {t('kitchen.allItemsReady')}
                   </button>
                 )}
                 {order.status === 'ready' && isDineInOrder(order) && (
                   <button
                     onClick={() => handleStatusUpdate(order.id, 'SERVED')}
-                    className="w-full py-2.5 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
+                    disabled={isPending(`order:${order.id}:SERVED`)}
+                    className="w-full py-2.5 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 disabled:bg-purple-700/60 disabled:cursor-not-allowed text-white text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
                   >
-                    <UtensilsCrossed className="h-5 w-5" />
+                    {isPending(`order:${order.id}:SERVED`) ? (
+                      <LoadingSpinner size="sm" className="border-white/40 border-t-white" />
+                    ) : (
+                      <UtensilsCrossed className="h-5 w-5" />
+                    )}
                     {t('kitchen.allServed')}
                   </button>
                 )}
                 {order.status === 'ready' && isDeliveryOrder(order) && (
                   <button
-                    onClick={async () => {
-                      try {
-                        await updateOrderStatus.mutateAsync({
-                          orderId: order.id,
-                          status: 'OUT_FOR_DELIVERY',
-                        });
-                      } catch (_error) {
-                        toast.error(t('orders.failedUpdateStatus'));
-                      }
-                    }}
-                    className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
+                    onClick={() =>
+                      run(`order:${order.id}:OUT_FOR_DELIVERY`, async () => {
+                        try {
+                          await updateOrderStatus.mutateAsync({
+                            orderId: order.id,
+                            status: 'OUT_FOR_DELIVERY',
+                          });
+                        } catch (_error) {
+                          toast.error(t('orders.failedUpdateStatus'));
+                        }
+                      })
+                    }
+                    disabled={isPending(`order:${order.id}:OUT_FOR_DELIVERY`)}
+                    className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 disabled:bg-purple-800/60 disabled:cursor-not-allowed text-white text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
                   >
-                    <Truck className="h-5 w-5" />
+                    {isPending(`order:${order.id}:OUT_FOR_DELIVERY`) ? (
+                      <LoadingSpinner size="sm" className="border-white/40 border-t-white" />
+                    ) : (
+                      <Truck className="h-5 w-5" />
+                    )}
                     {t('orders.outForDelivery')}
                   </button>
                 )}
@@ -719,9 +774,12 @@ export default function KitchenDisplayPage() {
               </button>
               <button
                 onClick={handleRejectOrder}
-                disabled={!rejectReason.trim()}
-                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!rejectReason.trim() || isPending('reject')}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
+                {isPending('reject') && (
+                  <LoadingSpinner size="sm" className="border-white/40 border-t-white" />
+                )}
                 {t('reject', { ns: 'common' })}
               </button>
             </div>

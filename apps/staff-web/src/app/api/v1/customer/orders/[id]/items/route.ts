@@ -9,15 +9,22 @@ import { addCustomerOrderItems } from '@/lib/services/customer-order-service';
 
 export const dynamic = 'force-dynamic';
 
+// Length caps (H3): item-level free-text fields are bounded to prevent
+// a single cart submission from inflating into a multi-MB realtime
+// fanout. `item_name` cap stays well under the column's `varchar(255)`;
+// `notes` matches the staff-side payment-notes cap in `inputs.ts`. Plus
+// a hard `.max(50)` on the array itself — a "100,000 items" payload
+// would otherwise blow past the BEFORE INSERT trigger budget per
+// Postgres statement timeout.
 const AddItemsSchema = z.object({
   items: z
     .array(
       z.object({
         menu_item_id: z.string().uuid(),
-        item_name: z.string().min(1),
+        item_name: z.string().min(1).max(200),
         item_price: z.number().min(0),
-        quantity: z.number().int().positive(),
-        notes: z.string().optional().nullable(),
+        quantity: z.number().int().positive().max(999),
+        notes: z.string().max(500).optional().nullable(),
         tenant_id: z.string().uuid(),
         // Required per-item (Blocker 1): the wrapper stamps every row so
         // a paused-then-replayed cart submission dedupes against the
@@ -26,7 +33,8 @@ const AddItemsSchema = z.object({
         client_request_id: z.string().uuid(),
       }),
     )
-    .min(1),
+    .min(1)
+    .max(50),
 });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

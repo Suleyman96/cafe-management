@@ -6,9 +6,9 @@ import { TextInput } from '@/lib/paper-compat';
 import type { SettingsSectionProps } from './ToggleRow';
 
 const POSITION_OPTIONS = [
-  { value: 'before', label: 'Before ($10)' },
-  { value: 'after', label: 'After (10$)' },
-];
+  { value: 'before', labelKey: 'cafeSettings.currencyPositionBefore' },
+  { value: 'after', labelKey: 'cafeSettings.currencyPositionAfter' },
+] as const;
 
 export function CurrencySection({ form, updateField }: SettingsSectionProps) {
   const { t } = useTranslation('staff');
@@ -52,7 +52,7 @@ export function CurrencySection({ form, updateField }: SettingsSectionProps) {
               onPress={() => updateField('currency_position', opt.value)}
               compact
             >
-              {opt.label}
+              {t(opt.labelKey)}
             </Chip>
           ))}
         </View>
