@@ -1,5 +1,5 @@
 import { useTranslation } from '@gustri/i18n';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { StatusBadge } from '@/components/ui';
 import { Text } from '@/lib/paper-compat';
@@ -29,6 +29,7 @@ export const TableCard = React.memo(function TableCard({
   onPress,
 }: TableCardProps) {
   const { t } = useTranslation('staff');
+  const handlePress = useCallback(() => onPress(table.id), [onPress, table.id]);
   const statusColors = TABLE_STATUS_COLORS[table.status];
   const backgroundColor = statusColors?.bg || COLORS.card;
   const borderColor = statusColors?.text || COLORS.border;
@@ -50,7 +51,7 @@ export const TableCard = React.memo(function TableCard({
   return (
     <TouchableOpacity
       style={[styles.card, { backgroundColor, borderColor }, hasWaiterCall && styles.cardWithCall]}
-      onPress={() => onPress(table.id)}
+      onPress={handlePress}
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}

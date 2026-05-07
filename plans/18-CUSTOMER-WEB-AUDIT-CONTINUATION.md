@@ -12,10 +12,15 @@ Handoff doc for picking up the customer-web security audit in a new Claude sessi
 |---|---|---|
 | 🟠 H1 — engagement-route DoS via direct-Supabase | #97 | API routes + DB velocity guard |
 | 🟠 H2 — dine-in QR codes never expire | #97 | Rotation + expiry/revocation columns + admin UI |
-| 🟠 H3 — unbounded free-text DoS | (pre-session) | `NOT VALID` length CHECKs |
+| 🟠 H3 — unbounded free-text DoS | (pre-session) + #102 | `NOT VALID` length CHECKs, then VALIDATE after prod-replica all-zero pre-flight |
 | 🟠 H4 — anon table-free policy | false positive | Already fixed by 20260428000001 |
 | 🟠 H5 — realtime cross-customer leak | (pre-session) | Channel narrowed from `table_id` to `id` |
 | ⚙️ Migration timestamp collision | #98 | `20260507000001` → `…04` rename for `set_order_number_uses_new_tenant_id` |
+| 🟡 M5 — realtime listener leak | #101 | useRef dedupe + setTimeout(0) deferred teardown in `useOrder` |
+| 🟡 M4 — staff-web XSS audit | (this session) | All 5 user-controlled fields render via plain `{value}` JSX; zero `dangerouslySetInnerHTML`, zero HTML parsers in deps. Closed without code change. |
+| 🟢 L5 — delivery menu unscoped browse | (this session) | Client guard now also requires `qrToken`; SSR cross-tenant fetch concern documented inline as a follow-up. |
+| 🟢 L4 — anon read of `tables.qr_code` | (this session) | `set_table_context()` now `RETURNS uuid`; anon `SELECT` revoked from the four `qr_code*` columns; wrapper narrowed to `PUBLIC_TABLE_COLUMNS`. |
+| ⚙️ Wrapper insert dead code | #101 | `db.waiterCalls.create` / `db.feedback.create` deleted (unused after #97). |
 
 ### Open PRs
 
@@ -28,12 +33,12 @@ Handoff doc for picking up the customer-web security audit in a new Claude sessi
 
 **Mediums still open:**
 - 🟡 **M3** — plan-required gate inconsistency. `/api/v1/customer/orders` enforces `PLAN_LIMITS[plan].qrOrdering` server-side, but `waiter_calls` and `feedback` routes (added in PR #97) skip this check. A free-tier tenant who hasn't enabled QR ordering still gets calls/feedback writes. Low revenue impact.
-- 🟡 **M4** — staff-web XSS audit. Out-of-scope for the customer-web review. Need to grep staff-web for `dangerouslySetInnerHTML` and any code rendering `customer_notes` / `delivery_address` / `delivery_notes` / `feedback.message` / `waiter_calls.notes`.
-- 🟡 **M5** — realtime listener leak on rapid navigation. PR1 simplified the path (no channel before `orderId`) but the `useEffect` dep array can still churn channels under React strict-mode double-invoke. Surgical fix in `apps/customer-web/src/hooks/use-order.ts`.
 
 **Lows still open:**
-- 🟢 **L4** — `tables.qr_code` is anon-readable via `anon_read_tables`. Partially mitigated by PR #97's rotation (rotated codes invalidate scrapes), but the column itself is still readable. Consider a column-level revoke or a view that omits `qr_code` from the anon-read policy.
-- 🟢 **L5** — delivery menu fetched without scoping if token omitted. Verify [apps/customer-web/src/app/delivery/menu/page.tsx](../apps/customer-web/src/app/delivery/menu/page.tsx) rejects unscoped browses.
+- (none — Tier 2 closed; see status table)
+
+**Deferred (deeper surgery):**
+- Customer-web `/delivery/menu` SSR fetch is cross-tenant: anon Supabase client + no tenant context bound + `anon_read_menu_items USING (true)` means the SSR HTML can briefly contain mixed-tenant items before the L5 client guard redirects. Not a leak in single-tenant prod; in multi-tenant prod the proper fix moves tenant resolution server-side (cookie / signed URL with the qr_token validated against `qr_tokens`) and tenant-scopes the wrapper read.
 
 **Operational follow-ups (from PRs #97 / #98 / #100):**
 - `VALIDATE CONSTRAINT` migration to upgrade PR2's `NOT VALID` length checks once a per-tenant audit query confirms no offending rows.

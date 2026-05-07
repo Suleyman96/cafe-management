@@ -1,5 +1,5 @@
 import { useTranslation } from '@gustri/i18n';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { StatusBadge, TimeElapsed } from '@/components/ui';
 import { Text } from '@/lib/paper-compat';
@@ -35,6 +35,8 @@ export const OrderCard = React.memo(function OrderCard({
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
 
+  const handlePress = useCallback(() => onPress(order.id), [onPress, order.id]);
+
   const typeStyle = TYPE_STYLES[order.order_type || ''];
 
   const tableLabel = order.table
@@ -54,7 +56,7 @@ export const OrderCard = React.memo(function OrderCard({
           backgroundColor: typeStyle.backgroundColor,
         },
       ]}
-      onPress={() => onPress(order.id)}
+      onPress={handlePress}
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={`${t('orders.orderHash', { number: order.order_number || '—' })}, ${order.status}`}

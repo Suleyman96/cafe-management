@@ -58,35 +58,37 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 export const db = createSupabaseWrapper(supabase);
 
 /**
- * Set table context for customer session
- * This is used by RLS policies to scope access. We also resolve the tenant
- * id from the table row so the wrapper can apply its defense-in-depth
- * tenant predicate (H5) on subsequent reads.
+ * Set table context for customer session.
+ *
+ * This is used by RLS policies to scope access. We also bind the tenant id
+ * to the wrapper so its defense-in-depth tenant predicate (H5) takes effect
+ * on subsequent reads.
+ *
+ * L4 — the RPC now RETURNS the resolved `tenant_id`. Pre-L4 we made a
+ * second `db.tables.findByQrCode(qrToken)` call to recover it client-side,
+ * but that required anon SELECT on the `qr_code` column, which leaks the
+ * full QR-code list to anyone with the public anon key. The RPC runs as
+ * `SECURITY DEFINER` (postgres), so it can read the column even after
+ * we revoke anon's column-level SELECT in 20260507000006.
  */
 export async function setTableContext(qrToken: string) {
-  // Set session variable for RLS
   // Supabase client can't resolve RPC arg types — typed in Database['public']['Functions']
-  const { error } = await (supabase.rpc as Function)('set_table_context', { qr_token: qrToken });
+  const { data: tenantId, error } = await (supabase.rpc as Function)('set_table_context', {
+    qr_token: qrToken,
+  });
   if (error) {
     throw handleSupabaseError(error);
   }
-  // Look up the table row by qr_code so we can bind its tenant_id to the
-  // wrapper. Anon RLS allows this read.
-  try {
-    const table = await db.tables.findByQrCode(qrToken);
-    db.setTenantContext(table.tenant_id);
-  } catch (lookupErr) {
-    // M2: pre-PR this error was caught and dropped on the floor. The
-    // wrapper stays at tenantId=null and continues to rely on RLS alone
-    // — that's the intended fallback — but a silent failure means we
-    // can't distinguish "RLS-only by design" from "the lookup is
-    // actually broken." Surface the failure to Sentry so we can
-    // monitor lookup health without changing user-visible behavior.
-    // The set_table_context RPC already succeeded (sentinel errors
-    // throw above); reaching this catch implies the table read
-    // failed for some reason orthogonal to QR validity.
-    Sentry.captureException(lookupErr, {
-      tags: { surface: 'set_table_context.findByQrCode' },
+  if (typeof tenantId === 'string' && tenantId.length > 0) {
+    db.setTenantContext(tenantId);
+  } else {
+    // The RPC succeeded (no sentinel exception) but didn't return a
+    // tenant id — that should be impossible with the current function
+    // body. Surface to Sentry so we notice if a future migration
+    // changes the contract; the wrapper falls back to RLS-only scoping.
+    Sentry.captureMessage('set_table_context returned no tenant_id', {
+      level: 'warning',
+      tags: { surface: 'set_table_context.return' },
     });
   }
 }
