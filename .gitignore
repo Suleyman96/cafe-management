@@ -26,7 +26,11 @@ apps/mobile/google-service-account.json
 .env.development.local
 .env.test.local
 .env.production.local
-.env*.local
+# `.env*.local*` (with trailing *) catches both `.env.local` and
+# variants like `.env.local.remote` that hold credentials for non-default
+# Supabase projects. The previous pattern (`.env*.local` without trailing
+# `*`) silently let `.env.local.remote` through.
+.env*.local*
 
 # IDE
 .vscode/
