@@ -121,3 +121,75 @@ If a crash arrives unsymbolicated (`f`/`g` frames):
    release for that crash should have a matching artifact bundle.
 2. If missing, the EAS build that produced that binary did not have
    `SENTRY_AUTH_TOKEN`. Verify with `eas secret:list` and re-run the build.
+
+---
+
+## Audible-alert constraint: keep the app foregrounded during shift (Android)
+
+**TL;DR — staff using Android phones must keep the gustri app open and the
+screen on (or under do-not-disturb-priority) during a shift to hear new-order
+sounds reliably.** This is intentional, not a bug; the alternative ships
+foreground-service requirements that add Play Store review friction without
+clear staff benefit.
+
+### What we ship
+
+The notification handler explicitly disables in-app sound for backgrounded
+delivery (`shouldPlayInBackground: false` in
+[apps/mobile/src/lib/notifications.ts](src/lib/notifications.ts)). When the
+app is foreground, every order arrival fires:
+
+- A coalesced sound (≤ 1 buzz / 300 ms) via
+  [sound.ts](src/lib/sound.ts).
+- A haptic via [haptics.ts](src/lib/haptics.ts).
+- A heads-up local notification on the `MAX`-importance channel.
+
+When the app is backgrounded or the screen is locked, sound delivery falls
+to **OS-level Expo Push routing through APNs / FCM**:
+
+- **iOS:** `aps.sound = 'default'` plays once briefly. Lock-screen banner
+  remains visible until dismissed.
+- **Android 12+:** FCM-delivered notification plays the channel sound *if
+  the OS hasn't aggressively killed the process*. Doze, App Standby Buckets,
+  and OEM battery savers (Xiaomi, Huawei, Samsung) routinely silence
+  background pushes after ≈10 minutes of inactivity.
+
+### Operational guidance for restaurant ops
+
+- Hand each shift-using device to staff with the app **foregrounded** and
+  the screen kept awake (the `usesCleartextTraffic`-free in-app session
+  already disables the OS auto-lock when the orders screen is active — see
+  the `keepAwakeOn` calls in `OrdersListScreen` / `KitchenDisplayScreen`).
+- For shared tablets in the kitchen, plug into power and disable the OEM
+  battery-saver. Stock Android works without intervention; OEM-skinned
+  Android needs the per-app battery setting flipped to **Unrestricted**.
+- If a manager reports "we missed orders for 10 minutes," the first
+  diagnostic is "was the app foregrounded?" before reaching for the
+  realtime / push logs.
+
+### When to revisit
+
+Add an `expo-task-manager` foreground service (visible persistent
+notification, "gustri is listening for orders") if EITHER:
+
+1. Multiple ops complaints document missed-order incidents traced to
+   backgrounded Android, or
+2. A tenant explicitly contracts for background-resilient alerts (e.g.
+   24/7 dark kitchen with the device locked in a drawer).
+
+Foreground services trigger Play Store policy review under the
+`FOREGROUND_SERVICE_DATA_SYNC` permission (Android 14+); ship in a
+dedicated PR with the policy declaration and a screenshot of the
+persistent notification UI.
+
+### Why we don't ship a foreground service today
+
+- Most tenants run the app on a dedicated kitchen tablet plugged into
+  power with the screen always on — the failure mode this would fix
+  doesn't occur in practice for them.
+- Adding a foreground service adds a permanent system-tray notification
+  that can't be dismissed, which is visually noisy for staff who keep the
+  device foregrounded anyway.
+- The Play Store review path for `FOREGROUND_SERVICE_DATA_SYNC` is a one-
+  way valve — once required, every future submission needs the policy
+  attestation. Not worth paying for hypothetical demand.

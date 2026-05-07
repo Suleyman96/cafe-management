@@ -3,7 +3,7 @@ import { OrdersRealtimeInsertSchema, OrdersRealtimeUpdateSchema } from '@gustri/
 import { QUERY_KEYS, useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { markEvent } from '@/lib/event-dedup';
 import { hapticEvent } from '@/lib/haptics';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
@@ -11,7 +11,7 @@ import { notifyNewOrder } from '@/lib/notifications';
 import { validateRealtimePayload } from '@/lib/realtime-validation';
 import { playNewOrderSound } from '@/lib/sound';
 import { db } from '@/lib/supabase';
-import { useRealtimeStatusStore } from '@/store/realtime-status-store';
+import { type RealtimeChannelStatus, useRealtimeStatusStore } from '@/store/realtime-status-store';
 import type { OrderWithDetails } from '@/types';
 import { useRealtimeSync } from './use-realtime-sync';
 
@@ -139,10 +139,13 @@ export function useOrders(filters?: {
   // First render seeds the set without playing — we only want sound for
   // genuinely new arrivals.
   const knownOrderIdsRef = useRef<Set<string> | null>(null);
-  useEffect(() => {
+
+  const runDegradedCatchup = useCallback(() => {
     if (!query.data) return;
     const fresh = new Set(query.data.map((o) => o.id));
     if (knownOrderIdsRef.current === null) {
+      // First time we have data — seed without firing. We only care about
+      // *new* arrivals from this point forward.
       knownOrderIdsRef.current = fresh;
       return;
     }
@@ -171,6 +174,32 @@ export function useOrders(filters?: {
         });
     }
   }, [query.data]);
+
+  useEffect(() => {
+    runDegradedCatchup();
+  }, [runDegradedCatchup]);
+
+  // Mobile audit #3 — fire catchup on the *moment* realtime flips to degraded,
+  // not just when the post-transition refetch eventually lands. The
+  // invalidateAll() inside use-realtime-sync triggers a React-Query refetch,
+  // which in turn updates `query.data`, which fires `runDegradedCatchup` via
+  // the effect above — but that depends on the refetch completing
+  // synchronously after the transition. If the refetch is delayed (slow
+  // network, briefly suspended observer), kitchen staff get a silent window
+  // until the next refetch lands. This second trigger forces an explicit
+  // `query.refetch()` at the transition edge so the catchup is bounded by
+  // network latency, not by React-Query scheduling.
+  const channelStatus = useRealtimeStatusStore((s) => s.channels['orders:all'] ?? null);
+  const previousChannelStatusRef = useRef<RealtimeChannelStatus | null>(null);
+  useEffect(() => {
+    const previous = previousChannelStatusRef.current;
+    previousChannelStatusRef.current = channelStatus;
+    if (previous === 'degraded' || channelStatus !== 'degraded') return;
+    // Best-effort refetch; the [runDegradedCatchup] effect above handles the
+    // diff once `query.data` updates. If the refetch already completed via
+    // `invalidateAll`, this is a no-op (React Query dedupes in-flight reads).
+    void query.refetch();
+  }, [channelStatus, query]);
 
   return query;
 }
