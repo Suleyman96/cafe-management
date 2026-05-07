@@ -32,6 +32,9 @@ vi.mock('@/lib/api-routes', () => ({
         .fn()
         .mockResolvedValue({ feedback: { id: 'test-feedback-id', status: 'pending' } }),
     },
+    customerQrTokens: {
+      resolve: vi.fn().mockResolvedValue({ tenant_id: 'test-tenant-id' }),
+    },
   },
 }));
 

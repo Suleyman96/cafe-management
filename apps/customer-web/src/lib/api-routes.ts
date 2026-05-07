@@ -176,4 +176,19 @@ export const apiRoutes = {
         body: JSON.stringify(data),
       }),
   },
+
+  // SSR-multi-tenant fix (plans/18 deferred). The /delivery/menu page
+  // used to SSR-fetch from the anon Supabase client with no tenant
+  // context bound, leaking mixed-tenant items into the SSR HTML in
+  // multi-tenant deployments. Client now resolves the qr_token to a
+  // tenant_id via this endpoint, then `db.setTenantContext(tenant_id)`
+  // so subsequent wrapper reads (`useMenuItems`, `useCategories`) get
+  // the `applyTenantScope` predicate the dine-in flow already enjoys.
+  customerQrTokens: {
+    resolve: (qrToken: string) =>
+      apiFetch<{ tenant_id: string }>('/api/v1/customer/qr-tokens/resolve', {
+        method: 'POST',
+        body: JSON.stringify({ qr_token: qrToken }),
+      }),
+  },
 };

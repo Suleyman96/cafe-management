@@ -13,6 +13,11 @@ function mockResource(...methods: string[]) {
 
 export function createMockDb() {
   return {
+    // Top-level wrapper methods (not domain resources). The delivery-context
+    // hook calls db.setTenantContext after resolving the qr_token; without
+    // this stub the post-resolve effect would throw on a real prod build.
+    setTenantContext: vi.fn(),
+    getTenantId: vi.fn().mockReturnValue(null),
     tables: mockResource(
       'findAll',
       'findById',

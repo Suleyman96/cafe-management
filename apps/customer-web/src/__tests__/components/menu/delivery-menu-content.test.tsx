@@ -1,16 +1,16 @@
 import { useRouter } from 'next/navigation';
 import { DeliveryMenuContent } from '@/components/menu/delivery-menu-content';
+import { apiRoutes } from '@/lib/api-routes';
+import { db } from '@/lib/supabase';
 import { useDeliveryStore } from '@/store/delivery-store';
 import { renderWithProviders, waitFor } from '../../helpers/test-utils';
 
-// Stub MenuScreen so the test stays focused on the guard. The real
-// MenuScreen pulls the cart store + queries and is exercised elsewhere.
+// Stub MenuScreen so the test stays focused on the guard + token-resolve
+// flow. The real MenuScreen pulls the cart store + queries and is
+// exercised elsewhere.
 vi.mock('@/components/menu/menu-screen', () => ({
   MenuScreen: () => <div data-testid="menu-screen">menu</div>,
 }));
-
-const initialCategories: any[] = [];
-const initialMenuItems: any[] = [];
 
 const replaceMock = vi.fn();
 
@@ -31,10 +31,14 @@ beforeEach(() => {
     lastOrderId: null,
     qrToken: null,
   });
+  // Reset apiRoutes mocks — setup.ts seeds defaults, vi.clearAllMocks
+  // wipes them, individual tests opt into specific resolutions.
+  (apiRoutes.customerQrTokens.resolve as any).mockResolvedValue({ tenant_id: 'test-tenant-id' });
+  (db.setTenantContext as any).mockClear?.();
 });
 
 describe('DeliveryMenuContent — L5 guard', () => {
-  it('renders the menu when customerName, deliveryAddress, and qrToken are all set', async () => {
+  it('renders MenuScreen and binds tenant when all three pieces are present', async () => {
     useDeliveryStore.setState({
       customerName: 'Alice',
       customerPhone: '+15551234567',
@@ -44,23 +48,22 @@ describe('DeliveryMenuContent — L5 guard', () => {
       qrToken: 'tkn_legit',
     });
 
-    const { getByTestId } = renderWithProviders(
-      <DeliveryMenuContent
-        initialCategories={initialCategories}
-        initialMenuItems={initialMenuItems}
-      />,
-    );
+    const { findByTestId } = renderWithProviders(<DeliveryMenuContent />);
 
-    expect(getByTestId('menu-screen')).toBeInTheDocument();
+    expect(await findByTestId('menu-screen')).toBeInTheDocument();
     expect(replaceMock).not.toHaveBeenCalled();
+    // Audit deferred SSR fix — the resolved tenant_id binds to the
+    // wrapper so subsequent useMenuItems / useCategories scope reads.
+    await waitFor(() => {
+      expect(db.setTenantContext).toHaveBeenCalledWith('test-tenant-id');
+    });
   });
 
   it('redirects to /delivery when qrToken is missing (L5)', async () => {
     // Customer hit /delivery/menu directly (or a stale persisted store
-    // without the token from the QR `?token=…`). Cart submit would later
-    // fail with `missingQrToken`; redirecting here surfaces the broken
-    // entry path immediately instead of letting the customer browse a
-    // menu they can never check out from.
+    // without the token from the QR `?token=…`). The wrapper would
+    // never get tenant context, so failing fast here is preferable to
+    // letting the customer browse and break at cart submit.
     useDeliveryStore.setState({
       customerName: 'Alice',
       customerPhone: '+15551234567',
@@ -70,16 +73,13 @@ describe('DeliveryMenuContent — L5 guard', () => {
       qrToken: null,
     });
 
-    renderWithProviders(
-      <DeliveryMenuContent
-        initialCategories={initialCategories}
-        initialMenuItems={initialMenuItems}
-      />,
-    );
+    renderWithProviders(<DeliveryMenuContent />);
 
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith('/delivery');
     });
+    // No POST should fire — the hook gates on `enabled: !!qrToken`.
+    expect(apiRoutes.customerQrTokens.resolve).not.toHaveBeenCalled();
   });
 
   it('redirects to /delivery when customerName is missing', async () => {
@@ -92,12 +92,7 @@ describe('DeliveryMenuContent — L5 guard', () => {
       qrToken: 'tkn_legit',
     });
 
-    renderWithProviders(
-      <DeliveryMenuContent
-        initialCategories={initialCategories}
-        initialMenuItems={initialMenuItems}
-      />,
-    );
+    renderWithProviders(<DeliveryMenuContent />);
 
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith('/delivery');
@@ -114,15 +109,33 @@ describe('DeliveryMenuContent — L5 guard', () => {
       qrToken: 'tkn_legit',
     });
 
-    renderWithProviders(
-      <DeliveryMenuContent
-        initialCategories={initialCategories}
-        initialMenuItems={initialMenuItems}
-      />,
-    );
+    renderWithProviders(<DeliveryMenuContent />);
 
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith('/delivery');
     });
+  });
+
+  it('redirects to /delivery when token resolution rejects (revoked / expired / plan_required)', async () => {
+    useDeliveryStore.setState({
+      customerName: 'Alice',
+      customerPhone: '+15551234567',
+      deliveryAddress: '1 Main St',
+      deliveryNotes: '',
+      lastOrderId: null,
+      qrToken: 'tkn_revoked',
+    });
+    (apiRoutes.customerQrTokens.resolve as any).mockRejectedValueOnce(
+      new Error('invalid_qr_token'),
+    );
+
+    renderWithProviders(<DeliveryMenuContent />);
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith('/delivery');
+    });
+    // Wrapper must NOT receive a tenant binding from a rejected resolve —
+    // a stale tenant id from a prior session would otherwise leak through.
+    expect(db.setTenantContext).not.toHaveBeenCalled();
   });
 });

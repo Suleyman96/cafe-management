@@ -21,6 +21,7 @@ Handoff doc for picking up the customer-web security audit in a new Claude sessi
 | 🟢 L5 — delivery menu unscoped browse | (this session) | Client guard now also requires `qrToken`; SSR cross-tenant fetch concern documented inline as a follow-up. |
 | 🟢 L4 — anon read of `tables.qr_code` | (this session) | `set_table_context()` now `RETURNS uuid`; anon `SELECT` revoked from the four `qr_code*` columns; wrapper narrowed to `PUBLIC_TABLE_COLUMNS`. |
 | 🟡 M3 — plan-required gate consistency | (this session) | `customer-engagement-service.ts` now runs the same `PLAN_LIMITS[plan].qrOrdering` gate as `customer-order-service.ts`. Free-tier tenants get `403 plan_required` from `/api/v1/customer/waiter-calls` and `/api/v1/customer/feedback` instead of a successful insert. |
+| 🔵 SSR multi-tenant leak on `/delivery/menu` | (this session) | New `POST /api/v1/customer/qr-tokens/resolve` route validates the bearer `qr_token` server-side (revocation/expiry/kind/plan), returns `tenant_id`. Customer-web binds it via `db.setTenantContext` so `useMenuItems` / `useCategories` apply the existing `applyTenantScope` predicate. The SSR fetch on `/delivery/menu/page.tsx` is gone; the page is now a thin client shell. |
 | ⚙️ Wrapper insert dead code | #101 | `db.waiterCalls.create` / `db.feedback.create` deleted (unused after #97). |
 
 ### Open PRs
@@ -39,7 +40,7 @@ Handoff doc for picking up the customer-web security audit in a new Claude sessi
 - (none — Tier 2 closed; see status table)
 
 **Deferred (deeper surgery):**
-- Customer-web `/delivery/menu` SSR fetch is cross-tenant: anon Supabase client + no tenant context bound + `anon_read_menu_items USING (true)` means the SSR HTML can briefly contain mixed-tenant items before the L5 client guard redirects. Not a leak in single-tenant prod; in multi-tenant prod the proper fix moves tenant resolution server-side (cookie / signed URL with the qr_token validated against `qr_tokens`) and tenant-scopes the wrapper read.
+- (none — `/delivery/menu` SSR multi-tenant fix shipped this session; see status table)
 
 **Operational follow-ups (from PRs #97 / #98 / #100):**
 - `VALIDATE CONSTRAINT` migration to upgrade PR2's `NOT VALID` length checks once a per-tenant audit query confirms no offending rows.

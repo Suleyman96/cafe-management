@@ -74,6 +74,17 @@ const limiters = redis
         limiter: Ratelimit.slidingWindow(5, '60 s'),
         prefix: 'rl:order-cancel',
       }),
+      // SSR-multi-tenant fix: customer-web hits this once on the
+      // /delivery → /delivery/menu transition to validate the qr_token
+      // and bind tenant context to the wrapper. Legitimate customers
+      // call it at most a handful of times per session (initial visit
+      // + back-nav refreshes); anything past 10/min is a brute-force
+      // probe against the qr_token namespace.
+      'customer-qr-token': new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(10, '60 s'),
+        prefix: 'rl:customer-qr-token',
+      }),
     }
   : null;
 
@@ -87,7 +98,8 @@ export type RateLimitCategory =
   | 'staff-pin-verify'
   | 'waiter-call'
   | 'feedback'
-  | 'order-cancel';
+  | 'order-cancel'
+  | 'customer-qr-token';
 
 export async function rateLimit(
   category: RateLimitCategory,
