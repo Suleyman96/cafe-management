@@ -4,7 +4,7 @@ import { QUERY_KEYS, useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { markEvent } from '@/lib/event-dedup';
+import { markEvent, seenRecently } from '@/lib/event-dedup';
 import { hapticEvent } from '@/lib/haptics';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { notifyNewOrder } from '@/lib/notifications';
@@ -82,9 +82,24 @@ export function useOrders(filters?: {
         onPayload: async (newRecord: Record<string, unknown>) => {
           const parsed = OrdersRealtimeInsertSchema.safeParse(newRecord);
           if (parsed.success) {
+            const orderKey = `order:${parsed.data.id}`;
+            // Mobile audit #5 — Supabase Realtime can re-deliver an INSERT
+            // after a brief disconnect (>5 s after the original). The 60 s
+            // lookup window catches reconnect-replay so the kitchen doesn't
+            // hear the same order ring twice. We still refresh the timestamp
+            // below so the realtime↔push race dedup at the foreground
+            // notification handler keeps working.
+            const isReplay = seenRecently(orderKey, 60_000);
             // Mark BEFORE playing so a near-simultaneous push (which checks
-            // seenRecently in the foreground handler) suppresses its sound.
-            markEvent(`order:${parsed.data.id}`);
+            // seenRecently in the foreground handler with a 500 ms window)
+            // suppresses its sound for the original delivery.
+            markEvent(orderKey);
+            if (isReplay) {
+              // Replay path skips side effects but still invalidates via the
+              // realtime handler chain — `useRealtimeSync` runs the
+              // `queryKeys` invalidation regardless of `onPayload`'s return.
+              return;
+            }
           }
 
           hapticEvent();
@@ -152,11 +167,19 @@ export function useOrders(filters?: {
     const previous = knownOrderIdsRef.current;
     knownOrderIdsRef.current = fresh;
 
-    const isDegraded = useRealtimeStatusStore.getState().isAnyDegraded();
-    if (!isDegraded) return;
+    // Widened gate so reconnecting state also alerts; dedup against the
+    // realtime path so a brief recovery delivering the same INSERT doesn't double-play.
+    const isUnhealthy = useRealtimeStatusStore.getState().isAnyUnhealthy();
+    if (!isUnhealthy) return;
 
-    const newOrders = query.data.filter((o) => !previous.has(o.id));
+    const newOrders = query.data
+      .filter((o) => !previous.has(o.id))
+      .filter((o) => !seenRecently(`order:${o.id}`));
     if (newOrders.length === 0) return;
+
+    for (const order of newOrders) {
+      markEvent(`order:${order.id}`);
+    }
 
     hapticEvent();
     void playNewOrderSound();

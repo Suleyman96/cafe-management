@@ -9,6 +9,8 @@ interface RealtimeStatusStore {
   removeChannel: (channelName: string) => void;
   /** True when ANY tracked channel is in the `degraded` state. */
   isAnyDegraded: () => boolean;
+  /** True when ANY tracked channel is not `connected` (degraded or reconnecting). */
+  isAnyUnhealthy: () => boolean;
 }
 
 /**
@@ -28,4 +30,5 @@ export const useRealtimeStatusStore = create<RealtimeStatusStore>((set, get) => 
       return { channels: rest };
     }),
   isAnyDegraded: () => Object.values(get().channels).some((st) => st === 'degraded'),
+  isAnyUnhealthy: () => Object.values(get().channels).some((st) => st !== 'connected'),
 }));

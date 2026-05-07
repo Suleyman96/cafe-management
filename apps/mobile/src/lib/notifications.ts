@@ -2,23 +2,46 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { seenRecently } from './event-dedup';
+import { markEvent, seenRecently } from './event-dedup';
 
-// Configure notification behavior. The dedup gate suppresses the foreground
-// sound when the same event already played via the realtime path within the
-// last 500ms. The banner still shows so the user has the visual cue.
+// Configure notification behavior. Two dedup gates suppress duplicate sound:
+//
+//   - Realtime↔push race (event-id keyed, 500 ms window). The realtime path
+//     stamps `order:<id>` / `waiter_call:<tableId>` just before playing the
+//     in-app sound, so when the same event is also delivered via Expo push
+//     the foreground handler can suppress the second sound.
+//
+//   - OS re-delivery (audit #7, identifier keyed, 60 s window). Expo / FCM /
+//     APNs can re-invoke the foreground handler with the same notification
+//     `request.identifier` during reconnect, app boot, or rare OS retry
+//     paths. Without an identifier-keyed gate, the same banner sound plays
+//     twice within seconds. Expo handles most OS-level dedup in practice;
+//     this is belt-and-braces.
+const NOTIFICATION_REDELIVERY_WINDOW_MS = 60_000;
+
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     const data = (notification.request.content.data ?? {}) as Record<string, unknown>;
     const orderId = typeof data.orderId === 'string' ? data.orderId : null;
     const tableId = typeof data.tableId === 'string' ? data.tableId : null;
     const type = typeof data.type === 'string' ? data.type : null;
+    const requestId = notification.request.identifier;
 
     let suppressSound = false;
+
+    // Existing realtime↔push race dedup (event-id keyed, default 500 ms).
     if (type === 'new_order' && orderId && seenRecently(`order:${orderId}`)) {
       suppressSound = true;
     } else if (type === 'waiter_call' && tableId && seenRecently(`waiter_call:${tableId}`)) {
       suppressSound = true;
+    }
+
+    // OS re-delivery dedup (identifier keyed, longer window).
+    if (requestId && seenRecently(`notif:${requestId}`, NOTIFICATION_REDELIVERY_WINDOW_MS)) {
+      suppressSound = true;
+    }
+    if (requestId) {
+      markEvent(`notif:${requestId}`);
     }
 
     return {

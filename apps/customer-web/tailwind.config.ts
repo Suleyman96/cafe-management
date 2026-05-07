@@ -6,6 +6,10 @@ const config: Config = {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    // Shared UI package — without this, Tailwind purges classes it doesn't
+    // see in this app's source (e.g. LoadingSpinner's `animate-spin`,
+    // `border-t-blue-500`), leaving a static grey ring instead of a spinner.
+    '../../packages/ui/src/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {

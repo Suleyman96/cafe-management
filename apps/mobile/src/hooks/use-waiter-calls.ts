@@ -4,7 +4,7 @@ import { QUERY_KEYS } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef } from 'react';
-import { markEvent } from '@/lib/event-dedup';
+import { markEvent, seenRecently } from '@/lib/event-dedup';
 import { hapticEvent, hapticSuccess } from '@/lib/haptics';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { notifyWaiterCall } from '@/lib/notifications';
@@ -36,10 +36,24 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
         onPayload: async (newRecord: Record<string, unknown>) => {
           const parsed = WaiterCallsRealtimeInsertSchema.safeParse(newRecord);
           if (parsed.success) {
+            const callKey = `waiter_call:${parsed.data.table_id}`;
+            // Mobile audit #5 — Supabase Realtime can re-deliver an INSERT
+            // after a brief disconnect. The 60 s lookup window catches
+            // reconnect-replay so the same table's assistance call doesn't
+            // ring twice. Keyed on table_id (not call id) to match the push
+            // handler's payload shape — same reason as the realtime↔push
+            // race dedup below.
+            const isReplay = seenRecently(callKey, 60_000);
             // Mark by table_id so the push handler — whose payload carries
             // tableId, not callId — can match. Mark BEFORE playing so a
             // near-simultaneous push suppresses its own sound via seenRecently.
-            markEvent(`waiter_call:${parsed.data.table_id}`);
+            markEvent(callKey);
+            if (isReplay) {
+              // Replay path skips side effects but still invalidates via the
+              // realtime handler chain — `useRealtimeSync` runs the
+              // `queryKeys` invalidation regardless of `onPayload`'s return.
+              return;
+            }
           }
 
           hapticEvent();
@@ -100,11 +114,19 @@ export function useWaiterCalls(status?: WaiterCall['status']) {
     const previous = knownCallIdsRef.current;
     knownCallIdsRef.current = fresh;
 
-    const isDegraded = useRealtimeStatusStore.getState().isAnyDegraded();
-    if (!isDegraded) return;
+    // Widened gate so reconnecting state also alerts; dedup against the
+    // realtime path so a brief recovery delivering the same INSERT doesn't double-play.
+    const isUnhealthy = useRealtimeStatusStore.getState().isAnyUnhealthy();
+    if (!isUnhealthy) return;
 
-    const newCalls = query.data.filter((c) => !previous.has(c.id));
+    const newCalls = query.data
+      .filter((c) => !previous.has(c.id))
+      .filter((c) => !(c.table_id && seenRecently(`waiter_call:${c.table_id}`)));
     if (newCalls.length === 0) return;
+
+    for (const call of newCalls) {
+      if (call.table_id) markEvent(`waiter_call:${call.table_id}`);
+    }
 
     hapticEvent();
     void playWaiterCallSound();

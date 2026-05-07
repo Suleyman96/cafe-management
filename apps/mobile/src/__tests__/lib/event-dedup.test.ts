@@ -36,10 +36,11 @@ describe('event-dedup', () => {
     expect(seenRecently('order:xyz', 1000)).toBe(false);
   });
 
-  it('cleans up entries older than 5s on every check', () => {
+  it('cleans up entries older than the 60s floor on every check', () => {
+    // Audit #5 / #7 — retention floor was bumped from 5 s to 60 s so reconnect-
+    // replay (>5 s after original) and OS-re-delivery dedup windows survive.
     markEvent('order:old');
-    vi.advanceTimersByTime(6_000);
-    // Sanity: no longer recent
+    vi.advanceTimersByTime(61_000);
     expect(seenRecently('order:old')).toBe(false);
     // Re-marking refreshes; ensure prior expiry didn't poison the new entry.
     markEvent('order:old');
@@ -48,10 +49,20 @@ describe('event-dedup', () => {
 
   it('cleans up old entries when marking new ones', () => {
     markEvent('order:1');
-    vi.advanceTimersByTime(6_000);
-    // 'order:1' is now expired. Marking 'order:2' should evict 'order:1'.
+    vi.advanceTimersByTime(61_000);
+    // 'order:1' is now past the 60 s retention floor. Marking 'order:2'
+    // should evict 'order:1' regardless of any extended lookup window.
     markEvent('order:2');
-    expect(seenRecently('order:1', 10_000)).toBe(false);
+    expect(seenRecently('order:1', 120_000)).toBe(false);
     expect(seenRecently('order:2')).toBe(true);
+  });
+
+  it('retains entries within the 60 s floor for reconnect-replay dedup (audit #5)', () => {
+    markEvent('order:replay');
+    vi.advanceTimersByTime(30_000);
+    // 30 s post-mark — well past the default 500 ms race window but inside
+    // the 60 s reconnect-replay window. Lookup with the longer window finds it.
+    expect(seenRecently('order:replay')).toBe(false); // default 500 ms — not "recent"
+    expect(seenRecently('order:replay', 60_000)).toBe(true); // 60 s — "recent"
   });
 });

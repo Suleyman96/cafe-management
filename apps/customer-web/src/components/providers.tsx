@@ -1,5 +1,6 @@
 'use client';
 
+import { ProgressProvider } from '@bprogress/next/app';
 import { isAppError } from '@gustri/core';
 import type { Language } from '@gustri/i18n';
 import { I18nextProvider, i18n, localizeErrorMessage } from '@gustri/i18n';
@@ -83,12 +84,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <I18nextProvider i18n={i18n}>
-      <QueryClientProvider client={queryClient}>
-        <DbProvider db={db}>
-          <LanguageSync />
-          {children}
-        </DbProvider>
-      </QueryClientProvider>
+      <ProgressProvider
+        height="3px"
+        color="#367B8B"
+        options={{ showSpinner: false }}
+        shallowRouting
+      >
+        <QueryClientProvider client={queryClient}>
+          <DbProvider db={db}>
+            <LanguageSync />
+            {children}
+          </DbProvider>
+        </QueryClientProvider>
+      </ProgressProvider>
     </I18nextProvider>
   );
 }

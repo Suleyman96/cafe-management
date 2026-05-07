@@ -111,11 +111,8 @@ Everything else is small.
 
 ## 4. Push notifications
 
-### 4.1 [MEDIUM] No Android foreground service for active-shift alerts
-- **Context:** Android 12+ aggressively kills background apps. The current setup (notification channel `MAX` importance) plays sounds while the app is foreground; backgrounded app relies on Expo Push delivering through APNs/FCM, with no in-app sound.
-- **Risk:** A waiter who locks the screen during a shift may miss audible alerts entirely on Android — Expo Push notification sound plays once, briefly. The `setNotificationHandler` config explicitly sets `shouldPlayInBackground: false` ([notifications.ts](apps/mobile/src/lib/notifications.ts) and `sound.ts:4-11` comment) — this is intentional, but worth surfacing to ops.
-- **Mobile-specific:** Yes, Android-specific.
-- **Fix options:** (1) Document this in `RUNBOOK.md` as a known constraint and tell staff to keep the app foregrounded during shift. (2) If background alerts are required, add `expo-task-manager` foreground service. Don't ship the foreground service unless ops explicitly needs it — it adds Play Store review friction.
+### 4.1 ~~[MEDIUM] No Android foreground service for active-shift alerts~~ — RESOLVED
+- **Audit miss:** Already documented in [RUNBOOK.md:127-195](apps/mobile/RUNBOOK.md#L127) under "Audible-alert constraint: keep the app foregrounded during shift (Android)". Covers iOS/Android delivery semantics, OEM battery-saver caveats, ops guidance, and the deliberate choice not to ship a foreground service. The audit explore agent inferred the constraint from `shouldPlayInBackground: false` in code but didn't open RUNBOOK.md to confirm whether it was already documented. No action required.
 
 ### 4.2 [LOW] Notification dedup keys on event id, not notification id
 - **File:** [apps/mobile/src/lib/notifications.ts:10-31](apps/mobile/src/lib/notifications.ts#L10)
@@ -186,12 +183,13 @@ Everything else is small.
 | 1 | MEDIUM | S | Inline lambda breaks `OrderCard` memo | [OrderCard.tsx:57](apps/mobile/src/components/orders/OrderCard.tsx#L57) |
 | 2 | MEDIUM | S | Inline lambda breaks `TableCard` memo | [TableCard.tsx:53](apps/mobile/src/components/tables/TableCard.tsx#L53) |
 | 3 | MEDIUM | M | No event backfill on degraded transition (silent gap) | [use-realtime-sync.ts:159-169](apps/mobile/src/hooks/use-realtime-sync.ts#L159) |
-| 4 | MEDIUM | S | Document Android backgrounded-shift sound limitation | RUNBOOK.md |
+| 4 | ~~MEDIUM~~ | — | ~~Document Android backgrounded-shift sound limitation~~ — already covered in [RUNBOOK.md:127-195](apps/mobile/RUNBOOK.md#L127). Audit miss. |
 | 5 | LOW | S | Duplicate-INSERT replay re-fires sound | [use-orders.ts:82-109](apps/mobile/src/hooks/use-orders.ts#L82) |
 | 6 | LOW | XS | Coalesce haptics like sound | [use-orders.ts:90](apps/mobile/src/hooks/use-orders.ts#L90) |
 | 7 | LOW | XS | Add notification.request.identifier to dedup | [notifications.ts:10-31](apps/mobile/src/lib/notifications.ts#L10) |
 
-**Recommended order:** 1, 2, 3, 4 before launch. 5–7 can ride a follow-up.
+**Recommended order:** 1, 2, 3 before launch. 5–7 can ride a follow-up. (4 is already
+documented in RUNBOOK.md — audit miss, no action needed.)
 
 ---
 

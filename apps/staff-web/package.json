@@ -13,6 +13,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@bprogress/next": "^3.2.12",
     "@gustri/api-client": "workspace:*",
     "@gustri/core": "workspace:*",
     "@gustri/database": "workspace:*",

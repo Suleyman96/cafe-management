@@ -1,5 +1,6 @@
 'use client';
 
+import { ProgressProvider } from '@bprogress/next/app';
 import { isAppError } from '@gustri/core';
 import { I18nextProvider, i18n, localizeErrorMessage } from '@gustri/i18n';
 import { DbProvider } from '@gustri/queries';
@@ -212,17 +213,24 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <I18nextProvider i18n={i18n}>
-      <QueryClientProvider client={queryClient}>
-        <TenantBoundDbProvider>
-          <RealtimeAuthBridge />
-          <LifecycleBridge />
-          <CrossTabBridge />
-          <RouteChangeHandler />
-          {children}
-          <Toaster position="bottom-right" />
-          <ReactQueryDevtools initialIsOpen={false} />
-        </TenantBoundDbProvider>
-      </QueryClientProvider>
+      <ProgressProvider
+        height="3px"
+        color="#367B8B"
+        options={{ showSpinner: false }}
+        shallowRouting
+      >
+        <QueryClientProvider client={queryClient}>
+          <TenantBoundDbProvider>
+            <RealtimeAuthBridge />
+            <LifecycleBridge />
+            <CrossTabBridge />
+            <RouteChangeHandler />
+            {children}
+            <Toaster position="bottom-right" />
+            <ReactQueryDevtools initialIsOpen={false} />
+          </TenantBoundDbProvider>
+        </QueryClientProvider>
+      </ProgressProvider>
     </I18nextProvider>
   );
 }
