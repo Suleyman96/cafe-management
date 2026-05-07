@@ -1,7 +1,7 @@
 import { getOrCreateClientRequestId, QUERY_KEYS } from '@gustri/queries';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { apiRoutes } from '@/lib/api-routes';
 import { supabase } from '@/lib/supabase';
 import type { DeliveryOrderWithDetails, Order, OrderItem } from '@/types';
@@ -24,48 +24,78 @@ export function useDeliveryOrder(orderId: string, accessToken?: string) {
     staleTime: 10 * 1000, // 10s — realtime subscription handles freshness
   });
 
-  // Real-time subscription by order ID
+  // Realtime subscription — mirrors the M5 pattern in `use-order.ts` (PR
+  // #101): a `useRef` holds the live channel keyed on orderId so dep-
+  // array churn or React strict-mode double-invoke in dev doesn't tear
+  // down + recreate the channel on every cycle, and the cleanup defers
+  // one macrotask so a synchronous remount can cancel the unsubscribe
+  // before it fires. Pre-PR this hook had the bare-effect version that
+  // PR #101 fixed for dine-in; the audit fresh-pass found the same
+  // churn issue lingering on the delivery surface.
+  //
+  // `event: 'UPDATE'` on the orders subscription (not `'*'`) — the
+  // customer's own delivery order INSERT happens via their cart submit,
+  // which already invalidates locally; orders are never DELETE-d.
+  // Status changes (UPDATE) are the only realtime traffic the customer
+  // cares about. `order_items` stays at `'*'` because staff can add
+  // items server-side after delivery dispatch (rare but real), and
+  // those INSERTs do need to surface to the customer.
+  const channelRef = useRef<{ orderId: string; channel: RealtimeChannel } | null>(null);
+  const teardownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (!orderId) return;
 
-    let channel: RealtimeChannel;
+    if (teardownTimerRef.current !== null) {
+      clearTimeout(teardownTimerRef.current);
+      teardownTimerRef.current = null;
+    }
 
-    const setupSubscription = () => {
-      channel = supabase
-        .channel(`delivery_order:${orderId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'orders',
-            filter: `id=eq.${orderId}`,
-          },
-          () => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderId] });
-          },
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'order_items',
-            filter: `order_id=eq.${orderId}`,
-          },
-          () => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderId] });
-          },
-        )
-        .subscribe();
-    };
+    if (channelRef.current?.orderId === orderId) return;
 
-    setupSubscription();
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current.channel);
+      channelRef.current = null;
+    }
+
+    const channel: RealtimeChannel = supabase
+      .channel(`delivery_order:${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderId] });
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'order_items',
+          filter: `order_id=eq.${orderId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderId] });
+        },
+      )
+      .subscribe();
+
+    channelRef.current = { orderId, channel };
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
+      teardownTimerRef.current = setTimeout(() => {
+        if (channelRef.current) {
+          supabase.removeChannel(channelRef.current.channel);
+          channelRef.current = null;
+        }
+        teardownTimerRef.current = null;
+      }, 0);
     };
   }, [orderId, queryClient]);
 

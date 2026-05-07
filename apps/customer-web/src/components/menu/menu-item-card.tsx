@@ -91,11 +91,17 @@ export function MenuItemCard({ item, accentColor, priority = false }: MenuItemCa
             )}
           </div>
 
-          {/* Quick Add FAB */}
+          {/* Quick Add FAB — h-11 w-11 = 44×44, the WCAG 2.5.5 mobile
+              tap-target minimum. The pre-PR `h-8 w-8` (32×32) was a real
+              fat-finger hazard on phones; on a small two-up card grid
+              the previous size was easy to mis-tap to the neighboring
+              card. Inner icon stays at h-4 w-4 so the button reads
+              visually subtle, just with a larger hit area. */}
           <button
             data-testid="quick-add"
             onClick={handleQuickAdd}
-            className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full shadow-lg transition-all active:scale-90 hover:shadow-xl"
+            aria-label={t('menuItem.addToCartA11y', { defaultValue: 'Add to cart' })}
+            className="absolute bottom-2 right-2 flex h-11 w-11 items-center justify-center rounded-full shadow-lg transition-all active:scale-90 hover:shadow-xl"
             style={{
               background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
               color: '#0C0C0E',

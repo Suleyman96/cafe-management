@@ -37,10 +37,70 @@ describe('useDeliveryOrder', () => {
     expect(supabase.channel).not.toHaveBeenCalled();
   });
 
-  it('cleans up realtime channel on unmount', () => {
+  it('cleans up realtime channel on unmount', async () => {
     const { unmount } = renderHookWithProviders(() => useDeliveryOrder('order-1'));
     unmount();
-    expect(supabase.removeChannel).toHaveBeenCalled();
+    // Audit fix — teardown is now deferred one macrotask (mirrors PR
+    // #101's M5 pattern) so a synchronous remount can cancel it. On a
+    // real unmount the timer fires uncontested.
+    await waitFor(() => {
+      expect(supabase.removeChannel).toHaveBeenCalled();
+    });
+  });
+
+  // ─── M5-style dedupe + UPDATE narrowing (audit fresh-pass) ─────────────────
+
+  it('subscribes to orders with event: "UPDATE" (not "*") so customer-own INSERTs and impossible DELETEs are not echoed', async () => {
+    const mockOrder = { id: 'order-1', status: 'new', items: [] };
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
+
+    renderHookWithProviders(() => useDeliveryOrder('order-1', 'test-token'));
+
+    await waitFor(() => {
+      expect(supabase.channel).toHaveBeenCalledWith('delivery_order:order-1');
+    });
+
+    const channelObj = (supabase.channel as any).mock.results[0].value;
+    const ordersCall = channelObj.on.mock.calls.find((c: any[]) => c[1]?.table === 'orders');
+    expect(ordersCall?.[1]?.event).toBe('UPDATE');
+  });
+
+  it('keeps order_items at event: "*" so waiter-side INSERTs surface to the customer', async () => {
+    const mockOrder = { id: 'order-1', status: 'new', items: [] };
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
+
+    renderHookWithProviders(() => useDeliveryOrder('order-1', 'test-token'));
+
+    await waitFor(() => {
+      expect(supabase.channel).toHaveBeenCalledWith('delivery_order:order-1');
+    });
+
+    const channelObj = (supabase.channel as any).mock.results[0].value;
+    const itemsCall = channelObj.on.mock.calls.find((c: any[]) => c[1]?.table === 'order_items');
+    expect(itemsCall?.[1]?.event).toBe('*');
+  });
+
+  it('defers channel teardown one macrotask so a synchronous remount can cancel it (M5 mirror)', async () => {
+    const mockOrder = { id: 'order-1', status: 'new', items: [] };
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
+
+    const { unmount } = renderHookWithProviders(() => useDeliveryOrder('order-1', 'test-token'));
+
+    await waitFor(() => {
+      expect((supabase.channel as any).mock.calls.length).toBe(1);
+    });
+
+    const removeCountBefore = (supabase.removeChannel as any).mock.calls.length;
+    unmount();
+    // Synchronously after unmount the channel must NOT yet be torn down
+    // — the cleanup queues a setTimeout(0) so a synchronous remount can
+    // cancel it. This is the same contract as the dine-in M5 fix in PR
+    // #101.
+    expect((supabase.removeChannel as any).mock.calls.length).toBe(removeCountBefore);
+
+    await waitFor(() => {
+      expect((supabase.removeChannel as any).mock.calls.length).toBeGreaterThan(removeCountBefore);
+    });
   });
 });
 

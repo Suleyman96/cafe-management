@@ -201,6 +201,40 @@ describe('useOrder - realtime filter', () => {
       expect(ordersCall?.[1]?.filter).toBe('id=eq.order-1');
     });
   });
+
+  it('subscribes to orders with event: "UPDATE" so customer-own INSERT and impossible DELETE are not echoed (audit fresh-pass)', async () => {
+    // The customer's own order INSERT is a single event they themselves
+    // triggered (the cart-submit hook already invalidates locally on
+    // success). Orders are never DELETE-d. Status UPDATEs are the only
+    // realtime traffic the customer cares about.
+    const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
+
+    renderHookWithProviders(() => useOrder('table-1'));
+
+    await waitFor(() => {
+      const channelObj = (supabase.channel as any).mock.results[0]?.value;
+      const ordersCall = channelObj?.on.mock.calls.find((c: any[]) => c[1]?.table === 'orders');
+      expect(ordersCall?.[1]?.event).toBe('UPDATE');
+    });
+  });
+
+  it('keeps order_items at event: "*" so waiter-side INSERTs surface to the customer', async () => {
+    // Distinct from the orders narrowing above — order_items can receive
+    // INSERTs from staff-web (waiter manually adding an item to the
+    // customer's order during dine-in) that the customer should see.
+    // Narrowing this to UPDATE only would drop those server-side adds.
+    const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
+
+    renderHookWithProviders(() => useOrder('table-1'));
+
+    await waitFor(() => {
+      const channelObj = (supabase.channel as any).mock.results[0]?.value;
+      const itemsCall = channelObj?.on.mock.calls.find((c: any[]) => c[1]?.table === 'order_items');
+      expect(itemsCall?.[1]?.event).toBe('*');
+    });
+  });
 });
 
 describe('useCancelOrder - scoped invalidation', () => {

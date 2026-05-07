@@ -72,12 +72,19 @@ export function useOrder(tableId: string) {
       channelRef.current = null;
     }
 
+    // `event: 'UPDATE'` on the orders subscription, `'*'` on order_items.
+    // The customer's own order INSERT is a single event they themselves
+    // triggered (already invalidated locally); orders are never DELETE-d.
+    // Only status UPDATEs (pending_approval → new → preparing → … →
+    // closed) are realtime traffic the customer cares about. order_items
+    // stays at `'*'` because waiter-added items (staff-side INSERT) are
+    // a real flow that the customer should see.
     const channel: RealtimeChannel = supabase
       .channel(`order:${orderId}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'orders',
           filter: `id=eq.${orderId}`,
