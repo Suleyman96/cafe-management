@@ -142,6 +142,16 @@ export const apiRoutes = {
           })),
         }),
       }),
+
+    // M6 — cancel through the API instead of direct-Supabase. Server
+    // verifies `table_id` matches the order's table so a stranger who
+    // scraped order_id can't cancel without also being at the same
+    // table. Rate-limited (5/60s/IP).
+    cancel: (orderId: string, data: { table_id: string; reason?: string | null }) =>
+      apiFetch<{ order: OrderRow }>(`/api/v1/customer/orders/${orderId}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
 
   // H1 — both endpoints replace direct `db.waiterCalls.create` /

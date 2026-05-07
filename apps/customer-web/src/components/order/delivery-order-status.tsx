@@ -3,6 +3,7 @@
 import { useTranslation } from '@gustri/i18n';
 import { Badge, LoadingSpinner } from '@gustri/ui';
 import { CheckCircle2, Clock, Hourglass, MapPin, Phone, Truck, User } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { OrderTimeline } from '@/components/order/order-timeline';
 import { PlatformFooter } from '@/components/ui/platform-footer';
 import { useDeliveryOrder } from '@/hooks/use-delivery';
@@ -12,16 +13,41 @@ import { getStatusColor, timeAgo } from '@/lib/utils';
 
 interface DeliveryOrderStatusProps {
   orderId: string;
-  accessToken?: string;
 }
 
-export function DeliveryOrderStatus({ orderId, accessToken }: DeliveryOrderStatusProps) {
+/**
+ * Read the access token out of the URL fragment (M1). The fragment is
+ * `#token=<value>` (no other keys today, but parse defensively as a
+ * URLSearchParams-style string so a future second key wouldn't break
+ * this).
+ */
+function readAccessTokenFromHash(): string | null {
+  if (typeof window === 'undefined') return null;
+  const hash = window.location.hash.replace(/^#/, '');
+  if (!hash) return null;
+  const params = new URLSearchParams(hash);
+  return params.get('token');
+}
+
+export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
   const { t } = useTranslation('customer');
-  const { data: order, isLoading } = useDeliveryOrder(orderId, accessToken);
+  // The fragment is only available client-side, so we start with `null`
+  // and read on mount. Until then we render LoadingSpinner; flashing
+  // the "missing token" UI for a tick on every page-load would look
+  // broken to the customer.
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [tokenChecked, setTokenChecked] = useState(false);
+
+  useEffect(() => {
+    setAccessToken(readAccessTokenFromHash());
+    setTokenChecked(true);
+  }, []);
+
+  const { data: order, isLoading } = useDeliveryOrder(orderId, accessToken ?? undefined);
   const { data: settings } = useCafeSettings();
   const formatPrice = useFormatPrice();
 
-  if (isLoading) {
+  if (!tokenChecked || isLoading) {
     return <LoadingSpinner fullScreen />;
   }
 

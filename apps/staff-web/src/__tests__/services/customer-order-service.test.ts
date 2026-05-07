@@ -12,10 +12,14 @@
  *     id is already on disk.
  */
 
-import { NotFoundError, ValidationError } from '@gustri/core';
+import { ConflictError, NotFoundError, ValidationError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it, vi } from 'vitest';
-import { addCustomerOrderItems, createCustomerOrder } from '@/lib/services/customer-order-service';
+import {
+  addCustomerOrderItems,
+  cancelCustomerOrder,
+  createCustomerOrder,
+} from '@/lib/services/customer-order-service';
 
 const TENANT = '11111111-1111-4111-8111-111111111111';
 const TENANT_OTHER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -572,6 +576,93 @@ describe('createCustomerOrder — client_request_id is required', () => {
         },
       }),
     ).rejects.toThrow(/plan_required/);
+  });
+});
+
+describe('cancelCustomerOrder — M6', () => {
+  const ORDER_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+  const TABLE_OTHER = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+
+  it('rejects when the order does not exist', async () => {
+    const client = buildClient({
+      orders: [{ data: null, error: null }],
+    });
+
+    await expect(
+      cancelCustomerOrder(client, { orderId: ORDER_ID, tableId: TABLE }),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('rejects when table_id does not match the order (M6 grief gate)', async () => {
+    // Attacker has order_id but is at a different table — server
+    // refuses the cancel.
+    const client = buildClient({
+      orders: [
+        {
+          data: {
+            id: ORDER_ID,
+            tenant_id: TENANT,
+            table_id: TABLE,
+            status: 'new',
+          },
+          error: null,
+        },
+      ],
+    });
+
+    await expect(
+      cancelCustomerOrder(client, { orderId: ORDER_ID, tableId: TABLE_OTHER }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('rejects when the order is past the cancellable status', async () => {
+    // Once the kitchen is preparing, customer-side cancel is blocked.
+    // Staff-side cancel (with a reason) is the right surface.
+    const client = buildClient({
+      orders: [
+        {
+          data: {
+            id: ORDER_ID,
+            tenant_id: TENANT,
+            table_id: TABLE,
+            status: 'preparing',
+          },
+          error: null,
+        },
+      ],
+    });
+
+    await expect(
+      cancelCustomerOrder(client, { orderId: ORDER_ID, tableId: TABLE }),
+    ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it('cancels successfully when order is in pending_approval and table matches', async () => {
+    const cancelled = {
+      id: ORDER_ID,
+      tenant_id: TENANT,
+      table_id: TABLE,
+      status: 'cancelled',
+    };
+    const client = buildClient({
+      orders: [
+        // 1st `from('orders')` → SELECT to fetch the row
+        {
+          data: { id: ORDER_ID, tenant_id: TENANT, table_id: TABLE, status: 'pending_approval' },
+          error: null,
+        },
+        // 2nd `from('orders')` → UPDATE returning the cancelled row
+        { data: cancelled, error: null },
+      ],
+    });
+
+    const result = await cancelCustomerOrder(client, {
+      orderId: ORDER_ID,
+      tableId: TABLE,
+      reason: 'changed mind',
+    });
+
+    expect(result).toEqual(cancelled);
   });
 });
 

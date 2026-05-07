@@ -76,26 +76,35 @@ describe('useCreateOrder', () => {
 });
 
 describe('useCancelOrder', () => {
-  it('calls db.orders.cancelOrder with customer reason', async () => {
+  // M6: this hook now POSTs through `/api/v1/customer/orders/[id]/cancel`
+  // so the staff-web edge limiter and the table-id-match check apply.
+  it('calls apiRoutes.customerOrders.cancel with table_id and customer reason', async () => {
     const { result } = renderHookWithProviders(() => useCancelOrder());
 
     await result.current.mutateAsync({ orderId: 'order-1', tableId: 'table-1' });
 
-    expect(db.orders.cancelOrder).toHaveBeenCalledWith(
-      'order-1',
-      'Cancelled by customer',
-      'table-1',
-    );
+    expect(apiRoutes.customerOrders.cancel).toHaveBeenCalledWith('order-1', {
+      table_id: 'table-1',
+      reason: 'Cancelled by customer',
+    });
   });
 
-  it('invalidates all ORDER queries', async () => {
+  it('does NOT call the legacy db.orders.cancelOrder wrapper (M6)', async () => {
+    const { result } = renderHookWithProviders(() => useCancelOrder());
+
+    await result.current.mutateAsync({ orderId: 'order-1', tableId: 'table-1' });
+
+    expect(db.orders.cancelOrder).not.toHaveBeenCalled();
+  });
+
+  it('invalidates the ORDER query scoped to tableId', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useCancelOrder());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    await result.current.mutateAsync({ orderId: 'order-1' });
+    await result.current.mutateAsync({ orderId: 'order-1', tableId: 'table-1' });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.ORDER]);
+    expect(keys).toContainEqual([QUERY_KEYS.ORDER, 'table-1']);
   });
 });
 
@@ -195,7 +204,11 @@ describe('useOrder - realtime filter', () => {
 });
 
 describe('useCancelOrder - scoped invalidation', () => {
-  it('invalidates only the specific table query when tableId is provided', async () => {
+  it('invalidates only the specific table query (M6: tableId is required)', async () => {
+    // Pre-M6 there was a fallback to [QUERY_KEYS.ORDER] when tableId
+    // was omitted, but the new API path requires tableId so the
+    // fallback can't trigger. The test for the fallback is gone with
+    // the fallback itself.
     const { result, queryClient } = renderHookWithProviders(() => useCancelOrder());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -206,16 +219,6 @@ describe('useCancelOrder - scoped invalidation', () => {
     // Should NOT contain the broad [QUERY_KEYS.ORDER] (without tableId)
     const broadKeys = keys.filter((k: any[]) => k.length === 1 && k[0] === QUERY_KEYS.ORDER);
     expect(broadKeys).toHaveLength(0);
-  });
-
-  it('falls back to broad invalidation when tableId is not provided', async () => {
-    const { result, queryClient } = renderHookWithProviders(() => useCancelOrder());
-    const spy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    await result.current.mutateAsync({ orderId: 'order-1' });
-
-    const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(keys).toContainEqual([QUERY_KEYS.ORDER]);
   });
 });
 

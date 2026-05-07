@@ -1,4 +1,10 @@
-import { NotFoundError, PLAN_LIMITS, type PlanName, ValidationError } from '@gustri/core';
+import {
+  ConflictError,
+  NotFoundError,
+  PLAN_LIMITS,
+  type PlanName,
+  ValidationError,
+} from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findOrCreateByClientRequestId } from '@/lib/api/dedupe';
 
@@ -344,4 +350,68 @@ export async function addCustomerOrderItems(
   }
 
   return createdItems;
+}
+
+/**
+ * Cancel a customer order from the customer-web flow (M6).
+ *
+ * Pre-PR the customer-web hook called `db.orders.cancelOrder()` directly,
+ * which means anyone holding `order_id` could cancel — relying on the
+ * `anon_cancel_early_orders` RLS policy alone, which doesn't pin the
+ * cancel to the customer's table. After PR3 narrowed the realtime
+ * channel (H5), the leak vector is reduced — but if an attacker had
+ * already scraped order_id during a prior visit, they could still grief
+ * the customer.
+ *
+ * This service raises the bar by requiring `tableId` in the request and
+ * checking it matches `order.table_id`. An attacker now needs both the
+ * order's UUID AND the table's UUID to cancel. Both are anon-readable
+ * via the existing `tables` policy, so this isn't bulletproof — a future
+ * PR could require the live `qr_code` instead — but it's a meaningful
+ * incremental improvement and matches the existing dine-in routing
+ * pattern (`tableId` is what the customer-web hook already has on hand).
+ *
+ * Tenant resolution: derived from the order row server-side. The body
+ * cannot influence which tenant the cancellation lands in.
+ */
+export async function cancelCustomerOrder(
+  supabaseAdmin: SupabaseClient,
+  args: { orderId: string; tableId: string; reason?: string | null },
+) {
+  const { orderId, tableId, reason } = args;
+
+  const { data: order, error } = await supabaseAdmin
+    .from('orders')
+    .select('id, tenant_id, table_id, status')
+    .eq('id', orderId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!order) throw new NotFoundError('Order');
+
+  // Pin the cancel to the customer's current table (M6).
+  if (order.table_id !== tableId) {
+    throw new ValidationError('order_table_mismatch');
+  }
+
+  // Match the existing `anon_cancel_early_orders` RLS policy: only
+  // pre-kitchen statuses are cancellable from the customer side. Past
+  // 'preparing' the kitchen has already started; staff-side cancel
+  // (with a reason) is the right surface there.
+  if (!['pending_approval', 'new'].includes(order.status as string)) {
+    throw new ConflictError('order_not_cancellable');
+  }
+
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from('orders')
+    .update({
+      status: 'cancelled',
+      internal_notes: `Cancelled: ${reason ?? 'Cancelled by customer'}`,
+    })
+    .eq('id', orderId)
+    .eq('tenant_id', order.tenant_id) // defense-in-depth on the UPDATE
+    .select()
+    .single();
+
+  if (updateError) throw updateError;
+  return updated;
 }

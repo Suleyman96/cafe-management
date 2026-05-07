@@ -64,6 +64,16 @@ const limiters = redis
         limiter: Ratelimit.slidingWindow(3, '300 s'),
         prefix: 'rl:feedback',
       }),
+      // M6: customer-side cancel-order endpoint. Cancellation is rare
+      // per legitimate customer (1 per order at most), so 5/60s is
+      // generous; anything past that is unambiguous abuse — most
+      // likely an attacker who scraped order_id + table_id and is
+      // griefing.
+      'order-cancel': new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(5, '60 s'),
+        prefix: 'rl:order-cancel',
+      }),
     }
   : null;
 
@@ -76,7 +86,8 @@ export type RateLimitCategory =
   | 'push-token-revoke'
   | 'staff-pin-verify'
   | 'waiter-call'
-  | 'feedback';
+  | 'feedback'
+  | 'order-cancel';
 
 export async function rateLimit(
   category: RateLimitCategory,

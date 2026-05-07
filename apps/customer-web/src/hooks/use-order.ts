@@ -121,15 +121,20 @@ export function useCancelOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ orderId, tableId }: { orderId: string; tableId?: string | null }) => {
-      return db.orders.cancelOrder(orderId, 'Cancelled by customer', tableId);
+    // M6: cancellation now goes through `/api/v1/customer/orders/[id]/cancel`
+    // so the staff-web edge limiter and the table-id-match check apply.
+    // `tableId` is required (not optional like the wrapper version), so the
+    // server can verify the cancel is happening from the same table the
+    // order was placed at.
+    mutationFn: async ({ orderId, tableId }: { orderId: string; tableId: string }) => {
+      const { order } = await apiRoutes.customerOrders.cancel(orderId, {
+        table_id: tableId,
+        reason: 'Cancelled by customer',
+      });
+      return order;
     },
     onSuccess: (_, variables) => {
-      if (variables.tableId) {
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.tableId] });
-      } else {
-        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
-      }
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.tableId] });
     },
   });
 }

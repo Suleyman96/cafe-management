@@ -22,6 +22,7 @@ vi.mock('@/lib/api-routes', () => ({
         .fn()
         .mockResolvedValue({ order: { id: 'test-order-id', status: 'pending_approval' } }),
       addItems: vi.fn().mockResolvedValue({ items: [] }),
+      cancel: vi.fn().mockResolvedValue({ order: { id: 'test-order-id', status: 'cancelled' } }),
     },
     customerWaiterCalls: {
       create: vi.fn().mockResolvedValue({ waiter_call: { id: 'test-call-id', status: 'pending' } }),

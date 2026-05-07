@@ -80,7 +80,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
   };
 
   const handleCancelOrder = async () => {
-    if (!order) return;
+    if (!order?.table_id) return;
     setCancelLoading(true);
     try {
       await cancelOrder.mutateAsync({

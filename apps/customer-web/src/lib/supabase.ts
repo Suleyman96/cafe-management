@@ -1,5 +1,6 @@
 import { createSupabaseWrapper, handleSupabaseError } from '@gustri/api-client';
 import type { Database } from '@gustri/database';
+import * as Sentry from '@sentry/nextjs';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -74,8 +75,18 @@ export async function setTableContext(qrToken: string) {
   try {
     const table = await db.tables.findByQrCode(qrToken);
     db.setTenantContext(table.tenant_id);
-  } catch {
-    // If the lookup fails the wrapper stays at tenantId=null and
-    // continues to rely on RLS alone — same as before.
+  } catch (lookupErr) {
+    // M2: pre-PR this error was caught and dropped on the floor. The
+    // wrapper stays at tenantId=null and continues to rely on RLS alone
+    // — that's the intended fallback — but a silent failure means we
+    // can't distinguish "RLS-only by design" from "the lookup is
+    // actually broken." Surface the failure to Sentry so we can
+    // monitor lookup health without changing user-visible behavior.
+    // The set_table_context RPC already succeeded (sentinel errors
+    // throw above); reaching this catch implies the table read
+    // failed for some reason orthogonal to QR validity.
+    Sentry.captureException(lookupErr, {
+      tags: { surface: 'set_table_context.findByQrCode' },
+    });
   }
 }
