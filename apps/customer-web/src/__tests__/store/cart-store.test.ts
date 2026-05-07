@@ -150,4 +150,35 @@ describe('useCartStore', () => {
       expect(useCartStore.getState().getItemCount()).toBe(5);
     });
   });
+
+  describe('persistence (audit fix — H7 cross-table contamination)', () => {
+    // Pre-PR the store used `persist({ name: 'cart-storage' })` with a
+    // single global localStorage key — a customer who scanned table A,
+    // added items, then scanned table B in the same browser kept A's cart.
+    // The fix drops persistence entirely; reload-survives-cart was a
+    // nice-to-have, cross-table contamination was a real bug. If reload
+    // survival is ever revisited, the right partition key is the route
+    // param (tableId / qrToken), NOT a global key.
+
+    it('does NOT write to localStorage on addItem', () => {
+      useCartStore.getState().addItem(mockMenuItem(), 1);
+      // The pre-PR persist middleware wrote under `cart-storage`. The new
+      // in-memory store should never touch localStorage at all.
+      expect(localStorage.getItem('cart-storage')).toBeNull();
+      // Belt-and-braces: assert the entire localStorage is empty for this
+      // store's namespace.
+      const cartKeys = Object.keys(localStorage).filter((k) => k.startsWith('cart-'));
+      expect(cartKeys).toEqual([]);
+    });
+
+    it('does NOT export a cleanup helper (storage listener was removed with persist)', async () => {
+      // The pre-PR module exported `cleanupCartStoreSync` for tests to
+      // detach a global `storage` event listener. Both the listener and
+      // the helper are gone now; importing the named export should not
+      // succeed. This locks the contract so a regression that re-adds
+      // persistence has to consciously revisit the test.
+      const mod = (await import('@/store/cart-store')) as Record<string, unknown>;
+      expect(mod.cleanupCartStoreSync).toBeUndefined();
+    });
+  });
 });

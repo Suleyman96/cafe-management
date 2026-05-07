@@ -187,6 +187,30 @@ describe('POST /api/v1/customer/orders — length caps (H3)', () => {
     expect(createCustomerOrderMock).not.toHaveBeenCalled();
   });
 
+  // Audit fix — pre-PR the schema used `/^[+\d\s\-()]{7,20}$/` which
+  // accepted shape-valid but uncallable inputs like `+()()()()` or strings
+  // of pure spaces/hyphens. The shared `isValidPhone` helper now requires
+  // ≥ MIN_PHONE_DIGITS real digits; the route should reject these even
+  // though they pass the prior character-set bound.
+  it.each([
+    ['parens-only zero-digit garbage', '+()()()()'],
+    ['hyphens only', '------- '],
+    ['signs and spaces, no digits', '+( )(  )'],
+  ])('rejects delivery with phone %s as 400 (audit fix)', async (_label, phone) => {
+    const res = await POST(
+      buildRequest({
+        order_type: 'delivery',
+        qr_token: 'tkn_legit',
+        client_request_id: '55555555-5555-4555-8555-555555555555',
+        delivery_address: '1 Main St',
+        delivery_phone: phone,
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(createCustomerOrderMock).not.toHaveBeenCalled();
+  });
+
   it('accepts dine_in with customer_notes exactly at the 2000-char cap', async () => {
     createCustomerOrderMock.mockResolvedValue({
       order: { id: 'o1', tenant_id: 'derived-tenant' },

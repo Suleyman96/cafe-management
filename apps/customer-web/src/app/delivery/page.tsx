@@ -1,5 +1,6 @@
 'use client';
 
+import { isValidPhone } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
 import { MapPin, Phone, Truck, User } from 'lucide-react';
@@ -82,8 +83,12 @@ function DeliveryPageInner() {
       setError(t('deliveryLanding.errorPhone'));
       return;
     }
-    const phoneRegex = /^[+\d\s\-()]{7,20}$/;
-    if (!phoneRegex.test(phone.trim())) {
+    // Audit fix — old `/^[+\d\s\-()]{7,20}$/` accepted shape-valid garbage
+    // like `+()()()()` (no real digits, totally uncallable). `isValidPhone`
+    // adds a `MIN_PHONE_DIGITS` check on top of the character-set bound, and
+    // the staff-web `/api/v1/customer/orders` schema uses the same helper
+    // so client + server reject the exact same set of inputs.
+    if (!isValidPhone(phone.trim())) {
       setError(t('deliveryLanding.errorPhoneFormat'));
       return;
     }

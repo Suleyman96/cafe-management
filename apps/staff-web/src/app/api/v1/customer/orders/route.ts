@@ -1,3 +1,4 @@
+import { isValidPhone } from '@gustri/core';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
@@ -50,7 +51,13 @@ const DeliverySchema = z.object({
   order_type: z.literal('delivery'),
   qr_token: z.string().min(1).max(128),
   delivery_address: z.string().min(1).max(500),
-  delivery_phone: z.string().regex(/^[+\d\s\-()]{7,20}$/, 'Invalid phone format'),
+  // Audit fix — character-set + length bounds were accepting shape-valid
+  // garbage like `+()()()()` (no real digits). `isValidPhone` from
+  // `@gustri/core` enforces ≥ MIN_PHONE_DIGITS real digits in addition to
+  // the character set. Same helper runs client-side in
+  // `apps/customer-web/src/app/delivery/page.tsx` so the bypass-the-client
+  // path can't post inputs the form would have rejected.
+  delivery_phone: z.string().refine(isValidPhone, 'invalid_phone_format'),
   delivery_customer_name: z.string().max(100).optional().nullable(),
   delivery_fee: z.number().min(0).optional().nullable(),
 });
