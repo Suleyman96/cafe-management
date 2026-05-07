@@ -20,6 +20,7 @@ Handoff doc for picking up the customer-web security audit in a new Claude sessi
 | 🟡 M4 — staff-web XSS audit | (this session) | All 5 user-controlled fields render via plain `{value}` JSX; zero `dangerouslySetInnerHTML`, zero HTML parsers in deps. Closed without code change. |
 | 🟢 L5 — delivery menu unscoped browse | (this session) | Client guard now also requires `qrToken`; SSR cross-tenant fetch concern documented inline as a follow-up. |
 | 🟢 L4 — anon read of `tables.qr_code` | (this session) | `set_table_context()` now `RETURNS uuid`; anon `SELECT` revoked from the four `qr_code*` columns; wrapper narrowed to `PUBLIC_TABLE_COLUMNS`. |
+| 🟡 M3 — plan-required gate consistency | (this session) | `customer-engagement-service.ts` now runs the same `PLAN_LIMITS[plan].qrOrdering` gate as `customer-order-service.ts`. Free-tier tenants get `403 plan_required` from `/api/v1/customer/waiter-calls` and `/api/v1/customer/feedback` instead of a successful insert. |
 | ⚙️ Wrapper insert dead code | #101 | `db.waiterCalls.create` / `db.feedback.create` deleted (unused after #97). |
 
 ### Open PRs
@@ -32,7 +33,7 @@ Handoff doc for picking up the customer-web security audit in a new Claude sessi
 ### Open audit items
 
 **Mediums still open:**
-- 🟡 **M3** — plan-required gate inconsistency. `/api/v1/customer/orders` enforces `PLAN_LIMITS[plan].qrOrdering` server-side, but `waiter_calls` and `feedback` routes (added in PR #97) skip this check. A free-tier tenant who hasn't enabled QR ordering still gets calls/feedback writes. Low revenue impact.
+- (none — M3 closed; see status table)
 
 **Lows still open:**
 - (none — Tier 2 closed; see status table)

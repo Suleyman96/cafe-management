@@ -1,4 +1,4 @@
-import { NotFoundError } from '@gustri/core';
+import { NotFoundError, PLAN_LIMITS, type PlanName } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findOrCreateByClientRequestId } from '@/lib/api/dedupe';
 
@@ -15,6 +15,13 @@ import { findOrCreateByClientRequestId } from '@/lib/api/dedupe';
  *      customer-orders service applies.
  *   3. Force `status = 'pending'` on insert so a hand-crafted POST
  *      can't pre-acknowledge or pre-resolve its own call.
+ *   4. Enforce `PLAN_LIMITS[plan].qrOrdering` (audit M3). Customer
+ *      engagement (waiter buzz, feedback) is the same product surface
+ *      as customer ordering — both depend on the customer holding a QR
+ *      placard. Plans that disable `qrOrdering` (free tier) shouldn't
+ *      receive engagement writes either; the customer-orders route has
+ *      always gated on this, so applying it here closes the
+ *      inconsistency the audit flagged.
  *
  * Tenant resolution is deliberately strict: a `table_id` that doesn't
  * exist throws `NotFoundError` so the route returns 404, not a vague
@@ -55,6 +62,30 @@ async function resolveTenantFromTable(
 }
 
 /**
+ * Mirrors the gate at `customer-order-service.ts` line ~172. Throws the
+ * `plan_required` sentinel that `handleRouteError` maps to HTTP 403. Run
+ * AFTER `resolveTenantFromTable` (we need the tenant id) but BEFORE any
+ * insert so a free-tier tenant's row count never moves.
+ */
+async function assertPlanAllowsCustomerEngagement(
+  supabaseAdmin: SupabaseClient,
+  tenantId: string,
+): Promise<void> {
+  const { data: tenant, error } = await supabaseAdmin
+    .from('tenants')
+    .select('plan')
+    .eq('id', tenantId)
+    .single();
+  if (error || !tenant) {
+    throw new Error('Tenant not found');
+  }
+  const plan = ((tenant as { plan?: string }).plan ?? 'free') as PlanName;
+  if (!PLAN_LIMITS[plan].qrOrdering) {
+    throw new Error('plan_required');
+  }
+}
+
+/**
  * Idempotent on `client_request_id` via the partial unique index on
  * `waiter_calls(tenant_id, client_request_id)` from migration
  * 20260428000002. A retried POST returns the original row instead of
@@ -65,6 +96,7 @@ export async function createCustomerWaiterCall(
   input: CreateWaiterCallInput,
 ) {
   const tenantId = await resolveTenantFromTable(supabaseAdmin, input.table_id);
+  await assertPlanAllowsCustomerEngagement(supabaseAdmin, tenantId);
 
   return findOrCreateByClientRequestId<Record<string, unknown>>(supabaseAdmin, {
     table: 'waiter_calls',
@@ -110,6 +142,7 @@ export async function createCustomerFeedback(
   input: CreateCustomerFeedbackInput,
 ) {
   const tenantId = await resolveTenantFromTable(supabaseAdmin, input.table_id);
+  await assertPlanAllowsCustomerEngagement(supabaseAdmin, tenantId);
 
   const { data, error } = await supabaseAdmin
     .from('customer_feedback')
