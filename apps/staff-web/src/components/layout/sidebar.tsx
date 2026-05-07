@@ -242,10 +242,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
   useEffect(() => {
     if (!collapsedGroupsLoadedRef.current) return;
     try {
-      window.localStorage.setItem(
-        SIDEBAR_GROUPS_STORAGE_KEY,
-        JSON.stringify(collapsedGroups),
-      );
+      window.localStorage.setItem(SIDEBAR_GROUPS_STORAGE_KEY, JSON.stringify(collapsedGroups));
     } catch {
       // Storage write failed — preferences are session-only this run.
     }

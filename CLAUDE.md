@@ -99,7 +99,7 @@ When adding a feature, work through this in order:
 ### Data Access
 - All database operations go through `@gustri/api-client` wrapper (never raw supabase queries in app code)
 - Create wrapper: `const db = createSupabaseWrapper(supabaseClient)`
-- Usage: `db.orders.findAll()`, `db.tables.findById(id)`, `db.waiterCalls.create({...})`
+- Usage: `db.orders.findAll()`, `db.tables.findById(id)`, `db.waiterCalls.acknowledge(id, staffId)`
 - Exception 1 — **Realtime**: Supabase Realtime channels use the raw `supabase` client directly (not wrappable)
 - Exception 2 — **Server-side business logic**: Endpoints under `/api/v1/*` (orders create, payments,
   discounts, refunds, stock adjustments, settings updates) execute server-side transactions or

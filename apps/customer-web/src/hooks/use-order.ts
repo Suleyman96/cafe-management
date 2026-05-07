@@ -1,7 +1,7 @@
 import { getOrCreateClientRequestId, QUERY_KEYS } from '@gustri/queries';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { apiRoutes } from '@/lib/api-routes';
 import { db, supabase } from '@/lib/supabase';
 import type { Order, OrderItem, OrderWithItems } from '@/types';
@@ -39,8 +39,38 @@ export function useOrder(tableId: string) {
   // to listen for anyone else's. No channel is opened until the active
   // order id resolves — there is nothing useful to subscribe to before
   // that.
+  //
+  // M5 — useRef dedupe + deferred teardown so rapid mount/unmount cycles
+  // (React strict-mode double-invoke in dev, fast back/forward navigation,
+  // or any spurious dep-array re-evaluation) don't churn channels. Without
+  // this, every cycle does a SUBSCRIBE/UNSUBSCRIBE round-trip to the
+  // realtime server and momentarily drops live updates. The dedupe makes
+  // the effect a no-op when re-run with an unchanged orderId; the deferred
+  // teardown lets a synchronous remount cancel a pending unsubscribe before
+  // it fires.
+  const channelRef = useRef<{ orderId: string; channel: RealtimeChannel } | null>(null);
+  const teardownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (!orderId) return;
+
+    // Cancel any pending teardown — strict-mode remount or fast-nav back.
+    if (teardownTimerRef.current !== null) {
+      clearTimeout(teardownTimerRef.current);
+      teardownTimerRef.current = null;
+    }
+
+    // Live channel already covers this orderId? Reuse it.
+    if (channelRef.current?.orderId === orderId) return;
+
+    // Different orderId — synchronous teardown of the stale channel before
+    // opening a new one. (If the prior cleanup already deferred a teardown,
+    // we just cancelled its timer above; doing the teardown here keeps the
+    // ordering deterministic.)
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current.channel);
+      channelRef.current = null;
+    }
 
     const channel: RealtimeChannel = supabase
       .channel(`order:${orderId}`)
@@ -70,10 +100,22 @@ export function useOrder(tableId: string) {
       )
       .subscribe();
 
+    channelRef.current = { orderId, channel };
+
     return () => {
-      supabase.removeChannel(channel);
+      // Defer teardown one macrotask so a synchronous remount (strict-mode
+      // double-invoke in dev, or a Suspense bail-out re-mount) can cancel
+      // it via the timer-clear at the top of this effect. On a real
+      // unmount the timer fires uncontested and the channel is removed.
+      teardownTimerRef.current = setTimeout(() => {
+        if (channelRef.current) {
+          supabase.removeChannel(channelRef.current.channel);
+          channelRef.current = null;
+        }
+        teardownTimerRef.current = null;
+      }, 0);
     };
-  }, [tableId, orderId, queryClient]);
+  }, [orderId, tableId, queryClient]);
 
   return query;
 }

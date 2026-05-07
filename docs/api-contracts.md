@@ -441,15 +441,11 @@ Manages customer-to-waiter call requests.
 
 ### Methods
 
-```ts
-create(data: {
-  table_id: string;
-  call_type?: string;
-  reason?: string;
-  priority?: string;
-  status?: string;          // Defaults to 'pending'
-}): Promise<WaiterCallRow>
+> **Inserts go through `POST /api/v1/customer/waiter-calls`** — the wrapper's
+> `create` method was deleted in audit 18. The route applies the customer-side
+> Upstash rate limiter and resolves `tenant_id` server-side from the table row.
 
+```ts
 findByTable(tableId: string, status?: WaiterCallStatus): Promise<WaiterCallRow[]>
 findAll(status?: WaiterCallStatus): Promise<WaiterCallRow[]>
 // Joins table(table_number, location)
@@ -484,16 +480,18 @@ getPendingCount(): Promise<number>
 ### Example
 
 ```ts
-await db.waiterCalls.create({
+// Customer-side insert: route, not wrapper.
+await apiRoutes.customerWaiterCalls.create({
   table_id: 'uuid',
   call_type: 'bill',
   reason: 'Customer wants the bill',
   priority: 'normal',
 });
 
-const pending = await db.waiterCalls.findAll('pending');
+// Staff-side reads/transitions still go through the wrapper.
+const pending = await db.waiterCalls.findAll({ status: 'pending' });
 await db.waiterCalls.acknowledge(pending[0].id, staffId);
-await db.waiterCalls.resolve(pending[0].id, 'Bill delivered');
+await db.waiterCalls.resolve(pending[0].id, { notes: 'Bill delivered' });
 ```
 
 ---
@@ -504,17 +502,11 @@ Manages customer feedback and complaints.
 
 ### Methods
 
-```ts
-create(data: {
-  table_id: string;
-  feedback_type: string;
-  rating?: number;
-  message?: string;
-  subject?: string | null;
-  order_id?: string | null;
-  status?: string;          // Defaults to 'pending'
-}): Promise<CustomerFeedbackRow>
+> **Inserts go through `POST /api/v1/customer/feedback`** — the wrapper's
+> `create` method was deleted in audit 18. The route applies the customer-side
+> Upstash rate limiter and resolves `tenant_id` server-side from the table row.
 
+```ts
 findAll(status?: FeedbackStatus): Promise<CustomerFeedbackRow[]>
 // Joins table(table_number), responded_by_staff(full_name)
 
@@ -553,7 +545,8 @@ getPendingCount(): Promise<number>
 ### Example
 
 ```ts
-await db.feedback.create({
+// Customer-side insert: route, not wrapper.
+await apiRoutes.customerFeedback.create({
   table_id: 'uuid',
   feedback_type: 'complaint_food',
   message: 'Soup was cold',

@@ -305,7 +305,12 @@ describe('useOrder - realtime lifecycle', () => {
 
     const removeCountBefore = (supabase.removeChannel as any).mock.calls.length;
     unmount();
-    expect((supabase.removeChannel as any).mock.calls.length).toBeGreaterThan(removeCountBefore);
+    // M5: teardown is deferred one macrotask so a synchronous remount can
+    // cancel it (strict-mode double-invoke). On a real unmount the timer
+    // fires uncontested.
+    await waitFor(() => {
+      expect((supabase.removeChannel as any).mock.calls.length).toBeGreaterThan(removeCountBefore);
+    });
   });
 
   it('orders channel callback invokes invalidateQueries', async () => {
@@ -327,6 +332,45 @@ describe('useOrder - realtime lifecycle', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     callback();
     expect(spy).toHaveBeenCalledWith({ queryKey: [QUERY_KEYS.ORDER, 'table-1'] });
+  });
+
+  // ─── M5 — useRef dedupe + deferred teardown ──────────────────────────────
+  //
+  // The M5 fix has two parts:
+  //   1. A useRef dedupe so the effect is a no-op when re-run with the same
+  //      orderId (defends against dep-array identity wobble in prod).
+  //   2. A setTimeout(0) deferred cleanup so a synchronous remount (React
+  //      strict-mode double-invoke in dev, or fast back/forward navigation)
+  //      can cancel the teardown via clearTimeout before it fires.
+  //
+  // Part 2 is exercised below. Part 1 is hard to unit-test in isolation —
+  // re-rendering the same hook instance does not re-fire the effect unless
+  // a dep changes, and changing the dep would defeat the dedupe by design.
+  // A full StrictMode simulation here is too coupled to TanStack Query's
+  // strict-mode observer cycle to give a stable signal; the dedupe ref's
+  // value is in defending against subtle dep churn we can't easily fabricate.
+
+  it('defers channel teardown one macrotask so a synchronous remount can cancel it (M5)', async () => {
+    const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
+
+    const { unmount } = renderHookWithProviders(() => useOrder('table-1'));
+
+    await waitFor(() => {
+      expect((supabase.channel as any).mock.calls.length).toBe(1);
+    });
+
+    const removeCountBefore = (supabase.removeChannel as any).mock.calls.length;
+    unmount();
+    // Synchronously after unmount the channel must NOT yet be torn down —
+    // the cleanup queues a setTimeout(0) so a synchronous remount can
+    // cancel it before it fires.
+    expect((supabase.removeChannel as any).mock.calls.length).toBe(removeCountBefore);
+
+    // After a macrotask flush the deferred teardown fires.
+    await waitFor(() => {
+      expect((supabase.removeChannel as any).mock.calls.length).toBeGreaterThan(removeCountBefore);
+    });
   });
 
   it('order_items channel callback invokes invalidateQueries', async () => {

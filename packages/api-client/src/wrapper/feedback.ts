@@ -1,37 +1,19 @@
 /**
  * Customer feedback wrapper module
+ *
+ * Insert path (`create`) was deleted in audit 18 once customer-web migrated to
+ * the rate-limited `/api/v1/customer/feedback` route (PR #97) and mobile was
+ * verified not to call it. Server-side inserts go through
+ * `customer-engagement-service.ts` directly.
  */
 
 import { isCustomerFeedback } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
-import { applyTenantScope, assertInsertTenantMatches } from './_tenant-scope';
+import { applyTenantScope } from './_tenant-scope';
 import type { CustomerFeedbackRow, WrapperContext } from './types';
 
 export function createFeedbackWrapper(ctx: WrapperContext) {
   return {
-    create: async (data: {
-      table_id: string;
-      tenant_id?: string;
-      feedback_type: 'complaint' | 'praise';
-      message?: string;
-      order_id?: string | null;
-      status?: 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
-    }) => {
-      assertInsertTenantMatches(data, ctx);
-      const { data: result, error } = await ctx.anyClient
-        .from('customer_feedback')
-        .insert({
-          ...data,
-          status: data.status || 'pending',
-        })
-        .select()
-        .single();
-
-      if (error) throw handleSupabaseError(error);
-      if (!isCustomerFeedback(result)) throw new Error('Invalid feedback data');
-      return result as CustomerFeedbackRow;
-    },
-
     findAll: async (options?: {
       status?: CustomerFeedbackRow['status'];
       limit?: number;

@@ -14,21 +14,9 @@ const validCall = {
 };
 
 describe('WaiterCallsWrapper', () => {
-  it('create inserts with default status', async () => {
-    const ctx = createMockContext({
-      responses: {
-        waiter_calls: { data: validCall, error: null },
-      },
-    });
-    const waiterCalls = createWaiterCallsWrapper(ctx);
-    const result = await waiterCalls.create({
-      table_id: validCall.table_id,
-      reason: 'Need assistance',
-    });
-    expect(result).toEqual(validCall);
-    const calls = ctx.getCalls();
-    expect(calls[0].method).toBe('insert');
-  });
+  // `create` was deleted in audit 18 once customer-web migrated to the
+  // `/api/v1/customer/waiter-calls` route. Tests for the insert path live
+  // alongside the route at `apps/staff-web/src/__tests__/api/`.
 
   it('findByTable filters by table and status', async () => {
     const ctx = createMockContext({

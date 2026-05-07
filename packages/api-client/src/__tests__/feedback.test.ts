@@ -12,38 +12,9 @@ const validFeedback = {
 };
 
 describe('FeedbackWrapper', () => {
-  it('create inserts feedback with default status', async () => {
-    const ctx = createMockContext({
-      responses: {
-        customer_feedback: { data: validFeedback, error: null },
-      },
-    });
-    const feedback = createFeedbackWrapper(ctx);
-    const result = await feedback.create({
-      table_id: validFeedback.table_id,
-      feedback_type: 'praise',
-      message: 'Great service!',
-    });
-    expect(result).toEqual(validFeedback);
-    expect(ctx.getCalls()[0].method).toBe('insert');
-  });
-
-  it('create supports order_id', async () => {
-    const ctx = createMockContext({
-      responses: {
-        customer_feedback: { data: validFeedback, error: null },
-      },
-    });
-    const feedback = createFeedbackWrapper(ctx);
-    await feedback.create({
-      table_id: validFeedback.table_id,
-      feedback_type: 'complaint',
-      message: 'Cold food',
-      order_id: 'order-123',
-    });
-    const calls = ctx.getCalls();
-    expect(calls[0].method).toBe('insert');
-  });
+  // `create` was deleted in audit 18 once customer-web migrated to the
+  // `/api/v1/customer/feedback` route. Tests for the insert path live
+  // alongside the route at `apps/staff-web/src/__tests__/api/`.
 
   it('findAll returns feedback list', async () => {
     const ctx = createMockContext({

@@ -59,10 +59,9 @@ export function createMockDb() {
       'delete',
       'getActiveWaiters',
     ),
-    feedback: mockResource('create', 'findAll', 'markRead', 'getPendingCount'),
+    feedback: mockResource('findAll', 'markRead', 'getPendingCount'),
     payments: mockResource('create', 'findByOrderId', 'findByReceivedBy'),
     waiterCalls: mockResource(
-      'create',
       'findByTable',
       'findAll',
       'acknowledge',
