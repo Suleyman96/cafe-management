@@ -21,8 +21,12 @@ export default defineConfig({
     // CI runs against a production build — Next.js dev mode JIT-compiles
     // each route on first request which on the GitHub runner exceeds 30s
     // and times out `page.goto`. Production builds serve pre-compiled
-    // routes in <100ms. Local dev keeps `pnpm dev` for HMR ergonomics.
-    command: isCI ? 'pnpm build && pnpm start' : 'pnpm dev',
+    // routes in <100ms. The explicit `--port 3000` decouples E2E from
+    // `package.json`'s `dev`/`start` ports (which can drift for local-dev
+    // ergonomics without breaking CI).
+    command: isCI
+      ? 'pnpm build && pnpm exec next start --port 3000'
+      : 'pnpm exec next dev --port 3000',
     port: 3000,
     reuseExistingServer: !isCI,
     timeout: 180_000,

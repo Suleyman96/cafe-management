@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SW_PATH = join(__dirname, '..', 'public', 'sw.js');
+const SHA_FILE_PATH = join(__dirname, '..', '.commit-sha');
 const PLACEHOLDER = '__BUILD_SHA__';
 
 const isCi = process.env.VERCEL === '1' || process.env.CI === 'true';
@@ -22,8 +23,21 @@ const isCi = process.env.VERCEL === '1' || process.env.CI === 'true';
 // VERCEL_GIT_COMMIT_SHA on Vercel, GITHUB_SHA on GitHub Actions, or an
 // explicitly-set GIT_COMMIT_SHA from a workflow that wants to override
 // (e.g. tagging a manual deploy with a non-HEAD ref).
-const sha =
+let sha =
   process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT_SHA ?? process.env.GITHUB_SHA ?? null;
+
+// Fallback: read from a file stamped by the deploy workflow. Needed when
+// `vercel build` runs from a GitHub Actions runner — the CLI sandboxes
+// the build env and strips host env vars, so we ship the SHA as a file
+// inside rootDirectory instead.
+if (!sha) {
+  try {
+    const fileSha = (await readFile(SHA_FILE_PATH, 'utf8')).trim();
+    if (fileSha) sha = fileSha;
+  } catch (_err) {
+    // file absent — fall through to the no-sha branch below
+  }
+}
 
 if (!isCi) {
   console.log('[inject-sw-version] Local build — leaving sw.js placeholder intact.');
@@ -36,7 +50,7 @@ if (!sha) {
   // be invalidated.
   console.error(
     '[inject-sw-version] CI build but no commit SHA available ' +
-      '(checked VERCEL_GIT_COMMIT_SHA, GIT_COMMIT_SHA, GITHUB_SHA). ' +
+      '(checked VERCEL_GIT_COMMIT_SHA, GIT_COMMIT_SHA, GITHUB_SHA, .commit-sha file). ' +
       'Cache cannot be scoped to this deploy — failing build.',
   );
   process.exit(1);

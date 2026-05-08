@@ -43,8 +43,11 @@ jobs:
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Inject commit SHA into Vercel build env
-        run: echo "GIT_COMMIT_SHA=${{ github.sha }}" >> .vercel/.env.production.local
+      - name: Stamp commit SHA into staff-web
+        # `vercel build` sandboxes its env and strips host vars, so the
+        # postbuild SW-version-injection script reads the SHA from a file
+        # inside rootDirectory instead. See apps/staff-web/scripts/inject-sw-version.mjs.
+        run: echo "${{ github.sha }}" > apps/staff-web/.commit-sha
 
       - name: Build Project Artifacts
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}

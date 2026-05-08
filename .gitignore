@@ -9,6 +9,10 @@ dist/
 out/
 build/
 
+# Deploy-time stamp (written by .github/workflows/deploy-*.yml, read by
+# apps/staff-web/scripts/inject-sw-version.mjs). Never committed.
+apps/*/.commit-sha
+
 # Expo / React Native
 .expo/
 *.jks
