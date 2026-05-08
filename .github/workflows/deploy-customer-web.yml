@@ -43,9 +43,10 @@ jobs:
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
+      - name: Inject commit SHA into Vercel build env
+        run: echo "GIT_COMMIT_SHA=${{ github.sha }}" >> .vercel/.env.production.local
+
       - name: Build Project Artifacts
-        env:
-          GIT_COMMIT_SHA: ${{ github.sha }}
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy Project Artifacts to Vercel
