@@ -18,7 +18,12 @@ const SW_PATH = join(__dirname, '..', 'public', 'sw.js');
 const PLACEHOLDER = '__BUILD_SHA__';
 
 const isCi = process.env.VERCEL === '1' || process.env.CI === 'true';
-const sha = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT_SHA ?? null;
+// Accept the SHA env var native to whichever CI is running this build:
+// VERCEL_GIT_COMMIT_SHA on Vercel, GITHUB_SHA on GitHub Actions, or an
+// explicitly-set GIT_COMMIT_SHA from a workflow that wants to override
+// (e.g. tagging a manual deploy with a non-HEAD ref).
+const sha =
+  process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT_SHA ?? process.env.GITHUB_SHA ?? null;
 
 if (!isCi) {
   console.log('[inject-sw-version] Local build — leaving sw.js placeholder intact.');
@@ -30,7 +35,8 @@ if (!sha) {
   // ops team notices rather than silently shipping a deploy that can't
   // be invalidated.
   console.error(
-    '[inject-sw-version] CI build but no VERCEL_GIT_COMMIT_SHA / GIT_COMMIT_SHA. ' +
+    '[inject-sw-version] CI build but no commit SHA available ' +
+      '(checked VERCEL_GIT_COMMIT_SHA, GIT_COMMIT_SHA, GITHUB_SHA). ' +
       'Cache cannot be scoped to this deploy — failing build.',
   );
   process.exit(1);
