@@ -1,4 +1,4 @@
-import { DAYS_OF_WEEK, TIME_OPTIONS } from '@gustri/core';
+import { DAYS_OF_WEEK, TIME_OPTIONS, WEEKDAY_TRANSLATION_KEY } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -360,7 +360,7 @@ export function ScheduleModal({
                             : undefined
                         }
                       >
-                        {day.label}
+                        {t(WEEKDAY_TRANSLATION_KEY[day.value])}
                       </Chip>
                     ))}
                   </View>

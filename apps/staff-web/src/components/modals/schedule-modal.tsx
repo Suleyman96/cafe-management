@@ -1,6 +1,11 @@
 'use client';
 
-import { DAYS_OF_WEEK, getLocalDateString, TIME_OPTIONS } from '@gustri/core';
+import {
+  DAYS_OF_WEEK,
+  getLocalDateString,
+  TIME_OPTIONS,
+  WEEKDAY_TRANSLATION_KEY,
+} from '@gustri/core';
 import type { StaffSchedule, StaffScheduleInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
@@ -369,7 +374,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                       >
-                        {day.label}
+                        {t(WEEKDAY_TRANSLATION_KEY[day.value])}
                       </button>
                     ))}
                   </div>

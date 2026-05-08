@@ -1,4 +1,4 @@
-import { TIME_OPTIONS, WEEKDAYS } from '@gustri/core';
+import { TIME_OPTIONS, WEEKDAY_TRANSLATION_KEY, WEEKDAYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -307,7 +307,7 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
                           recurrenceDays.includes(day.value) && { backgroundColor: '#dbeafe' },
                         ]}
                       >
-                        {day.label}
+                        {t(WEEKDAY_TRANSLATION_KEY[day.value])}
                       </Chip>
                     ))}
                   </View>

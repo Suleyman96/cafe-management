@@ -1,6 +1,6 @@
 'use client';
 
-import { getLocalDateString, TIME_OPTIONS, WEEKDAYS } from '@gustri/core';
+import { getLocalDateString, TIME_OPTIONS, WEEKDAY_TRANSLATION_KEY, WEEKDAYS } from '@gustri/core';
 import type { Database, TaskInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
@@ -28,16 +28,6 @@ const PRIORITIES = [
 export function TaskModal({ task, onClose }: TaskModalProps) {
   const { t } = useTranslation('staff');
 
-  const WEEKDAY_KEYS = [
-    '',
-    'weekdays.mon',
-    'weekdays.tue',
-    'weekdays.wed',
-    'weekdays.thu',
-    'weekdays.fri',
-    'weekdays.sat',
-    'weekdays.sun',
-  ];
   const isEditing = !!task;
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -341,7 +331,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
                           : 'bg-white text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      {t(WEEKDAY_KEYS[day.value])}
+                      {t(WEEKDAY_TRANSLATION_KEY[day.value])}
                     </button>
                   ))}
                 </div>

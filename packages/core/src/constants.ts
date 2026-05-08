@@ -207,25 +207,47 @@ export const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 
 // Weekdays with Sunday=0 (matches JS Date.getDay())
 export const DAYS_OF_WEEK = [
-  { value: 1, label: 'Mon' },
-  { value: 2, label: 'Tue' },
-  { value: 3, label: 'Wed' },
-  { value: 4, label: 'Thu' },
-  { value: 5, label: 'Fri' },
-  { value: 6, label: 'Sat' },
-  { value: 0, label: 'Sun' },
+  { value: 1 },
+  { value: 2 },
+  { value: 3 },
+  { value: 4 },
+  { value: 5 },
+  { value: 6 },
+  { value: 0 },
 ] as const;
 
 // Weekdays with Sunday=7 (1-7 numbering for recurrence)
 export const WEEKDAYS = [
-  { value: 1, label: 'Mon' },
-  { value: 2, label: 'Tue' },
-  { value: 3, label: 'Wed' },
-  { value: 4, label: 'Thu' },
-  { value: 5, label: 'Fri' },
-  { value: 6, label: 'Sat' },
-  { value: 7, label: 'Sun' },
+  { value: 1 },
+  { value: 2 },
+  { value: 3 },
+  { value: 4 },
+  { value: 5 },
+  { value: 6 },
+  { value: 7 },
 ] as const;
+
+/**
+ * Maps a day-of-week numeric value to its translation key in the `staff`
+ * namespace. Handles both numbering conventions in this file:
+ *   - `DAYS_OF_WEEK` → 0..6 with Sunday=0 (matches `Date.getDay()`).
+ *   - `WEEKDAYS`     → 1..7 with Sunday=7 (recurrence-style).
+ *
+ * Both `0` and `7` map to `weekdays.sun` so the same map works regardless
+ * of which constant the consumer iterated. The `weekdays.*` keys are
+ * translated for all 20 locales — never render the day value as text;
+ * always go through `t(WEEKDAY_TRANSLATION_KEY[day.value])`.
+ */
+export const WEEKDAY_TRANSLATION_KEY: Record<number, string> = {
+  0: 'weekdays.sun',
+  1: 'weekdays.mon',
+  2: 'weekdays.tue',
+  3: 'weekdays.wed',
+  4: 'weekdays.thu',
+  5: 'weekdays.fri',
+  6: 'weekdays.sat',
+  7: 'weekdays.sun',
+};
 
 /** Maps order status enum values to i18n translation keys */
 export const ORDER_STATUS_KEYS: Record<string, string> = {

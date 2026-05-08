@@ -1,6 +1,6 @@
 'use client';
 
-import { getLocalDateString } from '@gustri/core';
+import { getLocalDateString, WEEKDAY_TRANSLATION_KEY } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
@@ -174,18 +174,8 @@ export default function TasksPage() {
     monthly: t('tasks.monthly'),
   };
 
-  const WEEKDAY_KEYS = [
-    '',
-    'weekdays.mon',
-    'weekdays.tue',
-    'weekdays.wed',
-    'weekdays.thu',
-    'weekdays.fri',
-    'weekdays.sat',
-    'weekdays.sun',
-  ];
   const getWeekdayLabels = (days: number[]) => {
-    return days.map((d) => t(WEEKDAY_KEYS[d])).join(', ');
+    return days.map((d) => t(WEEKDAY_TRANSLATION_KEY[d])).join(', ');
   };
 
   if (isLoading) {
