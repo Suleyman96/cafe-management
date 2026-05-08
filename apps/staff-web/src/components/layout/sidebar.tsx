@@ -268,7 +268,13 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
 
   return (
     <aside
-      className={`bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col transition-all duration-300 ${
+      // `h-dvh` (dynamic viewport height) instead of `h-screen` — on iOS,
+      // 100vh is the URL-bar-collapsed value, so the aside extends below
+      // the actually visible area and the bottom items (user menu, shift
+      // indicator, lower nav rows) become unreachable. 100dvh tracks the
+      // visible viewport so the inner `<nav flex-1 overflow-y-auto>` is
+      // bounded correctly and scrolls when items don't fit.
+      className={`bg-white border-r border-gray-200 h-dvh sticky top-0 flex flex-col transition-all duration-300 ${
         isCollapsed && !isMobile ? 'w-16' : 'w-64'
       }`}
     >

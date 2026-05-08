@@ -61,8 +61,13 @@ export function BaseModal({
           </button>
         </div>
 
-        <Wrapper {...wrapperProps} className="flex-1 overflow-y-auto flex flex-col min-h-0">
-          <div className="p-6 flex-1">{children}</div>
+        <Wrapper {...wrapperProps} className="flex-1 flex flex-col min-h-0">
+          {/* Scroll boundary lives on the body, not the wrapper, so the footer
+              sits below the scroll area and stays pinned to the modal bottom
+              on small viewports. Keeping the footer inside `<Wrapper>` (rather
+              than as a sibling) preserves form submission for `as='form'`
+              modals — the submit button stays inside the form. */}
+          <div className="flex-1 overflow-y-auto p-6">{children}</div>
 
           {footer && (
             <div className="border-t px-6 py-4 flex flex-col sm:flex-row gap-3 shrink-0">
