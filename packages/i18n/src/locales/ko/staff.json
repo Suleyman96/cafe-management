@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "결제 금액 {{amount}}이(가) 잔액 {{balance}}을(를) 초과합니다",
   "payment.exceedsRemaining": "금액이 남은 잔액을 초과합니다",
   "payment.fullPayment": "전액 결제",
+  "payment.networkError": "네트워크 오류 — 연결을 확인하고 다시 시도해 주세요.",
   "payment.noItemsToPay": "이 주문에 결제할 항목이 없습니다.",
   "payment.notAuthenticated": "인증되지 않았습니다",
   "payment.offlineUnavailable": "오프라인에서는 결제할 수 없습니다",

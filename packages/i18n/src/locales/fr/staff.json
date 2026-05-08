@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "Le montant du paiement {{amount}} dépasse le solde restant {{balance}}",
   "payment.exceedsRemaining": "Le montant dépasse le solde restant",
   "payment.fullPayment": "Paiement intégral",
+  "payment.networkError": "Erreur réseau — vérifiez votre connexion et réessayez.",
   "payment.noItemsToPay": "Cette commande n'a aucun article à payer.",
   "payment.notAuthenticated": "Non authentifié",
   "payment.offlineUnavailable": "Paiement indisponible hors ligne",

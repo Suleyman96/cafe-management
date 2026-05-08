@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "จำนวนเงินที่ชำระ {{amount}} เกินยอมคงเหลือ {{balance}}",
   "payment.exceedsRemaining": "จำนวนเงินเกินยอดคงเหลือ",
   "payment.fullPayment": "ชำระเต็มจำนวน",
+  "payment.networkError": "เครือข่ายผิดพลาด — กรุณาตรวจสอบการเชื่อมต่อและลองใหม่อีกครั้ง",
   "payment.noItemsToPay": "คำสั่งซื้อนี้ไม่มีรายการที่ต้องชำระ",
   "payment.notAuthenticated": "ไม่ได้ยืนยันตัวตน",
   "payment.offlineUnavailable": "ไม่สามารถชำระเงินขณะออฟไลน์",

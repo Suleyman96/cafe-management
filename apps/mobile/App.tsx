@@ -42,6 +42,7 @@ import {
   startCacheSizeTelemetry,
 } from './src/lib/query-persister';
 import { registerMutationDefaults } from './src/lib/register-mutation-defaults';
+import { sanitizeBreadcrumbUrl } from './src/lib/sentry-breadcrumb-url';
 import { redactJsonBody, redactPii } from './src/lib/sentry-redaction';
 import {
   clearSessionStamp,
@@ -82,20 +83,20 @@ Sentry.init({
     undefined,
   beforeSend(event) {
     if (event.breadcrumbs) {
-      for (const breadcrumb of event.breadcrumbs) {
+      event.breadcrumbs = event.breadcrumbs.filter((breadcrumb) => {
         if (breadcrumb.data?.headers) {
           delete breadcrumb.data.headers.Authorization;
           delete breadcrumb.data.headers.authorization;
         }
         if (breadcrumb.data?.url) {
-          try {
-            const url = new URL(breadcrumb.data.url);
-            url.searchParams.delete('token');
-            url.searchParams.delete('apikey');
-            breadcrumb.data.url = url.toString();
-          } catch {
-            // Not a valid URL, leave as-is
-          }
+          // H10: strip the entire query string before any URL parsing
+          // (see `sanitizeBreadcrumbUrl` for rationale). If the result
+          // still doesn't parse, the breadcrumb is malformed enough
+          // that shipping it risks leaking an unredacted log line —
+          // drop it.
+          const cleaned = sanitizeBreadcrumbUrl(breadcrumb.data.url as string);
+          if (cleaned === null) return false;
+          breadcrumb.data.url = cleaned;
         }
         // M9: Strip PII from request bodies. Fetch breadcrumbs put the body
         // under `data.body`; xhr puts it under `data.data`. Both can carry
@@ -105,7 +106,8 @@ Sentry.init({
           if ('body' in data) data.body = redactJsonBody(data.body);
           if ('data' in data) data.data = redactJsonBody(data.data);
         }
-      }
+        return true;
+      });
     }
     if (event.request && event.request.data !== undefined) {
       event.request.data = redactPii(event.request.data) as typeof event.request.data;
@@ -258,7 +260,7 @@ function App() {
   // cache growth alongside any captured error, and a single warning event
   // fires past 8MB so we hear about runaways before users do.
   useEffect(() => {
-    const stop = startCacheSizeTelemetry();
+    const stop = startCacheSizeTelemetry(queryClient);
     return stop;
   }, []);
 

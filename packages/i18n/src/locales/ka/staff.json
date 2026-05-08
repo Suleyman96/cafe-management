@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "გადახდის თანხა {{amount}} აღემატება დარჩენილ ბალანსს {{balance}}",
   "payment.exceedsRemaining": "თანხა აღემატება დარჩენილ ბალანსს",
   "payment.fullPayment": "სრული გადახდა",
+  "payment.networkError": "ქსელის შეცდომა — შეამოწმეთ კავშირი და სცადეთ თავიდან.",
   "payment.noItemsToPay": "ამ შეკვეთაში გადასახდელი ერთეულები არ არის.",
   "payment.notAuthenticated": "ავთენტიფიკაცია არ არის გავლილი",
   "payment.offlineUnavailable": "გადახდა ოფლაინ რეჟიმში მიუწვდომელია",

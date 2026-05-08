@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "Төлем сомасы {{amount}} қалған баланстан {{balance}} асып кетті",
   "payment.exceedsRemaining": "Сома қалған балансты асады",
   "payment.fullPayment": "Толық төлем",
+  "payment.networkError": "Желі қатесі — байланысты тексеріп, қайта көріңіз.",
   "payment.noItemsToPay": "Бұл тапсырыста төленетін тауарлар жоқ.",
   "payment.notAuthenticated": "Аутентификация жасалмаған",
   "payment.offlineUnavailable": "Офлайн режимде төлем қолжетімсіз",

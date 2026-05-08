@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "Payment amount {{amount}} exceeds remaining balance {{balance}}",
   "payment.exceedsRemaining": "Amount exceeds the remaining balance",
   "payment.fullPayment": "Full Payment",
+  "payment.networkError": "Network error — please check your connection and try again.",
   "payment.noItemsToPay": "This order has no items to pay for.",
   "payment.notAuthenticated": "Not authenticated",
   "payment.offlineUnavailable": "Payment unavailable offline",

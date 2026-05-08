@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "Сумма платежа {{amount}} превышает остаток {{balance}}",
   "payment.exceedsRemaining": "Сумма превышает остаток",
   "payment.fullPayment": "Полная оплата",
+  "payment.networkError": "Ошибка сети — проверьте подключение и попробуйте ещё раз.",
   "payment.noItemsToPay": "В этом заказе нет позиций для оплаты.",
   "payment.notAuthenticated": "Не авторизован",
   "payment.offlineUnavailable": "Оплата недоступна без подключения",

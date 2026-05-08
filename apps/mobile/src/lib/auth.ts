@@ -243,15 +243,40 @@ export function onAuthStateChange(callback: (staff: Staff | null) => void) {
     ) {
       const newUserId = session.user.id;
 
-      // Identity changed mid-session (different staff/tenant). Clear the
-      // cache before loading the new staff so no stale data leaks across.
-      // Skip on the very first observation (lastUserId === null) — that's
-      // a normal sign-in, not a transition.
-      if (lastUserId !== null && lastUserId !== newUserId) {
+      // H6 — defensive cache flush on a fresh SIGNED_IN (defense-in-depth).
+      //
+      // The expected flow has SIGNED_OUT clearing the cache before any
+      // SIGNED_IN, and the cold-boot pre-hydration check in App.tsx
+      // vetting the persisted blob against the session stamp. But a
+      // partial-cleanup bug or pre-existing leftover would otherwise
+      // become visible to the new user — and once the persister is
+      // hydrated, even a single render frame against the previous
+      // tenant's data is a cross-tenant leak.
+      //
+      //   SIGNED_IN: explicit login transition (login screen, fresh
+      //     session). Always clear, even when `lastUserId === null` —
+      //     that is precisely the "after SIGNED_OUT" or "post-crash
+      //     cleanup never ran" path the audit calls out.
+      //   INITIAL_SESSION: boot-time session restore. The persister was
+      //     already validated against the session stamp by App.tsx's
+      //     pre-hydration check; clearing here would defeat offline-
+      //     first reads.
+      //   TOKEN_REFRESHED: same user, same data. Clear only on the
+      //     unlikely user-id change.
+      //
+      // `cleanupClientState` itself sets `isLoading: true` → `false`,
+      // so the navigator's auth gate keeps the splash up across the
+      // wipe. The brief staff-fetch window after this is the same
+      // shape as the existing tenant-switch path — no new flicker.
+      const isMidSessionUserSwitch = lastUserId !== null && lastUserId !== newUserId;
+      const isExplicitSignIn = event === 'SIGNED_IN';
+      if (isExplicitSignIn || isMidSessionUserSwitch) {
         Sentry.addBreadcrumb({
           category: 'auth',
-          message: 'tenant transition: clearing cache',
-          data: { from: lastUserId, to: newUserId },
+          message: isMidSessionUserSwitch
+            ? 'tenant transition: clearing cache'
+            : 'fresh sign-in: clearing cache (H6 defensive)',
+          data: { from: lastUserId, to: newUserId, event },
         });
         await cleanupClientState();
       }

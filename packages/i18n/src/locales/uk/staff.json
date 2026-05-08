@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "Сума платежу {{amount}} перевищує залишок {{balance}}",
   "payment.exceedsRemaining": "Сума перевищує залишок",
   "payment.fullPayment": "Повна оплата",
+  "payment.networkError": "Помилка мережі — перевірте з'єднання та спробуйте ще раз.",
   "payment.noItemsToPay": "У цьому замовленні немає позицій для оплати.",
   "payment.notAuthenticated": "Не авторизовано",
   "payment.offlineUnavailable": "Оплата недоступна офлайн",

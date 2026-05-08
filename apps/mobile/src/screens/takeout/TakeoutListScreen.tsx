@@ -1,8 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ACTIVE_TAKEOUT_STATUSES, ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
+import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Searchbar } from 'react-native-paper';
 import { CreateTakeoutModal } from '@/components/takeout/CreateTakeoutModal';
@@ -11,6 +12,7 @@ import { EmptyState, ErrorScreen, FilterChipBar, LoadingScreen } from '@/compone
 import { useCurrencySymbol, useUpdateOrderStatus } from '@/hooks/local';
 import { useCancelOrder, useTakeoutOrders } from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { checkTakeoutCancelEligibility } from '@/lib/order-cancel-guard';
 import { Text, TextInput } from '@/lib/paper-compat';
 import { COLORS } from '@/theme';
 
@@ -43,6 +45,20 @@ export default function TakeoutListScreen() {
   const { data: orders, isLoading, error, refetch } = useTakeoutOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const cancelOrder = useCancelOrder();
+
+  // H3: clear the cancel-dialog state when the screen blurs (tab switch,
+  // navigation away). Otherwise the user comes back to a pre-filled dialog
+  // pointing at an order whose status may have moved on while away — and
+  // because `db.orders.cancelOrder` has no DB-level previous-status guard,
+  // confirming would silently rewrite a closed/cancelled order.
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setCancelTarget(null);
+        setCancelReason('');
+      };
+    }, []),
+  );
 
   const currencySymbol = useCurrencySymbol();
 
@@ -121,6 +137,19 @@ export default function TakeoutListScreen() {
 
     setCancelling(true);
     try {
+      // H3: refetch before mutating and gate on the fresh status. If the
+      // order is no longer in `ACTIVE_TAKEOUT_STATUSES` (already closed or
+      // cancelled by another staff member, or via a customer flow) we close
+      // the dialog and surface the existing failure message rather than
+      // rewriting a terminal-state order.
+      const fresh = await refetch();
+      const eligibility = checkTakeoutCancelEligibility(fresh.data, cancelTarget.id);
+      if (!eligibility.ok) {
+        showError(t('takeout.failedCancel'));
+        setCancelTarget(null);
+        setCancelReason('');
+        return;
+      }
       await cancelOrder.mutateAsync({ orderId: cancelTarget.id, reason: cancelReason.trim() });
       showSuccess(t('orders.orderCancelled'));
       setCancelTarget(null);

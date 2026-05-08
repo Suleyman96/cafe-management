@@ -3,6 +3,7 @@ import { QUERY_KEYS } from '@gustri/queries';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sentry from '@sentry/react-native';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
+import type { QueryClient } from '@tanstack/react-query';
 import type { Persister } from '@tanstack/react-query-persist-client';
 import Constants from 'expo-constants';
 import { MMKV } from 'react-native-mmkv';
@@ -198,14 +199,58 @@ export async function migrateAsyncStorageToMMKV(): Promise<void> {
 }
 
 /**
+ * H8: cache size at which we pre-emptively evict aged queries from the
+ * in-memory cache. Picked below the existing 5MB warning breadcrumb and
+ * 8MB capture threshold so eviction kicks in *before* the cache reaches
+ * the "rare incident" levels — keeps the steady-state working set lean
+ * for low-end Android devices.
+ */
+export const EVICTION_THRESHOLD_BYTES = 4 * 1024 * 1024;
+
+/**
+ * H8: queries older than this with no live observers are removed when
+ * eviction runs. 2 hours covers a kitchen shift's worth of "background
+ * tab still has the data" while still discarding overnight residue.
+ */
+export const EVICTION_QUERY_AGE_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * Drop queries that are both stale (older than {@link EVICTION_QUERY_AGE_MS})
+ * AND unobserved by any mounted hook. The observer check is load-bearing —
+ * removing a query that a screen is actively reading would force an instant
+ * refetch, defeating the offline-first persister and wasting network on a
+ * device that's already over its cache budget.
+ *
+ * Exported for testability; called by `startCacheSizeTelemetry` when the
+ * disk size crosses the eviction threshold.
+ */
+export function pruneStaleUnobservedQueries(queryClient: QueryClient): { evicted: number } {
+  const cutoff = Date.now() - EVICTION_QUERY_AGE_MS;
+  const targets = queryClient
+    .getQueryCache()
+    .getAll()
+    .filter((q) => q.state.dataUpdatedAt < cutoff && q.getObserversCount() === 0);
+  queryClient.removeQueries({
+    predicate: (q) => q.state.dataUpdatedAt < cutoff && q.getObserversCount() === 0,
+  });
+  return { evicted: targets.length };
+}
+
+/**
  * Periodic cache-size sampler. Pushes a Sentry breadcrumb so per-user cache
  * growth shows up alongside any error captured later, and surfaces a warning
  * event once a single user blows past 8MB — the threshold above which we'd
  * want to narrow `PERSISTED_QUERY_KEYS` rather than keep growing the blob.
  *
+ * H8: when disk size crosses {@link EVICTION_THRESHOLD_BYTES}, drop aged +
+ * unobserved queries. The persister's throttled write (2s) commits the
+ * smaller blob to disk on the next cache change. Emits an info-level
+ * Sentry event per eviction sweep so growth-then-shrink curves are
+ * visible alongside any captured errors.
+ *
  * Returns the disposer so callers can stop sampling on unmount.
  */
-export function startCacheSizeTelemetry(intervalMs = 60_000): () => void {
+export function startCacheSizeTelemetry(queryClient: QueryClient, intervalMs = 60_000): () => void {
   let warned = false;
 
   const sample = () => {
@@ -217,6 +262,22 @@ export function startCacheSizeTelemetry(intervalMs = 60_000): () => void {
       level: size > 5_000_000 ? 'warning' : 'info',
       data: { bytes: size },
     });
+
+    // H8: pre-emptive eviction. Idempotent — if the previous sweep
+    // already removed every aged query, this loop counts zero and emits
+    // no event. The persister picks up the in-memory shrink on its next
+    // throttled write cycle.
+    if (size > EVICTION_THRESHOLD_BYTES) {
+      const { evicted } = pruneStaleUnobservedQueries(queryClient);
+      if (evicted > 0) {
+        Sentry.captureMessage('query-cache eviction triggered', {
+          level: 'info',
+          tags: { area: 'query-cache-eviction' },
+          extra: { sizeBytes: size, evicted },
+        });
+      }
+    }
+
     if (size > 8_000_000 && !warned) {
       Sentry.captureMessage('query-cache exceeded 8MB', { level: 'warning' });
       warned = true;

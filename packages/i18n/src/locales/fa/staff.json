@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "مبلغ پرداخت {{amount}} بیش از مانده {{balance}} است",
   "payment.exceedsRemaining": "مبلغ از باقیمانده بیشتر است",
   "payment.fullPayment": "پرداخت کامل",
+  "payment.networkError": "خطای شبکه — لطفاً اتصال خود را بررسی کرده و دوباره تلاش کنید.",
   "payment.noItemsToPay": "این سفارش آیتمی برای پرداخت ندارد.",
   "payment.notAuthenticated": "احراز هویت نشده",
   "payment.offlineUnavailable": "پرداخت در حالت آفلاین در دسترس نیست",

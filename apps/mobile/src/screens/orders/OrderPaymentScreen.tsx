@@ -1,4 +1,4 @@
-import { ConflictError } from '@gustri/core';
+import { ConflictError, NetworkError } from '@gustri/core';
 import { useLocale, useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -102,6 +102,19 @@ export default function OrderPaymentScreen() {
       if (err instanceof ConflictError) {
         refetch();
         refetchPayments();
+        showError(err);
+        return;
+      }
+      // H9: distinguish network failures from server-side rejections.
+      // `useCreatePayment` is `networkMode: 'always', retry: 0` — the
+      // mutation does NOT queue offline. A `NetworkError` here means the
+      // request never reached the server (or the response was lost), so
+      // the user must retry manually. The default `err.message` from
+      // `NetworkError` is English ("Network request failed" or similar);
+      // surface a localized message instead.
+      if (err instanceof NetworkError) {
+        showError(t('payment.networkError'));
+        return;
       }
       showError(err instanceof Error ? err : t('payment.paymentFailed'));
     }

@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "支払い金額{{amount}}が残高{{balance}}を超えています",
   "payment.exceedsRemaining": "金額が残額を超えています",
   "payment.fullPayment": "全額支払い",
+  "payment.networkError": "ネットワークエラー — 接続を確認してもう一度お試しください。",
   "payment.noItemsToPay": "この注文には支払う品目がありません。",
   "payment.notAuthenticated": "未認証",
   "payment.offlineUnavailable": "オフラインでは支払いできません",

@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "مبلغ الدفع {{amount}} يتجاوز الرصيد المتبقي {{balance}}",
   "payment.exceedsRemaining": "المبلغ يتجاوز الرصيد المتبقي",
   "payment.fullPayment": "دفع كامل",
+  "payment.networkError": "خطأ في الشبكة — يرجى التحقق من اتصالك والمحاولة مرة أخرى.",
   "payment.noItemsToPay": "لا توجد أصناف للدفع في هذا الطلب.",
   "payment.notAuthenticated": "غير مسجل الدخول",
   "payment.offlineUnavailable": "الدفع غير متاح دون اتصال",

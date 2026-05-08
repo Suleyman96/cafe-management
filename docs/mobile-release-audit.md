@@ -724,23 +724,185 @@ Nothing — premise rejected. The literal defect cannot occur, and the audit's p
 
 ## 🟠 Tier 3 — High
 
-### H1. Item-level KDS taps disabled only at order level
+### H1. Item-level KDS taps disabled only at order level — ✅ DONE (2026-05-08)
 - **File:** `apps/mobile/src/components/kitchen/KitchenOrderCard.tsx:82-95`
 - **Fix:** Track `processingItemIds: Set<string>` in `KitchenDisplayScreen`. Pass per-item `disabled` to the row. Replace the order-level `processingOrderId` for this purpose.
 
-### H2. Item button re-render race
+#### Findings on close inspection (premise re-evaluated)
+
+- **Premise valid.** [`handleMarkItemReady`](apps/mobile/src/screens/kitchen/KitchenDisplayScreen.tsx#L109-L119) (pre-fix) did NOT touch `processingOrderId`, so the per-item "Ready" button at [KitchenOrderCard.tsx:82-95](apps/mobile/src/components/kitchen/KitchenOrderCard.tsx#L82-L95) was disabled only when an *order-level* bulk operation was running. A double-tap on a single item within the network round-trip (~200–500 ms) fired two `update-order-item-status` mutations for the same logical action.
+- **`isProcessing` is still load-bearing.** Bulk handlers (`handleStartPreparing` / `handleMarkAllReady` / `handleMarkAllServed`) iterate every qualifying item; while that bulk op is in flight per-item taps must stay locked even if the specific item id isn't yet in `processingItemIds`. So the new contract is "disabled = `isProcessing` (order-level bulk in flight) OR `processingItemIds.has(item.id)` (this specific item's mutation in flight)" rather than literally replacing one with the other.
+- **No memo/perf concern.** `KitchenOrderCard` is `React.memo`'d. Passing a new `Set` reference on every per-item state change triggers re-render of all visible cards — acceptable at typical kitchen-list scale (5–20 orders) and the same cost as the existing `processingOrderId` re-render. If volume grows, switch to a per-item `useIsMutating` lookup (H2's approach) rather than slicing the Set.
+
+#### What was changed
+
+- `apps/mobile/src/components/kitchen/KitchenOrderCard.tsx`
+  - Added optional `processingItemIds?: ReadonlySet<string>` prop alongside the existing `isProcessing`.
+  - Per-item button `disabled` is now `isProcessing || (processingItemIds?.has(item.id) ?? false)`. Comment block at the call site explains the two-gate rationale so a future cleanup doesn't drop one half.
+  - `accessibilityState.disabled` mirrors the same combined value.
+- `apps/mobile/src/screens/kitchen/KitchenDisplayScreen.tsx`
+  - Added `processingItemIds: ReadonlySet<string>` state, plus stable `markItemProcessing` / `unmarkItemProcessing` callbacks that only allocate a new Set when membership actually changes (avoids re-renders on no-op flips).
+  - `handleMarkItemReady` now wraps the mutate in `try { … } finally { unmarkItemProcessing(itemId) }` so the button reliably re-enables on both success and error paths.
+  - `renderKitchenOrder` forwards `processingItemIds` to the card; memo deps include it.
+  - Order-level handlers (`handleStartPreparing` / `handleMarkAllReady` / `handleMarkAllServed`) are unchanged — they continue to set `processingOrderId`, which keeps the existing bulk-op item-button lockout via `isProcessing`. Narrow scope per the audit.
+- `apps/mobile/src/__tests__/components/KitchenOrderCard.test.tsx` (new, 4 tests)
+  - Disables only the matching item button when its id is in `processingItemIds`.
+  - Enables all item buttons when `processingItemIds` is empty.
+  - Regression guard: per-item buttons stay disabled during order-level `isProcessing` (bulk-op contract).
+  - Optional-prop fallback: omitting `processingItemIds` keeps the card usable.
+  - React-Native primitives (`TouchableOpacity`, `Text`, `View`) are mocked to plain DOM elements so the test runs in the jsdom environment without pulling in the full RN renderer (same approach as `PendingSyncBadge.test.tsx`).
+
+#### Validation run
+
+- `pnpm test:mobile` — 51 files, 268 tests passing (4 new H1 tests; previous bar 264).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `npx biome check` on the three touched files — clean (one whitespace auto-format applied).
+- **Manual stress test deferred.** The audit's "rapid double-tap on one item button" needs a release build + a slow-network harness; the unit test pins the disabled-state contract, which is the mechanical guarantee against the race.
+
+#### Notes for the agent picking up H2 / later
+
+- **H2 will likely supersede the new prop.** The audit's H2 fix uses `useIsMutating({ mutationKey: ['order-item-status', itemId], exact: true })` per row. If H2 moves the per-item gate into the row, `processingItemIds` becomes redundant for the per-item case — keep it only as a transitional surface and delete once H2's per-item hook lands. The mutation key (`MUTATION_KEYS.UPDATE_ORDER_ITEM_STATUS = ['update-order-item-status']`) is already registered in [`packages/queries/src/mutation-keys.ts`](packages/queries/src/mutation-keys.ts); H2's open question is whether to extend the key with `itemId` (so `useIsMutating` can scope `exact: true` per row) or keep the broad key and filter via `predicate`.
+- **The `isProcessing` half of the OR is the bulk-op safety net.** Don't drop it when wiring H2 — bulk handlers don't (and shouldn't) populate per-item state. If H2 moves the per-item gate inside the row via `useIsMutating`, the order-level bulk lockout still needs `isProcessing` from the parent. Two gates, two reasons.
+- **`Set` reference equality drives re-render granularity.** `markItemProcessing` returns the previous Set when the id is already present (and `unmarkItemProcessing` returns the previous Set when the id is absent) — verified visually, not test-pinned. If a future change makes those mutate-in-place, you'll regress the no-op-render contract.
+- **Per-item `disabled` does NOT show a spinner.** The existing per-item button has no busy state — it just disables. If product asks for a spinner when an item is in flight, that's UX scope beyond H1.
+
+### H2. Item button re-render race — ✅ DONE (2026-05-08, supersedes H1's parent-state prop)
 - **File:** `apps/mobile/src/components/kitchen/KitchenOrderCard.tsx:82-95`
 - **Fix:** Bind `disabled` to `useIsMutating({ mutationKey: ['order-item-status', itemId], exact: true }) > 0` rather than parent state. Set a stable `mutationKey` on `useUpdateOrderItemStatus`.
 
-### H3. Cancel-dialog state survives navigation
+#### Findings on close inspection (premise re-evaluated)
+
+- **The literal "race" is more about state duplication than synchronous re-render ordering.** Both parent state (H1) and `useIsMutating` (H2) ultimately propagate disabled via React's render scheduler — within a single JS frame, two near-simultaneous taps could in principle both fire before either path's re-render flushes. The structural bug is that parent state is a *duplicate* of what the mutation cache already tracks; if `onMutate` / `onError` / `onSettled` ever drift from the parent's `setState` bookkeeping (or a future try/finally is missed), the button stays stuck disabled. `useIsMutating` reads from the same store TanStack writes during the mutation lifecycle — auto-clears on settle, no try/finally to forget.
+- **`mutationKey: ['order-item-status', itemId]` (audit's literal) — narrowed.** The canonical mobile mutation key is `MUTATION_KEYS.UPDATE_ORDER_ITEM_STATUS = ['update-order-item-status']` (see [`packages/queries/src/mutation-keys.ts`](packages/queries/src/mutation-keys.ts)). Extending it with `itemId` would require a per-row `useMutation` instantiation (one observer per visible item) and a hook signature change; the predicate approach gets the same per-item granularity by filtering on `mutation.state.variables.itemId` against the existing canonical key. Predicate filtering is functionally equivalent to `exact: true` here and avoids restructuring `useUpdateOrderItemStatus`.
+- **`isProcessing` is still load-bearing.** Bulk handlers (`handleStartPreparing` / `handleMarkAllReady` / `handleMarkAllServed`) iterate every qualifying item; the per-row `useIsMutating` lookup *does* see those mutations once they fire (each carries an `itemId` variable), but the order-level prop continues to gate *before* the bulk Promise.all so taps queued by the user during the bulk-op orchestration are also blocked. Two gates, two reasons.
+- **H1's `processingItemIds` prop is now redundant.** Per CLAUDE.md ("If you are certain that something is unused, you can delete it completely"), removed it rather than leaving a dead transitional surface. `KitchenDisplayScreen` is the only caller and the screen no longer needs the parent state either.
+
+#### What was changed
+
+- `apps/mobile/src/components/kitchen/KitchenOrderCard.tsx`
+  - Extracted `KitchenOrderItemRow` subcomponent (`React.memo`'d) that owns its per-row `useIsMutating` lookup. Each row subscribes only to mutations whose `mutation.state.variables.itemId` matches its own item, so a different item's mutation doesn't cause this row to re-render.
+  - Predicate is `useCallback`-memoized on `item.id` so identical-row re-renders don't churn the filter.
+  - `disabled = isOrderProcessing || itemMutating` — bulk-op gate plus per-item gate, in that order.
+  - Removed the inline IIFE introduced by H1 and the `processingItemIds` prop.
+  - Imports `useIsMutating` from `@tanstack/react-query` (first usage in the mobile app — searched and confirmed).
+- `apps/mobile/src/screens/kitchen/KitchenDisplayScreen.tsx`
+  - Removed `processingItemIds` state, `markItemProcessing` / `unmarkItemProcessing` callbacks, and the try/finally bookkeeping in `handleMarkItemReady`.
+  - `renderKitchenOrder` no longer forwards `processingItemIds`; memo deps trimmed.
+  - `handleMarkItemReady` is back to its pre-H1 shape — just `await mutateAsync` + error toast.
+- `apps/mobile/src/__tests__/components/KitchenOrderCard.test.tsx`
+  - Replaced the H1 prop-based tests (4) with H2 mutation-cache tests (4):
+    1. Disables only the row whose `itemId` matches an in-flight mutation (uses `MutationObserver` to register an in-flight `update-order-item-status` mutation against `item-a`; asserts only the Pizza button is disabled, the Salad one is not).
+    2. Re-enables the row after its mutation settles — proves the auto-clear contract that obsoletes H1's try/finally.
+    3. Ignores mutations for unrelated keys — proves the `mutationKey` filter isn't accidentally cross-talking.
+    4. Bulk-op safety net (`isProcessing`) still disables both items even when no mutation is in flight.
+  - Test uses real `QueryClient` + `QueryClientProvider` (same pattern as `PendingSyncBadge.test.tsx`), with React-Native primitives mocked to plain DOM elements so jsdom can render the tree.
+
+#### Validation run
+
+- `pnpm test:mobile` — 51 files, 268 tests passing (4 H2 tests replace the 4 H1 tests; bar holds at 268).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `npx biome check` on the three touched files — clean (one auto-format applied).
+- **Manual stress test deferred.** Same as H1: the audit's "rapid double-tap on one item" needs a release build + slow-network harness; the unit test pins the cache-driven disable contract.
+
+#### Notes for the agent picking up H3 / later
+
+- **`useIsMutating` is now in the mobile codebase for the first time.** If you need it elsewhere (e.g. H8's eviction telemetry), the predicate-on-variables pattern here is the model — predicate over `mutation.state.variables`, scoped via a stable `mutationKey` from `MUTATION_KEYS`. Don't extend `MUTATION_KEYS` with row-specific keys unless a use-case actually requires `exact: true` filtering at the cache level (none does today).
+- **`KitchenOrderItemRow` is `React.memo`'d.** That's load-bearing — without it, re-rendering `KitchenOrderCard` (e.g. on `processingOrderId` change) would re-run every row's `useIsMutating` subscription. With memo, only rows whose `item` reference changes (genuine status change) re-render.
+- **The bulk-op `isProcessing` gate is per-card, not per-row.** If a future change splits bulk ops into per-item awaits with snackbar progress, consider whether to drop `isOrderProcessing` from the row entirely and rely solely on `useIsMutating` — at that point every bulk-iteration mutation registers in the cache and the per-row gate covers them.
+- **Predicate sees `mutation.state.variables`, not the original `mutate(input)` arg shape.** TanStack Query stores variables verbatim, so as long as `useUpdateOrderItemStatus`'s mutation accepts `{ itemId, status }`, the predicate's `vars.itemId` matches. If the hook signature ever changes (e.g., to `{ id, status }`), the predicate must change too — and the test will fail loudly because the disabled flip won't happen.
+- **H1's commit history isn't a wash.** H1 verified the premise was real and added a passing-baseline test for the disabled-state contract. H2 superseded the implementation; the test surface migrated to match the new contract. If a future revert pulls back to H1's parent-state pattern, the H2 test failures will be the canary.
+
+
+### H3. Cancel-dialog state survives navigation — ✅ DONE (2026-05-08)
 - **File:** `apps/mobile/src/screens/takeout/TakeoutListScreen.tsx:36-50`
 - **Fix:** Clear `cancelTarget` in a `useFocusEffect(blur)`. On confirm, refetch the target order's current status and reject the mutation client-side if status is already terminal.
 
-### H4. Pending revoke queue grows unbounded on persistent 5xx
+#### Findings on close inspection (premise re-evaluated)
+
+- **Premise valid — and the impact is data corruption, not just UX rot.** [`db.orders.cancelOrder`](packages/api-client/src/wrapper/orders.ts#L550-L602) writes `status: 'cancelled'` with no previous-status precondition; if a staff member opens the cancel dialog, switches tabs (the screen stays mounted in the bottom-tab navigator), and the order is closed/cancelled in the meantime by a customer-side flow or another staff member, confirming the dialog will silently flip the terminal-state order back to `cancelled`. Same hazard via two devices working the same takeout queue.
+- **Item 1 (`useFocusEffect(blur)`) — applied as written.** The blur cleanup is the right hook for "screen is no longer focused" — it fires for both navigation away and tab-switch, and matches the React Navigation contract for screens kept mounted in tab navigators.
+- **Item 2 ("reject if status is already terminal") — narrowed.** The audit said "terminal", which I read as `cancelled`/`closed`. On second look, takeout has its own active-status set: `ACTIVE_TAKEOUT_STATUSES = ['pending_approval', 'new', 'preparing', 'ready']` ([packages/core/src/constants.ts:42](packages/core/src/constants.ts#L42)). Anything *outside* that set should fail the guard, not just the strict terminals. This catches `closed`, `cancelled`, and the edge case of a takeout order somehow stuck in `served` (no flow normally reaches that, but the cancel mutation has no DB precondition and we shouldn't trust it). Reuses the same constant the screen's `activeCount` already uses — consistency.
+- **Refetch surface — chose `refetch()` over `db.orders.findById` for narrowness.** The list query (`useTakeoutOrders`) returns the most recent 200 takeout orders unfiltered; the active cancel target is virtually guaranteed to be in that list (otherwise it wouldn't have been visible in the dialog seconds earlier). `refetch()` is one line, no new `useDb` import, and cache-coherent — the refetched data is what other screens will also see.
+- **i18n: no new key added.** The existing `takeout.failedCancel` ("Failed to cancel" / 20-locale coverage already in place) is honest for both rejection reasons (`not_found`, `no_longer_active`) — the cancel didn't happen. A more specific "order has already been closed/cancelled — please refresh" key would be nicer UX but requires a 20-locale addition for a Tier 3 fix; out of scope here. Flagged in notes if a future audit wants to refine the message.
+
+#### What was changed
+
+- `apps/mobile/src/lib/order-cancel-guard.ts` (new)
+  - `checkTakeoutCancelEligibility(freshList, orderId)` — pure function returning `{ ok: true }` or `{ ok: false; reason: 'not_found' | 'no_longer_active' }`. Accepts the refetched list rather than fetching internally so the helper stays pure / unit-testable.
+  - Reuses `ACTIVE_TAKEOUT_STATUSES` from `@gustri/core` so the active-set definition isn't duplicated.
+- `apps/mobile/src/screens/takeout/TakeoutListScreen.tsx`
+  - Added `useFocusEffect` import from `@react-navigation/native` and `useCallback` from `react`.
+  - `useFocusEffect(useCallback(() => () => { setCancelTarget(null); setCancelReason(''); }, []))` — blur cleanup. Comment explains the data-corruption motivation so a future cleanup PR doesn't drop it.
+  - `handleConfirmCancel` now `await refetch()`s before submitting and runs the eligibility check; on `!ok` it closes the dialog and surfaces `t('takeout.failedCancel')` without firing the mutation.
+- `apps/mobile/src/__tests__/lib/order-cancel-guard.test.ts` (new, 5 tests)
+  - Allows cancellation across all four active takeout statuses (`pending_approval`, `new`, `preparing`, `ready`).
+  - Rejects with `no_longer_active` for `cancelled` and `closed`.
+  - Rejects with `not_found` when the order isn't in the refetched list.
+  - Rejects with `not_found` when the refetched list is `undefined` (fetch error).
+  - Rejects with `no_longer_active` for the `served` edge case — proves the guard treats anything outside `ACTIVE_TAKEOUT_STATUSES` as ineligible, not just hard terminals.
+
+#### Validation run
+
+- `pnpm test:mobile` — 52 files, 273 tests passing (5 new H3 tests; previous bar 268).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `npx biome check` on the three touched files — clean.
+- **Manual E2E deferred.** The "open dialog → switch tab → return" and "two-device race" walks need a release build + a second tester; flagged for the release-checklist concurrency tests block (already lists "Two waiters editing same table → reconciles cleanly").
+
+#### Notes for the agent picking up H4 / later
+
+- **The screen-level useFocusEffect blur is intentionally narrow.** It only resets the cancel dialog. If a future feature adds a discount or refund dialog to this screen, gate it the same way — don't promote one shared "close all dialogs" effect; per-dialog state is cleaner and avoids closing a different dialog the user actually wants to keep.
+- **`db.orders.cancelOrder` still has no DB-level precondition.** Per Plan 8, `cancelOrder` does accept `expectedVersion` as an option (see [orders.ts:550-602](packages/api-client/src/wrapper/orders.ts#L550-L602)) — passing it on this call site would convert the H3 client-side guard into a server-enforced guard. Out of scope here because the refetch loop already gives a fresh `version` and the failure modes overlap; flag if a future audit wants the version-locked path.
+- **Don't reuse `checkTakeoutCancelEligibility` for delivery cancellations as-is.** Delivery has its own active set (`ACTIVE_DELIVERY_STATUSES`) which includes `out_for_delivery`. If you need a delivery variant, take the same pattern but parameterize the active set — don't widen the takeout guard.
+- **`useFocusEffect`'s callback returns the cleanup that runs on blur**, not the focus handler. If a future change wants to do work *on* focus (e.g. refetch on tab return), that goes in the body before the `return` — don't move the cleanup logic out.
+
+### H4. Pending revoke queue grows unbounded on persistent 5xx — ✅ DONE (2026-05-08)
 - **File:** `apps/mobile/src/lib/pending-revokes.ts:114-124`
 - **Fix:** Add per-entry `enqueuedAt` timestamp. On drain, drop entries older than 7 days. Cap queue at 50 entries; on overflow drop oldest first. Emit Sentry breadcrumb on drop.
 
-### H5. Push-token revoke endpoint is unauthenticated and tenant-global
+#### Findings on close inspection (premise re-evaluated)
+
+- **Premise valid.** The retain-and-retry branch ([pending-revokes.ts:121-123](apps/mobile/src/lib/pending-revokes.ts#L121-L123) pre-fix) keeps every network/5xx-failed entry indefinitely. On a multi-day backend outage, every logout-with-network-failure adds an entry; nothing pops without server cooperation.
+- **Queue shape change is not a backward-compat hazard.** The queue is private to this module — only `enqueuePendingRevoke`/`drainPendingRevokes` cross the boundary, and the value type didn't change. The MMKV file's persisted `string[]` shape from prior versions is dropped on first read of the new code (existing legacy-handling block already wipes shape mismatches), which is acceptable per the module's own doc comment ("Losing a pending revoke is acceptable — at worst, the next user on the device receives one extra notification before their first sync evicts the prior token").
+- **Cap eviction at enqueue, age-prune at drain.** The audit didn't specify *when* the cap fires — at enqueue is the right time so the persisted file never exceeds 50 entries (no spike past the cap even briefly). Age-prune fits at drain because the abandonment is observable as "we tried, gave up, moved on" rather than a write-time concern.
+- **Aged-out entries do not count toward the `drained` return.** Existing semantic: "drained" = server resolved the entry (200 success, 4xx rejection). Aged-out is abandonment, not server-acknowledged removal — keeping these distinct preserves the meaning future telemetry might rely on. Both call sites (`auth.ts:174`, `App.tsx:272`) discard the return value, so this is purely a definitional choice.
+- **Sentry channel: `addBreadcrumb`, not `captureException`.** Drops are expected operating-mode events under bad-network conditions, not exceptions. `level: 'info'` matches what B3 raised the bar to (per-event breadcrumb buffer cap of 50). Includes `ageMs` in `data` so the Sentry timeline shows whether a drop tripped the size cap (small ageMs) or the age cap (≥7 days).
+
+#### What was changed
+
+- `apps/mobile/src/lib/pending-revokes.ts`
+  - Queue shape: `string[]` → `PendingRevokeEntry[] = { token: string; enqueuedAt: number }[]`.
+  - Exported `MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000` and `MAX_QUEUE_SIZE = 50`.
+  - `readQueue` validates the new shape via a `isPendingRevokeEntry` type guard; legacy / malformed shapes return `[]` (one-time wipe on next boot, intentional — see module doc).
+  - `enqueuePendingRevoke` stamps `enqueuedAt: Date.now()`, dedupes by `entry.token`, then enforces the cap by sorting ascending and slicing the freshest `MAX_QUEUE_SIZE`. Emits a `dropped on overflow` breadcrumb per evicted entry with `{ ageMs, queueSize }`.
+  - `drainPendingRevokes` filters out entries with `now - enqueuedAt > MAX_AGE_MS` *before* the server-call loop. Each drop emits a `dropped stale entry` breadcrumb with `{ ageMs }`. Aged-out entries are not retained on the next attempt and are not counted toward the returned drain count.
+  - Module doc updated to describe the H4 retention contract.
+- `apps/mobile/src/__tests__/lib/pending-revokes.test.ts`
+  - Added `vi.mock('@sentry/react-native', …)` with `vi.fn()` exports so breadcrumb assertions work (the global stub at `apps/mobile/src/__tests__/helpers/mock-sentry.ts` exports `noop`s — same workaround used by `auth-cleanup.test.ts`, `realtime-patches.test.ts`, `navigation-stack-monitor.test.ts`).
+  - Added `afterEach(() => vi.useRealTimers())` so the time-traveling tests don't bleed into siblings.
+  - 5 new tests:
+    1. Drops aged-out entries on drain (not attempted server-side, not retained on next drain, not counted as drained).
+    2. Emits `dropped stale entry` breadcrumb for the aged drop.
+    3. Keeps fresh entries intact when only some are aged out.
+    4. Caps the queue at `MAX_QUEUE_SIZE` on enqueue, evicting the oldest first (verified by inspecting which tokens reached the server on subsequent drain).
+    5. Emits `dropped on overflow` breadcrumb on cap-overflow eviction.
+  - The 6 existing tests are unchanged (the API surface is unchanged for them; only the internal entry shape moved under the hood).
+
+#### Validation run
+
+- `pnpm test:mobile` — 52 files, 278 tests passing (5 new H4 tests; previous bar 273).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `npx biome check` on the two touched files — clean (two minor formatter auto-fixes applied).
+- **Soak test deferred.** "Backend down for 8 hours, 50 logout cycles, queue stays at ≤50" needs a release build + real network simulation; the unit-test cap proves the mechanical guarantee.
+
+#### Notes for the agent picking up H5 / later
+
+- **`MAX_AGE_MS` / `MAX_QUEUE_SIZE` are exported.** Tests import them rather than hardcoding numbers — if a future tuning PR raises the cap or shortens the window, the tests follow automatically. Keep the constants exported.
+- **Don't add a `staffId` field to entries** without a clear use case. The unauthenticated `/push-tokens/revoke` route doesn't take it, and adding it would be PII-on-disk that we don't currently emit.
+- **Aged-out entries vs cap-evicted entries are intentionally distinct breadcrumb messages** (`dropped stale entry` vs `dropped on overflow`). The Sentry timeline's filter-by-message lets investigation distinguish "backend was unavailable for too long" from "backend is hammered and we're shedding load" — different operational signals.
+- **The legacy-shape wipe on first read is one-shot.** Once shipped, every device's MMKV is on the new shape. Don't pile additional shape-migration code paths on top in future audits — bump a `version` field in the JSON if the shape changes again.
+- **The `Promise<number>` return is unused** by both call sites today (`auth.ts:174` and `App.tsx:272` both `.catch()` only). If a future task needs richer telemetry (count of aged drops, etc.), refactor to `Promise<{ drained: number; aged: number; retained: number; capped: number }>` — but verify no caller has started reading `.then(n => ...)` first.
+
+### H5. Push-token revoke endpoint is unauthenticated and tenant-global — ✅ DONE (2026-05-08, premise rejected)
 - **Files:**
   - `apps/mobile/src/lib/api-routes.ts:68-96`
   - Server: `apps/staff-web/src/app/api/v1/push-tokens/revoke/route.ts`
@@ -750,27 +912,260 @@ Nothing — premise rejected. The literal defect cannot occur, and the audit's p
   3. Mobile: include `device_id` (use `expo-device` `Device.osBuildId` or a generated UUID stored in SecureStore).
   4. Add per-IP rate limit on the route.
 
-### H6. Persisted query cache not flushed on tenant switch
+#### Findings on close inspection (premise re-evaluated)
+
+**Items 1–3 are incompatible with the offline-drain design that's the entire reason this endpoint exists. Item 4 is already in place. No code change is the correct outcome for this audit item.**
+
+- **Item 1 (require auth) — REJECTED.** The `/api/v1/push-tokens/revoke` route is intentionally unauthenticated; the existing route comment ([revoke/route.ts:18-24](apps/staff-web/src/app/api/v1/push-tokens/revoke/route.ts#L18-L24)) and the `pending-revokes.ts` module doc ([pending-revokes.ts:30-49](apps/mobile/src/lib/pending-revokes.ts#L30-L49) post-H4) make this explicit:
+  - When a logout happens offline (the common end-of-shift case on flaky cafe Wi-Fi), the revoke is queued in MMKV. It's drained either at next app boot (`App.tsx:272`, fires regardless of who logs in next) or on the next online transition. Both call sites use `apiFetchUnauthed` because there is no caller-side session that matches the *previous* user's token.
+  - Requiring auth would either (a) strand the queued revoke until the original user logs in again on the same device — which never happens after a hand-off — or (b) require the *next* user's session to revoke the *previous* user's token, which is a strictly broader capability than today (any logged-in user can scrub any token they hold).
+  - The audit's framing ("unauthenticated") implies a missing safeguard; the code is unauthenticated *by design* for a specific user-handoff scenario, with the threat model documented inline.
+- **Item 2 (tuple scoping `(staff_id, tenant_id, device_id, expo_token)`) — REJECTED.** Two reasons:
+  - Scoping by `staff_id` / `tenant_id` from a JWT is the same auth requirement as item 1, and breaks offline-drain for the same reason.
+  - Scoping by `(expo_token, device_id)` from the *body* (with no JWT) doesn't add a real authorization gate — the device that holds the token also holds the device_id. An attacker who has captured one has the other.
+- **Item 3 (mobile: include `device_id`) — REJECTED as a security improvement.** Either via `expo-device` `Device.osBuildId` (not unique per install on Android) or a SecureStore UUID, the device_id lives next to the token on the same device. Adding it as a body field for the server to log is observability, not security — and the existing schema doesn't have a column for it. Adding both is a migration + Expo dependency for a marginal audit-trail value, which we don't currently have a use case for.
+- **Item 4 (per-IP rate limit) — ALREADY DONE before this audit.** [`/api/v1/push-tokens/revoke`](apps/staff-web/src/app/api/v1/push-tokens/revoke/route.ts#L33) calls `rateLimit('push-token-revoke', ip)` at 10/60 s ([apps/staff-web/src/lib/api/rate-limit.ts:40-44](apps/staff-web/src/lib/api/rate-limit.ts#L40-L44)). On Redis unavailable the limit fails open (returns `success: true, remaining: 999`) — that's a minor audit observation but the same fail-open behavior is consistent across all rate-limited routes (payments, discounts, refunds, staff). Tightening that is a cross-cutting infra change, not H5's scope.
+
+**The actual threat model**, made explicit:
+
+- The only way to call this route maliciously is to hold a valid `expo_token`. Tokens are stored in the device OS keystore (and synced to the server via `/api/v1/push-tokens/register` over HTTPS, which IS authenticated).
+- A token leak (sniffed wire, exfiltrated keystore, stolen phone) gives the attacker the ability to **revoke that one token** — denying push notifications to the victim until they re-register on next app open. There's no read access, no other-tenant access, no enumeration.
+- The 10-revokes-per-IP-per-minute cap means that even a leaked-token-database scenario can scrub at most 14k tokens/day per source IP — a loud signal under any monitoring; per-token DoS is recoverable.
+- Stolen device → game over for everything else on the device anyway; a scrubbed push token is the least of the victim's concerns.
+
+#### What was changed
+
+Nothing — premise rejected after re-reading the design intent and the existing protection. Pre-launch checklist already includes "push-token cleanup job operational (`DeviceNotRegistered → revoke`)"; that's the natural source of *legitimate* tenant-global revokes (Apple/Google's own bookkeeping) and benefits from the same unauthenticated semantics.
+
+#### Validation run
+
+- No code changes; existing 278/278 mobile + 516/516 staff-web bar holds.
+- Confirmed item 4 in source: `apps/staff-web/src/app/api/v1/push-tokens/revoke/route.ts:33` and `apps/staff-web/src/lib/api/rate-limit.ts:40-44`.
+
+#### Notes for the agent picking up H6 / later
+
+- **Don't reflexively bolt auth onto this route.** If a future audit raises this again, the right answer is to verify whether *legitimate* unauthenticated callers exist — they do, and `App.tsx`/`auth.ts` are the consumers. Adding auth would silently break offline-logout drain on next-boot.
+- **If the threat model ever does change** — e.g. tokens become server-only secrets sent to clients via authenticated channels with TTL — revisit. Until then, the device-binds-the-token assumption is sound.
+- **Tenant-globality is load-bearing.** The DELETE filter is `WHERE expo_token = $1` precisely so a re-registered device under a new tenant evicts the old binding. Adding a `tenant_id` filter (item 2) would prevent device hand-offs across tenants from cleanly transferring.
+- **The fail-open behavior of the rate limiter is an org-config concern**, not H5's scope. If a future ticket wants fail-closed on rate-limit infrastructure outage, that's a single change in `rate-limit.ts:119-121` — but it affects every limited route and needs a separate threat-model conversation.
+- **`device_id` as observability** could land separately if push-notification debugging needs it (e.g. "we sent a notification but the device says it didn't arrive — was the token still bound to this device when we sent?"). Out of scope here.
+
+### H6. Persisted query cache not flushed on tenant switch — ✅ DONE (2026-05-08, defense-in-depth)
 - **File:** `apps/mobile/src/lib/auth.ts:173-225`
 - **Fix:** On `SIGNED_IN` event, if `lastUserId` is `null` OR differs from the new user's id, call `queryClient.clear()` and clear the persister storage *before* allowing any screen to render. Block render with a splash gate until clear completes.
 
-### H7. `__DEV__` defaults to `true` in fallback paths
+#### Findings on close inspection (premise re-evaluated)
+
+- **Premise valid as defense-in-depth, partially redundant with existing safeguards.** The mobile app already has *two* tenant-scrub guards on the auth path — both added in earlier audits and unchanged here:
+  1. **Pre-hydration check at boot** ([App.tsx:222-248](apps/mobile/App.tsx#L222-L248)) — reads the session stamp written by `loadSession`, calls `getCurrentUser()`, and `removeClient()`s the persister blob if the IDs don't match. Runs before `PersistQueryClientProvider` mounts so no screen ever sees the stale cache on cold boot.
+  2. **`SIGNED_OUT` handler in `onAuthStateChange`** ([auth.ts:230-238](apps/mobile/src/lib/auth.ts#L230-L238)) — runs `cleanupClientState()` (cache + persister + realtime + session stamp) before flipping `lastUserId = null`.
+  Together, these cover (a) cold boot with mismatched persister, (b) explicit logout, (c) server-side session expiry. The case the audit calls out is the *gap between* these — a partial-cleanup bug, a future refactor that drops a step, or a mid-session crash that leaves the persister written by user A while user B logs in fresh on the same device. The pre-existing `lastUserId !== null && lastUserId !== newUserId` branch handles the *mid-session* user switch, but a fresh `SIGNED_IN` after the cleanup flow ran (with `lastUserId === null`) currently SKIPs the clear, trusting upstream cleanup. The H6 gate makes that trust explicit and verifiable rather than inherited.
+- **Narrowed to `event === 'SIGNED_IN'`, not `INITIAL_SESSION` / `TOKEN_REFRESHED`.** The audit literal "On SIGNED_IN event, if `lastUserId` is null OR differs" was specific. Implementing it on every event would clear the persister on *every* cold boot (where `lastUserId === null` AND the event is `INITIAL_SESSION`), defeating the entire offline-first design. INITIAL_SESSION = boot-time session restore, already vetted by App.tsx; TOKEN_REFRESHED = same user, same data; only SIGNED_IN is a fresh login transition.
+- **Splash gate is provided by `cleanupClientState`'s built-in `setIsLoading(true)/false`.** No additional gate logic required — the existing `RootNavigator` keys off `staff !== null && !isLoading` to render authed routes, so the cleanup flow naturally splashes during the wipe. The brief staff-fetch window after cleanup (where `isLoading` is false but staff is null until `loadSession` resolves) is the same shape as the existing tenant-switch path; matching it avoids a separate refactor of App.tsx's loadSession wiring.
+- **Cost on the happy path: one extra cleanup-and-clear per fresh login.** Cleanup is millisecond-scale on an empty cache (no realtime channels yet, MMKV `clearAll` on already-empty). Worth it for the closed leak window.
+
+#### What was changed
+
+- `apps/mobile/src/lib/auth.ts`
+  - In `onAuthStateChange`, replaced the prior `if (lastUserId !== null && lastUserId !== newUserId)` clear-condition with a wider one:
+    - `isMidSessionUserSwitch = lastUserId !== null && lastUserId !== newUserId` (existing tenant-transition path).
+    - `isExplicitSignIn = event === 'SIGNED_IN'` (H6 — explicit login is always a clear-worthy transition).
+    - When either is true, `Sentry.addBreadcrumb` (distinct messages so Sentry timeline disambiguates "tenant transition" from "fresh sign-in defensive") then `await cleanupClientState()`.
+  - INITIAL_SESSION and TOKEN_REFRESHED preserve the existing skip-clear behavior for the same-user case so cold-boot offline-first reads aren't defeated.
+  - Comment block at the new gate documents the why and the event-shape distinctions so a future cleanup PR can't accidentally widen this to all events.
+- `apps/mobile/src/__tests__/lib/auth-state-change.test.ts` (new, 5 tests)
+  - SIGNED_IN with `lastUserId === null` clears the cache (`queryClient.cancelQueries` + `queryClient.clear` invoked) — the H6 contract.
+  - INITIAL_SESSION with `lastUserId === null` does NOT clear (boot restore is pre-vetted).
+  - TOKEN_REFRESHED for the same user does NOT clear (same-user no-op).
+  - Mid-session user switch via TOKEN_REFRESHED with a different user-id DOES clear (existing tenant-transition contract preserved).
+  - SIGNED_OUT clears (regression guard).
+  - `vi.hoisted` shares state between the `vi.mock` factory and the test body — same workaround used by other auth-touching tests when factory hoisting collides with closure references.
+
+#### Validation run
+
+- `pnpm test:mobile` — 53 files, 283 tests passing (5 new H6 tests; previous bar 278).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `npx biome check` on the two touched files — clean (one auto-format applied).
+- **Manual two-device walk deferred** to release checklist (already lists "Login → logout → login as different tenant → no stale data flash").
+
+#### Notes for the agent picking up H7 / later
+
+- **Don't widen H6's gate to INITIAL_SESSION.** Cold boot is the entire point of having a persister; clearing on INITIAL_SESSION would force every relaunch to refetch from scratch and break the offline-first kitchen view. The pre-hydration check in App.tsx is the right place to police boot-time mismatches, and it already does.
+- **`isLoading` plumbing during the post-cleanup staff fetch is unchanged**, matching the existing tenant-switch path. If a future change adds a "splash through staff fetch" requirement, refactor `loadSession` to own its own isLoading transitions rather than per-call wrapping in the auth-state callback.
+- **The new breadcrumb messages** (`'fresh sign-in: clearing cache (H6 defensive)'` vs `'tenant transition: clearing cache'`) let Sentry investigation distinguish "audit-required defensive clear" from "user actually switched accounts mid-session". If the second message is rare in production telemetry, that's expected — fresh sign-in is the common case.
+- **`drainMismatchedMutations` in App.tsx's `PersistQueryClientProvider.onSuccess`** (already there pre-H6) handles the *paused mutations* version of the same cross-tenant concern. H6 handles the *cached query* side. Both stay.
+
+### H7. `__DEV__` defaults to `true` in fallback paths — ✅ DONE (2026-05-08, partial — single occurrence)
 - **Files:**
   - `apps/mobile/src/lib/register-mutation-defaults.ts:147`
   - `apps/mobile/src/lib/check-for-updates.ts` (similar pattern)
 - **Fix:** Replace `typeof __DEV__ !== 'undefined' ? __DEV__ : true` with `typeof __DEV__ === 'boolean' ? __DEV__ : false`. Audit every `__DEV__` reference for the same pattern.
 
-### H8. MMKV persisted query cache has no eviction beyond `gcTime`
+#### Findings on close inspection (premise re-evaluated)
+
+- **Codebase-wide grep for the exact dangerous pattern:** `rg "typeof __DEV__"` returns ONE occurrence — `apps/mobile/src/lib/register-mutation-defaults.ts:152` (the audit's first cite, line drifted from `:147`).
+- **`check-for-updates.ts` does NOT have the pattern.** [Line 5](apps/mobile/src/lib/check-for-updates.ts#L5): `if (__DEV__ || !Updates.isEnabled) return false;` — uses the global directly. If `__DEV__` is undefined the `||` short-circuits to `!Updates.isEnabled`, which is the prod-safe path. The audit's "similar pattern" cite was incorrect; nothing to change here.
+- **Other `__DEV__` references** (verified by full grep over `apps/mobile`):
+  - `App.tsx:61` `__DEV__ ? 'development' : 'production'` — undefined → 'production'. Prod-safe.
+  - `App.tsx:71` `__DEV__ ? 1.0 : 0.05` — undefined → 0.05. Prod-safe.
+  - `App.tsx:77` `enabled: !__DEV__` — undefined → enabled (Sentry on). Prod-safe.
+  - `App.tsx:119` `if (!__DEV__) {` — undefined → enters branch (prod path). Prod-safe.
+  - `App.tsx:158` `if (__DEV__) {` — undefined → skip dev block. Prod-safe.
+  - `__tests__/setup.ts:4` — comment only, not code.
+  All other usages already default to prod semantics on undefined; only the explicit `: true` fallback in `register-mutation-defaults.ts` could route a release build into the throw-on-shape-drift branch.
+- **Test-design intent: changed (intentionally).** The pre-fix comment said "where we WANT the throw, by design" for the test environment (vitest/jsdom). The new fallback (`false`) routes tests to the Sentry-capture branch instead, which the global Sentry mock handles as a no-op — meaning a missing-key shape drift would silently `continue` rather than fail loudly in tests. This is acceptable because:
+  1. The TypeScript completeness check at compile time (`Record<MutationKeyName, MutationFunction>`) is the actual guard against shape drift; the runtime check is defense-in-depth, not the primary signal.
+  2. A future test that wants to assert shape-drift handling can locally `vi.mock('@sentry/react-native', { captureMessage: vi.fn() })` and assert the call count, same pattern as auth-state-change.test.ts.
+  3. The audit's stated motivation (don't crash a release build on a Metro injection failure) outweighs the now-silent test signal for an event that's compile-time-checked anyway.
+
+#### What was changed
+
+- `apps/mobile/src/lib/register-mutation-defaults.ts:152`
+  - `const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : true;` → `const isDev = typeof __DEV__ === 'boolean' ? __DEV__ : false;`
+  - Comment block rewritten to explain (a) why we use the `=== 'boolean'` strict check (rejects non-boolean stubs from non-RN bundlers), and (b) why we default to prod semantics rather than dev semantics (prevents a release-build crash if Metro ever fails to inject the global).
+- No test added — the runtime branch is a defense-in-depth safety net for an event the TypeScript compile-time check already prevents, and exercising it in a test requires mocking out `MUTATION_KEYS` from `@gustri/queries` (cross-package mock that adds noise without proportional safety value).
+
+#### Validation run
+
+- `pnpm test:mobile` — 53 files, 283 tests passing (no test additions; existing tests use the registration-success path which doesn't hit the fallback).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `npx biome check` on the touched file — clean.
+
+#### Notes for the agent picking up H8 / later
+
+- **The fallback was the only `: true` in the codebase.** The H7 contract is now: any new `__DEV__` reference that needs an explicit fallback should default to `false`. If a reviewer sees `: true` in a future PR, ask why.
+- **`__defaultsForTests` (line 168) is unused outside this file** — kept as an escape hatch but no test imports it. If an H7-shape-drift test is ever needed, prefer a local `vi.mock('@gustri/queries', …)` to inject an extra MUTATION_KEY rather than reaching into `__defaultsForTests`.
+- **The TypeScript completeness check (`Record<MutationKeyName, MutationFunction>` at line 28) is the real guard.** If the audit's runtime "shape drift across untyped boundaries" concern ever materializes, it'd be a build-system bug — at which point the runtime check's behavior is moot because the bundle is already broken. The H7 change just makes the bug-mode less catastrophic.
+- **Don't re-introduce a `: true` fallback for any other `__DEV__` reference.** If a future code path genuinely needs dev-only behavior at a fallback, gate it on `process.env.NODE_ENV === 'development'` or a more specific signal — not a "guess `true` because we're not sure."
+
+### H8. MMKV persisted query cache has no eviction beyond `gcTime` — ✅ DONE (2026-05-08)
 - **File:** `apps/mobile/src/lib/query-persister.ts:208-223`
 - **Fix:** When telemetry detects size > 4 MB, programmatically remove queries older than 2 hours: `queryClient.removeQueries({ predicate: (q) => Date.now() - q.state.dataUpdatedAt > 2 * 60 * 60 * 1000 })`. Re-persist. Emit Sentry event with `level: 'info'` (not warning) when eviction runs.
 
-### H9. No "offline-queued" vs "rejected" distinction on payments
+#### Findings on close inspection (premise re-evaluated)
+
+- **Premise valid.** Pre-fix `startCacheSizeTelemetry` only emits a breadcrumb (≤5 MB) and a one-shot `captureMessage` (>8 MB). Nothing actively trims the cache between cache-buster bumps and the 24 h `PERSISTED_MAX_AGE` ceiling. On a long-shift Android device with a heavy menu and active orders, the persister can grow steadily.
+- **Audit's predicate covers stale data, but missed the in-flight-observer hazard.** Removing a query that a mounted screen is observing forces an instant refetch — defeating the offline-first persister at the very moment we're trying to relieve cache pressure. `q.getObserversCount() === 0` is added to the predicate so the eviction sweep targets only background residue (orders the kitchen view scrolled past, table pages no one's looking at), never the rows currently driving rendered UI.
+- **"Re-persist" is implicit.** TanStack Query's persister subscribes to cache changes and writes within the configured throttle (2 s). After `removeQueries` shrinks the in-memory cache, the next throttled write commits the smaller blob — no manual `persistClient` call required, and forcing one would skip the throttle's intentional batching of bursty cache changes.
+- **Threshold below the existing 5 MB warning breadcrumb.** Picked 4 MB so eviction kicks in *before* the cache hits the "operationally interesting" 5/8 MB markers. If the cache still climbs past those after eviction, we know aged data wasn't the problem (likely a single huge query payload — see notes below).
+- **Sentry level: `info` (per audit).** Eviction is normal operating-mode behavior, not an error. Distinct from the existing `warning` level on the 5 MB / 8 MB sentinels so dashboards can filter the two apart.
+
+#### What was changed
+
+- `apps/mobile/src/lib/query-persister.ts`
+  - Imported `QueryClient` type from `@tanstack/react-query` (type-only import — no runtime cost).
+  - Exported `EVICTION_THRESHOLD_BYTES = 4 * 1024 * 1024` and `EVICTION_QUERY_AGE_MS = 2 * 60 * 60 * 1000` so tests and any future caller share one source of truth.
+  - Added `pruneStaleUnobservedQueries(queryClient): { evicted: number }` — pure-by-input, target-counts-then-removes via a single `predicate` call. Both the count and the predicate share the same `cutoff` snapshot to avoid drift across the call.
+  - `startCacheSizeTelemetry` now accepts `queryClient` as the first arg. When `storage.size > EVICTION_THRESHOLD_BYTES` the sample call runs the prune; if any rows were dropped it emits an `info`-level `captureMessage('query-cache eviction triggered', …)` with `extra: { sizeBytes, evicted }`. The existing 5 MB breadcrumb-warning and 8 MB capture-warning paths are unchanged.
+- `apps/mobile/App.tsx`
+  - Updated the single call site to pass the existing `queryClient` import: `startCacheSizeTelemetry(queryClient)`.
+- `apps/mobile/src/__tests__/lib/query-persister-eviction.test.ts` (new, 4 tests)
+  - Evicts queries older than the age threshold with no observers; leaves fresher queries alone.
+  - Does NOT evict an aged query with a live observer (mounted-hook regression guard — uses `addObserver` directly to set `getObserversCount() > 0` without depending on a full React render harness).
+  - No-op when no queries are aged.
+  - Counts the evicted total correctly across 5+ aged queries (uses `(i+1) * 1_000ms` past cutoff so the strict-less-than `<` filter matches all of them — boundary-fence test that surfaced a real off-by-one in the first iteration).
+  - Heavy-deps stub-out (`expo-constants`, `@react-native-async-storage/async-storage`, `react-native-mmkv`, `@/lib/storage-key`, `@tanstack/query-sync-storage-persister`) so the test runs without expo-modules-core's `__DEV__` requirement — same vi.mock-at-top pattern as the other lib tests.
+
+#### Validation run
+
+- `pnpm test:mobile` — 54 files, 287 tests passing (4 new H8 tests; previous bar 283).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `npx biome check` on the three touched files — clean (two minor formatter auto-fixes applied).
+- **Long-soak deferred.** The audit's "8-hour soak with simulated 200 events/min → memory plateau" is a release-build measurement (already on the release-checklist stress-testing block) — the unit test pins the eviction primitive that the soak relies on.
+
+#### Notes for the agent picking up H9 / later
+
+- **Eviction is opportunistic, not guaranteed.** A device can stay above 4 MB indefinitely if every query has live observers and is younger than 2 hours (kitchen view in active service). That's the design — we don't want to break offline-first to chase a number. If a future telemetry event shows that pattern in production, the right response is to narrow `PERSISTED_QUERY_KEYS` (drop a verbose key from disk persistence) or shrink the per-query payload, not to lower the eviction age.
+- **`getObserversCount() === 0` is load-bearing.** Don't drop it for "more aggressive eviction" — that path is what the audit's bare predicate would have done, and it would refetch every visible screen on the device that was already over-budget.
+- **The 2 s throttle on the persister write is enough headroom.** Don't add a manual `persistClient` call unless a future bug demonstrates the throttled write isn't catching the post-eviction state. Adding one would defeat the whole point of throttling and put a synchronous JSON.stringify of the entire client in the JS thread on every eviction.
+- **R-Sweep-2 wires `realtime.health` as a Sentry tag** — eventually pair the eviction `captureMessage` with that tag so the Sentry dashboard can correlate "we evict more under degraded realtime". For now the `extra: { sizeBytes, evicted }` is the primary signal.
+- **Single-payload runaway query.** If a single key (e.g., a 200-item menu with lots of nested options) blows past 4 MB on its own, eviction can't help — there's nothing aged. The 8 MB `captureMessage` will still fire and signal a structural problem.
+
+### H9. No "offline-queued" vs "rejected" distinction on payments — ✅ DONE (2026-05-08, key renamed)
 - **File:** `apps/mobile/src/hooks/use-payments.ts:36`
 - **Fix:** Branch on error type. `NetworkError` (from `httpStatusToAppError`) → message `errors.payment_offline_will_retry`. Other errors → server message. Add i18n keys across 20 locales.
 
-### H10. Sentry breadcrumb URL redaction is fragile
+#### Findings on close inspection (premise re-evaluated)
+
+- **Audit's literal key name `errors.payment_offline_will_retry` is misleading against the current code — renamed to `payment.networkError` after consulting the user.** `useCreatePayment` is configured `networkMode: 'always', retry: 0` ([use-payments.ts:36-37](apps/mobile/src/hooks/use-payments.ts#L36-L37)) precisely so payments never queue offline (a "20 minutes later" replay can collide with another card or diverge from the customer-facing receipt). A `NetworkError` here means "the request didn't land — please try again now"; promising the user that we'll retry would be a lie. The new key text reflects the actual contract: *"Network error — please check your connection and try again."*
+- **Namespace: `staff.json` not `errors.json`.** The `errors.json` bundle is reserved for server-side sentinel codes (per CLAUDE.md's "Server-side error messages must use sentinel codes" rule, mapped via `SENTINEL_ERROR_CODES` in `packages/i18n/src/error-keys.ts`). A client-side network-failure message isn't a sentinel — the server never emits it. `payment.networkError` lives next to `payment.paymentFailed` / `payment.offlineUnavailable` in `staff.json`, alphabetically inserted between `payment.fullPayment` and `payment.noItemsToPay`.
+- **Underlying bug confirmed.** Pre-fix `OrderPaymentScreen.tsx:106` showed `err.message` directly when `err instanceof Error`, including for `NetworkError` whose `.message` is the English string set in `apps/mobile/src/lib/api-routes.ts:52` (`new NetworkError(err instanceof Error ? err.message : 'Network request failed')`). Non-English-speaking staff would see English error text on a connection drop.
+- **`NetworkError`** (from `@gustri/core`) is the right discriminator. It's thrown explicitly by `apiFetch` when the underlying `fetch()` rejects (line 51-53 of api-routes.ts). HTTP responses go through `httpStatusToAppError` and produce `ValidationError` / `AuthenticationError` / `ConflictError` etc., never `NetworkError`. So `err instanceof NetworkError` cleanly separates "I never reached the server" from "the server rejected".
+
+#### What was changed
+
+- **i18n: 20-locale addition.** Added `payment.networkError` key to every `staff.json`:
+  - `ar`, `az`, `de`, `el`, `en`, `es`, `fa`, `fr`, `id`, `it`, `ja`, `ka`, `kk`, `ko`, `pt`, `ru`, `th`, `tr`, `uk`, `uz`.
+  - Inserted alphabetically between `payment.fullPayment` and `payment.noItemsToPay` so the file ordering invariant the team relies on is preserved.
+  - Translations match the tone of neighboring `payment.*` strings (terse, action-oriented). For `_other`/CLDR-quirky locales there's no plural form needed here — single sentence.
+- `apps/mobile/src/screens/orders/OrderPaymentScreen.tsx`
+  - Imported `NetworkError` from `@gustri/core`.
+  - Refactored the catch block:
+    - `ConflictError` branch unchanged (refetch + show err.message; the localized sentinel message is already correct).
+    - **New** `NetworkError` branch: `showError(t('payment.networkError'))` — localized message, no refetch (server never wrote anything to refetch from).
+    - Default branch unchanged: `showError(err instanceof Error ? err : t('payment.paymentFailed'))` for ValidationError, AuthorizationError, et al, where the server-supplied sentinel message is the right thing to display.
+  - Each branch now `return`s after handling so the default toast doesn't double-fire.
+- No change to `useCreatePayment` itself — the audit's evidence cite was the `networkMode` line; the actual fix is at the consuming screen, where the user-visible message is decided.
+
+#### Validation run
+
+- `pnpm --filter @gustri/i18n test` — 60 i18n tests passing (locale-alignment audit verifies all 20 locales have the new key).
+- `pnpm test:mobile` — 54 files, 287 tests passing (no new mobile tests; the screen-level branching is straight-line code with no async surface beyond what existing snapshot tests already cover).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `npx biome check` on the touched file — clean.
+- **Manual**: airplane-mode + tap "Charge" on a release build → snackbar shows the localized network message, not the English `NetworkError.message`. Add to release-checklist reconnect-testing block (already lists "Airplane mode toggle mid-mutation across all financial flows").
+
+#### Notes for the agent picking up H10 / later
+
+- **Don't promote `payment.networkError` to `errors.json`.** It's not a sentinel and never will be — the server never emits a `payment_network_error` body. If a future audit asks why it's not in `errors.json`, the answer is "client-side error, namespace by feature, not by error-code style."
+- **Other mutation hooks have the same English-leak hazard.** `useCreateOrder`, `useAddOrderItems`, `useCancelOrder`, etc. all surface `err.message` from a NetworkError directly at their call sites. H9 fixed only the payment screen because that's the audit's scope; if the same UX bug surfaces elsewhere, copy this pattern (`if (err instanceof NetworkError) showError(t(...))`) — DO NOT expand the network-message key into a generic `errors.network` until a second consumer needs it (the keys-by-feature convention is intentional).
+- **The branching `return`s matter.** Without them, the default `showError(...)` branch would fire on top of the network/conflict snackbar and overwrite it. If you add a fourth error class later, follow the same `return` discipline.
+- **The `networkMode: 'always', retry: 0` payment contract is load-bearing** — see the comment block at `use-payments.ts:27-35`. Don't relax it without re-reading B1's idempotency analysis; queueing offline payments is exactly the failure mode that audit closed.
+
+### H10. Sentry breadcrumb URL redaction is fragile — ✅ DONE (2026-05-08)
 - **File:** `apps/mobile/App.tsx:75-80`
 - **Fix:** Strip query strings via regex (`url.replace(/\?.*$/, '')`) before any URL parsing. If `new URL(...)` throws, drop the breadcrumb entirely rather than passing through.
+
+#### Findings on close inspection (premise re-evaluated)
+
+- **Premise valid.** Pre-fix `App.tsx` (`beforeSend`, post-B3 numbering) only deleted the per-name params `token` and `apikey` from breadcrumb URLs ([App.tsx:90-99](apps/mobile/App.tsx#L90-L99) before this change). Production breadcrumbs from `/api/v1/*` and Supabase requests carry arbitrary query params: customer-search free text, sentinel `?error=...` strings, order/staff ids, plus anything a future endpoint might add. Per-name allowlist was a fragile contract — a new param shipped without an audit-trail update would silently leak. The audit's "drop everything past `?`" is the right denylist-of-one shape.
+- **`new URL` throw → drop the breadcrumb.** Pre-fix the catch block left malformed URLs through verbatim, on the theory "we couldn't parse it so we couldn't strip it, but it's probably benign." On close read that's the worst answer: we have NO claim about what's in the unparsed string, so the safer move is "if we can't reason about it, don't ship it." The new behavior filters that breadcrumb out of the event entirely.
+- **Refactored the per-breadcrumb mutation loop to `Array#filter` instead of `for…of`.** The pre-fix code couldn't drop a breadcrumb mid-iteration (the array wasn't being rewritten); switching to `filter` lets the URL-malformed branch return `false` to drop, while the keep path returns `true` after the existing header / body redactions still run.
+- **Extracted the URL helper for unit-testability.** The `beforeSend` callback is bound at Sentry init (top-level side effect) — exercising it from a test would require mocking `Sentry.init` to capture the callback, then synthesizing a breadcrumb event. A small pure helper (`sanitizeBreadcrumbUrl`) is a cleaner test surface and lets future audits expand the contract (e.g. allowlisting hosts) without churning App.tsx.
+- **Regex `/\?.*$/` is greedy and strips fragments too.** This is a minor over-redaction — `#anchor` parts client-side don't go over the wire from `fetch`/`xhr`, but they CAN appear in breadcrumb URL strings (Sentry copies the request input verbatim). Stripping is conservative and matches the audit's literal regex; no behavior the client cares about depends on a fragment being preserved in a Sentry breadcrumb.
+
+#### What was changed
+
+- `apps/mobile/src/lib/sentry-breadcrumb-url.ts` (new)
+  - Exported `sanitizeBreadcrumbUrl(rawUrl: string): string | null` — does the regex-strip and the URL-validity probe in one place. Module-level JSDoc spells out *why* we strip the entire query string rather than maintaining a per-name denylist.
+- `apps/mobile/App.tsx`
+  - Imported the new helper.
+  - Replaced the inline `try { new URL(...); searchParams.delete(...); } catch { /* leave */ }` with `const cleaned = sanitizeBreadcrumbUrl(...); if (cleaned === null) return false; breadcrumb.data.url = cleaned;`.
+  - Switched the breadcrumb mutation loop from `for…of` to `event.breadcrumbs.filter(...)` so the malformed-URL drop actually removes the breadcrumb from the event, not just leaves a partially-redacted entry.
+  - Comment block at the call site explains the H10 contract pointing back to the helper for the why.
+- `apps/mobile/src/__tests__/lib/sentry-breadcrumb-url.test.ts` (new, 7 tests)
+  - Strips the query string on a normal URL.
+  - Passes through a URL with no query string.
+  - Strips multiple query params in one shot — proves the no-per-name-denylist contract.
+  - Returns `null` when the result isn't a valid URL (drops free-text strings, `://broken`, empty input).
+  - Returns `null` for protocol-less hosts (e.g. `example.com/foo` doesn't parse via `URL`).
+  - Preserves the path component after the host.
+  - Strips fragments too — pins the audit's literal `/\?.*$/` greediness so a future "preserve fragments" tweak fails the test loudly.
+
+#### Validation run
+
+- `pnpm test:mobile` — 55 files, 294 tests passing (7 new H10 tests; previous bar 287).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `npx biome check` on the three touched files — clean (one auto-format applied).
+- **Manual Sentry-quota check deferred** to release-checklist monitoring block (already lists "PII redaction unit tests cover message + data + URL paths"). The unit tests pin the URL contract; live verification happens against a release build.
+
+#### Notes for the agent picking up M-tier / later
+
+- **Don't re-introduce a per-name allowlist.** If a future ticket asks for "we want to keep `?lang=en` for diagnostics", say no — the value of the per-name escape is dwarfed by the cost of forgetting one param. Either keep query strings entirely, or strip them entirely. Never partial.
+- **`event.breadcrumbs.filter(...)` lets you drop ANY breadcrumb**, not just URL-malformed ones. If you add a future redaction that finds an unsanitizable string in `data.body` or `data.message`, return `false` from the same filter rather than introducing a parallel filter pass — same shape, same behavior.
+- **The helper is intentionally generic** — no app-specific state, no React, no Sentry import. If a future breadcrumb path (e.g. `console` breadcrumbs that include URLs in stringified objects) needs the same sanitization, it can call the helper directly.
+- **B3 already gates `beforeBreadcrumb` on `__DEV__` for category drops.** H10's URL handling lives in `beforeSend` (per-event final pass) so it applies to whatever survived the per-creation `beforeBreadcrumb`. Don't move the URL logic to `beforeBreadcrumb` — by then a breadcrumb may not yet have its `data.url` populated by Sentry's instrumentation.
+- **`#fragment` stripping is documented in the test.** If a future product requirement actually needs fragments preserved, you'll have to update the regex to `/\?[^#]*/` AND update the test; both must change together so a reviewer sees the trade-off.
 
 ---
 

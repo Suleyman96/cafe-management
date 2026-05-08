@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "Ödeme tutarı {{amount}}, kalan bakiye {{balance}} tutarını aşıyor",
   "payment.exceedsRemaining": "Tutar kalan bakiyeyi aşıyor",
   "payment.fullPayment": "Tam Ödeme",
+  "payment.networkError": "Ağ hatası — bağlantınızı kontrol edin ve tekrar deneyin.",
   "payment.noItemsToPay": "Bu siparişte ödenecek ürün yok.",
   "payment.notAuthenticated": "Kimliği doğrulanmamış",
   "payment.offlineUnavailable": "Ödeme çevrimdışı kullanılamaz",

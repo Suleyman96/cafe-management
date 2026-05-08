@@ -146,10 +146,14 @@ export function registerMutationDefaults(queryClient: QueryClient) {
     const fn = defaults[name];
     if (!fn) {
       const message = `register-mutation-defaults: missing mutationFn for ${name}`;
-      // `__DEV__` is the React Native runtime flag; absent in vitest/jsdom,
-      // so guard the access with `typeof` to avoid a ReferenceError under
-      // tests (where we WANT the throw, by design).
-      const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
+      // H7: `__DEV__` is the React Native runtime flag, injected by Metro.
+      // Use a strict `=== 'boolean'` check and fall back to `false` (= prod
+      // semantics) so any environment where the flag is missing OR set to
+      // a non-boolean (Webpack stub, TypeScript test runner, partial build)
+      // takes the gentle Sentry-capture path instead of throwing. Earlier
+      // code defaulted to `true` here, which would have crashed a release
+      // build outright if Metro had ever failed to define the global.
+      const isDev = typeof __DEV__ === 'boolean' ? __DEV__ : false;
       if (isDev) {
         throw new Error(message);
       }

@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "Το ποσό πληρωμής {{amount}} υπερβαίνει το υπόλοιπο {{balance}}",
   "payment.exceedsRemaining": "Το ποσό υπερβαίνει το υπόλοιπο",
   "payment.fullPayment": "Πλήρης Πληρωμή",
+  "payment.networkError": "Σφάλμα δικτύου — ελέγξτε τη σύνδεση και προσπαθήστε ξανά.",
   "payment.noItemsToPay": "Αυτή η παραγγελία δεν έχει είδη προς πληρωμή.",
   "payment.notAuthenticated": "Μη συνδεδεμένος",
   "payment.offlineUnavailable": "Η πληρωμή δεν είναι διαθέσιμη χωρίς σύνδεση",

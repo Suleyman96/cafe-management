@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "Jumlah pembayaran {{amount}} melebihi saldo tersisa {{balance}}",
   "payment.exceedsRemaining": "Jumlah melebihi sisa tagihan",
   "payment.fullPayment": "Pembayaran Penuh",
+  "payment.networkError": "Kesalahan jaringan — periksa koneksi Anda dan coba lagi.",
   "payment.noItemsToPay": "Pesanan ini tidak memiliki item untuk dibayar.",
   "payment.notAuthenticated": "Tidak terautentikasi",
   "payment.offlineUnavailable": "Pembayaran tidak tersedia saat offline",

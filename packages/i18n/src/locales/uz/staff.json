@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "To'lov summasi {{amount}} qoldiq balans {{balance}} dan oshib ketdi",
   "payment.exceedsRemaining": "Miqdor qoldiq balansdan oshib ketdi",
   "payment.fullPayment": "To'liq to'lov",
+  "payment.networkError": "Tarmoq xatosi — ulanishni tekshiring va qaytadan urinib ko'ring.",
   "payment.noItemsToPay": "Bu buyurtmada to'lanadigan mahsulotlar yo'q.",
   "payment.notAuthenticated": "Autentifikatsiya qilinmagan",
   "payment.offlineUnavailable": "Oflayn rejimda to‘lov mavjud emas",

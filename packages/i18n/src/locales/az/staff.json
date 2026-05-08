@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "Ödəniş məbləği {{amount}} qalıq balansdan {{balance}} artıqdır",
   "payment.exceedsRemaining": "Məbləğ qalıq balansı aşır",
   "payment.fullPayment": "Tam Ödəniş",
+  "payment.networkError": "Şəbəkə xətası — bağlantını yoxlayın və yenidən cəhd edin.",
   "payment.noItemsToPay": "Bu sifarişdə ödəniləcək məhsul yoxdur.",
   "payment.notAuthenticated": "Giriş edilməyib",
   "payment.offlineUnavailable": "Oflayn ödəniş mümkün deyil",

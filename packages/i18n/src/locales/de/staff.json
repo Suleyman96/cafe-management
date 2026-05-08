@@ -690,6 +690,7 @@
   "payment.exceedsBalance": "Zahlungsbetrag {{amount}} übersteigt den Restbetrag {{balance}}",
   "payment.exceedsRemaining": "Betrag übersteigt den Restbetrag",
   "payment.fullPayment": "Vollständige Zahlung",
+  "payment.networkError": "Netzwerkfehler — bitte Verbindung prüfen und erneut versuchen.",
   "payment.noItemsToPay": "Diese Bestellung hat keine zu bezahlenden Artikel.",
   "payment.notAuthenticated": "Nicht angemeldet",
   "payment.offlineUnavailable": "Zahlung offline nicht verfügbar",
