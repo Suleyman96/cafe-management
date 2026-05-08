@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { loginAs } from './fixtures';
 
 test.describe('Authentication', () => {
   test('login page renders with email and password fields', async ({ page }) => {
@@ -16,9 +17,7 @@ test.describe('Authentication', () => {
 
   test('admin can log in and reach the dashboard', async ({ page }) => {
     await page.goto('/login');
-    await page.fill('input[type="email"]', 'admin@test.com');
-    await page.fill('input[type="password"]', 'test1234');
-    await page.click('button[type="submit"]');
+    await loginAs(page, 'admin@test.com', 'test1234');
 
     await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 });
     expect(page.url()).not.toContain('/login');
@@ -26,9 +25,7 @@ test.describe('Authentication', () => {
 
   test('invalid credentials stay on login page', async ({ page }) => {
     await page.goto('/login');
-    await page.fill('input[type="email"]', 'admin@test.com');
-    await page.fill('input[type="password"]', 'wrongpassword');
-    await page.click('button[type="submit"]');
+    await loginAs(page, 'admin@test.com', 'wrongpassword');
 
     // Should stay on login page
     await page.waitForTimeout(3000);
