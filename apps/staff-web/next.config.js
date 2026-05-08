@@ -60,15 +60,22 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
-          // CSP disabled in development — Next.js requires inline scripts for hydration.
-          // Re-enable with nonce-based approach for production.
+          // Next.js bootstraps React via inline <script> tags (the
+          // __NEXT_DATA__ blob, chunk loaders, runtime patches). Strict
+          // `script-src 'self'` blocks them and hydration silently fails —
+          // the page renders, but onSubmit handlers never attach so forms
+          // fall back to native HTML submission.
+          //
+          // TODO: migrate to a nonce-based CSP (Next.js supports this via
+          // middleware) so we can drop 'unsafe-inline' / 'unsafe-eval'.
+          // Until then, allow them in production so the app actually works.
           ...(process.env.NODE_ENV === 'production'
             ? [
                 {
                   key: 'Content-Security-Policy',
                   value: [
                     "default-src 'self'",
-                    "script-src 'self'",
+                    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
                     "style-src 'self' 'unsafe-inline'",
                     `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL || ''} wss://*.supabase.co https://*.sentry.io`,
                     "img-src 'self' data: blob: https://*.supabase.co",
