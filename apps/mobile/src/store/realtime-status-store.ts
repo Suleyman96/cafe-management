@@ -7,6 +7,12 @@ interface RealtimeStatusStore {
   channels: Record<string, RealtimeChannelStatus>;
   setChannelStatus: (channelName: string, status: RealtimeChannelStatus) => void;
   removeChannel: (channelName: string) => void;
+  /**
+   * Drop every tracked channel — called from `cleanupClientState` on logout
+   * so stale degraded/reconnecting badges from the previous session don't
+   * leak into the next user's UI.
+   */
+  clearAll: () => void;
   /** True when ANY tracked channel is in the `degraded` state. */
   isAnyDegraded: () => boolean;
   /** True when ANY tracked channel is not `connected` (degraded or reconnecting). */
@@ -29,6 +35,7 @@ export const useRealtimeStatusStore = create<RealtimeStatusStore>((set, get) => 
       const { [channelName]: _omit, ...rest } = s.channels;
       return { channels: rest };
     }),
+  clearAll: () => set({ channels: {} }),
   isAnyDegraded: () => Object.values(get().channels).some((st) => st === 'degraded'),
   isAnyUnhealthy: () => Object.values(get().channels).some((st) => st !== 'connected'),
 }));

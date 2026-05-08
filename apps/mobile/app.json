@@ -40,7 +40,6 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router",
       [
         "expo-notifications",
         {
@@ -62,9 +61,6 @@
     ],
     "scheme": "gustri",
     "extra": {
-      "router": {
-        "origin": false
-      },
       "eas": {
         "projectId": "c0780054-a6d7-4e65-8ead-1a4b09f661a5"
       }
@@ -74,8 +70,8 @@
     },
     "updates": {
       "url": "https://u.expo.dev/c0780054-a6d7-4e65-8ead-1a4b09f661a5",
-      "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 5000,
+      "checkAutomatically": "NEVER",
+      "fallbackToCacheTimeout": 0,
       "enabled": true
     },
     "owner": "hajilov-k"

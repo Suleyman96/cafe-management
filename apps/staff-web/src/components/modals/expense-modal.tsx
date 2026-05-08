@@ -35,14 +35,19 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
     notes: expense?.notes || '',
   });
 
+  const amount = Number.parseFloat(formData.amount);
+  // Mirrors the mobile pattern: keep submit disabled until the form is
+  // valid so we don't need a per-field error string. The browser's native
+  // `required` tooltip ("Please fill in this field.") is rendered in the
+  // browser locale, not the app locale — disabling the button avoids that
+  // inconsistency entirely.
+  const isValid =
+    formData.description.trim().length > 0 && amount > 0 && formData.expense_date.length > 0;
+  const isPending = createExpense.isPending || updateExpense.isPending;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const amount = Number.parseFloat(formData.amount);
-    if (!amount || amount <= 0) {
-      toast.error(t('expenses.validAmount'));
-      return;
-    }
+    if (!isValid || isPending) return;
 
     const toastId = toast.loading(
       isEditing ? t('expenses.updatingExpense') : t('expenses.creatingExpense'),
@@ -98,7 +103,6 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
               onChange={(v) => setFormData({ ...formData, amount: v })}
               min={0.01}
               step={0.01}
-              required
               placeholder="0.00"
             />
           </div>
@@ -112,7 +116,6 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
               type="text"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               placeholder={t('expenses.whatExpenseFor')}
             />
@@ -171,7 +174,6 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
               type="date"
               value={formData.expense_date}
               onChange={(e) => setFormData({ ...formData, expense_date: e.target.value })}
-              required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -197,15 +199,11 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
               variant="outline"
               onClick={onClose}
               className="flex-1"
-              disabled={createExpense.isPending || updateExpense.isPending}
+              disabled={isPending}
             >
               {t('cancel', { ns: 'common' })}
             </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={createExpense.isPending || updateExpense.isPending}
-            >
+            <Button type="submit" className="flex-1" disabled={!isValid || isPending}>
               {isEditing ? t('expenses.updateExpense') : t('expenses.addExpense')}
             </Button>
           </div>

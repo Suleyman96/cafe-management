@@ -33,23 +33,20 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
     reason: '',
   });
 
-  const submitDisabled = adjustStock.isPending || !isOnline || !canManageStock;
+  const qty = Number.parseFloat(formData.quantity);
+  const isValid = qty > 0;
+  const submitDisabled = adjustStock.isPending || !isOnline || !canManageStock || !isValid;
 
   const getNewQuantity = () => {
-    const qty = Number.parseFloat(formData.quantity) || 0;
-    if (formData.type === 'in') return item.quantity + qty;
-    if (formData.type === 'out') return item.quantity - qty;
-    return qty; // adjustment sets absolute value
+    const q = Number.parseFloat(formData.quantity) || 0;
+    if (formData.type === 'in') return item.quantity + q;
+    if (formData.type === 'out') return item.quantity - q;
+    return q; // adjustment sets absolute value
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const qty = Number.parseFloat(formData.quantity);
-    if (!qty || qty <= 0) {
-      toast.error(t('stock.validQuantity'));
-      return;
-    }
+    if (submitDisabled) return;
 
     if (formData.type === 'out' && qty > item.quantity) {
       toast.error(t('stock.cannotRemoveMore'));
@@ -142,7 +139,6 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
               onChange={(v) => setFormData({ ...formData, quantity: v })}
               min={0}
               step={0.01}
-              required
               placeholder={
                 formData.type === 'adjustment'
                   ? t('stock.newQuantity').toLowerCase()

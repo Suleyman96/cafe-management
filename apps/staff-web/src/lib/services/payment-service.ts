@@ -1,4 +1,5 @@
 import { handleSupabaseError } from '@gustri/api-client';
+import { ConflictError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findOrCreateByClientRequestId } from '@/lib/api/dedupe';
 
@@ -57,7 +58,12 @@ export async function createPayment(supabaseAdmin: SupabaseClient, params: Creat
       }
 
       if (amount > Number(remaining)) {
-        throw new Error(`Payment amount (${amount}) exceeds remaining balance (${remaining})`);
+        // Throw the same sentinel + status (409) the trigger raises on the
+        // race-loser path so client error handling is uniform regardless of
+        // which check fires. Pre-Blocker-5 this was a prose `Error` that
+        // `handleRouteError` mapped to 422 + English text, defeating both
+        // i18n and the client's 409-driven refetch.
+        throw new ConflictError('payment_exceeds_remaining');
       }
 
       const { data: payment, error: createError } = await supabaseAdmin

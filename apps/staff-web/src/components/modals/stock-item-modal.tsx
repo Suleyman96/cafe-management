@@ -68,8 +68,12 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
     notes: item?.notes || '',
   });
 
+  const isValid = formData.name.trim().length > 0;
+  const isPending = createStockItem.isPending || updateStockItem.isPending;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValid || isPending) return;
 
     const toastId = toast.loading(isEditing ? t('stock.updatingItem') : t('stock.creatingItem'));
 
@@ -127,7 +131,6 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               placeholder={t('stock.itemName')}
             />
@@ -257,10 +260,16 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+              disabled={isPending}
+            >
               {t('cancel', { ns: 'common' })}
             </Button>
-            <Button type="submit" className="flex-1">
+            <Button type="submit" className="flex-1" disabled={!isValid || isPending}>
               {isEditing ? t('stock.updateItem') : t('stock.createItem')}
             </Button>
           </div>

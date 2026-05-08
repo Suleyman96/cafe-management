@@ -49,7 +49,7 @@ export function StaffEditModal({
         data: { session },
       } = await supabase.auth.getSession();
 
-      const response = await fetch(`/api/staff?id=${staff.id}`, {
+      const response = await fetch(`/api/v1/staff?id=${staff.id}`, {
         method: 'DELETE',
         headers: {
           ...(session?.access_token && { Authorization: `Bearer ${session.access_token}` }),
@@ -91,11 +91,15 @@ export function StaffEditModal({
     }
   }, [detail, phoneInitialized]);
 
+  const isValid = fullName.trim().length > 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValid || loading || deleting) return;
     setLoading(true);
 
     try {
+      const wasActive = staff.is_active ?? true;
       await updateStaff.mutateAsync({
         id: staff.id,
         updates: {
@@ -105,6 +109,35 @@ export function StaffEditModal({
           is_active: isActive,
         },
       });
+
+      // C3 — when admin flips `is_active: true → false`, revoke the
+      // deactivated user's refresh tokens so their existing devices
+      // can't keep refreshing access tokens until natural expiry. The
+      // `is_active_staff` JWT claim already kicks them out within the
+      // access-token TTL (~1 h) on the next refresh, but revoking here
+      // forces re-authentication immediately on next refresh attempt
+      // instead of waiting up to that window. A failure doesn't undo
+      // the deactivation; the JWT-claim check still gates the user out
+      // within ~1 h regardless.
+      if (wasActive && !isActive) {
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          await fetch('/api/v1/staff/revoke-sessions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(session?.access_token && { Authorization: `Bearer ${session.access_token}` }),
+            },
+            body: JSON.stringify({ staffId: staff.id }),
+          });
+        } catch (_revokeError) {
+          // Swallowed by design — the deactivation already landed; the
+          // is_active_staff JWT check is the durable guarantee.
+        }
+      }
+
       toast.success(t('staffMgmt.staffUpdated'));
       onSuccess();
     } catch (_error) {
@@ -142,7 +175,6 @@ export function StaffEditModal({
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
             />
           </div>
 
@@ -199,7 +231,7 @@ export function StaffEditModal({
             >
               {t('cancel', { ns: 'common' })}
             </Button>
-            <Button type="submit" disabled={loading || deleting} className="flex-1">
+            <Button type="submit" disabled={!isValid || loading || deleting} className="flex-1">
               {loading ? t('staffMgmt.saving') : t('saveChanges', { ns: 'common' })}
             </Button>
           </div>

@@ -1,4 +1,5 @@
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
+import * as Sentry from '@sentry/react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Avatar, Button, Card, Chip, Divider, List } from 'react-native-paper';
@@ -56,6 +57,19 @@ export default function ProfileScreen() {
         password: newPassword,
       });
       if (error) throw error;
+      // C3 — revoke refresh tokens on the user's *other* devices so a
+      // shared/leaked password (e.g. an employee leaving) can't keep them
+      // logged in via stale tokens. `scope: 'others'` keeps the current
+      // device's session alive — the user just changed their password
+      // and shouldn't be booted from the device they did it on. A
+      // failure here doesn't undo the password change, so don't surface
+      // it as an error; capture for triage.
+      const { error: revokeError } = await supabase.auth.signOut({ scope: 'others' });
+      if (revokeError) {
+        Sentry.captureException(revokeError, {
+          tags: { area: 'auth.password-change-revoke-others' },
+        });
+      }
       showSuccess(t('settings.passwordChanged'));
       setIsChangingPassword(false);
       setNewPassword('');

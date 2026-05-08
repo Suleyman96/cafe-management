@@ -15,7 +15,6 @@ import { MUTATION_KEYS, type MutationKeyName } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import type { MutationFunction, QueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth-store';
-import { getOrCreateClientRequestId } from './idempotency';
 import { db } from './supabase';
 
 /**
@@ -29,14 +28,17 @@ import { db } from './supabase';
 function buildDefaults(): Record<MutationKeyName, MutationFunction<unknown, unknown>> {
   return {
     CREATE_ORDER: ((orderData: OrdersInsert) => {
-      // Defense-in-depth: hooks should stamp `client_request_id` in their
-      // own `onMutate` so it's persisted with the variables. If a paused
-      // mutation predating this PR rehydrates without one, mint one here so
-      // a single replay retry still goes through the dedupe path. Multiple
-      // retries within the same mutation lifecycle reuse the variables
-      // object, so the id stays stable across retries.
-      const clientRequestId = getOrCreateClientRequestId(orderData.client_request_id);
-      return db.orders.create({ ...orderData, client_request_id: clientRequestId });
+      // The variables-side `client_request_id` is the canonical idempotency
+      // key. `useCreateOrder.onMutate` stamps it before the first attempt;
+      // the persister round-trips it across rehydrate so a paused-then-
+      // resumed mutation hits the server's `(tenant_id, client_request_id)`
+      // dedupe path. If the field is missing here, hooks have regressed —
+      // silently minting a fresh id would bypass dedupe and risk a duplicate
+      // ticket, so we fail loudly instead.
+      if (!orderData.client_request_id) {
+        throw new Error('CREATE_ORDER replay: variables missing client_request_id');
+      }
+      return db.orders.create(orderData);
     }) as MutationFunction<unknown, unknown>,
     UPDATE_ORDER_STATUS: (({ orderId, status }: { orderId: string; status: Order['status'] }) =>
       db.orders.updateStatus(orderId, status)) as MutationFunction<unknown, unknown>,
@@ -104,12 +106,18 @@ function buildDefaults(): Record<MutationKeyName, MutationFunction<unknown, unkn
 export function registerMutationDefaults(queryClient: QueryClient) {
   // Stamp every newly-created mutation with the current tenant/staff identity
   // so the persister carries enough context to drain mismatched entries on
-  // next launch (see C2 / mutation-drain.ts). The mutation cache emits the
+  // next launch (see mutation-drain.ts). The mutation cache emits the
   // `added` event synchronously when a mutation is created, before its
   // `onMutate` runs, so this is the earliest hook we have. We only stamp
   // mutations whose key is one we plan to persist — anything else (e.g.
   // shared-package mutations without a mobile mutationKey) is left alone so
   // we don't accidentally promote them into the persisted set.
+  //
+  // We do NOT stamp an idempotency key here. The canonical key lives on the
+  // mutation variables (`client_request_id`), set by each hook's `onMutate`
+  // and serialized with the variables across rehydrate. A second meta-side
+  // id would be dead state at best and a footgun at worst (server only ever
+  // reads the variables-side value from the request body).
   const cache = queryClient.getMutationCache();
   const knownKeys = new Set<string>(Object.values(MUTATION_KEYS).map((k) => JSON.stringify(k)));
   cache.subscribe((event) => {
@@ -122,13 +130,10 @@ export function registerMutationDefaults(queryClient: QueryClient) {
     if (!staff) return;
 
     const existing = (m.options.meta ?? {}) as Record<string, unknown>;
-    const existingClientRequestId =
-      typeof existing.clientRequestId === 'string' ? existing.clientRequestId : null;
     m.options.meta = {
       ...existing,
       tenantId: staff.tenant_id,
       staffId: staff.id,
-      clientRequestId: getOrCreateClientRequestId(existingClientRequestId),
     };
   });
 

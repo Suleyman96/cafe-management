@@ -1,5 +1,4 @@
 import { fireEvent, screen } from '@testing-library/react';
-import { toast } from 'sonner';
 import { describe, expect, it, vi } from 'vitest';
 import { mockAdminStaff } from '../../helpers/mock-auth';
 import { renderWithProviders } from '../../helpers/test-utils';
@@ -73,15 +72,21 @@ describe('ExpenseModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('shows error toast when amount is invalid on submit', () => {
+  it('disables submit until amount and description are filled', () => {
     renderWithProviders(<ExpenseModal onClose={onClose} />);
 
-    // Amount defaults to empty string → parseFloat('') = NaN → validation fails
-    // Submit the form directly (bypasses HTML5 constraint validation)
-    const amountInput = screen.getByPlaceholderText('0.00');
-    const form = amountInput.closest('form')!;
-    fireEvent.submit(form);
+    // Default state: amount empty, description empty → submit disabled.
+    const submit = screen.getByRole('button', { name: 'Add Expense' });
+    expect(submit).toHaveProperty('disabled', true);
 
-    expect(toast.error).toHaveBeenCalledWith('expenses.validAmount');
+    // Fill description but leave amount empty → still disabled.
+    const description = screen.getByPlaceholderText('What was this expense for?');
+    fireEvent.change(description, { target: { value: 'Coffee beans' } });
+    expect(submit).toHaveProperty('disabled', true);
+
+    // Fill amount → submit enabled.
+    const amountInput = screen.getByPlaceholderText('0.00');
+    fireEvent.change(amountInput, { target: { value: '12.50' } });
+    expect(submit).toHaveProperty('disabled', false);
   });
 });

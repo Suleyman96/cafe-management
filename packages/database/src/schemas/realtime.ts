@@ -15,7 +15,12 @@
  */
 
 import { z } from 'zod';
-import { OrderStatusSchema, WaiterCallStatusSchema, WaiterCallTypeSchema } from './enum-schemas';
+import {
+  OrderItemStatusSchema,
+  OrderStatusSchema,
+  WaiterCallStatusSchema,
+  WaiterCallTypeSchema,
+} from './enum-schemas';
 
 // ─── Orders INSERT ───────────────────────────────────────────────
 
@@ -37,6 +42,24 @@ export const OrdersRealtimeUpdateSchema = z.object({
 });
 
 export type OrdersRealtimeUpdatePayload = z.infer<typeof OrdersRealtimeUpdateSchema>;
+
+// ─── Order items UPDATE ──────────────────────────────────────────
+//
+// Audit C5 — `order_items` UPDATE events fire frequently during a busy
+// service (every status transition: pending → preparing → ready → served).
+// The `useOrders` hook patches the cache from this payload directly
+// instead of invalidating the orders list, so the kitchen view doesn't
+// re-fetch on every status flip. Only the fields the patch reads are
+// validated; the spread keeps any extra columns (timestamps, notes) on
+// the cached row.
+
+export const OrderItemsRealtimeUpdateSchema = z.object({
+  id: z.string().uuid(),
+  order_id: z.string().uuid(),
+  status: OrderItemStatusSchema.nullable().optional(),
+});
+
+export type OrderItemsRealtimeUpdatePayload = z.infer<typeof OrderItemsRealtimeUpdateSchema>;
 
 // ─── Waiter calls INSERT ─────────────────────────────────────────
 

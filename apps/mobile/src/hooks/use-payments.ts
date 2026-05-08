@@ -39,13 +39,15 @@ export function useCreatePayment() {
       input.client_request_id = getOrCreateClientRequestId(input.client_request_id);
     },
     mutationFn: async (input: CreatePaymentInput) => {
-      const stamped = {
-        ...input,
-        client_request_id: getOrCreateClientRequestId(input.client_request_id),
-      };
+      // Invariant: `onMutate` above stamps `client_request_id`. If it's
+      // missing here, `onMutate` was bypassed and re-minting silently would
+      // duplicate-charge on a network retry that lost only the response.
+      if (!input.client_request_id) {
+        throw new Error('createPayment: client_request_id missing — onMutate must run first');
+      }
       const payment = validateOrThrow(
         OrderPaymentCreateInputSchema,
-        stamped,
+        input,
         'Invalid payment payload',
       );
       const { payment: created } = await apiRoutes.payments.create(payment.order_id, {

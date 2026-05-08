@@ -1,3 +1,4 @@
+import { ConflictError } from '@gustri/core';
 import { useLocale, useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -37,7 +38,7 @@ export default function OrderPaymentScreen() {
   );
 
   const { data: order, isLoading, error, refetch } = useOrder(orderId);
-  const { data: payments } = useOrderPayments(orderId);
+  const { data: payments, refetch: refetchPayments } = useOrderPayments(orderId);
   const createPayment = useCreatePayment();
   const updateOrderStatus = useUpdateOrderStatus();
   const currencySymbol = useCurrencySymbol();
@@ -92,6 +93,16 @@ export default function OrderPaymentScreen() {
 
       navigation.goBack();
     } catch (err: unknown) {
+      // 409 (ConflictError) is what the server returns when the payment
+      // would exceed the remaining balance — typically because another
+      // cashier already charged this order while this screen was open.
+      // Refetch order + payments so the staff sees the actual remaining
+      // balance before retrying. The localized sentinel message that comes
+      // back already tells them to refresh; this just does it for them.
+      if (err instanceof ConflictError) {
+        refetch();
+        refetchPayments();
+      }
       showError(err instanceof Error ? err : t('payment.paymentFailed'));
     }
   };

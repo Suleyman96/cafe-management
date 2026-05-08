@@ -1,13 +1,25 @@
 import * as Sentry from '@sentry/react-native';
 import { clearPushTokenSyncCache, readLastSyncedExpoToken } from '@/hooks/use-push-token-sync';
 import { useAuthStore } from '@/store/auth-store';
+import { useRealtimeStatusStore } from '@/store/realtime-status-store';
 import type { Staff } from '@/types';
 import { clearLastActiveAt } from './last-active-at';
+import { resetNavigationStackMonitor } from './navigation-stack-monitor';
 import { drainPendingRevokes, enqueuePendingRevoke } from './pending-revokes';
 import { queryClient } from './query-client';
 import { asyncStoragePersister, clearEncryptedQueryCache } from './query-persister';
 import { clearSessionStamp } from './session-stamp';
 import { db, supabase } from './supabase';
+
+/**
+ * Per-channel timeout when tearing down realtime subscriptions during logout.
+ * Supabase's `removeChannel` waits for a phx_leave ack from the server (~10s
+ * default). On dead networks that's an unacceptable logout delay, so we cap
+ * the wait and let the leave message fire-and-forget over the wire — the
+ * channel is removed from the local registry synchronously regardless, which
+ * is what protects the next user's session.
+ */
+const CHANNEL_TEARDOWN_TIMEOUT_MS = 2_000;
 
 export interface LoginCredentials {
   email: string;
@@ -56,10 +68,47 @@ export async function login({ email, password }: LoginCredentials) {
 export async function cleanupClientState(): Promise<void> {
   useAuthStore.getState().setIsLoading(true);
   try {
+    // Tear down every realtime channel before clearing the cache. Supabase's
+    // `removeChannel` removes the channel from the client's local registry
+    // synchronously and returns a Promise that resolves when the WS leave
+    // message is acked — which can hang indefinitely on a dead network.
+    // Awaiting bounds the cross-tenant race window: until every channel
+    // teardown resolves (or times out), a postgres_changes event from the
+    // previous tenant could still hit `queryClient.invalidateQueries` and
+    // re-fetch under the next user's auth token. We cap the wait so logout
+    // on flaky cafe Wi-Fi doesn't stall the UI.
     const channels = supabase.getChannels();
-    for (const channel of channels) {
-      supabase.removeChannel(channel);
+    if (channels.length > 0) {
+      Sentry.addBreadcrumb({
+        category: 'auth',
+        message: `cleanupClientState: tearing down ${channels.length} realtime channel(s)`,
+        data: { count: channels.length },
+      });
+      await Promise.all(
+        channels.map((channel) => {
+          const removal = Promise.resolve(supabase.removeChannel(channel)).catch((err) => {
+            Sentry.captureException(err, { tags: { area: 'logout.removeChannel' } });
+          });
+          const timeout = new Promise<void>((resolve) => {
+            setTimeout(() => {
+              Sentry.addBreadcrumb({
+                category: 'auth',
+                message: 'cleanupClientState: channel removal timed out',
+                level: 'warning',
+              });
+              resolve();
+            }, CHANNEL_TEARDOWN_TIMEOUT_MS);
+          });
+          return Promise.race([removal, timeout]);
+        }),
+      );
     }
+    // Drop tracked channel statuses so the next session doesn't inherit a
+    // stale `degraded`/`reconnecting` badge from the previous user.
+    useRealtimeStatusStore.getState().clearAll();
+    // Re-arm the navigation stack-depth monitor so the next session gets
+    // its own first-crossing report if a regression also affects them.
+    resetNavigationStackMonitor();
     await queryClient.cancelQueries();
     queryClient.clear();
     try {

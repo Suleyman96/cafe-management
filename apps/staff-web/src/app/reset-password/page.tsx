@@ -131,7 +131,6 @@ export default function ResetPasswordPage() {
                     name="password"
                     type="password"
                     autoComplete="new-password"
-                    required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="appearance-none block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all"
@@ -153,7 +152,6 @@ export default function ResetPasswordPage() {
                     name="confirmPassword"
                     type="password"
                     autoComplete="new-password"
-                    required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="appearance-none block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all"

@@ -67,16 +67,14 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
     }
   }, [schedule]);
 
+  const isValid = !!staffId && !!date && !!plannedStart && !!plannedEnd;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValid || isBusy) return;
     setError('');
 
     try {
-      if (!staffId) {
-        setError(t('schedules.selectStaffMember'));
-        return;
-      }
-
       if (isEdit) {
         const updateData: Partial<StaffScheduleInsert> = {
           staff_id: staffId,
@@ -195,7 +193,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
           <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>
             {t('cancel', { ns: 'common' })}
           </Button>
-          <Button type="submit" disabled={isBusy}>
+          <Button type="submit" disabled={!isValid || isBusy}>
             {isBusy ? t('saving', { ns: 'common' }) : t('save', { ns: 'common' })}
           </Button>
         </>
@@ -217,7 +215,6 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
             value={staffId}
             onChange={(e) => setStaffId(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
           >
             <option value="">{t('schedules.selectStaff')}</option>
             {activeStaff.map((s) => (
@@ -238,7 +235,6 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
             value={date}
             onChange={(e) => setDate(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
           />
         </div>
 
@@ -252,7 +248,6 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
               value={plannedStart}
               onChange={(e) => setPlannedStart(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
             >
               {TIME_OPTIONS.map((time) => (
                 <option key={time} value={time}>
@@ -269,7 +264,6 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
               value={plannedEnd}
               onChange={(e) => setPlannedEnd(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
             >
               {TIME_OPTIONS.map((time) => (
                 <option key={time} value={time}>

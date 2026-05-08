@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { useDb } from '@gustri/queries';
 import { NumberInput } from '@gustri/ui-web';
 import { Map as MapIcon, MapPin, Phone, Search, StickyNote, Truck, User, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -10,8 +11,11 @@ import { useFormatPrice } from '@/hooks/use-format-price';
 // Search results never carry the plaintext phone — column-level grants on
 // `delivery_customers` hide ciphertext from non-admin sessions, and the
 // hash-based `find_delivery_customer_by_phone` RPC returns the row without
-// it. The form treats `phone` as something the waiter types in this
-// session, not something we autofill from the directory.
+// it. After a saved customer is picked we make a follow-up `findById`
+// against `delivery_customers_decrypted`: admin/owner sessions get the
+// plaintext phone back and we autofill the field; waiter/kitchen sessions
+// get NULL from the view and the field stays empty (they're expected to
+// be on the call and already know the phone).
 interface DeliveryCustomer {
   id: string;
   name: string;
@@ -46,6 +50,7 @@ export function DeliveryCustomerForm({
 }: DeliveryCustomerFormProps) {
   const { t } = useTranslation('staff');
   const formatPrice = useFormatPrice();
+  const db = useDb();
 
   const [customerSearch, setCustomerSearch] = useState('');
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
@@ -62,6 +67,31 @@ export function DeliveryCustomerForm({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Autofill phone for admin/owner sessions when a saved customer is picked.
+  // Waiters/kitchen get NULL from `delivery_customers_decrypted` and leave the
+  // field empty. Cancellation flag avoids clobbering a fresh selection if the
+  // user picks customer A, then quickly switches to B before A's fetch lands.
+  const customerId = customer.customerId;
+  useEffect(() => {
+    if (!customerId) return;
+    let cancelled = false;
+    db.deliveryCustomers
+      .findById(customerId)
+      .then((row) => {
+        if (cancelled || !row) return;
+        const phone = (row as { phone?: string | null }).phone;
+        if (typeof phone === 'string' && phone) {
+          onCustomerChange({ phone });
+        }
+      })
+      .catch(() => {
+        // Non-admin sessions silently get NULL/RLS — don't surface as an error.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [customerId, db, onCustomerChange]);
 
   const selectSavedCustomer = (c: DeliveryCustomer) => {
     onCustomerChange({

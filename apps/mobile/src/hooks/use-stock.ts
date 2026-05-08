@@ -90,6 +90,11 @@ export function useAdjustStock() {
         clientRequestId?: string;
       };
     }) => {
+      // Invariant: `onMutate` above stamps `clientRequestId`. Re-minting
+      // silently would bypass the server's dedupe path on a network retry.
+      if (!data.clientRequestId) {
+        throw new Error('adjustStock: clientRequestId missing — onMutate must run first');
+      }
       const input = validateOrThrow(
         StockAdjustInputSchema,
         { id, ...data },
@@ -100,10 +105,7 @@ export function useAdjustStock() {
         quantity_change: input.quantity,
         reason: input.reason ?? '',
         performed_by: input.performedBy ?? '',
-        // Schema is `required` post-Blocker-1; `validateOrThrow` above
-        // would have rejected an unstamped input. Kept as a stamp here
-        // for defense in depth in case the validate step is ever removed.
-        client_request_id: getOrCreateClientRequestId(input.clientRequestId),
+        client_request_id: input.clientRequestId,
       });
     },
     onSuccess: () => {

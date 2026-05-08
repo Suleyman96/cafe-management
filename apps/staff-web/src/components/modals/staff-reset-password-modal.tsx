@@ -94,8 +94,6 @@ export function StaffResetPasswordModal({
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder={t('staffMgmt.minEightChars')}
-              minLength={8}
-              required
             />
             <p className="text-xs text-gray-500 mt-1">{t('staffMgmt.passwordRequirements')}</p>
           </div>
@@ -110,8 +108,6 @@ export function StaffResetPasswordModal({
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder={t('staffMgmt.reenterPassword')}
-              minLength={8}
-              required
             />
           </div>
 

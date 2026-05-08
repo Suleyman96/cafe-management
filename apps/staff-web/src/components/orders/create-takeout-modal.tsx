@@ -205,7 +205,6 @@ export function CreateTakeoutModal({
                       onChange={(e) => setCustomerName(e.target.value)}
                       placeholder={t('orders.fullNamePlaceholder')}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
                     />
                   </div>
 
@@ -219,7 +218,6 @@ export function CreateTakeoutModal({
                       onChange={(e) => setCustomerPhone(e.target.value)}
                       placeholder={t('phonePlaceholder', { ns: 'common' })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
                     />
                   </div>
 
@@ -378,7 +376,7 @@ export function CreateTakeoutModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 mt-6 pt-6 border-t">
+          <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-6 border-t">
             <Button onClick={onClose} variant="outline" className="flex-1" disabled={isSubmitting}>
               {t('cancel', { ns: 'common' })}
             </Button>

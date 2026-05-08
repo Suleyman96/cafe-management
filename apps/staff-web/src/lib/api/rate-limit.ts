@@ -47,6 +47,15 @@ const limiters = redis
         limiter: Ratelimit.slidingWindow(5, '300 s'),
         prefix: 'rl:staff-pin-verify',
       }),
+      // C3: revoke-sessions is admin-only and rare in practice (fired
+      // employee, suspected credential leak). 10/min per IP comfortably
+      // covers a sweep of multiple staff in one sitting; anything past
+      // that is suspicious enough to throttle.
+      'revoke-sessions': new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(10, '60 s'),
+        prefix: 'rl:revoke-sessions',
+      }),
       // Customer-facing engagement writes (H1). The pre-PR3 path went
       // straight to Supabase via the wrapper with no edge gate; an
       // attacker holding a single QR-code value could spam thousands of
@@ -96,6 +105,7 @@ export type RateLimitCategory =
   | 'password-reset'
   | 'push-token-revoke'
   | 'staff-pin-verify'
+  | 'revoke-sessions'
   | 'waiter-call'
   | 'feedback'
   | 'order-cancel'

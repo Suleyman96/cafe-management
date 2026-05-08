@@ -62,6 +62,9 @@ export const OrderItemRow = React.memo(function OrderItemRow({
           style={styles.actionButton}
           onPress={() => onMarkReady(item.id)}
           activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('orders.markReady')} — ${name}`}
         >
           <Text style={styles.actionButtonText}>{t('orders.markReady')}</Text>
         </TouchableOpacity>

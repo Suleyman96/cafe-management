@@ -14,8 +14,11 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
 
+  const isValid = email.trim().length > 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValid || loading) return;
     setError('');
     setLoading(true);
 
@@ -83,7 +86,6 @@ export default function ForgotPasswordPage() {
                     name="email"
                     type="email"
                     autoComplete="email"
-                    required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="appearance-none block w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all"
@@ -94,7 +96,7 @@ export default function ForgotPasswordPage() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={!isValid || loading}
                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-xl"
               >
                 {loading ? t('sendingResetLink') : t('sendResetLink')}

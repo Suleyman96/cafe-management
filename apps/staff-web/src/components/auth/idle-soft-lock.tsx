@@ -195,8 +195,6 @@ function PinPromptOverlay({ onSuccess }: { onSuccess: () => void }) {
               type="password"
               inputMode="numeric"
               autoComplete="off"
-              pattern="[0-9]{4,8}"
-              minLength={4}
               maxLength={8}
               value={pin}
               onChange={(e) => {
@@ -204,7 +202,6 @@ function PinPromptOverlay({ onSuccess }: { onSuccess: () => void }) {
                 setError(null);
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center tracking-widest text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
               disabled={submitting}
             />
           </div>

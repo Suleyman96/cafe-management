@@ -1,3 +1,4 @@
+import { AppError } from '@gustri/core';
 import * as Sentry from '@sentry/react-native';
 import { MMKV } from 'react-native-mmkv';
 import { apiRoutes } from './api-routes';
@@ -102,8 +103,16 @@ export async function drainPendingRevokes(): Promise<number> {
       await apiRoutes.pushTokens.revoke({ expo_token: token });
       drained++;
     } catch (err) {
-      const status = (err as { status?: number } | null)?.status;
-      if (typeof status === 'number' && status >= 400 && status < 500) {
+      // `apiFetchUnauthed` throws `AppError` subclasses produced by
+      // `httpStatusToAppError`, whose status field is `statusCode` (NOT
+      // `status`). Reading `.status` here was always undefined and the
+      // 4xx-drop branch was unreachable — failed-permanently tokens stayed
+      // queued forever. The `instanceof AppError` check makes the lookup
+      // rename-resilient; non-AppError throws (e.g. native fetch failures
+      // wrapped as `NetworkError` lower in the stack) fall through to the
+      // retain-and-retry branch as before.
+      const statusCode = err instanceof AppError ? err.statusCode : undefined;
+      if (typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500) {
         // Server rejected — drop it, retrying won't help.
         Sentry.captureException(err, {
           tags: { area: 'pending-revokes-drain', outcome: '4xx-dropped' },

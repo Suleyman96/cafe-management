@@ -1,5 +1,5 @@
 import { useTranslation } from '@gustri/i18n';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from '@/lib/paper-compat';
 import { BRAND_PRIMARY, COLORS } from '@/theme';
@@ -14,8 +14,8 @@ interface MenuItemCardProps {
   };
   quantity: number;
   currencySymbol: string;
-  onAdd: () => void;
-  onRemove: () => void;
+  onAdd: (item: { id: string; price: number; name?: string | null }) => void;
+  onRemove: (itemId: string) => void;
 }
 
 export const MenuItemCard = React.memo(function MenuItemCard({
@@ -27,6 +27,12 @@ export const MenuItemCard = React.memo(function MenuItemCard({
 }: MenuItemCardProps) {
   const { t } = useTranslation('staff');
   const unavailable = menuItem.is_available === false;
+
+  const handleAdd = useCallback(
+    () => onAdd({ id: menuItem.id, price: menuItem.price, name: menuItem.name }),
+    [onAdd, menuItem.id, menuItem.price, menuItem.name],
+  );
+  const handleRemove = useCallback(() => onRemove(menuItem.id), [onRemove, menuItem.id]);
 
   return (
     <View style={[styles.card, unavailable && styles.unavailable]}>
@@ -48,7 +54,7 @@ export const MenuItemCard = React.memo(function MenuItemCard({
         <View style={styles.quantityControl}>
           {quantity > 0 ? (
             <>
-              <TouchableOpacity style={styles.qtyBtn} onPress={onRemove}>
+              <TouchableOpacity style={styles.qtyBtn} onPress={handleRemove}>
                 <Text style={styles.qtyBtnText}>-</Text>
               </TouchableOpacity>
               <Text style={styles.quantity}>{quantity}</Text>
@@ -56,7 +62,7 @@ export const MenuItemCard = React.memo(function MenuItemCard({
           ) : null}
           <TouchableOpacity
             style={[styles.qtyBtn, styles.qtyBtnAdd, quantity > 0 && styles.qtyBtnAddActive]}
-            onPress={onAdd}
+            onPress={handleAdd}
           >
             <Text
               style={[

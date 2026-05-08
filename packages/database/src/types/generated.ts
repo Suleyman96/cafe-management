@@ -2161,6 +2161,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_revoke_user_sessions: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       apply_discount_with_audit: {
         Args: {
           p_client_request_id: string

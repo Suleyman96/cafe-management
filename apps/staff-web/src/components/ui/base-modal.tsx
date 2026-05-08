@@ -64,7 +64,11 @@ export function BaseModal({
         <Wrapper {...wrapperProps} className="flex-1 overflow-y-auto flex flex-col min-h-0">
           <div className="p-6 flex-1">{children}</div>
 
-          {footer && <div className="border-t px-6 py-4 flex gap-3 shrink-0">{footer}</div>}
+          {footer && (
+            <div className="border-t px-6 py-4 flex flex-col sm:flex-row gap-3 shrink-0">
+              {footer}
+            </div>
+          )}
         </Wrapper>
       </div>
     </div>

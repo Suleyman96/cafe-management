@@ -3,7 +3,7 @@ import { useTranslation } from '@gustri/i18n';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import * as Sentry from '@sentry/react-native';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -83,6 +83,20 @@ export default function TablesListScreen() {
     });
   }, [tables, orderAggregatesByTable, tablesWithCalls]);
 
+  const renderTable = useCallback<ListRenderItem<(typeof tableData)[number]>>(
+    ({ item }) => (
+      <TableCard
+        table={item.table}
+        activeOrderCount={item.activeOrderCount}
+        orderTotal={item.orderTotal}
+        hasWaiterCall={item.hasWaiterCall}
+        currencySymbol={currencySymbol}
+        onPress={handleTablePress}
+      />
+    ),
+    [currencySymbol, handleTablePress],
+  );
+
   if (isLoading) return <LoadingScreen message={t('tables.loadingTables')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
@@ -94,16 +108,7 @@ export default function TablesListScreen() {
         keyExtractor={(item) => item.table.id}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 16 }]}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
-        renderItem={({ item }) => (
-          <TableCard
-            table={item.table}
-            activeOrderCount={item.activeOrderCount}
-            orderTotal={item.orderTotal}
-            hasWaiterCall={item.hasWaiterCall}
-            currencySymbol={currencySymbol}
-            onPress={handleTablePress}
-          />
-        )}
+        renderItem={renderTable}
         ListEmptyComponent={
           <EmptyState
             icon="table-furniture"

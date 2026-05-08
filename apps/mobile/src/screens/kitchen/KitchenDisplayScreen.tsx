@@ -1,7 +1,7 @@
 import { isDeliveryOrder } from '@gustri/core';
 import { ORDER_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -198,6 +198,26 @@ export default function KitchenDisplayScreen() {
     [updateItemStatus, updateOrderStatus, showSuccess, showError, t],
   );
 
+  const renderKitchenOrder = useCallback<ListRenderItem<(typeof kitchenOrders)[number]>>(
+    ({ item }) => (
+      <KitchenOrderCard
+        order={item}
+        onStartPreparing={handleStartPreparing}
+        onMarkItemReady={handleMarkItemReady}
+        onMarkAllReady={handleMarkAllReady}
+        onMarkAllServed={handleMarkAllServed}
+        isProcessing={processingOrderId === item.id}
+      />
+    ),
+    [
+      handleStartPreparing,
+      handleMarkItemReady,
+      handleMarkAllReady,
+      handleMarkAllServed,
+      processingOrderId,
+    ],
+  );
+
   if (isLoading) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -241,16 +261,7 @@ export default function KitchenDisplayScreen() {
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#fff" />
         }
-        renderItem={({ item }) => (
-          <KitchenOrderCard
-            order={item}
-            onStartPreparing={handleStartPreparing}
-            onMarkItemReady={handleMarkItemReady}
-            onMarkAllReady={handleMarkAllReady}
-            onMarkAllServed={handleMarkAllServed}
-            isProcessing={processingOrderId === item.id}
-          />
-        )}
+        renderItem={renderKitchenOrder}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>{t('kitchen.noActiveOrders')}</Text>

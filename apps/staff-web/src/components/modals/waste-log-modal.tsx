@@ -97,14 +97,14 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
     });
   };
 
+  const quantity = Number.parseFloat(formData.quantity);
+  const isValid =
+    formData.item_name.trim().length > 0 && quantity > 0 && formData.waste_date.length > 0;
+  const isPending = createWaste.isPending || updateWaste.isPending;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const quantity = Number.parseFloat(formData.quantity);
-    if (!quantity || quantity <= 0) {
-      toast.error(t('waste.validQuantity'));
-      return;
-    }
+    if (!isValid || isPending) return;
 
     const toastId = toast.loading(isEditing ? t('waste.updatingWaste') : t('waste.loggingWaste'));
 
@@ -165,14 +165,16 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
       onSubmit={handleSubmit}
       footer={
         <>
-          <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="flex-1"
+            disabled={isPending}
+          >
             {t('cancel', { ns: 'common' })}
           </Button>
-          <Button
-            type="submit"
-            className="flex-1"
-            disabled={createWaste.isPending || updateWaste.isPending}
-          >
+          <Button type="submit" className="flex-1" disabled={!isValid || isPending}>
             {isEditing ? t('tasks.update') : t('waste.logWaste')}
           </Button>
         </>
@@ -207,7 +209,6 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
             type="text"
             value={formData.item_name}
             onChange={(e) => setFormData({ ...formData, item_name: e.target.value })}
-            required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             placeholder={t('waste.whatWasWasted')}
           />
@@ -224,7 +225,6 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
               onChange={handleQuantityChange}
               min={0.01}
               step={0.01}
-              required
               placeholder="0"
             />
           </div>
@@ -297,7 +297,6 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
               type="date"
               value={formData.waste_date}
               onChange={(e) => setFormData({ ...formData, waste_date: e.target.value })}
-              required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>

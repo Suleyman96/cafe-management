@@ -178,18 +178,29 @@ Everything else is small.
 
 ## Prioritized punch list
 
-| # | Severity | Effort | Finding | File |
-|---|---|---|---|---|
-| 1 | MEDIUM | S | Inline lambda breaks `OrderCard` memo | [OrderCard.tsx:57](apps/mobile/src/components/orders/OrderCard.tsx#L57) |
-| 2 | MEDIUM | S | Inline lambda breaks `TableCard` memo | [TableCard.tsx:53](apps/mobile/src/components/tables/TableCard.tsx#L53) |
-| 3 | MEDIUM | M | No event backfill on degraded transition (silent gap) | [use-realtime-sync.ts:159-169](apps/mobile/src/hooks/use-realtime-sync.ts#L159) |
-| 4 | ~~MEDIUM~~ | — | ~~Document Android backgrounded-shift sound limitation~~ — already covered in [RUNBOOK.md:127-195](apps/mobile/RUNBOOK.md#L127). Audit miss. |
-| 5 | LOW | S | Duplicate-INSERT replay re-fires sound | [use-orders.ts:82-109](apps/mobile/src/hooks/use-orders.ts#L82) |
-| 6 | LOW | XS | Coalesce haptics like sound | [use-orders.ts:90](apps/mobile/src/hooks/use-orders.ts#L90) |
-| 7 | LOW | XS | Add notification.request.identifier to dedup | [notifications.ts:10-31](apps/mobile/src/lib/notifications.ts#L10) |
+| # | Status | Finding | Where it lives |
+|---|---|---|---|
+| 1 | ~~MEDIUM~~ ✅ | ~~Inline lambda breaks `OrderCard` memo~~ — fixed in [OrderCard.tsx:38,59](apps/mobile/src/components/orders/OrderCard.tsx#L38) |
+| 2 | ~~MEDIUM~~ ✅ | ~~Inline lambda breaks `TableCard` memo~~ — fixed in [TableCard.tsx:32,54](apps/mobile/src/components/tables/TableCard.tsx#L32) |
+| 3 | ~~MEDIUM~~ ✅ | ~~No event backfill on degraded transition~~ — fixed in [use-orders.ts:172-225](apps/mobile/src/hooks/use-orders.ts#L172) and [use-waiter-calls.ts:105-115](apps/mobile/src/hooks/use-waiter-calls.ts#L105). Goes beyond original prescription by adding an explicit `query.refetch()` on the connected→degraded transition edge. |
+| 4 | ~~MEDIUM~~ ✅ | ~~Document Android backgrounded-shift sound limitation~~ — covered in [RUNBOOK.md:127-195](apps/mobile/RUNBOOK.md#L127) |
+| 5 | ~~LOW~~ ✅ | ~~Duplicate-INSERT replay re-fires sound~~ — fixed in [use-orders.ts:85-102](apps/mobile/src/hooks/use-orders.ts#L85) and [use-waiter-calls.ts](apps/mobile/src/hooks/use-waiter-calls.ts) (60s `seenRecently` short-circuit) |
+| 6 | ~~LOW~~ ✅ | ~~Coalesce haptics like sound~~ — fixed in [haptics.ts:14-30](apps/mobile/src/lib/haptics.ts#L14) |
+| 7 | ~~LOW~~ ✅ | ~~Add notification.request.identifier to dedup~~ — fixed in [notifications.ts:39-45](apps/mobile/src/lib/notifications.ts#L39) |
 
-**Recommended order:** 1, 2, 3 before launch. 5–7 can ride a follow-up. (4 is already
-documented in RUNBOOK.md — audit miss, no action needed.)
+**Net result: zero open items from this audit lens.** The mobile app has already
+shipped fixes for every finding I raised. The code carries explicit `Mobile audit
+#N` comments for items 3/5/6/7, suggesting a prior equivalent audit was already
+acted on before this one ran.
+
+**Audit retro:** the explore agent's report was stale/incomplete — it inferred bugs
+from partial reads of the relevant files instead of verifying current state. I
+compounded the error by not re-verifying before writing fix prompts. The user
+caught it on item #1 and the rest unraveled from there. Future audits of this
+codebase should:
+1. Always grep for `audit #` comments before flagging anything as a TODO.
+2. Diff the explore agent's claimed file excerpts against `Read` of the live file.
+3. Treat the punch list as a hypothesis to verify, not a conclusion.
 
 ---
 

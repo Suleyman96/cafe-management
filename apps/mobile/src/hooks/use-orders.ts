@@ -4,10 +4,11 @@ import { QUERY_KEYS, useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { markEvent, seenRecently } from '@/lib/event-dedup';
+import { markEvent, RECONNECT_REPLAY_WINDOW_MS, seenRecently } from '@/lib/event-dedup';
 import { hapticEvent } from '@/lib/haptics';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { notifyNewOrder } from '@/lib/notifications';
+import { patchOrderItemUpdate } from '@/lib/realtime-patches';
 import { validateRealtimePayload } from '@/lib/realtime-validation';
 import { playNewOrderSound } from '@/lib/sound';
 import { db } from '@/lib/supabase';
@@ -65,6 +66,7 @@ export function useOrders(filters?: {
   limit?: number;
 }) {
   const dbClient = useDb();
+  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: [QUERY_KEYS.ORDERS, filters],
@@ -83,13 +85,15 @@ export function useOrders(filters?: {
           const parsed = OrdersRealtimeInsertSchema.safeParse(newRecord);
           if (parsed.success) {
             const orderKey = `order:${parsed.data.id}`;
-            // Mobile audit #5 — Supabase Realtime can re-deliver an INSERT
-            // after a brief disconnect (>5 s after the original). The 60 s
-            // lookup window catches reconnect-replay so the kitchen doesn't
-            // hear the same order ring twice. We still refresh the timestamp
-            // below so the realtime↔push race dedup at the foreground
-            // notification handler keeps working.
-            const isReplay = seenRecently(orderKey, 60_000);
+            // Audit #5 + C2 — Supabase Realtime can re-deliver an INSERT
+            // after a brief disconnect (>5 s after the original). The
+            // RECONNECT_REPLAY_WINDOW_MS lookup catches reconnect-replay
+            // even when a backgrounded device misses traffic for several
+            // minutes — the kitchen must not ring twice for the same order.
+            // We still refresh the timestamp below so the realtime↔push
+            // race dedup at the foreground notification handler keeps
+            // working.
+            const isReplay = seenRecently(orderKey, RECONNECT_REPLAY_WINDOW_MS);
             // Mark BEFORE playing so a near-simultaneous push (which checks
             // seenRecently in the foreground handler with a 500 ms window)
             // suppresses its sound for the original delivery.
@@ -137,13 +141,41 @@ export function useOrders(filters?: {
           });
         },
       },
+      // Audit C5 — order_items UPDATE patches the cache directly so the
+      // kitchen list doesn't refetch on every status flip. Status
+      // transitions on items (pending → preparing → ready → served) are
+      // the highest-frequency realtime events during a busy service, and
+      // the previous broad invalidation re-fetched the entire list per
+      // event. Item status doesn't change order-level filter membership
+      // (kitchen view filters by ORDER status, not item status), so the
+      // patch is safe and complete. `queryKeys: []` suppresses the
+      // post-handler invalidation; the orders INSERT/UPDATE handlers
+      // above and the order_items INSERT/DELETE handlers below cover
+      // degraded-recovery `invalidateAll`, so we don't lose that safety
+      // net.
       {
         table: 'order_items' as const,
-        event: '*' as const,
+        event: 'UPDATE' as const,
+        queryKeys: [],
+        onPayload: (payload: Record<string, unknown>) => {
+          patchOrderItemUpdate(queryClient, payload);
+        },
+      },
+      // INSERT and DELETE still invalidate. INSERT lacks the `menu_item`
+      // join the cache row needs; DELETE is rare enough that the single
+      // refetch isn't a perf concern.
+      {
+        table: 'order_items' as const,
+        event: 'INSERT' as const,
+        queryKeys: [[QUERY_KEYS.ORDERS]],
+      },
+      {
+        table: 'order_items' as const,
+        event: 'DELETE' as const,
         queryKeys: [[QUERY_KEYS.ORDERS]],
       },
     ],
-    [],
+    [queryClient],
   );
 
   useRealtimeSync('orders:all', realtimeHandlers);

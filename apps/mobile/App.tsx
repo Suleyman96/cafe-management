@@ -12,7 +12,7 @@ import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import * as Updates from 'expo-updates';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, AppState, Linking, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Linking, View } from 'react-native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
@@ -29,6 +29,7 @@ import {
 } from './src/lib/last-active-at';
 import { drainMismatchedMutations } from './src/lib/mutation-drain';
 import { handleNotificationNavigation, navigationRef } from './src/lib/navigation-ref';
+import { reportIfStackDepthExceeded } from './src/lib/navigation-stack-monitor';
 import { drainPendingRevokes } from './src/lib/pending-revokes';
 import { queryClient } from './src/lib/query-client';
 import {
@@ -58,7 +59,21 @@ import { lightTheme } from './src/theme';
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
   environment: __DEV__ ? 'development' : 'production',
-  tracesSampleRate: __DEV__ ? 1.0 : 0.2,
+  // Error events: capture every error in production. Default is 1.0 but we
+  // set it explicitly so a future SDK upgrade can't silently drop us to a
+  // lower default. Errors are the signal we cannot afford to sample away.
+  sampleRate: 1.0,
+  // Performance traces: 50 staff × ~4 events/min × ~10h/day at 0.2 sampling
+  // (the prior value) puts us at ~720k traces/month — well over the
+  // standard plan's monthly cap. 0.05 (5%) keeps trends observable without
+  // bankrupting the quota mid-month. Dev value is moot because of
+  // `enabled: !__DEV__` below; kept explicit for intent.
+  tracesSampleRate: __DEV__ ? 1.0 : 0.05,
+  // Cap the per-event breadcrumb buffer. The default (100) on a long shift
+  // with high realtime + UI churn fills with noise that drowns out the
+  // breadcrumbs that actually explain a crash; 50 is enough for the last
+  // ~30s of meaningful action.
+  maxBreadcrumbs: 50,
   enabled: !__DEV__,
   release: `gustri-mobile@${Constants.expoConfig?.version ?? '0.0.0'}+${Updates.runtimeVersion ?? 'unknown'}`,
   dist:
@@ -98,6 +113,20 @@ Sentry.init({
     return event;
   },
   beforeBreadcrumb(breadcrumb) {
+    // Production-only volume controls. In dev we keep everything so live
+    // debugging works the same as before; `enabled: !__DEV__` above means
+    // dev never sends, so this branch is a no-op there in practice.
+    if (!__DEV__) {
+      // `console` breadcrumbs duplicate logs we already have in the
+      // device console / Logcat and inflate every event by ~30 entries
+      // on a busy screen. Drop them.
+      if (breadcrumb.category === 'console') return null;
+      // `ui.click` fires on every tap on Android. With 50 staff hammering
+      // tables/orders/KDS this is the single largest breadcrumb source
+      // and adds no diagnostic value the navigation breadcrumbs don't
+      // already cover.
+      if (breadcrumb.category === 'ui.click') return null;
+    }
     if (breadcrumb.category === 'fetch' && breadcrumb.data?.url?.includes('/auth/')) {
       return null;
     }
@@ -245,13 +274,37 @@ function App() {
     });
   }, [migrationDone]);
 
-  // Boot-time OTA check — fetches a published update if available and reloads
-  // into it before the user starts interacting. No-op in dev. Failures are
-  // captured to Sentry via checkForOtaUpdate and never block app start.
+  // Deferred OTA check.
+  //
+  // `checkAutomatically: "NEVER"` in app.json (Blocker 4) disables expo-updates'
+  // native blocking check on cold start, so this is the single update path.
+  // We delay 5s so the manifest fetch never sits on the critical-startup line —
+  // captive-portal / flaky cafe Wi-Fi at shift open used to freeze the app for
+  // up to 5 seconds before falling back to the cached bundle.
+  //
+  // When an update is downloaded, we ASK before reloading. Auto-reloading
+  // mid-shift would lose in-flight order/payment UI state. If the user
+  // dismisses, the staged bundle still loads automatically on the next cold
+  // start (expo-updates picks up the on-disk staged update regardless of
+  // `checkAutomatically`).
   useEffect(() => {
-    checkForOtaUpdate().then((hasUpdate) => {
-      if (hasUpdate) Updates.reloadAsync();
-    });
+    const timer = setTimeout(() => {
+      checkForOtaUpdate().then((hasUpdate) => {
+        if (!hasUpdate) return;
+        Alert.alert(i18n.t('updateAvailable.title'), i18n.t('updateAvailable.description'), [
+          { text: i18n.t('common.cancel'), style: 'cancel' },
+          {
+            text: i18n.t('updateAvailable.refresh'),
+            onPress: () => {
+              Updates.reloadAsync().catch((err) => {
+                Sentry.captureException(err, { tags: { area: 'ota-reload' } });
+              });
+            },
+          },
+        ]);
+      });
+    }, 5_000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -431,7 +484,11 @@ function App() {
           <TenantBoundDbProvider>
             <PaperProvider theme={lightTheme}>
               <SnackbarProvider>
-                <NavigationContainer ref={navigationRef} linking={linkingConfig}>
+                <NavigationContainer
+                  ref={navigationRef}
+                  linking={linkingConfig}
+                  onStateChange={reportIfStackDepthExceeded}
+                >
                   <ErrorBoundary>
                     <RootNavigator />
                   </ErrorBoundary>

@@ -75,8 +75,11 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
     }
   };
 
+  const isValid = tableNumber.trim().length > 0 && capacity >= 1 && capacity <= 20;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValid || loading || rotating) return;
     setLoading(true);
 
     try {
@@ -144,7 +147,6 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
               onChange={(e) => setTableNumber(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder={t('tables.tableNumberPlaceholder')}
-              required
             />
           </div>
 
@@ -158,7 +160,6 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
               min={1}
               max={20}
               integer
-              required
             />
           </div>
 
@@ -229,7 +230,7 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
             >
               {t('cancel', { ns: 'common' })}
             </Button>
-            <Button type="submit" disabled={loading || rotating} className="flex-1">
+            <Button type="submit" disabled={!isValid || loading || rotating} className="flex-1">
               {loading
                 ? isEditing
                   ? `${t('save', { ns: 'common' })}...`

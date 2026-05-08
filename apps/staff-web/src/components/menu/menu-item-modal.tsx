@@ -72,8 +72,11 @@ export function MenuItemModal({ item, categories, menuItems = [], onClose }: Men
     formData.allergens as string[],
   );
 
+  const isValid = formData.name.trim().length > 0 && Number.parseFloat(formData.price) >= 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValid || uploading) return;
     setUploading(true);
 
     const toastId = toast.loading(
@@ -227,7 +230,6 @@ export function MenuItemModal({ item, categories, menuItems = [], onClose }: Men
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               placeholder={t('menu.itemNamePlaceholder')}
             />
@@ -259,7 +261,6 @@ export function MenuItemModal({ item, categories, menuItems = [], onClose }: Men
                 min={0}
                 step={0.01}
                 placeholder="0.00"
-                required
               />
             </div>
             <div>
@@ -377,10 +378,16 @@ export function MenuItemModal({ item, categories, menuItems = [], onClose }: Men
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+              disabled={uploading}
+            >
               {t('cancel', { ns: 'common' })}
             </Button>
-            <Button type="submit" disabled={uploading} className="flex-1">
+            <Button type="submit" disabled={!isValid || uploading} className="flex-1">
               {uploading
                 ? t('staffMgmt.saving')
                 : isEditing

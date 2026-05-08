@@ -1,10 +1,10 @@
-import { ORDER_ITEM_STATUS } from '@gustri/database';
+import { type MenuItem, ORDER_ITEM_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { FlashList } from '@shopify/flash-list';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MenuItemCard } from '@/components/orders/MenuItemCard';
@@ -77,7 +77,7 @@ export default function AddItemsScreen() {
   const cartItems = Object.values(cart);
   const hasCartItems = cartItems.length > 0;
 
-  const handleAdd = (item: { id: string; price: number; name: string }) => {
+  const handleAdd = useCallback((item: { id: string; price: number; name?: string | null }) => {
     setCart((prev) => {
       const existing = prev[item.id];
       return {
@@ -90,9 +90,9 @@ export default function AddItemsScreen() {
         },
       };
     });
-  };
+  }, []);
 
-  const handleRemove = (itemId: string) => {
+  const handleRemove = useCallback((itemId: string) => {
     setCart((prev) => {
       const existing = prev[itemId];
       if (!existing || existing.quantity <= 1) {
@@ -104,7 +104,20 @@ export default function AddItemsScreen() {
         [itemId]: { ...existing, quantity: existing.quantity - 1 },
       };
     });
-  };
+  }, []);
+
+  const renderMenuItem = useCallback(
+    ({ item }: { item: MenuItem }) => (
+      <MenuItemCard
+        menuItem={item}
+        quantity={cart[item.id]?.quantity || 0}
+        currencySymbol={currencySymbol}
+        onAdd={handleAdd}
+        onRemove={handleRemove}
+      />
+    ),
+    [cart, currencySymbol, handleAdd, handleRemove],
+  );
 
   const handleSubmit = async () => {
     const items = Object.values(cart);
@@ -207,15 +220,7 @@ export default function AddItemsScreen() {
       <FlashList
         data={filteredItems}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <MenuItemCard
-            menuItem={item}
-            quantity={cart[item.id]?.quantity || 0}
-            currencySymbol={currencySymbol}
-            onAdd={() => handleAdd(item)}
-            onRemove={() => handleRemove(item.id)}
-          />
-        )}
+        renderItem={renderMenuItem}
         contentContainerStyle={{ paddingBottom: hasCartItems ? footerHeight + 8 : 16 }}
       />
 

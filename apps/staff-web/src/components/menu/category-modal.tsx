@@ -55,8 +55,12 @@ export function CategoryModal({ category, categories = [], onClose }: CategoryMo
     is_active: category?.is_active !== false,
   });
 
+  const isValid = formData.name.trim().length > 0;
+  const isPending = createCategory.isPending || updateCategory.isPending;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValid || isPending) return;
 
     const toastId = toast.loading(
       isEditing ? t('menu.updatingCategory') : t('menu.creatingCategory'),
@@ -146,7 +150,6 @@ export function CategoryModal({ category, categories = [], onClose }: CategoryMo
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               placeholder={t('menu.categoryNamePlaceholder')}
             />
@@ -197,10 +200,16 @@ export function CategoryModal({ category, categories = [], onClose }: CategoryMo
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+              disabled={isPending}
+            >
               {t('cancel', { ns: 'common' })}
             </Button>
-            <Button type="submit" className="flex-1">
+            <Button type="submit" className="flex-1" disabled={!isValid || isPending}>
               {isEditing ? t('menu.updateCategory') : t('menu.createCategory')}
             </Button>
           </div>

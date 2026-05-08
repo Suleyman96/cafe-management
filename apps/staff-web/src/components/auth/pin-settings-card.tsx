@@ -178,12 +178,9 @@ export function PinSettingsCard() {
                 inputMode="numeric"
                 value={currentPin}
                 onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                pattern="[0-9]{4,8}"
-                minLength={4}
                 maxLength={8}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                 disabled={submitting}
-                required
               />
             </div>
           )}
@@ -196,13 +193,10 @@ export function PinSettingsCard() {
               inputMode="numeric"
               value={newPin}
               onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
-              pattern="[0-9]{4,8}"
-              minLength={4}
               maxLength={8}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
               placeholder={t('idleLock.pinPlaceholder')}
               disabled={submitting}
-              required
             />
           </div>
           <div>
@@ -214,12 +208,9 @@ export function PinSettingsCard() {
               inputMode="numeric"
               value={confirmPin}
               onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
-              pattern="[0-9]{4,8}"
-              minLength={4}
               maxLength={8}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
               disabled={submitting}
-              required
             />
           </div>
 

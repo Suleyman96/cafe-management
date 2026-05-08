@@ -69,6 +69,17 @@ export default function SettingsPage() {
         throw error;
       }
 
+      // C3 — revoke refresh tokens on the user's *other* sessions so a
+      // shared/leaked password can't keep them logged in via stale tokens.
+      // `scope: 'others'` keeps the current tab/device alive — the user
+      // just changed their password and shouldn't be booted from the
+      // session they did it on. A failure here doesn't undo the password
+      // change, so don't surface it as an error.
+      const { error: revokeError } = await supabase.auth.signOut({ scope: 'others' });
+      if (revokeError && process.env.NODE_ENV !== 'production') {
+        console.error('[settings] revoke other sessions failed', revokeError);
+      }
+
       toast.success(t('settings.passwordChanged'));
       setIsChangingPassword(false);
       setNewPassword('');
@@ -177,8 +188,6 @@ export default function SettingsPage() {
                       onChange={(e) => setNewPassword(e.target.value)}
                       className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       placeholder={t('settings.enterNewPassword')}
-                      required
-                      minLength={6}
                     />
                     <button
                       type="button"
@@ -204,8 +213,6 @@ export default function SettingsPage() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     placeholder={t('settings.confirmNewPassword')}
-                    required
-                    minLength={6}
                   />
                 </div>
 

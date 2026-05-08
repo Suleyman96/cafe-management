@@ -24,6 +24,13 @@ export function useCreateOrder() {
       orderData.client_request_id = getOrCreateClientRequestId(orderData.client_request_id);
     },
     mutationFn: async (orderData: OrdersInsert) => {
+      // Invariant: `onMutate` above stamps `client_request_id` before the
+      // network call. If it's missing here, `onMutate` was bypassed (e.g.
+      // a future regression that calls `mutationFn` directly) — silently
+      // continuing would route the request past the server's dedupe path.
+      if (!orderData.client_request_id) {
+        throw new Error('createOrder: client_request_id missing — onMutate must run first');
+      }
       const validated = validateOrThrow(OrderCreateInputSchema, orderData, 'Invalid order');
       return await db.orders.create(validated as OrdersInsert);
     },

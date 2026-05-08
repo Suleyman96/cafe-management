@@ -24,6 +24,7 @@ import {
   UtensilsCrossed,
   XCircle,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { FreshnessIndicator } from '@/components/common/freshness-indicator';
@@ -35,6 +36,7 @@ import { ORDER_ITEM_STATUS_ICONS } from '@/lib/enum-icons';
 
 export default function KitchenDisplayPage() {
   const { t } = useTranslation('staff');
+  const router = useRouter();
   // Kitchen view shows only the active queue. Server-side filter keeps the
   // payload tight; the explicit limit prevents the silent 200-row cap that
   // used to hide older rows.
@@ -723,10 +725,13 @@ export default function KitchenDisplayPage() {
                   </button>
                 )}
                 {order.status === 'ready' && isTakeoutOrder(order) && (
-                  <div className="w-full py-2.5 bg-orange-100 border-2 border-orange-400 text-orange-700 text-base font-bold rounded-lg flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => router.push(`/orders/${order.id}`)}
+                    className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
+                  >
                     <Package className="h-5 w-5" />
-                    {t('takeout.readyForPickup')}
-                  </div>
+                    {t('kitchen.pickedUp')}
+                  </button>
                 )}
               </div>
             </div>

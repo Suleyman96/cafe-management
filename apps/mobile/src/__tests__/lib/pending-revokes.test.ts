@@ -1,3 +1,5 @@
+import { httpStatusToAppError } from '@gustri/api-client';
+import { NetworkError } from '@gustri/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiRoutes } from '@/lib/api-routes';
 import {
@@ -36,9 +38,9 @@ describe('pending-revokes', () => {
   });
 
   it('keeps the entry queued when the revoke fails with a network error', async () => {
-    vi.mocked(apiRoutes.pushTokens.revoke).mockRejectedValueOnce(
-      Object.assign(new Error('offline'), { name: 'NetworkError' }),
-    );
+    // Production shape: `apiFetchUnauthed` throws `NetworkError` (an
+    // AppError with statusCode=0) when the underlying fetch rejects.
+    vi.mocked(apiRoutes.pushTokens.revoke).mockRejectedValueOnce(new NetworkError('offline'));
     await enqueuePendingRevoke(TOKEN_A);
 
     const drained = await drainPendingRevokes();
@@ -51,8 +53,14 @@ describe('pending-revokes', () => {
   });
 
   it('drops 4xx-rejected entries instead of retrying forever', async () => {
+    // Production shape: `apiFetchUnauthed` calls `httpStatusToAppError(422,
+    // body)` which returns a `ValidationError` whose status field is
+    // `statusCode` (not `status`). The drain code reads `.statusCode` via
+    // `instanceof AppError`, so this exercises the real path — the
+    // pre-fix test mocked `{ status: 422 }` which never matched the live
+    // error shape and silently masked the unreachable 4xx-drop branch.
     vi.mocked(apiRoutes.pushTokens.revoke).mockRejectedValueOnce(
-      Object.assign(new Error('bad'), { status: 422 }),
+      httpStatusToAppError(422, { error: 'invalid_token' }),
     );
     await enqueuePendingRevoke(TOKEN_A);
 
@@ -61,6 +69,23 @@ describe('pending-revokes', () => {
 
     const drainedAgain = await drainPendingRevokes();
     expect(drainedAgain).toBe(0);
+  });
+
+  it('keeps the entry queued when the server returns a 5xx', async () => {
+    // 5xx is a server-side hiccup — drainable on the next attempt. Distinct
+    // from the 4xx case above because the queue-retain branch needs its
+    // own coverage now that the AppError discriminator is the real path.
+    vi.mocked(apiRoutes.pushTokens.revoke).mockRejectedValueOnce(
+      httpStatusToAppError(503, { error: 'unavailable' }),
+    );
+    await enqueuePendingRevoke(TOKEN_A);
+
+    const drained = await drainPendingRevokes();
+    expect(drained).toBe(0);
+
+    vi.mocked(apiRoutes.pushTokens.revoke).mockResolvedValueOnce({ revoked: true });
+    const drainedAgain = await drainPendingRevokes();
+    expect(drainedAgain).toBe(1);
   });
 
   it('dedupes identical tokens', async () => {

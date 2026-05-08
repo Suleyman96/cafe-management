@@ -2,7 +2,7 @@ import { ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { OrderCard } from '@/components/orders/OrderCard';
@@ -62,6 +62,13 @@ export default function OrdersListScreen() {
   const handleOrderPress = useCallback(
     (orderId: string) => navigation.navigate('OrderDetail', { orderId }),
     [navigation],
+  );
+
+  const renderOrder = useCallback<ListRenderItem<OrderWithJoins>>(
+    ({ item }) => (
+      <OrderCard order={item} currencySymbol={currencySymbol} onPress={handleOrderPress} />
+    ),
+    [currencySymbol, handleOrderPress],
   );
 
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -125,9 +132,7 @@ export default function OrdersListScreen() {
         data={filteredOrders}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
-        renderItem={({ item }) => (
-          <OrderCard order={item} currencySymbol={currencySymbol} onPress={handleOrderPress} />
-        )}
+        renderItem={renderOrder}
         ListEmptyComponent={
           <EmptyState
             icon="clipboard-text-off"

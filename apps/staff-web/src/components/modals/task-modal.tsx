@@ -64,13 +64,12 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
     setFormData({ ...formData, recurrence_days: days });
   };
 
+  const isValid = formData.title.trim().length > 0;
+  const isPending = createTask.isPending || updateTask.isPending;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!formData.title.trim()) {
-      toast.error(t('tasks.titleRequired'));
-      return;
-    }
+    if (!isValid || isPending) return;
 
     const toastId = toast.loading(isEditing ? t('tasks.updatingTask') : t('tasks.creatingTask'));
 
@@ -153,10 +152,16 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
       onSubmit={handleSubmit}
       footer={
         <>
-          <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="flex-1"
+            disabled={isPending}
+          >
             {t('cancel', { ns: 'common' })}
           </Button>
-          <Button type="submit" className="flex-1">
+          <Button type="submit" className="flex-1" disabled={!isValid || isPending}>
             {isEditing ? t('tasks.update') : t('tasks.newTask')}
           </Button>
         </>
@@ -172,7 +177,6 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
             type="text"
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             placeholder={t('tasks.whatNeedsDone')}
           />

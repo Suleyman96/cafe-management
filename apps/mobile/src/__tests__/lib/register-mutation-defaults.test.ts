@@ -15,7 +15,12 @@ describe('registerMutationDefaults — CREATE_ORDER idempotency', () => {
     };
   }
 
-  it('mints a stable client_request_id on first call and reuses it on replay', async () => {
+  it('passes a stamped client_request_id straight through (no re-mint on replay)', async () => {
+    // The persister-rehydrated path: `useCreateOrder.onMutate` ran on the
+    // first attempt before the crash, so the variables object already
+    // carries `client_request_id`. The registered default must thread that
+    // exact id through to `db.orders.create` so the server's
+    // `(tenant_id, client_request_id)` unique index dedupes the replay.
     const ordersCreate = vi.mocked(db.orders.create).mockResolvedValue({ id: 'order-1' } as never);
 
     const queryClient = new QueryClient({
@@ -26,25 +31,24 @@ describe('registerMutationDefaults — CREATE_ORDER idempotency', () => {
     const defaults = queryClient.getMutationDefaults(MUTATION_KEYS.CREATE_ORDER);
     expect(defaults?.mutationFn).toBeDefined();
 
-    // First attempt: helper mints a UUID and threads it through.
-    const variables = makeOrderData();
-    await defaults!.mutationFn?.(variables as never);
-    const firstCallArg = ordersCreate.mock.calls[0]![0] as OrdersInsert;
-    const firstId = firstCallArg.client_request_id;
-    expect(firstId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-    );
+    const stamped = '11111111-2222-4333-8444-555555555555';
+    const variables = { ...makeOrderData(), client_request_id: stamped };
 
-    // Replay: persister rehydrates the same variables object — id must
-    // round-trip so the server dedupes against the unique index.
-    variables.client_request_id = firstId;
     await defaults!.mutationFn?.(variables as never);
-    const secondCallArg = ordersCreate.mock.calls[1]![0] as OrdersInsert;
-    expect(secondCallArg.client_request_id).toBe(firstId);
+    await defaults!.mutationFn?.(variables as never);
+
+    expect(ordersCreate.mock.calls).toHaveLength(2);
+    expect((ordersCreate.mock.calls[0]![0] as OrdersInsert).client_request_id).toBe(stamped);
+    expect((ordersCreate.mock.calls[1]![0] as OrdersInsert).client_request_id).toBe(stamped);
   });
 
-  it('preserves a caller-supplied client_request_id', async () => {
-    const ordersCreate = vi.mocked(db.orders.create).mockResolvedValue({ id: 'order-2' } as never);
+  it('throws when variables are missing client_request_id', async () => {
+    // Hooks stamp the id in `onMutate` before the network call. If the
+    // registered default ever sees an unstamped variables object, hooks
+    // have regressed — silently minting a fresh id here would route the
+    // request past server-side dedupe on a network-retry and risk a
+    // duplicate ticket. We fail loudly instead.
+    vi.mocked(db.orders.create).mockResolvedValue({ id: 'order-2' } as never);
 
     const queryClient = new QueryClient({
       defaultOptions: { mutations: { retry: false } },
@@ -52,11 +56,9 @@ describe('registerMutationDefaults — CREATE_ORDER idempotency', () => {
     registerMutationDefaults(queryClient);
     const defaults = queryClient.getMutationDefaults(MUTATION_KEYS.CREATE_ORDER);
 
-    const supplied = '11111111-2222-4333-8444-555555555555';
-    const variables = { ...makeOrderData(), client_request_id: supplied };
-    await defaults!.mutationFn?.(variables as never);
+    const variables = makeOrderData(); // no client_request_id
 
-    const callArg = ordersCreate.mock.calls[0]![0] as OrdersInsert;
-    expect(callArg.client_request_id).toBe(supplied);
+    expect(() => defaults!.mutationFn?.(variables as never)).toThrow(/client_request_id/i);
+    expect(db.orders.create).not.toHaveBeenCalled();
   });
 });
