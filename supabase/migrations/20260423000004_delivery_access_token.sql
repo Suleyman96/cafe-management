@@ -5,15 +5,18 @@
 ALTER TABLE public.orders
 ADD COLUMN IF NOT EXISTS delivery_access_token TEXT;
 
--- Generate tokens for existing delivery orders
+-- Generate tokens for existing delivery orders.
+-- pgcrypto is installed in the `extensions` schema on Supabase, so we
+-- qualify the call rather than rely on search_path (Supabase's hardened
+-- search_path doesn't include `extensions` for safety reasons).
 UPDATE public.orders
-SET delivery_access_token = encode(gen_random_bytes(16), 'hex')
+SET delivery_access_token = encode(extensions.gen_random_bytes(16), 'hex')
 WHERE order_type = 'delivery'
   AND delivery_access_token IS NULL;
 
 -- Set default for new rows
 ALTER TABLE public.orders
-ALTER COLUMN delivery_access_token SET DEFAULT encode(gen_random_bytes(16), 'hex');
+ALTER COLUMN delivery_access_token SET DEFAULT encode(extensions.gen_random_bytes(16), 'hex');
 
 -- Drop the old single-argument version (PostgreSQL treats different signatures as different functions)
 DROP FUNCTION IF EXISTS public.get_delivery_order(UUID);

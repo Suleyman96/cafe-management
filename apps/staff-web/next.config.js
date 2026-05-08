@@ -1,4 +1,6 @@
 const { withSentryConfig } = require('@sentry/nextjs');
+const fs = require('node:fs');
+const path = require('node:path');
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
@@ -9,7 +11,32 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 // the user kept the page open. Also pinned as Next's generateBuildId so
 // _next asset URLs match the SHA, which lets the service worker scope its
 // cache by deploy and purge on activate.
-const COMMIT_SHA = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT_SHA ?? 'dev';
+//
+// Order of resolution:
+//   1. VERCEL_GIT_COMMIT_SHA — set when building on Vercel's git integration.
+//   2. GIT_COMMIT_SHA — set by callers that want to override.
+//   3. apps/staff-web/.commit-sha — written by .github/workflows/deploy-staff-web.yml
+//      because `vercel build` running off Vercel infra sandboxes its env and
+//      strips host vars, so a file is the only reliable handoff path.
+//   4. 'dev' — local development.
+//
+// We coerce empty strings to undefined so `||` fallbacks fire correctly:
+// `vercel build` running off Vercel infra exports VERCEL_GIT_COMMIT_SHA=""
+// rather than leaving it unset, which a bare `??` chain would treat as a
+// real value — and a `''` buildId trips Next's runtime invariant on every
+// dynamic route ("Invariant: buildID is required").
+function readCommitShaFile() {
+  try {
+    return fs.readFileSync(path.join(__dirname, '.commit-sha'), 'utf8').trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+const COMMIT_SHA =
+  (process.env.VERCEL_GIT_COMMIT_SHA || undefined) ??
+  (process.env.GIT_COMMIT_SHA || undefined) ??
+  readCommitShaFile() ??
+  'dev';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
