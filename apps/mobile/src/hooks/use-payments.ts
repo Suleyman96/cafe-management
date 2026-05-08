@@ -24,6 +24,20 @@ export function useCreatePayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // M6: stable mutationKey so consumers can scope `useIsMutating(...)` to
+    // payments — e.g. a screen-level disable on the "Charge" button while a
+    // payment for the *same order* is in flight (predicate filters
+    // `mutation.state.variables.order_id`, same shape H2 uses for per-item
+    // kitchen rows).
+    //
+    // INTENTIONALLY NOT registered in `@gustri/queries/MUTATION_KEYS` and
+    // INTENTIONALLY NOT given a default `mutationFn` in
+    // `register-mutation-defaults.ts`. Those two registries are the
+    // *replayable persisted-mutation* set — joining them would imply this
+    // mutation can resume after rehydrate, which contradicts the
+    // `networkMode: 'always', retry: 0` contract below. The key is for
+    // observability (useIsMutating) and dedup, NOT replay.
+    mutationKey: ['create-payment'],
     // Payments must NEVER queue offline — a payment recorded "now" but
     // executed 20 minutes later when connectivity returns can collide with
     // another card or diverge from the customer-facing receipt. UI guards

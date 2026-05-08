@@ -17,10 +17,14 @@ const failingSchema = {
 describe('validateRealtimePayload', () => {
   it('returns parsed data on success without touching Sentry', () => {
     vi.mocked(Sentry.captureException).mockClear();
-    const out = validateRealtimePayload(passthroughSchema, { id: '1' }, {
-      table: 'orders',
-      event: 'INSERT',
-    });
+    const out = validateRealtimePayload(
+      passthroughSchema,
+      { id: '1' },
+      {
+        table: 'orders',
+        event: 'INSERT',
+      },
+    );
     expect(out).toEqual({ id: '1' });
     expect(Sentry.captureException).not.toHaveBeenCalled();
   });

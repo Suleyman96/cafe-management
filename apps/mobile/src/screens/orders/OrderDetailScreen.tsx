@@ -15,9 +15,9 @@ import {
   useUpdateOrderStatus,
 } from '@/hooks/local';
 import { useOrderPayments } from '@/hooks/shared';
+import { useCanPerform } from '@/hooks/use-can-perform';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
-import { useAuthStore } from '@/store/auth-store';
 import { CARD_RADIUS, COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, OrderPayment, OrdersStackParamList } from '@/types';
 
@@ -34,7 +34,6 @@ export default function OrderDetailScreen() {
   const route = useRoute<Route>();
   const navigation = useNavigation<Nav>();
   const { orderId } = route.params;
-  const staff = useAuthStore((s) => s.staff);
   const { showSuccess, showError } = useSnackbar();
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
@@ -87,8 +86,7 @@ export default function OrderDetailScreen() {
     [updateItemStatus, showSuccess, showError, t],
   );
 
-  const showItemActions =
-    staff?.role === 'kitchen' || staff?.role === 'admin' || staff?.role === 'owner';
+  const showItemActions = useCanPerform('mark_item_ready');
 
   const renderItem = useCallback(
     ({ item }: { item: OrderItemWithMenuItem }) => (

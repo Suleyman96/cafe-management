@@ -3,11 +3,11 @@ import { useTranslation } from '@gustri/i18n';
 import * as Sentry from '@sentry/react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Card, Chip, FAB, SegmentedButtons, Text } from 'react-native-paper';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskModal } from '@/components/tasks/TaskModal';
-import { EmptyState, LoadingScreen } from '@/components/ui';
+import { DestructiveConfirmModal, EmptyState, LoadingScreen } from '@/components/ui';
 import {
   useCreateTask,
   useDeleteTask,
@@ -21,6 +21,7 @@ import {
   useTasks,
   useUpdateTask,
 } from '@/hooks/shared';
+import { useCanPerform } from '@/hooks/use-can-perform';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { getLocalDateString } from '@/lib/date-utils';
 import { useAuthStore } from '@/store/auth-store';
@@ -31,7 +32,7 @@ type TabView = 'today' | 'all' | 'my' | 'templates';
 
 export default function TasksListScreen() {
   const staff = useAuthStore((s) => s.staff);
-  const isAdmin = staff?.role === 'admin' || staff?.role === 'owner';
+  const canManageTasks = useCanPerform('manage_tasks');
   const { showSuccess, showError } = useSnackbar();
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
@@ -40,6 +41,7 @@ export default function TasksListScreen() {
   const [priorityFilter, setPriorityFilter] = useState('');
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const statusOptions = useMemo(
     () => [
@@ -125,9 +127,9 @@ export default function TasksListScreen() {
       { value: 'all', label: tCommon('all') },
       { value: 'my', label: t('tasks.myTasks') },
     ];
-    if (isAdmin) base.push({ value: 'templates', label: t('tasks.templates') });
+    if (canManageTasks) base.push({ value: 'templates', label: t('tasks.templates') });
     return base;
-  }, [isAdmin, t, tCommon]);
+  }, [canManageTasks, t, tCommon]);
 
   const handleMarkInProgress = async (id: string) => {
     try {
@@ -162,21 +164,19 @@ export default function TasksListScreen() {
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert(t('tasks.deleteTask'), t('tasks.deleteTaskConfirm'), [
-      { text: tCommon('cancel'), style: 'cancel' },
-      {
-        text: tCommon('delete'),
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteTask.mutateAsync(id);
-            showSuccess(t('tasks.taskDeleted'));
-          } catch (err: unknown) {
-            showError(err instanceof Error ? err : t('tasks.failedDelete'));
-          }
-        },
-      },
-    ]);
+    setDeleteTarget(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
+    setDeleteTarget(null);
+    try {
+      await deleteTask.mutateAsync(id);
+      showSuccess(t('tasks.taskDeleted'));
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err : t('tasks.failedDelete'));
+    }
   };
 
   const handleSaveTask = async (data: Record<string, unknown>) => {
@@ -287,7 +287,7 @@ export default function TasksListScreen() {
         renderItem={({ item }) => (
           <TaskCard
             task={item}
-            isAdmin={isAdmin}
+            isAdmin={canManageTasks}
             isTemplate={tab === 'templates'}
             onMarkInProgress={handleMarkInProgress}
             onMarkCompleted={handleMarkCompleted}
@@ -319,7 +319,7 @@ export default function TasksListScreen() {
         <TaskModal
           task={editingTask}
           staffId={staff?.id}
-          isAdmin={isAdmin}
+          isAdmin={canManageTasks}
           onSave={handleSaveTask}
           isSaving={createTask.isPending || updateTask.isPending}
           onClose={() => {
@@ -328,6 +328,16 @@ export default function TasksListScreen() {
           }}
         />
       )}
+
+      <DestructiveConfirmModal
+        visible={deleteTarget !== null}
+        title={t('tasks.deleteTask')}
+        message={t('tasks.deleteTaskConfirm')}
+        confirmLabel={tCommon('delete')}
+        cancelLabel={tCommon('cancel')}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </View>
   );
 }

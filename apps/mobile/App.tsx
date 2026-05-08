@@ -43,7 +43,12 @@ import {
 } from './src/lib/query-persister';
 import { registerMutationDefaults } from './src/lib/register-mutation-defaults';
 import { sanitizeBreadcrumbUrl } from './src/lib/sentry-breadcrumb-url';
-import { redactJsonBody, redactPii } from './src/lib/sentry-redaction';
+import {
+  redactJsonBody,
+  redactPii,
+  redactString,
+  redactStringsDeep,
+} from './src/lib/sentry-redaction';
 import {
   clearSessionStamp,
   initEncryptedSessionStamp,
@@ -106,11 +111,31 @@ Sentry.init({
           if ('body' in data) data.body = redactJsonBody(data.body);
           if ('data' in data) data.data = redactJsonBody(data.data);
         }
+        // M3: free-text PII inside the breadcrumb message itself
+        // (e.g. console-bridge messages echoing customer details, error
+        // messages produced by validators that quote the bad input).
+        if (typeof breadcrumb.message === 'string') {
+          breadcrumb.message = redactString(breadcrumb.message);
+        }
         return true;
       });
     }
     if (event.request && event.request.data !== undefined) {
       event.request.data = redactPii(event.request.data) as typeof event.request.data;
+    }
+    // M3: top-level event.message and the contexts/extra free-text bags.
+    // `event.message` is what `Sentry.captureMessage(...)` writes; contexts
+    // and extra are arbitrary string maps the SDK and our own tagging code
+    // populate. None goes through `redactPii` (key-name based) because the
+    // shape isn't structured PII fields.
+    if (typeof event.message === 'string') {
+      event.message = redactString(event.message);
+    }
+    if (event.contexts) {
+      event.contexts = redactStringsDeep(event.contexts) as typeof event.contexts;
+    }
+    if (event.extra) {
+      event.extra = redactStringsDeep(event.extra) as typeof event.extra;
     }
     return event;
   },

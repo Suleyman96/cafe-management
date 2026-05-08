@@ -9,9 +9,9 @@ import { Button, Card, Chip, Modal, Portal, Text } from 'react-native-paper';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useCurrencySymbol, useOrders, useUpdateStaff } from '@/hooks/local';
 import { usePaymentsByStaff, useStaffMember } from '@/hooks/shared';
+import { useCanPerform } from '@/hooks/use-can-perform';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { TextInput } from '@/lib/paper-compat';
-import { useAuthStore } from '@/store/auth-store';
 import { COLORS, ROLE_COLORS } from '@/theme';
 import type { Order, OrderPayment, Staff, StaffManagementStackParamList } from '@/types';
 
@@ -26,7 +26,7 @@ export default function StaffDetailScreen() {
   const locale = useLocale();
   const route = useRoute<Route>();
   const { staffId } = route.params;
-  const currentUser = useAuthStore((s) => s.staff);
+  const canGrantOwnerRole = useCanPerform('grant_owner_role');
   const { showSuccess, showError } = useSnackbar();
 
   const { data: member, isLoading, error, refetch } = useStaffMember(staffId);
@@ -82,7 +82,7 @@ export default function StaffDetailScreen() {
     return <ErrorScreen error={error || t('staffMgmt.staffNotFound')} onRetry={refetch} />;
 
   const roleColors = ROLE_COLORS[member.role] || { bg: '#f3f4f6', text: '#374151' };
-  const editableRoles = currentUser?.role === 'owner' ? ROLES_ALL : ROLES_NO_OWNER;
+  const editableRoles = canGrantOwnerRole ? ROLES_ALL : ROLES_NO_OWNER;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

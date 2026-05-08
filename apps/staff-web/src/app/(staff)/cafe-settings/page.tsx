@@ -2,12 +2,13 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui';
-import { Palette, Phone, RotateCcw, Save, Store } from 'lucide-react';
+import { Bell, Palette, Phone, RotateCcw, Save, Store } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { BrandingSettingsTab } from '@/components/settings/branding-settings-tab';
 import { ContactSettingsTab } from '@/components/settings/contact-settings-tab';
 import { GeneralSettingsTab } from '@/components/settings/general-settings-tab';
+import { NotificationSettingsTab } from '@/components/settings/notification-settings-tab';
 import { useCafeSettings, useUpdateCafeSettings } from '@/hooks';
 import { useCanPerform } from '@/hooks/use-can-perform';
 import type { CafeSettingsFormData } from '@/types/settings';
@@ -57,7 +58,9 @@ export default function CafeSettingsPage() {
   });
 
   const [hasChanges, setHasChanges] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'branding' | 'contact'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'branding' | 'contact' | 'notifications'>(
+    'general',
+  );
 
   // Sync form data when settings load
   useEffect(() => {
@@ -181,6 +184,7 @@ export default function CafeSettingsPage() {
     { id: 'general' as const, label: t('cafeSettings.tabs.general'), icon: Store },
     { id: 'branding' as const, label: t('cafeSettings.tabs.branding'), icon: Palette },
     { id: 'contact' as const, label: t('cafeSettings.tabs.contact'), icon: Phone },
+    { id: 'notifications' as const, label: t('cafeSettings.tabs.notifications'), icon: Bell },
   ];
 
   return (
@@ -236,6 +240,7 @@ export default function CafeSettingsPage() {
       {activeTab === 'contact' && (
         <ContactSettingsTab formData={formData} onChange={handleChange} />
       )}
+      {activeTab === 'notifications' && <NotificationSettingsTab />}
 
       {/* Save button at bottom for mobile */}
       {hasChanges && (

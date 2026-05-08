@@ -1171,29 +1171,314 @@ Nothing — premise rejected after re-reading the design intent and the existing
 
 ## 🟡 Tier 4 — Medium
 
-### M1. Inline role checks in mobile
+### M1. Inline role checks in mobile — ✅ DONE (2026-05-08)
 - **Files:** `apps/mobile/src/screens/orders/OrderDetailScreen.tsx:91`, `apps/mobile/src/screens/tasks/TasksListScreen.tsx:34`, and any other inline `staff?.role === 'admin'` references.
 - **Fix:** Mirror staff-web's `useCanPerform`/`PERMISSIONS` map into mobile (`apps/mobile/src/hooks/use-can-perform.ts`). Replace inline comparisons. CLAUDE.md explicitly forbids new inline role checks.
 
-### M2. Destructive `Alert.alert` confirms
+#### Findings on close inspection (premise re-evaluated)
+
+- **Premise valid.** Grepping `rg "staff\?\.role" apps/mobile/src` and `rg "role\s*===\s*'(admin|owner|kitchen|waiter)'" apps/mobile/src` turned up three call sites that gate UI behavior on a literal role comparison:
+  - [OrderDetailScreen.tsx:91](apps/mobile/src/screens/orders/OrderDetailScreen.tsx#L91) (audit-cited) — `staff?.role === 'kitchen' || staff?.role === 'admin' || staff?.role === 'owner'` to show the per-item "mark ready" button.
+  - [TasksListScreen.tsx:34](apps/mobile/src/screens/tasks/TasksListScreen.tsx#L34) (audit-cited) — `staff?.role === 'admin' || staff?.role === 'owner'` to show the templates tab.
+  - [StaffDetailScreen.tsx:85](apps/mobile/src/screens/staff-management/StaffDetailScreen.tsx#L85) (audit's "any other inline" cite) — `currentUser?.role === 'owner'` to widen the editable-role list to include `owner`.
+- **Out of M1's scope but flagged:** [`MainTabs.tsx:44`](apps/mobile/src/navigation/MainTabs.tsx#L44) `role === 'kitchen'` for default-tab selection, and the `roles: string[]`-driven visibility lists in `MainTabs` and `CustomDrawerContent`. These are role-shaped routing/visibility data, not action gates — CLAUDE.md's prohibition is on the `=== 'admin' || === 'owner'`-style inline action checks. The `roles` arrays are already a centralized policy surface (declared next to the route config); turning them into permission-actions would multiply the policy types without removing inline literals (they'd still appear in the `roles` arrays). Left as-is.
+- **Permission map placement: `@gustri/core`.** The audit said "mirror staff-web's"; doing so app-locally would have produced two copies of the policy map. Per CLAUDE.md ("policy data, not React"), the headless `canPerform(role, action)` belongs in `@gustri/core`. Both `useCanPerform` hooks (web + mobile) now delegate to the same function — single source of truth.
+- **New action shapes required.** Staff-web's existing map was binary (`ADMIN_ONLY` vs everyone). The OrderDetailScreen check is `kitchen|admin|owner` (everyone *except* waiter — kitchen workflow), and the StaffDetailScreen check is `owner`-only. Restructured the map from a single `Set<Action>` to `Record<Action, ReadonlySet<UserRole>>` so each action carries its own role-set. Two new actions added: `mark_item_ready` (kitchen+admin+owner) and `grant_owner_role` (owner-only). The 10 existing staff-web actions all map to the same admin-or-owner set, preserving prior behavior.
+
+#### What was changed
+
+- `packages/core/src/permissions.ts` (new)
+  - `Action` type — 12 entries: 10 prior staff-web actions + the two new mobile-required ones.
+  - `ACTION_ALLOWED_ROLES: Record<Action, ReadonlySet<UserRole>>` map. Reuses three named sets (`ADMIN_OR_OWNER`, `KITCHEN_ADMIN_OR_OWNER`, `OWNER_ONLY`) so adding a new action with the same shape is one map entry, not a new set.
+  - `canPerform(role, action)` — pure function returning `false` for null/undefined role, otherwise membership lookup. No React, no Zustand — headless-package boundary preserved.
+  - Module-level JSDoc spells out: server-side enforcement is the actual security boundary; this is UI policy only; never inline `=== 'admin' || === 'owner'` at a call site.
+- `packages/core/src/index.ts` — added `export * from './permissions';` between `errors` and `profit-metrics` (alphabetic).
+- `apps/staff-web/src/hooks/use-can-perform.ts`
+  - Now imports `canPerform` and `Action` from `@gustri/core` and delegates. Existing callers (10 files: 5 modal/component, 4 page, 1 sidebar — verified by `rg useCanPerform apps/staff-web/src`) are unchanged because the hook signature is unchanged. Re-exports the `Action` type for those callers.
+  - Old `ADMIN_ONLY` set deleted — duplicated by the core map.
+- `apps/mobile/src/hooks/use-can-perform.ts` (new)
+  - Same shape as staff-web's hook: reads `role` from the mobile `useAuthStore` and delegates to `canPerform`. JSDoc reiterates the CLAUDE.md prohibition on inline role checks for mobile.
+- `apps/mobile/src/screens/orders/OrderDetailScreen.tsx`
+  - Replaced `staff?.role === 'kitchen' || staff?.role === 'admin' || staff?.role === 'owner'` with `useCanPerform('mark_item_ready')`. Removed the unused `useAuthStore` import and the `staff` selector binding.
+- `apps/mobile/src/screens/tasks/TasksListScreen.tsx`
+  - Replaced `isAdmin = staff?.role === 'admin' || staff?.role === 'owner'` with `canManageTasks = useCanPerform('manage_tasks')`. Renamed the variable rather than keeping `isAdmin` so the new contract (an action gate, not a role identity) is visible at the call site. Updated three references (`tabOptions`, two `<TaskCard>`/`<TaskModal>` props) and the `tabOptions` `useMemo` dep array. Kept the `useAuthStore` import — `staff?.id` is still consumed elsewhere in the file.
+- `apps/mobile/src/screens/staff-management/StaffDetailScreen.tsx`
+  - Replaced `currentUser?.role === 'owner'` with `useCanPerform('grant_owner_role')`. Removed the unused `useAuthStore` import.
+- `packages/core/src/__tests__/permissions.test.ts` (new, 12 tests)
+  - Null/undefined role rejected for every action category.
+  - All 10 admin-or-owner actions: admin and owner pass; waiter and kitchen fail (parameterized via `it.each`).
+  - `mark_item_ready`: kitchen, admin, owner pass; waiter fails.
+  - `grant_owner_role`: owner passes; admin, kitchen, waiter all fail.
+
+#### Validation run
+
+- `pnpm --filter @gustri/core build` — fresh `dist` carrying the new export.
+- `pnpm --filter @gustri/core test` — 7 files, 178 tests passing (12 new permissions tests; previous core bar 166).
+- `pnpm test:mobile` — 55 files, 294 tests passing (no new mobile tests; the screen changes are wiring through the hook, exercised by the hook's underlying core unit tests + the type system).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `pnpm --filter @gustri/staff-web test` — 65 files, 516 tests passing (no regressions from the hook delegation refactor).
+- `pnpm --filter @gustri/staff-web type-check` — clean.
+- `npx biome check` on the eight touched files — clean.
+
+#### Notes for the agent picking up M2 / later
+
+- **`@gustri/core/permissions` is now the only place to add UI policy gates.** A new mobile or web action (e.g. M2's destructive-confirm screens) should add an `Action` entry there, not a hook-local check. The `useCanPerform` hooks are thin shims; don't grow them.
+- **The `roles: string[]` arrays in `MainTabs.tsx` and `CustomDrawerContent.tsx` are intentionally NOT migrated.** They're route-visibility data, declared next to the route config; folding them into actions would force every navigation entry to mint a permission-action without changing the inline-literal density. If a future audit pushes for full migration, take the route-config arrays as a unit, not piecemeal.
+- **`mark_item_ready` is mobile-only today.** If staff-web ever adds an item-ready button on its order page (currently it has separate kitchen flow), reuse this action — that's the single-source-of-truth dividend.
+- **Server enforcement is unchanged.** RLS policies and `verifyAdmin` in `/api/v1/*` routes are the actual security gate. A bug in `canPerform` would leak/hide UI but not change what the server accepts. Don't conflate the two when reviewing.
+
+### M2. Destructive `Alert.alert` confirms — ✅ DONE (2026-05-08, partial — narrowed)
 - **Files:** `apps/mobile/src/screens/tasks/TasksListScreen.tsx:164-180`, search for other `Alert.alert.*destructive` usages.
 - **Fix:** Build a typed `<DestructiveConfirmModal>` component requiring explicit text input or a long-press to confirm. Use it for: cancel order, refund, delete task, void payment.
 
-### M3. Sentry redaction whitelist misses message text
+#### Findings on close inspection (premise re-evaluated)
+
+- **Premise valid for the cited file. Audit's "use it for: cancel order, refund, delete task, void payment" cite is overstated against the current code.** Greps for the destructive-Alert pattern:
+  - `rg "Alert\.alert" apps/mobile` → exactly two hits: [TasksListScreen.tsx:166](apps/mobile/src/screens/tasks/TasksListScreen.tsx#L166) (the audit-cited delete-task) and [App.tsx:296](apps/mobile/App.tsx#L296) (the OTA update prompt — *not* destructive, B4 owner).
+  - `rg "style:\s*'destructive'" apps/mobile` → exactly one hit: TasksListScreen.tsx:170 (same call site).
+  - **Cancel order** (takeout + delivery) already uses a Portal/Dialog with a typed cancellation reason input — that pattern *is* "explicit text input to confirm", just framed as a reason field. No retrofit needed; the existing UX is acceptable.
+  - **Refund / void payment** are admin-tier flows that are intentionally web-only per CLAUDE.md's "Mobile Parity Rule" (`apps/mobile/src/__tests__/...` confirms no mobile refund hook). Out of scope.
+  - So M2's actual scope is one Alert.alert → modal swap. The audit's broader list was anticipatory.
+- **Long-press over text-input.** Per the agent prompt's guidance, picked long-press: avoids the i18n scope of "Type DELETE to confirm" (would have needed a new key × 20 locales) and matches mobile gesture idiom. Implemented with a 1500 ms hold + an animated progress fill on the button itself — the visual fill IS the affordance, so no instructional copy ("hold to delete") is needed and no new i18n key was added. A user who taps and sees nothing happen will instinctively try again, see the bar starting to fill, and complete the gesture. This is the same pattern Telegram / TikTok use for destructive holds.
+- **Component placement: `apps/mobile/src/components/ui/`.** Per CLAUDE.md placement table — used by 2+ apps → `@gustri/ui`; otherwise app-local. Currently no web app uses an Alert.alert.destructive equivalent, so app-local is correct. Promote when a second consumer surfaces.
+- **Existing `ConfirmDialog`** at `apps/mobile/src/components/ui/ConfirmDialog.tsx` is the *vanilla tap-to-confirm* dialog and is intentionally **not** replaced — it's the right tool for non-destructive confirmations (e.g. "discard unsaved changes?"). The new component is destructive-specific.
+
+#### What was changed
+
+- `apps/mobile/src/components/ui/DestructiveConfirmModal.tsx` (new)
+  - Typed props: `visible`, `title`, `message`, `confirmLabel`, `cancelLabel` (all already-localized strings — call site owns i18n), `holdDurationMs?: number = 1500`, `onConfirm`, `onCancel`.
+  - State: `progress: number ∈ [0, 1]`, plus `completionTimerRef` (one-shot setTimeout that fires `onConfirm`) and `tickTimerRef` (interval at 30 ms that updates the progress bar).
+  - `handlePressIn` (RN `Pressable.onPressIn`): starts both timers. Idempotent — early-returns if a hold is already in progress.
+  - `handlePressOut`: clears both timers and resets progress to 0. Safety net for `onMouseLeave` paths under web testing.
+  - Two cleanup effects: `!visible → reset()` so closing the modal mid-hold cancels; unmount cleanup so a hold-in-progress when the parent unmounts the modal can't fire `onConfirm` against a stale closure.
+  - Confirm button is an `RN Pressable` with an absolute-positioned `View` (the fill) inside it; `width: ${progress * 100}%` is the only animated prop. Not using `Animated.timing` — interval-driven setState is simpler, equally testable, and the visual difference at 30 ms ticks is below human perception.
+  - JSDoc spells out the rationale (mistap on a tap-to-confirm dialog is the failure mode this closes; visual fill is the affordance; no new i18n required).
+- `apps/mobile/src/components/ui/index.ts`
+  - Added `export { DestructiveConfirmModal } from './DestructiveConfirmModal';` alphabetically between `ConfirmDialog` and `EmptyState`.
+- `apps/mobile/src/screens/tasks/TasksListScreen.tsx`
+  - Removed `Alert` from the `react-native` import (no longer needed).
+  - Added `DestructiveConfirmModal` to the `@/components/ui` import.
+  - Added `deleteTarget: string | null` state to drive modal visibility.
+  - `handleDelete(id)` now sets `deleteTarget` (open the modal) instead of calling `Alert.alert`.
+  - New `handleConfirmDelete` runs the actual `deleteTask.mutateAsync` + snackbar branches inside the same try/catch as the prior `Alert.alert` `onPress` callback.
+  - Modal rendered at the bottom of the JSX tree alongside `TaskModal`, gated by `deleteTarget !== null`.
+- `apps/mobile/src/__tests__/components/DestructiveConfirmModal.test.tsx` (new, 8 tests)
+  - Renders nothing when `visible=false`.
+  - Renders title, message, and both buttons when visible.
+  - Cancel button calls `onCancel`.
+  - Quick tap (200 ms then release) does NOT call `onConfirm`. Including a forward 2000 ms timer-advance to prove no delayed leak.
+  - Holding for the full `holdDurationMs` calls `onConfirm` exactly once.
+  - Press-release-press cycle: the hold counter resets to 0 between attempts (regression guard against a press-then-release leaking 800 ms of progress into the second attempt).
+  - `visible` flipping false mid-hold cancels the in-flight timer (regression guard against the unmount-during-hold path firing `onConfirm` after the modal closes).
+  - Progress fill width reaches 30–70% at 500 ms into a 1000 ms hold (slack for the 30 ms tick alignment) — pins the visible-affordance contract so a future "drop the progress bar for a spinner" change fails loudly.
+  - React-Native + react-native-paper primitives mocked to plain DOM elements (same approach as `KitchenOrderCard.test.tsx` and `PendingSyncBadge.test.tsx`); RN `Pressable` mapped to a `<button>` with `onMouseDown` / `onMouseUp` / `onMouseLeave` so DOM Testing Library `fireEvent.mouseDown` exercises the gesture path. Style-array flatten helper so the inline `width` is observable in the DOM.
+  - `vi.useFakeTimers()` per-test; `vi.useRealTimers()` cleanup in `afterEach`.
+
+#### Validation run
+
+- `pnpm test:mobile` — 56 files, 302 tests passing (8 new M2 tests; previous bar 294).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `npx biome check` on the four touched files — clean (one auto-format applied to the test file).
+- **Manual gesture-feel deferred** to release-checklist UX block. The unit test pins the timing contract (1500 ms default, progress-fill visual at 30 ms ticks); subjective hold-feel is a release-build-on-device judgement.
+
+#### Notes for the agent picking up M3 / later
+
+- **Don't extract `holdDurationMs` to a global constant** unless a second consumer surfaces. The 1500 ms default lives at the component level so a future "this is too slow / fast for *my* call site" tuning is one prop, not a cross-component change.
+- **The visual-only affordance is load-bearing**, not a placeholder. If a future UX review pushes for a "Hold to delete" text label, that's a 20-locale i18n addition — confirm scope before adding the key. The current design is intentional: tapping does nothing, holding fills the bar; users discover the gesture by trying twice.
+- **App.tsx's OTA `Alert.alert` is NOT destructive** — it's a "Restart now" / "Later" prompt. Don't migrate it under "M2 cleanup" — it'd just add modal weight to a transient prompt. If a future audit raises it, the right answer is "not destructive, leave alone."
+- **Cancel-order dialogs use the typed-reason pattern**, not the long-press. If a future audit asks why those don't use `<DestructiveConfirmModal>`: typing the reason already serves the audit's "explicit input to confirm" intent, and adding a long-press on top would be redundant friction. They're different patterns for different contexts.
+- **No new i18n keys.** The modal uses the existing `tasks.deleteTask` (title), `tasks.deleteTaskConfirm` (body), `common.delete` (button), `common.cancel` (button) — all already covered across all 20 locales. If a future destructive flow needs new copy, the call site adds the keys; the component itself is i18n-free.
+
+### M3. Sentry redaction whitelist misses message text — ✅ DONE (2026-05-08)
 - **File:** `apps/mobile/src/lib/sentry-redaction.ts:13-24`
 - **Fix:** Add a `redactString(s: string): string` that runs regex passes over message bodies (table numbers, order numbers, phone-shaped strings, email-shaped strings). Apply in `beforeSend` to `event.message`, `event.breadcrumbs[].message`, and nested string values.
 
-### M4. Audio JSI handle leak on cleanup throw
+#### Findings on close inspection (premise re-evaluated)
+
+- **Premise valid.** The pre-fix `sentry-redaction.ts` only handled key-name-based PII (`PII_FIELDS` set in `redactPii` / `redactJsonBody`). Free-text strings — `event.message` from `Sentry.captureMessage(...)`, `breadcrumb.message` from console-bridge, the `event.contexts` / `event.extra` bags — passed through verbatim. A validator that quotes the bad input ("invalid phone +15551234567") or a captureMessage tagged with an order id leaks PII despite the structured-field redaction.
+- **Composes with H10's `sanitizeBreadcrumbUrl`, no overlap.** That helper handles URL strings (one branch of `beforeSend`); `redactString` handles message text (a different branch). Neither imports the other; they run in independent passes against different fields.
+- **Regex tradeoffs:**
+  - **Phone** matched only when prefixed with `+`. Bare 10-digit runs (`5551234567`) are NOT redacted because they're shape-ambiguous against order ids, SKUs, FOREIGN KEYs, etc. The structured-field `redactPii` pass already covers `customer_phone` field-level cases; redacting bare digits in free text would over-redact diagnostic strings. Per the agent prompt's note ("Don't be too aggressive").
+  - **Order # / Table N** preserve the prefix and redact only the identifier (`Order #[redacted]`, `Table [redacted]`). Per the agent prompt's note ("preserve the kind of value rather than dropping the whole line"). Aligns with the audit's stated test patterns.
+  - **Order-redaction must run BEFORE phone-redaction.** Otherwise `Order #ORD-2026-0001` would have `2026-0001` swallowed by phone (it doesn't today, because phone requires a leading `+`, but the contract is fragile if phone is widened later). Pinned by a regression test.
+- **`event.message` typing.** Sentry's `Event.message` can be a string OR a structured `{ message, params }` object in older SDKs. The current SDK (`@sentry/react-native@~5.x`) types it as `string | undefined` — the runtime check `typeof event.message === 'string'` is correct and would fall through cleanly if a future SDK widens the type.
+- **No structured-field broadening.** `customer_email` was raised as a candidate for `PII_FIELDS` but the existing `email` entry already catches the common case (`{ email: '...' }`). Adding `customer_email` only makes sense if a payload landed with that exact key — verified by greps over `apiRoutes` and wrapper inputs (none use `customer_email`). Out of M3 scope.
+
+#### What was changed
+
+- `apps/mobile/src/lib/sentry-redaction.ts`
+  - `EMAIL_RE`, `PHONE_RE`, `ORDER_NUMBER_RE`, `TABLE_NUMBER_RE` exported as module-private constants. JSDoc spells out each regex's intent and the false-positive choices.
+  - `redactString(s: string): string` — runs the four regex passes in the deliberate order (order # → email → phone → table). Returns a new string; idempotent on already-redacted output (placeholders don't match any pattern).
+  - `redactStringsDeep(value, seen?): unknown` — recursive walker that applies `redactString` to every string leaf in a structure. Cycle-safe via the same `WeakSet` pattern `redactPii` uses. Handles null / non-object primitives by passing through.
+  - Module-level JSDoc clarifies the division of labor: `redactPii` handles known field names; `redactString` handles regex shapes in arbitrary text; they don't overlap.
+- `apps/mobile/App.tsx`
+  - Added `redactString` and `redactStringsDeep` to the `sentry-redaction` import.
+  - In `beforeSend`'s breadcrumb filter loop: `if (typeof breadcrumb.message === 'string') breadcrumb.message = redactString(breadcrumb.message)` — covers the breadcrumb case the audit cites.
+  - After the breadcrumb loop and the existing `event.request.data` redaction:
+    - `event.message` redacted via `redactString` if string.
+    - `event.contexts` and `event.extra` walked via `redactStringsDeep` if defined.
+  - Inline comments at each new branch point cite M3 and the rationale (free-text PII vs structured PII).
+- `apps/mobile/src/__tests__/lib/sentry-redaction.test.ts`
+  - Imports widened to include `redactString` and `redactStringsDeep`.
+  - 14 new tests across two new `describe` blocks:
+    - `redactString` (10 tests): inline email, multiple emails, international phone with separators, contiguous-digit international phone, bare 10-digit no-op (intentional), order-number prefix preservation, table-number prefix preservation, chained email/phone/order in one string, no-PII passthrough, regression guard for the order-then-phone ordering invariant.
+    - `redactStringsDeep` (4 tests): nested object walk applying all four redactions, non-string primitive passthrough, cyclic-reference safety, top-level string redaction.
+  - The existing 8 `redactPii` / `redactJsonBody` tests are unchanged.
+
+#### Validation run
+
+- `pnpm test:mobile` — 56 files, 316 tests passing (14 new M3 tests; previous bar 302).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `npx biome check` on the three touched files — clean (one auto-format applied).
+- **Live Sentry-event verification deferred** to release-checklist monitoring block. The unit tests pin the regex contract; verifying that a real Sentry event's `event.message` lands redacted requires a release build and a forced-error path.
+
+#### Notes for the agent picking up M4 / later
+
+- **Don't loosen the phone regex to bare 10-digit runs without a follow-up over-redaction audit.** Order ids, SKUs, audit-log row counts, and timestamps all match digit-only shapes; flipping `+\d` to `\d` would pollute every operational log line with `[phone-redacted]`.
+- **The order-then-phone redaction order is load-bearing.** A reviewer-flagged "let me clean this up alphabetically" change is exactly the regression the test pins. If a future ticket adds a fifth pattern, append it; don't reorder the existing four.
+- **`redactStringsDeep` is generic** — it'll happily redact strings inside any nested structure. The `event.contexts` / `event.extra` call sites are sufficient for now; if a future SDK upgrade adds a new free-text bag (`event.tags` is currently `Record<string, string>` — *also* worth redacting if it carries dynamic values, but Sentry's own tag rules disallow PII in tags by convention), extend the call site, not the helper.
+- **`PII_FIELDS` is the structured-field knob.** If a future API endpoint uses a new key like `delivery_phone`, add it there — `redactString` won't catch it because the value is structured (`{ delivery_phone: '...' }`), not embedded in prose.
+- **Regex performance.** The four regexes run on every string in every breadcrumb of every Sentry event. With `maxBreadcrumbs: 50` (B3) and the typical message length under 200 chars, this is microseconds per event — no perf concern. Don't optimize prematurely.
+
+### M4. Audio JSI handle leak on cleanup throw — ✅ DONE (2026-05-08, partial — narrowed)
 - **File:** `apps/mobile/src/lib/sound.ts:111-127`
 - **Fix:** On `remove()` throw, log to Sentry, force-rebuild the audio session before nulling the player ref. Consider using a single shared player and swapping the source rather than recreating.
 
-### M5. Hook-local idempotency stamping not enforced
+#### Findings on close inspection (premise re-evaluated)
+
+- **Premise valid for the cleanup path.** Pre-fix `cleanupSounds` swallowed `.remove()` throws with a bare `catch { /* Player may already be removed. */ }` — the comment is only sometimes accurate. A throw can also indicate the JSI handle is in a bad state (player torn down on the native side, audio session crashed mid-play with a dangling reference). The next `setupSounds()` would then build a fresh player against a corrupted native context, and the *next* cleanup would also throw — repeating the leak.
+- **"Force-rebuild the audio session" interpretation.** The session is what `setAudioModeAsync({...})` configures (the iOS AVAudioSession / Android AudioFocus state). Re-calling it after a remove() throw resets it to known mode flags. This is the right intervention for the JSI-handle-stale path: the player is gone but the session it was attached to is still in whatever state the failed teardown left it.
+- **"Consider using a single shared player" — REJECTED for M4 scope.** Per the agent prompt's note, this is a refactor larger than M4 needs. The current code already aliases `waiterCallPlayer = newOrderPlayer` (single player, dedupes in cleanup). Recreating per setup is correct given that setup runs once per app lifecycle in production (`App.tsx` boot). If a future investigation surfaces the recreate-per-event pattern as the leak source, take it up as a separate ticket.
+- **Why not also wrap `setAudioModeAsync` in a bounded race like B2's channel teardown?** The Expo audio session reset in this codebase has not exhibited the hung-promise pathology that B2's WebSocket leave-ack did. Adding a timeout race here would be premature complexity. If a future incident shows the reset can hang, copy B2's `Promise.race(reset, timeout(2_000))` pattern at that point.
+- **Sentry `area` tag conventions matched.** B2 used `area: 'auth.cleanup'`, B3 standardized the tag-on-area pattern, H4 used `area: 'pending-revokes.drain'` shape. M4 uses `area: 'sound.cleanup'` with a `player` sub-tag (`'newOrderPlayer'` or `'waiterCallPlayer'`) so a future Sentry investigation can group by whether one player or both are leaking. Session-reset failures use the distinct area `sound.cleanup.session-reset` so the timeline disambiguates "remove() failed" from "remove() succeeded but reset failed".
+
+#### What was changed
+
+- `apps/mobile/src/lib/sound.ts`
+  - Imported `* as Sentry from '@sentry/react-native'`.
+  - Extracted `tryRemovePlayer(player, label): boolean` — a small helper that attempts `.remove()`, captures any throw to Sentry with `area: 'sound.cleanup'` + the player label, and returns `true` on success / `false` on throw. JSDoc spells out the JSI-handle-stale failure mode and why the boolean drives the session-rebuild decision.
+  - `cleanupSounds`:
+    - Tracks `removeThrew: boolean` across both player remove() calls.
+    - The waiterCallPlayer alias-dedup logic is unchanged (only runs `.remove()` if it's a different instance).
+    - After both remove attempts: if `removeThrew` is true, calls `await setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: false })` to force-rebuild the audio session. A throw from the reset itself is captured to Sentry with the distinct `area: 'sound.cleanup.session-reset'` tag and does NOT block the rest of cleanup.
+    - The unconditional ref-nulling at the bottom (`newOrderPlayer = null`, etc.) is unchanged — it runs even if both remove() and reset failed, because logout cleanup must always reach the "nothing references the players" state.
+- `apps/mobile/src/__tests__/lib/sound.test.ts`
+  - Added a local `vi.mock('@sentry/react-native', ...)` with `vi.fn()` exports (the global mock-sentry helper exports noop, can't assert call counts — same workaround as auth-cleanup, realtime-patches, navigation-stack-monitor).
+  - Imported `cleanupSounds`, `setAudioModeAsync`, and `Sentry` for assertion.
+  - New `describe('cleanupSounds (M4 — JSI handle leak recovery)')` block with 5 tests:
+    1. Happy path: `.remove()` called once, no Sentry capture, no session rebuild.
+    2. Throwing `.remove()`: captured to Sentry with `area: 'sound.cleanup'` and the original error.
+    3. Throwing `.remove()`: triggers `setAudioModeAsync` rebuild with the M4 mode flags — pins the rebuild contract.
+    4. Happy path: `setAudioModeAsync` is NOT called (don't churn the session on every logout).
+    5. Throwing `.remove()` + throwing reset: both throws captured separately (distinct area tags), refs still null after.
+  - Existing 3 playback-serialization tests are unchanged.
+
+#### Validation run
+
+- `pnpm test:mobile` — 56 files, 321 tests passing (5 new M4 tests; previous bar 316).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `npx biome check --write` on the two touched files — clean (no fixes needed).
+- **Manual session-reset verification deferred.** The audit's behavioral guarantee (a leaked JSI handle leaves the session recoverable on next setupSounds) requires a real device + a way to fake a JSI throw, neither feasible in CI. The unit test pins the call sequence; the recovery contract is mechanical (the next `setupSounds()` runs `setAudioModeAsync` first anyway, so the worst case is the session-reset call gets duplicated, not skipped).
+
+#### Notes for the agent picking up M5 / later
+
+- **Don't promote `setAudioModeAsync({...})` to a module-level constant.** The mode flags are short and read clearly inline; centralizing them across `setupSounds` and `cleanupSounds` would create a "what does this magic constant do" hop without saving any maintenance.
+- **The single-shared-player refactor is still on the table** if a future incident shows the leak. The shape would be: keep one player ref, swap the source via `replace()` instead of `createAudioPlayer()` per setup. Today there's no evidence the recreate-per-setup pattern is the leak source — production setup runs once per app lifecycle, so the recreate frequency is fine.
+- **`area: 'sound.cleanup'` and `area: 'sound.cleanup.session-reset'` are distinct intentionally.** Don't merge them under one tag. The Sentry timeline filter on `area` is how on-call distinguishes "the player is leaking" from "the session itself is degraded".
+- **`tryRemovePlayer` is a private helper** — not exported. If a future audio resource needs the same try/capture/return-bool pattern, factor it then; copying the 6 lines for a single second use would be over-abstraction.
+
+### M5. Hook-local idempotency stamping not enforced — ✅ DONE (2026-05-08)
 - **File:** `apps/mobile/src/hooks/use-create-order.ts`
 - **Fix:** Add a comment block above the hook documenting the idempotency contract. Add a CI grep guard that fails if any new `createOrder` mutation in `@gustri/queries` lacks a `client_request_id` field in its variables type.
 
-### M6. No `mutationKey` on payment mutation
+#### Findings on close inspection (premise re-evaluated)
+
+- **Premise valid.** Pre-fix, the four-layer idempotency contract (B1's runtime invariants in the hook + register-mutation-defaults, plus the schema-level Zod requirement, plus the server unique index) existed but was scattered across files with only inline 3-line comments at each enforcement point. Anyone adding a new "create" mutation in `@gustri/queries` had no single doc that explained the required shape, and no compile-time signal that they'd missed the contract.
+- **The runtime invariants are already in place from B1** — `useCreateOrder.mutationFn` and `register-mutation-defaults.ts CREATE_ORDER` both throw if `client_request_id` is missing. This M5 fix is the *type-level* gate that makes the same regression a build failure rather than a runtime throw.
+- **Audit's "CI grep guard" interpretation: type-level test, not literal grep.** Per the agent prompt's note ("the cleanest 'CI grep' is a TypeScript type-level check"). A TypeScript-level test using `@ts-expect-error` directives turns "field is required" into a build-time gate: if a future PR makes `client_request_id` optional, the directive's "this should error" promise is no longer satisfied, and `tsc --noEmit` fails. Same gating power as a CI grep, no shell scripts to maintain, no false positives from comments / strings that happen to match the pattern.
+- **Test placement: `@gustri/database`, not `@gustri/queries`.** The Zod schema is in database; the test is asserting the schema's TypeScript type. Putting the test in queries would have required importing the type cross-package and the gate would fire from the wrong package. Tests in queries already cover hooks (mutation behavior, cache keys); the schema contract belongs at the schema source.
+- **Coverage extended to all three `client_request_id` schemas, not just OrderCreate.** `OrderCreateInputSchema`, `OrderPaymentCreateInputSchema`, and `StockAdjustInputSchema` (uses camelCase `clientRequestId`) all map to server endpoints with the `(tenant_id, client_request_id)` dedupe pattern. The audit's literal cite was `createOrder`; same regression risk applies to the other two, so all three got the type-level gate. Marginal cost (3 small test blocks); meaningful future-proofing.
+- **No "CREATE_REFUND" today.** Refunds are admin/web-only on mobile; no mobile mutation in scope for M5. If a future ticket adds a mobile refund flow, it follows the same shape — schema requires `client_request_id`, hook stamps via onMutate, runtime invariant in mutationFn, type-level test in `idempotency-contract.test.ts`. The JSDoc on `useCreateOrder` spells out this template.
+
+#### What was changed
+
+- `apps/mobile/src/hooks/use-create-order.ts`
+  - Added a 30-line JSDoc block above `useCreateOrder` that documents the four-layer idempotency contract: hook onMutate → hook mutationFn → persister-replay path → schema. Each layer cites its file and explains *why* the layer exists from a different angle (variable serialization, regression catch, cold-start replay, type-level gate).
+  - Closes with a "if you add another create mutation..." paragraph that names the type-level test as the place to extend the gate. This is the canonical reference future authors will land on when adding a sibling mutation.
+  - No code path changed — the hook body is unchanged from B1.
+- `packages/database/src/__tests__/idempotency-contract.test.ts` (new, 9 tests)
+  - Three describe blocks (`OrderCreateInput`, `OrderPaymentCreateInput`, `StockAdjustInput`).
+  - Each block: a runtime Zod test ("rejects without `client_request_id`"), and a type-level test using `// @ts-expect-error` to pin the field as required at compile time.
+  - The Zod runtime tests cover the early-validation path (`validateOrThrow` boundary). The `@ts-expect-error` directives are the M5 gate — if any of these schemas loosens the field to `.optional()` in a future PR, the directive's expected-error promise stops being satisfied and `tsc --noEmit` fails the build.
+  - File-header JSDoc spells out the contract for future authors: "every `*CreateInputSchema` that's part of a `client_request_id`-dedupe path gets one entry here."
+
+#### Validation run
+
+- `pnpm --filter @gustri/database test` — 3 files, 117 tests passing (9 new M5 tests; previous database bar 108).
+- `pnpm --filter @gustri/database type-check` — clean. The `@ts-expect-error` directives are correctly satisfied; if any one were not, the type-check would fail with `"Unused '@ts-expect-error' directive"`.
+- `pnpm --filter @gustri/mobile type-check` — clean (no behavior change, just JSDoc).
+- `pnpm test:mobile` — 56 files, 321 tests passing (no new mobile tests; the contract gate is a database-side type-level test).
+- `npx biome check` on the two touched files — clean.
+
+#### Notes for the agent picking up M6 / later
+
+- **The four-layer contract on `useCreateOrder` is the template** for any future server-dedupe mutation. Don't skip a layer because "the runtime check is enough" — the runtime check fires *after* the field is missing, by which point the user already saw the error. The schema + type-level layers are how we keep the regression off the merge in the first place.
+- **`@ts-expect-error` directives are load-bearing**, not noise. If a future PR sees them and tries to "clean up" by removing them, the M5 gate is gone. The file-header JSDoc names them as the gate so a reviewer who reads the file before changing it has the context.
+- **The `StockAdjustInput` field is `clientRequestId` (camelCase)**, not `client_request_id` — divergent from the orders schemas. That's a pre-M5 inconsistency (the wrapper translates it on the wire). Don't "fix" it as part of M5 cleanup; renaming the field is a cross-package contract change.
+- **If a `useCreateOrder` ever lands in `@gustri/queries`** (i.e. shared with web, no longer mobile-local), the runtime invariants stay where they are, but the JSDoc on the mobile hook becomes a cross-reference to the shared one. Move the JSDoc, don't duplicate it.
+- **Type-level gates are NOT a substitute for runtime invariants.** B1's runtime checks catch the case where TypeScript is bypassed (e.g. an `any`-typed payload arrives at `mutationFn`, or `.parse()` was skipped). Both layers stay.
+
+### M6. No `mutationKey` on payment mutation — ✅ DONE (2026-05-08, narrowed)
 - **File:** `apps/mobile/src/hooks/use-payments.ts:51`
 - **Fix:** Add `mutationKey: ['create-payment']` (or richer key including order id). Required for `useIsMutating`, replay, and dedup hooks.
+
+#### Findings on close inspection (premise re-evaluated)
+
+- **Premise valid for the literal "add a stable key" fix; audit's stated motivation only partially applies.**
+  - Pre-fix `useCreatePayment` had no `mutationKey`, so `useIsMutating(...)` against payments fell back to filtering by `mutationFn` reference equality — fragile and impossible to express from a screen-level consumer.
+  - The audit cited "useIsMutating, replay, and dedup hooks" as motivations. **Replay does NOT apply** — `useCreatePayment` is `networkMode: 'always', retry: 0` precisely so payments never queue offline (a "20 minutes later" replay can collide with another card or diverge from the customer-facing receipt; see B1's idempotency analysis). The audit's reasoning conflated "stable key" (yes, useful) with "queueable for replay" (no, deliberately not).
+  - **useIsMutating and dedup are valid uses.** A screen-level `useIsMutating({ mutationKey: ['create-payment'], predicate })` lets `OrderPaymentScreen` disable the "Charge" button while a payment for the *same order* is in flight — same per-row pattern H2 used for kitchen item buttons. This is a future consumer; M6 itself just lands the key.
+- **The key is INTENTIONALLY not added to `MUTATION_KEYS`** (the persisted-mutation registry in `packages/queries/src/mutation-keys.ts`) and INTENTIONALLY not registered in `register-mutation-defaults.ts`. Those two registries are the *replayable persisted-mutation set*; joining them would imply payments resume after rehydrate, which directly contradicts the `networkMode: 'always', retry: 0` contract. Adding the key to either would re-introduce the failure mode B1 closed.
+- **No richer key (e.g. `['create-payment', orderId]`).** Per H2's analysis of the same trade-off: scoping by variables (`predicate: vars.order_id === orderId`) gives the same per-order granularity from a single broad key, without forcing a per-instance mutation observer. The audit's "(or richer key including order id)" was an alternative, not a requirement; the broader key + predicate is the lower-friction shape.
+- **Test placement.** The natural regression guard is in `apps/mobile/src/__tests__/hooks/use-payments.test.ts` — pinning the key as observable via `useIsMutating` AND pinning its absence from `MUTATION_KEYS` (the persisted set). Both tests fail loudly if a future PR reverses either half of the contract.
+
+#### What was changed
+
+- `apps/mobile/src/hooks/use-payments.ts`
+  - Added `mutationKey: ['create-payment']` as the first option key inside `useMutation({...})`.
+  - Comment block above the key spells out (a) what the key enables — `useIsMutating` for screen-level disable, dedup observability — and (b) why it must NOT be in `MUTATION_KEYS` or `register-mutation-defaults.ts` (replay would directly contradict the non-queueable contract three lines below).
+  - No behavior change to onMutate / mutationFn / onSuccess / onError.
+- `apps/mobile/src/__tests__/hooks/use-payments.test.ts`
+  - Imports widened: `MUTATION_KEYS` (regression guard) and `useIsMutating` (consumer test).
+  - New `describe('useCreatePayment - mutationKey (M6)')` block with 2 tests:
+    1. **`exposes the in-flight payment mutation via useIsMutating`** — injects a slow `apiRoutes.payments.create` mock so the mutation stays in flight, asserts `queryClient.isMutating({ mutationKey: ['create-payment'] })` reflects the in-flight state, then resolves and asserts it returns to 0. Pins the consumer contract.
+    2. **`is NOT registered in @gustri/queries MUTATION_KEYS (non-replayable)`** — flat assertion that `Object.values(MUTATION_KEYS)` does not contain `'create-payment'`. Persisted-mutation regression guard: a future "let me clean up the registry" PR that adds the key to MUTATION_KEYS would imply replay-on-rehydrate semantics, contradicting the network-mode contract. This test fires the moment such a PR runs the test suite.
+
+#### Validation run
+
+- `pnpm test:mobile` — 56 files, 323 tests passing (2 new M6 tests; previous bar 321).
+- `pnpm --filter @gustri/mobile type-check` — clean.
+- `pnpm --filter @gustri/staff-web test` — 64 files, 511 tests passing.
+  - **Note on the staff-web bar shift (516 → 511):** unrelated to M-tier work. `apps/staff-web/src/__tests__/components/audio-toggle-menu.test.tsx` (69 lines, ~5 tests) was deleted on this branch by pre-existing staged work *before* this session began (verified via `git diff --stat HEAD apps/staff-web/src/__tests__/`). My only staff-web edit was `apps/staff-web/src/hooks/use-can-perform.ts` (M1 hook delegation refactor), which is signature-compatible with all 10 existing callers; staff-web tests still pass cleanly.
+- `pnpm --filter @gustri/i18n test` — 5 files, 60 tests passing (no new keys; M2's long-press affordance is visual-only, M3's redaction is internal).
+- `pnpm --filter @gustri/database test` — 3 files, 117 tests (M5's idempotency-contract gate).
+- `pnpm --filter @gustri/core test` — 7 files, 178 tests (M1's permissions module).
+- `npx biome check` on the touched files — clean.
+- **Manual smoke deferred** to release-checklist UX block. The "Charge button disables while payment in flight" UX is a future consumer of the M6 key; verifying it requires the screen-level wiring that's explicitly out of M6 scope.
+
+#### Notes for the agent picking up Tier 4 release work / Sweep tasks
+
+- **The natural M6 consumer** is a screen-level `useIsMutating` in `OrderPaymentScreen` to disable the "Charge" button while a payment for *this specific order* is in flight. Shape:
+  ```ts
+  const isCharging = useIsMutating({
+    mutationKey: ['create-payment'],
+    predicate: (m) => (m.state.variables as { order_id?: string } | undefined)?.order_id === orderId,
+  });
+  ```
+  Pair with the existing connectivity gate (`OfflineGuardButton`) — both must pass for the button to be enabled. NOT in M6 scope; flag as a follow-up if rapid-double-tap on the Charge button surfaces in production.
+- **Don't promote `'create-payment'` to a `MUTATION_KEYS` entry under any circumstances.** The B1 idempotency analysis is the last word: payments are non-queueable. The M6 test's second assertion is the regression guard; if it ever fails, do NOT "fix it by adding the key to the registry" — the failure is correct, the proposed registry-add is the bug.
+- **`useCreatePayment` is mobile-local.** If a future shared `@gustri/queries/use-create-payment` lands (e.g. for staff-web parity), the same `mutationKey: ['create-payment']` discipline applies — and the registry-absence test moves to a shared package test. Don't fork the contract.
+- **The test mocks the slow payment via `apiRoutes.payments.create.mockImplementationOnce(() => pending)` and resolves the promise after the assertion.** Same shape works for any "is this mutation in flight" test on networked-mode mutations. If you need a similar test elsewhere, copy this pattern rather than reaching for fake timers (mutations don't go through React's render-tick path the same way state updates do).
 
 ---
 

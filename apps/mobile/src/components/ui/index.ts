@@ -1,4 +1,5 @@
 export { ConfirmDialog } from './ConfirmDialog';
+export { DestructiveConfirmModal } from './DestructiveConfirmModal';
 export { EmptyState } from './EmptyState';
 export { ErrorScreen } from './ErrorScreen';
 export { FilterChipBar } from './FilterChipBar';

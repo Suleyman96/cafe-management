@@ -1,4 +1,5 @@
-import { QUERY_KEYS, tenantKey } from '@gustri/queries';
+import { MUTATION_KEYS, QUERY_KEYS, tenantKey } from '@gustri/queries';
+import { useIsMutating } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useCreatePayment, useOrderPayments } from '@/hooks/use-payments';
@@ -84,5 +85,57 @@ describe('useCreatePayment - QUERY_KEYS', () => {
     expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.PAYMENTS, orderId));
     expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
     expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, orderId));
+  });
+});
+
+// M6: stable mutationKey for observability + dedup. The key is intentionally
+// NOT registered in @gustri/queries/MUTATION_KEYS or
+// register-mutation-defaults.ts because payments are non-replayable
+// (`networkMode: 'always', retry: 0`). The two regression guards below pin
+// both halves of that contract — the key is present, AND the persisted-set
+// stays absent.
+describe('useCreatePayment - mutationKey (M6)', () => {
+  it('exposes the in-flight payment mutation via useIsMutating', async () => {
+    // Inject a slow apiRoute so the mutation stays in flight long enough to
+    // be observed by useIsMutating during the call.
+    let resolveCreate: (value: { payment: unknown }) => void = () => {};
+    const pending = new Promise<{ payment: unknown }>((resolve) => {
+      resolveCreate = resolve;
+    });
+    (apiRoutes.payments.create as any).mockImplementationOnce(() => pending);
+
+    const { result, queryClient } = renderHookWithProviders(() => ({
+      mutation: useCreatePayment(),
+      isMutating: useIsMutating({ mutationKey: ['create-payment'] }),
+    }));
+
+    expect(result.current.isMutating).toBe(0);
+
+    const orderId = '00000000-0000-0000-0000-0000000000a1';
+    const promise = result.current.mutation.mutateAsync({
+      order_id: orderId,
+      amount: 25,
+      payment_method: 'cash',
+    });
+
+    // The mutation is now in flight against `mutationKey: ['create-payment']`.
+    await waitFor(() =>
+      expect(queryClient.isMutating({ mutationKey: ['create-payment'] })).toBe(1),
+    );
+
+    resolveCreate({ payment: { id: 'p1' } });
+    await promise;
+
+    await waitFor(() =>
+      expect(queryClient.isMutating({ mutationKey: ['create-payment'] })).toBe(0),
+    );
+  });
+
+  it('is NOT registered in @gustri/queries MUTATION_KEYS (non-replayable)', () => {
+    // Persisted-mutation regression guard: payments must never queue
+    // offline; including them in MUTATION_KEYS would imply replay-on-rehydrate
+    // semantics, which directly contradicts `networkMode: 'always', retry: 0`.
+    const persistedKeys = Object.values(MUTATION_KEYS).map((k) => k.join(':'));
+    expect(persistedKeys).not.toContain('create-payment');
   });
 });

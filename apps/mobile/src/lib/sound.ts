@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react-native';
 import { type AudioPlayer, createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 
 /**
@@ -108,20 +109,54 @@ export async function playWaiterCallSound() {
   await playOnce(waiterCallPlayer);
 }
 
-export async function cleanupSounds() {
+/**
+ * Tries to call `.remove()` on a player and tracks whether it threw. A throw
+ * here usually means the JSI handle is already in a bad state (player was
+ * already torn down on the native side, or the audio session crashed mid-play
+ * and left a dangling reference). Capturing to Sentry surfaces the rate; the
+ * caller (`cleanupSounds`) uses the boolean to decide whether to force-rebuild
+ * the audio session before nulling refs — leaving a degraded session in place
+ * means the next `setupSounds` would create a player against a corrupted
+ * native context.
+ */
+function tryRemovePlayer(player: AudioPlayer, label: string): boolean {
   try {
-    newOrderPlayer?.remove();
-  } catch {
-    // Player may already be removed.
+    player.remove();
+    return true;
+  } catch (err) {
+    Sentry.captureException(err, { tags: { area: 'sound.cleanup', player: label } });
+    return false;
+  }
+}
+
+export async function cleanupSounds() {
+  let removeThrew = false;
+
+  if (newOrderPlayer && !tryRemovePlayer(newOrderPlayer, 'newOrderPlayer')) {
+    removeThrew = true;
   }
 
   // Only remove waiterCallPlayer if it's a different instance than newOrderPlayer
   // (currently they alias, but stay defensive in case the assets diverge).
   if (waiterCallPlayer && waiterCallPlayer !== newOrderPlayer) {
+    if (!tryRemovePlayer(waiterCallPlayer, 'waiterCallPlayer')) {
+      removeThrew = true;
+    }
+  }
+
+  // M4: if any `.remove()` threw, force-rebuild the audio session before we
+  // null the player refs. Without this, the next `setupSounds()` would create
+  // a player against a corrupted native context and a future cleanup would
+  // also throw — repeating the leak. The session reset is fire-and-forget;
+  // a second throw here is captured but doesn't block cleanup.
+  if (removeThrew) {
     try {
-      waiterCallPlayer.remove();
-    } catch {
-      // Player may already be removed.
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        shouldPlayInBackground: false,
+      });
+    } catch (err) {
+      Sentry.captureException(err, { tags: { area: 'sound.cleanup.session-reset' } });
     }
   }
 

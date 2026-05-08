@@ -5,17 +5,30 @@ import { useTranslation } from '@gustri/i18n';
 import { useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/nextjs';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import {
-  type AudioChannel,
-  type AudioPrefs,
-  AudioToggleMenu,
-} from '@/components/notifications/audio-toggle-menu';
 import { useIsLeaderTab } from '@/hooks/use-is-leader-tab';
 import { channelRegistry } from '@/lib/realtime/channel-registry';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
+
+export type AudioChannel = 'orders' | 'waiterCalls' | 'alerts';
+export type AudioPrefs = Record<AudioChannel, boolean>;
+
+interface AudioPrefsContextValue {
+  prefs: AudioPrefs;
+  toggleChannel: (channel: AudioChannel) => void;
+}
+
+const AudioPrefsContext = createContext<AudioPrefsContextValue | null>(null);
+
+export function useAudioPrefs(): AudioPrefsContextValue {
+  const ctx = useContext(AudioPrefsContext);
+  if (!ctx) {
+    throw new Error('useAudioPrefs must be used within a NotificationProvider');
+  }
+  return ctx;
+}
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 
@@ -644,17 +657,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [realtimeConnected, tenantId, playSound, t]);
 
   return (
-    <>
+    <AudioPrefsContext.Provider value={{ prefs: audioPrefs, toggleChannel }}>
       {children}
 
       {/* Realtime degraded indicator */}
       {!realtimeConnected && (
-        <div className="fixed bottom-16 right-4 z-50 bg-amber-100 text-amber-800 text-xs px-3 py-2 rounded-lg shadow-md border border-amber-200">
+        <div className="fixed bottom-4 right-4 z-50 bg-amber-100 text-amber-800 text-xs px-3 py-2 rounded-lg shadow-md border border-amber-200">
           {t('notifications.realtimeDegraded', 'Live updates paused — checking periodically')}
         </div>
       )}
-
-      <AudioToggleMenu prefs={audioPrefs} onToggle={toggleChannel} />
-    </>
+    </AudioPrefsContext.Provider>
   );
 }
