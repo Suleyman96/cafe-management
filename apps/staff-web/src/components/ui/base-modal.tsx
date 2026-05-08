@@ -44,10 +44,16 @@ export function BaseModal({
   const wrapperProps = as === 'form' ? { onSubmit } : {};
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    // `h-dvh` (and `max-h-[90dvh]` on the inner box) — `100vh` resolves to
+    // the URL-bar-collapsed value on iOS Safari, so a `fixed inset-0`
+    // backdrop is taller than the actually visible viewport and centering
+    // inside it places the modal bottom (with the Submit button) behind the
+    // URL bar. `dvh` tracks the visible viewport so the modal stays within
+    // reach on mobile. Desktop behavior is unchanged.
+    <div className="fixed inset-x-0 top-0 h-dvh bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div
         className={cn(
-          'bg-white rounded-lg shadow-xl w-full max-h-[90vh] overflow-hidden flex flex-col',
+          'bg-white rounded-lg shadow-xl w-full max-h-[90dvh] overflow-hidden flex flex-col',
           sizeClasses[size],
         )}
       >
