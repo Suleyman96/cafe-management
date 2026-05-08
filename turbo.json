@@ -4,7 +4,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", ".expo/**", "build/**"]
+      "outputs": ["dist/**", ".next/**", ".expo/**", "build/**"],
+      "env": ["GIT_COMMIT_SHA", "VERCEL_GIT_COMMIT_SHA", "GITHUB_SHA", "VERCEL", "CI"]
     },
     "dev": {
       "cache": false,
