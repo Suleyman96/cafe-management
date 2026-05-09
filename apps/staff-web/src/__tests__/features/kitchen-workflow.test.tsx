@@ -8,15 +8,23 @@ const mockUpdateItemStatus = { mutateAsync: vi.fn().mockResolvedValue({}) };
 let mockOrders: any[] | undefined = [];
 let mockIsLoading = false;
 let mockError: Error | null = null;
-const mockRefetch = vi.fn();
 
 vi.mock('@/hooks', () => ({
-  useOrders: () => ({
-    data: mockOrders,
+  useKitchenView: () => ({
+    visibleOrders: (mockOrders ?? []).map((o) => ({
+      ...o,
+      visibleItems: o.order_items ?? [],
+      hiddenItems: [],
+      hiddenCount: 0,
+      hiddenByCategory: [],
+    })),
+    activeFilter: { mode: 'all' as const },
     isLoading: mockIsLoading,
+    isError: mockError !== null,
     error: mockError,
-    refetch: mockRefetch,
   }),
+  useFeatureFlag: () => false,
+  useCategories: () => ({ data: [] }),
   useUpdateOrderStatus: () => mockUpdateOrderStatus,
   useUpdateOrderItemStatus: () => mockUpdateItemStatus,
   useCancelOrder: () => ({ mutateAsync: vi.fn().mockResolvedValue({}) }),
