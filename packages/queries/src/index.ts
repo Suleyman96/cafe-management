@@ -21,6 +21,14 @@ export { useFeatureFlag } from './hooks/use-feature-flag';
 // Read hooks — Feedback
 export { useFeedback, usePendingFeedbackCount } from './hooks/use-feedback';
 export { useFormatPrice, useFormatPriceWithSettings } from './hooks/use-format-price';
+// Read hooks — Kitchen
+export {
+  type ActiveKitchenFilter,
+  deriveKitchenView,
+  type HiddenCategoryBucket,
+  type KitchenOrderView,
+  useKitchenView,
+} from './hooks/use-kitchen-view';
 export { useMenuItem, useMenuItems, useMenuItemsPaginated } from './hooks/use-menu-items';
 // Read hooks — Orders
 export {
@@ -54,6 +62,10 @@ export {
 } from './hooks/use-schedules';
 // Read hooks — Staff
 export { useActiveWaiters, useStaff, useStaffByEmail, useStaffMember } from './hooks/use-staff';
+export {
+  useReplaceStaffKitchenFilters,
+  useStaffKitchenFilters,
+} from './hooks/use-staff-kitchen-filters';
 // Read hooks — Stock
 export {
   useLowStockCount,

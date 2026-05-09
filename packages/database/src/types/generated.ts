@@ -653,6 +653,7 @@ export type Database = {
       }
       order_items: {
         Row: {
+          category_id: string | null
           client_request_id: string | null
           created_at: string | null
           id: string
@@ -667,6 +668,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          category_id?: string | null
           client_request_id?: string | null
           created_at?: string | null
           id?: string
@@ -681,6 +683,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          category_id?: string | null
           client_request_id?: string | null
           created_at?: string | null
           id?: string
@@ -695,6 +698,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "order_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_items_menu_item_id_fkey"
             columns: ["menu_item_id"]
@@ -1171,6 +1181,49 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "staff_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_kitchen_filters: {
+        Row: {
+          category_id: string
+          created_at: string
+          staff_id: string
+          tenant_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          staff_id: string
+          tenant_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          staff_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_kitchen_filters_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_kitchen_filters_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_kitchen_filters_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2184,6 +2237,7 @@ export type Database = {
       cancel_order_item_qty: {
         Args: { p_cancel_qty: number; p_order_item_id: string }
         Returns: {
+          category_id: string | null
           client_request_id: string | null
           created_at: string | null
           id: string

@@ -400,6 +400,7 @@ describe('Table Schemas', () => {
       tenant_id: uuid1,
       order_id: uuid2,
       menu_item_id: uuid1,
+      category_id: null,
       item_name: 'Pizza',
       item_price: 15.99,
       quantity: 2,

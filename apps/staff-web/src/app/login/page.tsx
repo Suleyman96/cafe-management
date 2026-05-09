@@ -90,7 +90,7 @@ export default function LoginPage() {
           <GustriLogo size={56} showText={false} />
         </div>
         <h1 className="mt-4 text-center text-3xl font-bold text-gray-900">{t('appTitle')}</h1>
-        <p className="mt-1 text-center text-sm text-gray-500">{t('staffPortal')}</p>
+        <p className="mt-1 text-center text-sm text-gray-500">{t('serviceName')}</p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">

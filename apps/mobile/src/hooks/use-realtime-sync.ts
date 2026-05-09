@@ -12,6 +12,13 @@ export type RealtimeHandler<TPayload = Record<string, unknown>> = {
   table: string;
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
   queryKeys: string[][];
+  /**
+   * Optional postgres_changes filter override. Defaults to the channel's
+   * tenant filter (`tenant_id=eq.<tenantId>`). Pass an explicit value when
+   * you need a finer scope — e.g. `staff_id=eq.<id>` for per-staff prefs
+   * so other staff's writes don't fan out to this device.
+   */
+  filter?: string;
   /** Optional callback for side effects (sound, notifications). Runs before invalidation. */
   onPayload?: (payload: TPayload) => void | Promise<void>;
 };
@@ -116,10 +123,10 @@ export function useRealtimeSync(channelName: string, handlers: RealtimeHandler[]
       const tenantFilter = `tenant_id=eq.${tenantId}`;
       let channel = supabase.channel(channelName);
 
-      for (const { table, event, queryKeys, onPayload } of handlersRef.current) {
+      for (const { table, event, queryKeys, filter, onPayload } of handlersRef.current) {
         channel = channel.on(
           'postgres_changes',
-          { event, schema: 'public', table, filter: tenantFilter },
+          { event, schema: 'public', table, filter: filter ?? tenantFilter },
           async (payload) => {
             if (cancelledRef.current) return;
 

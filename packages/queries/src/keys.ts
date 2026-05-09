@@ -51,6 +51,7 @@ export const QUERY_KEYS = {
   Z_REPORT: 'z_report',
   TENANT: 'tenant',
   MONTHLY_ORDER_COUNT: 'monthly_order_count',
+  STAFF_KITCHEN_FILTERS: 'staff_kitchen_filters',
 } as const;
 
 /**

@@ -92,7 +92,7 @@ export default function LoginScreen() {
             gustri
           </Text>
           <Text variant="bodyLarge" style={styles.subtitle}>
-            {t('staffPortal')}
+            {t('serviceName')}
           </Text>
         </View>
 

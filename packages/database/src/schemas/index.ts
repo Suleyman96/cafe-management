@@ -89,6 +89,10 @@ export const OrderItemSchema = z.object({
   tenant_id: z.string().uuid(),
   order_id: z.string().uuid(),
   menu_item_id: z.string().uuid(),
+  // Snapshot of menu_items.category_id at order time. Null when the source
+  // menu item has no category, or when a later category hard-delete cleared
+  // the snapshot. The kitchen view treats null as uncategorized.
+  category_id: z.string().uuid().nullable(),
   item_name: z.string().max(100),
   item_price: z.number(),
   quantity: z.number().int().positive(),
@@ -158,6 +162,13 @@ export const StaffPushTokenSchema = z.object({
   expo_token: z.string().min(1),
   platform: z.string().nullable(),
   last_seen_at: z.string(),
+  created_at: z.string(),
+});
+
+export const StaffKitchenFilterSchema = z.object({
+  staff_id: z.string().uuid(),
+  category_id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
   created_at: z.string(),
 });
 
@@ -472,6 +483,7 @@ export type RefundInput = z.infer<typeof RefundSchema>;
 export type DeliveryCustomerInput = z.infer<typeof DeliveryCustomerSchema>;
 export type TenantInput = z.infer<typeof TenantSchema>;
 export type CategoryInput = z.infer<typeof CategorySchema>;
+export type StaffKitchenFilterInput = z.infer<typeof StaffKitchenFilterSchema>;
 
 // ─── Force-Update Gate Schemas ───────────────────────────────────
 export * from './app-version';

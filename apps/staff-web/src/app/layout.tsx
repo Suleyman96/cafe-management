@@ -4,7 +4,7 @@ import { ServiceWorkerRegistration } from '@/components/pwa/service-worker-regis
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  title: 'gustri | Staff Portal',
+  title: 'gustri | Restaurant Management System',
   description: 'Restaurant management system by gustri',
   manifest: '/manifest.json',
   appleWebApp: {

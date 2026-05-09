@@ -64,6 +64,7 @@ export function createMockDb(): Record<string, any> {
       'delete',
       'getActiveWaiters',
     ),
+    staffKitchenFilters: mockResource('findByStaffId', 'replace'),
     feedback: mockResource('create', 'findAll', 'markRead', 'getPendingCount'),
     payments: mockResource('create', 'findByOrderId', 'findByReceivedBy'),
     waiterCalls: mockResource(

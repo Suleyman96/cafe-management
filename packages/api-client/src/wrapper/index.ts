@@ -21,6 +21,7 @@ import { createRpcWrapper } from './rpc';
 import { createSchedulesWrapper } from './schedules';
 import { createSettingsWrapper } from './settings';
 import { createStaffWrapper } from './staff';
+import { createStaffKitchenFiltersWrapper } from './staff-kitchen-filters';
 import { createStockItemsWrapper } from './stock';
 import { createTablesWrapper } from './tables';
 import { createTasksWrapper } from './tasks';
@@ -49,6 +50,7 @@ export class SupabaseWrapper {
   private _menuItems?: ReturnType<typeof createMenuItemsWrapper>;
   private _categories?: ReturnType<typeof createCategoriesWrapper>;
   private _staff?: ReturnType<typeof createStaffWrapper>;
+  private _staffKitchenFilters?: ReturnType<typeof createStaffKitchenFiltersWrapper>;
   private _feedback?: ReturnType<typeof createFeedbackWrapper>;
   private _payments?: ReturnType<typeof createPaymentsWrapper>;
   private _waiterCalls?: ReturnType<typeof createWaiterCallsWrapper>;
@@ -120,6 +122,11 @@ export class SupabaseWrapper {
   get staff() {
     if (!this._staff) this._staff = createStaffWrapper(this.ctx);
     return this._staff;
+  }
+  get staffKitchenFilters() {
+    if (!this._staffKitchenFilters)
+      this._staffKitchenFilters = createStaffKitchenFiltersWrapper(this.ctx);
+    return this._staffKitchenFilters;
   }
   get feedback() {
     if (!this._feedback) this._feedback = createFeedbackWrapper(this.ctx);
@@ -227,6 +234,7 @@ export type { RpcWrapper } from './rpc';
 export type { SchedulesWrapper } from './schedules';
 export type { SettingsWrapper } from './settings';
 export type { StaffWrapper } from './staff';
+export type { StaffKitchenFiltersWrapper } from './staff-kitchen-filters';
 export type { StockItemsWrapper } from './stock';
 export type { TablesWrapper } from './tables';
 export type { TasksWrapper } from './tasks';

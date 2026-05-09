@@ -86,6 +86,7 @@ export function buildOrderItem(overrides?: Partial<OrderItemRow>): OrderItemRow 
     tenant_id: nextId(),
     order_id: nextId(),
     menu_item_id: nextId(),
+    category_id: null,
     item_name: 'Test Item',
     item_price: 10.0,
     quantity: 1,

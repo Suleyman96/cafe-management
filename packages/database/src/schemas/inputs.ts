@@ -143,3 +143,18 @@ export const CafeSettingsUpdateInputSchema = z
   .partial();
 
 export type CafeSettingsUpdateInput = z.infer<typeof CafeSettingsUpdateInputSchema>;
+
+// ─── Staff kitchen filters replace ───────────────────────────────
+
+// Replace = atomic delete-then-insert. Empty array means "show all" (the
+// kitchen view interprets the absence of rows as no filter). The wrapper
+// derives tenant_id from auth context, so callers pass only the staff_id
+// and category list. Cap at 64 — no realistic restaurant has more than
+// a few dozen kitchen-relevant categories, and the cap defends against
+// pathological payloads.
+export const StaffKitchenFiltersReplaceInputSchema = z.object({
+  staff_id: z.string().uuid(),
+  category_ids: z.array(z.string().uuid()).max(64),
+});
+
+export type StaffKitchenFiltersReplaceInput = z.infer<typeof StaffKitchenFiltersReplaceInputSchema>;

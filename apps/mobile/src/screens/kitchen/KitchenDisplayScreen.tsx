@@ -1,15 +1,46 @@
 import { isDeliveryOrder } from '@gustri/core';
-import { ORDER_STATUS } from '@gustri/database';
+import { ORDER_STATUS, type OrderItemStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import {
+  deriveKitchenView,
+  type KitchenOrderView,
+  QUERY_KEYS,
+  useStaffKitchenFilters,
+} from '@gustri/queries';
 import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KitchenFilterBar } from '@/components/kitchen/KitchenFilterBar';
+import { KitchenFilterSheet } from '@/components/kitchen/KitchenFilterSheet';
 import { KitchenOrderCard } from '@/components/kitchen/KitchenOrderCard';
 import { ErrorScreen, LoadingScreen } from '@/components/ui';
-import { useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks/local';
+import {
+  useCategories,
+  useOrders,
+  useUpdateOrderItemStatus,
+  useUpdateOrderStatus,
+} from '@/hooks/local';
+import { useFeatureFlag } from '@/hooks/shared';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 import { useSnackbar } from '@/hooks/use-snackbar';
+import { useAuthStore } from '@/store/auth-store';
 import { BRAND_PRIMARY, COLORS, TYPOGRAPHY } from '@/theme';
+
+// Item-status progression order for the per-station bulk advance check.
+// Mirrors the staff-web helper — duplicated here rather than exported
+// from @gustri/core to keep the headless boundary clean.
+const ITEM_STATUS_PROGRESS: Record<OrderItemStatus, number> = {
+  pending: 0,
+  preparing: 1,
+  ready: 2,
+  served: 3,
+  cancelled: -1,
+};
+
+function isAtOrPast(actual: OrderItemStatus, target: OrderItemStatus): boolean {
+  return ITEM_STATUS_PROGRESS[actual] >= ITEM_STATUS_PROGRESS[target];
+}
 
 type KitchenStatus =
   | typeof ORDER_STATUS.NEW
@@ -31,6 +62,19 @@ const KITCHEN_STATUS_PRIORITY = {
 export default function KitchenDisplayScreen() {
   const { t } = useTranslation('staff');
   const insets = useSafeAreaInsets();
+  const rawStaffId = useAuthStore((s) => s.staff?.id ?? null);
+  // Per-tenant kill switch. Default false ⇒ pre-feature behavior. With
+  // staffId=null, useStaffKitchenFilters is disabled, deriveKitchenView
+  // resolves to "show all", FilterBar/Sheet stay un-rendered, and the
+  // bulk handlers reduce to their original semantics. Removing this flag
+  // (target: 2 weeks post-enable per CLAUDE.md) is a 3-line edit.
+  const filteringEnabled = useFeatureFlag('kitchen_category_filters');
+  const staffId = filteringEnabled ? rawStaffId : null;
+  // Use the local `useOrders` (with realtime + sound + degraded-poll
+  // catchup) and compose the category filter on top via the shared pure
+  // `deriveKitchenView`. Calling the *shared* `useKitchenView` would lose
+  // mobile's realtime side effects because that hook reaches for the
+  // shared `useOrders`.
   const {
     data: orders,
     isLoading,
@@ -38,16 +82,30 @@ export default function KitchenDisplayScreen() {
     error,
     refetch,
   } = useOrders({ statuses: KITCHEN_STATUSES, limit: 100 });
+  const { data: filterCategoryIds, isLoading: filtersLoading } = useStaffKitchenFilters(staffId);
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const { showSuccess, showError } = useSnackbar();
   const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
+  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+
+  // Derive view first (filters by category), then apply the kitchen-status
+  // sort + filter. visibleOrders preserves the original shape so all the
+  // existing card/handler code keeps working.
+  const { visibleOrders, activeFilter } = useMemo(
+    () =>
+      deriveKitchenView({
+        orders: orders ?? [],
+        filterCategoryIds,
+        categories,
+      }),
+    [orders, filterCategoryIds, categories],
+  );
 
   const kitchenOrders = useMemo(() => {
-    if (!orders) return [];
-
-    return orders
-      .filter((o): o is typeof o & { status: KitchenStatus } =>
+    return visibleOrders
+      .filter((o): o is KitchenOrderView & { status: KitchenStatus } =>
         KITCHEN_STATUSES.includes(o.status as KitchenStatus),
       )
       .sort((a, b) => {
@@ -55,7 +113,7 @@ export default function KitchenDisplayScreen() {
         if (pDiff !== 0) return pDiff;
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       });
-  }, [orders]);
+  }, [visibleOrders]);
 
   // Ref keeps callbacks stable — they read latest orders without re-creating
   const kitchenOrdersRef = useRef(kitchenOrders);
@@ -76,8 +134,10 @@ export default function KitchenDisplayScreen() {
         const order = kitchenOrdersRef.current.find((o) => o.id === orderId);
         if (!order) return;
 
-        const items = order.order_items || [];
-        const pendingItems = items.filter((i) => i.status === 'pending');
+        // Bulk-advance only this station's items. Without this, the Pizza
+        // station's "Start preparing" tap would also flip Bar's drinks to
+        // "preparing" — bad cross-station UX.
+        const pendingItems = order.visibleItems.filter((i) => i.status === 'pending');
         const total = pendingItems.length;
 
         const results = await Promise.all(
@@ -94,6 +154,10 @@ export default function KitchenDisplayScreen() {
           showError(t('kitchen.partialItemError', { succeeded, total }));
         }
 
+        // Order-level status moves to 'preparing' as soon as any station
+        // starts work — matches the existing semantics. Pre-filter mode
+        // assumed all items were ours; per-station, advancing the order
+        // when *any* station starts is still correct.
         await updateOrderStatus.mutateAsync({ orderId, status: 'preparing' });
         showSuccess(t('kitchen.orderStarted'));
       } catch (err: unknown) {
@@ -125,8 +189,7 @@ export default function KitchenDisplayScreen() {
         const order = kitchenOrdersRef.current.find((o) => o.id === orderId);
         if (!order) return;
 
-        const items = order.order_items || [];
-        const qualifyingItems = items.filter(
+        const qualifyingItems = order.visibleItems.filter(
           (i) => i.status === 'pending' || i.status === 'preparing',
         );
         const total = qualifyingItems.length;
@@ -140,12 +203,26 @@ export default function KitchenDisplayScreen() {
           ),
         );
         const succeeded = results.filter(Boolean).length;
+        const advancedIds = new Set(
+          qualifyingItems.filter((_, idx) => results[idx]).map((i) => i.id),
+        );
 
         if (succeeded < total && succeeded > 0) {
           showError(t('kitchen.partialItemError', { succeeded, total }));
         }
 
-        await updateOrderStatus.mutateAsync({ orderId, status: 'ready' });
+        // Order-level READY only when EVERY non-cancelled item across every
+        // station is at/past 'ready'. Otherwise marking the order ready
+        // while another station is still cooking would mislead waiters.
+        const wholeOrderReady = order.order_items.every(
+          (item) =>
+            item.status === 'cancelled' ||
+            advancedIds.has(item.id) ||
+            isAtOrPast(item.status as OrderItemStatus, 'ready'),
+        );
+        if (wholeOrderReady) {
+          await updateOrderStatus.mutateAsync({ orderId, status: 'ready' });
+        }
         showSuccess(t('kitchen.orderReady'));
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : t('kitchen.failedMarkReady');
@@ -164,8 +241,7 @@ export default function KitchenDisplayScreen() {
         const order = kitchenOrdersRef.current.find((o) => o.id === orderId);
         if (!order) return;
 
-        const items = order.order_items || [];
-        const qualifyingItems = items.filter(
+        const qualifyingItems = order.visibleItems.filter(
           (i) => i.status !== 'cancelled' && i.status !== 'served',
         );
         const total = qualifyingItems.length;
@@ -179,12 +255,21 @@ export default function KitchenDisplayScreen() {
           ),
         );
         const succeeded = results.filter(Boolean).length;
+        const advancedIds = new Set(
+          qualifyingItems.filter((_, idx) => results[idx]).map((i) => i.id),
+        );
 
         if (succeeded < total && succeeded > 0) {
           showError(t('kitchen.partialItemError', { succeeded, total }));
         }
 
-        if (!isDeliveryOrder(order)) {
+        const wholeOrderServed = order.order_items.every(
+          (item) =>
+            item.status === 'cancelled' ||
+            advancedIds.has(item.id) ||
+            isAtOrPast(item.status as OrderItemStatus, 'served'),
+        );
+        if (!isDeliveryOrder(order) && wholeOrderServed) {
           await updateOrderStatus.mutateAsync({ orderId, status: 'served' });
         }
         showSuccess(t('kitchen.orderServed'));
@@ -201,7 +286,12 @@ export default function KitchenDisplayScreen() {
   const renderKitchenOrder = useCallback<ListRenderItem<(typeof kitchenOrders)[number]>>(
     ({ item }) => (
       <KitchenOrderCard
-        order={item}
+        // The card renders `order.order_items` — pass the per-station
+        // visibleItems so a filtered station only sees what it owns.
+        // hiddenCount/hiddenByCategory drive the coordination strip.
+        order={{ ...item, order_items: item.visibleItems }}
+        hiddenCount={item.hiddenCount}
+        hiddenByCategory={item.hiddenByCategory}
         onStartPreparing={handleStartPreparing}
         onMarkItemReady={handleMarkItemReady}
         onMarkAllReady={handleMarkAllReady}
@@ -218,7 +308,32 @@ export default function KitchenDisplayScreen() {
     ],
   );
 
-  if (isLoading) {
+  // Realtime: subscribe to staff_kitchen_filters scoped by staff_id so a
+  // manager updating another staff's filter doesn't fan out here. The
+  // tenant-default filter would over-broadcast.
+  useRealtimeSync(
+    'kitchen-filter-realtime',
+    useMemo(
+      () =>
+        staffId
+          ? [
+              {
+                table: 'staff_kitchen_filters' as const,
+                event: '*' as const,
+                queryKeys: [[QUERY_KEYS.STAFF_KITCHEN_FILTERS, staffId]],
+                filter: `staff_id=eq.${staffId}`,
+              },
+            ]
+          : [],
+      [staffId],
+    ),
+  );
+
+  // Gate the loading screen on all three queries — without this, the
+  // first paint shows orders un-filtered (filterCategoryIds undefined =
+  // show-all) before the filter rows arrive a beat later, producing a
+  // visible flash of the wrong items.
+  if (isLoading || filtersLoading || categoriesLoading) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <LoadingScreen message={t('kitchen.loadingOrders')} />
@@ -233,6 +348,8 @@ export default function KitchenDisplayScreen() {
       </View>
     );
   }
+
+  const isFiltered = activeFilter.mode === 'filtered';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -255,6 +372,10 @@ export default function KitchenDisplayScreen() {
         </View>
       </View>
 
+      {staffId && (
+        <KitchenFilterBar activeFilter={activeFilter} onPress={() => setFilterSheetVisible(true)} />
+      )}
+
       <FlashList
         data={kitchenOrders}
         keyExtractor={(item) => item.id}
@@ -264,12 +385,25 @@ export default function KitchenDisplayScreen() {
         renderItem={renderKitchenOrder}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>{t('kitchen.noActiveOrders')}</Text>
-            <Text style={styles.emptySubtext}>{t('kitchen.waitingForOrders')}</Text>
+            <Text style={styles.emptyText}>
+              {isFiltered ? t('kitchen.filter.empty') : t('kitchen.noActiveOrders')}
+            </Text>
+            <Text style={styles.emptySubtext}>
+              {isFiltered ? t('kitchen.filter.emptyHint') : t('kitchen.waitingForOrders')}
+            </Text>
           </View>
         }
         contentContainerStyle={styles.list}
       />
+
+      {staffId && (
+        <KitchenFilterSheet
+          visible={filterSheetVisible}
+          onDismiss={() => setFilterSheetVisible(false)}
+          staffId={staffId}
+          categories={categories}
+        />
+      )}
     </View>
   );
 }

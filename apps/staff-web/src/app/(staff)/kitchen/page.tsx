@@ -7,8 +7,9 @@ import {
   ORDER_STATUS_KEYS,
   TIME_ELAPSED_THRESHOLDS,
 } from '@gustri/core';
-import type { OrderItemStatus, OrderStatus, OrderWithDetails } from '@gustri/database';
+import type { OrderItemStatus, OrderStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import type { KitchenOrderView } from '@gustri/queries';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { LoadingSpinner, ORDER_ITEM_STATUS_BADGES } from '@gustri/ui';
 import {
@@ -29,30 +30,64 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { FreshnessIndicator } from '@/components/common/freshness-indicator';
 import { ElapsedTime } from '@/components/kitchen/elapsed-time';
-import { useCancelOrder, useOrders, useUpdateOrderItemStatus, useUpdateOrderStatus } from '@/hooks';
+import { HiddenItemsSummary } from '@/components/kitchen/hidden-items-summary';
+import { KitchenFilterBar } from '@/components/kitchen/kitchen-filter-bar';
+import { KitchenFilterDrawer } from '@/components/kitchen/kitchen-filter-drawer';
+import {
+  useCancelOrder,
+  useCategories,
+  useFeatureFlag,
+  useKitchenView,
+  useUpdateOrderItemStatus,
+  useUpdateOrderStatus,
+} from '@/hooks';
 import { usePendingAction } from '@/hooks/use-pending-action';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 import { ORDER_ITEM_STATUS_ICONS } from '@/lib/enum-icons';
+import { useAuthStore } from '@/store/auth-store';
+
+// Item-status progression order for the per-station bulk advance check.
+// `cancelled` is excluded — cancellation is terminal but does not block
+// the rest of an order from progressing.
+const ITEM_STATUS_PROGRESS: Record<OrderItemStatus, number> = {
+  pending: 0,
+  preparing: 1,
+  ready: 2,
+  served: 3,
+  cancelled: -1,
+};
+
+function isAtOrPast(actual: OrderItemStatus, target: OrderItemStatus): boolean {
+  return ITEM_STATUS_PROGRESS[actual] >= ITEM_STATUS_PROGRESS[target];
+}
 
 export default function KitchenDisplayPage() {
   const { t } = useTranslation('staff');
   const router = useRouter();
-  // Kitchen view shows only the active queue. Server-side filter keeps the
-  // payload tight; the explicit limit prevents the silent 200-row cap that
-  // used to hide older rows.
-  const {
-    data: orders,
-    isLoading: loading,
-    error,
-  } = useOrders({
-    statuses: ['pending_approval', 'new', 'preparing', 'ready'],
-    limit: 100,
-  });
+  const rawStaffId = useAuthStore((s) => s.staff?.id ?? null);
+  // Per-tenant kill switch. Default false ⇒ pre-feature behavior. We pass
+  // `null` for staff_id when the flag is off so `useStaffKitchenFilters`
+  // never fires, `useKitchenView` derives "show all", and the bulk
+  // handlers degenerate to their original semantics. Removing this flag
+  // (target: 2 weeks after enable per CLAUDE.md) is a 3-line edit:
+  // delete the flag check and inline `staffId = rawStaffId`.
+  const filteringEnabled = useFeatureFlag('kitchen_category_filters');
+  const staffId = filteringEnabled ? rawStaffId : null;
+  // Kitchen view shows only the active queue, filtered to the categories
+  // this staff member has selected (or all categories when no filter is set).
+  // The hook composes useOrders + useStaffKitchenFilters + useCategories
+  // and is the single source of truth for what this device should render.
+  const { visibleOrders, activeFilter, isLoading: loading, error } = useKitchenView(staffId);
+  // Categories drive the filter drawer's chip list. Fetched once and
+  // shared with the drawer via prop so the drawer doesn't re-trigger
+  // its own request on every open.
+  const { data: categories = [] } = useCategories();
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
   const cancelOrder = useCancelOrder();
-  const [rejectingOrder, setRejectingOrder] = useState<OrderWithDetails | null>(null);
+  const [rejectingOrder, setRejectingOrder] = useState<KitchenOrderView | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const tenantId = useTenantId();
   // Per-button pending lock — keys are scoped per row/item (`order:<id>:<verb>`,
   // `item:<id>:<status>`, `reject`) so one stuck mutation doesn't disable
@@ -63,22 +98,24 @@ export default function KitchenDisplayPage() {
   // Elapsed-time tick lives in the <ElapsedTime> leaf — no parent rerender.
 
   // Check if all non-cancelled items in an order are served
-  const allItemsServed = (order: OrderWithDetails) => {
+  const allItemsServed = (order: KitchenOrderView) => {
     const items = order.order_items?.filter((item) => item.status !== 'cancelled') || [];
     if (items.length === 0) return false;
     return items.every((item) => item.status === 'served');
   };
 
   // Check if all non-cancelled items in an order are ready (or served)
-  const allItemsReady = (order: OrderWithDetails) => {
+  const allItemsReady = (order: KitchenOrderView) => {
     const items = order.order_items?.filter((item) => item.status !== 'cancelled') || [];
     if (items.length === 0) return false;
     return items.every((item) => item.status === 'ready' || item.status === 'served');
   };
 
-  // Filter orders for kitchen display (new, preparing, ready) - exclude orders where all items are served
-  const kitchenOrders = orders
-    ?.filter(
+  // Filter orders for kitchen display (new, preparing, ready) - exclude orders where all items are served.
+  // `visibleOrders` is already category-filtered for this station; orders with no
+  // matching items have already been dropped upstream.
+  const kitchenOrders = visibleOrders
+    .filter(
       (order) => ['new', 'preparing', 'ready'].includes(order.status) && !allItemsServed(order),
     )
     .sort((a, b) => {
@@ -90,18 +127,21 @@ export default function KitchenDisplayPage() {
       return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     });
 
-  // Filter pending approval orders (QR orders awaiting staff approval)
-  const pendingApprovalOrders =
-    orders
-      ?.filter((order) => order.status === 'pending_approval')
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) || [];
+  // Filter pending approval orders (QR orders awaiting staff approval).
+  // Pending approvals follow the same per-category filter — a station that
+  // doesn't see any of an order's items shouldn't be the one approving it.
+  const pendingApprovalOrders = visibleOrders
+    .filter((order) => order.status === 'pending_approval')
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   // Count orders by status
   const newOrdersCount = kitchenOrders?.filter((o) => o.status === 'new').length || 0;
   const preparingCount = kitchenOrders?.filter((o) => o.status === 'preparing').length || 0;
   const readyCount = kitchenOrders?.filter((o) => o.status === 'ready').length || 0;
 
-  // Real-time: invalidate queries on DB changes
+  // Real-time: invalidate queries on DB changes. The third subscription
+  // is staff-scoped (not tenant-scoped) so a manager updating *another*
+  // staff member's filter doesn't fan out to every kitchen device.
   const { lastEventAtRef } = useRealtimeSync('kitchen-realtime', [
     {
       table: 'orders',
@@ -114,6 +154,15 @@ export default function KitchenDisplayPage() {
       table: 'order_items',
       queryKeys: [tenantKey(tenantId, QUERY_KEYS.ORDERS)],
     },
+    ...(staffId
+      ? [
+          {
+            table: 'staff_kitchen_filters',
+            queryKeys: [tenantKey(tenantId, QUERY_KEYS.STAFF_KITCHEN_FILTERS, staffId)],
+            filter: `staff_id=eq.${staffId}`,
+          },
+        ]
+      : []),
   ]);
 
   // Calculate elapsed time
@@ -134,7 +183,7 @@ export default function KitchenDisplayPage() {
   };
 
   // Get card color based on status, time, and item statuses
-  const getCardColor = (order: OrderWithDetails, minutes: number) => {
+  const getCardColor = (order: KitchenOrderView, minutes: number) => {
     const status = order.status;
     // If all items are ready, show green regardless of order status
     if (allItemsReady(order)) return 'bg-green-50 border-green-400 shadow-green-200';
@@ -180,39 +229,57 @@ export default function KitchenDisplayPage() {
     return KITCHEN_STATUS_BADGE_COLORS[status as OrderStatus] ?? 'bg-gray-500 text-white';
   };
 
-  // Handle status update — also updates all item statuses to stay in sync
+  // Handle status update — also updates all item statuses to stay in sync.
+  // Per-station filtering: the bulk button advances only THIS station's items
+  // (visibleItems), and the order-level status only advances when every item
+  // across every station would be at/past the target. Without this guard the
+  // Pizza station's "All ready" click would mark an order ready while the bar
+  // is still pouring drinks.
   const handleStatusUpdate = (orderId: string, newStatus: 'PREPARING' | 'READY' | 'SERVED') =>
     run(`order:${orderId}:${newStatus}`, async () => {
       try {
         const order = kitchenOrders?.find((o) => o.id === orderId);
+        if (!order) return;
 
-        // Update all item statuses to match the order-level action
-        if (order?.order_items) {
-          const targetItemStatus =
-            newStatus === 'PREPARING' ? 'preparing' : newStatus === 'READY' ? 'ready' : 'served';
+        const targetItemStatus =
+          newStatus === 'PREPARING' ? 'preparing' : newStatus === 'READY' ? 'ready' : 'served';
 
-          for (const item of order.order_items) {
-            // Skip items that are already at or past the target status, and skip cancelled
-            if (item.status === 'cancelled' || item.status === targetItemStatus) continue;
-            if (targetItemStatus === 'preparing' && item.status !== 'pending') continue;
-            if (
-              targetItemStatus === 'ready' &&
-              item.status !== 'pending' &&
-              item.status !== 'preparing'
-            )
-              continue;
+        // Track ids we just advanced so the order-level decision below
+        // reflects the post-mutation state without re-reading the cache.
+        const advancedIds = new Set<string>();
+        for (const item of order.visibleItems) {
+          if (item.status === 'cancelled' || item.status === targetItemStatus) continue;
+          if (targetItemStatus === 'preparing' && item.status !== 'pending') continue;
+          if (
+            targetItemStatus === 'ready' &&
+            item.status !== 'pending' &&
+            item.status !== 'preparing'
+          )
+            continue;
 
-            await updateItemStatus.mutateAsync({
-              itemId: item.id,
-              status: targetItemStatus as 'pending' | 'preparing' | 'ready' | 'served',
-            });
-          }
+          await updateItemStatus.mutateAsync({
+            itemId: item.id,
+            status: targetItemStatus as 'pending' | 'preparing' | 'ready' | 'served',
+          });
+          advancedIds.add(item.id);
         }
 
+        // Order-level advancement is only safe when EVERY non-cancelled item
+        // (across every station) is at or past the target. For PREPARING the
+        // existing flow already allows moving early — keep that behavior.
+        const wholeOrderReadyToAdvance =
+          targetItemStatus === 'preparing' ||
+          order.order_items.every(
+            (item) =>
+              item.status === 'cancelled' ||
+              advancedIds.has(item.id) ||
+              isAtOrPast(item.status, targetItemStatus),
+          );
+
         // Don't set delivery/takeout orders to "served" — they follow a different flow
-        if (
-          !(newStatus === 'SERVED' && order && (isDeliveryOrder(order) || isTakeoutOrder(order)))
-        ) {
+        const isTerminalServed =
+          newStatus === 'SERVED' && (isDeliveryOrder(order) || isTakeoutOrder(order));
+        if (!isTerminalServed && wholeOrderReadyToAdvance) {
           await updateOrderStatus.mutateAsync({
             orderId,
             status: newStatus,
@@ -289,7 +356,7 @@ export default function KitchenDisplayPage() {
   };
 
   // Handle item status update - also auto-update order status if needed
-  const handleItemStatusUpdate = (itemId: string, newStatus: string, order: OrderWithDetails) =>
+  const handleItemStatusUpdate = (itemId: string, newStatus: string, order: KitchenOrderView) =>
     run(`item:${itemId}:${newStatus}`, async () => {
       try {
         // If order is still "new", automatically change to "preparing"
@@ -368,13 +435,19 @@ export default function KitchenDisplayPage() {
     <div className="min-h-screen bg-gray-900 p-3 sm:p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
           <Utensils className="h-6 sm:h-10 w-6 sm:w-10 text-white" />
           <h1 className="text-xl sm:text-3xl font-bold text-white">{t('kitchen.title')}</h1>
           <FreshnessIndicator
             lastEventAtRef={lastEventAtRef}
             className="bg-white/10 px-2 py-1 rounded-full"
           />
+          {staffId && (
+            <KitchenFilterBar
+              activeFilter={activeFilter}
+              onOpen={() => setFilterDrawerOpen(true)}
+            />
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-6">
           {/* Status Summary */}
@@ -590,10 +663,12 @@ export default function KitchenDisplayPage() {
                 </div>
               )}
 
-              {/* Order Items - Background color indicates status */}
+              {/* Order Items - Background color indicates status. Uses
+                  visibleItems so a station only sees the items it owns;
+                  hidden items are summarized below. */}
               <div className="space-y-1.5 mb-3 max-h-48 overflow-y-auto">
-                {order.order_items
-                  ?.filter((item) => item.status !== 'cancelled')
+                {order.visibleItems
+                  .filter((item) => item.status !== 'cancelled')
                   .map((item) => {
                     const itemStyle = getItemStatusStyle(item.status);
 
@@ -654,6 +729,8 @@ export default function KitchenDisplayPage() {
                     );
                   })}
               </div>
+
+              <HiddenItemsSummary count={order.hiddenCount} byCategory={order.hiddenByCategory} />
 
               {/* Action Button - Compact touch target */}
               <div className="mt-auto">
@@ -739,15 +816,45 @@ export default function KitchenDisplayPage() {
         })}
       </div>
 
-      {/* Empty State */}
+      {/* Empty State — distinguish "no orders at all" from "no orders match
+          your filter" so a forgotten filter doesn't read as a system failure. */}
       {(!kitchenOrders || kitchenOrders.length === 0) && pendingApprovalOrders.length === 0 && (
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
             <ChefHat className="h-32 w-32 mx-auto mb-6 text-gray-500" />
-            <p className="text-4xl font-bold text-gray-400 mb-2">{t('kitchen.noActiveOrders')}</p>
-            <p className="text-xl text-gray-500">{t('kitchen.waitingForOrders')}</p>
+            {activeFilter.mode === 'filtered' ? (
+              <>
+                <p className="text-4xl font-bold text-gray-400 mb-2">{t('kitchen.filter.empty')}</p>
+                <p className="text-xl text-gray-500 mb-4">{t('kitchen.filter.emptyHint')}</p>
+                {staffId && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterDrawerOpen(true)}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-base font-semibold rounded-lg"
+                  >
+                    {t('kitchen.filter.openButton')}
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-4xl font-bold text-gray-400 mb-2">
+                  {t('kitchen.noActiveOrders')}
+                </p>
+                <p className="text-xl text-gray-500">{t('kitchen.waitingForOrders')}</p>
+              </>
+            )}
           </div>
         </div>
+      )}
+
+      {staffId && (
+        <KitchenFilterDrawer
+          isOpen={filterDrawerOpen}
+          onClose={() => setFilterDrawerOpen(false)}
+          staffId={staffId}
+          categories={categories}
+        />
       )}
 
       {/* Reject Order Modal */}

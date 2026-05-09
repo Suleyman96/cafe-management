@@ -1,11 +1,13 @@
 import { ORDER_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import type { HiddenCategoryBucket } from '@gustri/queries';
 import { useIsMutating } from '@tanstack/react-query';
 import React, { useCallback } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StatusBadge, TimeElapsed } from '@/components/ui';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { BRAND_PRIMARY, CARD_PADDING, CARD_RADIUS, COLORS, ORDER_STATUS_COLORS } from '@/theme';
+import { HiddenItemsSummary } from './HiddenItemsSummary';
 
 type KitchenItem = {
   id: string;
@@ -23,8 +25,20 @@ interface KitchenOrderCardProps {
     created_at: string;
     order_type?: string | null;
     table?: { table_number: string } | null;
+    /**
+     * Items the local kitchen station should render. The screen passes
+     * `visibleItems` from `deriveKitchenView` here — for unfiltered
+     * stations this is the full set, for filtered stations it's the
+     * subset matching the staff's category selection.
+     */
     order_items?: Array<KitchenItem>;
   };
+  /**
+   * Hidden-item summary shown below the items list when at least one
+   * item on the order belongs to another station.
+   */
+  hiddenCount?: number;
+  hiddenByCategory?: HiddenCategoryBucket[];
   onStartPreparing: (orderId: string) => void;
   onMarkItemReady: (itemId: string) => void;
   onMarkAllReady: (orderId: string) => void;
@@ -104,6 +118,8 @@ const KitchenOrderItemRow = React.memo(function KitchenOrderItemRow({
 
 export const KitchenOrderCard = React.memo(function KitchenOrderCard({
   order,
+  hiddenCount = 0,
+  hiddenByCategory,
   onStartPreparing,
   onMarkItemReady,
   onMarkAllReady,
@@ -154,6 +170,9 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
           />
         ))}
       </View>
+
+      {/* Hidden-station coordination summary */}
+      <HiddenItemsSummary count={hiddenCount} byCategory={hiddenByCategory ?? []} />
 
       {/* Actions */}
       <View style={styles.actions}>
