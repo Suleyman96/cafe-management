@@ -40,19 +40,15 @@ test.describe('Customer Order Flow', () => {
     await expect(quickAddBtn).toBeVisible({ timeout: 5000 });
     await quickAddBtn.click();
 
-    // A toast notification should appear confirming item was added
-    // The cart sidebar should appear at the bottom of the menu screen
-    // Wait a bit for the cart to slide in
-    await page.waitForTimeout(500);
-
-    // Navigate to cart to verify item is there
-    await page.goto('/table/T01/cart');
-    await page.waitForLoadState('networkidle');
-
-    // Cart should NOT show empty state — it should show the item we added
-    // The place order button should be visible
-    const placeOrderBtn = page.getByTestId('place-order');
-    await expect(placeOrderBtn).toBeVisible({ timeout: 5000 });
+    // Cart is in-memory only (cart-store.ts: persistence dropped to fix
+    // cross-table contamination), so `page.goto('/cart')` would do a
+    // full reload and wipe state. Verify the add via the toast that
+    // menu-item-card.tsx fires synchronously after `addItem`. Toast text
+    // is `Added 1x <name> to cart` (en, customer.json:menuItem.addedToCart);
+    // matching `/added .* to cart/i` keeps the assertion robust to count
+    // and name interpolation.
+    const toast = page.getByText(/added .* to cart/i).first();
+    await expect(toast).toBeVisible({ timeout: 5000 });
   });
 
   test('cart page handles empty state', async ({ page }) => {

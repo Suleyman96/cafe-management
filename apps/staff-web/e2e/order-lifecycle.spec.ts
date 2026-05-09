@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 
 test.describe('Order Lifecycle', () => {
@@ -60,30 +61,31 @@ test.describe('Order Lifecycle', () => {
     await page.goto('/orders');
     await page.waitForLoadState('networkidle');
 
-    // Look for any order with a status action button
-    // If there's a "new" order, we should see "Start Preparing" button
+    // Look for any order with a status action button. The button must be both
+    // visible AND enabled — Playwright's `isVisible()` returns true for disabled
+    // buttons too (they're in the DOM), so without the enabled check we'd try to
+    // click a button that's gated by `!hasItems` or an in-flight mutation and
+    // time out on the click retry. The test is intentionally lenient: if no
+    // actionable order exists, it passes — only the page-loads-without-error
+    // signal is asserted.
+    const isClickable = async (locator: ReturnType<Page['getByRole']>) =>
+      (await locator.isVisible().catch(() => false)) &&
+      (await locator.isEnabled().catch(() => false));
+
     const startPreparingBtn = page.getByRole('button', { name: /start preparing/i }).first();
     const approveBtn = page.getByRole('button', { name: /approve/i }).first();
 
-    // Either start preparing or approve should be visible if orders exist
-    const hasNewOrPending =
-      (await startPreparingBtn.isVisible().catch(() => false)) ||
-      (await approveBtn.isVisible().catch(() => false));
-
-    if (hasNewOrPending) {
-      // Click the first available action button
-      if (await startPreparingBtn.isVisible().catch(() => false)) {
-        await startPreparingBtn.click();
-        await page.waitForLoadState('networkidle');
-        // After clicking, the status should change - look for "Ready" button
-        const readyBtn = page.getByRole('button', { name: /ready/i }).first();
-        await expect(readyBtn).toBeVisible({ timeout: 5000 });
-      } else {
-        await approveBtn.click();
-        await page.waitForLoadState('networkidle');
-      }
+    if (await isClickable(startPreparingBtn)) {
+      await startPreparingBtn.click();
+      await page.waitForLoadState('networkidle');
+      // After clicking, the status should change - look for "Ready" button
+      const readyBtn = page.getByRole('button', { name: /ready/i }).first();
+      await expect(readyBtn).toBeVisible({ timeout: 5000 });
+    } else if (await isClickable(approveBtn)) {
+      await approveBtn.click();
+      await page.waitForLoadState('networkidle');
     }
-    // If no orders exist, the test still passes — it verifies the page loads
+    // If no actionable order exists, the test still passes — it verifies the page loads
   });
 
   test('kitchen page displays order items', async ({ staffPage: page }) => {
