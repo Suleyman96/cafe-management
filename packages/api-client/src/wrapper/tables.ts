@@ -27,8 +27,16 @@ export function createTablesWrapper(ctx: WrapperContext) {
       // (table_history join, reservations) could blow up the row count.
       // Defensive cap is free here and prevents one bad query from stalling.
       const limit = options?.limit ?? 500;
+      // Order by creation time (oldest first). `table_number` is text, so a
+      // lexicographic sort placed "10" between "1" and "2"; creation order
+      // matches how staff actually built out the floor plan and stays stable
+      // across renames.
       const { data, error } = await applyTenantScope(
-        ctx.client.from('tables').select(PUBLIC_TABLE_COLUMNS).order('table_number').limit(limit),
+        ctx.client
+          .from('tables')
+          .select(PUBLIC_TABLE_COLUMNS)
+          .order('created_at', { ascending: true })
+          .limit(limit),
         ctx,
       );
 

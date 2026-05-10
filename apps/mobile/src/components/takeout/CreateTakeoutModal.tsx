@@ -29,7 +29,7 @@ export const CreateTakeoutModal = React.memo(function CreateTakeoutModal({
   const [customerNotes, setCustomerNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const isValid = customerName.trim() && customerPhone.trim();
+  const isValid = customerName.trim().length > 0;
 
   const resetForm = () => {
     setCustomerName('');
@@ -46,7 +46,7 @@ export const CreateTakeoutModal = React.memo(function CreateTakeoutModal({
         order_type: 'takeout',
         status: 'new',
         customer_name: customerName.trim(),
-        customer_phone: customerPhone.trim(),
+        customer_phone: customerPhone.trim() || null,
         customer_notes: customerNotes.trim() || null,
       } as Partial<OrdersInsert> as OrdersInsert);
       showSuccess(t('takeout.takeoutOrderCreated'));

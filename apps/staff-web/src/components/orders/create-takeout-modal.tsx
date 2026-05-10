@@ -109,8 +109,8 @@ export function CreateTakeoutModal({
   };
 
   const handleSubmit = async () => {
-    if (!customerName.trim() || !customerPhone.trim()) {
-      toast.error(t('orders.enterNameAndPhone'));
+    if (!customerName.trim()) {
+      toast.error(t('orders.customerNameRequired'));
       return;
     }
 
@@ -127,7 +127,7 @@ export function CreateTakeoutModal({
         table_id: null,
         order_type: 'takeout',
         customer_name: customerName.trim(),
-        customer_phone: customerPhone.trim(),
+        customer_phone: customerPhone.trim() || null,
         customer_notes: customerNotes.trim() || null,
         assigned_waiter_id: staffId,
         status: 'new',
@@ -210,7 +210,7 @@ export function CreateTakeoutModal({
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('orders.phoneNumberLabel')} *
+                      {t('orders.phoneNumberLabel')}
                     </label>
                     <input
                       type="tel"
@@ -383,11 +383,7 @@ export function CreateTakeoutModal({
             <Button
               onClick={handleSubmit}
               disabled={
-                isSubmitting ||
-                !isOnline ||
-                !customerName.trim() ||
-                !customerPhone.trim() ||
-                selectedItems.length === 0
+                isSubmitting || !isOnline || !customerName.trim() || selectedItems.length === 0
               }
               className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
             >
