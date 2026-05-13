@@ -26,6 +26,15 @@ export function middleware(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+  // Staff-web origin where /api/v1/customer/* lives. Customer-web POSTs
+  // to it for waiter calls, feedback, order placement, cancel, etc. (see
+  // src/lib/api-routes.ts). When customer-web and staff-web live on
+  // separate origins — which is the case in prod (different Vercel
+  // projects) AND in local/CI (3000 vs 3001) — the connect-src below
+  // must include this origin or the browser blocks every customer
+  // mutation with a CSP violation. 'self' covers only the customer-web
+  // origin and is not enough.
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
   const isDev = process.env.NODE_ENV === 'development';
 
   // `'strict-dynamic'` lets scripts loaded by trusted (nonce'd) scripts
@@ -35,7 +44,7 @@ export function middleware(request: NextRequest) {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''}`,
     "style-src 'self' 'unsafe-inline'",
-    `connect-src 'self' ${supabaseUrl} wss://*.supabase.co https://*.sentry.io`,
+    `connect-src 'self' ${supabaseUrl} ${apiBaseUrl} wss://*.supabase.co https://*.sentry.io`,
     "img-src 'self' data: blob: https://*.supabase.co",
     "font-src 'self'",
     "frame-ancestors 'none'",
