@@ -9,6 +9,12 @@ export function useTables(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: tenantKey(tenantId, QUERY_KEYS.TABLES),
     queryFn: () => db.tables.findAll() as Promise<Table[]>,
+    // Tables are added/removed rarely (admin task) and status changes
+    // (free/occupied/reserved) propagate via realtime invalidation. The
+    // global 60s default forces a refetch on every navigation back to a
+    // tables view, which is wasteful on high-RTT clients. 2 min is a
+    // safety margin in case realtime is temporarily disconnected.
+    staleTime: 2 * 60 * 1000,
     enabled: options?.enabled ?? true,
   });
 }

@@ -31,6 +31,10 @@ export function useExpenseCategories(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: tenantKey(tenantId, QUERY_KEYS.EXPENSE_CATEGORIES),
     queryFn: () => db.expenseCategories.findAll() as Promise<ExpenseCategory[]>,
+    // Quasi-static reference data — admins add/edit categories rarely.
+    // Used in select dropdowns on the expenses form, so a stale read
+    // is harmless (mutation invalidates on category create/edit).
+    staleTime: 10 * 60 * 1000,
     enabled: options?.enabled ?? true,
   });
 }

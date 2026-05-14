@@ -1,5 +1,5 @@
 import type { MenuItemWithCategory } from '@gustri/database';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from '../keys';
 import { useDb, useTenantId } from '../provider';
 
@@ -41,6 +41,9 @@ export function useMenuItemsPaginated(
   return useQuery({
     queryKey: tenantKey(tenantId, QUERY_KEYS.MENU_ITEMS, 'paginated', page, pageSize, categoryId),
     queryFn: () => db.menuItems.findAllPaginated({ page, pageSize, categoryId }),
+    // Show the previous page while the next one is loading instead of a
+    // spinner — material on high-RTT clients where each fetch is ~300ms.
+    placeholderData: keepPreviousData,
     enabled: options?.enabled ?? true,
   });
 }
