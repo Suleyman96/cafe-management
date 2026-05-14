@@ -10,6 +10,7 @@ import { verifyStaff } from '@/lib/api/verify-staff';
 import { createPayment } from '@/lib/services/payment-service';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 const CreatePaymentSchema = z.object({
   amount: z.number().positive(),

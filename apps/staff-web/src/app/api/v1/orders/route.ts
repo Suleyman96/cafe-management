@@ -10,6 +10,7 @@ import { verifyStaff } from '@/lib/api/verify-staff';
 import { createOrder } from '@/lib/services/order-service';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 const CreateOrderSchema = z.object({
   table_id: z.string().uuid().optional().nullable(),

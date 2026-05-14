@@ -9,6 +9,7 @@ import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 import { applyDiscount } from '@/lib/services/discount-service';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 const ApplyDiscountSchema = z.object({
   discount_type: DiscountTypeSchema,

@@ -4,6 +4,7 @@ import { handleRouteError } from '@/lib/api/handle-route-error';
 import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 export async function GET(request: NextRequest) {
   try {

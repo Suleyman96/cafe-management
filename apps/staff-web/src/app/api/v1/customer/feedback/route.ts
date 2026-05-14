@@ -8,6 +8,7 @@ import { getSupabaseAdmin } from '@/lib/api/verify-admin';
 import { createCustomerFeedback } from '@/lib/services/customer-engagement-service';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 // H1 length cap: `message` matches the
 // `customer_feedback_message_length_check` constraint added in PR 2.

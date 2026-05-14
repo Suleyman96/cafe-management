@@ -7,6 +7,7 @@ import { getSupabaseAdmin } from '@/lib/api/verify-admin';
 import { verifyStaff } from '@/lib/api/verify-staff';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 // Expo push tokens are opaque strings of the shape
 // `ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]`. Validate the prefix loosely so

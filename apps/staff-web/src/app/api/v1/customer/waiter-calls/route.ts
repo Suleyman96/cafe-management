@@ -8,6 +8,7 @@ import { getSupabaseAdmin } from '@/lib/api/verify-admin';
 import { createCustomerWaiterCall } from '@/lib/services/customer-engagement-service';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 // H1 length caps: every customer-typed string is bounded so a hostile
 // payload can't inflate into a multi-MB realtime fanout to staff

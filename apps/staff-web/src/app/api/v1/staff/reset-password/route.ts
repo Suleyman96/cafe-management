@@ -13,6 +13,7 @@ const ResetPasswordSchema = z.object({
 });
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 // Dedupe: not needed — Supabase admin `updateUserById` overwrites the password
 // with an absolute value. A replayed call lands the same hash and is idempotent.

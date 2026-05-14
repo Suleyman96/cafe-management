@@ -35,6 +35,7 @@ import { getSupabaseAdmin } from '@/lib/api/verify-admin';
  */
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 export const runtime = 'nodejs';
 
 interface CheckResult {

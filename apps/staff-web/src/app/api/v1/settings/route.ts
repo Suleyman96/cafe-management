@@ -9,6 +9,7 @@ import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 import { requirePlanAtLeast } from '@/lib/api/verify-plan';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 // Dedupe: not needed — UPDATE writes absolute settings values, so replays
 // converge on the same row state and emit no audit/log side effects.

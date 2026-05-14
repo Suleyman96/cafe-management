@@ -7,6 +7,7 @@ import { validateBody } from '@/lib/api/validate';
 import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 /**
  * Reassign (or unassign) the waiter on an order. Admin/owner only.

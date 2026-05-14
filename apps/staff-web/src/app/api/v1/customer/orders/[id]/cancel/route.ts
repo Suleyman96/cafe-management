@@ -8,6 +8,7 @@ import { getSupabaseAdmin } from '@/lib/api/verify-admin';
 import { cancelCustomerOrder } from '@/lib/services/customer-order-service';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 // `tenant_id` is intentionally NOT in the schema — the service derives
 // it from the order row server-side. `table_id` IS required: the

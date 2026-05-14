@@ -8,6 +8,7 @@ import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 import { createRefund } from '@/lib/services/refund-service';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 const CreateRefundSchema = z.object({
   amount: z.number().positive(),

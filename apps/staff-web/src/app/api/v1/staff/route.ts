@@ -34,6 +34,7 @@ async function findAuthUserByEmail(supabaseAdmin: SupabaseClient, email: string)
 }
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 // Dedupe: not applied. Mobile does not call this route — staff CRUD is web-only
 // per the Mobile Parity rule, and the web UI doesn't replay through a persister.

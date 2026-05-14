@@ -17,6 +17,7 @@ const VerifyPinSchema = z.object({
 });
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 export async function POST(request: NextRequest) {
   try {

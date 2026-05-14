@@ -9,6 +9,7 @@ import { verifyPlan } from '@/lib/api/verify-plan';
 import { adjustStock } from '@/lib/services/stock-service';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 const AdjustStockSchema = z.object({
   movement_type: z.enum(['in', 'out', 'adjustment']),

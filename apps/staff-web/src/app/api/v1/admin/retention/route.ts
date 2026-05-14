@@ -4,6 +4,7 @@ import { handleRouteError } from '@/lib/api/handle-route-error';
 import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 // Dedupe: not needed — the `run_data_retention` RPC operates on time-windowed
 // rows (delete-where-expired). A replay finds nothing left to delete and

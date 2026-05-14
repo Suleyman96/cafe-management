@@ -9,6 +9,7 @@ import { getSupabaseAdmin } from '@/lib/api/verify-admin';
 import { createCustomerOrder } from '@/lib/services/customer-order-service';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 // Tenant binding is derived server-side (C1). Clients send `table_id`
 // (dine_in) or `qr_token` (takeout/delivery); the service resolves the

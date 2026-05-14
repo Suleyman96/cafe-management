@@ -7,6 +7,7 @@ import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 import { rotateTableQrCode } from '@/lib/services/table-qr-service';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 // `expires_at` is optional. Omit for the service default (1 year).
 // Pass `null` to disable auto-expiry. Pass an ISO datetime for a custom

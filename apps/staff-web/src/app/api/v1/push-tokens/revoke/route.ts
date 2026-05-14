@@ -7,6 +7,7 @@ import { validateBody } from '@/lib/api/validate';
 import { getSupabaseAdmin } from '@/lib/api/verify-admin';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 const RevokePushTokenSchema = z.object({
   expo_token: z.string().min(20).max(200),

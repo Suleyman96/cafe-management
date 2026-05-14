@@ -8,6 +8,7 @@ import { getSupabaseAdmin } from '@/lib/api/verify-admin';
 import { resolveCustomerQrToken } from '@/lib/services/customer-qr-token-service';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 // SSR-multi-tenant fix (deferred item from plans/18). The
 // customer-web `/delivery/menu` page used to fetch categories and menu

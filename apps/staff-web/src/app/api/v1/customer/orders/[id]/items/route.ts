@@ -8,6 +8,7 @@ import { getSupabaseAdmin } from '@/lib/api/verify-admin';
 import { addCustomerOrderItems } from '@/lib/services/customer-order-service';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ['sin1'];
 
 // Length caps (H3): item-level free-text fields are bounded to prevent
 // a single cart submission from inflating into a multi-MB realtime
