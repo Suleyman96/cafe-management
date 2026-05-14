@@ -82,18 +82,18 @@ export async function middleware(request: NextRequest) {
 
   const { supabase, response } = createMiddlewareClient(request);
 
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Read staff claims from the JWT (injected by custom_access_token_hook)
+  // Page-nav gate uses getSession() (local cookie read + JWT decode, with
+  // an auto-refresh round-trip only when the token is near expiry) rather
+  // than getUser() (always a network call to Supabase Auth). Distant
+  // regions (e.g. Azerbaijan → Tokyo) were paying ~250ms per navigation
+  // for the getUser() roundtrip even though the JWT claims we read below
+  // already gate UI access. Authorization at the API boundary is still
+  // network-verified: every /api/v1/* route runs verifyStaff (which calls
+  // auth.getUser server-side), and direct supabase-js writes from the
+  // browser are gated by RLS. So middleware here only decides whether
+  // to render the staff shell — a deactivated user has up to jwt_expiry
+  // (1h) of UI grace before their next token refresh kicks them out,
+  // and can't perform any privileged action in the meantime.
   const {
     data: { session },
   } = await supabase.auth.getSession();
