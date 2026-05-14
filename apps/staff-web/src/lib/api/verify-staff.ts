@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import { getCachedAuth, setCachedAuth } from './auth-cache';
 import { getStaffClaims } from './jwt-claims';
 import { jsonError } from './response';
 import { getSupabaseAdmin } from './verify-admin';
@@ -21,6 +22,13 @@ export async function verifyStaff(request: NextRequest) {
   }
 
   const token = authHeader.slice(7);
+
+  // Cache hit skips both auth.getUser (Auth API roundtrip) and the
+  // verifyTenantClaim SELECT — both are network calls to Supabase.
+  // See auth-cache.ts for the trust-window analysis.
+  const cached = await getCachedAuth(token);
+  if (cached) return cached;
+
   const supabaseAdmin = getSupabaseAdmin();
 
   const {
@@ -42,9 +50,11 @@ export async function verifyStaff(request: NextRequest) {
     return jsonError(`Forbidden: ${claimErr}`, 403);
   }
 
-  return {
+  const result = {
     id: claims.staff_id,
     role: claims.user_role,
     tenant_id: claims.tenant_id,
   };
+  await setCachedAuth(token, result);
+  return result;
 }

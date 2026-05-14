@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getCachedAuth, setCachedAuth } from './auth-cache';
 import { getStaffClaims } from './jwt-claims';
 import { verifyTenantClaim } from './verify-tenant-claim';
 
@@ -32,6 +33,19 @@ export async function verifyAdmin(request: NextRequest) {
   }
 
   const token = authHeader.slice(7);
+
+  // Cache hit skips both auth.getUser and the verifyTenantClaim SELECT.
+  // The cache is shared with verifyStaff (same key/shape), so the role
+  // check still has to run on cache hits — a waiter's cached entry must
+  // not unlock admin endpoints.
+  const cached = await getCachedAuth(token);
+  if (cached) {
+    if (!['admin', 'owner'].includes(cached.role)) {
+      return NextResponse.json({ error: 'Forbidden: admin access required' }, { status: 403 });
+    }
+    return cached;
+  }
+
   const supabaseAdmin = getSupabaseAdmin();
 
   const {
@@ -57,9 +71,11 @@ export async function verifyAdmin(request: NextRequest) {
     return NextResponse.json({ error: `Forbidden: ${claimErr}` }, { status: 403 });
   }
 
-  return {
+  const result = {
     id: claims.staff_id,
     role: claims.user_role,
     tenant_id: claims.tenant_id,
   };
+  await setCachedAuth(token, result);
+  return result;
 }
