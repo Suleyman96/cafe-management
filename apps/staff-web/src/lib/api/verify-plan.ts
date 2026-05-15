@@ -12,33 +12,34 @@ import { verifyStaff } from './verify-staff';
  * that — a modified client (Hermes-decompiled, MITM'd `/tenants`
  * response, query cache mutated in dev tools) can spoof the value.
  *
- * `verifyPlan(allowed)` resolves the tenant from the JWT (never from the
- * request body) via `verifyStaff`, looks up `tenants.plan` server-side,
- * and rejects with HTTP 403 when the plan isn't in `allowed`.
+ * `verifyPlan(allowed)` resolves the tenant from the JWT (never from
+ * the request body) via `verifyStaff`, looks up `tenants.plan`
+ * server-side every time, and rejects with HTTP 403 when the plan
+ * isn't in `allowed`.
  *
- * The lookup is cached in-process for `PLAN_TTL_MS` so a burst of
- * mutations from one tenant doesn't translate to one DB roundtrip per
- * call. The cache is small enough to live in a `Map` — Next.js server
- * runtime keeps the module alive across requests, and stale entries
- * resolve naturally because plan upgrades are rare and the worst case
- * (denying a freshly upgraded tenant for ~30s) is acceptable.
+ * Why no in-process cache: this used to keep a 30s Map per Next.js
+ * instance. That created two real problems:
+ *   1. Per-instance drift. Serverless = N processes per region, each
+ *      with its own cache. After an admin upgrade or downgrade, two
+ *      back-to-back requests can land on different instances and get
+ *      contradictory plan answers for ~30s.
+ *   2. Downgrade-still-allowed window. A tenant demoted from pro→free
+ *      could still hit plan-gated routes for 30s.
+ *
+ * Plan-gated routes are few (`/api/v1/stock/[id]/adjust`, settings
+ * branding fields) and plan changes are admin-initiated and rare —
+ * the call rate doesn't justify caching. One indexed `tenants.plan`
+ * fetch is <5ms in-region, comparable to an Upstash hit, and adding
+ * Upstash here would still leave a stale window. Drop the cache,
+ * read fresh.
  */
 
-const PLAN_TTL_MS = 30_000;
-
-interface CachedPlan {
+export interface VerifiedPlanContext {
+  staff: { id: string; role: string; tenant_id: string };
   plan: PlanName;
-  expiresAt: number;
 }
 
-const planCache = new Map<string, CachedPlan>();
-
 async function loadPlan(tenantId: string): Promise<PlanName> {
-  const cached = planCache.get(tenantId);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.plan;
-  }
-
   const { data, error } = await getSupabaseAdmin()
     .from('tenants')
     .select('plan')
@@ -49,14 +50,7 @@ async function loadPlan(tenantId: string): Promise<PlanName> {
     throw new Error('Tenant not found');
   }
 
-  const plan = (data.plan ?? 'free') as PlanName;
-  planCache.set(tenantId, { plan, expiresAt: Date.now() + PLAN_TTL_MS });
-  return plan;
-}
-
-export interface VerifiedPlanContext {
-  staff: { id: string; role: string; tenant_id: string };
-  plan: PlanName;
+  return (data.plan ?? 'free') as PlanName;
 }
 
 /**
@@ -94,14 +88,6 @@ export async function verifyPlan(
   }
 
   return { staff: staffOrError, plan };
-}
-
-/**
- * Test/operations helper — drop the in-process cache. Server hot-reloads
- * pick up plan upgrades naturally, but tests need a deterministic reset.
- */
-export function __resetPlanCacheForTests(): void {
-  planCache.clear();
 }
 
 /**

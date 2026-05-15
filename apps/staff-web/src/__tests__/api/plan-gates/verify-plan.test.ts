@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockSingle = vi.fn();
 const mockEq = vi.fn(() => ({ single: mockSingle }));
@@ -15,7 +15,7 @@ vi.mock('@/lib/api/verify-staff', () => ({
   verifyStaff: (req: NextRequest) => verifyStaffMock(req),
 }));
 
-const { __resetPlanCacheForTests, verifyPlan } = await import('@/lib/api/verify-plan');
+const { verifyPlan } = await import('@/lib/api/verify-plan');
 
 function fakeRequest(): NextRequest {
   return { headers: { get: () => null } } as unknown as NextRequest;
@@ -27,16 +27,11 @@ function staff(tenantId: string, id = 'staff-1', role = 'admin') {
 
 describe('verifyPlan', () => {
   beforeEach(() => {
-    __resetPlanCacheForTests();
     mockSingle.mockReset();
     mockFrom.mockClear();
     mockSelect.mockClear();
     mockEq.mockClear();
     verifyStaffMock.mockReset();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it('returns the plan + staff context when the tenant is on an allowed plan', async () => {
@@ -76,21 +71,19 @@ describe('verifyPlan', () => {
     expect(mockFrom).not.toHaveBeenCalled();
   });
 
-  it('caches lookups per tenant for ~30s', async () => {
-    vi.useFakeTimers();
-    verifyStaffMock.mockResolvedValue(staff('tenant-cached'));
+  it('reads tenants.plan fresh on every call — no in-process cache', async () => {
+    // Caching introduced per-instance drift (different serverless processes
+    // serving contradictory plan answers within the same 30s window) and a
+    // 30s downgrade-still-allowed window. The call rate doesn't justify
+    // either bug; fetch fresh every time.
+    verifyStaffMock.mockResolvedValue(staff('tenant-fresh'));
     mockSingle.mockResolvedValue({ data: { plan: 'pro' }, error: null });
 
     await verifyPlan(fakeRequest(), ['pro']);
     await verifyPlan(fakeRequest(), ['pro']);
     await verifyPlan(fakeRequest(), ['pro']);
 
-    // verifyStaff runs every call; the DB lookup should run once.
-    expect(mockSingle).toHaveBeenCalledTimes(1);
-
-    vi.advanceTimersByTime(31_000);
-    await verifyPlan(fakeRequest(), ['pro']);
-    expect(mockSingle).toHaveBeenCalledTimes(2);
+    expect(mockSingle).toHaveBeenCalledTimes(3);
   });
 
   it('fails closed when the tenant lookup errors (treats plan as free)', async () => {

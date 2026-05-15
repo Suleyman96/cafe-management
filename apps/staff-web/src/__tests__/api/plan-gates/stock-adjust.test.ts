@@ -25,7 +25,6 @@ vi.mock('@/lib/api/rate-limit', () => ({
   getRateLimitIdentifier: () => '127.0.0.1',
 }));
 
-const { __resetPlanCacheForTests } = await import('@/lib/api/verify-plan');
 const { POST } = await import('@/app/api/v1/stock/[id]/adjust/route');
 
 function buildRequest(body: Record<string, unknown>): NextRequest {
@@ -44,7 +43,6 @@ const VALID_BODY = {
 
 describe('POST /api/v1/stock/[id]/adjust — plan gate', () => {
   beforeEach(() => {
-    __resetPlanCacheForTests();
     mockSingle.mockReset();
     mockFrom.mockClear();
     mockSelect.mockClear();
