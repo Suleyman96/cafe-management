@@ -1,4 +1,3 @@
-import { PLAN_LIMITS, type PlanName } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findOrCreateByClientRequestId } from '@/lib/api/dedupe';
 
@@ -29,44 +28,10 @@ export async function createOrder(supabaseAdmin: SupabaseClient, params: CreateO
     clientRequestId: orderData.client_request_id,
     selectShape: '*',
     create: async () => {
-      // Plan-limit check runs only on a fresh insert path. On replay the
-      // helper short-circuits before reaching here, so a tenant whose
-      // current month happens to be at the cap won't see a stale paused
-      // mutation rejected.
-      const { data: tenant, error: tenantError } = await supabaseAdmin
-        .from('tenants')
-        .select('plan')
-        .eq('id', tenantId)
-        .single();
-
-      if (tenantError || !tenant) {
-        throw new Error('Tenant not found');
-      }
-
-      const plan = (tenant.plan ?? 'free') as PlanName;
-      const maxOrders = PLAN_LIMITS[plan]?.maxOrdersPerMonth ?? -1;
-
-      if (maxOrders !== -1) {
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-
-        const { count, error: countError } = await supabaseAdmin
-          .from('orders')
-          .select('id', { count: 'exact', head: true })
-          .eq('tenant_id', tenantId)
-          .gte('created_at', startOfMonth.toISOString());
-
-        if (countError) {
-          throw new Error('Failed to check order count');
-        }
-
-        if ((count ?? 0) >= maxOrders) {
-          throw new Error(
-            `Your ${plan} plan allows up to ${maxOrders} orders/month. Upgrade to add more.`,
-          );
-        }
-      }
+      // Order cap is enforced by the `check_order_limit` BEFORE INSERT
+      // trigger. Over-cap inserts raise the `plan_required` sentinel
+      // (P0001) which handleSupabaseError maps to AuthorizationError,
+      // localized at the client via localizeErrorMessage.
 
       // Strip any client-supplied totals. They are derived server-side —
       // the trigger on order_items rewrites them once items are inserted.

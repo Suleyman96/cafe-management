@@ -99,7 +99,6 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
       tenants: [{ data: { plan: 'pro' }, error: null }],
       orders: [
         { data: null, error: null }, // dedupe lookup → no replay
-        { data: null, error: null, count: 0 } as QueuedResponse, // monthly-count check
         { data: fresh, error: null }, // insert
       ],
     });
@@ -204,7 +203,6 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
       tenants: [{ data: { plan: 'pro' }, error: null }],
       orders: [
         { data: null, error: null },
-        { data: null, error: null, count: 0 } as QueuedResponse,
         { data: fresh, error: null },
       ],
     });
@@ -338,7 +336,6 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
       tenants: [{ data: { plan: 'pro' }, error: null }],
       orders: [
         { data: null, error: null }, // dedupe lookup → no replay
-        { data: null, error: null, count: 0 } as QueuedResponse,
         { data: fresh, error: null },
       ],
     });
@@ -376,7 +373,6 @@ describe('createCustomerOrder — tenant binding (C1)', () => {
       tenants: [{ data: { plan: 'pro' }, error: null }],
       orders: [
         { data: null, error: null }, // dedupe lookup → no replay
-        { data: null, error: null, count: 0 } as QueuedResponse,
         { data: fresh, error: null },
       ],
     });
@@ -442,7 +438,6 @@ describe('createCustomerOrder — dedupe', () => {
       ],
       orders: [
         { data: null, error: null }, // dedupe lookup → no replay
-        { data: null, error: null, count: 0 } as QueuedResponse, // monthly-count check
         { data: fresh, error: null }, // insert
       ],
       tenants: [{ data: { plan: 'pro' }, error: null }],

@@ -173,27 +173,9 @@ export async function createCustomerOrder(
         throw new Error('plan_required');
       }
 
-      const maxOrders = PLAN_LIMITS[plan]?.maxOrdersPerMonth ?? -1;
-
-      if (maxOrders !== -1) {
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-
-        const { count, error: countError } = await supabaseAdmin
-          .from('orders')
-          .select('id', { count: 'exact', head: true })
-          .eq('tenant_id', tenantId)
-          .gte('created_at', startOfMonth.toISOString());
-
-        if (countError) {
-          throw new Error('Failed to check order count');
-        }
-
-        if ((count ?? 0) >= maxOrders) {
-          throw new Error(`Monthly order limit reached for ${plan} plan`);
-        }
-      }
+      // Order cap is enforced by the `check_order_limit` BEFORE INSERT
+      // trigger. Over-cap inserts raise the `plan_required` sentinel
+      // (P0001) which handleSupabaseError maps to AuthorizationError.
 
       const insertRow: Record<string, unknown> = {
         tenant_id: tenantId,

@@ -3,16 +3,23 @@ import * as Sentry from '@sentry/nextjs';
 import { jsonError } from './response';
 
 /**
- * Known business errors that are safe to expose to clients.
- * Maps a substring match to a user-friendly message and HTTP status.
+ * Sentinel-only fallback for legacy `new Error('<sentinel>')` throws
+ * that haven't been migrated to `AppError` subclasses yet. New code
+ * should throw the right `AppError` subclass — the `isAppError(err)`
+ * branch below handles it cleanly. Once every throw is typed this
+ * map can go away entirely.
+ *
+ * Earlier versions of this map substring-matched English error text
+ * ("table limit reached", "order limit reached", "plan allows") to
+ * compensate for SQL triggers raising English RAISE EXCEPTION
+ * strings. After migration 20260515000002 those triggers raise the
+ * `plan_required` sentinel (P0001) which `handleSupabaseError` maps
+ * to `AuthorizationError('plan_required')`, so the substring fallback
+ * is no longer needed for the plan-cap paths.
  */
 const SAFE_ERRORS: Record<string, { message: string; status: number }> = {
-  'plan allows': { message: 'Order limit reached for your plan', status: 403 },
   plan_required: { message: 'plan_required', status: 403 },
-  'exceeds remaining': { message: 'Payment amount exceeds remaining balance', status: 422 },
   payment_exceeds_remaining: { message: 'payment_exceeds_remaining', status: 409 },
-  'order limit reached': { message: 'Monthly order limit reached for your plan', status: 403 },
-  'table limit reached': { message: 'Table limit reached for your plan', status: 403 },
 };
 
 /**

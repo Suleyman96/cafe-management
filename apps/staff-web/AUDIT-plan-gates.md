@@ -7,10 +7,17 @@ check — UI-only gating is never sufficient (see
 [plans/mobile-audit-2026-04/01-CRITICAL.md](../../plans/mobile-audit-2026-04/01-CRITICAL.md)
 C5).
 
-Plan tier mapping is the source of truth in
-[`packages/core/src/constants.ts`](../../packages/core/src/constants.ts)
-(`PLAN_LIMITS`). The SQL helper `plan_allows_feature(feature)` mirrors that
-table; if you change one, change the other.
+Plan tier mapping has two sources of truth held in sync by CI:
+
+1. `PLAN_LIMITS` in [`packages/core/src/constants.ts`](../../packages/core/src/constants.ts) — the
+   design source of truth, consumed by TS callers.
+2. `plan_limits(plan text)` SQL function (migration `20260515000002`) — the
+   single SQL source, consulted by `plan_allows_feature`,
+   `plan_allows_new_table`, and `check_order_limit`.
+
+The integration test in [`packages/api-client/src/__tests__/rls/plan-limits.test.ts`](../../packages/api-client/src/__tests__/rls/plan-limits.test.ts)
+asserts row-by-row equality between the two. Adding a plan tier or
+changing a cap requires updating both, and the test fails on drift.
 
 ## Client-side plan state
 
@@ -44,8 +51,8 @@ re-introduce that pattern.
 | **Tasks** | `pro`, `business` | sidebar `/tasks`; mobile drawer | n/a (direct supabase) | RLS RESTRICTIVE policies `plan_tasks_*` on `tasks` calling `plan_allows_feature('tasks')` |
 | **QR ordering** | `standard`, `pro`, `business` | customer-web entry | `POST /api/v1/customer/orders` | `customer-order-service.ts` rejects with `plan_required` when `PLAN_LIMITS[plan].qrOrdering === false`. RLS does not need a separate gate because customer orders only land through this route. |
 | **Custom branding** | `standard`, `pro`, `business` | settings UI | `PUT /api/v1/settings` (theme fields) | Settings route checks `requirePlanAtLeast('standard')` only when `brand_primary_color` or `brand_logo_url` is in the body, so non-branding settings stay open to free admins. |
-| **Monthly order cap** | per-tier `maxOrdersPerMonth` | mobile `useCreateOrder` soft check | `POST /api/v1/orders` | `apps/staff-web/src/lib/services/order-service.ts` runs the per-month count under `verifyStaff` |
-| **Table cap** | per-tier `maxTables` | none (server-only) | n/a (direct supabase) | BEFORE INSERT trigger `enforce_table_cap_trigger` calls `plan_allows_new_table(tenant_id)` and raises the `plan_required` sentinel (P0001) for friendly localized errors. RLS RESTRICTIVE policy `plan_tables_insert` (same helper) stays as defense-in-depth — fires only if the trigger is bypassed. Counts active tables vs `PLAN_LIMITS[*].maxTables`; downgraded tenants keep existing rows but can't add. The redundant baseline trigger `enforce_table_limit` (which counted all rows, not just active, and raised an English error) was dropped in the same migration. |
+| **Monthly order cap** | per-tier `maxOrdersPerMonth` | mobile `useCreateOrder` soft check | `POST /api/v1/orders` (no pre-check, server trigger enforces) | BEFORE INSERT trigger `check_order_limit` raises `plan_required` (P0001) when the tenant's month is at cap. `handleSupabaseError` maps to `AuthorizationError('plan_required')`, localized at the client. Caps come from `plan_limits(plan).max_orders_per_month`. |
+| **Table cap** | per-tier `maxTables` | none (server-only) | n/a (direct supabase) | BEFORE INSERT trigger `enforce_table_cap_trigger` raises `plan_required` (P0001). RLS RESTRICTIVE policy `plan_tables_insert` (same `plan_allows_new_table` helper) stays as defense-in-depth — fires only if the trigger is bypassed. Counts active tables vs `plan_limits(plan).max_tables`; downgraded tenants keep existing rows but can't add. The redundant baseline trigger `enforce_table_limit` (which counted all rows, not just active, and raised an English error) was dropped in migration `20260513000001`. |
 
 ## Conventions
 
@@ -64,12 +71,14 @@ re-introduce that pattern.
 ## When you add a new plan-gated feature
 
 1. Add it to `PLAN_LIMITS` in `packages/core/src/constants.ts`.
-2. Add a `WHEN '<feature>' THEN ...` branch to `plan_allows_feature` in a
-   new migration. Default-deny is automatic for unknown names.
-3. If the feature has a `/api/v1` route, call `verifyPlan(['pro', ...])`
+2. Add the matching field to:
+   - the `plan_limits_t` composite type (migration `20260515000002`), AND
+   - the field map in [`plan-limits.test.ts`](../../packages/api-client/src/__tests__/rls/plan-limits.test.ts).
+   The CI sync test fails the PR if either is missed.
+3. Add a `WHEN '<feature>' THEN RETURN limits.<field>;` branch to
+   `plan_allows_feature` if it's a boolean feature gate.
+4. If the feature has a `/api/v1` route, call `verifyPlan(['pro', ...])`
    at the top of the handler.
-4. If the feature is written via the wrapper, add a RESTRICTIVE RLS policy
-   on the target table.
-5. Add a row to this table.
-6. Add a Vitest test under `src/__tests__/plan-gates/` (or expand
-   `verify-plan.test.ts`).
+5. If the feature is written via the wrapper, add a RESTRICTIVE RLS policy
+   on the target table calling `plan_allows_feature('<feature>')`.
+6. Add a row to this table.

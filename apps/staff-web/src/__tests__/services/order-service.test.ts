@@ -78,10 +78,8 @@ describe('createOrder service — totals are derived server-side (C2)', () => {
     // from order_items rows after they're inserted in a follow-up call.
     const fresh = { id: 'order-fresh', tenant_id: TENANT };
     const client = buildClient({
-      tenants: [{ data: { plan: 'pro' }, error: null }],
       orders: [
         { data: null, error: null }, // dedupe lookup miss (Blocker 1)
-        { data: null, error: null, count: 0 } as QueuedResponse, // monthly-count
         { data: fresh, error: null }, // insert
       ],
     });
@@ -113,10 +111,8 @@ describe('createOrder service — totals are derived server-side (C2)', () => {
     // not just when the client tries to spoof them.
     const fresh = { id: 'order-fresh', tenant_id: TENANT };
     const client = buildClient({
-      tenants: [{ data: { plan: 'pro' }, error: null }],
       orders: [
         { data: null, error: null }, // dedupe lookup miss (Blocker 1)
-        { data: null, error: null, count: 0 } as QueuedResponse,
         { data: fresh, error: null },
       ],
     });

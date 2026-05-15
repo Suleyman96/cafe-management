@@ -2432,6 +2432,16 @@ export type Database = {
         Args: { target_tenant: string }
         Returns: boolean
       }
+      plan_limits: {
+        Args: { plan: string }
+        Returns: Database["public"]["CompositeTypes"]["plan_limits_t"]
+        SetofOptions: {
+          from: "*"
+          to: "plan_limits_t"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       run_data_retention: {
         Args: {
           p_order_retention_months?: number
@@ -2476,7 +2486,18 @@ export type Database = {
       [_ in never]: never
     }
     CompositeTypes: {
-      [_ in never]: never
+      plan_limits_t: {
+        max_tables: number | null
+        max_orders_per_month: number | null
+        qr_ordering: boolean | null
+        kitchen_display: boolean | null
+        inventory: boolean | null
+        waste: boolean | null
+        scheduling: boolean | null
+        tasks: boolean | null
+        custom_branding: boolean | null
+        analytics: string | null
+      }
     }
   }
   storage: {
