@@ -1,8 +1,7 @@
 'use client';
 
 import { ProgressProvider } from '@bprogress/next/app';
-import { isAppError } from '@gustri/core';
-import { I18nextProvider, i18n, localizeErrorMessage } from '@gustri/i18n';
+import { I18nextProvider, i18n } from '@gustri/i18n';
 import { DbProvider } from '@gustri/queries';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -14,13 +13,14 @@ import {
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { Toaster, toast } from 'sonner';
+import { Toaster } from 'sonner';
 import '@/lib/i18n';
 import { channelRegistry } from '@/lib/realtime/channel-registry';
 import { onCrossTab, postCrossTab } from '@/lib/realtime/cross-tab';
 import { LifecycleBridge } from '@/lib/realtime/lifecycle-bridge';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/wrapped-client';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 import { useAuthStore } from '@/store/auth-store';
 
 /**
@@ -170,9 +170,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 ns: 'common',
                 defaultValue: 'An unexpected error occurred',
               });
-              toast.error(
-                isAppError(error) ? localizeErrorMessage(error.message, fallback) : fallback,
-              );
+              toastLocalizedError(error, fallback);
             }
           },
           // Every successful mutation pings sibling tabs to refetch. The

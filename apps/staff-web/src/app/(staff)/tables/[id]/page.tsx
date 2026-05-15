@@ -55,6 +55,7 @@ import { useFormatPrice } from '@/hooks/use-format-price';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 import { useStaffCart } from '@/hooks/use-staff-cart';
 import { useActiveCallsForTable, useResolveWaiterCall } from '@/hooks/use-waiter-calls-safe';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 import type { OrderWithDetails } from '@/types';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
@@ -335,8 +336,7 @@ export default function TableDetailPage() {
       setCancelItemConfirm(null);
       setCancelItemQty(1);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('orders.failedCancelItem');
-      toast.error(message);
+      toastLocalizedError(error, t('orders.failedCancelItem'));
     } finally {
       setCancellingItem(false);
     }
@@ -366,7 +366,7 @@ export default function TableDetailPage() {
       }
     } catch (error) {
       Sentry.captureException(error);
-      toast.error(t('orders.failedCancel'));
+      toastLocalizedError(error, t('orders.failedCancel'));
     } finally {
       setCancelling(false);
     }

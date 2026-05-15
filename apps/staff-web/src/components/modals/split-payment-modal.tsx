@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useIsOnline } from '@/hooks/use-is-online';
 import { usePersistentClientRequestId } from '@/hooks/use-persistent-client-request-id';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 import { ItemPaymentForm } from './payment/item-payment-form';
 import { OrderSummary } from './payment/order-summary';
 import { PartialPaymentForm } from './payment/partial-payment-form';
@@ -232,8 +233,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
       onSuccess();
     } catch (error: unknown) {
       Sentry.captureException(error);
-      const message = error instanceof Error ? error.message : t('payment.paymentFailed');
-      toast.error(message);
+      toastLocalizedError(error, t('payment.paymentFailed'));
     }
   };
 

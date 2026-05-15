@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useAdjustStock, useAuth } from '@/hooks';
 import { useCanPerform } from '@/hooks/use-can-perform';
 import { useIsOnline } from '@/hooks/use-is-online';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 
 type StockItem = Database['public']['Tables']['stock_items']['Row'];
 
@@ -70,8 +71,7 @@ export function StockMovementModal({ item, defaultType = 'in', onClose }: StockM
       toast.success(t('stock.adjusted'), { id: toastId });
       onClose();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('stock.failedAdjust');
-      toast.error(message, { id: toastId });
+      toastLocalizedError(error, t('stock.failedAdjust'), { id: toastId });
     }
   };
 

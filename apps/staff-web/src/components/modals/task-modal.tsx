@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { BaseModal } from '@/components/ui/base-modal';
 import { useAuth, useCreateTask, useStaff, useUpdateTask } from '@/hooks';
 import { useCanPerform } from '@/hooks/use-can-perform';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
 
@@ -128,8 +129,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
 
       onClose();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('tasks.failedSave');
-      toast.error(message, { id: toastId });
+      toastLocalizedError(error, t('tasks.failedSave'), { id: toastId });
     }
   };
 

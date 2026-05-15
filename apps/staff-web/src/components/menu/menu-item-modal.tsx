@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateMenuItem, useUpdateMenuItem } from '@/hooks';
 import { supabase } from '@/lib/supabase/client';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 import { validateImageFile } from '@/lib/uploads/validate-image';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -153,7 +154,7 @@ export function MenuItemModal({ item, categories, menuItems = [], onClose }: Men
       } else if (errorMessage.includes('duplicate')) {
         toast.error(t('menu.duplicateItem'), { id: toastId });
       } else {
-        toast.error(errorMessage, { id: toastId });
+        toastLocalizedError(error, t('menu.failedSaveItem'), { id: toastId });
       }
     } finally {
       setUploading(false);

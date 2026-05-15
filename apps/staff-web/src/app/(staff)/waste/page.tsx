@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/modals/confirm-dialog';
 import { WasteLogModal } from '@/components/modals/waste-log-modal';
 import { useCafeSettings, useDeleteWasteLog, useWasteLogs, useWasteMonthlySummary } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 
 type WasteLog = Database['public']['Tables']['waste_logs']['Row'];
 
@@ -64,8 +65,7 @@ export default function WastePage() {
       await deleteWaste.mutateAsync(deletingId);
       toast.success(t('waste.wasteLogDeleted'));
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('delete', { ns: 'common' });
-      toast.error(message);
+      toastLocalizedError(error, t('delete', { ns: 'common' }));
     } finally {
       setDeletingId(null);
     }

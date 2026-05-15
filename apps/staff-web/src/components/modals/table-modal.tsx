@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateTable, useUpdateTable } from '@/hooks';
 import { apiRoutes } from '@/lib/api-routes';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 import type { Tables } from '@/types';
 
 interface TableModalProps {
@@ -68,8 +69,7 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
       onSuccess();
     } catch (err) {
       Sentry.captureException(err);
-      const message = err instanceof Error ? err.message : t('tables.rotateQrFailed');
-      toast.error(message);
+      toastLocalizedError(err, t('tables.rotateQrFailed'));
     } finally {
       setRotating(false);
     }
@@ -113,8 +113,7 @@ export function TableModal({ isOpen, onClose, onSuccess, table }: TableModalProp
       }
       onSuccess();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('tables.failedSaveTable');
-      toast.error(message);
+      toastLocalizedError(error, t('tables.failedSaveTable'));
     } finally {
       setLoading(false);
     }

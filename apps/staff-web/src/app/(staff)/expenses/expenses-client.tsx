@@ -16,6 +16,7 @@ import {
   useExpenses,
 } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 
 type Expense = Database['public']['Tables']['expenses']['Row'];
 
@@ -60,8 +61,7 @@ export default function ExpensesClient() {
       await deleteExpense.mutateAsync(deletingId);
       toast.success(t('expenses.expenseDeleted'));
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('delete', { ns: 'common' });
-      toast.error(message);
+      toastLocalizedError(error, t('delete', { ns: 'common' }));
     } finally {
       setDeletingId(null);
     }

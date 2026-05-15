@@ -8,6 +8,7 @@ import * as Sentry from '@sentry/nextjs';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateCategory, useUpdateCategory } from '@/hooks';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 
 type Category = Database['public']['Tables']['categories']['Row'];
 
@@ -95,7 +96,7 @@ export function CategoryModal({ category, categories = [], onClose }: CategoryMo
       } else if (errorMessage.includes('duplicate')) {
         toast.error(t('menu.duplicateCategory'), { id: toastId });
       } else {
-        toast.error(errorMessage, { id: toastId });
+        toastLocalizedError(error, t('menu.failedSaveCategory'), { id: toastId });
       }
     }
   };

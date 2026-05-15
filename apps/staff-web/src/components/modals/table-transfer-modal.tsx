@@ -9,6 +9,7 @@ import { AlertTriangle, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useAuth, useOrders, useTables, useTransferTable } from '@/hooks';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 import type { Tables } from '@/types';
 
 interface TableTransferModalProps {
@@ -107,8 +108,7 @@ export function TableTransferModal({
           }),
         );
       } else {
-        const message = error instanceof Error ? error.message : t('tables.failedTransfer');
-        toast.error(message);
+        toastLocalizedError(error, t('tables.failedTransfer'));
       }
     } finally {
       setLoading(false);

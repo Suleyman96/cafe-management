@@ -8,6 +8,7 @@ import { NumberInput } from '@gustri/ui-web';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAuth, useCreateExpense, useExpenseCategories, useUpdateExpense } from '@/hooks';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 
 type Expense = Database['public']['Tables']['expenses']['Row'];
 
@@ -75,8 +76,7 @@ export function ExpenseModal({ expense, onClose }: ExpenseModalProps) {
 
       onClose();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('expenses.failedSave');
-      toast.error(message, { id: toastId });
+      toastLocalizedError(error, t('expenses.failedSave'), { id: toastId });
     }
   };
 

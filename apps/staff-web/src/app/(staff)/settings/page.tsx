@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { loadAndSwitchLanguage } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/wrapped-client';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 
 export default function SettingsPage() {
   const { staff, isLoading } = useAuth();
@@ -85,8 +86,7 @@ export default function SettingsPage() {
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('settings.failedChangePassword');
-      toast.error(message);
+      toastLocalizedError(error, t('settings.failedChangePassword'));
     } finally {
       setPasswordLoading(false);
     }

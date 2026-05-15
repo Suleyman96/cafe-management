@@ -13,6 +13,7 @@ import { useCanPerform } from '@/hooks/use-can-perform';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useIsOnline } from '@/hooks/use-is-online';
 import { usePersistentClientRequestId } from '@/hooks/use-persistent-client-request-id';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 import { ConfirmRefundModal } from './confirm-refund-modal';
 
 interface RefundModalProps {
@@ -107,8 +108,7 @@ export function RefundModal({
       onSuccess();
       handleClose();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to process refund';
-      toast.error(message);
+      toastLocalizedError(error, t('somethingWentWrong', { ns: 'common' }));
       // Stay on the confirm step so a retry reuses the same request id.
     }
   };

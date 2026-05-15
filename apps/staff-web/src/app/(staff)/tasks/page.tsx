@@ -38,6 +38,7 @@ import {
   useTodaysTasks,
 } from '@/hooks';
 import { useCanPerform } from '@/hooks/use-can-perform';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
 
@@ -113,8 +114,7 @@ export default function TasksPage() {
         toast.success(t('tasks.taskCancelled'));
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('tasks.failedUpdateTask');
-      toast.error(message);
+      toastLocalizedError(error, t('tasks.failedUpdateTask'));
     }
   };
 
@@ -125,8 +125,7 @@ export default function TasksPage() {
       toast.success(t('tasks.taskDeleted'));
       setDeleteConfirmTask(null);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('tasks.failedUpdateTask');
-      toast.error(message);
+      toastLocalizedError(error, t('tasks.failedUpdateTask'));
     }
   };
 

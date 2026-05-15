@@ -15,6 +15,7 @@ import {
   useStockItems,
   useUpdateWasteLog,
 } from '@/hooks';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 
 type WasteLog = Database['public']['Tables']['waste_logs']['Row'];
 
@@ -151,8 +152,7 @@ export function WasteLogModal({ wasteLog, onClose }: WasteLogModalProps) {
 
       onClose();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('waste.failedLog');
-      toast.error(message, { id: toastId });
+      toastLocalizedError(error, t('waste.failedLog'), { id: toastId });
     }
   };
 

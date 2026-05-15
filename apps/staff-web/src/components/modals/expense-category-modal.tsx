@@ -12,6 +12,7 @@ import {
   useExpenseCategories,
   useUpdateExpenseCategory,
 } from '@/hooks';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 
 interface ExpenseCategoryModalProps {
   onClose: () => void;
@@ -51,8 +52,7 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
       toast.success(t('expenses.categoryCreated'));
       resetForm();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('expenses.failedCreateCategory');
-      toast.error(message);
+      toastLocalizedError(error, t('expenses.failedCreateCategory'));
     }
   };
 
@@ -71,8 +71,7 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
       toast.success(t('expenses.categoryUpdated'));
       resetForm();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('expenses.failedUpdateCategory');
-      toast.error(message);
+      toastLocalizedError(error, t('expenses.failedUpdateCategory'));
     }
   };
 
@@ -84,8 +83,7 @@ export function ExpenseCategoryModal({ onClose }: ExpenseCategoryModalProps) {
       toast.success(t('expenses.categoryDeleted'));
       setDeletingId(null);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('expenses.failedDeleteCategory');
-      toast.error(message);
+      toastLocalizedError(error, t('expenses.failedDeleteCategory'));
     }
   };
 

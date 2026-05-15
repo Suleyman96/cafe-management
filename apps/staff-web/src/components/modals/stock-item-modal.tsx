@@ -7,6 +7,7 @@ import { NumberInput } from '@gustri/ui-web';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateStockItem, useUpdateStockItem } from '@/hooks';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 
 type StockItem = Database['public']['Tables']['stock_items']['Row'];
 
@@ -104,8 +105,7 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
 
       onClose();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('stock.failedSave');
-      toast.error(message, { id: toastId });
+      toastLocalizedError(error, t('stock.failedSave'), { id: toastId });
     }
   };
 

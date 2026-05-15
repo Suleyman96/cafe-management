@@ -13,6 +13,7 @@ import { useCanPerform } from '@/hooks/use-can-perform';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useIsOnline } from '@/hooks/use-is-online';
 import { usePersistentClientRequestId } from '@/hooks/use-persistent-client-request-id';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 import { ConfirmRefundModal } from './confirm-refund-modal';
 
 interface DiscountModalProps {
@@ -127,9 +128,18 @@ export function DiscountModal({
       onSuccess();
       handleClose();
     } catch (error: unknown) {
-      const raw = error instanceof Error ? error.message : 'Failed to apply discount';
-      const message = raw === 'discount_reason_required' ? t('orders.discountReasonRequired') : raw;
-      toast.error(message);
+      // `discount_reason_required` is raised by the server when an
+      // admin override (>cap, >threshold) is missing a reason. It is not
+      // a registered sentinel — its translation lives under `staff.orders`,
+      // not the `errors` namespace — so handle it inline before
+      // delegating to the generic helper.
+      if (error instanceof Error && error.message === 'discount_reason_required') {
+        toast.error(t('orders.discountReasonRequired'), {
+          id: 'discount_reason_required',
+        });
+      } else {
+        toastLocalizedError(error, t('somethingWentWrong', { ns: 'common' }));
+      }
       // Stay on the confirm step so a retry reuses the same request id.
     }
   };
@@ -150,8 +160,7 @@ export function DiscountModal({
       onSuccess();
       handleClose();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to remove discount';
-      toast.error(message);
+      toastLocalizedError(error, t('somethingWentWrong', { ns: 'common' }));
     }
   };
 

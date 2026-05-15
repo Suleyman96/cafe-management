@@ -6,10 +6,10 @@ import { Button, TABLE_STATUS_BADGES } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
 import { ArrowRight, Loader2, Minus, Plus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { toast } from 'sonner';
 import { useTables, useTransferOrderItems } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 import type { OrderWithDetails } from '@/types';
 
 type OrderItem = Database['public']['Tables']['order_items']['Row'];
@@ -118,8 +118,7 @@ export function ItemTransferModal({
       onSuccess();
     } catch (error: unknown) {
       Sentry.captureException(error);
-      const message = error instanceof Error ? error.message : t('tables.failedTransfer');
-      toast.error(message);
+      toastLocalizedError(error, t('tables.failedTransfer'));
     } finally {
       setLoading(false);
     }

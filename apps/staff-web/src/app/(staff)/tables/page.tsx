@@ -22,6 +22,7 @@ import {
 import { useCanPerform } from '@/hooks/use-can-perform';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 
 // Module-level stable empty arrays — sharing one reference per render keeps
 // memoized TableCards from re-rendering on tables with no orders/calls.
@@ -183,8 +184,7 @@ export default function TablesPage() {
       toast.success(`${deleteConfirmTable.table_number} ${t('tables.tableDeleted')}`);
       refetchTables();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('tables.failedDeleteTable');
-      toast.error(message);
+      toastLocalizedError(error, t('tables.failedDeleteTable'));
     } finally {
       setIsDeleting(false);
       setDeleteConfirmTable(null);

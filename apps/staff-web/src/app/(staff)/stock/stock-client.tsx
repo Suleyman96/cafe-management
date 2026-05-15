@@ -22,6 +22,7 @@ import { StockItemModal } from '@/components/modals/stock-item-modal';
 import { StockMovementModal } from '@/components/modals/stock-movement-modal';
 import { useDeleteStockItem, useLowStockCount, useStockItems, useStockMovements } from '@/hooks';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { toastLocalizedError } from '@/lib/toast/localized-error';
 
 type StockItem = Database['public']['Tables']['stock_items']['Row'];
 
@@ -99,8 +100,7 @@ export default function StockClient() {
       await deleteStockItem.mutateAsync(deletingId);
       toast.success(t('stock.stockItemDeleted'));
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('delete', { ns: 'common' });
-      toast.error(message);
+      toastLocalizedError(error, t('delete', { ns: 'common' }));
     } finally {
       setDeletingId(null);
     }
