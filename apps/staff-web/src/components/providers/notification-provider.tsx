@@ -35,6 +35,16 @@ type OrderRow = Database['public']['Tables']['orders']['Row'];
 const MAX_BACKOFF_MS = 30_000;
 const MAX_RETRIES = 10;
 const POLL_INTERVAL_MS = 120_000; // 2 minutes — matches REFRESH_INTERVALS.FALLBACK
+// Watchdog for the initial .subscribe() handshake. Supabase emits
+// `SUBSCRIBED` on success and `TIMED_OUT` on its own internal timeout,
+// but a failed WS upgrade (stale JWT rejected at handshake, proxy that
+// strips the auth header) can leave the .subscribe() callback silent
+// indefinitely — neither status fires. Without this watchdog the channel
+// sits dead until the next visibilitychange / online event nudges it,
+// which on a kiosk tablet can be hours. 10s is generous vs. a healthy
+// subscribe (<1s) but short enough that polling fallback isn't the
+// recovery mechanism of last resort.
+const SUBSCRIBE_TIMEOUT_MS = 10_000;
 // Catchup window overlap: a few seconds before `lastEventAt` to absorb clock
 // skew between client and server. Without it, an event whose server-side
 // timestamp lands one millisecond before lastEventAt would be skipped.
@@ -421,10 +431,38 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     let currentChannel: RealtimeChannel | null = null;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let subscribeTimer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
+
+    function scheduleRetry(
+      channel: RealtimeChannel,
+      reason: 'channel_error' | 'subscribe_timeout',
+    ) {
+      setRealtimeConnected(false);
+      supabase.removeChannel(channel);
+      if (currentChannel === channel) currentChannel = null;
+
+      if (retryCountRef.current >= MAX_RETRIES) {
+        Sentry.captureMessage(
+          `Notification realtime: max retries exceeded (${reason}), falling back to polling`,
+          'warning',
+        );
+        return;
+      }
+
+      const delay = Math.min(1000 * 2 ** retryCountRef.current, MAX_BACKOFF_MS);
+      retryCountRef.current++;
+      retryTimer = setTimeout(() => {
+        setupChannel();
+      }, delay);
+    }
 
     function setupChannel() {
       if (cancelled) return;
+      if (subscribeTimer) {
+        clearTimeout(subscribeTimer);
+        subscribeTimer = null;
+      }
       Sentry.addBreadcrumb({ category: 'realtime', message: 'Setting up notifications channel' });
 
       const channel = supabase
@@ -520,6 +558,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         )
         .subscribe((status) => {
           if (cancelled) return;
+          // Any status callback means the channel is alive enough for
+          // Supabase to talk back — clear the handshake watchdog whether
+          // the news is good (SUBSCRIBED) or bad (CHANNEL_ERROR/TIMED_OUT).
+          if (subscribeTimer) {
+            clearTimeout(subscribeTimer);
+            subscribeTimer = null;
+          }
           Sentry.addBreadcrumb({
             category: 'realtime',
             message: `notifications channel: ${status}`,
@@ -541,25 +586,26 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
               lastEventAtRef.current = Date.now();
             }
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            setRealtimeConnected(false);
-            supabase.removeChannel(channel);
-            if (currentChannel === channel) currentChannel = null;
-
-            if (retryCountRef.current >= MAX_RETRIES) {
-              Sentry.captureMessage(
-                'Notification realtime: max retries exceeded, falling back to polling',
-                'warning',
-              );
-              return;
-            }
-
-            const delay = Math.min(1000 * 2 ** retryCountRef.current, MAX_BACKOFF_MS);
-            retryCountRef.current++;
-            retryTimer = setTimeout(() => {
-              setupChannel();
-            }, delay);
+            scheduleRetry(channel, 'channel_error');
           }
         });
+
+      // Arm the handshake watchdog. If neither SUBSCRIBED nor
+      // CHANNEL_ERROR/TIMED_OUT fires within SUBSCRIBE_TIMEOUT_MS, the
+      // websocket upgrade has silently failed (typically a stale JWT
+      // rejected at handshake or a proxy that stripped the auth header)
+      // and Supabase will never call back. Treat as channel_error and
+      // let the existing backoff ladder recover.
+      subscribeTimer = setTimeout(() => {
+        if (cancelled) return;
+        subscribeTimer = null;
+        Sentry.addBreadcrumb({
+          category: 'realtime',
+          level: 'warning',
+          message: `notifications channel subscribe watchdog fired after ${SUBSCRIBE_TIMEOUT_MS}ms`,
+        });
+        scheduleRetry(channel, 'subscribe_timeout');
+      }, SUBSCRIBE_TIMEOUT_MS);
 
       currentChannel = channel;
     }
@@ -574,6 +620,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         if (retryTimer) {
           clearTimeout(retryTimer);
           retryTimer = null;
+        }
+        if (subscribeTimer) {
+          clearTimeout(subscribeTimer);
+          subscribeTimer = null;
         }
         if (currentChannel) {
           supabase.removeChannel(currentChannel);
@@ -591,6 +641,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           clearTimeout(retryTimer);
           retryTimer = null;
         }
+        if (subscribeTimer) {
+          clearTimeout(subscribeTimer);
+          subscribeTimer = null;
+        }
         if (currentChannel) {
           supabase.removeChannel(currentChannel);
           currentChannel = null;
@@ -602,6 +656,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
+      if (subscribeTimer) clearTimeout(subscribeTimer);
       channelRegistry.unregister(registryKey);
       if (currentChannel) supabase.removeChannel(currentChannel);
     };

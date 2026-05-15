@@ -8,16 +8,40 @@ import { useCallback, useEffect, useRef } from 'react';
 import { loadAndSwitchLanguage } from '@/lib/i18n';
 import { postCrossTab } from '@/lib/realtime/cross-tab';
 import { supabase } from '@/lib/supabase/client';
+import { isTimeoutError, withTimeout } from '@/lib/supabase/with-timeout';
 import { db } from '@/lib/supabase/wrapped-client';
 import { useAuthStore } from '@/store/auth-store';
+
+// Watchdog for supabase.auth.getSession() — see with-timeout.ts. 5s is
+// well above the p99 of a healthy local-storage session read (sub-50ms)
+// but short enough that a stuck refresh sends the user back to /login
+// instead of holding ProtectedRoute's spinner indefinitely.
+const GET_SESSION_TIMEOUT_MS = 5_000;
 
 type Staff = Database['public']['Tables']['staff']['Row'];
 type StaffSchedule = Database['public']['Tables']['staff_schedules']['Row'];
 
 async function clockViaApi(scheduleId: string, action: 'clock_in' | 'clock_out') {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  let session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'];
+  try {
+    ({
+      data: { session },
+    } = await withTimeout(
+      supabase.auth.getSession(),
+      GET_SESSION_TIMEOUT_MS,
+      'getSession(clockViaApi)',
+    ));
+  } catch (err) {
+    // Fire-and-forget side effect — failing to clock in/out is not a
+    // blocking error. The next post-login or manual clock action will
+    // retry. Surface to Sentry so we can see if timeouts cluster.
+    if (isTimeoutError(err)) {
+      Sentry.captureMessage('getSession timed out in clockViaApi', 'warning');
+    } else {
+      Sentry.captureException(err, { tags: { context: 'clock-via-api-get-session' } });
+    }
+    return;
+  }
   if (!session?.access_token) return;
 
   await fetch('/api/v1/schedules/clock', {
@@ -179,10 +203,27 @@ export function useAuth() {
     const initSession = async () => {
       // If Zustand already has staff, just ensure the Supabase session is loaded
       if (staff) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session && !cancelled) {
+        try {
+          const {
+            data: { session },
+          } = await withTimeout(
+            supabase.auth.getSession(),
+            GET_SESSION_TIMEOUT_MS,
+            'getSession(initSession-rehydrate)',
+          );
+          if (!session && !cancelled) {
+            clearAuth();
+            routerRef.current.push('/login');
+          }
+        } catch (err) {
+          if (cancelled) return;
+          if (isTimeoutError(err)) {
+            // Treat a stuck refresh as "no session" — better to send the
+            // user to /login than hold them on a ProtectedRoute spinner.
+            Sentry.captureMessage('getSession timed out on rehydrate', 'warning');
+          } else {
+            Sentry.captureException(err);
+          }
           clearAuth();
           routerRef.current.push('/login');
         }
@@ -206,7 +247,11 @@ export function useAuth() {
           const {
             data: { session },
             error: sessionError,
-          } = await supabase.auth.getSession();
+          } = await withTimeout(
+            supabase.auth.getSession(),
+            GET_SESSION_TIMEOUT_MS,
+            'getSession(initSession-cold)',
+          );
 
           if (cancelled) return;
 
@@ -231,7 +276,14 @@ export function useAuth() {
             }
           }
         } catch (error) {
-          Sentry.captureException(error);
+          if (isTimeoutError(error)) {
+            // Group timeouts under a stable message so we can dashboard
+            // them. The existing catch path (clearAuth + finally flips
+            // isLoading to false) handles redirection via ProtectedRoute.
+            Sentry.captureMessage('getSession timed out on cold init', 'warning');
+          } else {
+            Sentry.captureException(error);
+          }
           if (!cancelled) clearAuth();
         } finally {
           if (!cancelled) setIsLoading(false);
