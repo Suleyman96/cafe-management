@@ -11,7 +11,6 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Toaster } from 'sonner';
 import '@/lib/i18n';
@@ -127,18 +126,42 @@ function CrossTabBridge() {
   return null;
 }
 
-/** Cancel in-flight queries when route changes to free browser connections. */
-function RouteChangeHandler() {
-  const pathname = usePathname();
+/**
+ * Logs a Sentry breadcrumb when queries get stuck in `pending + idle` with
+ * live observers — the symptom of "page never loads, has to refresh."
+ *
+ * Pending + idle + observed means: a component is subscribed and waiting
+ * for data, but nothing is fetching and nothing will. Healthy queries
+ * transition pending → fetching → success/error within seconds; sitting
+ * idle in pending past the 30s scan window is pathological.
+ *
+ * Breadcrumb only — does NOT auto-invalidate. We want signal first; a
+ * self-heal can come later once we see which keys actually hang.
+ */
+function StuckQueryObserver() {
   const queryClient = useQueryClient();
-  const prevPathRef = useRef(pathname);
 
   useEffect(() => {
-    if (prevPathRef.current !== pathname) {
-      queryClient.cancelQueries();
-      prevPathRef.current = pathname;
-    }
-  }, [pathname, queryClient]);
+    const interval = setInterval(() => {
+      const stuck = queryClient
+        .getQueryCache()
+        .getAll()
+        .filter(
+          (q) =>
+            q.state.status === 'pending' &&
+            q.state.fetchStatus === 'idle' &&
+            q.getObserversCount() > 0,
+        );
+      if (stuck.length === 0) return;
+      Sentry.addBreadcrumb({
+        category: 'react-query',
+        level: 'warning',
+        message: `Stuck pending queries with observers: ${stuck.length}`,
+        data: { keys: stuck.slice(0, 5).map((q) => q.queryKey) },
+      });
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [queryClient]);
 
   return null;
 }
@@ -190,6 +213,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
             refetchOnMount: true,
             refetchOnReconnect: true,
             retry: 1,
+            // Pinned to match mutations: an upstream switch to 'always' would
+            // let queries fire while offline against a stale token, and
+            // 'offlineFirst' would serve cache without verifying freshness.
+            // The 'online' default is correct — we want it explicit.
+            networkMode: 'online',
           },
           // Money mutations must never auto-retry — even idempotent ones
           // are risky at the React Query layer because a paused-then-fired
@@ -222,7 +250,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <RealtimeAuthBridge />
             <LifecycleBridge />
             <CrossTabBridge />
-            <RouteChangeHandler />
+            <StuckQueryObserver />
             {children}
             <Toaster position="bottom-right" />
             <ReactQueryDevtools initialIsOpen={false} />
