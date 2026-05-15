@@ -238,7 +238,7 @@ export type { StaffKitchenFiltersWrapper } from './staff-kitchen-filters';
 export type { StockItemsWrapper } from './stock';
 export type { TablesWrapper } from './tables';
 export type { TasksWrapper } from './tasks';
-export type { TenantsWrapper } from './tenants';
+export type { TenantPublicProfile, TenantsWrapper } from './tenants';
 // Re-export types
 export * from './types';
 export type { ViewsWrapper } from './views';

@@ -1,14 +1,21 @@
+import type { TenantPublicProfile } from '@gustri/api-client';
 import type { PlanName } from '@gustri/core';
-import type { Database } from '@gustri/database';
 import { useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from '../keys';
 import { useDb, useTenantId } from '../provider';
 
-export type Tenant = Database['public']['Tables']['tenants']['Row'];
+/**
+ * The slice of the tenants row that the wrapper exposes to clients.
+ * Narrowed in `@gustri/api-client` to enumerate columns explicitly so
+ * adding a sensitive column to the table doesn't silently leak it
+ * into the React Query cache.
+ */
+export type Tenant = TenantPublicProfile;
 
 /**
- * Current tenant row, keyed by tenant id. Refetched on focus so plan
- * upgrades / downgrades propagate without requiring re-login.
+ * Current tenant row (narrowed projection), keyed by tenant id.
+ * Refetched on focus so plan upgrades / downgrades propagate without
+ * requiring re-login.
  */
 export function useTenant() {
   const db = useDb();

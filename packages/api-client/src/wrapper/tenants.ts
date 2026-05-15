@@ -9,14 +9,40 @@ import type { WrapperContext } from './types';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
 
+/**
+ * Narrowed projection of the `tenants` row exposed to clients.
+ *
+ * This wrapper is the only path through which client code reads the
+ * tenants table (via `useTenant` / `useTenantPlan` hooks). The whole
+ * row sits in the React Query cache + Sentry breadcrumbs + browser
+ * DevTools, so anything we expose here is effectively client-visible.
+ *
+ * Today the row only carries id/name/slug/plan/is_active/timestamps
+ * — none of it sensitive. But the moment a billing column lands on
+ * this table (stripe_customer_id, subscription_status, billing_email,
+ * webhook_secret, …) a thoughtless `select('*')` would leak it into
+ * every client cache. Enumerate columns explicitly so adding a
+ * sensitive column requires a deliberate change to this query.
+ *
+ * Timestamps are intentionally NOT exposed — no consumer reads them
+ * today; adding them on demand is cheaper than leaking by default.
+ */
+export type TenantPublicProfile = Pick<TenantRow, 'id' | 'name' | 'slug' | 'plan' | 'is_active'>;
+
+const TENANT_PUBLIC_COLUMNS = 'id, name, slug, plan, is_active' as const;
+
 export function createTenantsWrapper(ctx: WrapperContext) {
   return {
-    getCurrent: async (): Promise<TenantRow> => {
+    getCurrent: async (): Promise<TenantPublicProfile> => {
       // Use `id` rather than `tenant_id` — the tenants table is keyed by `id`
       // and the wrapper's tenantId IS that primary key. The applyTenantScope
       // default uses tenant_id, so query by id explicitly here and skip the
       // helper. RLS still scopes correctly.
-      const { data, error } = await ctx.client.from('tenants').select('*').limit(1).single();
+      const { data, error } = await ctx.client
+        .from('tenants')
+        .select(TENANT_PUBLIC_COLUMNS)
+        .limit(1)
+        .single();
 
       if (error) throw handleSupabaseError(error);
       return data;
