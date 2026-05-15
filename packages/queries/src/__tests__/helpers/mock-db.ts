@@ -144,6 +144,7 @@ export function createMockDb(): Record<string, any> {
       'delete',
       'incrementOrderCount',
     ),
+    tenants: mockResource('getCurrent', 'getMonthlyOrderCount'),
     rpc: mockResource('getRemainingBalance', 'transferTable', 'generateOrderNumber'),
     reports: mockResource(
       'getRevenueSummary',

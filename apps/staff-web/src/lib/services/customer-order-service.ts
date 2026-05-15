@@ -1,4 +1,4 @@
-import { ConflictError, NotFoundError, PLAN_LIMITS, ValidationError } from '@gustri/core';
+import { ConflictError, NotFoundError, ValidationError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findOrCreateByClientRequestId } from '@/lib/api/dedupe';
 import { assertCustomerPlanAllowsWrites } from './customer-plan-gate';
@@ -151,7 +151,7 @@ export async function createCustomerOrder(
       // helper throws `AuthorizationError('plan_required')` on a free
       // tenant, which `handleRouteError`'s `isAppError` branch maps to
       // HTTP 403 + the localized sentinel.
-      const plan = await assertCustomerPlanAllowsWrites(supabaseAdmin, tenantId);
+      await assertCustomerPlanAllowsWrites(supabaseAdmin, tenantId);
 
       // Order cap is enforced by the `check_order_limit` BEFORE INSERT
       // trigger. Over-cap inserts raise the `plan_required` sentinel
