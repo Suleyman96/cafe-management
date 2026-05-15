@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { PlanName } from '@gustri/core';
 import { PLAN_ORDER } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
+import { useTenantPlan } from '@gustri/queries';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { StyleSheet, View } from 'react-native';
@@ -116,7 +117,7 @@ const DRAWER_SECTIONS: DrawerSection[] = [
 
 export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const staff = useAuthStore((s) => s.staff);
-  const tenantPlan = useAuthStore((s) => s.tenantPlan) ?? 'free';
+  const { plan: tenantPlan } = useTenantPlan();
   const { data: cafeSettings } = useCafeSettings();
   const role = staff?.role || 'waiter';
   const currentRoute = props.state.routes[props.state.index]?.name;
@@ -143,7 +144,13 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
       {DRAWER_SECTIONS.map((section) => {
         const visibleItems = section.items.filter((item) => {
           if (!item.roles.includes(role)) return false;
-          if (item.minPlan && PLAN_ORDER[tenantPlan] < PLAN_ORDER[item.minPlan]) return false;
+          // Plan unknown (loadSession pending / tenant fetch failed) → hide
+          // gated items rather than coercing to 'free'. The gated entry
+          // will appear once the plan resolves; safer than guessing.
+          if (item.minPlan) {
+            if (!tenantPlan) return false;
+            if (PLAN_ORDER[tenantPlan] < PLAN_ORDER[item.minPlan]) return false;
+          }
           if (item.key === 'WasteTab' && !cafeSettings?.waste_tracking_enabled) return false;
           return true;
         });

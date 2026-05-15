@@ -8,16 +8,6 @@ vi.mock('@/lib/session-stamp', () => ({
   clearSessionStamp: vi.fn(),
 }));
 
-const tenantsGetCurrent = vi.fn();
-
-vi.mock('@/lib/supabase', () => ({
-  db: {
-    tenants: {
-      getCurrent: (...args: unknown[]) => tenantsGetCurrent(...args),
-    },
-  },
-}));
-
 const STAFF: Staff = {
   id: 'staff-1',
   tenant_id: 'tenant-1',
@@ -29,40 +19,26 @@ const STORAGE_KEY = 'gustri-auth-store';
 
 describe('useAuthStore.loadSession', () => {
   beforeEach(async () => {
-    useAuthStore.setState({ staff: null, tenantPlan: null, isLoading: true });
-    tenantsGetCurrent.mockReset();
+    useAuthStore.setState({ staff: null, isLoading: true });
     await SecureStore.deleteItemAsync(STORAGE_KEY);
   });
 
-  it('clears staff and tenantPlan when called with null', async () => {
-    useAuthStore.setState({ staff: STAFF, tenantPlan: 'pro' });
-    await useAuthStore.getState().loadSession(null);
+  it('clears staff when called with null', () => {
+    useAuthStore.setState({ staff: STAFF });
+    useAuthStore.getState().loadSession(null);
     expect(useAuthStore.getState().staff).toBeNull();
-    expect(useAuthStore.getState().tenantPlan).toBeNull();
-    expect(tenantsGetCurrent).not.toHaveBeenCalled();
   });
 
-  it('sets staff and fetches tenantPlan once when called with a staff', async () => {
-    tenantsGetCurrent.mockResolvedValueOnce({ plan: 'pro' });
-    await useAuthStore.getState().loadSession(STAFF);
+  it('sets staff when called with a staff record', () => {
+    useAuthStore.getState().loadSession(STAFF);
     expect(useAuthStore.getState().staff).toBe(STAFF);
-    expect(useAuthStore.getState().tenantPlan).toBe('pro');
-    expect(tenantsGetCurrent).toHaveBeenCalledTimes(1);
-  });
-
-  it('leaves tenantPlan null when the fetch fails (does not throw)', async () => {
-    tenantsGetCurrent.mockRejectedValueOnce(new Error('network'));
-    await useAuthStore.getState().loadSession(STAFF);
-    expect(useAuthStore.getState().staff).toBe(STAFF);
-    expect(useAuthStore.getState().tenantPlan).toBeNull();
   });
 });
 
 describe('useAuthStore persistence', () => {
   beforeEach(async () => {
     await SecureStore.deleteItemAsync(STORAGE_KEY);
-    useAuthStore.setState({ staff: null, tenantPlan: null, isLoading: true });
-    tenantsGetCurrent.mockReset();
+    useAuthStore.setState({ staff: null, isLoading: true });
   });
 
   async function waitForPersistedWrite() {
@@ -72,14 +48,13 @@ describe('useAuthStore persistence', () => {
     await Promise.resolve();
   }
 
-  it('writes staff to SecureStore on set, omits tenantPlan and isLoading', async () => {
-    useAuthStore.setState({ staff: STAFF, tenantPlan: 'pro', isLoading: false });
+  it('writes staff to SecureStore on set, omits isLoading', async () => {
+    useAuthStore.setState({ staff: STAFF, isLoading: false });
     await waitForPersistedWrite();
     const raw = await SecureStore.getItemAsync(STORAGE_KEY);
     expect(raw).not.toBeNull();
     const parsed = JSON.parse(raw as string);
     expect(parsed.state).toEqual({ staff: STAFF });
-    expect(parsed.state.tenantPlan).toBeUndefined();
     expect(parsed.state.isLoading).toBeUndefined();
   });
 

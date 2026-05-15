@@ -2,7 +2,6 @@ import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
-  useCreateTable,
   useDeleteTable,
   useTable,
   useTableByQrCode,
@@ -134,24 +133,12 @@ describe('useUpdateTableStatus', () => {
   });
 });
 
-describe('useCreateTable', () => {
-  it('invalidates TABLES on success', async () => {
-    const { result, queryClient } = renderHookWithProviders(() => useCreateTable());
-    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    await result.current.mutateAsync({ table_number: '5', capacity: 4, status: 'free' } as any);
-
-    const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
-  });
-
-  it('calls create with table data', async () => {
-    const tableData = { table_number: '5', capacity: 4, status: 'free' } as any;
-    const { result } = renderHookWithProviders(() => useCreateTable());
-    await result.current.mutateAsync(tableData);
-    expect(db.tables.create).toHaveBeenCalledWith(tableData);
-  });
-});
+// Note: `useCreateTable` is re-exported verbatim from @gustri/queries.
+// Its behavior is covered by packages/queries/src/__tests__/mutations/
+// use-table-mutations.test.ts. The local soft pre-check (which used to
+// live here) was deleted — the table cap is now enforced exclusively
+// by the `enforce_table_cap_trigger` server-side, which raises the
+// `plan_required` sentinel that mutation cache `onError` localizes.
 
 // --- Mutations from @gustri/queries (use useDb → mockDb from provider) ---
 

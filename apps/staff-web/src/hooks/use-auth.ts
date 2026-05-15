@@ -1,6 +1,5 @@
 'use client';
 
-import type { PlanName } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import * as Sentry from '@sentry/nextjs';
 import { useQueryClient } from '@tanstack/react-query';
@@ -117,16 +116,23 @@ export async function postLoginSideEffects(staffId: string) {
 // JS is single-threaded — the check-and-assign at the call site is atomic.
 let sessionCheckPromise: Promise<void> | null = null;
 
-async function loadStaffAndSetup(
-  userId: string,
-  setStaff: (s: Staff) => void,
-  setTenantPlan: (p: PlanName) => void,
-) {
-  const staffData = (await db.staff.findByAuthId(userId)) as Staff;
+/**
+ * Install a freshly-loaded staff session: bind the wrapper tenant
+ * context, commit staff to the auth store, then fire the non-blocking
+ * post-login side effects (language, last-login stamp, schedule
+ * auto-clock-in).
+ *
+ * The tenant plan is **not** fetched here — it lives in the TanStack
+ * Query (`useTenantPlan` from `@gustri/queries`), so plan upgrades
+ * propagate on focus without a re-login and the loading state is
+ * surfaced explicitly to consumers.
+ */
+export function installSession(staffData: Staff, setStaff: (s: Staff) => void) {
   // Bind the wrapper tenant context for the defense-in-depth tenant
   // predicate (H5). Every subsequent wrapper read appends
   // `.eq('tenant_id', tenantId)`. Sign-out clears it via clearAuth().
   db.setTenantContext(staffData.tenant_id);
+
   setStaff(staffData);
   postLoginSideEffects(staffData.id);
 
@@ -135,13 +141,11 @@ async function loadStaffAndSetup(
       Sentry.captureException(err);
     });
   }
+}
 
-  db.tenants
-    .getCurrent()
-    .then((tenant) => setTenantPlan(tenant.plan as PlanName))
-    .catch((err) => {
-      Sentry.captureException(err, { tags: { context: 'post-login-tenant-plan' } });
-    });
+async function loadStaffAndSetup(userId: string, setStaff: (s: Staff) => void) {
+  const staffData = (await db.staff.findByAuthId(userId)) as Staff;
+  installSession(staffData, setStaff);
 }
 
 export function useAuth() {
@@ -149,7 +153,7 @@ export function useAuth() {
   const routerRef = useRef(router);
   routerRef.current = router;
 
-  const { staff, isLoading, setStaff, setTenantPlan, setIsLoading, clearAuth } = useAuthStore();
+  const { staff, isLoading, setStaff, setIsLoading, clearAuth } = useAuthStore();
   const queryClient = useQueryClient();
 
   const stableLogout = useCallback(async () => {
@@ -218,7 +222,7 @@ export function useAuth() {
           }
 
           try {
-            await loadStaffAndSetup(session.user.id, setStaff, setTenantPlan);
+            await loadStaffAndSetup(session.user.id, setStaff);
           } catch (staffError) {
             Sentry.captureException(staffError);
             if (!cancelled) {
@@ -256,7 +260,7 @@ export function useAuth() {
         // Only load staff if we don't have it yet
         if (!useAuthStore.getState().staff) {
           try {
-            await loadStaffAndSetup(session.user.id, setStaff, setTenantPlan);
+            await loadStaffAndSetup(session.user.id, setStaff);
             setIsLoading(false);
           } catch (err) {
             Sentry.captureException(err);
@@ -273,7 +277,7 @@ export function useAuth() {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [staff, clearAuth, setIsLoading, setStaff, setTenantPlan]);
+  }, [staff, clearAuth, setIsLoading, setStaff]);
 
   return {
     staff,

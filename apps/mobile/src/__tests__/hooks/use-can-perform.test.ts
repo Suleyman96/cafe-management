@@ -17,7 +17,7 @@ function setRole(role: Staff['role'] | null) {
 
 describe('useCanPerform', () => {
   beforeEach(() => {
-    useAuthStore.setState({ staff: null, tenantPlan: null, isLoading: true });
+    useAuthStore.setState({ staff: null, isLoading: true });
   });
 
   it('returns false when no staff is signed in', () => {

@@ -360,7 +360,7 @@ function App() {
             }
           }
         }
-        await loadSession(staff);
+        loadSession(staff);
       })
       .catch((err) => {
         Sentry.captureException(err);
@@ -369,9 +369,9 @@ function App() {
         setIsLoading(false);
       });
 
-    // Listen for auth changes — single fetch path through loadSession.
+    // Listen for auth changes — single entry point through loadSession.
     const { data } = onAuthStateChange((staff) => {
-      void loadSession(staff);
+      loadSession(staff);
     });
 
     return () => {

@@ -4,6 +4,7 @@ import { Button } from '@gustri/ui';
 import * as Sentry from '@sentry/nextjs';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { installSession } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -67,7 +68,7 @@ export function DevLoginButton() {
           );
         }
 
-        setStaff(staffData);
+        installSession(staffData, setStaff);
         router.push('/');
         return;
       }

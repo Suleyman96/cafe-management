@@ -72,6 +72,18 @@ describe('handleSupabaseError', () => {
     expect(error).toBeInstanceOf(AuthorizationError);
   });
 
+  it('maps P0001 with plan_required to AuthorizationError', () => {
+    // Friendly-error layer for the table-cap trigger: raises
+    // plan_required (P0001) so the user gets the localized
+    // "upgrade your plan" message instead of the bare RLS rejection.
+    const error = handleSupabaseError({
+      code: 'P0001',
+      message: 'plan_required',
+    });
+    expect(error).toBeInstanceOf(AuthorizationError);
+    expect(error.message).toBe('plan_required');
+  });
+
   it('maps 23514 to ValidationError', () => {
     const error = handleSupabaseError({
       code: '23514',

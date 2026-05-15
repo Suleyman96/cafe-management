@@ -7,11 +7,10 @@ import { verifyStaff } from './verify-staff';
 /**
  * Server-side plan enforcement.
  *
- * The mobile app (and the web sidebar) hide plan-gated UI based on a
- * client-resident `tenantPlan`. Nothing on the server checks plan, so a
- * modified client (Hermes-decompiled, MITM'd `/tenants` response, or
- * Zustand state mutated in dev tools) can spoof `tenantPlan = 'pro'` and
- * call any plan-gated endpoint — pro features become free.
+ * The mobile app (and the web sidebar) hide plan-gated UI based on the
+ * `useTenantPlan` TanStack Query result. Nothing on the server trusts
+ * that — a modified client (Hermes-decompiled, MITM'd `/tenants`
+ * response, query cache mutated in dev tools) can spoof the value.
  *
  * `verifyPlan(allowed)` resolves the tenant from the JWT (never from the
  * request body) via `verifyStaff`, looks up `tenants.plan` server-side,

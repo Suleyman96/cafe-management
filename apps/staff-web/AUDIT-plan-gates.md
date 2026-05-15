@@ -12,6 +12,29 @@ Plan tier mapping is the source of truth in
 (`PLAN_LIMITS`). The SQL helper `plan_allows_feature(feature)` mirrors that
 table; if you change one, change the other.
 
+## Client-side plan state
+
+The client reads plan via `useTenantPlan()` from
+[`@gustri/queries`](../../packages/queries/src/hooks/use-tenant.ts), which
+returns `{ plan: PlanName | null, isLoading: boolean }`. Plan lives in a
+TanStack Query keyed by tenant id, so:
+
+- Plan upgrades / downgrades propagate on focus refetch — no re-login needed.
+- The auth store stays purely about staff identity. There is no zustand
+  `tenantPlan` field; bypassing the hook (e.g. reading staff and assuming
+  free) is no longer possible.
+- The loading state is surfaced explicitly. Consumers MUST treat
+  `plan === null` as **unknown**, never as `'free'`:
+  - **Sidebar / drawer nav**: hide plan-gated items while plan is null.
+  - **Mutation pre-checks**: skip them entirely. The server is the
+    authoritative gate (RLS + friendly-error triggers) — let it respond
+    and localize the sentinel via `localizeErrorMessage`.
+
+A previous version of the staff-web store coerced `null` to `'free'`,
+which produced spurious "free plan allows up to 5 tables" errors at
+paying business-tier tenants during the post-login load window. Do not
+re-introduce that pattern.
+
 | Feature | Plan tier required | UI gate (where) | Server route(s) | Server enforcement |
 |---|---|---|---|---|
 | **Inventory (stock items)** | `pro`, `business` | sidebar `/stock`; mobile drawer | `POST /api/v1/stock/[id]/adjust` | `verifyPlan(['pro', 'business'])` middleware |
@@ -22,7 +45,7 @@ table; if you change one, change the other.
 | **QR ordering** | `standard`, `pro`, `business` | customer-web entry | `POST /api/v1/customer/orders` | `customer-order-service.ts` rejects with `plan_required` when `PLAN_LIMITS[plan].qrOrdering === false`. RLS does not need a separate gate because customer orders only land through this route. |
 | **Custom branding** | `standard`, `pro`, `business` | settings UI | `PUT /api/v1/settings` (theme fields) | Settings route checks `requirePlanAtLeast('standard')` only when `brand_primary_color` or `brand_logo_url` is in the body, so non-branding settings stay open to free admins. |
 | **Monthly order cap** | per-tier `maxOrdersPerMonth` | mobile `useCreateOrder` soft check | `POST /api/v1/orders` | `apps/staff-web/src/lib/services/order-service.ts` runs the per-month count under `verifyStaff` |
-| **Table cap** | per-tier `maxTables` | `useCreateTable` (web) soft check | n/a (direct supabase) | RLS RESTRICTIVE policy `plan_tables_insert` calling `plan_allows_new_table(tenant_id)`. Counts active tables vs `PLAN_LIMITS[*].maxTables`; downgraded tenants keep existing rows but can't add. |
+| **Table cap** | per-tier `maxTables` | none (server-only) | n/a (direct supabase) | BEFORE INSERT trigger `enforce_table_cap_trigger` calls `plan_allows_new_table(tenant_id)` and raises the `plan_required` sentinel (P0001) for friendly localized errors. RLS RESTRICTIVE policy `plan_tables_insert` (same helper) stays as defense-in-depth — fires only if the trigger is bypassed. Counts active tables vs `PLAN_LIMITS[*].maxTables`; downgraded tenants keep existing rows but can't add. The redundant baseline trigger `enforce_table_limit` (which counted all rows, not just active, and raised an English error) was dropped in the same migration. |
 
 ## Conventions
 

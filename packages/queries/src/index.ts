@@ -86,6 +86,8 @@ export {
   useTodaysTasks,
 } from './hooks/use-tasks';
 export { useTaxMultiplier } from './hooks/use-tax-multiplier';
+// Read hooks — Tenant + plan
+export { type Tenant, useTenant, useTenantPlan } from './hooks/use-tenant';
 // Read hooks — Waiter Calls
 export { usePendingWaiterCallsCount, useWaiterCalls } from './hooks/use-waiter-calls';
 // Read hooks — Waste

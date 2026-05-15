@@ -69,6 +69,19 @@ export function handleSupabaseError(error: unknown): AppError {
     return new AuthorizationError(err.message || 'Insufficient privileges');
   }
 
+  // PL/pgSQL `RAISE EXCEPTION ... USING ERRCODE = 'P0001'` (raise_exception).
+  // Triggers use this for friendly-error sentinels — e.g. the table-cap
+  // trigger raises `plan_required` so the user gets the localized
+  // "upgrade your plan" message instead of the bare RLS rejection.
+  // Map known plan sentinels to AuthorizationError so call sites'
+  // sentinel matching + i18n keep working.
+  if (err.code === 'P0001') {
+    const sentinel = err.message?.trim();
+    if (sentinel === 'plan_required') {
+      return new AuthorizationError(sentinel);
+    }
+  }
+
   // PostgreSQL: CHECK constraint violation. The validate_payment_amount /
   // validate_refund_amount triggers RAISE with ERRCODE = 'check_violation' and
   // a sentinel message (e.g. 'payment_exceeds_remaining'). Map those to a

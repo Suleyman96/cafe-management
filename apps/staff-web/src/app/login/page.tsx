@@ -7,7 +7,7 @@ import * as Sentry from '@sentry/nextjs';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { postLoginSideEffects } from '@/hooks/use-auth';
+import { installSession } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/supabase/wrapped-client';
 import { useAuthStore } from '@/store/auth-store';
@@ -70,10 +70,7 @@ export default function LoginPage() {
         return;
       }
 
-      // Set staff in store and redirect
-      setStaff(staffData);
-      postLoginSideEffects(staffData.id);
-
+      installSession(staffData, setStaff);
       router.push('/');
     } catch (err) {
       Sentry.captureException(err);

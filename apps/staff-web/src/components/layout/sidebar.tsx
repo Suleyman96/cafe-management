@@ -173,7 +173,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
   const { data: overdueCount = 0 } = useOverdueTasksCount();
   const pendingApprovalCount = usePendingApprovalCount();
   const { data: cafeSettings } = useCafeSettings();
-  const tenantPlan = useTenantPlan();
+  const { plan: tenantPlan } = useTenantPlan();
 
   const isOwner = staff?.role === 'owner';
   // Sidebar uses `manage_staff` as a stand-in for "admin tier UI" — both
@@ -186,7 +186,15 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
     items.filter((item) => {
       if (item.ownerOnly && !isOwner) return false;
       if (item.adminOnly && !isAdmin) return false;
-      if (item.minPlan && PLAN_ORDER[tenantPlan] < PLAN_ORDER[item.minPlan]) return false;
+      // Plan unknown (post-login fetch pending or failed) → hide gated
+      // items rather than coercing to 'free'. The gated entry will appear
+      // once the plan resolves; this is preferable to surfacing a link the
+      // user can't actually reach (or — worse — hiding entries they paid
+      // for if the fetch failed transiently).
+      if (item.minPlan) {
+        if (!tenantPlan) return false;
+        if (PLAN_ORDER[tenantPlan] < PLAN_ORDER[item.minPlan]) return false;
+      }
       if (item.href === '/waste' && !cafeSettings?.waste_tracking_enabled) return false;
       return true;
     });
