@@ -2390,7 +2390,6 @@ export type Database = {
           total_size: string
         }[]
       }
-      get_tenant_plan_from_context: { Args: never; Returns: string }
       get_top_sold_items: {
         Args: { p_from: string; p_limit?: number; p_to: string }
         Returns: {

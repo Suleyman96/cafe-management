@@ -1,0 +1,65 @@
+-- ============================================================
+-- Drop dead/broken consumers of the `app.current_tenant_id` session
+-- var on anon HTTP paths.
+--
+-- Background
+-- ----------
+-- `set_table_context(qr_token)` binds three session vars using
+-- `set_config(..., true)` — the `true` is `is_local`, so the
+-- settings are **transaction-local**. PostgREST commits each HTTP
+-- RPC as its own transaction. By the time a *subsequent* anon HTTP
+-- request runs, those settings are already rolled back.
+--
+-- That means any anon-reachable function or RLS policy that reads
+-- `current_setting('app.current_tenant_id', ...)` will see NULL and
+-- silently produce no rows / no result. The customer never sees an
+-- error — the failure is invisible. We discovered this in
+-- 20260515000003 (the broken `get_tenant_plan_from_context` call
+-- pattern that left customer-web's "Browse Menu" CTA blank).
+--
+-- This migration sweeps the remaining cases of the same anti-pattern.
+--
+-- What's dropped
+-- --------------
+-- 1. `get_tenant_plan_from_context()` function. Made orphan by
+--    20260515000003 (customer-web's `setTableContext` now returns
+--    the plan inline). The function was still GRANTed to anon, so
+--    a future caller would re-introduce the same bug. Drop the
+--    footgun.
+--
+-- 2. Belt-and-braces `DROP POLICY IF EXISTS "anon_read_via_context"
+--    ON public.order_payments` — the policy was already dropped by
+--    20260418000001 (security sweep), but the IF EXISTS makes this
+--    idempotent and the comment record-keeps the rationale alongside
+--    the orphan-function drop.
+--
+-- What's NOT changed
+-- ------------------
+-- - `current_tenant_id()` function (still in use as DEFAULT on many
+--   tables, called by authenticated paths through `auth.uid()` →
+--   `staff` lookup, NOT through the session var for those callers).
+--   The function's anon fallback path (no JWT → reads session var →
+--   NULL after the customer-web fix) is preserved for completeness
+--   but isn't currently reachable by any code path that depends on
+--   the return value being non-NULL.
+--
+-- - The session-var bindings in `set_table_context` itself. They
+--   still gate the few `tenant_context`-aware functions called
+--   WITHIN the same transaction (e.g. `current_tenant_id()` as the
+--   DEFAULT on inserts that immediately follow inside the same
+--   transaction — not relevant for separate anon RPC roundtrips).
+--
+-- Future contract
+-- ---------------
+-- Don't add anon RLS policies or SQL functions that depend on
+-- `current_setting('app.current_tenant_id', ...)`. The session var
+-- only survives within one PostgREST transaction. For anon flows
+-- that need tenant context across multiple requests, either:
+--   (a) Pass the tenant ID / QR token explicitly as a function arg.
+--   (b) Have a server route resolve and return everything needed
+--       in one call (the `set_table_context` → jsonb pattern).
+-- ============================================================
+
+DROP POLICY IF EXISTS "anon_read_via_context" ON public.order_payments;
+
+DROP FUNCTION IF EXISTS public.get_tenant_plan_from_context();

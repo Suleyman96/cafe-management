@@ -68,6 +68,32 @@ re-introduce that pattern.
   tenant downgrading from `pro` to `free` should still see and clean up
   their pro-tier data. Only INSERT/UPDATE produce new chargeable state.
 
+## Anti-pattern: session-var-dependent anon RLS / RPC
+
+**Do not** add an anon-reachable RLS policy or SQL function that
+reads `current_setting('app.current_tenant_id', ...)` to identify
+the tenant. The variable is set by `set_table_context` with
+`set_config(..., true)` — the `true` is `is_local`, **transaction-
+local**. PostgREST commits each HTTP RPC in its own transaction, so
+the setting is rolled back before any *subsequent* anon HTTP request
+runs. The downstream call sees `NULL`, the RLS check fails to match
+any row, and the response is empty with no error — an invisible bug.
+
+This is how the customer-web "Browse Menu" CTA was silently broken
+for paying tenants before migration `20260515000003` (which folded
+the plan lookup into `set_table_context`'s response). Migration
+`20260515000004` then dropped the now-orphaned
+`get_tenant_plan_from_context()` function so the footgun can't be
+re-introduced via the same call shape.
+
+For anon flows that need tenant context across multiple requests,
+choose one of:
+
+  (a) Pass the tenant id or QR token explicitly as a function arg.
+  (b) Have a server route do the work with `supabaseAdmin` and
+      return everything needed in one response (the `set_table_context`
+      → `jsonb` pattern from `20260515000003`).
+
 ## When you add a new plan-gated feature
 
 1. Add it to `PLAN_LIMITS` in `packages/core/src/constants.ts`.
