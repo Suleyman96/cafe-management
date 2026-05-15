@@ -1,4 +1,4 @@
-import { PLAN_ORDER, type PlanName } from '@gustri/core';
+import { AuthorizationError, NotFoundError, PLAN_ORDER, type PlanName } from '@gustri/core';
 import type { NextRequest } from 'next/server';
 import { jsonError } from './response';
 import { getSupabaseAdmin } from './verify-admin';
@@ -47,7 +47,7 @@ async function loadPlan(tenantId: string): Promise<PlanName> {
     .single();
 
   if (error || !data) {
-    throw new Error('Tenant not found');
+    throw new NotFoundError('Tenant');
   }
 
   return (data.plan ?? 'free') as PlanName;
@@ -95,13 +95,17 @@ export async function verifyPlan(
  * already have a tenant_id and need to gate work behind a plan check
  * without invoking the request-bound `verifyPlan`. Throws when denied so
  * the caller doesn't have to branch on a Response.
+ *
+ * Errors are typed `AppError` subclasses (`AuthorizationError` for
+ * plan-denied, `NotFoundError` for tenant lookup miss) so routes that
+ * wrap their handler with `handleRouteError` get correct status codes
+ * and the `plan_required` sentinel automatically. Callers don't need
+ * to convert the error themselves.
  */
 export async function requirePlanAtLeast(tenantId: string, minimum: PlanName): Promise<PlanName> {
   const plan = await loadPlan(tenantId);
   if (PLAN_ORDER[plan] < PLAN_ORDER[minimum]) {
-    const err = new Error('plan_required') as Error & { status?: number };
-    err.status = 403;
-    throw err;
+    throw new AuthorizationError('plan_required');
   }
   return plan;
 }

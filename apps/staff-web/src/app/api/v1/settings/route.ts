@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
 import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
-import { jsonError, jsonOk, jsonRateLimited } from '@/lib/api/response';
+import { jsonOk, jsonRateLimited } from '@/lib/api/response';
 import { validateBody } from '@/lib/api/validate';
 import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 import { requirePlanAtLeast } from '@/lib/api/verify-plan';
@@ -96,11 +96,11 @@ export async function PUT(request: NextRequest) {
     // the whole route for free-tier admins.
     const touchesBranding = BRANDING_FIELDS.some((f) => data[f] !== undefined);
     if (touchesBranding) {
-      try {
-        await requirePlanAtLeast(adminOrError.tenant_id, 'standard');
-      } catch {
-        return jsonError('plan_required', 403);
-      }
+      // requirePlanAtLeast throws AuthorizationError('plan_required') on
+      // denial, NotFoundError('Tenant') on lookup miss. The outer
+      // try/catch + handleRouteError below maps both to the right status
+      // (403 / 404) and surfaces the sentinel — no inner catch needed.
+      await requirePlanAtLeast(adminOrError.tenant_id, 'standard');
     }
 
     const supabaseAdmin = getSupabaseAdmin();
