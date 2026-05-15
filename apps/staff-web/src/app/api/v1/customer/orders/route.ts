@@ -47,6 +47,14 @@ const TakeoutSchema = z.object({
   qr_token: z.string().min(1).max(128),
 });
 
+// Customer-web delivery (self-service via QR) keeps `delivery_address` and
+// `delivery_phone` REQUIRED here, even though staff-web/mobile relax both
+// to optional via `orders_takeout_customer_check`. Reason: the customer is
+// the one supplying the destination — an address-less order from this
+// route is physically undeliverable. The DB-level CHECK only requires
+// `customer_name` for delivery (see migration
+// 20260515000005_delivery_customer_phone_optional.sql); this server-side
+// schema is the stricter gate for the self-service path.
 const DeliverySchema = z.object({
   ...BaseFields,
   order_type: z.literal('delivery'),

@@ -39,8 +39,9 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
   }, [settings?.delivery_fee_default]);
 
   const phoneRegex = /^\+?[\d\s\-()]{7,}$/;
-  const isPhoneValid = phoneRegex.test(customerPhone.trim());
-  const isValid = customerName.trim() && isPhoneValid && deliveryAddress.trim();
+  const trimmedPhone = customerPhone.trim();
+  const isPhoneValid = !trimmedPhone || phoneRegex.test(trimmedPhone);
+  const isValid = !!customerName.trim() && isPhoneValid;
 
   const resetForm = () => {
     setCustomerName('');
@@ -59,8 +60,8 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
         order_type: 'delivery',
         status: 'new',
         customer_name: customerName.trim(),
-        customer_phone: customerPhone.trim(),
-        delivery_address: deliveryAddress.trim(),
+        customer_phone: trimmedPhone || null,
+        delivery_address: deliveryAddress.trim() || null,
         delivery_notes: deliveryNotes.trim() || null,
         delivery_fee: Number.parseFloat(deliveryFee) || 0,
       } as Partial<OrdersInsert> as OrdersInsert);

@@ -8,8 +8,12 @@ export function useCreateDeliveryCustomer(options?: MutationCallbacks) {
   const tenantId = useTenantId();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; phone: string; address: string; notes: string | null }) =>
-      db.deliveryCustomers.create(data),
+    mutationFn: (data: {
+      name: string;
+      phone: string | null;
+      address: string | null;
+      notes: string | null;
+    }) => db.deliveryCustomers.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: tenantKey(tenantId, QUERY_KEYS.DELIVERY_CUSTOMERS),

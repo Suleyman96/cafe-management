@@ -129,7 +129,7 @@ export function CreateDeliveryModal({
   };
 
   const handleSubmit = async () => {
-    if (!customer.name.trim() || !customer.phone.trim() || !customer.address.trim()) return;
+    if (!customer.name.trim()) return;
     if (selectedItems.length === 0) {
       toast.error(t('orders.addAtLeastOneItem'));
       return;
@@ -141,12 +141,15 @@ export function CreateDeliveryModal({
       // recompute reads it back off the order row to compute total.
       const { deliveryFee: fee } = calculateTotal();
 
+      const trimmedPhone = customer.phone.trim();
+      const trimmedAddress = customer.address.trim();
+
       const newOrder = await createOrder.mutateAsync({
         table_id: null,
         order_type: 'delivery',
         customer_name: customer.name.trim(),
-        customer_phone: customer.phone.trim(),
-        delivery_address: customer.address.trim(),
+        customer_phone: trimmedPhone || null,
+        delivery_address: trimmedAddress || null,
         delivery_notes: customer.notes.trim() || null,
         delivery_fee: fee,
         assigned_waiter_id: staffId,
@@ -169,11 +172,16 @@ export function CreateDeliveryModal({
 
       if (customer.customerId) {
         incrementOrderCount.mutate(customer.customerId);
-      } else if (customer.saveCustomer) {
+      } else if (customer.saveCustomer && (trimmedPhone || trimmedAddress)) {
+        // Skip the profile save for name-only entries — the saved-customer
+        // search is keyed off phone_hash (the primary path) with address
+        // as the visible discriminator in the dropdown. A name-only row
+        // is unfindable by phone and indistinguishable from other
+        // name-only stubs, so it just clutters the directory.
         createDeliveryCustomer.mutate({
           name: customer.name.trim(),
-          phone: customer.phone.trim(),
-          address: customer.address.trim(),
+          phone: trimmedPhone || null,
+          address: trimmedAddress || null,
           notes: customer.notes.trim() || null,
         });
       }
@@ -218,12 +226,7 @@ export function CreateDeliveryModal({
           <Button
             onClick={handleSubmit}
             disabled={
-              isSubmitting ||
-              !isOnline ||
-              !customer.name.trim() ||
-              !customer.phone.trim() ||
-              !customer.address.trim() ||
-              selectedItems.length === 0
+              isSubmitting || !isOnline || !customer.name.trim() || selectedItems.length === 0
             }
             className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
           >

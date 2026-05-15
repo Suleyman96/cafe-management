@@ -95,6 +95,49 @@ describe('OrdersWrapper', () => {
     expect(result).toEqual(validOrder);
   });
 
+  // Delivery orders accept name-only customer info after the
+  // orders_takeout_customer_check relaxation in migration
+  // 20260515000005. The wrapper itself must not reintroduce a
+  // client-side phone/address requirement — that gate moved to the UI
+  // for the QR self-service flow only (apps/staff-web/.../customer/orders).
+  it('create accepts a delivery order with only customer_name', async () => {
+    const deliveryOrder = {
+      ...validOrder,
+      order_type: 'delivery' as const,
+      customer_name: 'Phone-In Customer',
+      customer_phone: null,
+      delivery_address: null,
+      table_id: null,
+    };
+    const createCtx = createMockContext({
+      responses: {
+        orders: { data: deliveryOrder, error: null },
+      },
+    });
+    const createOrders = createOrdersWrapper(createCtx);
+    const result = await createOrders.create(
+      buildOrderInsert({
+        order_type: 'delivery',
+        status: 'new',
+        source: 'waiter',
+        table_id: null,
+        customer_name: 'Phone-In Customer',
+        customer_phone: null,
+        delivery_address: null,
+      }),
+    );
+    expect(result.customer_name).toBe('Phone-In Customer');
+    expect(result.customer_phone).toBeNull();
+    expect(result.delivery_address).toBeNull();
+
+    const insertCall = createCtx
+      .getCalls()
+      .find((c: { table: string; method: string; args: unknown[] }) => c.method === 'insert');
+    const payload = insertCall!.args[0] as Record<string, unknown>;
+    expect(payload.customer_phone).toBeNull();
+    expect(payload.delivery_address).toBeNull();
+  });
+
   // C2 — revenue-theft fix: any client-supplied totals MUST be replaced with
   // zeros at the wrapper boundary. The DB-level recompute trigger rewrites
   // them once items land, but a row with no items would otherwise persist

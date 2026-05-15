@@ -19,7 +19,7 @@ import { useFormatPrice } from '@/hooks/use-format-price';
 interface DeliveryCustomer {
   id: string;
   name: string;
-  address: string;
+  address: string | null;
   notes: string | null;
   order_count: number;
 }
@@ -97,7 +97,7 @@ export function DeliveryCustomerForm({
     onCustomerChange({
       customerId: c.id,
       name: c.name,
-      address: c.address,
+      address: c.address || '',
       notes: c.notes || '',
     });
     setCustomerSearch('');
@@ -163,9 +163,11 @@ export function DeliveryCustomerForm({
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="font-medium text-sm">{c.name}</div>
-                          <div className="text-xs text-gray-400 line-clamp-1 max-w-[220px]">
-                            {c.address}
-                          </div>
+                          {c.address && (
+                            <div className="text-xs text-gray-400 line-clamp-1 max-w-[220px]">
+                              {c.address}
+                            </div>
+                          )}
                         </div>
                         {c.order_count > 0 && (
                           <div className="text-xs text-purple-600">
@@ -204,7 +206,7 @@ export function DeliveryCustomerForm({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <Phone className="inline h-4 w-4 mr-1" />
-            {t('delivery.phoneNumber')} <span className="text-red-500">*</span>
+            {t('delivery.phoneNumber')}
           </label>
           <input
             type="tel"
@@ -218,7 +220,7 @@ export function DeliveryCustomerForm({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <MapPin className="inline h-4 w-4 mr-1" />
-            {t('delivery.deliveryAddress')} <span className="text-red-500">*</span>
+            {t('delivery.deliveryAddress')}
           </label>
           <div className="relative">
             <textarea
