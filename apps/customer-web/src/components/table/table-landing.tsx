@@ -24,7 +24,7 @@ import { useEffect, useState } from 'react';
 import { useOrder } from '@/hooks/use-order';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
-import { getTenantPlanFromContext, setTableContext } from '@/lib/supabase';
+import { setTableContext } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { useLanguageStore } from '@/store/language-store';
 
@@ -58,9 +58,11 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
   useEffect(() => {
     if (token) {
       setTableContext(token)
-        .then(async () => {
-          // After context is set, check tenant plan for QR ordering gate.
-          const plan = await getTenantPlanFromContext();
+        .then((plan) => {
+          // `setTableContext` now returns the tenant's plan in the same
+          // RPC roundtrip — see the migration comment for why a separate
+          // `get_tenant_plan_from_context` call ALWAYS returned null
+          // (session-var transaction scope).
           if (plan) setTenantPlan(plan);
         })
         .catch((err: unknown) => {

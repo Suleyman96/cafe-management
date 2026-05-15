@@ -2460,7 +2460,7 @@ export type Database = {
           waste_logs_deleted: number
         }[]
       }
-      set_table_context: { Args: { qr_token: string }; Returns: string }
+      set_table_context: { Args: { qr_token: string }; Returns: Json }
       transfer_order_items: {
         Args: {
           p_destination_table_id: string

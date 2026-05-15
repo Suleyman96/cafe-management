@@ -60,60 +60,55 @@ export const db = createSupabaseWrapper(supabase);
 /**
  * Set table context for customer session.
  *
- * This is used by RLS policies to scope access. We also bind the tenant id
- * to the wrapper so its defense-in-depth tenant predicate (H5) takes effect
- * on subsequent reads.
+ * Binds the wrapper's defense-in-depth tenant predicate (H5) for
+ * subsequent reads AND returns the tenant's plan in the same call.
  *
- * L4 — the RPC now RETURNS the resolved `tenant_id`. Pre-L4 we made a
- * second `db.tables.findByQrCode(qrToken)` call to recover it client-side,
- * but that required anon SELECT on the `qr_code` column, which leaks the
- * full QR-code list to anyone with the public anon key. The RPC runs as
- * `SECURITY DEFINER` (postgres), so it can read the column even after
- * we revoke anon's column-level SELECT in 20260507000006.
+ * Why one call instead of two: the previous design called
+ * `set_table_context` then `get_tenant_plan_from_context` separately.
+ * `set_table_context` set session vars with `set_config(..., true)`
+ * (transaction-local); PostgREST commits each RPC in its own
+ * transaction; so the second call ran with the session var already
+ * gone. The plan lookup matched no rows and silently returned NULL,
+ * which the UI rendered as an empty 48px div — paying tenants saw no
+ * "Browse Menu" CTA. Migration `20260515000003` folded the plan
+ * lookup into `set_table_context` itself, so it's done in the same
+ * transaction as the session-var binding.
+ *
+ * The QR-code lookup runs as `SECURITY DEFINER` so it can read
+ * `tables.qr_code` (revoked from anon by `20260507000006`) and
+ * `tenants.plan` (also anon-restricted).
+ *
+ * Returns the plan string (`'free' | 'standard' | 'pro' | 'business'`)
+ * so the caller can drive the QR-ordering UI gate without a second
+ * server round-trip. Returns `null` if the RPC succeeded but no plan
+ * value came back (Sentry-reported — would indicate a contract
+ * change in a future migration).
  */
-export async function setTableContext(qrToken: string) {
-  const { data: tenantId, error } = await supabase.rpc('set_table_context', {
+export async function setTableContext(qrToken: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('set_table_context', {
     qr_token: qrToken,
   });
   if (error) {
     throw handleSupabaseError(error);
   }
-  if (typeof tenantId === 'string' && tenantId.length > 0) {
+
+  // The RPC returns jsonb `{ tenant_id: <uuid>, plan: <text> }`. The
+  // generated `Json` type isn't shape-aware, so narrow at runtime.
+  const payload = data as { tenant_id?: unknown; plan?: unknown } | null;
+  const tenantId = typeof payload?.tenant_id === 'string' ? payload.tenant_id : null;
+  const plan = typeof payload?.plan === 'string' ? payload.plan : null;
+
+  if (tenantId) {
     db.setTenantContext(tenantId);
   } else {
-    // The RPC succeeded (no sentinel exception) but didn't return a
-    // tenant id — that should be impossible with the current function
-    // body. Surface to Sentry so we notice if a future migration
-    // changes the contract; the wrapper falls back to RLS-only scoping.
+    // Impossible with the current function body. Surface to Sentry so
+    // we notice if a future migration changes the contract; the
+    // wrapper falls back to RLS-only scoping.
     Sentry.captureMessage('set_table_context returned no tenant_id', {
       level: 'warning',
       tags: { surface: 'set_table_context.return' },
     });
   }
-}
 
-/**
- * Resolve the tenant's plan using the session var that
- * `set_table_context` binds. RLS-bypassing (`SECURITY DEFINER` in
- * the DB) so anon callers can read the plan after their QR session
- * is established.
- *
- * Lives in `lib/` — not in `components/` — because the wrapper-
- * boundary CI lint (`ci.yml: "no raw .from()/.rpc() in app hooks/
- * components"`) forbids direct `supabase.rpc(...)` calls there. The
- * cast `(supabase.rpc as Function)` that previously sat in
- * `table-landing.tsx` was a regex evasion of that same lint, not a
- * typing workaround. Components import this helper instead.
- *
- * Returns `null` on RPC error so callers render the neutral
- * "plan unknown" UI rather than crashing. The error is reported to
- * Sentry to preserve visibility.
- */
-export async function getTenantPlanFromContext(): Promise<string | null> {
-  const { data, error } = await supabase.rpc('get_tenant_plan_from_context');
-  if (error) {
-    Sentry.captureException(error);
-    return null;
-  }
-  return typeof data === 'string' && data.length > 0 ? data : null;
+  return plan;
 }
