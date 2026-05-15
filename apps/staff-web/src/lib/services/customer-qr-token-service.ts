@@ -1,5 +1,6 @@
-import { PLAN_LIMITS, type PlanName, ValidationError } from '@gustri/core';
+import { ValidationError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { assertCustomerPlanAllowsWrites } from './customer-plan-gate';
 
 /**
  * Customer-facing qr_token resolver — closes the deferred multi-tenant SSR
@@ -74,18 +75,7 @@ export async function resolveCustomerQrToken(
   // entry point to the cart, which is already plan-gated downstream.
   // Failing fast here prevents a free-tier customer from browsing a
   // menu they can never check out from.
-  const { data: tenant, error: tenantError } = await supabaseAdmin
-    .from('tenants')
-    .select('plan')
-    .eq('id', tenantId)
-    .single();
-
-  if (tenantError || !tenant) throw new Error('Tenant not found');
-
-  const plan = ((tenant as { plan?: string }).plan ?? 'free') as PlanName;
-  if (!PLAN_LIMITS[plan].qrOrdering) {
-    throw new Error('plan_required');
-  }
+  await assertCustomerPlanAllowsWrites(supabaseAdmin, tenantId);
 
   return { tenant_id: tenantId };
 }

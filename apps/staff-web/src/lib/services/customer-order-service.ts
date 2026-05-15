@@ -1,12 +1,7 @@
-import {
-  ConflictError,
-  NotFoundError,
-  PLAN_LIMITS,
-  type PlanName,
-  ValidationError,
-} from '@gustri/core';
+import { ConflictError, NotFoundError, PLAN_LIMITS, ValidationError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findOrCreateByClientRequestId } from '@/lib/api/dedupe';
+import { assertCustomerPlanAllowsWrites } from './customer-plan-gate';
 
 type DineInOrderInput = {
   order_type: 'dine_in';
@@ -151,27 +146,12 @@ export async function createCustomerOrder(
     clientRequestId: orderData.client_request_id,
     selectShape: '*',
     create: async () => {
-      // Get the tenant's plan
-      const { data: tenant, error: tenantError } = await supabaseAdmin
-        .from('tenants')
-        .select('plan')
-        .eq('id', tenantId)
-        .single();
-
-      if (tenantError || !tenant) {
-        throw new Error('Tenant not found');
-      }
-
-      const plan = (tenant.plan ?? 'free') as PlanName;
-
-      // QR-ordering is a paid feature (standard+ per PLAN_LIMITS[*].qrOrdering).
-      // Free tenants who try to receive customer-originated orders — the only
-      // path through this service — are rejected here. The client UI hides
-      // the QR-order entry points but a hand-crafted POST or a forked
-      // customer-web build would otherwise reach this insert.
-      if (!PLAN_LIMITS[plan].qrOrdering) {
-        throw new Error('plan_required');
-      }
+      // QR-ordering plan gate. Free tenants don't get any customer-side
+      // write surface (orders, waiter calls, feedback, delivery) — the
+      // helper throws `AuthorizationError('plan_required')` on a free
+      // tenant, which `handleRouteError`'s `isAppError` branch maps to
+      // HTTP 403 + the localized sentinel.
+      const plan = await assertCustomerPlanAllowsWrites(supabaseAdmin, tenantId);
 
       // Order cap is enforced by the `check_order_limit` BEFORE INSERT
       // trigger. Over-cap inserts raise the `plan_required` sentinel

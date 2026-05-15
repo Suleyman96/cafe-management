@@ -1,6 +1,7 @@
-import { NotFoundError, PLAN_LIMITS, type PlanName } from '@gustri/core';
+import { NotFoundError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findOrCreateByClientRequestId } from '@/lib/api/dedupe';
+import { assertCustomerPlanAllowsWrites } from './customer-plan-gate';
 
 /**
  * Customer-engagement endpoints — waiter calls and feedback writes.
@@ -62,30 +63,6 @@ async function resolveTenantFromTable(
 }
 
 /**
- * Mirrors the gate at `customer-order-service.ts` line ~172. Throws the
- * `plan_required` sentinel that `handleRouteError` maps to HTTP 403. Run
- * AFTER `resolveTenantFromTable` (we need the tenant id) but BEFORE any
- * insert so a free-tier tenant's row count never moves.
- */
-async function assertPlanAllowsCustomerEngagement(
-  supabaseAdmin: SupabaseClient,
-  tenantId: string,
-): Promise<void> {
-  const { data: tenant, error } = await supabaseAdmin
-    .from('tenants')
-    .select('plan')
-    .eq('id', tenantId)
-    .single();
-  if (error || !tenant) {
-    throw new Error('Tenant not found');
-  }
-  const plan = ((tenant as { plan?: string }).plan ?? 'free') as PlanName;
-  if (!PLAN_LIMITS[plan].qrOrdering) {
-    throw new Error('plan_required');
-  }
-}
-
-/**
  * Idempotent on `client_request_id` via the partial unique index on
  * `waiter_calls(tenant_id, client_request_id)` from migration
  * 20260428000002. A retried POST returns the original row instead of
@@ -96,7 +73,7 @@ export async function createCustomerWaiterCall(
   input: CreateWaiterCallInput,
 ) {
   const tenantId = await resolveTenantFromTable(supabaseAdmin, input.table_id);
-  await assertPlanAllowsCustomerEngagement(supabaseAdmin, tenantId);
+  await assertCustomerPlanAllowsWrites(supabaseAdmin, tenantId);
 
   return findOrCreateByClientRequestId<Record<string, unknown>>(supabaseAdmin, {
     table: 'waiter_calls',
@@ -142,7 +119,7 @@ export async function createCustomerFeedback(
   input: CreateCustomerFeedbackInput,
 ) {
   const tenantId = await resolveTenantFromTable(supabaseAdmin, input.table_id);
-  await assertPlanAllowsCustomerEngagement(supabaseAdmin, tenantId);
+  await assertCustomerPlanAllowsWrites(supabaseAdmin, tenantId);
 
   const { data, error } = await supabaseAdmin
     .from('customer_feedback')
