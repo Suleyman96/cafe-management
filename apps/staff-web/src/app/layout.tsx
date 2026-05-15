@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { ChunkErrorRecovery } from '@/components/pwa/chunk-error-recovery';
 import { ServiceWorkerRegistration } from '@/components/pwa/service-worker-registration';
 import { Providers } from './providers';
 
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body>
+        <ChunkErrorRecovery />
         <Providers>{children}</Providers>
         <ServiceWorkerRegistration />
       </body>
