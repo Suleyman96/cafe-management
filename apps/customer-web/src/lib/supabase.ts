@@ -72,8 +72,7 @@ export const db = createSupabaseWrapper(supabase);
  * we revoke anon's column-level SELECT in 20260507000006.
  */
 export async function setTableContext(qrToken: string) {
-  // Supabase client can't resolve RPC arg types — typed in Database['public']['Functions']
-  const { data: tenantId, error } = await (supabase.rpc as Function)('set_table_context', {
+  const { data: tenantId, error } = await supabase.rpc('set_table_context', {
     qr_token: qrToken,
   });
   if (error) {
@@ -91,4 +90,30 @@ export async function setTableContext(qrToken: string) {
       tags: { surface: 'set_table_context.return' },
     });
   }
+}
+
+/**
+ * Resolve the tenant's plan using the session var that
+ * `set_table_context` binds. RLS-bypassing (`SECURITY DEFINER` in
+ * the DB) so anon callers can read the plan after their QR session
+ * is established.
+ *
+ * Lives in `lib/` — not in `components/` — because the wrapper-
+ * boundary CI lint (`ci.yml: "no raw .from()/.rpc() in app hooks/
+ * components"`) forbids direct `supabase.rpc(...)` calls there. The
+ * cast `(supabase.rpc as Function)` that previously sat in
+ * `table-landing.tsx` was a regex evasion of that same lint, not a
+ * typing workaround. Components import this helper instead.
+ *
+ * Returns `null` on RPC error so callers render the neutral
+ * "plan unknown" UI rather than crashing. The error is reported to
+ * Sentry to preserve visibility.
+ */
+export async function getTenantPlanFromContext(): Promise<string | null> {
+  const { data, error } = await supabase.rpc('get_tenant_plan_from_context');
+  if (error) {
+    Sentry.captureException(error);
+    return null;
+  }
+  return typeof data === 'string' && data.length > 0 ? data : null;
 }

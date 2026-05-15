@@ -24,7 +24,7 @@ import { useEffect, useState } from 'react';
 import { useOrder } from '@/hooks/use-order';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
-import { setTableContext, supabase } from '@/lib/supabase';
+import { getTenantPlanFromContext, setTableContext } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { useLanguageStore } from '@/store/language-store';
 
@@ -58,15 +58,10 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
   useEffect(() => {
     if (token) {
       setTableContext(token)
-        .then(() => {
-          // After context is set, check tenant plan for QR ordering gate
-          (supabase.rpc as Function)('get_tenant_plan_from_context')
-            .then((res: { data: string | null }) => {
-              if (res.data) setTenantPlan(res.data);
-            })
-            .catch((err: unknown) => {
-              Sentry.captureException(err);
-            });
+        .then(async () => {
+          // After context is set, check tenant plan for QR ordering gate.
+          const plan = await getTenantPlanFromContext();
+          if (plan) setTenantPlan(plan);
         })
         .catch((err: unknown) => {
           // The three QR-failure sentinels look identical at the UI
