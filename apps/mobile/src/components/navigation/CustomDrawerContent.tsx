@@ -1,11 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { PlanName } from '@gustri/core';
-import { PLAN_ORDER } from '@gustri/core';
+import { BRAND_PRIMARY, PLAN_ORDER } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { useTenantPlan } from '@gustri/queries';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { Badge, Divider, Text } from 'react-native-paper';
 import { useMyOpenTasksCount } from '@/hooks/local';
 import { useCafeSettings } from '@/hooks/shared';
@@ -96,7 +96,12 @@ const DRAWER_SECTIONS: DrawerSection[] = [
         icon: 'account-group',
         roles: ['admin', 'owner'],
       },
-      { key: 'MenuManagementTab', labelKey: 'menu', icon: 'food', roles: ['admin', 'owner'] },
+      // MenuManagementTab is intentionally NOT surfaced — CLAUDE.md's
+      // mobile-only-omissions policy treats category reorganization as
+      // web-only. The route stays registered in the navigator so deep
+      // links continue to work and existing nav state restores cleanly,
+      // but it is not promoted in the drawer. The MenuManagementScreen
+      // itself shows a banner pointing users to the web app.
       {
         key: 'SchedulesTab',
         labelKey: 'schedules',
@@ -127,9 +132,19 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
 
   return (
     <DrawerContentScrollView {...props} style={styles.container}>
-      {/* Header */}
+      {/* Brand strip — app identity, separate from the session user info below. */}
+      <View style={styles.brand}>
+        <Image
+          source={require('../../../assets/icon.png')}
+          style={styles.brandLogo}
+          accessibilityIgnoresInvertColors
+        />
+        <Text style={styles.brandWordmark}>gustri</Text>
+      </View>
+
+      {/* Session user info */}
       <View style={styles.header}>
-        <MaterialCommunityIcons name="account-circle" size={48} color="#6366f1" />
+        <MaterialCommunityIcons name="account-circle" size={40} color={BRAND_PRIMARY} />
         <View style={styles.headerInfo}>
           <Text variant="titleMedium" style={styles.headerName}>
             {staff?.full_name || tRoles('staff')}
@@ -179,7 +194,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
                   <MaterialCommunityIcons name={item.icon} size={size} color={color} />
                 )}
                 onPress={() => props.navigation.navigate(item.key)}
-                activeTintColor="#6366f1"
+                activeTintColor={BRAND_PRIMARY}
               />
             ))}
           </View>
@@ -231,6 +246,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   taskBadge: {
-    backgroundColor: '#6366f1',
+    backgroundColor: BRAND_PRIMARY,
+  },
+  brand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  brandLogo: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+  },
+  brandWordmark: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: BRAND_PRIMARY,
+    letterSpacing: -0.4,
   },
 });

@@ -1,6 +1,6 @@
 import { useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Modal, Portal, Text } from 'react-native-paper';
 import { OfflineGuardButton } from '@/components/OfflineGuardButton';
 import { TextInput } from '@/lib/paper-compat';
@@ -76,95 +76,97 @@ export function StockMovementModal({
   return (
     <Portal>
       <Modal visible={visible} onDismiss={handleDismiss} contentContainerStyle={styles.modal}>
-        <Text variant="titleMedium" style={styles.title}>
-          {t('stock.adjustStock')}
-          {item ? `: ${item.name}` : ''}
-        </Text>
-
-        {/* Current Stock */}
-        <Card style={styles.currentCard}>
-          <Card.Content style={styles.currentContent}>
-            <Text variant="bodySmall" style={styles.currentLabel}>
-              {t('stock.currentStock')}
-            </Text>
-            <Text variant="headlineSmall" style={styles.currentValue}>
-              {currentQty} {unit}
-            </Text>
-          </Card.Content>
-        </Card>
-
-        {/* Movement Type */}
-        <Text variant="bodySmall" style={styles.label}>
-          {t('stock.movementType')}
-        </Text>
-        <View style={styles.typeRow}>
-          {MOVEMENT_TYPES.map((mt) => (
-            <Chip
-              key={mt.value}
-              compact
-              selected={type === mt.value}
-              onPress={() => setType(mt.value)}
-              style={type === mt.value ? { backgroundColor: mt.bg } : undefined}
-              textStyle={type === mt.value ? { color: mt.color, fontWeight: '700' } : undefined}
-            >
-              {t(mt.labelKey)}
-            </Chip>
-          ))}
-        </View>
-
-        {/* Quantity */}
-        <TextInput
-          label={type === 'adjustment' ? t('stock.newQuantity') : t('stock.quantityLabel')}
-          value={quantity}
-          onChangeText={setQuantity}
-          mode="outlined"
-          keyboardType="decimal-pad"
-          dense
-          style={styles.input}
-          error={isInvalid}
-        />
-        {isInvalid && (
-          <Text variant="bodySmall" style={styles.errorText}>
-            {t('stock.cannotRemoveMore')} ({currentQty})
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <Text variant="titleMedium" style={styles.title}>
+            {t('stock.adjustStock')}
+            {item ? `: ${item.name}` : ''}
           </Text>
-        )}
 
-        {/* New Stock Preview */}
-        {qty > 0 && !isInvalid && (
-          <Card style={styles.previewCard}>
-            <Card.Content style={styles.previewContent}>
-              <Text variant="bodySmall" style={styles.previewLabel}>
-                {t('stock.newStockLevel')}
+          {/* Current Stock */}
+          <Card style={styles.currentCard}>
+            <Card.Content style={styles.currentContent}>
+              <Text variant="bodySmall" style={styles.currentLabel}>
+                {t('stock.currentStock')}
               </Text>
-              <Text variant="titleLarge" style={styles.previewValue}>
-                {Number.isNaN(newQty) ? '0.00' : newQty.toFixed(2)} {unit}
+              <Text variant="headlineSmall" style={styles.currentValue}>
+                {currentQty} {unit}
               </Text>
             </Card.Content>
           </Card>
-        )}
 
-        {/* Reason */}
-        <TextInput
-          label={t('stock.reasonOptional')}
-          value={reason}
-          onChangeText={setReason}
-          mode="outlined"
-          dense
-          style={styles.input}
-        />
+          {/* Movement Type */}
+          <Text variant="bodySmall" style={styles.label}>
+            {t('stock.movementType')}
+          </Text>
+          <View style={styles.typeRow}>
+            {MOVEMENT_TYPES.map((mt) => (
+              <Chip
+                key={mt.value}
+                compact
+                selected={type === mt.value}
+                onPress={() => setType(mt.value)}
+                style={type === mt.value ? { backgroundColor: mt.bg } : undefined}
+                textStyle={type === mt.value ? { color: mt.color, fontWeight: '700' } : undefined}
+              >
+                {t(mt.labelKey)}
+              </Chip>
+            ))}
+          </View>
 
-        <View style={styles.actions}>
-          <Button onPress={handleDismiss}>{tCommon('cancel')}</Button>
-          <OfflineGuardButton
-            mode="contained"
-            onPress={handleSubmit}
-            loading={loading}
-            disabled={qty <= 0 || isInvalid}
-            offlineLabel={t('stock.offlineUnavailable')}
-          >
-            {tCommon('confirm')}
-          </OfflineGuardButton>
-        </View>
+          {/* Quantity */}
+          <TextInput
+            label={type === 'adjustment' ? t('stock.newQuantity') : t('stock.quantityLabel')}
+            value={quantity}
+            onChangeText={setQuantity}
+            mode="outlined"
+            keyboardType="decimal-pad"
+            dense
+            style={styles.input}
+            error={isInvalid}
+          />
+          {isInvalid && (
+            <Text variant="bodySmall" style={styles.errorText}>
+              {t('stock.cannotRemoveMore')} ({currentQty})
+            </Text>
+          )}
+
+          {/* New Stock Preview */}
+          {qty > 0 && !isInvalid && (
+            <Card style={styles.previewCard}>
+              <Card.Content style={styles.previewContent}>
+                <Text variant="bodySmall" style={styles.previewLabel}>
+                  {t('stock.newStockLevel')}
+                </Text>
+                <Text variant="titleLarge" style={styles.previewValue}>
+                  {Number.isNaN(newQty) ? '0.00' : newQty.toFixed(2)} {unit}
+                </Text>
+              </Card.Content>
+            </Card>
+          )}
+
+          {/* Reason */}
+          <TextInput
+            label={t('stock.reasonOptional')}
+            value={reason}
+            onChangeText={setReason}
+            mode="outlined"
+            dense
+            style={styles.input}
+          />
+
+          <View style={styles.actions}>
+            <Button onPress={handleDismiss}>{tCommon('cancel')}</Button>
+            <OfflineGuardButton
+              mode="contained"
+              onPress={handleSubmit}
+              loading={loading}
+              disabled={qty <= 0 || isInvalid}
+              offlineLabel={t('stock.offlineUnavailable')}
+            >
+              {tCommon('confirm')}
+            </OfflineGuardButton>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </Portal>
   );

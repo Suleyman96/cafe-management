@@ -4,7 +4,7 @@ import { ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import {
   Button,
   Card,
@@ -244,225 +244,234 @@ export default function OrderPaymentScreen() {
     (mode === 'items' && !hasSelectedItems);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Order Summary */}
-      <Card style={styles.card}>
-        <Card.Content>
-          <Text variant="titleMedium" style={styles.bold}>
-            {t('orders.orderHash', { number: order.order_number || '—' })}
-          </Text>
-          <Divider style={styles.divider} />
-          <View style={styles.summaryRow}>
-            <Text variant="bodyMedium">{tCommon('total')}</Text>
-            <Text variant="titleMedium" style={styles.bold}>
-              {currencySymbol}
-              {orderTotal.toFixed(2)}
-            </Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text variant="bodyMedium">{t('payment.alreadyPaid')}</Text>
-            <Text variant="bodyMedium" style={{ color: COLORS.success, fontWeight: '600' }}>
-              {currencySymbol}
-              {(orderTotal - balance).toFixed(2)}
-            </Text>
-          </View>
-          <Divider style={styles.divider} />
-          <View style={styles.summaryRow}>
-            <Text variant="titleMedium" style={styles.bold}>
-              {t('orders.remaining')}
-            </Text>
-            <Text
-              variant="titleLarge"
-              style={{ color: balance > 0 ? COLORS.danger : COLORS.success, fontWeight: '700' }}
-            >
-              {currencySymbol}
-              {balance.toFixed(2)}
-            </Text>
-          </View>
-        </Card.Content>
-      </Card>
-
-      {!isFullyPaid && (
-        <>
-          {/* Payment Mode */}
-          <Card style={styles.card}>
-            <Card.Content style={styles.modeCardContent}>
-              <Text variant="titleMedium" style={styles.bold}>
-                {t('payment.paymentType')}
-              </Text>
-              <SegmentedButtons
-                value={mode}
-                onValueChange={(v) => setMode(v as PaymentMode)}
-                buttons={modeOptions}
-                density="medium"
-              />
-            </Card.Content>
-          </Card>
-
-          {/* Mode-specific UI */}
-          {mode === 'partial' && (
-            <Card style={styles.card}>
-              <Card.Content style={styles.amountSection}>
-                <TextInput
-                  label={tCommon('amount')}
-                  value={partialAmount}
-                  onChangeText={setPartialAmount}
-                  mode="outlined"
-                  keyboardType="decimal-pad"
-                  left={<TextInput.Affix text={currencySymbol} />}
-                />
-                <Button
-                  mode="outlined"
-                  onPress={() => setPartialAmount(balance.toFixed(2))}
-                  compact
-                >
-                  {t('payment.payFull', { amount: `${currencySymbol}${balance.toFixed(2)}` })}
-                </Button>
-              </Card.Content>
-            </Card>
-          )}
-
-          {mode === 'items' && (
-            <Card style={styles.card}>
-              <Card.Content>
-                <Text variant="titleMedium" style={styles.bold}>
-                  {t('payment.selectItemsToPay')}
-                </Text>
-                <Divider style={styles.divider} />
-                {unpaidItems.length === 0 ? (
-                  <Text variant="bodyMedium" style={styles.muted}>
-                    {t('payment.noItemsToPay')}
-                  </Text>
-                ) : (
-                  unpaidItems.map((item) => {
-                    const qty = selectedItemQuantities.get(item.id) || 0;
-                    return (
-                      <View key={item.id} style={styles.itemRow}>
-                        <View style={styles.itemInfo}>
-                          <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
-                            {item.menu_item?.name ?? '—'}
-                          </Text>
-                          <Text variant="bodySmall" style={styles.muted}>
-                            {currencySymbol}
-                            {item.item_price.toFixed(2)} {t('payment.each')} · {item.quantity}
-                          </Text>
-                        </View>
-                        <View style={styles.qtyControls}>
-                          <IconButton
-                            icon="minus"
-                            mode="outlined"
-                            size={16}
-                            onPress={() => updateItemQty(item.id, item.quantity, -1)}
-                            disabled={qty <= 0}
-                          />
-                          <Text variant="titleSmall" style={styles.qtyText}>
-                            {qty}
-                          </Text>
-                          <IconButton
-                            icon="plus"
-                            mode="outlined"
-                            size={16}
-                            onPress={() => updateItemQty(item.id, item.quantity, 1)}
-                            disabled={qty >= item.quantity}
-                          />
-                        </View>
-                      </View>
-                    );
-                  })
-                )}
-                {hasSelectedItems && (
-                  <>
-                    <Divider style={styles.divider} />
-                    <View style={styles.summaryRow}>
-                      <Text variant="bodyMedium">{t('payment.totalToCollect')}</Text>
-                      <Text variant="titleMedium" style={styles.bold}>
-                        {currencySymbol}
-                        {selectedItemsTotal.toFixed(2)}
-                      </Text>
-                    </View>
-                  </>
-                )}
-              </Card.Content>
-            </Card>
-          )}
-
-          {/* Payment Method */}
-          <Card style={styles.card}>
-            <Card.Content>
-              <Text variant="titleMedium" style={styles.bold}>
-                {t('payment.paymentMethod')}
-              </Text>
-              <RadioButton.Group
-                onValueChange={(v) => setMethod(v as 'cash' | 'card' | 'digital')}
-                value={method}
-              >
-                <RadioButton.Item label={tCommon('cash')} value="cash" />
-                <RadioButton.Item label={tCommon('card')} value="card" />
-                <RadioButton.Item label={tCommon('digital')} value="digital" />
-              </RadioButton.Group>
-            </Card.Content>
-          </Card>
-
-          {/* Tip — only when the tenant enabled tips */}
-          {tipsEnabled && (
-            <Card style={styles.card}>
-              <Card.Content style={styles.amountSection}>
-                <Text variant="titleMedium" style={styles.bold}>
-                  {t('payment.addTip')}
-                </Text>
-                <TextInput
-                  label={tCommon('amount')}
-                  value={tipAmount}
-                  onChangeText={setTipAmount}
-                  mode="outlined"
-                  keyboardType="decimal-pad"
-                  left={<TextInput.Affix text={currencySymbol} />}
-                />
-              </Card.Content>
-            </Card>
-          )}
-
-          <OfflineGuardButton
-            mode="contained"
-            onPress={handleSubmit}
-            loading={createPayment.isPending}
-            disabled={submitDisabled}
-            style={styles.submitButton}
-            contentStyle={styles.submitButtonContent}
-            offlineLabel={t('payment.offlineUnavailable')}
-          >
-            {t('payment.processPaymentBtn')}
-          </OfflineGuardButton>
-        </>
-      )}
-
-      {/* Previous payments */}
-      {payments && payments.length > 0 && (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Order Summary */}
         <Card style={styles.card}>
           <Card.Content>
             <Text variant="titleMedium" style={styles.bold}>
-              {t('orders.paymentHistory')}
+              {t('orders.orderHash', { number: order.order_number || '—' })}
             </Text>
-            {payments.map((p) => (
-              <View key={p.id} style={styles.paymentItem}>
-                <View>
-                  <Text variant="bodyMedium" style={{ textTransform: 'capitalize' }}>
-                    {p.payment_method}
-                  </Text>
-                  <Text variant="bodySmall" style={styles.muted}>
-                    {new Date(p.created_at).toLocaleString(locale)}
-                  </Text>
-                </View>
-                <Text variant="titleSmall" style={{ color: COLORS.success, fontWeight: '600' }}>
-                  {currencySymbol}
-                  {p.amount.toFixed(2)}
-                </Text>
-              </View>
-            ))}
+            <Divider style={styles.divider} />
+            <View style={styles.summaryRow}>
+              <Text variant="bodyMedium">{tCommon('total')}</Text>
+              <Text variant="titleMedium" style={styles.bold}>
+                {currencySymbol}
+                {orderTotal.toFixed(2)}
+              </Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text variant="bodyMedium">{t('payment.alreadyPaid')}</Text>
+              <Text variant="bodyMedium" style={{ color: COLORS.success, fontWeight: '600' }}>
+                {currencySymbol}
+                {(orderTotal - balance).toFixed(2)}
+              </Text>
+            </View>
+            <Divider style={styles.divider} />
+            <View style={styles.summaryRow}>
+              <Text variant="titleMedium" style={styles.bold}>
+                {t('orders.remaining')}
+              </Text>
+              <Text
+                variant="titleLarge"
+                style={{ color: balance > 0 ? COLORS.danger : COLORS.success, fontWeight: '700' }}
+              >
+                {currencySymbol}
+                {balance.toFixed(2)}
+              </Text>
+            </View>
           </Card.Content>
         </Card>
-      )}
-    </ScrollView>
+
+        {!isFullyPaid && (
+          <>
+            {/* Payment Mode */}
+            <Card style={styles.card}>
+              <Card.Content style={styles.modeCardContent}>
+                <Text variant="titleMedium" style={styles.bold}>
+                  {t('payment.paymentType')}
+                </Text>
+                <SegmentedButtons
+                  value={mode}
+                  onValueChange={(v) => setMode(v as PaymentMode)}
+                  buttons={modeOptions}
+                  density="medium"
+                />
+              </Card.Content>
+            </Card>
+
+            {/* Mode-specific UI */}
+            {mode === 'partial' && (
+              <Card style={styles.card}>
+                <Card.Content style={styles.amountSection}>
+                  <TextInput
+                    label={tCommon('amount')}
+                    value={partialAmount}
+                    onChangeText={setPartialAmount}
+                    mode="outlined"
+                    keyboardType="decimal-pad"
+                    left={<TextInput.Affix text={currencySymbol} />}
+                  />
+                  <Button
+                    mode="outlined"
+                    onPress={() => setPartialAmount(balance.toFixed(2))}
+                    compact
+                  >
+                    {t('payment.payFull', { amount: `${currencySymbol}${balance.toFixed(2)}` })}
+                  </Button>
+                </Card.Content>
+              </Card>
+            )}
+
+            {mode === 'items' && (
+              <Card style={styles.card}>
+                <Card.Content>
+                  <Text variant="titleMedium" style={styles.bold}>
+                    {t('payment.selectItemsToPay')}
+                  </Text>
+                  <Divider style={styles.divider} />
+                  {unpaidItems.length === 0 ? (
+                    <Text variant="bodyMedium" style={styles.muted}>
+                      {t('payment.noItemsToPay')}
+                    </Text>
+                  ) : (
+                    unpaidItems.map((item) => {
+                      const qty = selectedItemQuantities.get(item.id) || 0;
+                      return (
+                        <View key={item.id} style={styles.itemRow}>
+                          <View style={styles.itemInfo}>
+                            <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
+                              {item.menu_item?.name ?? '—'}
+                            </Text>
+                            <Text variant="bodySmall" style={styles.muted}>
+                              {currencySymbol}
+                              {item.item_price.toFixed(2)} {t('payment.each')} · {item.quantity}
+                            </Text>
+                          </View>
+                          <View style={styles.qtyControls}>
+                            <IconButton
+                              icon="minus"
+                              mode="outlined"
+                              size={16}
+                              onPress={() => updateItemQty(item.id, item.quantity, -1)}
+                              disabled={qty <= 0}
+                            />
+                            <Text variant="titleSmall" style={styles.qtyText}>
+                              {qty}
+                            </Text>
+                            <IconButton
+                              icon="plus"
+                              mode="outlined"
+                              size={16}
+                              onPress={() => updateItemQty(item.id, item.quantity, 1)}
+                              disabled={qty >= item.quantity}
+                            />
+                          </View>
+                        </View>
+                      );
+                    })
+                  )}
+                  {hasSelectedItems && (
+                    <>
+                      <Divider style={styles.divider} />
+                      <View style={styles.summaryRow}>
+                        <Text variant="bodyMedium">{t('payment.totalToCollect')}</Text>
+                        <Text variant="titleMedium" style={styles.bold}>
+                          {currencySymbol}
+                          {selectedItemsTotal.toFixed(2)}
+                        </Text>
+                      </View>
+                    </>
+                  )}
+                </Card.Content>
+              </Card>
+            )}
+
+            {/* Payment Method */}
+            <Card style={styles.card}>
+              <Card.Content>
+                <Text variant="titleMedium" style={styles.bold}>
+                  {t('payment.paymentMethod')}
+                </Text>
+                <RadioButton.Group
+                  onValueChange={(v) => setMethod(v as 'cash' | 'card' | 'digital')}
+                  value={method}
+                >
+                  <RadioButton.Item label={tCommon('cash')} value="cash" />
+                  <RadioButton.Item label={tCommon('card')} value="card" />
+                  <RadioButton.Item label={tCommon('digital')} value="digital" />
+                </RadioButton.Group>
+              </Card.Content>
+            </Card>
+
+            {/* Tip — only when the tenant enabled tips */}
+            {tipsEnabled && (
+              <Card style={styles.card}>
+                <Card.Content style={styles.amountSection}>
+                  <Text variant="titleMedium" style={styles.bold}>
+                    {t('payment.addTip')}
+                  </Text>
+                  <TextInput
+                    label={tCommon('amount')}
+                    value={tipAmount}
+                    onChangeText={setTipAmount}
+                    mode="outlined"
+                    keyboardType="decimal-pad"
+                    left={<TextInput.Affix text={currencySymbol} />}
+                  />
+                </Card.Content>
+              </Card>
+            )}
+
+            <OfflineGuardButton
+              mode="contained"
+              onPress={handleSubmit}
+              loading={createPayment.isPending}
+              disabled={submitDisabled}
+              style={styles.submitButton}
+              contentStyle={styles.submitButtonContent}
+              offlineLabel={t('payment.offlineUnavailable')}
+            >
+              {t('payment.processPaymentBtn')}
+            </OfflineGuardButton>
+          </>
+        )}
+
+        {/* Previous payments */}
+        {payments && payments.length > 0 && (
+          <Card style={styles.card}>
+            <Card.Content>
+              <Text variant="titleMedium" style={styles.bold}>
+                {t('orders.paymentHistory')}
+              </Text>
+              {payments.map((p) => (
+                <View key={p.id} style={styles.paymentItem}>
+                  <View>
+                    <Text variant="bodyMedium" style={{ textTransform: 'capitalize' }}>
+                      {p.payment_method}
+                    </Text>
+                    <Text variant="bodySmall" style={styles.muted}>
+                      {new Date(p.created_at).toLocaleString(locale)}
+                    </Text>
+                  </View>
+                  <Text variant="titleSmall" style={{ color: COLORS.success, fontWeight: '600' }}>
+                    {currencySymbol}
+                    {p.amount.toFixed(2)}
+                  </Text>
+                </View>
+              ))}
+            </Card.Content>
+          </Card>
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

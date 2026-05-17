@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  getKitchenUrgencyBand,
   isDeliveryOrder,
   isDineInOrder,
   isTakeoutOrder,
@@ -11,7 +12,7 @@ import type { OrderItemStatus, OrderStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import type { KitchenOrderView } from '@gustri/queries';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
-import { LoadingSpinner, ORDER_ITEM_STATUS_BADGES } from '@gustri/ui-web';
+import { LoadingSpinner, ORDER_ITEM_STATUS_BADGES, Skeleton } from '@gustri/ui-web';
 import {
   AlertCircle,
   CheckCircle,
@@ -173,27 +174,37 @@ export default function KitchenDisplayPage() {
     return diffMinutes;
   };
 
-  // Get time color based on elapsed time
+  // Get time color based on elapsed time. Band comes from the canonical
+  // classifier in `@gustri/core` so this and the mobile kitchen agree on
+  // what counts as "critical" etc.
   const getTimeColor = (minutes: number, status: string) => {
-    if (status === 'ready') return 'text-green-600';
-    if (minutes >= TIME_ELAPSED_THRESHOLDS.CRITICAL) return 'text-red-600';
-    if (minutes >= TIME_ELAPSED_THRESHOLDS.ELEVATED) return 'text-orange-600';
-    if (minutes >= TIME_ELAPSED_THRESHOLDS.WARNING) return 'text-yellow-600';
+    const band = getKitchenUrgencyBand({ minutesElapsed: minutes, status });
+    if (band === 'ready') return 'text-green-600';
+    if (band === 'critical') return 'text-red-600';
+    if (band === 'elevated') return 'text-orange-600';
+    if (band === 'warning') return 'text-yellow-600';
+    // 'new' and 'default' fall through to gray — preserves original
+    // behavior where new orders' inline minute text was gray (the blue
+    // tint lives on the card surface, not the numeric).
     return 'text-gray-600';
   };
 
-  // Get card color based on status, time, and item statuses
+  // Get card color based on status, time, and item statuses.
   const getCardColor = (order: KitchenOrderView, minutes: number) => {
-    const status = order.status;
-    // If all items are ready, show green regardless of order status
-    if (allItemsReady(order)) return 'bg-green-50 border-green-400 shadow-green-200';
-    if (status === 'ready') return 'bg-green-50 border-green-400 shadow-green-200';
-    if (status === 'new')
+    const band = getKitchenUrgencyBand({
+      minutesElapsed: minutes,
+      status: order.status,
+      allItemsReady: allItemsReady(order),
+    });
+    if (band === 'ready') return 'bg-green-50 border-green-400 shadow-green-200';
+    if (band === 'new')
       return 'bg-blue-100 border-blue-400 ring-4 ring-blue-500/50 shadow-blue-200';
-    if (minutes >= TIME_ELAPSED_THRESHOLDS.CRITICAL)
-      return 'bg-red-100 border-red-400 shadow-red-200';
-    if (minutes >= TIME_ELAPSED_THRESHOLDS.ELEVATED)
-      return 'bg-orange-100 border-orange-400 shadow-orange-200';
+    if (band === 'critical') return 'bg-red-100 border-red-400 shadow-red-200';
+    if (band === 'elevated') return 'bg-orange-100 border-orange-400 shadow-orange-200';
+    // 'warning' AND 'default' both render yellow — preserves current web
+    // behavior (no separate neutral surface below WARNING). Aligning with
+    // mobile's distinct default surface is a UX decision tracked
+    // separately; do not silently change it here.
     return 'bg-yellow-50 border-yellow-400 shadow-yellow-200';
   };
 
@@ -417,8 +428,27 @@ export default function KitchenDisplayPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-900">
-        <LoadingSpinner />
+      <div
+        role="status"
+        aria-busy
+        aria-label={t('loading', { ns: 'common' })}
+        className="min-h-screen bg-gray-900 p-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3"
+      >
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton kitchen cards have no identity
+            key={i}
+            className="rounded-lg border border-gray-700 bg-gray-800 p-4 space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-6 w-24 bg-gray-700" />
+              <Skeleton className="h-5 w-14 bg-gray-700" />
+            </div>
+            <Skeleton className="h-4 w-3/4 bg-gray-700" />
+            <Skeleton className="h-4 w-2/3 bg-gray-700" />
+            <Skeleton className="h-10 w-full bg-gray-700" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -618,13 +648,17 @@ export default function KitchenDisplayPage() {
                   computed at parent render time from `order.created_at`; they refresh
                   on the next data event (item/order status change) rather than on a
                   60s force-rerender. The numeric minutes tick inside <ElapsedTime>. */}
+              {/* Inline elapsed pill is intentionally time-only (no status
+                  overrides — a "new" order at 25 min should still surface
+                  red here even though its card is blue). Uses `>=` to match
+                  the canonical band boundaries from getKitchenUrgencyBand. */}
               <div
                 className={`flex items-center gap-1 sm:gap-2 mb-2 sm:mb-3 px-2 py-1 sm:py-1.5 rounded-lg ${
-                  elapsedMinutes > TIME_ELAPSED_THRESHOLDS.CRITICAL
+                  elapsedMinutes >= TIME_ELAPSED_THRESHOLDS.CRITICAL
                     ? 'bg-red-200'
-                    : elapsedMinutes > TIME_ELAPSED_THRESHOLDS.ELEVATED
+                    : elapsedMinutes >= TIME_ELAPSED_THRESHOLDS.ELEVATED
                       ? 'bg-orange-200'
-                      : elapsedMinutes > TIME_ELAPSED_THRESHOLDS.WARNING
+                      : elapsedMinutes >= TIME_ELAPSED_THRESHOLDS.WARNING
                         ? 'bg-yellow-200'
                         : 'bg-white/60'
                 }`}
@@ -634,7 +668,7 @@ export default function KitchenDisplayPage() {
                   <ElapsedTime since={order.created_at} />
                 </span>
                 <span className={`text-xs sm:text-sm ${timeColor}`}>{t('kitchen.min')}</span>
-                {elapsedMinutes > TIME_ELAPSED_THRESHOLDS.ELEVATED && (
+                {elapsedMinutes >= TIME_ELAPSED_THRESHOLDS.ELEVATED && (
                   <span className="ml-auto text-red-600 text-xs sm:text-sm font-bold animate-pulse">
                     {t('kitchen.urgent')}
                   </span>

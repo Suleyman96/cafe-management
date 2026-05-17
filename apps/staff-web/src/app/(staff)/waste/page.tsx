@@ -348,7 +348,7 @@ export default function WastePage() {
         onClose={() => setDeletingId(null)}
         onConfirm={handleConfirmDelete}
         title={t('delete', { ns: 'common' })}
-        message={t('waste.confirmDeleteWasteLog')}
+        message={t('waste.deleteWasteConfirm')}
       />
     </div>
   );

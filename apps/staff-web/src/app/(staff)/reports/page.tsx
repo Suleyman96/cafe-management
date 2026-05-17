@@ -795,7 +795,7 @@ export default function ReportsPage() {
           <div className="flex justify-between items-center mb-3 sm:mb-4">
             <h2 className="text-base sm:text-lg font-semibold">{t('reports.soldItems')}</h2>
             <span className="text-xs sm:text-sm text-gray-500">
-              {metrics.soldItems.length} {t('reports.itemsCount')}
+              {t('reports.itemsCount', { count: metrics.soldItems.length })}
             </span>
           </div>
           <div className="space-y-2 sm:space-y-3 max-h-48 sm:max-h-80 overflow-y-auto">
@@ -807,7 +807,7 @@ export default function ReportsPage() {
                 </div>
                 <div className="text-right flex-shrink-0 ml-2">
                   <p className="font-medium text-xs sm:text-sm">
-                    {item.count} {t('reports.soldSuffix')}
+                    {t('reports.soldCount', { count: item.count })}
                   </p>
                   <p className="text-xs text-gray-600">{formatPrice(item.revenue)}</p>
                 </div>

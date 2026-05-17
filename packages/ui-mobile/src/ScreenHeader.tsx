@@ -7,20 +7,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from './lib/paper-compat';
 
 /**
- * Structural subset of `@react-navigation/stack`'s `StackHeaderProps`. Kept
- * inline rather than imported from the real package so this UI package
- * doesn't pin its own copy of `@react-navigation/stack` — pnpm would
- * otherwise instantiate a separate dependency context and the mobile app's
- * `StackHeaderProps` wouldn't unify with ours at type-check time.
+ * Structural subset of React Navigation's `StackHeaderProps` we actually read.
  *
- * `@react-navigation/stack`'s real type is wider; the consuming
- * `header: (props) => <ScreenHeader {...props} />` setter passes the wider
- * shape into this narrower one, which TS accepts.
+ * Why not import `StackHeaderProps` from `@react-navigation/stack`: when
+ * `apps/mobile` and `@gustri/ui-mobile` end up with two pnpm peer-resolution
+ * hashes of the same `@react-navigation/stack` version, the nominal types
+ * stop being assignable to each other (a `protected` field on
+ * `PrivateValueStore` breaks structural compat). Defining the contract
+ * locally lets consumers pass *any* compatible header-props shape.
  */
-interface StackHeaderPropsLite {
+interface MinimalStackHeaderProps {
   navigation: { goBack: () => void };
-  route: unknown;
-  options: unknown;
+  route: { key: string; name: string; params?: object | undefined };
+  options: Record<string, unknown>;
   back?: { title?: string } | undefined;
 }
 
@@ -47,10 +46,12 @@ export interface ScreenHeaderOptions {
 }
 
 /**
- * Helper that lets a stack config pass our custom `titleKey` / `titleNs` fields
- * alongside the standard React Navigation options. React Navigation typed its
- * `StackNavigationOptions` as a type alias (not an interface), so we can't
- * extend it via module augmentation — this is the next-cleanest thing.
+ * Helper that lets a stack config pass our custom `titleKey` / `titleNs`
+ * fields alongside the standard React Navigation options. React Navigation
+ * typed its `StackNavigationOptions` as a type alias (not an interface),
+ * so we can't extend it via module augmentation — this is the next-cleanest
+ * thing. Apps may still keep a thin local wrapper if they prefer importing
+ * from `@/navigation/header-options`.
  */
 export function headerOptions(
   options: StackNavigationOptionsLike & ScreenHeaderOptions,
@@ -70,7 +71,12 @@ export function headerOptions(
  *  - Slots: leaves `headerRight` open for the FreshnessIndicator (task 1.2)
  *    without each stack having to re-implement the layout.
  */
-export function ScreenHeader({ navigation, route: _route, options, back }: StackHeaderPropsLite) {
+export function ScreenHeader({
+  navigation,
+  route: _route,
+  options,
+  back,
+}: MinimalStackHeaderProps) {
   const insets = useSafeAreaInsets();
   const cfg = options as ScreenHeaderOptions;
   const ns = cfg.titleNs ?? 'nav';

@@ -74,8 +74,10 @@ export function StaffPerformanceSection({
                   {staffPerformance[0].name}
                 </p>
                 <p className="text-xs sm:text-sm text-yellow-700">
-                  {formatPrice(staffPerformance[0].revenue)} {t('reports.from')}{' '}
-                  {staffPerformance[0].ordersHandled} {t('reports.orders')}
+                  {t('reports.revenueFromOrders', {
+                    revenue: formatPrice(staffPerformance[0].revenue),
+                    count: staffPerformance[0].ordersHandled,
+                  })}
                 </p>
               </div>
             </div>

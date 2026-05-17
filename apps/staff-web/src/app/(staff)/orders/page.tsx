@@ -1,10 +1,10 @@
 'use client';
 
-import { ORDER_STATUS } from '@gustri/core';
+import { ORDER_STATUS, ORDER_STATUS_KEYS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
-import { Button, LoadingSpinner } from '@gustri/ui-web';
+import { Button, Skeleton } from '@gustri/ui-web';
 import { ClipboardList, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -123,7 +123,7 @@ export default function OrdersPage() {
             status: statusKey as keyof typeof ORDER_STATUS,
           });
         }
-        toast.success(`${t('orders.statusUpdated')} ${newStatus}`);
+        toast.success(t('orders.statusUpdatedTo', { status: t(ORDER_STATUS_KEYS[newStatus]) }));
       } catch (_error) {
         toast.error(t('delivery.failedUpdate'));
       }
@@ -156,8 +156,26 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <LoadingSpinner />
+      <div
+        role="status"
+        aria-busy
+        aria-label={t('loading', { ns: 'common' })}
+        className="p-4 space-y-3"
+      >
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows have no identity
+            key={i}
+            className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4"
+          >
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+            <Skeleton className="h-6 w-20" />
+          </div>
+        ))}
       </div>
     );
   }

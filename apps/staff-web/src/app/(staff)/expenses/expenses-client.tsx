@@ -338,7 +338,7 @@ export default function ExpensesClient() {
         onClose={() => setDeletingId(null)}
         onConfirm={handleConfirmDelete}
         title={t('delete', { ns: 'common' })}
-        message={t('expenses.confirmDeleteExpense')}
+        message={t('expenses.deleteExpenseConfirm')}
       />
     </div>
   );

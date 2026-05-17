@@ -159,7 +159,7 @@ export default function ReportsScreen() {
                     {i + 1}. {item.name}
                   </Text>
                   <Text variant="bodySmall" style={styles.muted}>
-                    {item.qty} {t('reports.sold')}
+                    {t('reports.soldCount', { count: item.qty })}
                   </Text>
                   <Text variant="bodySmall" style={{ fontWeight: '600', marginLeft: 8 }}>
                     {currencySymbol}
@@ -186,7 +186,7 @@ export default function ReportsScreen() {
                     {i + 1}. {s.name}
                   </Text>
                   <Text variant="bodySmall" style={styles.muted}>
-                    {s.orders} {t('reports.orders')}
+                    {t('reports.ordersCount', { count: s.orders })}
                   </Text>
                   <Text variant="bodySmall" style={{ fontWeight: '600', marginLeft: 8 }}>
                     {currencySymbol}
@@ -208,13 +208,13 @@ export default function ReportsScreen() {
           label={t('reports.expenses')}
           value={`${currencySymbol}${expenseTotal.toFixed(0)}`}
           color={COLORS.danger}
-          subtitle={`${expenses?.length || 0} ${t('reports.transactions')}`}
+          subtitle={t('reports.transactions', { count: expenses?.length || 0 })}
         />
         <MetricCard
           label={t('reports.wasteSummary')}
           value={`${currencySymbol}${wasteTotal.toFixed(0)}`}
           color={COLORS.warning}
-          subtitle={`${wasteLogs?.length || 0} ${t('reports.entries')}`}
+          subtitle={t('reports.entries', { count: wasteLogs?.length || 0 })}
         />
       </View>
 

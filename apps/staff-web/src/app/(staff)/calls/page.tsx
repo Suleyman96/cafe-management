@@ -168,8 +168,7 @@ export default function WaiterCallsPage() {
           <h1 className="text-xl sm:text-2xl font-bold">{t('calls.title')}</h1>
           {pendingCallsCount > 0 && (
             <p className="text-sm text-orange-600 font-medium">
-              {pendingCallsCount} {t('pending', { ns: 'common' }).toLowerCase()}{' '}
-              {pendingCallsCount === 1 ? t('calls.call') : t('calls.callsPlural')}
+              {t('calls.pendingCount', { count: pendingCallsCount })}
             </p>
           )}
         </div>
@@ -280,7 +279,7 @@ export default function WaiterCallsPage() {
                       <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
                         <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
                         <span>
-                          {t('calls.resolved')} {formatTimeAgo(call.resolved_at)}
+                          {t('calls.resolvedTime', { time: formatTimeAgo(call.resolved_at) })}
                         </span>
                       </div>
                     )}

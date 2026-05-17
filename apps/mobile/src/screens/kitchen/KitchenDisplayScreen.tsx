@@ -8,7 +8,7 @@ import {
   QUERY_KEYS,
   useStaffKitchenFilters,
 } from '@gustri/queries';
-import { ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
+import { ErrorScreen, Skeleton } from '@gustri/ui-mobile';
 import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -393,7 +393,7 @@ export default function KitchenDisplayScreen() {
   if (isLoading || filtersLoading || categoriesLoading) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        <LoadingScreen message={t('kitchen.loadingOrders')} />
+        <KitchenListSkeleton />
       </View>
     );
   }
@@ -596,6 +596,44 @@ export default function KitchenDisplayScreen() {
     </PaperProvider>
   );
 }
+
+function KitchenListSkeleton() {
+  return (
+    <View style={skeletonStyles.wrap}>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <View
+          // biome-ignore lint/suspicious/noArrayIndexKey: skeleton cards have no identity
+          key={i}
+          style={skeletonStyles.card}
+        >
+          <View style={skeletonStyles.headRow}>
+            <Skeleton width={120} height={28} style={skeletonStyles.darkBg} />
+            <Skeleton width={56} height={20} radius={9999} style={skeletonStyles.darkBg} />
+          </View>
+          <Skeleton width="80%" height={14} style={skeletonStyles.darkBg} />
+          <Skeleton width="65%" height={14} style={skeletonStyles.darkBg} />
+          <Skeleton width="100%" height={40} style={skeletonStyles.darkBg} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const skeletonStyles = StyleSheet.create({
+  wrap: { padding: 12, gap: 10 },
+  card: {
+    backgroundColor: '#262626',
+    borderRadius: 12,
+    borderWidth: 3,
+    borderColor: '#374151',
+    padding: 14,
+    gap: 10,
+  },
+  headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  // The Skeleton's default light gray reads as a black smear on the dark
+  // kitchen surface; brighten the band so the pulse stays visible.
+  darkBg: { backgroundColor: '#3f3f46' },
+});
 
 const styles = StyleSheet.create({
   container: {

@@ -259,7 +259,7 @@ function TableCardImpl({
           {hasMultipleOrders && (
             <div className="bg-amber-100 border border-amber-300 rounded-lg px-3 py-1.5 text-sm font-medium text-amber-800 flex items-center gap-2">
               <Package className="h-4 w-4" />
-              {activeOrders.length} {t('tables.ordersOnTable')}
+              {t('tables.ordersOnThisTable', { count: activeOrders.length })}
             </div>
           )}
 
@@ -290,9 +290,7 @@ function TableCardImpl({
             </div>
             <div className="flex items-center gap-2 text-gray-600">
               <Package className="h-4 w-4 text-gray-400" />
-              <span>
-                {combinedItemsCount} {t('tables.items')}
-              </span>
+              <span>{t('tables.itemsCount', { count: combinedItemsCount })}</span>
             </div>
           </div>
 

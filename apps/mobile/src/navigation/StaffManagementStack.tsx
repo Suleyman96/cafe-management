@@ -1,7 +1,8 @@
-import { headerOptions, ScreenHeader } from '@gustri/ui-mobile';
+import { ScreenHeader } from '@gustri/ui-mobile';
 import { createStackNavigator } from '@react-navigation/stack';
 import type React from 'react';
 import { DrawerMenuButton } from '@/components/navigation/DrawerMenuButton';
+import { headerOptions } from '@/navigation/header-options';
 import type { StaffManagementStackParamList } from '@/types';
 import { lazyScreen } from './lazy-screen';
 

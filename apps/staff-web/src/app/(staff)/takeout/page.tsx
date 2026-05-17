@@ -1,6 +1,6 @@
 'use client';
 
-import { ACTIVE_TAKEOUT_STATUSES, ORDER_STATUS } from '@gustri/core';
+import { ACTIVE_TAKEOUT_STATUSES, ORDER_STATUS, ORDER_STATUS_KEYS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
@@ -84,7 +84,7 @@ export default function TakeoutPage() {
           orderId,
           status: statusKey as keyof typeof ORDER_STATUS,
         });
-        toast.success(`${t('orders.statusUpdated')} ${newStatus.replace(/_/g, ' ')}`);
+        toast.success(t('orders.statusUpdatedTo', { status: t(ORDER_STATUS_KEYS[newStatus]) }));
       } catch (_error) {
         toast.error(t('takeout.failedUpdate'));
       }
@@ -123,7 +123,7 @@ export default function TakeoutPage() {
           <h1 className="text-xl sm:text-2xl font-bold">{t('takeout.title')}</h1>
           {activeCount > 0 && (
             <span className="bg-orange-100 text-orange-700 text-sm font-medium px-2.5 py-0.5 rounded-full">
-              {activeCount} {t('takeout.activeCount')}
+              {t('takeout.activeCount', { count: activeCount })}
             </span>
           )}
         </div>

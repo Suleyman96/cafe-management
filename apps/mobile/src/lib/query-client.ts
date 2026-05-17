@@ -41,10 +41,7 @@ const mutationCache = new MutationCache({
     const userMessage = isAppError(error)
       ? localizeErrorMessage(error.message, fallback)
       : fallback;
-    const syncReplayPrefix = i18n.t('syncReplayFailedPrefix', {
-      ns: 'common',
-      defaultValue: 'Failed to sync queued change',
-    });
+    const syncReplayPrefix = i18n.t('syncReplayFailedPrefix', { ns: 'common' });
     showSnackbarGlobal(isSyncReplay ? `${syncReplayPrefix}: ${userMessage}` : userMessage);
   },
 });

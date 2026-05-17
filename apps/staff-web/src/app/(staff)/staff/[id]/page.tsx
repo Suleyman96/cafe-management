@@ -191,7 +191,7 @@ export default function StaffDetailPage() {
         className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
       >
         <ArrowLeft className="h-4 w-4" />
-        {tCommon('back')} {t('staffMgmt.title')}
+        {t('staffMgmt.backToTitle')}
       </Link>
 
       {/* Profile Card */}
@@ -235,12 +235,16 @@ export default function StaffDetailPage() {
                 )}
                 <div className="flex items-center gap-2">
                   <Calendar className="h-3.5 w-3.5" />
-                  {t('staffMgmt.memberSince')} {new Date(member.created_at).toLocaleDateString()}
+                  {t('staffMgmt.memberSince', {
+                    date: new Date(member.created_at).toLocaleDateString(),
+                  })}
                 </div>
                 {member.last_login_at && (
                   <div className="flex items-center gap-2">
                     <Clock className="h-3.5 w-3.5" />
-                    {t('staffMgmt.lastLogin')} {new Date(member.last_login_at).toLocaleString()}
+                    {t('staffMgmt.lastLoginAt', {
+                      date: new Date(member.last_login_at).toLocaleString(),
+                    })}
                   </div>
                 )}
               </div>
@@ -364,7 +368,7 @@ export default function StaffDetailPage() {
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-600">
                         {order.table?.table_number
-                          ? `${t('staffMgmt.table')} ${order.table.table_number}`
+                          ? t('staffMgmt.tableNumber', { number: order.table.table_number })
                           : '-'}
                       </td>
                       <td className="px-4 py-2">

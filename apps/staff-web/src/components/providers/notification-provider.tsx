@@ -718,7 +718,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       {/* Realtime degraded indicator */}
       {!realtimeConnected && (
         <div className="fixed bottom-4 right-4 z-50 bg-amber-100 text-amber-800 text-xs px-3 py-2 rounded-lg shadow-md border border-amber-200">
-          {t('notifications.realtimeDegraded', 'Live updates paused — checking periodically')}
+          {t('notifications.realtimeDegraded')}
         </div>
       )}
     </AudioPrefsContext.Provider>

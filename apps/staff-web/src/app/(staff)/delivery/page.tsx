@@ -1,6 +1,6 @@
 'use client';
 
-import { ACTIVE_DELIVERY_STATUSES, ORDER_STATUS } from '@gustri/core';
+import { ACTIVE_DELIVERY_STATUSES, ORDER_STATUS, ORDER_STATUS_KEYS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
@@ -90,7 +90,7 @@ export default function DeliveryPage() {
           orderId,
           status: statusKey as keyof typeof ORDER_STATUS,
         });
-        toast.success(`${t('orders.statusUpdated')} ${newStatus.replace(/_/g, ' ')}`);
+        toast.success(t('orders.statusUpdatedTo', { status: t(ORDER_STATUS_KEYS[newStatus]) }));
       } catch (_error) {
         toast.error(t('delivery.failedUpdate'));
       }
@@ -152,7 +152,7 @@ export default function DeliveryPage() {
           <h1 className="text-xl sm:text-2xl font-bold">{t('delivery.title')}</h1>
           {activeCount > 0 && (
             <span className="bg-purple-100 text-purple-700 text-sm font-medium px-2.5 py-0.5 rounded-full">
-              {activeCount} {t('delivery.activeCount')}
+              {t('delivery.activeCount', { count: activeCount })}
             </span>
           )}
         </div>

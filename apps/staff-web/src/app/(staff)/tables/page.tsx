@@ -4,7 +4,7 @@ import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import type { OrderWithDetails, Table, WaiterCalls } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
-import { Button, LoadingSpinner } from '@gustri/ui-web';
+import { Button, Skeleton } from '@gustri/ui-web';
 import { Plus, RefreshCw, UtensilsCrossed } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -181,7 +181,7 @@ export default function TablesPage() {
     setIsDeleting(true);
     try {
       await deleteTable.mutateAsync(deleteConfirmTable.id);
-      toast.success(`${deleteConfirmTable.table_number} ${t('tables.tableDeleted')}`);
+      toast.success(t('tables.tableNumberDeleted', { number: deleteConfirmTable.table_number }));
       refetchTables();
     } catch (error: unknown) {
       toastLocalizedError(error, t('tables.failedDeleteTable'));
@@ -193,8 +193,23 @@ export default function TablesPage() {
 
   if (tablesLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <LoadingSpinner />
+      <div
+        role="status"
+        aria-busy
+        aria-label={t('loading', { ns: 'common' })}
+        className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"
+      >
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton tiles have no identity
+            key={i}
+            className="rounded-lg border border-gray-200 bg-white p-4 space-y-2"
+          >
+            <Skeleton className="h-5 w-1/2" />
+            <Skeleton className="h-3 w-2/3" />
+            <Skeleton className="h-3 w-1/3" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -310,7 +325,9 @@ export default function TablesPage() {
         onClose={() => setDeleteConfirmTable(null)}
         onConfirm={confirmDeleteTable}
         title={t('tables.deleteTable')}
-        message={`${t('tables.deleteTableConfirm')} ${deleteConfirmTable?.table_number}?`}
+        message={t('tables.deleteTableNumberConfirm', {
+          number: deleteConfirmTable?.table_number,
+        })}
         confirmLabel={t('delete', { ns: 'common' })}
         cancelLabel={t('cancel', { ns: 'common' })}
         loading={isDeleting}

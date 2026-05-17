@@ -1,6 +1,7 @@
-import { headerOptions, ScreenHeader } from '@gustri/ui-mobile';
+import { ScreenHeader } from '@gustri/ui-mobile';
 import { createStackNavigator } from '@react-navigation/stack';
 import { DrawerMenuButton } from '@/components/navigation/DrawerMenuButton';
+import { headerOptions } from '@/navigation/header-options';
 import TableDetailScreen from '@/screens/tables/TableDetailScreen';
 import TablesListScreen from '@/screens/tables/TablesListScreen';
 import type { TablesStackParamList } from '@/types';

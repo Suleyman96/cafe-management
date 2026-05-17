@@ -37,3 +37,4 @@ export * from './gustri-logo';
 export { cn } from './lib/utils';
 export * from './loading-spinner';
 export * from './number-input';
+export * from './skeleton';

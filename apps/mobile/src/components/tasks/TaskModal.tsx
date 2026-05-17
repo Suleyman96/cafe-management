@@ -1,7 +1,7 @@
 import { TIME_OPTIONS, WEEKDAY_TRANSLATION_KEY, WEEKDAYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, Modal, Portal, Switch } from 'react-native-paper';
 import { useStaff } from '@/hooks/shared';
 import { getLocalDateString } from '@/lib/date-utils';
@@ -102,298 +102,305 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
   return (
     <Portal>
       <Modal visible onDismiss={onClose} contentContainerStyle={styles.modal}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <Text variant="titleMedium" style={styles.header}>
-            {isEditing ? t('tasks.editTask') : t('tasks.newTask')}
-          </Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.keyboardAvoid}
+        >
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <Text variant="titleMedium" style={styles.header}>
+              {isEditing ? t('tasks.editTask') : t('tasks.newTask')}
+            </Text>
 
-          {/* Title */}
-          <TextInput
-            label={t('tasks.titleLabel')}
-            value={title}
-            onChangeText={setTitle}
-            mode="outlined"
-            dense
-            style={styles.input}
-            placeholder={t('tasks.whatNeedsDone')}
-          />
+            {/* Title */}
+            <TextInput
+              label={t('tasks.titleLabel')}
+              value={title}
+              onChangeText={setTitle}
+              mode="outlined"
+              dense
+              style={styles.input}
+              placeholder={t('tasks.whatNeedsDone')}
+            />
 
-          {/* Description */}
-          <TextInput
-            label={tCommon('description')}
-            value={description}
-            onChangeText={setDescription}
-            mode="outlined"
-            dense
-            multiline
-            numberOfLines={2}
-            style={styles.input}
-          />
+            {/* Description */}
+            <TextInput
+              label={tCommon('description')}
+              value={description}
+              onChangeText={setDescription}
+              mode="outlined"
+              dense
+              multiline
+              numberOfLines={2}
+              style={styles.input}
+            />
 
-          {/* Assign To */}
-          <Text variant="labelMedium" style={styles.label}>
-            {t('tasks.assignTo')}
-          </Text>
-          <Chip
-            icon="account"
-            onPress={() => setShowStaffPicker(!showStaffPicker)}
-            style={styles.pickerChip}
-          >
-            {selectedStaffName}
-          </Chip>
-          {showStaffPicker && (
-            <View style={styles.pickerList}>
-              <Chip
-                selected={!assignedTo}
-                onPress={() => {
-                  setAssignedTo('');
-                  setShowStaffPicker(false);
-                }}
-                compact
-                style={styles.pickerItem}
-              >
-                {t('tasks.unassigned')}
-              </Chip>
-              {activeStaff.map((s) => (
+            {/* Assign To */}
+            <Text variant="labelMedium" style={styles.label}>
+              {t('tasks.assignTo')}
+            </Text>
+            <Chip
+              icon="account"
+              onPress={() => setShowStaffPicker(!showStaffPicker)}
+              style={styles.pickerChip}
+            >
+              {selectedStaffName}
+            </Chip>
+            {showStaffPicker && (
+              <View style={styles.pickerList}>
                 <Chip
-                  key={s.id}
-                  selected={assignedTo === s.id}
+                  selected={!assignedTo}
                   onPress={() => {
-                    setAssignedTo(s.id);
+                    setAssignedTo('');
                     setShowStaffPicker(false);
                   }}
                   compact
                   style={styles.pickerItem}
                 >
-                  {s.full_name} ({s.role})
+                  {t('tasks.unassigned')}
                 </Chip>
-              ))}
-            </View>
-          )}
-
-          {/* Priority */}
-          <Text variant="labelMedium" style={styles.label}>
-            {t('tasks.priority')}
-          </Text>
-          <View style={styles.row}>
-            {PRIORITIES.map((p) => (
-              <Chip
-                key={p.value}
-                selected={priority === p.value}
-                onPress={() => setPriority(p.value)}
-                compact
-                style={[styles.priorityChip, priority === p.value && { backgroundColor: p.bg }]}
-                textStyle={priority === p.value ? { color: p.text, fontWeight: '600' } : undefined}
-              >
-                {p.label}
-              </Chip>
-            ))}
-          </View>
-
-          {/* Due Date + Time (non-recurring only) */}
-          {!isRecurring && (
-            <>
-              <Text variant="labelMedium" style={styles.label}>
-                {t('tasks.dueDate')}
-              </Text>
-              <TextInput
-                value={dueDate}
-                onChangeText={setDueDate}
-                mode="outlined"
-                dense
-                placeholder="YYYY-MM-DD"
-                style={styles.input}
-                error={!!dueDate && !isDueDateValid}
-              />
-
-              <Text variant="labelMedium" style={styles.label}>
-                {t('tasks.dueTime')}
-              </Text>
-              <Chip
-                icon="clock-outline"
-                onPress={() => setShowTimePicker(!showTimePicker)}
-                style={styles.pickerChip}
-              >
-                {dueTime || t('tasks.noTimeSet')}
-              </Chip>
-              {showTimePicker && (
-                <ScrollView style={styles.timePickerList} nestedScrollEnabled>
+                {activeStaff.map((s) => (
                   <Chip
-                    selected={!dueTime}
+                    key={s.id}
+                    selected={assignedTo === s.id}
                     onPress={() => {
-                      setDueTime('');
-                      setShowTimePicker(false);
+                      setAssignedTo(s.id);
+                      setShowStaffPicker(false);
                     }}
                     compact
                     style={styles.pickerItem}
                   >
-                    {t('tasks.noTime')}
-                  </Chip>
-                  {TIME_SLOTS.map((time) => (
-                    <Chip
-                      key={time}
-                      selected={dueTime === time}
-                      onPress={() => {
-                        setDueTime(time);
-                        setShowTimePicker(false);
-                      }}
-                      compact
-                      style={styles.pickerItem}
-                    >
-                      {time}
-                    </Chip>
-                  ))}
-                </ScrollView>
-              )}
-            </>
-          )}
-
-          {/* Recurring Toggle (admin only) */}
-          {isAdmin && (
-            <View style={styles.switchRow}>
-              <Text variant="labelMedium">{t('tasks.makeRecurring')}</Text>
-              <Switch
-                value={isRecurring}
-                onValueChange={(v: boolean) => {
-                  setIsRecurring(v);
-                  if (v) setDueDate('');
-                  else setDueDate(getLocalDateString());
-                }}
-              />
-            </View>
-          )}
-
-          {/* Recurrence Settings */}
-          {isRecurring && isAdmin && (
-            <View style={styles.recurringSection}>
-              <Text variant="labelMedium" style={styles.recurringLabel}>
-                {t('tasks.recurrencePattern')}
-              </Text>
-              <View style={styles.row}>
-                {PATTERNS.map((p) => (
-                  <Chip
-                    key={p.value}
-                    selected={recurrencePattern === p.value}
-                    onPress={() => {
-                      setRecurrencePattern(p.value);
-                      setRecurrenceDays([]);
-                    }}
-                    compact
-                    style={[
-                      styles.patternChip,
-                      recurrencePattern === p.value && { backgroundColor: '#dbeafe' },
-                    ]}
-                  >
-                    {p.label}
+                    {s.full_name} ({s.role})
                   </Chip>
                 ))}
               </View>
+            )}
 
-              {/* Weekly: day buttons */}
-              {recurrencePattern === 'weekly' && (
-                <>
-                  <Text variant="labelSmall" style={styles.recurringSubLabel}>
-                    {t('tasks.whichDays')}
-                  </Text>
-                  <View style={styles.weekdayRow}>
-                    {WEEKDAYS.map((day) => (
-                      <Chip
-                        key={day.value}
-                        selected={recurrenceDays.includes(day.value)}
-                        onPress={() => toggleWeekday(day.value)}
-                        compact
-                        style={[
-                          styles.weekdayChip,
-                          recurrenceDays.includes(day.value) && { backgroundColor: '#dbeafe' },
-                        ]}
-                      >
-                        {t(WEEKDAY_TRANSLATION_KEY[day.value])}
-                      </Chip>
-                    ))}
-                  </View>
-                </>
-              )}
+            {/* Priority */}
+            <Text variant="labelMedium" style={styles.label}>
+              {t('tasks.priority')}
+            </Text>
+            <View style={styles.row}>
+              {PRIORITIES.map((p) => (
+                <Chip
+                  key={p.value}
+                  selected={priority === p.value}
+                  onPress={() => setPriority(p.value)}
+                  compact
+                  style={[styles.priorityChip, priority === p.value && { backgroundColor: p.bg }]}
+                  textStyle={
+                    priority === p.value ? { color: p.text, fontWeight: '600' } : undefined
+                  }
+                >
+                  {p.label}
+                </Chip>
+              ))}
+            </View>
 
-              {/* Monthly: day of month */}
-              {recurrencePattern === 'monthly' && (
-                <>
-                  <Text variant="labelSmall" style={styles.recurringSubLabel}>
-                    {t('tasks.dayOfMonth')}
-                  </Text>
-                  <TextInput
-                    value={recurrenceDays[0]?.toString() || ''}
-                    onChangeText={(v: string) => {
-                      const num = Number.parseInt(v, 10);
-                      setRecurrenceDays(num >= 1 && num <= 31 ? [num] : []);
-                    }}
-                    mode="outlined"
-                    dense
-                    keyboardType="number-pad"
-                    placeholder="1-31"
-                    style={[styles.input, { width: 100 }]}
-                  />
-                </>
-              )}
+            {/* Due Date + Time (non-recurring only) */}
+            {!isRecurring && (
+              <>
+                <Text variant="labelMedium" style={styles.label}>
+                  {t('tasks.dueDate')}
+                </Text>
+                <TextInput
+                  value={dueDate}
+                  onChangeText={setDueDate}
+                  mode="outlined"
+                  dense
+                  placeholder="YYYY-MM-DD"
+                  style={styles.input}
+                  error={!!dueDate && !isDueDateValid}
+                />
 
-              {/* Default time for recurring */}
-              <Text variant="labelSmall" style={styles.recurringSubLabel}>
-                {t('tasks.defaultDueTime')}
-              </Text>
-              <Chip
-                icon="clock-outline"
-                onPress={() => setShowTimePicker(!showTimePicker)}
-                style={styles.pickerChip}
-              >
-                {dueTime || t('tasks.noTimeSet')}
-              </Chip>
-              {showTimePicker && (
-                <ScrollView style={styles.timePickerList} nestedScrollEnabled>
-                  <Chip
-                    selected={!dueTime}
-                    onPress={() => {
-                      setDueTime('');
-                      setShowTimePicker(false);
-                    }}
-                    compact
-                    style={styles.pickerItem}
-                  >
-                    {t('tasks.noTime')}
-                  </Chip>
-                  {TIME_SLOTS.map((time) => (
+                <Text variant="labelMedium" style={styles.label}>
+                  {t('tasks.dueTime')}
+                </Text>
+                <Chip
+                  icon="clock-outline"
+                  onPress={() => setShowTimePicker(!showTimePicker)}
+                  style={styles.pickerChip}
+                >
+                  {dueTime || t('tasks.noTimeSet')}
+                </Chip>
+                {showTimePicker && (
+                  <ScrollView style={styles.timePickerList} nestedScrollEnabled>
                     <Chip
-                      key={time}
-                      selected={dueTime === time}
+                      selected={!dueTime}
                       onPress={() => {
-                        setDueTime(time);
+                        setDueTime('');
                         setShowTimePicker(false);
                       }}
                       compact
                       style={styles.pickerItem}
                     >
-                      {time}
+                      {t('tasks.noTime')}
+                    </Chip>
+                    {TIME_SLOTS.map((time) => (
+                      <Chip
+                        key={time}
+                        selected={dueTime === time}
+                        onPress={() => {
+                          setDueTime(time);
+                          setShowTimePicker(false);
+                        }}
+                        compact
+                        style={styles.pickerItem}
+                      >
+                        {time}
+                      </Chip>
+                    ))}
+                  </ScrollView>
+                )}
+              </>
+            )}
+
+            {/* Recurring Toggle (admin only) */}
+            {isAdmin && (
+              <View style={styles.switchRow}>
+                <Text variant="labelMedium">{t('tasks.makeRecurring')}</Text>
+                <Switch
+                  value={isRecurring}
+                  onValueChange={(v: boolean) => {
+                    setIsRecurring(v);
+                    if (v) setDueDate('');
+                    else setDueDate(getLocalDateString());
+                  }}
+                />
+              </View>
+            )}
+
+            {/* Recurrence Settings */}
+            {isRecurring && isAdmin && (
+              <View style={styles.recurringSection}>
+                <Text variant="labelMedium" style={styles.recurringLabel}>
+                  {t('tasks.recurrencePattern')}
+                </Text>
+                <View style={styles.row}>
+                  {PATTERNS.map((p) => (
+                    <Chip
+                      key={p.value}
+                      selected={recurrencePattern === p.value}
+                      onPress={() => {
+                        setRecurrencePattern(p.value);
+                        setRecurrenceDays([]);
+                      }}
+                      compact
+                      style={[
+                        styles.patternChip,
+                        recurrencePattern === p.value && { backgroundColor: '#dbeafe' },
+                      ]}
+                    >
+                      {p.label}
                     </Chip>
                   ))}
-                </ScrollView>
-              )}
-            </View>
-          )}
+                </View>
 
-          {/* Actions */}
-          <View style={styles.actions}>
-            <Button onPress={onClose} style={styles.actionBtn}>
-              {tCommon('cancel')}
-            </Button>
-            <Button
-              mode="contained"
-              onPress={handleSubmit}
-              loading={isSaving}
-              disabled={!title.trim() || isSaving}
-              style={styles.actionBtn}
-            >
-              {isEditing ? tCommon('update') : tCommon('create')}
-            </Button>
-          </View>
-        </ScrollView>
+                {/* Weekly: day buttons */}
+                {recurrencePattern === 'weekly' && (
+                  <>
+                    <Text variant="labelSmall" style={styles.recurringSubLabel}>
+                      {t('tasks.whichDays')}
+                    </Text>
+                    <View style={styles.weekdayRow}>
+                      {WEEKDAYS.map((day) => (
+                        <Chip
+                          key={day.value}
+                          selected={recurrenceDays.includes(day.value)}
+                          onPress={() => toggleWeekday(day.value)}
+                          compact
+                          style={[
+                            styles.weekdayChip,
+                            recurrenceDays.includes(day.value) && { backgroundColor: '#dbeafe' },
+                          ]}
+                        >
+                          {t(WEEKDAY_TRANSLATION_KEY[day.value])}
+                        </Chip>
+                      ))}
+                    </View>
+                  </>
+                )}
+
+                {/* Monthly: day of month */}
+                {recurrencePattern === 'monthly' && (
+                  <>
+                    <Text variant="labelSmall" style={styles.recurringSubLabel}>
+                      {t('tasks.dayOfMonth')}
+                    </Text>
+                    <TextInput
+                      value={recurrenceDays[0]?.toString() || ''}
+                      onChangeText={(v: string) => {
+                        const num = Number.parseInt(v, 10);
+                        setRecurrenceDays(num >= 1 && num <= 31 ? [num] : []);
+                      }}
+                      mode="outlined"
+                      dense
+                      keyboardType="number-pad"
+                      placeholder="1-31"
+                      style={[styles.input, { width: 100 }]}
+                    />
+                  </>
+                )}
+
+                {/* Default time for recurring */}
+                <Text variant="labelSmall" style={styles.recurringSubLabel}>
+                  {t('tasks.defaultDueTime')}
+                </Text>
+                <Chip
+                  icon="clock-outline"
+                  onPress={() => setShowTimePicker(!showTimePicker)}
+                  style={styles.pickerChip}
+                >
+                  {dueTime || t('tasks.noTimeSet')}
+                </Chip>
+                {showTimePicker && (
+                  <ScrollView style={styles.timePickerList} nestedScrollEnabled>
+                    <Chip
+                      selected={!dueTime}
+                      onPress={() => {
+                        setDueTime('');
+                        setShowTimePicker(false);
+                      }}
+                      compact
+                      style={styles.pickerItem}
+                    >
+                      {t('tasks.noTime')}
+                    </Chip>
+                    {TIME_SLOTS.map((time) => (
+                      <Chip
+                        key={time}
+                        selected={dueTime === time}
+                        onPress={() => {
+                          setDueTime(time);
+                          setShowTimePicker(false);
+                        }}
+                        compact
+                        style={styles.pickerItem}
+                      >
+                        {time}
+                      </Chip>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            )}
+
+            {/* Actions */}
+            <View style={styles.actions}>
+              <Button onPress={onClose} style={styles.actionBtn}>
+                {tCommon('cancel')}
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleSubmit}
+                loading={isSaving}
+                disabled={!title.trim() || isSaving}
+                style={styles.actionBtn}
+              >
+                {isEditing ? tCommon('update') : tCommon('create')}
+              </Button>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </Portal>
   );
@@ -407,6 +414,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     maxHeight: '85%',
   },
+  keyboardAvoid: { flexShrink: 1 },
   header: { fontWeight: '700', marginBottom: 16 },
   input: { marginBottom: 8 },
   label: { color: COLORS.textPrimary, marginBottom: 6, marginTop: 8 },

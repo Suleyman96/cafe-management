@@ -4,7 +4,7 @@ import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@gustri/u
 import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Chip, FAB, IconButton, Searchbar } from 'react-native-paper';
+import { Banner, Button, Chip, FAB, IconButton, Searchbar } from 'react-native-paper';
 import { CategoryModal } from '@/components/menu-management/CategoryModal';
 import { MenuItemManageCard } from '@/components/menu-management/MenuItemManageCard';
 import { MenuItemModal } from '@/components/menu-management/MenuItemModal';
@@ -167,11 +167,17 @@ export default function MenuManagementScreen() {
 
   return (
     <View style={styles.container}>
+      <Banner visible icon="information-outline" style={styles.policyBanner}>
+        {t('menu.webOnlyManagement', {
+          defaultValue:
+            'Menu and category management is handled on the web app for safer bulk edits. Mobile is for quick on-shift toggles only.',
+        })}
+      </Banner>
       {/* Counts */}
       <View style={styles.countsRow}>
         <Text variant="bodySmall" style={styles.countText}>
-          {(items || []).length} {tCommon('items')} · {(categories || []).length}{' '}
-          {t('menu.categories')}
+          {tCommon('itemsCount', { count: (items || []).length })} ·{' '}
+          {t('menu.categories', { count: (categories || []).length })}
         </Text>
         <Button
           compact
@@ -343,6 +349,7 @@ export default function MenuManagementScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+  policyBanner: { marginBottom: 4 },
   countsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

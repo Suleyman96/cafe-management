@@ -91,7 +91,7 @@ export const WaiterCallCard = React.memo(function WaiterCallCard({
 
         {call.status === 'resolved' && call.resolved_at && (
           <Text variant="bodySmall" style={styles.muted}>
-            {t('calls.resolvedAt')} {new Date(call.resolved_at).toLocaleTimeString()}
+            {t('calls.resolvedAt', { time: new Date(call.resolved_at).toLocaleTimeString() })}
           </Text>
         )}
       </Card.Content>

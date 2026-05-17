@@ -71,7 +71,10 @@ export function MenuGrid({
     return (
       <div>
         <p className="text-sm text-gray-500 mb-3">
-          {filteredItems.length} {t('menu.searchResults')} "{searchQuery}"
+          {t('menu.searchResultsForQuery', {
+            count: filteredItems.length,
+            query: searchQuery,
+          })}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredItems.map((item) => (

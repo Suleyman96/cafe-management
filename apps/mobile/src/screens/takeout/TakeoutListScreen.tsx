@@ -171,7 +171,7 @@ export default function TakeoutListScreen() {
         <View style={styles.activeCountRow}>
           <MaterialCommunityIcons name="shopping" size={16} color={COLORS.orange} />
           <Text variant="bodySmall" style={styles.activeCountText}>
-            {activeCount} {t('takeout.activeCount')}
+            {t('takeout.activeCount', { count: activeCount })}
           </Text>
         </View>
       )}

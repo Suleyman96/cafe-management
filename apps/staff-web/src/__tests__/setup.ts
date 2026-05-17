@@ -115,8 +115,6 @@ vi.mock('@gustri/i18n', () => {
     'orders.served': 'Served',
     'orders.tax': 'Tax',
     'delivery.failedUpdate': 'Failed to update',
-    'calls.call': 'call',
-    'calls.callsPlural': 'calls',
     'calls.callCompleted': 'Call completed',
     'calls.failedRespond': 'Failed to respond',
     'calls.errorLoading': 'Error loading calls',

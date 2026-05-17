@@ -5,7 +5,7 @@ import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui-web';
 import { AlertTriangle, Loader2, X, XCircle } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { VersionConflictBanner } from '@/components/orders/version-conflict-banner';
 import { isOrderVersionConflict, useCancelOrder } from '@/hooks';
@@ -35,20 +35,12 @@ export function CancelOrderModal({
   const [cancelling, setCancelling] = useState(false);
   const [typed, setTyped] = useState('');
 
-  // High-stakes destructions get a type-to-confirm gate, mirroring the
-  // refund/discount-override flow (`ConfirmRefundModal`). Triggered once the
-  // kitchen has already invested labor — cancelling a `new` order is still a
-  // single click since no work has been done yet. The phrase is in caps and
-  // English-only on purpose: `CANCEL 1234` is a short, recognizable token
-  // that the same digits the user just read off the receipt header, so a
-  // translation would *reduce* the friction we want here.
+  // Type-to-confirm gate once the kitchen has invested labor — cancelling a
+  // `new` order is still a single click since no work has been done yet.
+  // English-only keyword, case-insensitive on input.
   const requiresTypeConfirm = orderCancellationRequiresTypeConfirm(order.status);
-  const requiredPhrase = useMemo(() => {
-    const token = order.order_number ?? order.id.slice(-4).toUpperCase();
-    return `CANCEL ${token}`;
-  }, [order.order_number, order.id]);
-  const phraseMatches =
-    typed.trim().toLocaleUpperCase('en-US') === requiredPhrase.toLocaleUpperCase('en-US');
+  const requiredPhrase = 'CANCEL';
+  const phraseMatches = typed.trim().toLocaleUpperCase('en-US') === requiredPhrase;
 
   const submit = async (override: boolean) => {
     if (!cancelReason.trim()) {

@@ -194,7 +194,7 @@ export default function DeliveryListScreen() {
         <View style={styles.activeCountRow}>
           <MaterialCommunityIcons name="truck-delivery" size={16} color={COLORS.purple} />
           <Text variant="bodySmall" style={styles.activeCountText}>
-            {activeCount} {t('delivery.activeCount')}
+            {t('delivery.activeCount', { count: activeCount })}
           </Text>
         </View>
       )}

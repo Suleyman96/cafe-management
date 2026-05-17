@@ -10,6 +10,11 @@ import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
 import type { WaiterCall } from '@/types';
 
+/**
+ * No FAB on this screen — waiter calls are created by *customers* from
+ * customer-web (the "call staff" CTA in the table session), not by staff.
+ * A "+" FAB here would invite the wrong action.
+ */
 export default function WaiterCallsScreen() {
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');

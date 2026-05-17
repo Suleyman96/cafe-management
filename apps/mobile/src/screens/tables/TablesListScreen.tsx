@@ -1,6 +1,6 @@
 import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
-import { EmptyState, ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
+import { EmptyState, ErrorScreen, Skeleton } from '@gustri/ui-mobile';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import * as Sentry from '@sentry/react-native';
@@ -15,6 +15,13 @@ import type { TablesStackParamList } from '@/types';
 
 type Nav = StackNavigationProp<TablesStackParamList, 'TablesList'>;
 
+/**
+ * No FAB on this screen — table creation is an admin/org task currently
+ * web-only on mobile. When mobile gains a table-create modal (parallel to
+ * staff-web's `TableModal`, gated on the tenant plan's table cap), wire
+ * a "+" FAB here behind the same `useCanPerform('manage_tables')`-style
+ * check the web page uses. Until then, no half-shipped affordance.
+ */
 export default function TablesListScreen() {
   const navigation = useNavigation<Nav>();
   const { t } = useTranslation('staff');
@@ -97,7 +104,7 @@ export default function TablesListScreen() {
     [currencySymbol, handleTablePress],
   );
 
-  if (isLoading) return <LoadingScreen message={t('tables.loadingTables')} />;
+  if (isLoading) return <TablesGridSkeleton />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
   return (
@@ -120,6 +127,40 @@ export default function TablesListScreen() {
     </View>
   );
 }
+
+function TablesGridSkeleton() {
+  return (
+    <View style={[styles.container, skeletonStyles.wrap]}>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <View
+          // biome-ignore lint/suspicious/noArrayIndexKey: skeleton tiles have no identity
+          key={i}
+          style={skeletonStyles.tile}
+        >
+          <View style={skeletonStyles.card}>
+            <Skeleton width="40%" height={22} />
+            <Skeleton width="70%" height={12} />
+            <Skeleton width="55%" height={12} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const skeletonStyles = StyleSheet.create({
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', padding: 8 },
+  tile: { width: '50%', padding: 4 },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 12,
+    gap: 8,
+    minHeight: 96,
+  },
+});
 
 const styles = StyleSheet.create({
   container: {

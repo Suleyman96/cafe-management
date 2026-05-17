@@ -345,7 +345,7 @@ export default function TasksPage() {
                         {task.recurrence_pattern === 'monthly' &&
                           (task.recurrence_days?.length ?? 0) > 0 && (
                             <span>
-                              ({t('reports.day')} {task.recurrence_days?.[0]})
+                              ({t('reports.dayNumber', { number: task.recurrence_days?.[0] })})
                             </span>
                           )}
                       </span>

@@ -1,6 +1,6 @@
 import { ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
-import { EmptyState, ErrorScreen, FilterChipBar, LoadingScreen } from '@gustri/ui-mobile';
+import { EmptyState, ErrorScreen, FilterChipBar, Skeleton } from '@gustri/ui-mobile';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { FlashList, type ListRenderItem } from '@shopify/flash-list';
@@ -43,6 +43,15 @@ const STATUS_FILTERS = [
   'cancelled',
 ] as const;
 
+/**
+ * No FAB on this screen — order creation is intentionally contextual on
+ * mobile, not routed through a generic "+" affordance. Dine-in orders
+ * start when a waiter taps a table from `TablesListScreen`; takeout and
+ * delivery have their own dedicated FABs on `TakeoutListScreen` /
+ * `DeliveryListScreen`. A "+ new order" button here would have nowhere
+ * to send the user without first asking the order_type — defeating the
+ * speed the FAB is meant to provide.
+ */
 export default function OrdersListScreen() {
   const navigation = useNavigation<Nav>();
   const { t } = useTranslation('staff');
@@ -104,7 +113,7 @@ export default function OrdersListScreen() {
     return filtered;
   }, [orders, selectedStatus, search]);
 
-  if (isLoading) return <LoadingScreen message={t('orders.loadingOrders')} />;
+  if (isLoading) return <OrdersListSkeleton />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
   return (
@@ -154,6 +163,40 @@ export default function OrdersListScreen() {
     </View>
   );
 }
+
+function OrdersListSkeleton() {
+  return (
+    <View style={[styles.container, skeletonStyles.wrap]}>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <View
+          // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows have no identity
+          key={i}
+          style={skeletonStyles.row}
+        >
+          <View style={skeletonStyles.headRow}>
+            <Skeleton width={80} height={18} />
+            <Skeleton width={64} height={20} radius={9999} />
+          </View>
+          <Skeleton width="70%" height={14} />
+          <Skeleton width="40%" height={14} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const skeletonStyles = StyleSheet.create({
+  wrap: { padding: 16, gap: 12 },
+  row: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 14,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+});
 
 const styles = StyleSheet.create({
   container: {

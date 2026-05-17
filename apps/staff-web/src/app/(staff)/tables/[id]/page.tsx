@@ -265,7 +265,7 @@ export default function TableDetailPage() {
         orderId: activeOrder.id,
         status: newStatus,
       });
-      toast.success(`${t('orders.statusUpdated')} ${newStatus.toLowerCase()}`);
+      toast.success(t('orders.statusUpdatedTo', { status: t(ORDER_STATUS_KEYS[newStatus]) }));
     } catch (_error) {
       toast.error(t('orders.failedUpdateStatus'));
     }
@@ -444,7 +444,7 @@ export default function TableDetailPage() {
             <div className="flex items-center gap-2 mb-2">
               <Layers className="h-4 w-4 text-amber-600" />
               <span className="text-sm font-medium text-amber-800">
-                {activeOrders.length} {t('tables.ordersOnTable')}
+                {t('tables.ordersOnThisTable', { count: activeOrders.length })}
               </span>
               <span className="text-sm text-amber-600">
                 ({t('tables.combinedTotal')}: {formatPrice(combinedTotal)})

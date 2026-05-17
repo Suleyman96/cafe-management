@@ -281,6 +281,57 @@ export const TIME_ELAPSED_THRESHOLDS = {
 } as const;
 
 /**
+ * Canonical urgency-band classification for a kitchen ticket. Both web
+ * (apps/staff-web/.../kitchen/page.tsx) and mobile (KitchenOrderCard.tsx)
+ * currently inline equivalent — but subtly divergent — band logic:
+ *
+ *   - Web's `getCardBg` returns the "warning" band even for orders at
+ *     minute 0 (no fallback below WARNING).
+ *   - Web's inline elapsed-pill bg uses `>` (strict) where everything else
+ *     uses `>=`, so the band flips one minute later.
+ *   - Mobile uses `>=` consistently and returns a distinct "default" band
+ *     for orders below WARNING.
+ *
+ * This helper is the single source of truth. New code MUST use it;
+ * existing inline implementations should migrate to it during the kitchen
+ * urgency work (MOBILE_PARITY_PLAN.md Phase 1.1) so the visual hierarchy
+ * is identical on both platforms — the operational guarantee that
+ * Phase 5.1/5.3/5.4 exists to verify.
+ *
+ * Precedence (highest → lowest):
+ *   ready (all items done / status=ready) >
+ *   new (untriaged) >
+ *   critical (>= 20 min) >
+ *   elevated (>= 15 min) >
+ *   warning (>= 10 min) >
+ *   default (< 10 min)
+ */
+export type KitchenUrgencyBand = 'ready' | 'new' | 'critical' | 'elevated' | 'warning' | 'default';
+
+export interface KitchenUrgencyInput {
+  /** Minutes elapsed since `order.created_at`. Negative values clamp to 0. */
+  minutesElapsed: number;
+  /** Current `order.status`. */
+  status: string;
+  /**
+   * Optional: true when every non-served / non-cancelled order item is in
+   * the `ready` state. Lets a "preparing"-status order with all items
+   * actually ready render as `ready` (mobile already does this).
+   */
+  allItemsReady?: boolean;
+}
+
+export function getKitchenUrgencyBand(input: KitchenUrgencyInput): KitchenUrgencyBand {
+  const minutes = Math.max(0, input.minutesElapsed);
+  if (input.allItemsReady || input.status === 'ready') return 'ready';
+  if (input.status === 'new') return 'new';
+  if (minutes >= TIME_ELAPSED_THRESHOLDS.CRITICAL) return 'critical';
+  if (minutes >= TIME_ELAPSED_THRESHOLDS.ELEVATED) return 'elevated';
+  if (minutes >= TIME_ELAPSED_THRESHOLDS.WARNING) return 'warning';
+  return 'default';
+}
+
+/**
  * Threshold above which a discount additionally requires a non-trivial
  * `discount_reason`. The discount endpoint is admin-only, so this is a
  * forensic-quality gate rather than an authorization gate — large comps

@@ -252,7 +252,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <CrossTabBridge />
             <StuckQueryObserver />
             {children}
-            <Toaster position="bottom-right" />
+            <Toaster position="bottom-right" expand visibleToasts={4} />
             <ReactQueryDevtools initialIsOpen={false} />
           </TenantBoundDbProvider>
         </QueryClientProvider>

@@ -2,7 +2,15 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { MenuItem, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Linking,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Button, Dialog, Divider, IconButton, Portal, Switch } from 'react-native-paper';
 import { useCategories, useCreateOrder, useCurrencySymbol } from '@/hooks/local';
 import {
@@ -212,251 +220,259 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
           </View>
         </Dialog.Title>
         <Dialog.ScrollArea style={styles.scrollArea}>
-          <ScrollView>
-            <View style={styles.form}>
-              {/* Customer details */}
-              <TextInput
-                label={t('delivery.customerName')}
-                value={customerName}
-                onChangeText={setCustomerName}
-                mode="outlined"
-                left={<TextInput.Icon icon="account" />}
-              />
-              <TextInput
-                label={t('delivery.phoneNumber')}
-                value={customerPhone}
-                onChangeText={setCustomerPhone}
-                mode="outlined"
-                keyboardType="phone-pad"
-                left={<TextInput.Icon icon="phone" />}
-                error={!!customerPhone.trim() && !isPhoneValid}
-              />
-              <View>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.keyboardAvoid}
+          >
+            <ScrollView keyboardShouldPersistTaps="handled">
+              <View style={styles.form}>
+                {/* Customer details */}
                 <TextInput
-                  label={t('delivery.deliveryAddress')}
-                  value={deliveryAddress}
-                  onChangeText={setDeliveryAddress}
+                  label={t('delivery.customerName')}
+                  value={customerName}
+                  onChangeText={setCustomerName}
+                  mode="outlined"
+                  left={<TextInput.Icon icon="account" />}
+                />
+                <TextInput
+                  label={t('delivery.phoneNumber')}
+                  value={customerPhone}
+                  onChangeText={setCustomerPhone}
+                  mode="outlined"
+                  keyboardType="phone-pad"
+                  left={<TextInput.Icon icon="phone" />}
+                  error={!!customerPhone.trim() && !isPhoneValid}
+                />
+                <View>
+                  <TextInput
+                    label={t('delivery.deliveryAddress')}
+                    value={deliveryAddress}
+                    onChangeText={setDeliveryAddress}
+                    mode="outlined"
+                    multiline
+                    numberOfLines={2}
+                    left={<TextInput.Icon icon="map-marker" />}
+                  />
+                  {deliveryAddress.trim() && (
+                    <TouchableOpacity onPress={openInMaps} style={styles.mapsLink}>
+                      <MaterialCommunityIcons name="google-maps" size={14} color={COLORS.purple} />
+                      <Text variant="bodySmall" style={styles.mapsText}>
+                        {t('delivery.viewOnMaps')}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <TextInput
+                  label={t('delivery.deliveryNotes')}
+                  value={deliveryNotes}
+                  onChangeText={setDeliveryNotes}
                   mode="outlined"
                   multiline
                   numberOfLines={2}
-                  left={<TextInput.Icon icon="map-marker" />}
+                  left={<TextInput.Icon icon="note-text" />}
                 />
-                {deliveryAddress.trim() && (
-                  <TouchableOpacity onPress={openInMaps} style={styles.mapsLink}>
-                    <MaterialCommunityIcons name="google-maps" size={14} color={COLORS.purple} />
-                    <Text variant="bodySmall" style={styles.mapsText}>
-                      {t('delivery.viewOnMaps')}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <TextInput
-                label={t('delivery.deliveryNotes')}
-                value={deliveryNotes}
-                onChangeText={setDeliveryNotes}
-                mode="outlined"
-                multiline
-                numberOfLines={2}
-                left={<TextInput.Icon icon="note-text" />}
-              />
-              <TextInput
-                label={tCommon('deliveryFee')}
-                value={deliveryFee}
-                onChangeText={setDeliveryFee}
-                mode="outlined"
-                keyboardType="numeric"
-                left={<TextInput.Icon icon="truck-delivery" />}
-              />
-              {settings?.delivery_fee_default != null ? (
-                <Text variant="bodySmall" style={styles.defaultFee}>
-                  {t('delivery.defaultLabel')} {settings.currency_symbol || '$'}
-                  {settings.delivery_fee_default.toFixed(2)}
-                </Text>
-              ) : null}
+                <TextInput
+                  label={tCommon('deliveryFee')}
+                  value={deliveryFee}
+                  onChangeText={setDeliveryFee}
+                  mode="outlined"
+                  keyboardType="numeric"
+                  left={<TextInput.Icon icon="truck-delivery" />}
+                />
+                {settings?.delivery_fee_default != null ? (
+                  <Text variant="bodySmall" style={styles.defaultFee}>
+                    {t('delivery.defaultLabel')} {settings.currency_symbol || '$'}
+                    {settings.delivery_fee_default.toFixed(2)}
+                  </Text>
+                ) : null}
 
-              {/* Save customer toggle */}
-              <View style={styles.toggleRow}>
-                <Text variant="bodyMedium" style={styles.toggleLabel}>
-                  {t('delivery.saveCustomer')}
-                </Text>
-                <Switch value={saveCustomer} onValueChange={setSaveCustomer} />
-              </View>
+                {/* Save customer toggle */}
+                <View style={styles.toggleRow}>
+                  <Text variant="bodyMedium" style={styles.toggleLabel}>
+                    {t('delivery.saveCustomer')}
+                  </Text>
+                  <Switch value={saveCustomer} onValueChange={setSaveCustomer} />
+                </View>
 
-              <Divider />
+                <Divider />
 
-              {/* Menu picker */}
-              <Text variant="titleSmall" style={styles.sectionHeader}>
-                {t('orders.addItems')}
-              </Text>
-              {menuLoading ? (
-                <Text variant="bodySmall" style={styles.muted}>
-                  {t('orders.loadingMenu')}
+                {/* Menu picker */}
+                <Text variant="titleSmall" style={styles.sectionHeader}>
+                  {t('orders.addItems')}
                 </Text>
-              ) : (
-                <>
-                  {/* Categories chip bar */}
-                  {categories && categories.length > 0 && (
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.categoryRow}
-                    >
-                      {categories.map((cat) => {
-                        const active = cat.id === selectedCategoryId;
-                        return (
-                          <TouchableOpacity
-                            key={cat.id}
-                            onPress={() => setSelectedCategoryId(cat.id)}
-                            style={[styles.categoryChip, active && styles.categoryChipActive]}
-                          >
-                            <Text
-                              variant="labelMedium"
-                              style={[
-                                styles.categoryChipText,
-                                active && styles.categoryChipTextActive,
-                              ]}
+                {menuLoading ? (
+                  <Text variant="bodySmall" style={styles.muted}>
+                    {t('orders.loadingMenu')}
+                  </Text>
+                ) : (
+                  <>
+                    {/* Categories chip bar */}
+                    {categories && categories.length > 0 && (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.categoryRow}
+                      >
+                        {categories.map((cat) => {
+                          const active = cat.id === selectedCategoryId;
+                          return (
+                            <TouchableOpacity
+                              key={cat.id}
+                              onPress={() => setSelectedCategoryId(cat.id)}
+                              style={[styles.categoryChip, active && styles.categoryChipActive]}
                             >
-                              {cat.name}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </ScrollView>
-                  )}
+                              <Text
+                                variant="labelMedium"
+                                style={[
+                                  styles.categoryChipText,
+                                  active && styles.categoryChipTextActive,
+                                ]}
+                              >
+                                {cat.name}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    )}
 
-                  {/* Items in selected category. Empty state intentionally
+                    {/* Items in selected category. Empty state intentionally
                       omitted — a category with zero available items is rare
                       and self-explanatory (the chip is selected but no rows
                       render). Adding a key here would block PR on 20-locale
                       translation for a near-unreachable string. */}
-                  {filteredMenuItems.length > 0 && (
-                    <View style={styles.menuItemsList}>
-                      {filteredMenuItems.map((item) => {
-                        const inCart = cart.get(item.id)?.quantity ?? 0;
-                        return (
-                          <TouchableOpacity
-                            key={item.id}
-                            onPress={() => addItem(item)}
-                            style={styles.menuItemRow}
-                          >
-                            <View style={styles.menuItemInfo}>
-                              <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
-                                {item.name}
-                              </Text>
-                              <Text variant="bodySmall" style={styles.muted}>
-                                {currencySymbol}
-                                {item.price.toFixed(2)}
-                              </Text>
-                            </View>
-                            <View style={styles.menuItemAdd}>
-                              {inCart > 0 && (
-                                <Text
-                                  variant="labelMedium"
-                                  style={styles.inCartBadge}
-                                >{`${inCart}x`}</Text>
-                              )}
-                              <MaterialCommunityIcons
-                                name="plus-circle"
-                                size={22}
-                                color={COLORS.purple}
-                              />
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  )}
-                </>
-              )}
-
-              {hasItems && (
-                <>
-                  <Divider />
-                  {/* Selected items */}
-                  <Text variant="titleSmall" style={styles.sectionHeader}>
-                    {t('orders.orderSummary')}
-                  </Text>
-                  {cartItems.map((c) => (
-                    <View key={c.menuItem.id} style={styles.selectedRow}>
-                      <View style={styles.selectedInfo}>
-                        <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
-                          {c.menuItem.name}
-                        </Text>
-                        <Text variant="bodySmall" style={styles.muted}>
-                          {currencySymbol}
-                          {c.menuItem.price.toFixed(2)} {t('payment.each')}
-                        </Text>
+                    {filteredMenuItems.length > 0 && (
+                      <View style={styles.menuItemsList}>
+                        {filteredMenuItems.map((item) => {
+                          const inCart = cart.get(item.id)?.quantity ?? 0;
+                          return (
+                            <TouchableOpacity
+                              key={item.id}
+                              onPress={() => addItem(item)}
+                              style={styles.menuItemRow}
+                            >
+                              <View style={styles.menuItemInfo}>
+                                <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
+                                  {item.name}
+                                </Text>
+                                <Text variant="bodySmall" style={styles.muted}>
+                                  {currencySymbol}
+                                  {item.price.toFixed(2)}
+                                </Text>
+                              </View>
+                              <View style={styles.menuItemAdd}>
+                                {inCart > 0 && (
+                                  <Text
+                                    variant="labelMedium"
+                                    style={styles.inCartBadge}
+                                  >{`${inCart}x`}</Text>
+                                )}
+                                <MaterialCommunityIcons
+                                  name="plus-circle"
+                                  size={22}
+                                  color={COLORS.purple}
+                                />
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })}
                       </View>
-                      <View style={styles.qtyControls}>
-                        <IconButton
-                          icon="minus"
-                          mode="outlined"
-                          size={16}
-                          onPress={() => updateQty(c.menuItem.id, -1)}
-                        />
-                        <Text variant="titleSmall" style={styles.qtyText}>
-                          {c.quantity}
-                        </Text>
-                        <IconButton
-                          icon="plus"
-                          mode="outlined"
-                          size={16}
-                          onPress={() => updateQty(c.menuItem.id, 1)}
-                        />
-                      </View>
-                    </View>
-                  ))}
+                    )}
+                  </>
+                )}
 
-                  {/* Order totals */}
-                  <View style={styles.totalsCard}>
-                    <View style={styles.totalsRow}>
-                      <Text variant="bodyMedium" style={styles.muted}>
-                        {tCommon('subtotal')}
-                      </Text>
-                      <Text variant="bodyMedium">
-                        {currencySymbol}
-                        {totals.subtotal.toFixed(2)}
-                      </Text>
-                    </View>
-                    {totals.tax > 0 && (
+                {hasItems && (
+                  <>
+                    <Divider />
+                    {/* Selected items */}
+                    <Text variant="titleSmall" style={styles.sectionHeader}>
+                      {t('orders.orderSummary')}
+                    </Text>
+                    {cartItems.map((c) => (
+                      <View key={c.menuItem.id} style={styles.selectedRow}>
+                        <View style={styles.selectedInfo}>
+                          <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
+                            {c.menuItem.name}
+                          </Text>
+                          <Text variant="bodySmall" style={styles.muted}>
+                            {currencySymbol}
+                            {c.menuItem.price.toFixed(2)} {t('payment.each')}
+                          </Text>
+                        </View>
+                        <View style={styles.qtyControls}>
+                          <IconButton
+                            icon="minus"
+                            mode="outlined"
+                            size={16}
+                            onPress={() => updateQty(c.menuItem.id, -1)}
+                          />
+                          <Text variant="titleSmall" style={styles.qtyText}>
+                            {c.quantity}
+                          </Text>
+                          <IconButton
+                            icon="plus"
+                            mode="outlined"
+                            size={16}
+                            onPress={() => updateQty(c.menuItem.id, 1)}
+                          />
+                        </View>
+                      </View>
+                    ))}
+
+                    {/* Order totals */}
+                    <View style={styles.totalsCard}>
                       <View style={styles.totalsRow}>
                         <Text variant="bodyMedium" style={styles.muted}>
-                          {t('orders.taxPercent', {
-                            percent: String(settings?.tax_percentage ?? 0),
-                          })}
+                          {tCommon('subtotal')}
                         </Text>
                         <Text variant="bodyMedium">
                           {currencySymbol}
-                          {totals.tax.toFixed(2)}
+                          {totals.subtotal.toFixed(2)}
                         </Text>
                       </View>
-                    )}
-                    {totals.deliveryFee > 0 && (
+                      {totals.tax > 0 && (
+                        <View style={styles.totalsRow}>
+                          <Text variant="bodyMedium" style={styles.muted}>
+                            {t('orders.taxPercent', {
+                              percent: String(settings?.tax_percentage ?? 0),
+                            })}
+                          </Text>
+                          <Text variant="bodyMedium">
+                            {currencySymbol}
+                            {totals.tax.toFixed(2)}
+                          </Text>
+                        </View>
+                      )}
+                      {totals.deliveryFee > 0 && (
+                        <View style={styles.totalsRow}>
+                          <Text
+                            variant="bodyMedium"
+                            style={[styles.muted, { color: COLORS.purple }]}
+                          >
+                            {tCommon('deliveryFee')}
+                          </Text>
+                          <Text variant="bodyMedium" style={{ color: COLORS.purple }}>
+                            {currencySymbol}
+                            {totals.deliveryFee.toFixed(2)}
+                          </Text>
+                        </View>
+                      )}
+                      <Divider style={{ marginVertical: 6 }} />
                       <View style={styles.totalsRow}>
-                        <Text variant="bodyMedium" style={[styles.muted, { color: COLORS.purple }]}>
-                          {tCommon('deliveryFee')}
+                        <Text variant="titleMedium" style={styles.bold}>
+                          {tCommon('total')}
                         </Text>
-                        <Text variant="bodyMedium" style={{ color: COLORS.purple }}>
+                        <Text variant="titleMedium" style={[styles.bold, { color: COLORS.purple }]}>
                           {currencySymbol}
-                          {totals.deliveryFee.toFixed(2)}
+                          {totals.total.toFixed(2)}
                         </Text>
                       </View>
-                    )}
-                    <Divider style={{ marginVertical: 6 }} />
-                    <View style={styles.totalsRow}>
-                      <Text variant="titleMedium" style={styles.bold}>
-                        {tCommon('total')}
-                      </Text>
-                      <Text variant="titleMedium" style={[styles.bold, { color: COLORS.purple }]}>
-                        {currencySymbol}
-                        {totals.total.toFixed(2)}
-                      </Text>
                     </View>
-                  </View>
-                </>
-              )}
-            </View>
-          </ScrollView>
+                  </>
+                )}
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </Dialog.ScrollArea>
         <Dialog.Actions>
           <Button onPress={handleDismiss} disabled={isSubmitting}>
@@ -485,6 +501,7 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   titleText: { fontWeight: '700', color: COLORS.textPrimary },
   scrollArea: { paddingHorizontal: 0 },
+  keyboardAvoid: { flexShrink: 1 },
   form: { gap: 12, paddingHorizontal: 24, paddingVertical: 12 },
   mapsLink: {
     flexDirection: 'row',

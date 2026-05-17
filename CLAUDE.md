@@ -189,23 +189,25 @@ Two patterns, picked by platform:
   (`apps/staff-web/src/components/modals/confirm-dialog.tsx`).
 - **Web (high stakes)** — *type-to-confirm* in addition to the dialog.
   The user must type a short literal phrase (uppercase, English-only, e.g.
-  `REFUND 200` or `CANCEL 1042`) before the destructive button enables.
+  `REFUND 200` or `CANCEL`) before the destructive button enables.
   Used where the action is irreversible AND expensive:
   - Refunds and manual discount overrides above
     `tenant.refund_type_to_confirm_threshold` — handled by
-    `ConfirmRefundModal`.
+    `ConfirmRefundModal`. Phrase includes the amount (`REFUND 200`)
+    because the digits are the safety-critical detail.
   - Order cancellations once the kitchen has invested labor (status in
     `ORDER_STATUSES_REQUIRING_CANCEL_TYPE_CONFIRM` —
     `preparing`/`ready`/`served`/`out_for_delivery`). Handled in
     `CancelOrderModal` via the `orderCancellationRequiresTypeConfirm`
-    helper from `@gustri/core`.
+    helper from `@gustri/core`. Phrase is bare `CANCEL` — the dialog
+    already shows which order is being cancelled.
 
 The phrase is English-only on purpose: a translated keyword is more
 likely to produce a typing error than a deliberate confirmation, which
-defeats the friction we want. The number in the phrase (amount or
-order_number) is the same digits the staff member just read off the
-screen — the friction comes from forcing a beat of attention, not from
-linguistic difficulty.
+defeats the friction we want. Where the phrase includes a number
+(`REFUND 200`), the digits match what the staff member just read off
+the screen — the friction comes from forcing a beat of attention, not
+from linguistic difficulty.
 
 When adding a new destructive action: ask "would I want this to be
 killable without a deploy?" (→ feature flag) and "is it expensive enough
@@ -377,3 +379,12 @@ These admin-tier features are intentionally web-only and will not be added to mo
 Rationale: keep mobile focused on shift-time operations (orders, tables, kitchen, calls).
 Mobile users authenticate but don't perform org-management tasks. The mobile staff list
 surfaces a banner pointing org-management work to the web app.
+
+The mobile drawer reflects this policy: as of Phase 4, the **Menu** entry is no
+longer surfaced in `CustomDrawerContent`. Category / menu-item management lives
+on the web app. The `MenuManagementTab` route remains registered in
+`DrawerNavigator` so existing deep links and persisted navigation state still
+resolve — `MenuManagementScreen` itself shows a banner pointing users to the
+web app for bulk edits. Quick on-shift toggles (e.g. mark item out of stock)
+stay reachable via the deep link path; only the discovery surface (the
+drawer) was tightened.

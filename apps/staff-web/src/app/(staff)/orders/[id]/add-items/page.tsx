@@ -193,8 +193,11 @@ export default function AddItemsPage() {
           <div className="border rounded-lg p-3 sm:p-4 lg:sticky lg:top-4 bg-white">
             <h2 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4 flex items-center gap-2">
               <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
-              {t('orders.cart')} ({cart.reduce((sum, item) => sum + item.quantity, 0)}{' '}
-              {t('tables.items')})
+              {t('orders.cart')} (
+              {t('tables.itemsCount', {
+                count: cart.reduce((sum, item) => sum + item.quantity, 0),
+              })}
+              )
             </h2>
 
             {cart.length === 0 ? (

@@ -228,7 +228,7 @@ export default function OrderDetailPage() {
           status: newStatus,
         });
       }
-      toast.success(`${t('orders.statusUpdated')} ${String(newStatus).toLowerCase()}`);
+      toast.success(t('orders.statusUpdatedTo', { status: t(ORDER_STATUS_KEYS[newStatus]) }));
     } catch (_error) {
       toast.error(t('orders.failedUpdateStatus'));
     }

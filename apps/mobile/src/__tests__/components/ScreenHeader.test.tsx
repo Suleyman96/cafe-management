@@ -35,16 +35,14 @@ vi.mock('@expo/vector-icons', () => ({
   ),
 }));
 
-vi.mock('@/lib/paper-compat', () => ({
+// ScreenHeader resolves `Text` via `./lib/paper-compat` → `react-native-paper`.
+// Mocking the paper module covers both re-export hops.
+vi.mock('react-native-paper', () => ({
   Text: ({ children, ...props }: any) => <span {...props}>{children}</span>,
-}));
-
-vi.mock('@/theme', () => ({
-  COLORS: {
-    card: '#ffffff',
-    border: '#e2e8f0',
-    textPrimary: '#1e293b',
-  },
+  TextInput: Object.assign(({ children }: any) => <span>{children}</span>, {
+    Icon: ({ children }: any) => <span>{children}</span>,
+    Affix: ({ children }: any) => <span>{children}</span>,
+  }),
 }));
 
 // Translation mock: return key suffix so we can assert which key was used.

@@ -28,5 +28,6 @@ export { __resetNowStoreForTests, useNow, useNowStore } from './lib/now-store';
 // subpath so the test barrel doesn't pull in `react-native-paper` eagerly.
 export { Text, TextInput } from './paper-compat';
 export { headerOptions, ScreenHeader, type ScreenHeaderOptions } from './ScreenHeader';
+export { Skeleton } from './Skeleton';
 export { StatusBadge } from './StatusBadge';
 export { TimeElapsed } from './TimeElapsed';

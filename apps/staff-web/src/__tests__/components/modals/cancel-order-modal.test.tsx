@@ -51,12 +51,12 @@ afterEach(() => {
 describe('CancelOrderModal — type-to-confirm gate', () => {
   it('shows the type-to-confirm input when status has kitchen labor invested', () => {
     renderModal({ status: 'preparing', order_number: '1042' });
-    expect(screen.getByPlaceholderText('CANCEL 1042')).toBeTruthy();
+    expect(screen.getByPlaceholderText('CANCEL')).toBeTruthy();
   });
 
   it('does NOT show the type-to-confirm input for early statuses', () => {
     renderModal({ status: 'new', order_number: '1042' });
-    expect(screen.queryByPlaceholderText('CANCEL 1042')).toBeNull();
+    expect(screen.queryByPlaceholderText('CANCEL')).toBeNull();
   });
 
   it('keeps cancel button disabled while phrase has not been typed correctly', () => {
@@ -73,30 +73,20 @@ describe('CancelOrderModal — type-to-confirm gate', () => {
     const textarea = screen.getByPlaceholderText(REASON_PLACEHOLDER_KEY) as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: 'Customer left' } });
 
-    const confirmInput = screen.getByPlaceholderText('CANCEL 1042') as HTMLInputElement;
-    fireEvent.change(confirmInput, { target: { value: 'cancel 1042' } });
+    const confirmInput = screen.getByPlaceholderText('CANCEL') as HTMLInputElement;
+    fireEvent.change(confirmInput, { target: { value: 'cancel' } });
 
     const cancelBtn = screen.getByRole('button', { name: new RegExp(CANCEL_BTN_KEY) });
     expect((cancelBtn as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it('falls back to the id last-4 when order_number is missing', () => {
-    renderModal({
-      status: 'ready',
-      order_number: undefined,
-      id: 'aaaaaaaa-bbbb-cccc-dddd-1234',
-    });
-    // last-4 of the id is uppercased — id ends in "1234" → "1234"
-    expect(screen.getByPlaceholderText('CANCEL 1234')).toBeTruthy();
-  });
-
-  it('rejects a typed phrase with the wrong digits', () => {
+  it('rejects a typed phrase that is not the keyword', () => {
     renderModal({ status: 'preparing', order_number: '1042' });
     const textarea = screen.getByPlaceholderText(REASON_PLACEHOLDER_KEY) as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: 'Customer left' } });
 
-    const confirmInput = screen.getByPlaceholderText('CANCEL 1042') as HTMLInputElement;
-    fireEvent.change(confirmInput, { target: { value: 'CANCEL 9999' } });
+    const confirmInput = screen.getByPlaceholderText('CANCEL') as HTMLInputElement;
+    fireEvent.change(confirmInput, { target: { value: 'CONFIRM' } });
 
     const cancelBtn = screen.getByRole('button', { name: new RegExp(CANCEL_BTN_KEY) });
     expect((cancelBtn as HTMLButtonElement).disabled).toBe(true);

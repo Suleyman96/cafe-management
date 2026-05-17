@@ -109,7 +109,9 @@ export default function StaffDetailScreen() {
             </Text>
           )}
           <Text variant="bodySmall" style={styles.muted}>
-            {t('staffMgmt.memberSince')} {new Date(member.created_at).toLocaleDateString(locale)}
+            {t('staffMgmt.memberSince', {
+              date: new Date(member.created_at).toLocaleDateString(locale),
+            })}
           </Text>
           <Button mode="outlined" onPress={openEdit} style={styles.editBtn}>
             {t('staffMgmt.editProfile')}

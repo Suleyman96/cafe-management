@@ -1,4 +1,4 @@
-import { TIME_ELAPSED_THRESHOLDS } from '@gustri/core';
+import { getKitchenUrgencyBand } from '@gustri/core';
 import { ORDER_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import type { HiddenCategoryBucket } from '@gustri/queries';
@@ -160,18 +160,21 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
 
   // Card surface colored by status + elapsed-time bands so the cook can
   // triage urgency at a glance — same mental model as the web kitchen.
+  // Band classification lives in `@gustri/core` so this and the web
+  // kitchen page stay aligned on what counts as "critical" etc.
   const minutesElapsed = differenceInMinutes(new Date(), new Date(order.created_at));
-  const urgency = (() => {
-    if (allItemsReady || order.status === ORDER_STATUS.READY) return URGENCY_THEME.ready;
-    if (order.status === ORDER_STATUS.NEW) return URGENCY_THEME.new;
-    if (minutesElapsed >= TIME_ELAPSED_THRESHOLDS.CRITICAL) return URGENCY_THEME.critical;
-    if (minutesElapsed >= TIME_ELAPSED_THRESHOLDS.ELEVATED) return URGENCY_THEME.elevated;
-    if (minutesElapsed >= TIME_ELAPSED_THRESHOLDS.WARNING) return URGENCY_THEME.warning;
-    return {
-      bg: URGENCY_THEME.default.bg,
-      border: ORDER_STATUS_COLORS[order.status]?.text || URGENCY_THEME.default.border,
-    };
-  })();
+  const band = getKitchenUrgencyBand({
+    minutesElapsed,
+    status: order.status,
+    allItemsReady,
+  });
+  const urgency =
+    band === 'default'
+      ? {
+          bg: URGENCY_THEME.default.bg,
+          border: ORDER_STATUS_COLORS[order.status]?.text || URGENCY_THEME.default.border,
+        }
+      : URGENCY_THEME[band];
 
   // Pulse the whole card while `status === 'new'`. Same affordance as web's
   // `animate-pulse` on the kitchen new-order card. Uses the native driver
