@@ -1,4 +1,11 @@
+import { SPACING } from '@gustri/design-tokens';
 import type { Config } from 'tailwindcss';
+
+/** Mirror the shared spacing scale as a Tailwind extension. Tailwind expects
+ * string values with units, so we suffix the numeric token values with `px`.
+ * Lets `gap-md`, `p-lg`, … on web resolve to the same pixel values as
+ * `style={{ padding: SPACING.lg }}` on mobile. */
+const sharedSpacing = Object.fromEntries(Object.entries(SPACING).map(([k, v]) => [k, `${v}px`]));
 
 const config: Config = {
   darkMode: ['class'],
@@ -9,7 +16,7 @@ const config: Config = {
     // Shared UI package — without this, Tailwind purges classes it doesn't
     // see in this app's source (e.g. LoadingSpinner's `animate-spin`,
     // `border-t-blue-500`), leaving a static grey ring instead of a spinner.
-    '../../packages/ui/src/**/*.{js,ts,jsx,tsx}',
+    '../../packages/ui-web/src/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
@@ -70,6 +77,7 @@ const config: Config = {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      spacing: sharedSpacing,
     },
   },
   plugins: [require('tailwindcss-animate')],

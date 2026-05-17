@@ -2,6 +2,7 @@ import { TIME_ELAPSED_THRESHOLDS } from '@gustri/core';
 import { ORDER_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import type { HiddenCategoryBucket } from '@gustri/queries';
+import { StatusBadge, TimeElapsed } from '@gustri/ui-mobile';
 import { useIsMutating } from '@tanstack/react-query';
 import { differenceInMinutes } from 'date-fns';
 import React, { useCallback, useEffect, useRef } from 'react';
@@ -13,7 +14,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { StatusBadge, TimeElapsed } from '@/components/ui';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { BRAND_PRIMARY, CARD_PADDING, CARD_RADIUS, COLORS, ORDER_STATUS_COLORS } from '@/theme';
 import { HiddenItemsSummary } from './HiddenItemsSummary';

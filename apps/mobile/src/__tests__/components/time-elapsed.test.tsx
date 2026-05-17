@@ -7,11 +7,18 @@ vi.mock('react-native-paper', () => ({
       {children}
     </span>
   ),
+  // `TextInput` (and its sub-components) is destructured by `paper-compat`
+  // — re-exported from the `@gustri/ui-mobile` barrel. Provide passthrough
+  // stubs so the barrel evaluation doesn't blow up. Tests don't use it.
+  TextInput: Object.assign(({ children }: any) => <span>{children}</span>, {
+    Icon: ({ children }: any) => <span>{children}</span>,
+    Affix: ({ children }: any) => <span>{children}</span>,
+  }),
   MD3LightTheme: { colors: {} },
   MD3DarkTheme: { colors: {} },
 }));
 
-import { TimeElapsed } from '@/components/ui/TimeElapsed';
+import { TimeElapsed } from '@gustri/ui-mobile';
 import { __resetNowStoreForTests, useNowStore } from '@/lib/now-store';
 
 describe('TimeElapsed component', () => {

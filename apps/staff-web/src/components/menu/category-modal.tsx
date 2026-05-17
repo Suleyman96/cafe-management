@@ -2,8 +2,7 @@
 
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
-import { NumberInput } from '@gustri/ui-web';
+import { Button, NumberInput } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { useState } from 'react';
 import { toast } from 'sonner';

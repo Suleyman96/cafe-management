@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import { ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';

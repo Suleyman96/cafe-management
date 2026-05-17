@@ -8,6 +8,7 @@ import {
   QUERY_KEYS,
   useStaffKitchenFilters,
 } from '@gustri/queries';
+import { ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -23,7 +24,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KitchenFilterBar } from '@/components/kitchen/KitchenFilterBar';
 import { KitchenFilterSheet } from '@/components/kitchen/KitchenFilterSheet';
 import { KitchenOrderCard } from '@/components/kitchen/KitchenOrderCard';
-import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
   useCategories,
   useOrders,

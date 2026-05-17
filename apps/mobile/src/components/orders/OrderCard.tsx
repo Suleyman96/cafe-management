@@ -1,7 +1,7 @@
 import { useTranslation } from '@gustri/i18n';
+import { StatusBadge, TimeElapsed } from '@gustri/ui-mobile';
 import React, { useCallback } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { StatusBadge, TimeElapsed } from '@/components/ui';
 import { Text } from '@/lib/paper-compat';
 import { CARD_PADDING, CARD_RADIUS, COLORS, TYPOGRAPHY } from '@/theme';
 

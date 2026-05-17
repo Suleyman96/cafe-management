@@ -1,5 +1,6 @@
 import type { StockItem, StockItemInsert, StockItemUpdate } from '@gustri/database';
 import { useLocale, useTranslation } from '@gustri/i18n';
+import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -7,7 +8,6 @@ import { Button, Card, Chip, FAB, Modal, Portal, Searchbar } from 'react-native-
 import { StockItemCard } from '@/components/stock/StockItemCard';
 import { StockItemModal } from '@/components/stock/StockItemModal';
 import { StockMovementModal } from '@/components/stock/StockMovementModal';
-import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import {
   useAdjustStock,
   useCurrencySymbol,

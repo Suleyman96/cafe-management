@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { LoadingSpinner } from '@gustri/ui';
+import { LoadingSpinner } from '@gustri/ui-web';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';

@@ -1,4 +1,5 @@
 import { useTranslation } from '@gustri/i18n';
+import { ErrorScreen, LoadingScreen, StatusBadge, TimeElapsed } from '@gustri/ui-mobile';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -7,7 +8,6 @@ import { useCallback, useMemo } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { OrderItemRow } from '@/components/orders/OrderItemRow';
 import { StatusActions } from '@/components/orders/StatusActions';
-import { ErrorScreen, LoadingScreen, StatusBadge, TimeElapsed } from '@/components/ui';
 import {
   useCurrencySymbol,
   useOrder,

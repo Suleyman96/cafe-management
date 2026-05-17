@@ -4,7 +4,7 @@ import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
 import type { MenuItem, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { randomUUIDv4, useStableClientRequestId } from '@gustri/queries';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { Truck } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';

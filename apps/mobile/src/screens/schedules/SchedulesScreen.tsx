@@ -7,13 +7,13 @@ type ScheduleWithStaff = StaffSchedule & {
 };
 
 import { getLocalDateString } from '@gustri/core';
+import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Card, Chip, FAB, SegmentedButtons } from 'react-native-paper';
 import { ScheduleCard } from '@/components/schedules/ScheduleCard';
 import { ScheduleModal } from '@/components/schedules/ScheduleModal';
-import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useUpdateSchedule } from '@/hooks/local';
 import {
   useCreateSchedule,

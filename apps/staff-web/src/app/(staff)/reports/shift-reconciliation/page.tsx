@@ -2,7 +2,7 @@
 
 import { downloadCsv, getLocalDateString, toCsv } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui-web';
 import { AlertTriangle, CheckCircle2, Download, Printer, Scale } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuth, useShiftReconciliation } from '@/hooks';

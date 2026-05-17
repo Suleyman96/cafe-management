@@ -1,19 +1,19 @@
 /**
  * Tailwind utility class helpers for status / role badges.
  *
- * The `BadgeConfig` *shape* lives in `@gustri/core/colors` so both web
- * (Tailwind class strings) and mobile (hex values) conform to the same
- * contract — add `border` / `pulse` / `iconName` once, get it on both
- * platforms. This file provides the web Tailwind-class-string values;
- * mobile provides hex values in its theme.
+ * Lives here (not in `@gustri/design-tokens`) because the return values
+ * are Tailwind class strings — a UI concern. The headless `BadgeConfig`
+ * type lives in `@gustri/design-tokens`; web populates the records with
+ * Tailwind class strings (`bg-amber-100`), mobile populates the
+ * matching records with hex values (`#fef3c7`).
  *
- * Each `*_BADGES` Record below is keyed by the corresponding enum, so adding
- * a new enum value (e.g. a new `OrderStatus` variant) fails compile across
- * every consumer that destructures from the map. That's the whole point —
- * never let a stray unknown status slip through to a `default:` arm again.
+ * Each `*_BADGES` Record below is keyed by the corresponding enum, so
+ * adding a new enum value (e.g. a new `OrderStatus` variant) fails
+ * compile across every consumer that destructures from the map. That's
+ * the whole point — never let a stray unknown status slip through to a
+ * `default:` arm again.
  */
 
-import type { BadgeConfig } from '@gustri/core';
 import type {
   OrderItemStatus,
   OrderStatus,
@@ -21,8 +21,7 @@ import type {
   TableStatus,
   UserRole,
 } from '@gustri/database';
-
-export type { BadgeConfig };
+import type { BadgeConfig } from '@gustri/design-tokens';
 
 /**
  * Badge styling per `OrderStatus`. Keyed by enum so missing variants fail

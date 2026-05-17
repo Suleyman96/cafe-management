@@ -11,7 +11,7 @@ import type { OrderItemStatus, OrderStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import type { KitchenOrderView } from '@gustri/queries';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
-import { LoadingSpinner, ORDER_ITEM_STATUS_BADGES } from '@gustri/ui';
+import { LoadingSpinner, ORDER_ITEM_STATUS_BADGES } from '@gustri/ui-web';
 import {
   AlertCircle,
   CheckCircle,

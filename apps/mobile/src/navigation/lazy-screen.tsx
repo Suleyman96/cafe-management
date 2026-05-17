@@ -1,5 +1,5 @@
+import { LoadingScreen } from '@gustri/ui-mobile';
 import React, { Suspense } from 'react';
-import { LoadingScreen } from '@/components/ui/LoadingScreen';
 
 type ScreenLoader<P> = () => Promise<{ default: React.ComponentType<P> }>;
 

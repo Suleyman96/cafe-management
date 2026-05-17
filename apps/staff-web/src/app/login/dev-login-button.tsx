@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';

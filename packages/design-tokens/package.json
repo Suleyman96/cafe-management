@@ -1,0 +1,29 @@
+{
+  "name": "@gustri/design-tokens",
+  "version": "0.0.0",
+  "sideEffects": false,
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist node_modules .turbo",
+    "lint": "biome check ./src",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@gustri/database": "workspace:*"
+  },
+  "devDependencies": {}
+}

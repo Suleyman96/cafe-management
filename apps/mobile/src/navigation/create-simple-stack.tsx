@@ -1,7 +1,7 @@
+import { headerOptions, ScreenHeader } from '@gustri/ui-mobile';
 import { createStackNavigator, type StackScreenProps } from '@react-navigation/stack';
 import type React from 'react';
 import { DrawerMenuButton } from '@/components/navigation/DrawerMenuButton';
-import { headerOptions, ScreenHeader } from '@/components/ui';
 
 type SimpleParamList = Record<string, undefined>;
 type SimpleScreenProps = StackScreenProps<SimpleParamList, string>;

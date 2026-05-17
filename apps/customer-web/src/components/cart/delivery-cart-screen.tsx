@@ -2,7 +2,7 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { randomUUIDv4, useStableClientRequestId } from '@gustri/queries';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { ArrowLeft, Edit3, MapPin, Phone, Truck, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';

@@ -2,7 +2,7 @@
 
 import { calculateOrderTotal, formatTime, ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
-import { Button, getOrderStatusColor, LoadingSpinner } from '@gustri/ui';
+import { Button, getOrderStatusColor, LoadingSpinner } from '@gustri/ui-web';
 import {
   CheckCircle,
   ChefHat,

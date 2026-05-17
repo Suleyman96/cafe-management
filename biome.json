@@ -89,7 +89,7 @@
       }
     },
     {
-      "includes": ["packages/core/**", "packages/database/**"],
+      "includes": ["packages/core/**", "packages/database/**", "packages/design-tokens/**"],
       "linter": {
         "rules": {
           "style": {

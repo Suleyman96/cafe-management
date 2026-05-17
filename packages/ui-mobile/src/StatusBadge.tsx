@@ -1,26 +1,30 @@
+import {
+  ORDER_STATUS_HEX,
+  type StatusColorPair,
+  TABLE_STATUS_HEX,
+  WAITER_CALL_REASON_HEX,
+} from '@gustri/design-tokens';
 import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import type { ColorPair } from '@/theme';
-import { ORDER_STATUS_COLORS, TABLE_STATUS_COLORS, WAITER_CALL_REASON_COLORS } from '@/theme';
 
 interface StatusBadgeProps {
   status: string;
   type?: 'order' | 'table' | 'waiterCall' | 'orderItem';
 }
 
-const FALLBACK_COLOR: ColorPair = { bg: '#f3f4f6', text: '#374151' };
+const FALLBACK_COLOR: StatusColorPair = { bg: '#f3f4f6', text: '#374151' };
 
-const PAIR_MAPS: Record<string, Record<string, ColorPair>> = {
-  order: ORDER_STATUS_COLORS,
-  table: TABLE_STATUS_COLORS,
-  orderItem: ORDER_STATUS_COLORS,
+const PAIR_MAPS: Record<string, Record<string, StatusColorPair>> = {
+  order: ORDER_STATUS_HEX,
+  table: TABLE_STATUS_HEX,
+  orderItem: ORDER_STATUS_HEX,
 };
 
-/** Waiter-call reasons use solid colors — wrap them into ColorPair (solid bg + white text) */
-function getColorPair(type: string, status: string): ColorPair {
+/** Waiter-call reasons use solid colors — wrap them into StatusColorPair (solid bg + white text) */
+function getColorPair(type: string, status: string): StatusColorPair {
   if (type === 'waiterCall') {
-    const solid = WAITER_CALL_REASON_COLORS[status];
+    const solid = WAITER_CALL_REASON_HEX[status];
     return solid ? { bg: solid, text: '#fff' } : FALLBACK_COLOR;
   }
   return PAIR_MAPS[type]?.[status] || FALLBACK_COLOR;

@@ -54,9 +54,16 @@ vi.mock('react-native-paper', () => ({
     </button>
   ),
   Text: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+  // `TextInput` (and its sub-components) is destructured by `paper-compat`
+  // — re-exported from the `@gustri/ui-mobile` barrel. Provide passthrough
+  // stubs so the barrel evaluation doesn't blow up. Tests don't use it.
+  TextInput: Object.assign(({ children }: any) => <span>{children}</span>, {
+    Icon: ({ children }: any) => <span>{children}</span>,
+    Affix: ({ children }: any) => <span>{children}</span>,
+  }),
 }));
 
-import { DestructiveConfirmModal } from '@/components/ui/DestructiveConfirmModal';
+import { DestructiveConfirmModal } from '@gustri/ui-mobile';
 
 describe('DestructiveConfirmModal', () => {
   beforeEach(() => {

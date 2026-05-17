@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { GustriLogo } from '@gustri/ui';
+import { GustriLogo } from '@gustri/ui-web';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

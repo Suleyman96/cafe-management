@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';

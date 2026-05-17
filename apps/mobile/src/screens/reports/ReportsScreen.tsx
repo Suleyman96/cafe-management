@@ -1,9 +1,9 @@
 import { useTranslation } from '@gustri/i18n';
+import { LoadingScreen } from '@gustri/ui-mobile';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Card, Chip, Text } from 'react-native-paper';
 import { MetricCard } from '@/components/reports/MetricCard';
-import { LoadingScreen } from '@/components/ui';
 import { useCurrencySymbol, useOrders } from '@/hooks/local';
 import { useExpenses, useStaff, useWasteLogs } from '@/hooks/shared';
 import { getLocalDateString } from '@/lib/date-utils';

@@ -3,7 +3,7 @@
 import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { ArrowLeft, Check, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';

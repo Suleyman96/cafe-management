@@ -1,8 +1,8 @@
 import { useTranslation } from '@gustri/i18n';
+import { TimeElapsed } from '@gustri/ui-mobile';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Text } from 'react-native-paper';
-import { TimeElapsed } from '@/components/ui';
 
 const FEEDBACK_TYPE_COLORS: Record<string, string> = {
   complaint: '#ef4444',

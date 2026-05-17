@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import { RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { subscribeClientMustReload } from '@/lib/client-outdated-state';

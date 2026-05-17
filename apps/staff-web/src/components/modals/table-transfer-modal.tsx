@@ -3,7 +3,7 @@
 import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import type { TableStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button, TABLE_STATUS_BADGES } from '@gustri/ui';
+import { Button, TABLE_STATUS_BADGES } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { AlertTriangle, X } from 'lucide-react';
 import { useMemo, useState } from 'react';

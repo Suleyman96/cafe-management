@@ -2,7 +2,7 @@
 
 import type { Language } from '@gustri/i18n';
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
-import { LoadingSpinner } from '@gustri/ui';
+import { LoadingSpinner } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import {
   ArrowRight,

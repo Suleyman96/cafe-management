@@ -2,7 +2,7 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { useFeatureFlag } from '@gustri/queries';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import { KeyRound } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { toast } from 'sonner';

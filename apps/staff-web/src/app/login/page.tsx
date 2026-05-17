@@ -2,7 +2,7 @@
 
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { GustriLogo } from '@gustri/ui';
+import { GustriLogo } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

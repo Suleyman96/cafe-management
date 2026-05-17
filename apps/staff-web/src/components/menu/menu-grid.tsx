@@ -2,7 +2,7 @@
 
 import type { Database } from '@gustri/database';
 import type { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import { Pencil, Search, Trash2, UtensilsCrossed } from 'lucide-react';
 import { MenuItemCard, MenuItemSkeletonCard } from '@/components/menu/menu-item-card';
 

@@ -10,7 +10,7 @@ import {
 import type { Database, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
-import { Button, getOrderStatusColor, LoadingSpinner } from '@gustri/ui';
+import { Button, getOrderStatusColor, LoadingSpinner } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import {
   ArrowLeft,

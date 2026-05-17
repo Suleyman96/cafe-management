@@ -1,7 +1,7 @@
 'use client';
 
 import { numberToWords, useLocale, useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import { AlertTriangle, ArrowLeft, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 

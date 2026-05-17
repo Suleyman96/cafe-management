@@ -4,7 +4,7 @@ import { ACTIVE_DELIVERY_STATUSES, ORDER_STATUS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui-web';
 import { Plus, Search, Truck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';

@@ -1,5 +1,6 @@
 import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
+import { EmptyState, ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import * as Sentry from '@sentry/react-native';
@@ -8,7 +9,6 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TableCard } from '@/components/tables/TableCard';
-import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useCurrencySymbol, useOrders, useTables, useWaiterCalls } from '@/hooks/local';
 import { useCleanupEmptyOrders } from '@/hooks/shared';
 import type { TablesStackParamList } from '@/types';

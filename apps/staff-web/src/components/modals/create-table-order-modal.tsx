@@ -3,7 +3,7 @@
 import type { OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { useStableClientRequestId } from '@gustri/queries';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { UtensilsCrossed, X } from 'lucide-react';
 import { useState } from 'react';

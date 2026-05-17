@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { Badge, LoadingSpinner } from '@gustri/ui';
+import { Badge, LoadingSpinner } from '@gustri/ui-web';
 import { CheckCircle2, Clock, Hourglass, MapPin, Phone, Truck, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { OrderTimeline } from '@/components/order/order-timeline';

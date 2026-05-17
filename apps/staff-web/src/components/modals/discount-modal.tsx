@@ -2,8 +2,7 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { useCafeSettings } from '@gustri/queries';
-import { Button } from '@gustri/ui';
-import { NumberInput } from '@gustri/ui-web';
+import { Button, NumberInput } from '@gustri/ui-web';
 import { Percent, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

@@ -1,7 +1,7 @@
+import { SEMANTIC_COLORS } from '@gustri/design-tokens';
 import React from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { Text } from '@/lib/paper-compat';
-import { COLORS } from '@/theme';
+import { Text } from './lib/paper-compat';
 
 interface FilterOption {
   key: string;
@@ -21,7 +21,7 @@ export const FilterChipBar = React.memo(function FilterChipBar({
   options,
   selected,
   onSelect,
-  defaultColor = COLORS.purple,
+  defaultColor = SEMANTIC_COLORS.purple,
 }: FilterChipBarProps) {
   return (
     <ScrollView
@@ -67,14 +67,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 9999,
-    backgroundColor: COLORS.borderLight,
+    backgroundColor: SEMANTIC_COLORS.borderLight,
   },
   chipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: SEMANTIC_COLORS.textSecondary,
   },
   chipTextActive: {
-    color: COLORS.card,
+    color: SEMANTIC_COLORS.card,
   },
 });

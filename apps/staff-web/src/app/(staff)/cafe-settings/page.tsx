@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui-web';
 import { Bell, Palette, Phone, RotateCcw, Save, Store } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';

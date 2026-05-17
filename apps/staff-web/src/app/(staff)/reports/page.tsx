@@ -2,7 +2,7 @@
 
 import { getLocalDateString } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui-web';
 import {
   Calendar,
   ChefHat,

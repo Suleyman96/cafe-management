@@ -20,7 +20,6 @@ fi
 SUITES=(
   "root|--config vitest.config.ts"
   "queries|--config packages/queries/vitest.config.ts"
-  "ui|--config packages/ui/vitest.config.ts"
   "ui-web|--config packages/ui-web/vitest.config.ts"
   "i18n|--config packages/i18n/vitest.config.ts"
   "mobile|--config apps/mobile/vitest.config.ts"

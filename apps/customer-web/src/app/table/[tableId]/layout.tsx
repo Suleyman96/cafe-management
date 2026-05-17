@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { LoadingSpinner } from '@gustri/ui';
+import { LoadingSpinner } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { ConciergeBell, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';

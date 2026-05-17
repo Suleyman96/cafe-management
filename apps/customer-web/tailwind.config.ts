@@ -1,4 +1,9 @@
+import { SPACING } from '@gustri/design-tokens';
 import type { Config } from 'tailwindcss';
+
+/** Mirror the shared spacing scale as a Tailwind extension (see staff-web
+ * tailwind.config.ts for the rationale). */
+const sharedSpacing = Object.fromEntries(Object.entries(SPACING).map(([k, v]) => [k, `${v}px`]));
 
 const config: Config = {
   darkMode: ['class'],
@@ -9,7 +14,7 @@ const config: Config = {
     // Shared UI package — without this, Tailwind purges classes it doesn't
     // see in this app's source (e.g. LoadingSpinner's `animate-spin`,
     // `border-t-blue-500`), leaving a static grey ring instead of a spinner.
-    '../../packages/ui/src/**/*.{js,ts,jsx,tsx}',
+    '../../packages/ui-web/src/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
@@ -65,6 +70,7 @@ const config: Config = {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      spacing: sharedSpacing,
       keyframes: {
         'accordion-down': {
           from: { height: '0' },

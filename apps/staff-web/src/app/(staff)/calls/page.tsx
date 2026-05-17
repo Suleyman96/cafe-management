@@ -2,7 +2,7 @@
 
 import { useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui-web';
 import {
   AlertCircle,
   Bell,

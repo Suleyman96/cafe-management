@@ -1,10 +1,10 @@
 import { useTranslation } from '@gustri/i18n';
+import { EmptyState, ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import { FlashList } from '@shopify/flash-list';
 import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { SegmentedButtons } from 'react-native-paper';
 import { WaiterCallCard } from '@/components/calls/WaiterCallCard';
-import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useUpdateWaiterCall, useWaiterCalls } from '@/hooks/local';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';

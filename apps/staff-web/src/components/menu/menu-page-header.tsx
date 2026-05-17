@@ -2,7 +2,7 @@
 
 import type { Database } from '@gustri/database';
 import type { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import { Search } from 'lucide-react';
 import Link from 'next/link';
 

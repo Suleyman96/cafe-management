@@ -2,7 +2,7 @@
 
 import type { Database, TableStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button, TABLE_STATUS_BADGES } from '@gustri/ui';
+import { Button, TABLE_STATUS_BADGES } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { ArrowRight, Loader2, Minus, Plus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';

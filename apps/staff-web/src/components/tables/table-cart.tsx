@@ -3,7 +3,7 @@
 import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import { Check, Loader2, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { useCafeSettings, useTaxMultiplier } from '@/hooks';
 import type { OrderWithDetails } from '@/types';

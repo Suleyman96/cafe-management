@@ -13,7 +13,11 @@ export default defineConfig({
     exclude: ['**/e2e/**', '**/node_modules/**'],
     server: {
       deps: {
-        inline: ['@testing-library/react', '@gustri/queries'],
+        // `@gustri/ui-mobile` is inlined so its `react-native-paper` / `react-native`
+        // imports go through the test's `vi.mock(...)` setup. Without inlining, the
+        // workspace symlink is treated as an external dep and the mock is bypassed
+        // when ui-mobile's components transitively require Paper internals.
+        inline: ['@testing-library/react', '@gustri/queries', '@gustri/ui-mobile'],
       },
     },
     coverage: {
@@ -50,13 +54,32 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, './src'),
       '@gustri/queries': resolve(__dirname, '../../packages/queries/src/index.ts'),
+      '@gustri/ui-mobile': resolve(__dirname, '../../packages/ui-mobile/src/index.ts'),
       '@sentry/react-native': resolve(__dirname, './src/__tests__/helpers/mock-sentry.ts'),
       '@tanstack/react-query': resolve(__dirname, './node_modules/@tanstack/react-query'),
+      '@expo/vector-icons': resolve(
+        __dirname,
+        './src/__tests__/helpers/mock-expo-vector-icons.tsx',
+      ),
       'react-native': resolve(__dirname, './src/__tests__/helpers/mock-react-native.ts'),
+      'react-native-paper': resolve(
+        __dirname,
+        './src/__tests__/helpers/mock-react-native-paper.tsx',
+      ),
+      'react-native-safe-area-context': resolve(
+        __dirname,
+        './src/__tests__/helpers/mock-safe-area-context.ts',
+      ),
       react: resolve(__dirname, './node_modules/react'),
       'react-dom': resolve(__dirname, './node_modules/react-dom'),
       'react/jsx-runtime': resolve(__dirname, './node_modules/react/jsx-runtime'),
       'react/jsx-dev-runtime': resolve(__dirname, './node_modules/react/jsx-dev-runtime'),
+      // Pin zustand to mobile's copy — the workspace contains a separate
+      // `zustand@4.5.7_..._react@18.3.1` variant (resolved for the web apps)
+      // whose internal `require('react')` would otherwise load React 18 and
+      // trigger a "two copies of React" runtime when ui-mobile's `useNow`
+      // hook subscribes from a test mounted against React 19.
+      zustand: resolve(__dirname, './node_modules/zustand'),
     },
   },
 });

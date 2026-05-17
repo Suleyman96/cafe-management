@@ -4,7 +4,7 @@ import type { PlanName } from '@gustri/core';
 import { getLocalDateString, PLAN_ORDER } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { invalidateSchedules, useTenantId } from '@gustri/queries';
-import { GustriIcon, GustriLogo, getRoleBadgeColor } from '@gustri/ui';
+import { GustriIcon, GustriLogo, getRoleBadgeColor } from '@gustri/ui-web';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   BarChart3,

@@ -3,8 +3,7 @@
 import { getLocalDateString, TIME_OPTIONS, WEEKDAY_TRANSLATION_KEY, WEEKDAYS } from '@gustri/core';
 import type { Database, TaskInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
-import { NumberInput } from '@gustri/ui-web';
+import { Button, NumberInput } from '@gustri/ui-web';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { BaseModal } from '@/components/ui/base-modal';

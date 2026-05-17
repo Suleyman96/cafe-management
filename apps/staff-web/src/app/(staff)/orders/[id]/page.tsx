@@ -4,7 +4,12 @@ import { formatTime, type ORDER_STATUS, ORDER_STATUS_KEYS } from '@gustri/core';
 import type { Database, OrderItemStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
-import { Button, getOrderStatusColor, LoadingSpinner, ORDER_ITEM_STATUS_BADGES } from '@gustri/ui';
+import {
+  Button,
+  getOrderStatusColor,
+  LoadingSpinner,
+  ORDER_ITEM_STATUS_BADGES,
+} from '@gustri/ui-web';
 import {
   ArrowLeft,
   ArrowRight,

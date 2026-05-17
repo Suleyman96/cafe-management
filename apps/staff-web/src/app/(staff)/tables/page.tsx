@@ -4,7 +4,7 @@ import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import type { OrderWithDetails, Table, WaiterCalls } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui-web';
 import { Plus, RefreshCw, UtensilsCrossed } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';

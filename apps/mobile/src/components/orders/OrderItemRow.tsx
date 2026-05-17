@@ -1,7 +1,7 @@
 import { useTranslation } from '@gustri/i18n';
+import { StatusBadge } from '@gustri/ui-mobile';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { StatusBadge } from '@/components/ui';
 import { Text } from '@/lib/paper-compat';
 import { COLORS } from '@/theme';
 

@@ -3,7 +3,7 @@
 import { calculateOrderTotal, formatElapsedTime } from '@gustri/core';
 import type { OrderStatus, TableStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button, ORDER_STATUS_BADGES, TABLE_STATUS_BADGES } from '@gustri/ui';
+import { Button, ORDER_STATUS_BADGES, TABLE_STATUS_BADGES } from '@gustri/ui-web';
 import {
   AlertCircle,
   CheckCircle,

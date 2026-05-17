@@ -2,7 +2,7 @@
 
 import type { Database, OrderItemStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { ORDER_ITEM_STATUS_BADGES } from '@gustri/ui';
+import { ORDER_ITEM_STATUS_BADGES } from '@gustri/ui-web';
 import { CheckCircle, UtensilsCrossed, X } from 'lucide-react';
 import { ORDER_ITEM_STATUS_ICONS } from '@/lib/enum-icons';
 

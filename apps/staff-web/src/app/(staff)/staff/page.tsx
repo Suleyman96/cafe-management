@@ -2,7 +2,7 @@
 
 import type { UserRole } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button, getRoleBadgeColor, LoadingSpinner } from '@gustri/ui';
+import { Button, getRoleBadgeColor, LoadingSpinner } from '@gustri/ui-web';
 import { Edit2, Plus, Search, UserCheck, UserX } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';

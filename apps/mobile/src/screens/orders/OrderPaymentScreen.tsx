@@ -1,5 +1,6 @@
 import { ConflictError, NetworkError } from '@gustri/core';
 import { useLocale, useTranslation } from '@gustri/i18n';
+import { ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
@@ -14,7 +15,6 @@ import {
   Text,
 } from 'react-native-paper';
 import { OfflineGuardButton } from '@/components/OfflineGuardButton';
-import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useCreatePayment, useCurrencySymbol, useOrder, useUpdateOrderStatus } from '@/hooks/local';
 import { useCafeSettings, useOrderPayments, useOrderRemainingBalance } from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';

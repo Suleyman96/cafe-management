@@ -8,7 +8,7 @@ type StaffSchedule = BaseStaffSchedule & {
 };
 
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, User } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { ScheduleModal } from '@/components/modals/schedule-modal';

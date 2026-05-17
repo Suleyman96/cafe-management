@@ -1,4 +1,5 @@
 import { useTranslation } from '@gustri/i18n';
+import { EmptyState, ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { FlashList } from '@shopify/flash-list';
@@ -6,7 +7,6 @@ import { useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Banner, Chip, Searchbar } from 'react-native-paper';
 import { StaffCard } from '@/components/staff-management/StaffCard';
-import { EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useStaff } from '@/hooks/shared';
 import type { Staff, StaffManagementStackParamList } from '@/types';
 

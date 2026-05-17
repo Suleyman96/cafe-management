@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ACTIVE_TAKEOUT_STATUSES, ORDER_STATUS_KEYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
+import { EmptyState, ErrorScreen, FilterChipBar, LoadingScreen } from '@gustri/ui-mobile';
 import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
 import { useCallback, useMemo, useState } from 'react';
@@ -8,7 +9,6 @@ import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Dialog, FAB, Portal, Searchbar } from 'react-native-paper';
 import { CreateTakeoutModal } from '@/components/takeout/CreateTakeoutModal';
 import { TakeoutOrderCard } from '@/components/takeout/TakeoutOrderCard';
-import { EmptyState, ErrorScreen, FilterChipBar, LoadingScreen } from '@/components/ui';
 import { useCurrencySymbol, useUpdateOrderStatus } from '@/hooks/local';
 import { useCancelOrder, useTakeoutOrders } from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';

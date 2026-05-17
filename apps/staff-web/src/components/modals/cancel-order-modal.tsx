@@ -3,7 +3,7 @@
 import { orderCancellationRequiresTypeConfirm } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import { AlertTriangle, Loader2, X, XCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';

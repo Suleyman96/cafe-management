@@ -3,7 +3,7 @@
 import { calculateOrderTotal, formatTime, ORDER_STATUS_KEYS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button, getOrderStatusColor } from '@gustri/ui';
+import { Button, getOrderStatusColor } from '@gustri/ui-web';
 import {
   CheckCircle,
   ChefHat,

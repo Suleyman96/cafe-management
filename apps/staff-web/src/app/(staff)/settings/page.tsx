@@ -2,7 +2,7 @@
 
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
-import { Button, getRoleBadgeColor, LoadingSpinner } from '@gustri/ui';
+import { Button, getRoleBadgeColor, LoadingSpinner } from '@gustri/ui-web';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Eye, EyeOff, Globe, Key, Mail, Shield, User } from 'lucide-react';
 import { useState } from 'react';

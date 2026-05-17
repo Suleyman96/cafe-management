@@ -1,10 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { calculateOrderTotal } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
+import { StatusBadge, TimeElapsed } from '@gustri/ui-mobile';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card } from 'react-native-paper';
-import { StatusBadge, TimeElapsed } from '@/components/ui';
 import { Text } from '@/lib/paper-compat';
 
 interface TakeoutOrderCardProps {

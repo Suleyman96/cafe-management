@@ -1,6 +1,7 @@
 import { isAppError } from '@gustri/core';
 import type { CafeSettings } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, SegmentedButtons } from 'react-native-paper';
@@ -15,7 +16,6 @@ import {
   TaxSettingsSection,
 } from '@/components/cafe-settings';
 import { OfflineGuardButton } from '@/components/OfflineGuardButton';
-import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useUpdateCafeSettings } from '@/hooks/local';
 import { useCafeSettings } from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';

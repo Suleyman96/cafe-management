@@ -1,10 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
+import { StatusBadge } from '@gustri/ui-mobile';
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Dialog, Divider, Portal, RadioButton } from 'react-native-paper';
-import { StatusBadge } from '@/components/ui';
 import { useOrders, useTables } from '@/hooks/local';
 import { useTransferTable } from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';

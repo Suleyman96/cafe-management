@@ -2,7 +2,7 @@
 
 import type { ORDER_STATUS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui-web';
 import {
   AlertTriangle,
   CheckCircle,

@@ -54,7 +54,7 @@ vi.mock('@gustri/i18n', () => ({
   }),
 }));
 
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { ScreenHeader } from '@gustri/ui-mobile';
 
 function makeProps(overrides: any = {}) {
   return {

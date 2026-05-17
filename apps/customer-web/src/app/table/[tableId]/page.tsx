@@ -1,4 +1,4 @@
-import { LoadingSpinner } from '@gustri/ui';
+import { LoadingSpinner } from '@gustri/ui-web';
 import { Suspense } from 'react';
 import { TableLanding } from '@/components/table/table-landing';
 

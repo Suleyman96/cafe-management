@@ -1,5 +1,12 @@
 import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
+import {
+  ConfirmDialog,
+  ErrorScreen,
+  LoadingScreen,
+  StatusBadge,
+  TimeElapsed,
+} from '@gustri/ui-mobile';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -8,13 +15,6 @@ import { useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, FAB, Text } from 'react-native-paper';
 import { TransferTableModal } from '@/components/tables/TransferTableModal';
-import {
-  ConfirmDialog,
-  ErrorScreen,
-  LoadingScreen,
-  StatusBadge,
-  TimeElapsed,
-} from '@/components/ui';
 import {
   useCurrencySymbol,
   useOrders,

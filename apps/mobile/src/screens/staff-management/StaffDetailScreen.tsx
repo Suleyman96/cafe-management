@@ -1,12 +1,12 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ORDER_STATUS_KEYS } from '@gustri/core';
 import { useLocale, useTranslation } from '@gustri/i18n';
+import { ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import type { RouteProp } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Modal, Portal, Text } from 'react-native-paper';
-import { ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useCurrencySymbol, useOrders, useUpdateStaff } from '@/hooks/local';
 import { usePaymentsByStaff, useStaffMember } from '@/hooks/shared';
 import { useCanPerform } from '@/hooks/use-can-perform';

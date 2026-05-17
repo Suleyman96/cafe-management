@@ -1,4 +1,5 @@
 import { useLocale, useTranslation } from '@gustri/i18n';
+import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -6,7 +7,6 @@ import { Button, Card, Chip, FAB } from 'react-native-paper';
 import { ExpenseCard } from '@/components/expenses/ExpenseCard';
 import { ExpenseCategoryModal } from '@/components/expenses/ExpenseCategoryModal';
 import { ExpenseModal } from '@/components/expenses/ExpenseModal';
-import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@/components/ui';
 import { useCurrencySymbol, useUpdateExpense, useUpdateExpenseCategory } from '@/hooks/local';
 import {
   useCreateExpense,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { Badge, Button, LoadingSpinner } from '@gustri/ui';
+import { Badge, Button, LoadingSpinner } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import {
   ArrowLeft,

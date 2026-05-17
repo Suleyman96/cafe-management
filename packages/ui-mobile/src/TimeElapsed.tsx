@@ -1,9 +1,9 @@
 import { TIME_ELAPSED_THRESHOLDS } from '@gustri/core';
+import { SEMANTIC_COLORS } from '@gustri/design-tokens';
 import { differenceInMinutes, differenceInSeconds } from 'date-fns';
 import React, { useMemo } from 'react';
 import { Text } from 'react-native-paper';
-import { useNow } from '@/lib/now-store';
-import { COLORS } from '@/theme';
+import { useNow } from './lib/now-store';
 
 interface TimeElapsedProps {
   createdAt: string;
@@ -11,10 +11,10 @@ interface TimeElapsedProps {
 }
 
 function getTimeColor(minutes: number): string {
-  if (minutes >= TIME_ELAPSED_THRESHOLDS.CRITICAL) return COLORS.danger;
+  if (minutes >= TIME_ELAPSED_THRESHOLDS.CRITICAL) return SEMANTIC_COLORS.danger;
   if (minutes >= TIME_ELAPSED_THRESHOLDS.ELEVATED) return '#f97316';
-  if (minutes >= TIME_ELAPSED_THRESHOLDS.WARNING) return COLORS.warning;
-  return COLORS.textMuted;
+  if (minutes >= TIME_ELAPSED_THRESHOLDS.WARNING) return SEMANTIC_COLORS.warning;
+  return SEMANTIC_COLORS.textMuted;
 }
 
 function formatElapsed(createdAtMs: number, nowMs: number): { text: string; minutes: number } {
@@ -36,7 +36,7 @@ export const TimeElapsed = React.memo(function TimeElapsed({
   const createdAtMs = useMemo(() => new Date(createdAt).getTime(), [createdAt]);
   const elapsed = formatElapsed(createdAtMs, now);
 
-  const color = showColor ? getTimeColor(elapsed.minutes) : COLORS.textMuted;
+  const color = showColor ? getTimeColor(elapsed.minutes) : SEMANTIC_COLORS.textMuted;
 
   return (
     <Text

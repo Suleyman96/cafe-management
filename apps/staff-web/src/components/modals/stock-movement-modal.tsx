@@ -3,8 +3,7 @@
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { useStableClientRequestId } from '@gustri/queries';
-import { Button } from '@gustri/ui';
-import { NumberInput } from '@gustri/ui-web';
+import { Button, NumberInput } from '@gustri/ui-web';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAdjustStock, useAuth } from '@/hooks';

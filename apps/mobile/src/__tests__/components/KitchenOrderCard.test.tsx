@@ -65,7 +65,7 @@ vi.mock('@gustri/i18n', () => ({
   }),
 }));
 
-vi.mock('@/components/ui', () => ({
+vi.mock('@gustri/ui-mobile', () => ({
   StatusBadge: ({ status }: { status: string }) => <span>status:{status}</span>,
   TimeElapsed: ({ createdAt }: { createdAt: string }) => <span>time:{createdAt}</span>,
 }));

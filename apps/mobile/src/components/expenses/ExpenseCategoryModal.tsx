@@ -1,8 +1,8 @@
 import { useTranslation } from '@gustri/i18n';
+import { ConfirmDialog } from '@gustri/ui-mobile';
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { Button, Divider, IconButton, Modal, Portal, Text } from 'react-native-paper';
-import { ConfirmDialog } from '@/components/ui';
 import { TextInput } from '@/lib/paper-compat';
 import { COLORS } from '@/theme';
 

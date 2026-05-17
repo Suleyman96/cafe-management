@@ -8,7 +8,7 @@ import {
 } from '@gustri/core';
 import type { StaffSchedule, StaffScheduleInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button } from '@gustri/ui';
+import { Button } from '@gustri/ui-web';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/modals/confirm-dialog';

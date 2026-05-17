@@ -1,6 +1,6 @@
 'use client';
 
-import { LoadingSpinner } from '@gustri/ui';
+import { LoadingSpinner } from '@gustri/ui-web';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 

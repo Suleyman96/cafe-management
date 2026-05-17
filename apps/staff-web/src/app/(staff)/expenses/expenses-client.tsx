@@ -2,7 +2,7 @@
 
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button, LoadingSpinner } from '@gustri/ui';
+import { Button, LoadingSpinner } from '@gustri/ui-web';
 import { DollarSign, FolderOpen, Pencil, Plus, Settings, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';

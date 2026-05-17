@@ -3,7 +3,7 @@
 import { getLocalDateString } from '@gustri/core';
 import type { OrderStatus, UserRole } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import { Button, getRoleBadgeColor, LoadingSpinner, ORDER_STATUS_BADGES } from '@gustri/ui';
+import { Button, getRoleBadgeColor, LoadingSpinner, ORDER_STATUS_BADGES } from '@gustri/ui-web';
 import {
   ArrowLeft,
   Calendar,

@@ -1,11 +1,30 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SEMANTIC_COLORS } from '@gustri/design-tokens';
 import { useTranslation } from '@gustri/i18n';
-import type { StackHeaderProps, StackNavigationOptions } from '@react-navigation/stack';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Text } from '@/lib/paper-compat';
-import { COLORS } from '@/theme';
+import { Text } from './lib/paper-compat';
+
+/**
+ * Structural subset of `@react-navigation/stack`'s `StackHeaderProps`. Kept
+ * inline rather than imported from the real package so this UI package
+ * doesn't pin its own copy of `@react-navigation/stack` — pnpm would
+ * otherwise instantiate a separate dependency context and the mobile app's
+ * `StackHeaderProps` wouldn't unify with ours at type-check time.
+ *
+ * `@react-navigation/stack`'s real type is wider; the consuming
+ * `header: (props) => <ScreenHeader {...props} />` setter passes the wider
+ * shape into this narrower one, which TS accepts.
+ */
+interface StackHeaderPropsLite {
+  navigation: { goBack: () => void };
+  route: unknown;
+  options: unknown;
+  back?: { title?: string } | undefined;
+}
+
+type StackNavigationOptionsLike = Record<string, unknown>;
 
 /**
  * Shape of the extra fields each stack screen may stuff into its
@@ -34,9 +53,9 @@ export interface ScreenHeaderOptions {
  * extend it via module augmentation — this is the next-cleanest thing.
  */
 export function headerOptions(
-  options: StackNavigationOptions & ScreenHeaderOptions,
-): StackNavigationOptions {
-  return options as StackNavigationOptions;
+  options: StackNavigationOptionsLike & ScreenHeaderOptions,
+): StackNavigationOptionsLike {
+  return options;
 }
 
 /**
@@ -51,7 +70,7 @@ export function headerOptions(
  *  - Slots: leaves `headerRight` open for the FreshnessIndicator (task 1.2)
  *    without each stack having to re-implement the layout.
  */
-export function ScreenHeader({ navigation, route: _route, options, back }: StackHeaderProps) {
+export function ScreenHeader({ navigation, route: _route, options, back }: StackHeaderPropsLite) {
   const insets = useSafeAreaInsets();
   const cfg = options as ScreenHeaderOptions;
   const ns = cfg.titleNs ?? 'nav';
@@ -59,12 +78,14 @@ export function ScreenHeader({ navigation, route: _route, options, back }: Stack
   const title = cfg.titleKey ? t(cfg.titleKey) : (cfg.title ?? '');
 
   const leftSlot = cfg.headerLeft ? (
-    cfg.headerLeft({ tintColor: COLORS.textPrimary, canGoBack: !!back })
+    cfg.headerLeft({ tintColor: SEMANTIC_COLORS.textPrimary, canGoBack: !!back })
   ) : back ? (
     <BackButton onPress={navigation.goBack} />
   ) : null;
 
-  const rightSlot = cfg.headerRight ? cfg.headerRight({ tintColor: COLORS.textPrimary }) : null;
+  const rightSlot = cfg.headerRight
+    ? cfg.headerRight({ tintColor: SEMANTIC_COLORS.textPrimary })
+    : null;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -91,7 +112,7 @@ function BackButton({ onPress }: { onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel={t('back')}
     >
-      <MaterialCommunityIcons name="arrow-left" size={24} color={COLORS.textPrimary} />
+      <MaterialCommunityIcons name="arrow-left" size={24} color={SEMANTIC_COLORS.textPrimary} />
     </Pressable>
   );
 }
@@ -101,9 +122,9 @@ const SIDE_MIN_WIDTH = 56;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.card,
+    backgroundColor: SEMANTIC_COLORS.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: SEMANTIC_COLORS.border,
   },
   row: {
     height: HEADER_HEIGHT,
@@ -128,7 +149,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: SEMANTIC_COLORS.textPrimary,
   },
   iconButton: {
     width: 40,

@@ -1,5 +1,6 @@
 import type { TaskInsert, TaskUpdate } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
+import { DestructiveConfirmModal, EmptyState, LoadingScreen } from '@gustri/ui-mobile';
 import * as Sentry from '@sentry/react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -7,7 +8,6 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Card, Chip, FAB, SegmentedButtons, Text } from 'react-native-paper';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskModal } from '@/components/tasks/TaskModal';
-import { DestructiveConfirmModal, EmptyState, LoadingScreen } from '@/components/ui';
 import {
   useCreateTask,
   useDeleteTask,
