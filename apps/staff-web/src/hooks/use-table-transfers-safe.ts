@@ -1,20 +1,17 @@
 /**
  * Type-Safe Table Transfer Hooks
  * Uses the wrapped client for type safety without 'as any'
+ *
+ * Note: `useTransferTable` was promoted to `@gustri/queries` in Phase 1.5
+ * (mobile parity) — both apps now import it from there. The other hooks
+ * here either depend on the web `db` directly (transfer history view) or
+ * are web-only flows (item-level transfer).
  */
 
 import type { OrderWithItems } from '@gustri/database';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
-
-interface TransferTableData {
-  orderId: string;
-  fromTableId: string;
-  toTableId: string;
-  staffId: string;
-  reason?: string;
-}
 
 export function useOrderTransferHistory(orderId: string) {
   const tenantId = useTenantId();
@@ -26,32 +23,6 @@ export function useOrderTransferHistory(orderId: string) {
       return order.table_transfers || [];
     },
     enabled: !!orderId,
-  });
-}
-
-export function useTransferTable() {
-  const queryClient = useQueryClient();
-  const tenantId = useTenantId();
-
-  return useMutation({
-    mutationFn: (params: TransferTableData) => db.rpc.transferTable(params),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.TABLES) });
-      queryClient.invalidateQueries({
-        queryKey: tenantKey(tenantId, QUERY_KEYS.TABLE, variables.fromTableId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: tenantKey(tenantId, QUERY_KEYS.TABLE, variables.toTableId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS, variables.orderId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: tenantKey(tenantId, QUERY_KEYS.ORDER, variables.orderId),
-      });
-      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, 'table_transfers') });
-      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) });
-    },
   });
 }
 

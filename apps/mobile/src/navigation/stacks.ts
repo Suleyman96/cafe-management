@@ -11,19 +11,19 @@ import { lazyScreen } from './lazy-screen';
 export const CallsStack = createSimpleStack({
   name: 'WaiterCallsList',
   component: WaiterCallsScreen,
-  title: 'Waiter Calls',
+  titleKey: 'waiterCalls',
 });
 
 export const KitchenStack = createSimpleStack({
   name: 'KitchenDisplay',
   component: KitchenDisplayScreen,
-  title: 'Kitchen',
+  titleKey: 'kitchen',
 });
 
 export const ProfileStack = createSimpleStack({
   name: 'Profile',
   component: ProfileScreen,
-  title: 'Profile',
+  titleKey: 'profile',
 });
 
 // Drawer-only stacks: lazy-loaded. Each screen's JS is parsed on first open,
@@ -33,65 +33,65 @@ export const ProfileStack = createSimpleStack({
 export const CafeSettingsStack = createSimpleStack({
   name: 'CafeSettings',
   component: lazyScreen(() => import('@/screens/settings/CafeSettingsScreen')),
-  title: 'Cafe Settings',
+  titleKey: 'cafeSettings',
 });
 
 export const DeliveryStack = createSimpleStack({
   name: 'DeliveryList',
   component: lazyScreen(() => import('@/screens/delivery/DeliveryListScreen')),
-  title: 'Delivery',
+  titleKey: 'delivery',
 });
 
 export const ExpensesStack = createSimpleStack({
   name: 'ExpensessList',
   component: lazyScreen(() => import('@/screens/expenses/ExpensesListScreen')),
-  title: 'Expenses',
+  titleKey: 'expenses',
 });
 
 export const FeedbackStack = createSimpleStack({
   name: 'FeedbackList',
   component: lazyScreen(() => import('@/screens/feedback/FeedbackListScreen')),
-  title: 'Feedback',
+  titleKey: 'feedback',
 });
 
 export const MenuManagementStack = createSimpleStack({
   name: 'MenuManagement',
   component: lazyScreen(() => import('@/screens/menu-management/MenuManagementScreen')),
-  title: 'Menu Management',
+  titleKey: 'menuManagement',
 });
 
 export const ReportsStack = createSimpleStack({
   name: 'Reports',
   component: lazyScreen(() => import('@/screens/reports/ReportsScreen')),
-  title: 'Reports',
+  titleKey: 'reports',
 });
 
 export const SchedulesStack = createSimpleStack({
   name: 'Schedules',
   component: lazyScreen(() => import('@/screens/schedules/SchedulesScreen')),
-  title: 'Schedules',
+  titleKey: 'schedules',
 });
 
 export const StockStack = createSimpleStack({
   name: 'StockList',
   component: lazyScreen(() => import('@/screens/stock/StockListScreen')),
-  title: 'Stock',
+  titleKey: 'stock',
 });
 
 export const TakeoutStack = createSimpleStack({
   name: 'TakeoutList',
   component: lazyScreen(() => import('@/screens/takeout/TakeoutListScreen')),
-  title: 'Takeout',
+  titleKey: 'takeout',
 });
 
 export const TasksStack = createSimpleStack({
   name: 'TasksList',
   component: lazyScreen(() => import('@/screens/tasks/TasksListScreen')),
-  title: 'Tasks',
+  titleKey: 'tasks',
 });
 
 export const WasteStack = createSimpleStack({
   name: 'WasteList',
   component: lazyScreen(() => import('@/screens/waste/WasteListScreen')),
-  title: 'Waste',
+  titleKey: 'waste',
 });

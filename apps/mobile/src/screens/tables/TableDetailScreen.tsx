@@ -7,6 +7,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, FAB, Text } from 'react-native-paper';
+import { TransferTableModal } from '@/components/tables/TransferTableModal';
 import {
   ConfirmDialog,
   ErrorScreen,
@@ -65,6 +66,7 @@ export default function TableDetailScreen() {
   const updateWaiterCall = useUpdateWaiterCall();
 
   const [statusConfirm, setStatusConfirm] = useState<Table['status'] | null>(null);
+  const [transferOpen, setTransferOpen] = useState(false);
 
   const activeOrders = useMemo(
     () =>
@@ -168,6 +170,16 @@ export default function TableDetailScreen() {
                     );
                   })}
                 </View>
+                {activeOrders.length > 0 && (
+                  <Button
+                    mode="outlined"
+                    icon="swap-horizontal"
+                    onPress={() => setTransferOpen(true)}
+                    style={styles.transferBtn}
+                  >
+                    {t('tables.transferTableBtn')}
+                  </Button>
+                )}
               </Card.Content>
             </Card>
 
@@ -272,6 +284,17 @@ export default function TableDetailScreen() {
         onConfirm={() => statusConfirm && handleStatusChange(statusConfirm)}
         onCancel={() => setStatusConfirm(null)}
       />
+
+      <TransferTableModal
+        visible={transferOpen}
+        sourceTable={{ id: table.id, table_number: table.table_number }}
+        onDismiss={() => setTransferOpen(false)}
+        onSuccess={() => {
+          setTransferOpen(false);
+          showSuccess(t('tables.tableTransferred'));
+          refetch();
+        }}
+      />
     </View>
   );
 }
@@ -286,6 +309,7 @@ const styles = StyleSheet.create({
   muted: { color: COLORS.textMuted, marginTop: 2 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   statusChip: {},
+  transferBtn: { marginTop: 12, alignSelf: 'flex-start' },
   callItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',

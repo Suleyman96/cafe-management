@@ -4,32 +4,50 @@ import { act, cleanup, render, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('react-native', () => ({
-  View: ({ children, style, ...props }: any) => (
+vi.mock('react-native', () => {
+  const View = ({ children, style, ...props }: any) => (
     <div style={style} {...props}>
       {children}
     </div>
-  ),
-  Text: ({ children, style, ...props }: any) => (
-    <span style={style} {...props}>
-      {children}
-    </span>
-  ),
-  TouchableOpacity: ({ children, onPress, disabled, accessibilityLabel, ...rest }: any) => (
-    <button
-      type="button"
-      onClick={onPress}
-      disabled={!!disabled}
-      aria-label={accessibilityLabel}
-      data-disabled={disabled ? 'true' : 'false'}
-      {...rest}
-    >
-      {children}
-    </button>
-  ),
-  ActivityIndicator: () => <span>spinner</span>,
-  StyleSheet: { create: <T extends Record<string, unknown>>(s: T) => s },
-}));
+  );
+  // KitchenOrderCard uses `Animated.View` for the new-order pulse loop and
+  // `new Animated.Value(...)` to drive opacity. The pulse itself is not
+  // under test here, so we shim Animated to no-op shapes that render
+  // through the regular `<div>` View used above.
+  class AnimatedValue {
+    setValue() {}
+  }
+  const noopAnimation = { start: () => {}, stop: () => {} };
+  return {
+    View,
+    Text: ({ children, style, ...props }: any) => (
+      <span style={style} {...props}>
+        {children}
+      </span>
+    ),
+    TouchableOpacity: ({ children, onPress, disabled, accessibilityLabel, ...rest }: any) => (
+      <button
+        type="button"
+        onClick={onPress}
+        disabled={!!disabled}
+        aria-label={accessibilityLabel}
+        data-disabled={disabled ? 'true' : 'false'}
+        {...rest}
+      >
+        {children}
+      </button>
+    ),
+    ActivityIndicator: () => <span>spinner</span>,
+    StyleSheet: { create: <T extends Record<string, unknown>>(s: T) => s },
+    Animated: {
+      View,
+      Value: AnimatedValue,
+      timing: () => noopAnimation,
+      sequence: () => noopAnimation,
+      loop: () => noopAnimation,
+    },
+  };
+});
 
 vi.mock('@gustri/i18n', () => ({
   useTranslation: () => ({

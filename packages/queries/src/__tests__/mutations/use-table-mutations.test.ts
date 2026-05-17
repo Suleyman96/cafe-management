@@ -3,6 +3,7 @@ import { QUERY_KEYS, tenantKey } from '../../keys';
 import {
   useCreateTable,
   useDeleteTable,
+  useTransferTable,
   useUpdateTable,
   useUpdateTableStatus,
 } from '../../mutations/use-table-mutations';
@@ -76,5 +77,53 @@ describe('useDeleteTable', () => {
     const { result, mockDb } = renderHookWithProviders(() => useDeleteTable());
     (mockDb.tables.delete as any).mockRejectedValueOnce(new Error('FK'));
     await expect(result.current.mutateAsync('t1')).rejects.toThrow('FK');
+  });
+});
+
+describe('useTransferTable', () => {
+  it('calls db.rpc.transferTable with the full param shape', async () => {
+    const { result, mockDb } = renderHookWithProviders(() => useTransferTable());
+    const params = {
+      orderId: 'o1',
+      fromTableId: 't1',
+      toTableId: 't2',
+      staffId: 's1',
+      reason: 'customer_request',
+    };
+    await result.current.mutateAsync(params);
+    expect(mockDb.rpc.transferTable).toHaveBeenCalledWith(params);
+  });
+
+  it('invalidates both tables, the order, and the transfers audit on success', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useTransferTable());
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    await result.current.mutateAsync({
+      orderId: 'o1',
+      fromTableId: 't1',
+      toTableId: 't2',
+      staffId: 's1',
+    });
+
+    const keys = getInvalidatedKeys(spy);
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLE, 't1'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLE, 't2'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, 'o1'));
+    expect(keys).toContainEqual(tenantKey(TEST_TENANT_ID, 'table_transfers'));
+  });
+
+  it('propagates rpc errors', async () => {
+    const { result, mockDb } = renderHookWithProviders(() => useTransferTable());
+    (mockDb.rpc.transferTable as any).mockRejectedValueOnce(new Error('rpc failed'));
+    await expect(
+      result.current.mutateAsync({
+        orderId: 'o1',
+        fromTableId: 't1',
+        toTableId: 't2',
+        staffId: 's1',
+      }),
+    ).rejects.toThrow('rpc failed');
   });
 });

@@ -1,10 +1,11 @@
 'use client';
 
+import { orderCancellationRequiresTypeConfirm } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui';
-import { Loader2, X, XCircle } from 'lucide-react';
-import { useState } from 'react';
+import { AlertTriangle, Loader2, X, XCircle } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { VersionConflictBanner } from '@/components/orders/version-conflict-banner';
 import { isOrderVersionConflict, useCancelOrder } from '@/hooks';
@@ -32,6 +33,22 @@ export function CancelOrderModal({
   const cancelOrderMutation = useCancelOrder();
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [typed, setTyped] = useState('');
+
+  // High-stakes destructions get a type-to-confirm gate, mirroring the
+  // refund/discount-override flow (`ConfirmRefundModal`). Triggered once the
+  // kitchen has already invested labor — cancelling a `new` order is still a
+  // single click since no work has been done yet. The phrase is in caps and
+  // English-only on purpose: `CANCEL 1234` is a short, recognizable token
+  // that the same digits the user just read off the receipt header, so a
+  // translation would *reduce* the friction we want here.
+  const requiresTypeConfirm = orderCancellationRequiresTypeConfirm(order.status);
+  const requiredPhrase = useMemo(() => {
+    const token = order.order_number ?? order.id.slice(-4).toUpperCase();
+    return `CANCEL ${token}`;
+  }, [order.order_number, order.id]);
+  const phraseMatches =
+    typed.trim().toLocaleUpperCase('en-US') === requiredPhrase.toLocaleUpperCase('en-US');
 
   const submit = async (override: boolean) => {
     if (!cancelReason.trim()) {
@@ -105,6 +122,33 @@ export function CancelOrderModal({
           />
         </div>
 
+        {requiresTypeConfirm ? (
+          <div className="mb-4">
+            <div className="flex items-start gap-2 mb-2 text-amber-700">
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+              <p className="text-xs">
+                {t('refunds.confirmTypePrompt', { phrase: requiredPhrase })}
+              </p>
+            </div>
+            <input
+              type="text"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              disabled={cancelling}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              placeholder={requiredPhrase}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono uppercase focus:outline-none focus:ring-2 focus:ring-red-500"
+              aria-label={t('refunds.confirmTypePrompt', { phrase: requiredPhrase })}
+            />
+            {typed.length > 0 && !phraseMatches ? (
+              <p className="mt-1 text-xs text-red-600">{t('refunds.confirmTypeMismatch')}</p>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="flex gap-3">
           <Button variant="outline" className="flex-1" onClick={onClose} disabled={cancelling}>
             {t('orders.keepOrder')}
@@ -113,7 +157,7 @@ export function CancelOrderModal({
             variant="destructive"
             className="flex-1"
             onClick={handleCancel}
-            disabled={cancelling || !cancelReason.trim()}
+            disabled={cancelling || !cancelReason.trim() || (requiresTypeConfirm && !phraseMatches)}
           >
             {cancelling ? (
               <>

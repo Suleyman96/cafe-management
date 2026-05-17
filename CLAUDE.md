@@ -176,6 +176,42 @@ When adding a feature, work through this in order:
     `/api/v1/*` routes (mobile's `apiFetch`, web's fetch helpers).
 - Type guards from `@gustri/core`: `isOrder()`, `isTable()`, `isStaff()`, etc.
 
+### Destructive-action confirmations
+
+Two patterns, picked by platform:
+
+- **Mobile** — press-and-hold confirm via `DestructiveConfirmModal`
+  (`apps/mobile/src/components/ui/DestructiveConfirmModal.tsx`). The user
+  must hold the destructive button for ~1.5 s before it fires; releasing
+  early resets the progress fill. Touch UX is accident-prone, and a single
+  mis-tap on a tap-to-confirm dialog is the failure mode this closes.
+- **Web (default)** — instant click-confirm-click via `ConfirmDialog`
+  (`apps/staff-web/src/components/modals/confirm-dialog.tsx`).
+- **Web (high stakes)** — *type-to-confirm* in addition to the dialog.
+  The user must type a short literal phrase (uppercase, English-only, e.g.
+  `REFUND 200` or `CANCEL 1042`) before the destructive button enables.
+  Used where the action is irreversible AND expensive:
+  - Refunds and manual discount overrides above
+    `tenant.refund_type_to_confirm_threshold` — handled by
+    `ConfirmRefundModal`.
+  - Order cancellations once the kitchen has invested labor (status in
+    `ORDER_STATUSES_REQUIRING_CANCEL_TYPE_CONFIRM` —
+    `preparing`/`ready`/`served`/`out_for_delivery`). Handled in
+    `CancelOrderModal` via the `orderCancellationRequiresTypeConfirm`
+    helper from `@gustri/core`.
+
+The phrase is English-only on purpose: a translated keyword is more
+likely to produce a typing error than a deliberate confirmation, which
+defeats the friction we want. The number in the phrase (amount or
+order_number) is the same digits the staff member just read off the
+screen — the friction comes from forcing a beat of attention, not from
+linguistic difficulty.
+
+When adding a new destructive action: ask "would I want this to be
+killable without a deploy?" (→ feature flag) and "is it expensive enough
+to warrant typing?" (→ type-to-confirm). If neither, plain `ConfirmDialog`
+is fine.
+
 ## Biome Rules
 
 - 2-space indentation, 100 char line width

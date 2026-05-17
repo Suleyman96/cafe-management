@@ -275,8 +275,7 @@ shared/
 │   └── constants.ts # App constants
 │       ├─ ORDER_STATUS
 │       ├─ TABLE_STATUS
-│       ├─ TAX_RATE
-│       └─ STATUS_COLORS
+│       └─ DEFAULT_TAX_PERCENTAGE
 │
 └── package.json
 ```

@@ -49,6 +49,30 @@ export const ACTIVE_DELIVERY_STATUSES = [
   'out_for_delivery',
 ] as const;
 
+/**
+ * Order statuses where cancellation is "expensive" — the kitchen has already
+ * invested labor (cooking in progress / cooked / served / sent for delivery).
+ * The web `CancelOrderModal` requires a type-to-confirm phrase before
+ * enabling submit when status is in this set, mirroring the refund/discount
+ * type-to-confirm pattern. `pending_approval`/`new` are excluded — those
+ * statuses are still "free" to cancel and the friction would be busywork.
+ */
+export const ORDER_STATUSES_REQUIRING_CANCEL_TYPE_CONFIRM = [
+  'preparing',
+  'ready',
+  'served',
+  'out_for_delivery',
+] as const;
+
+/**
+ * Returns `true` when cancelling an order in this status should be gated
+ * behind the type-to-confirm phrase ("CANCEL <order_number>"). See
+ * `ORDER_STATUSES_REQUIRING_CANCEL_TYPE_CONFIRM` for the rationale.
+ */
+export function orderCancellationRequiresTypeConfirm(status: string): boolean {
+  return (ORDER_STATUSES_REQUIRING_CANCEL_TYPE_CONFIRM as readonly string[]).includes(status);
+}
+
 // Waiter call reasons (UI-specific with labels and emojis)
 export const WAITER_CALL_REASONS = [
   { value: 'assistance', label: 'General Help', emoji: '💬' },
@@ -127,19 +151,6 @@ export const REFRESH_INTERVALS = {
   FALLBACK: 120000, // 2 minutes
   /** Active-recovery poll while a channel is in `degraded` state (H1). */
   DEGRADED_FALLBACK: 20000, // 20 seconds
-} as const;
-
-// Status colors
-export const STATUS_COLORS = {
-  pending_approval: '#D97706', // amber-600
-  new: '#EF4444', // red-500
-  preparing: '#F59E0B', // amber-500
-  ready: '#10B981', // green-500
-  served: '#6B7280', // gray-500
-  closed: '#374151', // gray-700
-  out_for_delivery: '#8B5CF6', // purple-500
-  delivered: '#10B981', // green-500
-  cancelled: '#9CA3AF', // gray-400
 } as const;
 
 // Subscription plan types and limits

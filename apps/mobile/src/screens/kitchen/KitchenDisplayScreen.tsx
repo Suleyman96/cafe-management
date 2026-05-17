@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { isDeliveryOrder } from '@gustri/core';
 import { ORDER_STATUS, type OrderItemStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
@@ -9,7 +10,15 @@ import {
 } from '@gustri/queries';
 import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Button,
+  Dialog,
+  PaperProvider,
+  Portal,
+  TextInput,
+} from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KitchenFilterBar } from '@/components/kitchen/KitchenFilterBar';
 import { KitchenFilterSheet } from '@/components/kitchen/KitchenFilterSheet';
@@ -21,11 +30,11 @@ import {
   useUpdateOrderItemStatus,
   useUpdateOrderStatus,
 } from '@/hooks/local';
-import { useFeatureFlag } from '@/hooks/shared';
+import { useCancelOrder, useFeatureFlag } from '@/hooks/shared';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
-import { BRAND_PRIMARY, COLORS, TYPOGRAPHY } from '@/theme';
+import { BRAND_PRIMARY, COLORS, kitchenDarkTheme, TYPOGRAPHY } from '@/theme';
 
 // Item-status progression order for the per-station bulk advance check.
 // Mirrors the staff-web helper — duplicated here rather than exported
@@ -82,13 +91,28 @@ export default function KitchenDisplayScreen() {
     error,
     refetch,
   } = useOrders({ statuses: KITCHEN_STATUSES, limit: 100 });
+  // Separate query for pending QR approval orders so we can render them in
+  // their own rail above the main list, matching the staff-web kitchen
+  // layout. Kept distinct from the main `useOrders` call so the QR
+  // approval rail's data doesn't get rolled into the kitchen sort.
+  const { data: pendingApprovalOrders = [] } = useOrders({
+    statuses: [ORDER_STATUS.PENDING_APPROVAL],
+    limit: 20,
+  });
   const { data: filterCategoryIds, isLoading: filtersLoading } = useStaffKitchenFilters(staffId);
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
   const updateOrderStatus = useUpdateOrderStatus();
   const updateItemStatus = useUpdateOrderItemStatus();
+  const cancelOrder = useCancelOrder();
   const { showSuccess, showError } = useSnackbar();
   const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+  const [rejectingOrder, setRejectingOrder] = useState<{
+    id: string;
+    tableId: string | null;
+  } | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null);
 
   // Derive view first (filters by category), then apply the kitchen-status
   // sort + filter. visibleOrders preserves the original shape so all the
@@ -283,6 +307,39 @@ export default function KitchenDisplayScreen() {
     [updateItemStatus, updateOrderStatus, showSuccess, showError, t],
   );
 
+  const handleApproveOrder = useCallback(
+    async (orderId: string) => {
+      setApprovingOrderId(orderId);
+      try {
+        await updateOrderStatus.mutateAsync({ orderId, status: 'new' });
+        showSuccess(t('kitchen.orderApproved'));
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : t('orders.failedUpdateStatus');
+        showError(message);
+      } finally {
+        setApprovingOrderId(null);
+      }
+    },
+    [updateOrderStatus, showSuccess, showError, t],
+  );
+
+  const handleRejectOrder = useCallback(async () => {
+    if (!rejectingOrder || !rejectReason.trim()) return;
+    try {
+      await cancelOrder.mutateAsync({
+        orderId: rejectingOrder.id,
+        reason: rejectReason.trim(),
+        tableId: rejectingOrder.tableId,
+      });
+      showSuccess(t('kitchen.orderRejected'));
+      setRejectingOrder(null);
+      setRejectReason('');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('orders.failedUpdateStatus');
+      showError(message);
+    }
+  }, [cancelOrder, rejectingOrder, rejectReason, showSuccess, showError, t]);
+
   const renderKitchenOrder = useCallback<ListRenderItem<(typeof kitchenOrders)[number]>>(
     ({ item }) => (
       <KitchenOrderCard
@@ -352,59 +409,191 @@ export default function KitchenDisplayScreen() {
   const isFiltered = activeFilter.mode === 'filtered';
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Status summary pills */}
-      <View style={styles.summary}>
-        <View style={[styles.summaryPill, { backgroundColor: BRAND_PRIMARY }]}>
-          <Text style={styles.summaryText}>
-            {counts.new} {t('kitchen.new')}
-          </Text>
-        </View>
-        <View style={[styles.summaryPill, { backgroundColor: COLORS.warning }]}>
-          <Text style={styles.summaryText}>
-            {counts.preparing} {t('kitchen.preparing')}
-          </Text>
-        </View>
-        <View style={[styles.summaryPill, { backgroundColor: COLORS.success }]}>
-          <Text style={styles.summaryText}>
-            {counts.ready} {t('kitchen.ready')}
-          </Text>
-        </View>
-      </View>
-
-      {staffId && (
-        <KitchenFilterBar activeFilter={activeFilter} onPress={() => setFilterSheetVisible(true)} />
-      )}
-
-      <FlashList
-        data={kitchenOrders}
-        keyExtractor={(item) => item.id}
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#fff" />
-        }
-        renderItem={renderKitchenOrder}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              {isFiltered ? t('kitchen.filter.empty') : t('kitchen.noActiveOrders')}
-            </Text>
-            <Text style={styles.emptySubtext}>
-              {isFiltered ? t('kitchen.filter.emptyHint') : t('kitchen.waitingForOrders')}
-            </Text>
+    // The kitchen route runs under a darker Paper theme so any Paper
+    // surfaces (Dialog, TextInput, ActivityIndicator) match the kitchen's
+    // dark canvas instead of inheriting the app-wide light theme.
+    <PaperProvider theme={kitchenDarkTheme}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        {/* Status summary tiles — icon + count + label, mirroring the web
+            kitchen header's New / Cooking / Ready stack. Larger than the
+            previous pill so the count is readable from across the line. */}
+        <View style={styles.summary}>
+          <View style={[styles.summaryTile, { backgroundColor: BRAND_PRIMARY }]}>
+            <MaterialCommunityIcons name="alert-circle" size={20} color="#fff" />
+            <Text style={styles.summaryCount}>{counts.new}</Text>
+            <Text style={styles.summaryLabel}>{t('kitchen.newOrders')}</Text>
           </View>
-        }
-        contentContainerStyle={styles.list}
-      />
+          <View style={[styles.summaryTile, { backgroundColor: COLORS.warning }]}>
+            <MaterialCommunityIcons name="chef-hat" size={20} color="#000" />
+            <Text style={[styles.summaryCount, { color: '#000' }]}>{counts.preparing}</Text>
+            <Text style={[styles.summaryLabel, { color: '#1f2937' }]}>{t('kitchen.cooking')}</Text>
+          </View>
+          <View style={[styles.summaryTile, { backgroundColor: COLORS.success }]}>
+            <MaterialCommunityIcons name="check-circle" size={20} color="#fff" />
+            <Text style={styles.summaryCount}>{counts.ready}</Text>
+            <Text style={styles.summaryLabel}>{t('kitchen.readyLabel')}</Text>
+          </View>
+        </View>
 
-      {staffId && (
-        <KitchenFilterSheet
-          visible={filterSheetVisible}
-          onDismiss={() => setFilterSheetVisible(false)}
-          staffId={staffId}
-          categories={categories}
+        {/* Pending QR Orders rail — only renders when there's something to
+            approve. Horizontal scroll keeps the rail out of the main grid's
+            vertical scroll, and the amber palette + Paper-managed
+            ActivityIndicator inside the buttons keep the loading state
+            distinct from the kitchen action buttons below. */}
+        {pendingApprovalOrders.length > 0 && (
+          <View style={styles.pendingRailWrap}>
+            <View style={styles.pendingRailHeader}>
+              <MaterialCommunityIcons name="cellphone" size={18} color="#fbbf24" />
+              <Text style={styles.pendingRailTitle}>
+                {t('kitchen.pendingQrOrders')} ({pendingApprovalOrders.length})
+              </Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.pendingRailContent}
+            >
+              {pendingApprovalOrders.map((order) => {
+                const itemCount =
+                  order.order_items?.filter((i) => i.status !== 'cancelled').length || 0;
+                const approving = approvingOrderId === order.id;
+                return (
+                  <View key={order.id} style={styles.pendingCard}>
+                    <View style={styles.pendingCardHeader}>
+                      <Text style={styles.pendingOrderNumber}>#{order.order_number || '—'}</Text>
+                      <View style={styles.qrBadge}>
+                        <MaterialCommunityIcons name="qrcode" size={12} color="#000" />
+                        <Text style={styles.qrBadgeText}>QR</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.pendingTableLabel}>
+                      {order.table?.table_number
+                        ? t('kitchen.tableNumber', { number: order.table.table_number })
+                        : t('orders.qrOrder')}
+                    </Text>
+                    <Text style={styles.pendingMeta}>
+                      {t('kitchen.itemCount', { count: itemCount })}
+                    </Text>
+                    <View style={styles.pendingActions}>
+                      <Button
+                        mode="contained"
+                        compact
+                        onPress={() => handleApproveOrder(order.id)}
+                        disabled={approving}
+                        buttonColor={COLORS.success}
+                        textColor="#fff"
+                        style={styles.pendingActionBtn}
+                      >
+                        {approving ? (
+                          <ActivityIndicator size={14} color="#fff" />
+                        ) : (
+                          t('approve', { ns: 'common' })
+                        )}
+                      </Button>
+                      <Button
+                        mode="contained"
+                        compact
+                        onPress={() =>
+                          setRejectingOrder({ id: order.id, tableId: order.table_id ?? null })
+                        }
+                        buttonColor={COLORS.danger}
+                        textColor="#fff"
+                        style={styles.pendingActionBtn}
+                      >
+                        {t('reject', { ns: 'common' })}
+                      </Button>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {staffId && (
+          <KitchenFilterBar
+            activeFilter={activeFilter}
+            onPress={() => setFilterSheetVisible(true)}
+          />
+        )}
+
+        <FlashList
+          data={kitchenOrders}
+          keyExtractor={(item) => item.id}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#fff" />
+          }
+          renderItem={renderKitchenOrder}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {isFiltered ? t('kitchen.filter.empty') : t('kitchen.noActiveOrders')}
+              </Text>
+              <Text style={styles.emptySubtext}>
+                {isFiltered ? t('kitchen.filter.emptyHint') : t('kitchen.waitingForOrders')}
+              </Text>
+            </View>
+          }
+          contentContainerStyle={styles.list}
         />
-      )}
-    </View>
+
+        {staffId && (
+          <KitchenFilterSheet
+            visible={filterSheetVisible}
+            onDismiss={() => setFilterSheetVisible(false)}
+            staffId={staffId}
+            categories={categories}
+          />
+        )}
+
+        {/* Reject reason dialog. Submission requires a non-empty reason
+            (matches the web kitchen — kitchens that ad-hoc reject without
+            a reason make finance reconciliation harder). */}
+        <Portal>
+          <Dialog
+            visible={!!rejectingOrder}
+            onDismiss={() => {
+              setRejectingOrder(null);
+              setRejectReason('');
+            }}
+          >
+            <Dialog.Title>
+              {t('reject', { ns: 'common' })} #{rejectingOrder?.id.slice(-4).toUpperCase()}
+            </Dialog.Title>
+            <Dialog.Content>
+              <Text style={styles.rejectHint}>{t('kitchen.rejectReason')}</Text>
+              <TextInput
+                mode="outlined"
+                multiline
+                numberOfLines={3}
+                value={rejectReason}
+                onChangeText={setRejectReason}
+                placeholder={t('kitchen.rejectReasonPlaceholder')}
+              />
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button
+                onPress={() => {
+                  setRejectingOrder(null);
+                  setRejectReason('');
+                }}
+              >
+                {t('cancel', { ns: 'common' })}
+              </Button>
+              <Button
+                onPress={handleRejectOrder}
+                disabled={!rejectReason.trim() || cancelOrder.isPending}
+                loading={cancelOrder.isPending}
+                buttonColor={COLORS.danger}
+                textColor="#fff"
+              >
+                {t('reject', { ns: 'common' })}
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
+      </View>
+    </PaperProvider>
   );
 }
 
@@ -418,17 +607,101 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
-  summaryPill: {
-    borderRadius: 9999,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+  summaryTile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 92,
   },
-  summaryText: {
+  summaryCount: {
     color: '#fff',
+    fontWeight: '800',
+    fontSize: 20,
+  },
+  summaryLabel: {
+    color: 'rgba(255,255,255,0.85)',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  pendingRailWrap: {
+    paddingTop: 4,
+    paddingBottom: 12,
+  },
+  pendingRailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  pendingRailTitle: {
+    color: '#fbbf24',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  pendingRailContent: {
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+  pendingCard: {
+    width: 200,
+    borderWidth: 2,
+    borderColor: '#f59e0b',
+    backgroundColor: '#3b2a05',
+    borderRadius: 12,
+    padding: 12,
+    gap: 6,
+  },
+  pendingCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pendingOrderNumber: {
+    color: '#fff',
+    fontWeight: '900',
+    fontSize: 20,
+  },
+  qrBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#fbbf24',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 9999,
+  },
+  qrBadgeText: {
+    color: '#000',
+    fontWeight: '800',
+    fontSize: 10,
+  },
+  pendingTableLabel: {
+    color: '#fcd34d',
     fontWeight: '700',
     fontSize: 13,
+  },
+  pendingMeta: {
+    color: '#d1d5db',
+    fontSize: 12,
+  },
+  pendingActions: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 4,
+  },
+  pendingActionBtn: {
+    flex: 1,
+  },
+  rejectHint: {
+    color: COLORS.textMuted,
+    fontSize: 13,
+    marginBottom: 12,
   },
   list: {
     paddingBottom: 24,

@@ -198,6 +198,7 @@ export {
 export {
   useCreateTable,
   useDeleteTable,
+  useTransferTable,
   useUpdateTable,
   useUpdateTableStatus,
 } from './mutations/use-table-mutations';

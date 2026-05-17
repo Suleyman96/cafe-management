@@ -79,6 +79,7 @@ export {
   useToggleMenuItemAvailability,
   useTopSoldItems,
   useTopWastedItems,
+  useTransferTable,
   useUpdateCategory,
   useUpdateDeliveryCustomer,
   useUpdateDeliveryFee,

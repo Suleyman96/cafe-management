@@ -1,6 +1,7 @@
 import { createStackNavigator } from '@react-navigation/stack';
 import type React from 'react';
 import { DrawerMenuButton } from '@/components/navigation/DrawerMenuButton';
+import { headerOptions, ScreenHeader } from '@/components/ui';
 import type { StaffManagementStackParamList } from '@/types';
 import { lazyScreen } from './lazy-screen';
 
@@ -18,16 +19,16 @@ const asScreen = <P extends object>(c: React.ComponentType<P>) =>
 
 export function StaffManagementStack() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={{ header: (props) => <ScreenHeader {...props} /> }}>
       <Stack.Screen
         name="StaffList"
         component={asScreen(StaffListScreen)}
-        options={{ title: 'Staff', headerLeft: () => <DrawerMenuButton /> }}
+        options={headerOptions({ titleKey: 'staff', headerLeft: () => <DrawerMenuButton /> })}
       />
       <Stack.Screen
         name="StaffDetail"
         component={asScreen(StaffDetailScreen)}
-        options={{ title: 'Staff Detail' }}
+        options={headerOptions({ titleKey: 'staffDetail' })}
       />
     </Stack.Navigator>
   );

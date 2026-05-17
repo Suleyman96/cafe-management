@@ -1,8 +1,11 @@
 /**
  * Tailwind utility class helpers for status / role badges.
  *
- * Lives here (not in `@gustri/core`) because the return values are Tailwind
- * class strings — a UI concern. Core stays headless and styling-agnostic.
+ * The `BadgeConfig` *shape* lives in `@gustri/core/colors` so both web
+ * (Tailwind class strings) and mobile (hex values) conform to the same
+ * contract — add `border` / `pulse` / `iconName` once, get it on both
+ * platforms. This file provides the web Tailwind-class-string values;
+ * mobile provides hex values in its theme.
  *
  * Each `*_BADGES` Record below is keyed by the corresponding enum, so adding
  * a new enum value (e.g. a new `OrderStatus` variant) fails compile across
@@ -10,6 +13,7 @@
  * never let a stray unknown status slip through to a `default:` arm again.
  */
 
+import type { BadgeConfig } from '@gustri/core';
 import type {
   OrderItemStatus,
   OrderStatus,
@@ -18,16 +22,7 @@ import type {
   UserRole,
 } from '@gustri/database';
 
-export interface BadgeConfig {
-  /** Tailwind background class (e.g. `bg-amber-100`). */
-  bg: string;
-  /** Tailwind text class (e.g. `text-amber-800`). */
-  text: string;
-  /** Optional Tailwind border class (e.g. `border-amber-300`). */
-  border?: string;
-  /** Default i18n key — consumers may override per-context. */
-  labelKey: string;
-}
+export type { BadgeConfig };
 
 /**
  * Badge styling per `OrderStatus`. Keyed by enum so missing variants fail

@@ -1,8 +1,12 @@
-import { QUERY_KEYS, tenantKey } from '@gustri/queries';
-import { describe, expect, it, vi } from 'vitest';
-import { useOrderTransferHistory, useTransferTable } from '@/hooks/use-table-transfers-safe';
+import { describe, expect, it } from 'vitest';
+import { useOrderTransferHistory } from '@/hooks/use-table-transfers-safe';
 import { db } from '@/lib/supabase/wrapped-client';
-import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
+import { renderHookWithProviders } from '../helpers/test-utils';
+
+// `useTransferTable` itself was promoted to `@gustri/queries` in Phase 1.5
+// and has its tests in `packages/queries/src/__tests__/mutations/use-table-mutations.test.ts`.
+// This file only covers the web-local read hooks that still live in
+// `use-table-transfers-safe.ts`.
 
 describe('useOrderTransferHistory', () => {
   it('calls db.orders.findById to get transfer history', () => {
@@ -14,28 +18,5 @@ describe('useOrderTransferHistory', () => {
   it('is disabled when orderId is empty', () => {
     renderHookWithProviders(() => useOrderTransferHistory(''));
     expect(db.orders.findById).not.toHaveBeenCalled();
-  });
-});
-
-describe('useTransferTable', () => {
-  it('invalidates TABLES, specific TABLEs, ORDERS, ORDER, and table_transfers on success', async () => {
-    const { result, queryClient } = renderHookWithProviders(() => useTransferTable());
-    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    await result.current.mutateAsync({
-      orderId: 'o1',
-      fromTableId: 't1',
-      toTableId: 't2',
-      staffId: 's1',
-      reason: 'customer_request',
-    });
-
-    const invalidatedKeys = invalidateSpy.mock.calls.map((c) => (c[0] as any).queryKey);
-    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES));
-    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLE, 't1'));
-    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLE, 't2'));
-    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, 'o1'));
-    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
-    expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, 'table_transfers'));
   });
 });

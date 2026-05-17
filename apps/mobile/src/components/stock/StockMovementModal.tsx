@@ -7,9 +7,9 @@ import { TextInput } from '@/lib/paper-compat';
 import { BRAND_PRIMARY, COLORS } from '@/theme';
 
 const MOVEMENT_TYPES = [
-  { value: 'in', label: '+ Add', color: COLORS.success, bg: '#d1fae5' },
-  { value: 'out', label: '- Remove', color: COLORS.danger, bg: '#fee2e2' },
-  { value: 'adjustment', label: 'Set To', color: BRAND_PRIMARY, bg: '#dbeafe' },
+  { value: 'in', labelKey: 'stock.addPlus', color: COLORS.success, bg: '#d1fae5' },
+  { value: 'out', labelKey: 'stock.removeMinus', color: COLORS.danger, bg: '#fee2e2' },
+  { value: 'adjustment', labelKey: 'stock.setTo', color: BRAND_PRIMARY, bg: '#dbeafe' },
 ] as const;
 
 interface StockMovementModalProps {
@@ -107,7 +107,7 @@ export function StockMovementModal({
               style={type === mt.value ? { backgroundColor: mt.bg } : undefined}
               textStyle={type === mt.value ? { color: mt.color, fontWeight: '700' } : undefined}
             >
-              {mt.label}
+              {t(mt.labelKey)}
             </Chip>
           ))}
         </View>
