@@ -1,7 +1,7 @@
 'use client';
 
 import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
-import type { MenuItem, OrdersInsert } from '@gustri/database';
+import type { Category, MenuItem, OrdersInsert } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { randomUUIDv4, useStableClientRequestId } from '@gustri/queries';
 import { Button } from '@gustri/ui-web';
@@ -9,6 +9,7 @@ import * as Sentry from '@sentry/nextjs';
 import { Truck } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { MenuItemPickerWithCategories } from '@/components/orders/menu-item-picker-with-categories';
 import { BaseModal } from '@/components/ui/base-modal';
 import {
   useAddOrderItems,
@@ -21,12 +22,12 @@ import {
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useIsOnline } from '@/hooks/use-is-online';
 import { DeliveryCustomerForm } from './delivery/delivery-customer-form';
-import { MenuItemPicker } from './delivery/menu-item-picker';
 import { type SelectedItem, SelectedItemsList } from './delivery/selected-items-list';
 
 interface CreateDeliveryModalProps {
   staffId: string;
   menuItems: MenuItem[];
+  categories: Category[];
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (orderId: string) => void;
@@ -35,6 +36,7 @@ interface CreateDeliveryModalProps {
 export function CreateDeliveryModal({
   staffId,
   menuItems,
+  categories,
   isOpen,
   onClose,
   onSuccess,
@@ -217,7 +219,7 @@ export function CreateDeliveryModal({
       onClose={onClose}
       title={t('delivery.createDeliveryOrder')}
       icon={<Truck className="h-5 w-5 text-purple-600" />}
-      size="4xl"
+      size="5xl"
       footer={
         <>
           <Button onClick={onClose} variant="outline" className="flex-1" disabled={isSubmitting}>
@@ -246,7 +248,13 @@ export function CreateDeliveryModal({
             onDeliveryFeeChange={setDeliveryFee}
             defaultDeliveryFee={settings?.delivery_fee_default}
           />
-          <MenuItemPicker menuItems={menuItems} taxMultiplier={taxMultiplier} onAddItem={addItem} />
+          <MenuItemPickerWithCategories
+            menuItems={menuItems}
+            categories={categories}
+            taxMultiplier={taxMultiplier}
+            accent="purple"
+            onAddItem={addItem}
+          />
         </div>
 
         <div className="space-y-6">

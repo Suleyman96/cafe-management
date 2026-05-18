@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
-type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
+type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl' | '5xl';
 
 const sizeClasses: Record<ModalSize, string> = {
   sm: 'max-w-sm',
@@ -13,6 +13,7 @@ const sizeClasses: Record<ModalSize, string> = {
   xl: 'max-w-xl',
   '2xl': 'max-w-2xl',
   '4xl': 'max-w-4xl',
+  '5xl': 'max-w-5xl',
 };
 
 interface BaseModalProps {

@@ -93,7 +93,15 @@ export function handleSupabaseError(error: unknown): AppError {
       sentinel === 'payment_exceeds_remaining' ||
       sentinel === 'refund_exceeds_available' ||
       sentinel === 'payment_tenant_mismatch' ||
-      sentinel === 'refund_tenant_mismatch'
+      sentinel === 'refund_tenant_mismatch' ||
+      // Channel-policy enforcement on order_items (migration
+      // 20260517000005). The takeout/delivery picker hides items
+      // flagged not-takeoutable/not-deliverable; a bypass attempt
+      // (raw SQL, malicious client, future API consumer) lands here.
+      // Surface as ConflictError so the i18n layer maps to the
+      // existing menu_item_not_* keys.
+      sentinel === 'menu_item_not_takeoutable' ||
+      sentinel === 'menu_item_not_deliverable'
     ) {
       return new ConflictError(sentinel);
     }

@@ -158,6 +158,8 @@ export {
   useDeleteCategory,
   useDeleteMenuItem,
   useToggleMenuItemAvailability,
+  useToggleMenuItemDeliverable,
+  useToggleMenuItemTakeoutable,
   useUpdateCategory,
   useUpdateMenuItem,
 } from './mutations/use-menu-mutations';

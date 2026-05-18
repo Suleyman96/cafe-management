@@ -1,13 +1,13 @@
 'use client';
 
-import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
+import { applyMenuFilter, DEFAULT_TAX_PERCENTAGE, deriveChannelFilter } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { ArrowLeft, Check, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
   useAddOrderItems,
@@ -49,10 +49,24 @@ export default function AddItemsPage() {
     }
   }, [order]);
 
-  // Filter menu items by category
-  const filteredItems = selectedCategory
-    ? menuItems?.filter((item: MenuItem) => item.category_id === selectedCategory)
-    : menuItems;
+  // Channel-policy filter: takeout orders must hide non-takeoutable items,
+  // delivery orders must hide non-deliverable items. Dine-in imposes no
+  // channel restriction. Pure helper from @gustri/core so mobile + web
+  // share one implementation — the channel policy must not diverge.
+  const channelFilter = useMemo(
+    () => (order ? deriveChannelFilter(order.order_type) : null),
+    [order],
+  );
+
+  const filteredItems = useMemo(
+    () =>
+      applyMenuFilter({
+        items: menuItems ?? [],
+        selectedCategoryId: selectedCategory,
+        channelFilter,
+      }),
+    [menuItems, selectedCategory, channelFilter],
+  );
 
   const cartSubtotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
   const cartTotal = cartSubtotal * taxMultiplier;

@@ -13,7 +13,7 @@ import { CancelOrderModal } from '@/components/modals/cancel-order-modal';
 import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import { CreateTakeoutModal } from '@/components/orders/create-takeout-modal';
 import { TakeoutOrderCard } from '@/components/takeout/takeout-order-card';
-import { useMenuItems, useTakeoutOrders, useUpdateOrderStatus } from '@/hooks';
+import { useCategories, useMenuItems, useTakeoutOrders, useUpdateOrderStatus } from '@/hooks';
 import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useOrderFilters } from '@/hooks/use-order-filters';
@@ -26,7 +26,8 @@ export default function TakeoutPage() {
   const router = useRouter();
   const { staff } = useAuth();
   const { data: orders, isLoading: loading, error, refetch } = useTakeoutOrders();
-  const { data: menuItems } = useMenuItems();
+  const { data: menuItems } = useMenuItems({ isTakeoutable: true });
+  const { data: categories } = useCategories({ isActive: true });
   const { mutateAsync: updateOrderStatusAsync } = useUpdateOrderStatus();
   const formatPrice = useFormatPrice();
 
@@ -226,6 +227,7 @@ export default function TakeoutPage() {
       <CreateTakeoutModal
         staffId={staff?.id || ''}
         menuItems={menuItems || []}
+        categories={categories || []}
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={(orderId) => {

@@ -16,6 +16,8 @@ import {
   useDeleteMenuItem,
   useMenuItems,
   useToggleMenuItemAvailability,
+  useToggleMenuItemDeliverable,
+  useToggleMenuItemTakeoutable,
 } from '@/hooks';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
@@ -39,6 +41,8 @@ export default function MenuPage() {
   const deleteMenuItem = useDeleteMenuItem();
   const deleteCategory = useDeleteCategory();
   const toggleAvailability = useToggleMenuItemAvailability();
+  const toggleTakeoutable = useToggleMenuItemTakeoutable();
+  const toggleDeliverable = useToggleMenuItemDeliverable();
 
   const isLoading = itemsLoading || categoriesLoading;
 
@@ -114,6 +118,32 @@ export default function MenuPage() {
     [toggleAvailabilityAsync, t],
   );
 
+  const { mutateAsync: toggleTakeoutableAsync } = toggleTakeoutable;
+  const handleToggleTakeoutable = useCallback(
+    async (id: string, currentTakeoutable: boolean) => {
+      try {
+        await toggleTakeoutableAsync({ id, currentTakeoutable });
+      } catch (error) {
+        Sentry.captureException(error);
+        toast.error(t('menu.failedToggleTakeoutable'));
+      }
+    },
+    [toggleTakeoutableAsync, t],
+  );
+
+  const { mutateAsync: toggleDeliverableAsync } = toggleDeliverable;
+  const handleToggleDeliverable = useCallback(
+    async (id: string, currentDeliverable: boolean) => {
+      try {
+        await toggleDeliverableAsync({ id, currentDeliverable });
+      } catch (error) {
+        Sentry.captureException(error);
+        toast.error(t('menu.failedToggleDeliverable'));
+      }
+    },
+    [toggleDeliverableAsync, t],
+  );
+
   const getCategoryItemCount = useCallback(
     (categoryId: string) =>
       menuItems.filter((item: MenuItem) => item.category_id === categoryId).length,
@@ -172,6 +202,8 @@ export default function MenuPage() {
           onEditCategory={openEditCategory}
           onDeleteCategory={setDeletingCategoryId}
           onToggleAvailability={handleToggleAvailability}
+          onToggleTakeoutable={handleToggleTakeoutable}
+          onToggleDeliverable={handleToggleDeliverable}
           onAddMenuItem={openAddMenuItem}
           t={t}
         />

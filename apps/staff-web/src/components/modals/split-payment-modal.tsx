@@ -4,7 +4,7 @@ import type { ORDER_STATUS } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import * as Sentry from '@sentry/nextjs';
-import { CheckCircle, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -18,7 +18,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useIsOnline } from '@/hooks/use-is-online';
 import { usePersistentClientRequestId } from '@/hooks/use-persistent-client-request-id';
-import { toastLocalizedError } from '@/lib/toast/localized-error';
+import { resolveLocalizedErrorMessage, toastLocalizedError } from '@/lib/toast/localized-error';
 import { ItemPaymentForm } from './payment/item-payment-form';
 import { OrderSummary } from './payment/order-summary';
 import { PartialPaymentForm } from './payment/partial-payment-form';
@@ -68,6 +68,15 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   );
   const [tipAmount, setTipAmount] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'digital'>('cash');
+  // Inline error surfaced after a failed payment attempt. The toast also fires
+  // (so the failure is visible if the cashier looked away), but the toast
+  // dismisses; this state persists in the modal until the user actively
+  // changes the form OR successfully completes the payment. The user-facing
+  // copy explicitly tells the cashier that retrying is safe because the
+  // server-side `(tenant_id, client_request_id)` unique index dedupes — a
+  // network blip that lost the response will replay against the existing
+  // payment row, never create a second one.
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   // `loading` derives from in-flight mutations rather than a separate state
   // flag — `retry: 0` flips `isPending` back to false on error so the user
@@ -88,6 +97,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
       setSelectedItemQuantities(new Map());
       setTipAmount('');
       setPaymentMethod('cash');
+      setPaymentError(null);
     }
   }, [isOpen]);
 
@@ -230,10 +240,16 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
         client_request_id: idempotencyKey.get(),
       });
       idempotencyKey.reset();
+      setPaymentError(null);
       onSuccess();
     } catch (error: unknown) {
       Sentry.captureException(error);
+      const message = resolveLocalizedErrorMessage(error, t('payment.paymentFailed'));
+      // Toast for the immediate "something happened" cue. The inline banner
+      // below picks up the same resolved message so the cashier still has it
+      // in front of them after the toast dismisses.
       toastLocalizedError(error, t('payment.paymentFailed'));
+      setPaymentError(message);
     }
   };
 
@@ -293,6 +309,25 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
                 </span>
               </div>
               <p className="text-sm text-green-600 mt-2">{t('payment.clickComplete')}</p>
+            </div>
+          )}
+
+          {paymentError !== null && !isFullyPaid && !isZeroTotal && (
+            <div
+              className="mb-6 p-4 bg-amber-50 border border-amber-300 rounded-lg"
+              role="alert"
+              aria-live="assertive"
+            >
+              <div className="flex items-start gap-2 text-amber-800">
+                <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-medium">{t('payment.failureBannerTitle')}</p>
+                  <p className="text-sm mt-1 break-words">{paymentError}</p>
+                  <p className="text-sm mt-2 text-amber-700">
+                    {t('payment.failureBannerSafeRetry')}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -369,6 +404,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
           isZeroTotal={isZeroTotal}
           loading={loading}
           canPay={!!staff?.id && isOnline}
+          isRetry={paymentError !== null}
           onCancel={onClose}
           onPay={handlePayment}
           onCompleteOrder={handleCompleteOrder}

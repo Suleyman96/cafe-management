@@ -2,7 +2,7 @@
 
 import { ProgressProvider } from '@bprogress/next/app';
 import { I18nextProvider, i18n } from '@gustri/i18n';
-import { DbProvider } from '@gustri/queries';
+import { DbProvider, QUERY_KEYS } from '@gustri/queries';
 import * as Sentry from '@sentry/nextjs';
 import {
   MutationCache,
@@ -14,6 +14,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useEffect, useRef, useState } from 'react';
 import { Toaster } from 'sonner';
 import '@/lib/i18n';
+import { useClockSyncBootstrap } from '@/hooks/use-clock-sync';
 import { channelRegistry } from '@/lib/realtime/channel-registry';
 import { onCrossTab, postCrossTab } from '@/lib/realtime/cross-tab';
 import { LifecycleBridge } from '@/lib/realtime/lifecycle-bridge';
@@ -86,14 +87,36 @@ function RealtimeAuthBridge() {
 }
 
 /**
+ * Query-key prefixes that should NOT refetch on a sibling tab's
+ * `mutation-success` broadcast. These are user-triggered snapshot/aggregate
+ * reports — refetching them in the background while the user is on another
+ * screen is pure waste, and even if the user is viewing them, the snapshot
+ * is conceptually frozen at the moment they ran it. Operational keys
+ * (orders, payments, tables, calls, stock, etc.) are intentionally NOT in
+ * this list — those must stay fresh across tabs during a shift.
+ */
+const CROSS_TAB_INVALIDATION_EXCLUDED_KEYS: ReadonlySet<string> = new Set([
+  QUERY_KEYS.SALES,
+  QUERY_KEYS.REPORTS,
+  QUERY_KEYS.Z_REPORT,
+  QUERY_KEYS.TENANT,
+  QUERY_KEYS.TABLE_QR,
+]);
+
+/**
  * Bridges BroadcastChannel messages from sibling tabs into the local React
  * Query cache + supabase auth state.
  *
- * - `mutation-success` from another tab → invalidate every active query so
- *   our cache catches the change. Coarse on purpose: avoids drift between
- *   sender and receiver about exactly which keys to refetch and matches
- *   how realtime already converges (refetch from DB, never patch from a
- *   payload).
+ * - `mutation-success` from another tab → invalidate operational queries.
+ *   Uses a predicate to skip read-mostly aggregates listed in
+ *   `CROSS_TAB_INVALIDATION_EXCLUDED_KEYS`. Why: the previous
+ *   no-argument `invalidateQueries()` refetched every query in the cache,
+ *   so a single payment from a sibling tab kicked off Z-report and sales
+ *   refetches that the user never asked for. Over a 14-hour shift this
+ *   compounds into hundreds of needless refetches. We stay coarse within
+ *   the operational set on purpose — the sender does not know which keys
+ *   the receiver has mounted, so refetching the operational surface is
+ *   the only way to avoid divergence.
  * - `signed-out` → wipe cache and call `supabase.auth.signOut()`. The
  *   resulting SIGNED_OUT event flows through `useAuth()` and redirects to
  *   /login. We DO NOT broadcast this back; postCrossTab from this handler
@@ -108,7 +131,13 @@ function CrossTabBridge() {
     return onCrossTab((msg) => {
       switch (msg.kind) {
         case 'mutation-success':
-          queryClient.invalidateQueries();
+          queryClient.invalidateQueries({
+            predicate: (query) => {
+              const head = query.queryKey[0];
+              if (typeof head !== 'string') return false;
+              return !CROSS_TAB_INVALIDATION_EXCLUDED_KEYS.has(head);
+            },
+          });
           break;
         case 'signed-out':
           queryClient.clear();
@@ -163,6 +192,19 @@ function StuckQueryObserver() {
     return () => clearInterval(interval);
   }, [queryClient]);
 
+  return null;
+}
+
+/**
+ * Bootstraps the server-clock singleton (see lib/server-clock.ts). Mounting
+ * this once at provider level establishes the offset between Date.now() on
+ * this device and the server's wall clock; downstream consumers (kitchen
+ * elapsed time, urgency bands, "is this order overdue") read the offset
+ * synchronously instead of trusting the device clock. Costs one fetch on
+ * mount + one every 5 minutes; renders nothing.
+ */
+function ClockSyncBridge() {
+  useClockSyncBootstrap();
   return null;
 }
 
@@ -250,6 +292,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <RealtimeAuthBridge />
             <LifecycleBridge />
             <CrossTabBridge />
+            <ClockSyncBridge />
             <StuckQueryObserver />
             {children}
             <Toaster position="bottom-right" expand visibleToasts={4} />

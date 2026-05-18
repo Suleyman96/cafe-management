@@ -1,6 +1,7 @@
 'use client';
 
-import { useTranslation } from '@gustri/i18n';
+import { ConflictError } from '@gustri/core';
+import { localizeErrorMessage, useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { Button, LoadingSpinner } from '@gustri/ui-web';
 import {
@@ -119,6 +120,17 @@ export default function WaiterCallsPage() {
     }
   };
 
+  // True when the server rejected because another staff member already
+  // claimed the call. The wrapper maps the BEFORE UPDATE trigger sentinels
+  // `waiter_call_already_acknowledged` / `waiter_call_already_resolved` to
+  // ConflictError. Treating this distinctly from a generic failure prevents
+  // the rush-hour failure mode where two waiters both see a "failed" toast
+  // and both walk to the same table.
+  const isAlreadyHandledByOtherStaff = (err: unknown): err is ConflictError =>
+    err instanceof ConflictError &&
+    (err.message === 'waiter_call_already_acknowledged' ||
+      err.message === 'waiter_call_already_resolved');
+
   // Handle acknowledge call
   const handleAcknowledge = (callId: string) =>
     run(`ack:${callId}`, async () => {
@@ -126,7 +138,17 @@ export default function WaiterCallsPage() {
       try {
         await acknowledgeCall.mutateAsync({ callId, staffId: staff.id });
         toast.success(t('calls.callAcknowledged'));
-      } catch (_error) {
+      } catch (error) {
+        if (isAlreadyHandledByOtherStaff(error)) {
+          // Info, not error — the waiter did nothing wrong; the call was
+          // simply claimed first. Localized via the same errors.json key
+          // the customer-facing flow uses, so the message is consistent.
+          toast.info(localizeErrorMessage(error.message, t('calls.failedRespond')));
+          // Refetch immediately so the row updates to "acknowledged" with
+          // the other staff's badge — don't wait for realtime to catch up.
+          refetch();
+          return;
+        }
         toast.error(t('calls.failedRespond'));
       }
     });
@@ -137,7 +159,12 @@ export default function WaiterCallsPage() {
       try {
         await resolveCall.mutateAsync({ callId });
         toast.success(t('calls.callCompleted'));
-      } catch (_error) {
+      } catch (error) {
+        if (isAlreadyHandledByOtherStaff(error)) {
+          toast.info(localizeErrorMessage(error.message, t('calls.failedRespond')));
+          refetch();
+          return;
+        }
         toast.error(t('calls.failedRespond'));
       }
     });

@@ -34,6 +34,7 @@ import {
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { MenuItemThumb } from '@/components/menu/menu-item-thumb';
 import { ItemTransferModal } from '@/components/modals/item-transfer-modal';
 import { OrderItemsList } from '@/components/tables/order-items-list';
 import { TableCart } from '@/components/tables/table-cart';
@@ -642,27 +643,42 @@ export default function TableDetailPage() {
                   return (
                     <div
                       key={item.id}
-                      className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all ${
+                      className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
                         quantity > 0 ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'
                       }`}
                       onClick={() => addToCart(item)}
                     >
-                      <div className="flex justify-between items-start mb-1 sm:mb-2">
-                        <h3 className="font-medium text-xs sm:text-sm line-clamp-2">{item.name}</h3>
+                      <div className="relative">
+                        <MenuItemThumb
+                          imageUrl={item.image_url}
+                          // 4:3 matches the menu admin cards (menu-item-card.tsx)
+                          // — keeps the two surfaces visually consistent and
+                          // avoids the "much taller cards" regression that
+                          // aspect-square caused for waiters used to dense
+                          // grids on table-detail.
+                          className="aspect-[4/3] bg-gray-100 flex items-center justify-center overflow-hidden"
+                          imageClassName="w-full h-full object-cover"
+                          fallbackClassName="text-3xl opacity-40"
+                        />
                         {quantity > 0 && (
-                          <span className="bg-blue-500 text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ml-1 flex-shrink-0">
+                          <span className="absolute top-1.5 right-1.5 bg-blue-500 text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full shadow">
                             {quantity}
                           </span>
                         )}
                       </div>
-                      {item.description && (
-                        <p className="text-xs text-gray-500 mb-1 sm:mb-2 line-clamp-2 hidden sm:block">
-                          {item.description}
+                      <div className="p-3 sm:p-4">
+                        <h3 className="font-medium text-xs sm:text-sm line-clamp-2 mb-1 sm:mb-2">
+                          {item.name}
+                        </h3>
+                        {item.description && (
+                          <p className="text-xs text-gray-500 mb-1 sm:mb-2 line-clamp-2 hidden sm:block">
+                            {item.description}
+                          </p>
+                        )}
+                        <p className="font-semibold text-blue-600 text-sm sm:text-base">
+                          {formatPrice(item.price * taxMultiplier)}
                         </p>
-                      )}
-                      <p className="font-semibold text-blue-600 text-sm sm:text-base">
-                        {formatPrice(item.price * taxMultiplier)}
-                      </p>
+                      </div>
                     </div>
                   );
                 })}

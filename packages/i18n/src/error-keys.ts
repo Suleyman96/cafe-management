@@ -51,6 +51,13 @@ export const SENTINEL_ERROR_CODES = [
   'invalid_qr_token',
   'qr_token_revoked',
   'qr_token_expired',
+  // Channel-policy enforcement on order_items (migration
+  // 20260517000005). Surfaced when a takeout/delivery order tries
+  // to include a menu_item that the admin flagged not-takeoutable
+  // / not-deliverable. UI hides such items, so reaching this state
+  // means a bypass attempt or a race between toggle + add-to-order.
+  'menu_item_not_takeoutable',
+  'menu_item_not_deliverable',
 ] as const;
 
 export type SentinelErrorCode = (typeof SENTINEL_ERROR_CODES)[number];

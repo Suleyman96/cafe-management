@@ -62,6 +62,36 @@ describe('MenuItemsWrapper', () => {
     expect(calls[0].table).toBe('menu_items');
   });
 
+  it('findAll applies isTakeoutable filter via .eq("is_takeoutable", value)', async () => {
+    await menuItems.findAll({ isTakeoutable: true });
+    const calls = ctx.getCalls();
+    // The wrapper chains .eq() after .select()/.order()/.limit() — assert
+    // it's actually present with the right column name. The existing
+    // isAvailable/isPopular tests only check `table`; this one is
+    // stricter because the column is new and easy to typo (`is_takeout`
+    // / `is_take_outable` would both be wrong and silently pass a
+    // table-name-only assertion).
+    expect(
+      calls.some(
+        (c: { method: string; args: unknown[] }) =>
+          c.method === 'eq' && c.args[0] === 'is_takeoutable',
+      ),
+    ).toBe(true);
+  });
+
+  it('findAll applies isDeliverable filter via .eq("is_deliverable", value)', async () => {
+    await menuItems.findAll({ isDeliverable: false });
+    const calls = ctx.getCalls();
+    const eqCall = calls.find(
+      (c: { method: string; args: unknown[] }) =>
+        c.method === 'eq' && c.args[0] === 'is_deliverable',
+    );
+    expect(eqCall).toBeDefined();
+    // Passing `false` should be respected — not silently coerced to true,
+    // which would happen with a `!!options.isDeliverable` check.
+    expect(eqCall?.args[1]).toBe(false);
+  });
+
   it('findById returns single item', async () => {
     const singleCtx = createMockContext({
       responses: {
@@ -112,6 +142,74 @@ describe('MenuItemsWrapper', () => {
     const items = createMenuItemsWrapper(toggleCtx);
     const result = await items.toggleAvailability(validMenuItem.id, true);
     expect(result.is_available).toBe(false);
+  });
+
+  it('toggleTakeoutable flips is_takeoutable and writes the negated value', async () => {
+    const toggleCtx = createMockContext({
+      responses: {
+        menu_items: { data: { ...validMenuItem, is_takeoutable: false }, error: null },
+      },
+    });
+    const items = createMenuItemsWrapper(toggleCtx);
+    const result = await items.toggleTakeoutable(validMenuItem.id, true);
+    expect(result.is_takeoutable).toBe(false);
+    // Verify the wrapper actually sent the negated value to .update() —
+    // a regression where it sent the *current* value would be silent
+    // without this check (the mock returns whatever was configured).
+    const updateCall = toggleCtx
+      .getCalls()
+      .find((c: { method: string; args: unknown[] }) => c.method === 'update');
+    expect(updateCall?.args[0]).toEqual({ is_takeoutable: false });
+  });
+
+  it('toggleTakeoutable from false → true', async () => {
+    const toggleCtx = createMockContext({
+      responses: {
+        menu_items: { data: { ...validMenuItem, is_takeoutable: true }, error: null },
+      },
+    });
+    const items = createMenuItemsWrapper(toggleCtx);
+    const result = await items.toggleTakeoutable(validMenuItem.id, false);
+    expect(result.is_takeoutable).toBe(true);
+    const updateCall = toggleCtx
+      .getCalls()
+      .find((c: { method: string; args: unknown[] }) => c.method === 'update');
+    expect(updateCall?.args[0]).toEqual({ is_takeoutable: true });
+  });
+
+  it('toggleDeliverable flips is_deliverable and writes the negated value', async () => {
+    const toggleCtx = createMockContext({
+      responses: {
+        menu_items: { data: { ...validMenuItem, is_deliverable: false }, error: null },
+      },
+    });
+    const items = createMenuItemsWrapper(toggleCtx);
+    const result = await items.toggleDeliverable(validMenuItem.id, true);
+    expect(result.is_deliverable).toBe(false);
+    const updateCall = toggleCtx
+      .getCalls()
+      .find((c: { method: string; args: unknown[] }) => c.method === 'update');
+    expect(updateCall?.args[0]).toEqual({ is_deliverable: false });
+  });
+
+  it('toggleTakeoutable throws on supabase error', async () => {
+    const errorCtx = createMockContext({
+      responses: {
+        menu_items: { data: null, error: { code: '23503', message: 'fk violation' } },
+      },
+    });
+    const items = createMenuItemsWrapper(errorCtx);
+    await expect(items.toggleTakeoutable(validMenuItem.id, true)).rejects.toThrow();
+  });
+
+  it('toggleDeliverable throws when guard rejects malformed data', async () => {
+    // Server returns a row missing required fields → isMenuItem guard fails.
+    // Same defensive check the other toggle helpers do.
+    const ctx = createMockContext({
+      responses: { menu_items: { data: { id: '1' }, error: null } },
+    });
+    const items = createMenuItemsWrapper(ctx);
+    await expect(items.toggleDeliverable('1', false)).rejects.toThrow('Invalid menu item data');
   });
 
   it('delete removes menu item', async () => {

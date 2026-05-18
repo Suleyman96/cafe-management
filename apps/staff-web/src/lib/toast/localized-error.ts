@@ -3,6 +3,18 @@ import { localizeErrorMessage } from '@gustri/i18n';
 import { toast } from 'sonner';
 
 /**
+ * Resolve an error into a localized message string without showing a toast.
+ *
+ * Use this when the caller wants to render the same string the toast would
+ * have shown — e.g. an inline error banner that persists after the toast
+ * dismisses. The toast helper below uses the same resolution path, so the
+ * banner and toast stay in lock-step.
+ */
+export function resolveLocalizedErrorMessage(error: unknown, fallback: string): string {
+  return isAppError(error) ? localizeErrorMessage(error.message, fallback) : fallback;
+}
+
+/**
  * Show an error toast, translating known server sentinels via the
  * `errors` i18n namespace and deduplicating identical messages.
  *
@@ -28,7 +40,7 @@ export function toastLocalizedError(
   fallback: string,
   options?: { id?: string | number },
 ): void {
-  const message = isAppError(error) ? localizeErrorMessage(error.message, fallback) : fallback;
+  const message = resolveLocalizedErrorMessage(error, fallback);
   // Callers that own a pre-existing toast lifecycle (e.g. a `toast.loading`
   // spinner that needs to be replaced in place) pass their own `id`.
   // Everyone else dedupes by message so the cache handler + a component

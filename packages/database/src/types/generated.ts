@@ -584,9 +584,11 @@ export type Database = {
           image_url: string | null
           is_available: boolean | null
           is_daily_special: boolean | null
+          is_deliverable: boolean
           is_gluten_free: boolean | null
           is_popular: boolean | null
           is_spicy: boolean | null
+          is_takeoutable: boolean
           is_vegan: boolean | null
           is_vegetarian: boolean | null
           name: string
@@ -605,9 +607,11 @@ export type Database = {
           image_url?: string | null
           is_available?: boolean | null
           is_daily_special?: boolean | null
+          is_deliverable?: boolean
           is_gluten_free?: boolean | null
           is_popular?: boolean | null
           is_spicy?: boolean | null
+          is_takeoutable?: boolean
           is_vegan?: boolean | null
           is_vegetarian?: boolean | null
           name: string
@@ -626,9 +630,11 @@ export type Database = {
           image_url?: string | null
           is_available?: boolean | null
           is_daily_special?: boolean | null
+          is_deliverable?: boolean
           is_gluten_free?: boolean | null
           is_popular?: boolean | null
           is_spicy?: boolean | null
+          is_takeoutable?: boolean
           is_vegan?: boolean | null
           is_vegetarian?: boolean | null
           name?: string

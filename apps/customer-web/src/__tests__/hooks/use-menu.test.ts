@@ -100,3 +100,54 @@ describe('useMenuItem', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });
+
+// Channel-filter regression guard:
+//   The shared useMenuItems derives its queryKey from Object.keys(options).
+//   Passing `isDeliverable: undefined` (a previously-shipped bug) silently
+//   changed the cache key for every dine-in caller and busted their cache
+//   on deploy. The wrapper must conditionally spread the key — only
+//   include it when the caller explicitly wants the filter.
+describe('useMenuItems channel-filter call shape', () => {
+  it('omits isDeliverable from the wrapper call when not provided (dine-in default)', () => {
+    const { mockDb } = renderHookWithProviders(() => useMenuItems());
+    const arg = (mockDb.menuItems.findAll as any).mock.calls[0][0];
+    // The KEY must be absent, not present-with-undefined-value.
+    expect('isDeliverable' in arg).toBe(false);
+  });
+
+  it('omits isDeliverable when options object is passed but isDeliverable is not set', () => {
+    // Edge case: a caller passes `{ initialData: [...] }` for SSR
+    // hydration but is in dine-in mode. The wrapper must still omit
+    // isDeliverable, not pass `undefined` through.
+    const { mockDb } = renderHookWithProviders(() => useMenuItems('cat-1', {}));
+    const arg = (mockDb.menuItems.findAll as any).mock.calls[0][0];
+    expect('isDeliverable' in arg).toBe(false);
+  });
+
+  it('passes isDeliverable: true through when the delivery context opts in', () => {
+    const { mockDb } = renderHookWithProviders(() =>
+      useMenuItems(undefined, { isDeliverable: true }),
+    );
+    const arg = (mockDb.menuItems.findAll as any).mock.calls[0][0];
+    expect(arg.isDeliverable).toBe(true);
+  });
+
+  it('preserves an explicit isDeliverable: false (contract for future audit views)', () => {
+    // No production caller passes false today, but the wrapper must not
+    // silently coerce it — that would break any future "show only
+    // non-deliverable" diagnostic view.
+    const { mockDb } = renderHookWithProviders(() =>
+      useMenuItems(undefined, { isDeliverable: false }),
+    );
+    const arg = (mockDb.menuItems.findAll as any).mock.calls[0][0];
+    expect(arg.isDeliverable).toBe(false);
+  });
+
+  it('always sets isAvailable: true (customer-web never shows out-of-stock items)', () => {
+    const { mockDb } = renderHookWithProviders(() =>
+      useMenuItems('cat-1', { isDeliverable: true }),
+    );
+    const arg = (mockDb.menuItems.findAll as any).mock.calls[0][0];
+    expect(arg.isAvailable).toBe(true);
+  });
+});

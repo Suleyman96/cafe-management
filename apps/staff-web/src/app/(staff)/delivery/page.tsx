@@ -13,6 +13,7 @@ import { DeliveryOrderCard } from '@/components/delivery/delivery-order-card';
 import { CancelOrderModal } from '@/components/modals/cancel-order-modal';
 import { CreateDeliveryModal } from '@/components/modals/create-delivery-modal';
 import {
+  useCategories,
   useDeliveryOrders,
   useMarkDelivered,
   useMarkOutForDelivery,
@@ -38,7 +39,8 @@ export default function DeliveryPage() {
   const router = useRouter();
   const { staff } = useAuth();
   const { data: orders, isLoading: loading, error, refetch } = useDeliveryOrders();
-  const { data: menuItems } = useMenuItems();
+  const { data: menuItems } = useMenuItems({ isDeliverable: true });
+  const { data: categories } = useCategories({ isActive: true });
   const { mutateAsync: updateOrderStatusAsync } = useUpdateOrderStatus();
   const { mutateAsync: markOutForDeliveryAsync } = useMarkOutForDelivery();
   const { mutateAsync: markDeliveredAsync } = useMarkDelivered();
@@ -101,7 +103,11 @@ export default function DeliveryPage() {
   const handleMarkOutForDelivery = useCallback(
     async (orderId: string, deliveryPersonId?: string | null) => {
       if (!deliveryPersonId) {
-        toast.error(t('delivery.failedUpdate'));
+        // Match the order-detail page's copy — same precondition, same
+        // actionable message ("open the order, assign a driver, retry").
+        // The previous generic "Failed to update order" left the user with
+        // no idea what to fix.
+        toast.error(t('delivery.assignDriverFirst'));
         return;
       }
       try {
@@ -240,6 +246,7 @@ export default function DeliveryPage() {
       <CreateDeliveryModal
         staffId={staff?.id || ''}
         menuItems={menuItems || []}
+        categories={categories || []}
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={(orderId) => {

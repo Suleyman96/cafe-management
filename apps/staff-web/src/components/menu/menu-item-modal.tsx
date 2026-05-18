@@ -61,6 +61,8 @@ export function MenuItemModal({ item, categories, menuItems = [], onClose }: Men
     is_spicy: item?.is_spicy || false,
     allergens: item?.allergens || [],
     is_available: item?.is_available !== false,
+    is_takeoutable: item?.is_takeoutable !== false,
+    is_deliverable: item?.is_deliverable !== false,
     is_daily_special: item?.is_daily_special || false,
     display_order: nextDisplayOrder,
   });
@@ -363,15 +365,37 @@ export function MenuItemModal({ item, categories, menuItems = [], onClose }: Men
                 placeholder="0"
               />
             </div>
-            <div className="flex items-center gap-2 pt-6">
+            <div className="flex flex-col gap-2 pt-6">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.is_available}
                   onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
                 />
                 <span className="text-sm font-medium text-gray-700">{t('menu.available')}</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.is_takeoutable}
+                  onChange={(e) => setFormData({ ...formData, is_takeoutable: e.target.checked })}
+                  className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  {t('menu.availableForTakeout')}
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.is_deliverable}
+                  onChange={(e) => setFormData({ ...formData, is_deliverable: e.target.checked })}
+                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  {t('menu.availableForDelivery')}
+                </span>
               </label>
             </div>
           </div>

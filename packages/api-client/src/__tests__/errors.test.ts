@@ -97,6 +97,14 @@ describe('handleSupabaseError', () => {
     'refund_exceeds_available',
     'payment_tenant_mismatch',
     'refund_tenant_mismatch',
+    // Channel-policy enforcement (migration 20260517000005). Sentinel
+    // raised by the order_items BEFORE INSERT trigger when a takeout
+    // order tries to include a non-takeoutable item (or delivery + a
+    // non-deliverable item). Must round-trip as ConflictError so the
+    // mutation cache's onError → localizeErrorMessage finds the i18n
+    // key in errors.json.
+    'menu_item_not_takeoutable',
+    'menu_item_not_deliverable',
   ])('maps 23514 with sentinel %s to ConflictError', (sentinel) => {
     const error = handleSupabaseError({ code: '23514', message: sentinel });
     expect(error).toBeInstanceOf(ConflictError);

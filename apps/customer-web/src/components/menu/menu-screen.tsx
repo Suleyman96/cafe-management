@@ -95,13 +95,20 @@ export function MenuScreen({ tableId, initialCategories, initialMenuItems }: Men
   const [dietaryFilters, setDietaryFilters] = useState<DietaryFilter[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Delivery flow uses a sentinel tableId — pre-compute the flag so we
+  // can pass `isDeliverable: true` to the menu query below. Items the
+  // admin has flagged as not-deliverable (melts in transit, doesn't
+  // travel well) shouldn't appear in the delivery menu at all, matching
+  // staff-web's create-delivery modal.
+  const isDelivery = tableId === '__delivery__';
+
   const { data: categories, isLoading: categoriesLoading } = useCategories(
     initialCategories ? { initialData: initialCategories } : undefined,
   );
-  const { data: menuItems, isLoading: itemsLoading } = useMenuItems(
-    selectedCategory,
-    initialMenuItems && !selectedCategory ? { initialData: initialMenuItems } : undefined,
-  );
+  const { data: menuItems, isLoading: itemsLoading } = useMenuItems(selectedCategory, {
+    ...(initialMenuItems && !selectedCategory ? { initialData: initialMenuItems } : {}),
+    ...(isDelivery ? { isDeliverable: true } : {}),
+  });
   const { data: settings } = useCafeSettings();
 
   // H3 — drop cart items that the live menu no longer offers (item
@@ -144,10 +151,9 @@ export function MenuScreen({ tableId, initialCategories, initialMenuItems }: Men
   const isLoading = categoriesLoading || itemsLoading;
   const hasCartItems = itemCount > 0;
 
-  // M2 — cart route surfaced in the post-add confirmation strip. The
-  // sentinel `__delivery__` keeps `MenuScreen` flow-agnostic; flipping
-  // it here once instead of leaking the check into the modal/card.
-  const isDelivery = tableId === '__delivery__';
+  // M2 — cart route surfaced in the post-add confirmation strip.
+  // `isDelivery` itself is declared near the top so the menu-items
+  // query can flip on the deliverable filter before this point.
   const cartHref = isDelivery ? '/delivery/cart' : `/table/${tableId}/cart`;
 
   // M3 — minimum-order chip on the menu header. Surfaces the threshold

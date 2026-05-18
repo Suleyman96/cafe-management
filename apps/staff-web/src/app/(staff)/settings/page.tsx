@@ -3,6 +3,7 @@
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { Button, getRoleBadgeColor, LoadingSpinner } from '@gustri/ui-web';
+import * as Sentry from '@sentry/nextjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Eye, EyeOff, Globe, Key, Mail, Shield, User } from 'lucide-react';
 import { useState } from 'react';
@@ -26,19 +27,51 @@ export default function SettingsPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  // Two-stage language change:
+  //   1. `loadAndSwitchLanguage(lang)` — local, dynamic-imports the
+  //      locale JSON and flips i18n. This MUST succeed for the user to
+  //      see anything change; a failure here (typically a Webpack
+  //      chunk 404 in dev, or an unknown lang code) is a real bug we
+  //      want to surface with the actual message via Sentry + toast.
+  //   2. `db.staff.update({ preferred_language })` — persistence so
+  //      *next* session opens in the chosen language. Best-effort: if
+  //      this fails (RLS denial, network blip), we keep the in-memory
+  //      switch and just log to Sentry. The user already sees the new
+  //      UI; bailing them back to the old language would feel worse
+  //      than missing the persist.
+  //
+  // Pre-refactor, both ran in one awaited block under a generic
+  // `onError: toast.error(t('error'))` — any failure showed a useless
+  // "Error" toast and the real error was silently swallowed, which is
+  // why "only EN and AZ work" was untriagable.
   const updateLanguageMutation = useMutation({
     mutationFn: async (lang: string) => {
       await loadAndSwitchLanguage(lang);
+
       if (staff?.id) {
-        await db.staff.update(staff.id, { preferred_language: lang });
+        try {
+          await db.staff.update(staff.id, { preferred_language: lang });
+        } catch (persistErr) {
+          // Best-effort persistence — don't reject the whole mutation,
+          // the user already sees the new language. Log so we can
+          // diagnose if a tenant reports "my language keeps reverting
+          // on next login".
+          Sentry.captureException(persistErr, {
+            tags: { context: 'settings-persist-preferred-language' },
+            extra: { lang },
+          });
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.STAFF) });
       toast.success(t('settings.languageChanged'));
     },
-    onError: () => {
-      toast.error(t('error', { ns: 'common' }));
+    onError: (error) => {
+      Sentry.captureException(error, {
+        tags: { context: 'settings-change-language' },
+      });
+      toastLocalizedError(error, t('settings.failedChangeLanguage'));
     },
   });
 

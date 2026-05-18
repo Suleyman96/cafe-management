@@ -77,6 +77,8 @@ export {
   useTaxMultiplier,
   useTodaysTasks,
   useToggleMenuItemAvailability,
+  useToggleMenuItemDeliverable,
+  useToggleMenuItemTakeoutable,
   useTopSoldItems,
   useTopWastedItems,
   useTransferTable,

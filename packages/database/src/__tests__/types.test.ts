@@ -482,6 +482,8 @@ describe('Table Schemas', () => {
       is_spicy: false,
       allergens: [],
       is_available: true,
+      is_takeoutable: true,
+      is_deliverable: true,
       is_daily_special: false,
       display_order: 0,
       created_at: now,

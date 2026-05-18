@@ -198,7 +198,19 @@ const languageLoaders: Record<string, () => Promise<NamespaceBundles>> = {
   }),
 };
 
-// Dynamically load and switch language (only loads the requested language on demand)
+/**
+ * Dynamically load a locale's resource bundles and switch i18n to it.
+ *
+ * Failure modes worth knowing:
+ * - Unknown `lang` code → throws. Previously this returned silently,
+ *   which hid genuine bugs (typos in the LANGUAGES list, ungenerated
+ *   loaders for new locales). Settings now surfaces the throw via
+ *   Sentry + a localised toast.
+ * - Dynamic import rejects (typically a Next.js dev-mode chunk 404 for
+ *   locales that haven't been touched since the last full build) →
+ *   rethrows with the locale code attached so the Sentry breadcrumb
+ *   identifies which chunk is missing.
+ */
 export async function loadAndSwitchLanguage(lang: string) {
   // Skip if already loaded
   if (i18n.hasResourceBundle(lang, 'common')) {
@@ -208,10 +220,18 @@ export async function loadAndSwitchLanguage(lang: string) {
 
   const loader = languageLoaders[lang];
   if (!loader) {
-    return;
+    throw new Error(`No loader registered for language code: ${lang}`);
   }
 
-  const bundles = await loader();
+  let bundles: NamespaceBundles;
+  try {
+    bundles = await loader();
+  } catch (err) {
+    // Re-throw with locale context. The original error is preserved in
+    // `cause` so Sentry can group identical failures across locales
+    // (dev chunk 404s tend to cluster after .next cache churn).
+    throw new Error(`Failed to load locale bundle '${lang}'`, { cause: err });
+  }
 
   i18n.addResourceBundle(lang, 'common', bundles.common);
   i18n.addResourceBundle(lang, 'nav', bundles.nav);

@@ -78,6 +78,7 @@ function renderModal() {
     <CreateDeliveryModal
       staffId="staff-1"
       menuItems={[menuItem]}
+      categories={[]}
       isOpen={true}
       onClose={vi.fn()}
       onSuccess={vi.fn()}

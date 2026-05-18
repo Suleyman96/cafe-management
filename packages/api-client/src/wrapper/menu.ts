@@ -21,6 +21,8 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
       categoryId?: string;
       isAvailable?: boolean;
       isPopular?: boolean;
+      isTakeoutable?: boolean;
+      isDeliverable?: boolean;
     }) => {
       // Anon QR menu browse hits this before set_table_context() runs.
       let query = applyTenantScope(
@@ -45,6 +47,12 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
       }
       if (options?.isPopular !== undefined) {
         query = query.eq('is_popular', options.isPopular);
+      }
+      if (options?.isTakeoutable !== undefined) {
+        query = query.eq('is_takeoutable', options.isTakeoutable);
+      }
+      if (options?.isDeliverable !== undefined) {
+        query = query.eq('is_deliverable', options.isDeliverable);
       }
 
       const { data, error } = await query;
@@ -101,6 +109,32 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
       const { data, error } = await ctx.anyClient
         .from('menu_items')
         .update({ is_available: !currentAvailable })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isMenuItem(data)) throw new Error('Invalid menu item data');
+      return data;
+    },
+
+    toggleTakeoutable: async (id: string, currentTakeoutable: boolean) => {
+      const { data, error } = await ctx.anyClient
+        .from('menu_items')
+        .update({ is_takeoutable: !currentTakeoutable })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw handleSupabaseError(error);
+      if (!isMenuItem(data)) throw new Error('Invalid menu item data');
+      return data;
+    },
+
+    toggleDeliverable: async (id: string, currentDeliverable: boolean) => {
+      const { data, error } = await ctx.anyClient
+        .from('menu_items')
+        .update({ is_deliverable: !currentDeliverable })
         .eq('id', id)
         .select()
         .single();

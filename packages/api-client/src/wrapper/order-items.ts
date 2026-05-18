@@ -15,6 +15,16 @@ import type { OrderItemInsert, OrderItemRow, WrapperContext } from './types';
 
 export function createOrderItemsWrapper(ctx: WrapperContext) {
   return {
+    // TODO(channel-enforcement): the takeout/delivery pickers filter by
+    // `is_takeoutable` / `is_deliverable` client-side, but this insert
+    // accepts any menu_item_id. A buggy or malicious staff client could
+    // POST a non-deliverable item to a delivery order and the wrapper
+    // would happily insert it. Proper fix is a CHECK trigger that joins
+    // order → menu_items and rejects when `(order_type, channel_flag)`
+    // disagree. Scoped out of the initial channel-flag rollout
+    // (20260517000004) because staff-only RLS scope makes the threat
+    // model limited. Track in a follow-up issue before opening this to
+    // non-staff API consumers.
     create: async (items: OrderItemInsert[]) => {
       const requestIds = items.map((item) => item.client_request_id);
       const data = await dedupeInsertMany<unknown>(requestIds, {

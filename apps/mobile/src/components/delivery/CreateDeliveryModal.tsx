@@ -46,7 +46,15 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
   const createOrder = useCreateOrder();
   const addOrderItems = useAddOrderItems();
   const { data: settings } = useCafeSettings();
-  const { data: menuItems, isLoading: menuLoading } = useMenuItems({ isAvailable: true });
+  // Hide items the admin has flagged as not deliverable (e.g. ice cream,
+  // delicate plated desserts that don't survive transit). Mirrors the web
+  // create-delivery modal — both surfaces must agree on what the customer
+  // could see for delivery, otherwise a waiter taking a phone order would
+  // offer items the web flow doesn't.
+  const { data: menuItems, isLoading: menuLoading } = useMenuItems({
+    isAvailable: true,
+    isDeliverable: true,
+  });
   const { data: categories } = useCategories();
   const createDeliveryCustomer = useCreateDeliveryCustomer();
   const currencySymbol = useCurrencySymbol();

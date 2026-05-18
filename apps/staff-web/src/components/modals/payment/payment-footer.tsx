@@ -16,6 +16,11 @@ interface PaymentFooterProps {
   isZeroTotal: boolean;
   loading: boolean;
   canPay: boolean;
+  // When true, the previous payment attempt failed and the action button
+  // re-labels to "Retry payment" so the cashier sees the call-to-action
+  // matches the inline banner. The idempotency key in the parent ensures a
+  // retry is safe even if the prior request silently succeeded server-side.
+  isRetry?: boolean;
   onCancel: () => void;
   onPay: () => void;
   onCompleteOrder: () => void;
@@ -33,6 +38,7 @@ export function PaymentFooter({
   isZeroTotal,
   loading,
   canPay,
+  isRetry = false,
   onCancel,
   onPay,
   onCompleteOrder,
@@ -83,7 +89,11 @@ export function PaymentFooter({
             disabled={paymentAmount <= 0 || paymentAmount > balance + 0.01 || loading || !canPay}
             className="flex-1"
           >
-            {loading ? t('payment.processing') : t('payment.processPaymentBtn')}
+            {loading
+              ? t('payment.processing')
+              : isRetry
+                ? t('payment.retryPaymentBtn')
+                : t('payment.processPaymentBtn')}
           </Button>
         )}
       </div>

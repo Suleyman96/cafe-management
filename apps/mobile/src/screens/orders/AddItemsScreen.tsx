@@ -1,3 +1,4 @@
+import { applyMenuFilter, deriveChannelFilter } from '@gustri/core';
 import { type MenuItem, ORDER_ITEM_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
@@ -9,7 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MenuItemCard } from '@/components/orders/MenuItemCard';
-import { useCategories, useCreateOrder, useCurrencySymbol } from '@/hooks/local';
+import { useCategories, useCreateOrder, useCurrencySymbol, useOrder } from '@/hooks/local';
 import { useAddOrderItems, useMenuItems } from '@/hooks/shared';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
@@ -49,6 +50,17 @@ export default function AddItemsScreen() {
   const { data: categories } = useCategories();
   const addOrderItems = useAddOrderItems();
   const createOrder = useCreateOrder();
+  // When adding to an existing order, the order type decides which channel
+  // policy applies — takeout orders hide non-takeoutable items, delivery
+  // orders hide non-deliverable items. New-order flows (tableId only) are
+  // always dine-in, so no channel filter applies. The `enabled` gate
+  // skips the fetch entirely for the new-order path — passing an empty
+  // id otherwise pollutes Sentry with not-found errors.
+  const { data: existingOrder } = useOrder(orderId || '', { enabled: !!orderId });
+  const channelFilter = useMemo(
+    () => (existingOrder ? deriveChannelFilter(existingOrder.order_type) : null),
+    [existingOrder],
+  );
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<Record<string, CartItem>>({});
@@ -60,11 +72,15 @@ export default function AddItemsScreen() {
     }
   }, [categories, selectedCategory]);
 
-  const filteredItems = useMemo(() => {
-    if (!menuItems) return [];
-    if (!selectedCategory) return menuItems;
-    return menuItems.filter((item) => item.category_id === selectedCategory);
-  }, [menuItems, selectedCategory]);
+  const filteredItems = useMemo(
+    () =>
+      applyMenuFilter({
+        items: menuItems ?? [],
+        selectedCategoryId: selectedCategory,
+        channelFilter,
+      }),
+    [menuItems, selectedCategory, channelFilter],
+  );
 
   const cartSummary = useMemo(() => {
     const items = Object.values(cart);

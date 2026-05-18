@@ -26,6 +26,8 @@ interface MenuGridProps {
   onEditCategory: (category: Category) => void;
   onDeleteCategory: (id: string) => void;
   onToggleAvailability: (id: string, currentAvailable: boolean) => void;
+  onToggleTakeoutable: (id: string, currentTakeoutable: boolean) => void;
+  onToggleDeliverable: (id: string, currentDeliverable: boolean) => void;
   onAddMenuItem: () => void;
   t: TFunc;
 }
@@ -45,6 +47,8 @@ export function MenuGrid({
   onEditCategory,
   onDeleteCategory,
   onToggleAvailability,
+  onToggleTakeoutable,
+  onToggleDeliverable,
   onAddMenuItem,
   t,
 }: MenuGridProps) {
@@ -85,6 +89,8 @@ export function MenuGrid({
               onEdit={onEditItem}
               onDelete={onDeleteItem}
               onToggleAvailability={onToggleAvailability}
+              onToggleTakeoutable={onToggleTakeoutable}
+              onToggleDeliverable={onToggleDeliverable}
               t={t}
             />
           ))}
@@ -147,6 +153,8 @@ export function MenuGrid({
                     onEdit={() => onEditItem(item)}
                     onDelete={() => onDeleteItem(item.id)}
                     onToggleAvailability={() => onToggleAvailability(item.id, item.is_available)}
+                    onToggleTakeoutable={() => onToggleTakeoutable(item.id, item.is_takeoutable)}
+                    onToggleDeliverable={() => onToggleDeliverable(item.id, item.is_deliverable)}
                     t={t}
                   />
                 ))}
@@ -173,6 +181,8 @@ export function MenuGrid({
                 onEdit={() => onEditItem(item)}
                 onDelete={() => onDeleteItem(item.id)}
                 onToggleAvailability={() => onToggleAvailability(item.id, item.is_available)}
+                onToggleTakeoutable={() => onToggleTakeoutable(item.id, item.is_takeoutable)}
+                onToggleDeliverable={() => onToggleDeliverable(item.id, item.is_deliverable)}
                 t={t}
               />
             ))}

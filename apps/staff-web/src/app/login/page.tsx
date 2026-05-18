@@ -7,13 +7,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth-store';
-import { type SignInErrorCode, signInAction } from './actions';
-
-const ERROR_KEY_BY_CODE: Record<SignInErrorCode, string> = {
-  invalid_credentials: 'loginFailed',
-  no_active_staff: 'noActiveStaff',
-  unexpected: 'unexpectedError',
-};
+import { signInAction } from './actions';
+// Intentionally NOT using a `Record<SignInErrorCode, key>` lookup table
+// here even though it's terser — the i18n parity scanner in
+// `packages/i18n` walks call sites for literal string arguments to `t()`,
+// and a Record-indexed lookup hides those keys from the regex. Without
+// literal keys, parity coverage drops and a missing translation can
+// ship silently. The switch below pays the verbosity tax to keep the
+// keys statically discoverable.
 
 export default function LoginPage() {
   const router = useRouter();
@@ -53,7 +54,16 @@ export default function LoginPage() {
         return;
       }
 
-      setError(t(ERROR_KEY_BY_CODE[result.error]));
+      switch (result.error) {
+        case 'invalid_credentials':
+          setError(t('loginFailed'));
+          break;
+        case 'no_active_staff':
+          setError(t('noActiveStaff'));
+          break;
+        default:
+          setError(t('unexpectedError'));
+      }
       setLoading(false);
     } catch (err) {
       // Network/transport failures invoking the action. The action

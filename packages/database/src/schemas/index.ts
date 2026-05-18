@@ -134,6 +134,8 @@ export const MenuItemSchema = z.object({
   is_spicy: z.boolean(),
   allergens: z.array(z.string().max(50)).nullable(),
   is_available: z.boolean(),
+  is_takeoutable: z.boolean(),
+  is_deliverable: z.boolean(),
   is_daily_special: z.boolean(),
   display_order: z.number().int(),
   created_at: z.string(),

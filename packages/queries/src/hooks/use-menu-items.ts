@@ -7,6 +7,8 @@ export function useMenuItems(options?: {
   categoryId?: string;
   isAvailable?: boolean;
   isPopular?: boolean;
+  isTakeoutable?: boolean;
+  isDeliverable?: boolean;
   initialData?: MenuItemWithCategory[];
   enabled?: boolean;
 }) {
@@ -15,7 +17,13 @@ export function useMenuItems(options?: {
   const initialData = options?.initialData;
   const enabled = options?.enabled ?? true;
   let filterOptions:
-    | { categoryId?: string; isAvailable?: boolean; isPopular?: boolean }
+    | {
+        categoryId?: string;
+        isAvailable?: boolean;
+        isPopular?: boolean;
+        isTakeoutable?: boolean;
+        isDeliverable?: boolean;
+      }
     | undefined;
   if (options) {
     const { initialData: _, enabled: __, ...rest } = options;

@@ -42,10 +42,23 @@ import {
   useUpdateOrderItemStatus,
   useUpdateOrderStatus,
 } from '@/hooks';
+import { useClockSync } from '@/hooks/use-clock-sync';
 import { usePendingAction } from '@/hooks/use-pending-action';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 import { ORDER_ITEM_STATUS_ICONS } from '@/lib/enum-icons';
+import { getServerNow } from '@/lib/server-clock';
 import { useAuthStore } from '@/store/auth-store';
+
+/**
+ * Skew threshold above which the kitchen view surfaces a "device clock is
+ * off" banner. Two minutes is the smallest gap that meaningfully distorts
+ * elapsed-time on a typical 5-15 minute kitchen prep cycle — below it,
+ * the existing 30s tick granularity masks the difference. Above it, every
+ * card's elapsed-minutes count is visibly wrong and staff would
+ * mis-prioritise. The banner asks the user to fix the device, not the
+ * app — there is no way for the app to override the OS clock.
+ */
+const CLOCK_SKEW_BANNER_THRESHOLD_MS = 2 * 60 * 1000;
 
 // Item-status progression order for the per-station bulk advance check.
 // `cancelled` is excluded — cancellation is terminal but does not block
@@ -166,13 +179,23 @@ export default function KitchenDisplayPage() {
       : []),
   ]);
 
-  // Calculate elapsed time
+  // Calculate elapsed time. Uses server-anchored `getServerNow()` rather
+  // than `Date.now()` so a drifted device clock can't reclassify orders
+  // as overdue (or wrongly fresh). See lib/server-clock.ts.
   const calculateElapsedTime = (createdAt: string) => {
-    const start = new Date(createdAt);
-    const now = new Date();
-    const diffMinutes = Math.floor((now.getTime() - start.getTime()) / 1000 / 60);
+    const startMs = new Date(createdAt).getTime();
+    const diffMinutes = Math.floor((getServerNow() - startMs) / 1000 / 60);
     return diffMinutes;
   };
+
+  // Surface a banner when the device clock is meaningfully out of sync
+  // with the server. Reads from useSyncExternalStore so it only re-renders
+  // when a sync sample actually lands, not on every Date.now() tick.
+  const clockSync = useClockSync();
+  const showClockSkewBanner =
+    clockSync.lastSyncedAt > 0 && Math.abs(clockSync.offsetMs) >= CLOCK_SKEW_BANNER_THRESHOLD_MS;
+  const clockSkewMinutes = Math.round(Math.abs(clockSync.offsetMs) / 60_000);
+  const deviceIsBehind = clockSync.offsetMs > 0;
 
   // Get time color based on elapsed time. Band comes from the canonical
   // classifier in `@gustri/core` so this and the mobile kitchen agree on
@@ -463,6 +486,24 @@ export default function KitchenDisplayPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 p-3 sm:p-6">
+      {showClockSkewBanner && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="mb-4 sm:mb-6 rounded-lg border-2 border-amber-400 bg-amber-100 px-3 sm:px-4 py-2 sm:py-3 flex items-start gap-2 sm:gap-3"
+        >
+          <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-amber-700 flex-shrink-0 mt-0.5" />
+          <div className="text-amber-900 text-sm sm:text-base">
+            <p className="font-semibold">{t('kitchen.clockSkewBannerTitle')}</p>
+            <p className="mt-0.5">
+              {t(
+                deviceIsBehind ? 'kitchen.clockSkewBannerBehind' : 'kitchen.clockSkewBannerAhead',
+                { count: clockSkewMinutes },
+              )}
+            </p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-2 sm:gap-4 flex-wrap">

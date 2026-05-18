@@ -51,6 +51,8 @@ export function createMockDb(): Record<string, any> {
       'update',
       'create',
       'toggleAvailability',
+      'toggleTakeoutable',
+      'toggleDeliverable',
       'delete',
     ),
     categories: mockResource('findAll', 'create', 'update', 'delete'),

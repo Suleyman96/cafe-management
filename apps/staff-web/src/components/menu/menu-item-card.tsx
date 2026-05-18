@@ -14,6 +14,8 @@ interface MenuItemCardProps {
   onEdit: (item: MenuItem) => void;
   onDelete: (id: string) => void;
   onToggleAvailability: (id: string, currentAvailable: boolean) => void;
+  onToggleTakeoutable: (id: string, currentTakeoutable: boolean) => void;
+  onToggleDeliverable: (id: string, currentDeliverable: boolean) => void;
   t: (key: string, opts?: Record<string, string | number>) => string;
 }
 
@@ -23,6 +25,8 @@ function MenuItemCardImpl({
   onEdit,
   onDelete,
   onToggleAvailability,
+  onToggleTakeoutable,
+  onToggleDeliverable,
   t,
 }: MenuItemCardProps) {
   const formatPrice = useFormatPrice();
@@ -132,34 +136,34 @@ function MenuItemCardImpl({
         )}
 
         {/* Actions row */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-          {/* Availability toggle */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleAvailability(item.id, item.is_available);
-            }}
-            className="flex items-center gap-1.5 text-xs font-medium transition-colors"
-            title={item.is_available ? t('menu.markUnavailable') : t('menu.markAvailable')}
-          >
-            <div
-              className={`relative w-8 h-[18px] rounded-full transition-colors ${
-                item.is_available ? 'bg-green-500' : 'bg-gray-300'
-              }`}
-            >
-              <div
-                className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-white shadow-sm transition-transform ${
-                  item.is_available ? 'left-[16px]' : 'left-[2px]'
-                }`}
-              />
-            </div>
-            <span className={item.is_available ? 'text-green-600' : 'text-gray-400'}>
-              {item.is_available ? t('menu.available') : t('menu.unavailableShort')}
-            </span>
-          </button>
+        <div className="flex items-start justify-between gap-2 mt-3 pt-3 border-t border-gray-100">
+          {/* Channel toggles: kitchen availability + takeout + delivery */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <ChannelToggle
+              active={item.is_available}
+              activeColor="green"
+              label={item.is_available ? t('menu.available') : t('menu.unavailableShort')}
+              title={item.is_available ? t('menu.markUnavailable') : t('menu.markAvailable')}
+              onClick={() => onToggleAvailability(item.id, item.is_available)}
+            />
+            <ChannelToggle
+              active={item.is_takeoutable}
+              activeColor="orange"
+              label={t('menu.takeout')}
+              title={item.is_takeoutable ? t('menu.markNotTakeoutable') : t('menu.markTakeoutable')}
+              onClick={() => onToggleTakeoutable(item.id, item.is_takeoutable)}
+            />
+            <ChannelToggle
+              active={item.is_deliverable}
+              activeColor="purple"
+              label={t('menu.delivery')}
+              title={item.is_deliverable ? t('menu.markNotDeliverable') : t('menu.markDeliverable')}
+              onClick={() => onToggleDeliverable(item.id, item.is_deliverable)}
+            />
+          </div>
 
           {/* Edit / Delete */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -184,6 +188,64 @@ function MenuItemCardImpl({
         </div>
       </div>
     </div>
+  );
+}
+
+type ChannelColor = 'green' | 'orange' | 'purple';
+
+// Tailwind needs the full class strings present in source so the JIT picks
+// them up — `bg-${color}-500` won't compile. Lookup table keeps the JSX
+// readable while satisfying the JIT.
+const TOGGLE_ACTIVE_BG: Record<ChannelColor, string> = {
+  green: 'bg-green-500',
+  orange: 'bg-orange-500',
+  purple: 'bg-purple-500',
+};
+const TOGGLE_ACTIVE_TEXT: Record<ChannelColor, string> = {
+  green: 'text-green-600',
+  orange: 'text-orange-600',
+  purple: 'text-purple-600',
+};
+
+interface ChannelToggleProps {
+  active: boolean;
+  activeColor: ChannelColor;
+  label: string;
+  title: string;
+  onClick: () => void;
+}
+
+function ChannelToggle({ active, activeColor, label, title, onClick }: ChannelToggleProps) {
+  return (
+    <button
+      type="button"
+      // aria-pressed turns this into a toggle button for assistive tech —
+      // screen readers announce "Available, toggle button, pressed" vs
+      // "Available, toggle button, not pressed", so the visual switch
+      // state isn't silently lost. The `title` provides on/off prose for
+      // sighted hover but isn't reliably read by screen readers.
+      aria-pressed={active}
+      aria-label={title}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className="flex items-center gap-1.5 text-xs font-medium transition-colors"
+      title={title}
+    >
+      <div
+        className={`relative w-8 h-[18px] rounded-full transition-colors ${
+          active ? TOGGLE_ACTIVE_BG[activeColor] : 'bg-gray-300'
+        }`}
+      >
+        <div
+          className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-white shadow-sm transition-transform ${
+            active ? 'left-[16px]' : 'left-[2px]'
+          }`}
+        />
+      </div>
+      <span className={active ? TOGGLE_ACTIVE_TEXT[activeColor] : 'text-gray-400'}>{label}</span>
+    </button>
   );
 }
 

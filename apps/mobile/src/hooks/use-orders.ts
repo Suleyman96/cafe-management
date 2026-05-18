@@ -260,16 +260,21 @@ export function useOrders(filters?: {
 }
 
 /**
- * Mobile-local single-order read. Unlike `@gustri/queries.useOrder`, this
- * variant doesn't gate on `enabled: !!orderId` because every call site
- * routes via a stack-navigation param that's guaranteed non-empty.
+ * Mobile-local single-order read. Most call sites navigate here with a
+ * non-empty stack-param id, but the AddItems screen also opens for the
+ * new-dine-in flow (tableId only, no orderId yet) and needs to skip the
+ * fetch entirely — hence the optional `enabled` gate, mirroring the
+ * shared `@gustri/queries.useOrder`. Without the gate, callers passing
+ * an empty id fire `findById('')` and pollute Sentry with not-found
+ * errors on every screen open.
  */
-export function useOrder(orderId: string) {
+export function useOrder(orderId: string, options?: { enabled?: boolean }) {
   const db = useDb();
   return useQuery({
     queryKey: [QUERY_KEYS.ORDER, orderId],
     queryFn: async (): Promise<Order> => {
       return await db.orders.findById(orderId);
     },
+    enabled: !!orderId && (options?.enabled ?? true),
   });
 }
