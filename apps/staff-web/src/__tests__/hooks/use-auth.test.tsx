@@ -423,5 +423,70 @@ describe('useAuth', () => {
       expect(db.staff.findByAuthId).toHaveBeenCalledWith('auth-user-1');
       expect(useAuthStore.getState().staff).toEqual(mockStaff);
     });
+
+    // Regression: a freshly-subscribed listener receives INITIAL_SESSION
+    // with whatever `_initialize()` cached when the SDK first ran. On
+    // /login that's `null`. The old handler treated `!session` as a
+    // sign-out and bounced the user back to /login right after a
+    // successful sign-in, requiring multiple hard refreshes to work
+    // around. The handler must now ignore null INITIAL_SESSION.
+    it('does not redirect to /login when INITIAL_SESSION fires with null session', async () => {
+      let authCallback: (event: string, session: any) => Promise<void>;
+      (supabase.auth.getSession as any).mockResolvedValueOnce({
+        data: { session: null },
+        error: null,
+      });
+      (supabase.auth.onAuthStateChange as any).mockImplementationOnce(
+        (cb: (event: string, session: any) => Promise<void>) => {
+          authCallback = cb;
+          return { data: { subscription: { unsubscribe: vi.fn() } } };
+        },
+      );
+
+      renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
+
+      await waitFor(() => {
+        expect(useAuthStore.getState().isLoading).toBe(false);
+      });
+
+      mockPush.mockClear();
+
+      await act(async () => {
+        await authCallback!('INITIAL_SESSION', null);
+      });
+
+      expect(mockPush).not.toHaveBeenCalledWith('/login');
+      expect(db.staff.findByAuthId).not.toHaveBeenCalled();
+    });
+
+    it('still redirects to /login on explicit SIGNED_OUT event', async () => {
+      let authCallback: (event: string, session: any) => Promise<void>;
+      useAuthStore.setState({ staff: mockAdminStaff, isLoading: false });
+      (supabase.auth.getSession as any).mockResolvedValueOnce({
+        data: { session: { user: { id: 'auth-user-1' } } },
+        error: null,
+      });
+      (supabase.auth.onAuthStateChange as any).mockImplementationOnce(
+        (cb: (event: string, session: any) => Promise<void>) => {
+          authCallback = cb;
+          return { data: { subscription: { unsubscribe: vi.fn() } } };
+        },
+      );
+
+      renderHook(() => useAuth(), { wrapper: makeAuthWrapper() });
+
+      await waitFor(() => {
+        expect(supabase.auth.onAuthStateChange).toHaveBeenCalled();
+      });
+
+      mockPush.mockClear();
+
+      await act(async () => {
+        await authCallback!('SIGNED_OUT', null);
+      });
+
+      expect(useAuthStore.getState().staff).toBeNull();
+      expect(mockPush).toHaveBeenCalledWith('/login');
+    });
   });
 });

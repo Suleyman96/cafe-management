@@ -6,6 +6,8 @@ import * as Sentry from '@sentry/nextjs';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { installSession } from '@/hooks/use-auth';
+import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
 import { signInAction } from './actions';
 // Intentionally NOT using a `Record<SignInErrorCode, key>` lookup table
@@ -19,7 +21,7 @@ import { signInAction } from './actions';
 export default function LoginPage() {
   const router = useRouter();
   const { t } = useTranslation('auth');
-  const { staff } = useAuthStore();
+  const { staff, setStaff } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,11 +47,28 @@ export default function LoginPage() {
       const result = await signInAction(email, password);
 
       if (result.ok) {
-        // The action's HTTP response already carried the `Set-Cookie`
-        // headers for the new session — the browser committed them
-        // before this promise resolved. `router.push('/')` is therefore
-        // race-free: middleware's `getSession()` will see the cookie on
-        // its first read.
+        // Two cookies appeared on this tab via the action response, but
+        // the browser-side Supabase singleton (instantiated when /login
+        // mounted with no session) won't notice them — `_initialize()`
+        // runs once per SDK instance. If we just `router.push('/')`,
+        // useAuth's first `onAuthStateChange` subscriber fires
+        // `INITIAL_SESSION` with `null` and bounces the user back here.
+        //
+        // Mirror the dev-login flow: hand the tokens to the SDK via
+        // `setSession` (verifies the access_token and emits SIGNED_IN
+        // against the populated session), then commit the staff row +
+        // tenant context to the auth store with `installSession`. By
+        // the time the destination page mounts useAuth, the store
+        // already has staff and the rehydrate branch runs — no spinner,
+        // no fetch round-trip.
+        const { error: sessionError } = await supabase.auth.setSession(result.session);
+        if (sessionError) {
+          Sentry.captureException(sessionError, { tags: { context: 'login-set-session' } });
+          setError(t('unexpectedError'));
+          setLoading(false);
+          return;
+        }
+        installSession(result.staff, setStaff);
         router.push('/');
         return;
       }

@@ -308,12 +308,25 @@ export function useAuth() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled) return;
 
-      if (event === 'SIGNED_OUT' || !session) {
+      // Only treat an explicit SIGNED_OUT as a sign-out. The `|| !session`
+      // arm used to live here as defense-in-depth, but it caused the
+      // post-login bounce-back bug: a freshly-subscribed listener gets
+      // an INITIAL_SESSION event whose session reflects whatever
+      // `_initialize()` cached when the SDK first ran — null on /login,
+      // even if cookies have since been set by `signInAction`. Treating
+      // that as a sign-out kicked the user back to /login until a hard
+      // refresh re-instantiated the SDK with the cookies present.
+      // Genuine token-refresh failures still surface as SIGNED_OUT from
+      // the SDK; the no-session case during cold init is handled by
+      // the initSession path above (which calls clearAuth without an
+      // aggressive redirect — ProtectedRoute owns the redirect decision
+      // once isLoading settles).
+      if (event === 'SIGNED_OUT') {
         clearAuth();
         routerRef.current.push('/login');
       } else if (
         (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') &&
-        session.user
+        session?.user
       ) {
         // Only load staff if we don't have it yet
         if (!useAuthStore.getState().staff) {
