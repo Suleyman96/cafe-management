@@ -1,13 +1,32 @@
+import { httpStatusToAppError } from '@gustri/api-client';
 import { RateLimitError } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import { getOrCreateClientRequestId } from '@gustri/queries';
+import * as Sentry from '@sentry/nextjs';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
 type WaiterCallRow = Database['public']['Tables']['waiter_calls']['Row'];
 type CustomerFeedbackRow = Database['public']['Tables']['customer_feedback']['Row'];
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+// H5 — explicit dev-only fallback. `next.config.js` throws at build time
+// when `NEXT_PUBLIC_API_BASE_URL` is unset in a production build, so the
+// `http://localhost:3001` fallback only kicks in for local dev. If
+// somehow we reach the runtime in a non-dev environment without the var,
+// flag it loudly to Sentry instead of silently posting to an unreachable
+// host.
+const API_BASE_URL = (() => {
+  const fromEnv = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (fromEnv) return fromEnv;
+  if (process.env.NODE_ENV === 'development') return 'http://localhost:3001';
+  if (typeof window !== 'undefined') {
+    Sentry.captureMessage(
+      'NEXT_PUBLIC_API_BASE_URL is unset in a non-development build — customer mutations will fail',
+      { level: 'error' },
+    );
+  }
+  return '';
+})();
 
 /**
  * Client-side rate limiter to prevent rapid-fire API calls.
@@ -29,7 +48,11 @@ function checkClientRateLimit(path: string, maxRequests: number, windowMs: numbe
 }
 
 async function apiFetch<T>(path: string, init: RequestInit): Promise<T> {
-  // Client-side throttle: max 5 POST requests per 30s per endpoint
+  // Client-side throttle: max 5 POST requests per 30s per endpoint.
+  // S5 — `checkClientRateLimit` already throws `RateLimitError` from
+  // `@gustri/core`, which is an `AppError` subclass with `message =
+  // 'rate_limited'`. The mutation cache's `isAppError(error)` check
+  // localizes it via `localizeErrorMessage` → translated toast.
   if (init.method === 'POST') {
     checkClientRateLimit(path, 5, 30_000);
   }
@@ -42,10 +65,24 @@ async function apiFetch<T>(path: string, init: RequestInit): Promise<T> {
     },
   });
 
-  const body = await res.json();
+  // S5 — defensively parse: some error responses (or proxies) may not be
+  // JSON. Falling back to an empty object keeps `httpStatusToAppError`
+  // typed and lets it pick the right `AppError` subclass off the status
+  // code alone.
+  let body: { error?: string; details?: Record<string, unknown> } | null = null;
+  try {
+    body = (await res.json()) as { error?: string; details?: Record<string, unknown> };
+  } catch {
+    body = null;
+  }
 
   if (!res.ok) {
-    throw new Error(body.error || `API error ${res.status}`);
+    // S5 — emit a typed `AppError` so the mutation cache's
+    // `isAppError(error)` branch in `providers.tsx` runs
+    // `localizeErrorMessage(error.message, fallback)`. Pre-fix this
+    // threw bare `new Error(body.error)` and customers saw raw sentinel
+    // codes (`rate_limited`, `qr_token_revoked`, …) in toasts.
+    throw httpStatusToAppError(res.status, body);
   }
 
   return body as T;
@@ -119,6 +156,7 @@ type CreateFeedbackPayload = {
   order_id?: string | null;
   feedback_type: 'complaint' | 'praise';
   message: string;
+  client_request_id?: string;
 };
 
 export const apiRoutes = {
@@ -152,6 +190,24 @@ export const apiRoutes = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+
+    // C3 — per-item cancel through the API instead of direct-Supabase.
+    // Pre-fix the customer-web hook called `db.orderItems.cancel()`,
+    // which bypassed the Upstash limiter AND the M6 `table_id` match
+    // check. Same `order-cancel` rate-limit bucket as the order-level
+    // path (5/60s/IP) — cancellation is rare per legitimate session.
+    cancelItem: (
+      orderId: string,
+      itemId: string,
+      data: { table_id: string; cancel_qty?: number | null },
+    ) =>
+      apiFetch<{ item: OrderItemRow }>(
+        `/api/v1/customer/orders/${orderId}/items/${itemId}/cancel`,
+        {
+          method: 'POST',
+          body: JSON.stringify(data),
+        },
+      ),
   },
 
   // H1 — both endpoints replace direct `db.waiterCalls.create` /
@@ -173,7 +229,10 @@ export const apiRoutes = {
     create: (data: CreateFeedbackPayload) =>
       apiFetch<{ feedback: CustomerFeedbackRow }>('/api/v1/customer/feedback', {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          client_request_id: getOrCreateClientRequestId(data.client_request_id),
+        }),
       }),
   },
 

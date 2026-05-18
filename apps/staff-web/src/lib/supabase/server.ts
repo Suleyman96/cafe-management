@@ -56,3 +56,34 @@ export function createServerComponentClient() {
     },
   );
 }
+
+/**
+ * Create a Supabase client for use in Server Actions and Route Handlers.
+ *
+ * Unlike `createServerComponentClient`, this writes cookies through
+ * `next/headers` so a server-side `signInWithPassword()` / `signOut()` /
+ * `refreshSession()` lands the resulting auth cookies on the response
+ * before the action returns. The next navigation request carries them,
+ * which closes the SSR cookie-sync race that bounces freshly-logged-in
+ * users back to `/login` (see `app/login/actions.ts`).
+ */
+export function createServerActionClient() {
+  const cookieStore = cookies();
+
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          for (const { name, value, options } of cookiesToSet) {
+            cookieStore.set(name, value, options);
+          }
+        },
+      },
+    },
+  );
+}

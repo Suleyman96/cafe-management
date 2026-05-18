@@ -16,5 +16,11 @@
   "plan_required": "Tindakan ini memerlukan peningkatan paket Anda.",
   "client_outdated": "Aplikasi Anda sudah usang. Silakan muat ulang untuk melanjutkan.",
   "version_conflict": "Perangkat lain baru saja mengubah pesanan ini. Segarkan dan coba lagi.",
-  "rate_limited": "Terlalu banyak permintaan. Tunggu sebentar dan coba lagi."
+  "rate_limited": "Terlalu banyak permintaan. Tunggu sebentar dan coba lagi.",
+  "order_cancel_too_late": "Dapur sudah mulai menyiapkan pesanan Anda. Silakan panggil pelayan untuk membicarakannya.",
+  "order_not_cancellable": "Pesanan ini tidak dapat dibatalkan lagi.",
+  "order_table_mismatch": "Pesanan ini milik meja lain.",
+  "invalid_qr_token": "Kode QR tidak valid atau kedaluwarsa. Silakan pindai ulang dan coba lagi.",
+  "qr_token_revoked": "Kode QR ini tidak lagi aktif. Silakan pindai ulang atau hubungi staf.",
+  "qr_token_expired": "Kode QR Anda telah kedaluwarsa. Silakan pindai ulang atau hubungi staf."
 }

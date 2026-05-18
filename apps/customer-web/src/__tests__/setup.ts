@@ -12,6 +12,10 @@ vi.mock('@/lib/supabase', () => ({
     removeChannel: vi.fn(),
     rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
   },
+  // S4 — audited tenant-bind helper. No-op in tests; the production
+  // implementation drops a Sentry breadcrumb and calls
+  // `db.setTenantContext` (which the mockDb above tracks).
+  bindCustomerTenantContext: vi.fn(),
 }));
 
 // Mock API routes (prevents real fetch calls to staff-web API)
@@ -23,6 +27,7 @@ vi.mock('@/lib/api-routes', () => ({
         .mockResolvedValue({ order: { id: 'test-order-id', status: 'pending_approval' } }),
       addItems: vi.fn().mockResolvedValue({ items: [] }),
       cancel: vi.fn().mockResolvedValue({ order: { id: 'test-order-id', status: 'cancelled' } }),
+      cancelItem: vi.fn().mockResolvedValue({ item: { id: 'test-item-id', status: 'cancelled' } }),
     },
     customerWaiterCalls: {
       create: vi.fn().mockResolvedValue({ waiter_call: { id: 'test-call-id', status: 'pending' } }),

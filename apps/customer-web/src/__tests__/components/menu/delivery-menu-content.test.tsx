@@ -1,7 +1,7 @@
 import { useRouter } from 'next/navigation';
 import { DeliveryMenuContent } from '@/components/menu/delivery-menu-content';
 import { apiRoutes } from '@/lib/api-routes';
-import { db } from '@/lib/supabase';
+import { bindCustomerTenantContext } from '@/lib/supabase';
 import { useDeliveryStore } from '@/store/delivery-store';
 import { renderWithProviders, waitFor } from '../../helpers/test-utils';
 
@@ -34,7 +34,7 @@ beforeEach(() => {
   // Reset apiRoutes mocks — setup.ts seeds defaults, vi.clearAllMocks
   // wipes them, individual tests opt into specific resolutions.
   (apiRoutes.customerQrTokens.resolve as any).mockResolvedValue({ tenant_id: 'test-tenant-id' });
-  (db.setTenantContext as any).mockClear?.();
+  (bindCustomerTenantContext as any).mockClear?.();
 });
 
 describe('DeliveryMenuContent — L5 guard', () => {
@@ -54,8 +54,11 @@ describe('DeliveryMenuContent — L5 guard', () => {
     expect(replaceMock).not.toHaveBeenCalled();
     // Audit deferred SSR fix — the resolved tenant_id binds to the
     // wrapper so subsequent useMenuItems / useCategories scope reads.
+    // S4 — the bind now flows through `bindCustomerTenantContext`
+    // (Sentry-audited entry point) rather than calling
+    // `db.setTenantContext` directly.
     await waitFor(() => {
-      expect(db.setTenantContext).toHaveBeenCalledWith('test-tenant-id');
+      expect(bindCustomerTenantContext).toHaveBeenCalledWith('test-tenant-id', 'delivery-context');
     });
   });
 
@@ -136,6 +139,6 @@ describe('DeliveryMenuContent — L5 guard', () => {
     });
     // Wrapper must NOT receive a tenant binding from a rejected resolve —
     // a stale tenant id from a prior session would otherwise leak through.
-    expect(db.setTenantContext).not.toHaveBeenCalled();
+    expect(bindCustomerTenantContext).not.toHaveBeenCalled();
   });
 });

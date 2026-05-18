@@ -11,12 +11,12 @@ Status legend: `[ ]` not started · `[~]` in progress · `[x]` shipped · `[-]` 
 
 ## P1. Debounce realtime invalidations
 
-- [ ] **Where.**
+- [x] **Where.**
   - [apps/customer-web/src/hooks/use-order.ts:92-105](../apps/customer-web/src/hooks/use-order.ts#L92-L105)
   - [apps/customer-web/src/hooks/use-delivery.ts:71-85](../apps/customer-web/src/hooks/use-delivery.ts#L71-L85)
-- [ ] **What.** Each `postgres_changes` event calls `queryClient.invalidateQueries`. If staff bulk-edit 10 items → 10 invalidations → 10 RPC refetches in one second.
-- [ ] **Why it matters.** Refetch storm on a phone with weak signal feels janky; also wastes server.
-- [ ] **Fix steps.**
+- [x] **What.** Each `postgres_changes` event calls `queryClient.invalidateQueries`. If staff bulk-edit 10 items → 10 invalidations → 10 RPC refetches in one second.
+- [x] **Why it matters.** Refetch storm on a phone with weak signal feels janky; also wastes server.
+- [x] **Fix steps.**
   1. Add a small debounce inside each hook:
      ```ts
      const invalidate = useRef(
@@ -26,142 +26,142 @@ Status legend: `[ ]` not started · `[~]` in progress · `[x]` shipped · `[-]` 
      (use a small inline debounce — don't pull in lodash for this.)
   2. Apply to both `orders` and `order_items` callbacks.
   3. 150ms is the sweet spot — invisible to the user, kills the storm.
-- [ ] **Verification.**
+- [x] **Verification.**
   - Staff bulk-edit 10 items → customer sees a single refetch ~150ms after the last event.
-- [ ] **Done when.** Debounced, no UI regression.
+- [x] **Done when.** Debounced, no UI regression.
 
 ---
 
 ## P2. Tune supabase fetch throttle — budget + per-endpoint keying
 
-- [ ] **Where.** [apps/customer-web/src/lib/supabase.ts:18-36](../apps/customer-web/src/lib/supabase.ts#L18-L36)
-- [ ] **What.** Throttle is 20 req / 10 s shared across every Supabase call. The menu page legitimately fires 6–10 requests on first load; a retry on a flaky network can blow past the budget and produce a generic `new Error('Too many requests...')` with no localization.
-- [ ] **Why it matters.** Aggressive throttle + bare Error class = customer sees a cryptic English toast on legitimate use.
-- [ ] **Fix steps.**
+- [x] **Where.** [apps/customer-web/src/lib/supabase.ts:18-36](../apps/customer-web/src/lib/supabase.ts#L18-L36)
+- [x] **What.** Throttle is 20 req / 10 s shared across every Supabase call. The menu page legitimately fires 6–10 requests on first load; a retry on a flaky network can blow past the budget and produce a generic `new Error('Too many requests...')` with no localization.
+- [x] **Why it matters.** Aggressive throttle + bare Error class = customer sees a cryptic English toast on legitimate use.
+- [x] **Fix steps.**
   1. **Bump budget** to 40 req / 10 s for the global throttle.
   2. **Throw `RateLimitError`** (from `@gustri/core`) instead of `new Error('Too many requests...')`. The mutation cache `onError` already knows how to localize this.
   3. **Optional:** key the throttle by URL path (`new URL(input).pathname`) so a single noisy endpoint doesn't starve the rest. Probably unnecessary if the budget bump is enough.
   4. Add a Sentry breadcrumb every time the throttle fires — visibility into how often we hit the cap in production.
-- [ ] **Verification.**
+- [x] **Verification.**
   - Initial menu page load → no throttle hit.
   - Manual: fire 50 reqs in a script → throttle kicks in, error is `RateLimitError`, toast localizes.
-- [ ] **Done when.** Throttle tuned, RateLimitError thrown, breadcrumb added.
+- [x] **Done when.** Throttle tuned, RateLimitError thrown, breadcrumb added.
 
 ---
 
 ## P3. Debounce menu search input
 
-- [ ] **Where.** [apps/customer-web/src/components/menu/menu-screen.tsx:82-102, 148-153](../apps/customer-web/src/components/menu/menu-screen.tsx#L82-L102)
-- [ ] **What.** `filteredItems` recomputes on every keystroke via `useMemo`. For a 200-item menu this is fine, but `getLocalizedField` is called twice per item per keystroke. Burns battery and triggers re-renders.
-- [ ] **Why it matters.** Battery on long restaurant sessions. Perceived smoothness on cheap Android devices.
-- [ ] **Fix steps.**
+- [x] **Where.** [apps/customer-web/src/components/menu/menu-screen.tsx:82-102, 148-153](../apps/customer-web/src/components/menu/menu-screen.tsx#L82-L102)
+- [x] **What.** `filteredItems` recomputes on every keystroke via `useMemo`. For a 200-item menu this is fine, but `getLocalizedField` is called twice per item per keystroke. Burns battery and triggers re-renders.
+- [x] **Why it matters.** Battery on long restaurant sessions. Perceived smoothness on cheap Android devices.
+- [x] **Fix steps.**
   1. Add a `useDebouncedValue(searchQuery, 200)` (small custom hook, ~10 lines) and use the debounced value in the filter.
   2. Keep the input controlled with the raw `searchQuery` so typing feels responsive — only the filter is debounced.
-- [ ] **Verification.**
+- [x] **Verification.**
   - Type fast in search → input remains responsive; filter updates ~200ms after last keystroke.
-- [ ] **Done when.** Debounced filter, no regression on UX feel.
+- [x] **Done when.** Debounced filter, no regression on UX feel.
 
 ---
 
 ## P4. Settings / price skeleton during initial load
 
-- [ ] **Where.**
+- [x] **Where.**
   - [apps/customer-web/src/hooks/use-settings.ts:17-66, 80-81](../apps/customer-web/src/hooks/use-settings.ts#L17-L66)
   - Consumers: [providers.tsx:25](../apps/customer-web/src/components/providers.tsx#L25), every screen that reads `settings?.currency_symbol`
-- [ ] **What.** `placeholderData: DEFAULT_SETTINGS` provides `$` + "Restaurant" + USD until the real fetch resolves. On a slow connection, prices flicker from "$5" to "₺250."
-- [ ] **Why it matters.** Trust hit. Looks unprofessional. Failure scenario #8.
-- [ ] **Fix steps.**
+- [x] **What.** `placeholderData: DEFAULT_SETTINGS` provides `$` + "Restaurant" + USD until the real fetch resolves. On a slow connection, prices flicker from "$5" to "₺250."
+- [x] **Why it matters.** Trust hit. Looks unprofessional. Failure scenario #8.
+- [x] **Fix steps.**
   1. **Where currency matters (cart, menu prices, banners):** when `isPlaceholderData === true`, render a price skeleton (`<Skeleton className="h-4 w-12" />`) instead of the placeholder value.
   2. **Where currency doesn't matter (page headers, modal titles):** OK to use placeholder.
   3. Hook variant: `useCafeSettings({ blockOnPlaceholder: true })` returns `undefined` data while placeholder; lets consumers decide.
   4. **Or:** drop the placeholder entirely and render `<LoadingSpinner />` while loading. Simpler but adds visible loading state on every page.
   5. Pick option 1 — surgical, preserves UX, addresses the flicker.
-- [ ] **Verification.**
+- [x] **Verification.**
   - Throttle network, hard refresh → no `$` → real currency transition; instead, brief skeleton → real currency.
-- [ ] **Done when.** No currency flicker observable on slow network.
+- [x] **Done when.** No currency flicker observable on slow network.
 
 ---
 
 ## P5. Memoize `getLocalizedField` calls in menu lists
 
-- [ ] **Where.** [apps/customer-web/src/components/menu/menu-screen.tsx:85-102](../apps/customer-web/src/components/menu/menu-screen.tsx#L85-L102), [menu-item-card.tsx:31-32](../apps/customer-web/src/components/menu/menu-item-card.tsx#L31-L32)
-- [ ] **What.** Each render of the menu list calls `getLocalizedField` twice per item. Inexpensive per call, but combined with the search debounce gap it can show up on profilers.
-- [ ] **Why it matters.** Marginal but real on 200-item menus + cheap phones.
-- [ ] **Fix steps.**
+- [x] **Where.** [apps/customer-web/src/components/menu/menu-screen.tsx:85-102](../apps/customer-web/src/components/menu/menu-screen.tsx#L85-L102), [menu-item-card.tsx:31-32](../apps/customer-web/src/components/menu/menu-item-card.tsx#L31-L32)
+- [x] **What.** Each render of the menu list calls `getLocalizedField` twice per item. Inexpensive per call, but combined with the search debounce gap it can show up on profilers.
+- [x] **Why it matters.** Marginal but real on 200-item menus + cheap phones.
+- [x] **Fix steps.**
   1. Compute name+description once per item in a `useMemo` keyed on `language` and the items array, returning `Array<{ item, name, description }>`. Pass the augmented object to `MenuItemCard`.
   2. Alternative: pre-localize at fetch time in `useMenuItems` — but that ties the data layer to the language, which is wrong (language can change without re-fetching).
   3. Pick option 1.
-- [ ] **Verification.**
+- [x] **Verification.**
   - React DevTools Profiler shows fewer commits per keystroke.
-- [ ] **Done when.** Profiler shows the saving, no UX regression.
+- [x] **Done when.** Profiler shows the saving, no UX regression.
 
 ---
 
 ## P6. Use `useShallow` / selector for cart store reads
 
-- [ ] **Where.** Every component that reads from `useCartStore`. Quick search:
+- [x] **Where.** Every component that reads from `useCartStore`. Quick search:
   - [menu-screen.tsx:64](../apps/customer-web/src/components/menu/menu-screen.tsx#L64)
   - [cart-screen.tsx:26](../apps/customer-web/src/components/cart/cart-screen.tsx#L26)
   - [menu-cart-sidebar.tsx:29](../apps/customer-web/src/components/menu/menu-cart-sidebar.tsx#L29)
   - [delivery-cart-screen.tsx:24](../apps/customer-web/src/components/cart/delivery-cart-screen.tsx#L24)
   - [menu-item-card.tsx:25](../apps/customer-web/src/components/menu/menu-item-card.tsx#L25)
   - [menu-item-modal.tsx:26](../apps/customer-web/src/components/menu/menu-item-modal.tsx#L26)
-- [ ] **What.** `const { items, updateQuantity, ... } = useCartStore()` subscribes to the whole store; every store update re-renders every consumer regardless of what changed.
-- [ ] **Why it matters.** Adding one item re-renders the entire menu grid. Cheap phones feel it.
-- [ ] **Fix steps.**
+- [x] **What.** `const { items, updateQuantity, ... } = useCartStore()` subscribes to the whole store; every store update re-renders every consumer regardless of what changed.
+- [x] **Why it matters.** Adding one item re-renders the entire menu grid. Cheap phones feel it.
+- [x] **Fix steps.**
   1. Use selector form: `const items = useCartStore(s => s.items);` per consumer.
   2. For multi-field reads, `import { useShallow } from 'zustand/react/shallow'` and `useCartStore(useShallow(s => ({ items: s.items, getTotal: s.getTotal })))`.
   3. Audit every consumer.
-- [ ] **Verification.**
+- [x] **Verification.**
   - React DevTools "Highlight updates" — adding an item no longer flashes the entire menu grid.
-- [ ] **Done when.** Consumers use selector/shallow form, profiler shows scoped re-renders.
+- [x] **Done when.** Consumers use selector/shallow form, profiler shows scoped re-renders.
 
 ---
 
 ## P7. Image `priority` conditional on viewport
 
-- [ ] **Where.** [apps/customer-web/src/components/menu/menu-item-card.tsx:62](../apps/customer-web/src/components/menu/menu-item-card.tsx#L62)
-- [ ] **What.** `priority={index < 4}` — sensible on a 2-col grid (first 2 rows above fold), wasteful on a 4-col grid (first row already covers 4 items, only 1 row above fold for `lg:`).
-- [ ] **Why it matters.** Wasted preloads on desktop / large tablets; on mobile this happens to be correct.
-- [ ] **Fix steps.**
+- [x] **Where.** [apps/customer-web/src/components/menu/menu-item-card.tsx:62](../apps/customer-web/src/components/menu/menu-item-card.tsx#L62)
+- [x] **What.** `priority={index < 4}` — sensible on a 2-col grid (first 2 rows above fold), wasteful on a 4-col grid (first row already covers 4 items, only 1 row above fold for `lg:`).
+- [x] **Why it matters.** Wasted preloads on desktop / large tablets; on mobile this happens to be correct.
+- [x] **Fix steps.**
   1. Cheapest fix: lower the prioritize-count to 2 (covers first row on most viewports).
   2. Smarter: read `window.matchMedia('(min-width: 1024px)')` to pick a count. Skip — over-engineered for the savings.
   3. Pick option 1.
-- [ ] **Verification.**
+- [x] **Verification.**
   - Lighthouse score unchanged or slightly improved on mobile; desktop preloads reduced.
-- [ ] **Done when.** Priority count tuned.
+- [x] **Done when.** Priority count tuned.
 
 ---
 
 ## P8. Remove the `.split('•').pop()?.trim()` translation parsing
 
-- [ ] **Where.** [apps/customer-web/src/components/table/table-landing.tsx:339-347](../apps/customer-web/src/components/table/table-landing.tsx#L339-L347)
-- [ ] **What.** A translated label is split on a literal bullet character to extract a segment. Fragile across locales — most languages don't include a bullet.
-- [ ] **Why it matters.** Currently produces an empty string or weird output for most locales (with a fallback to `t('tableLanding.items')`). Already covered as part of Phase 3 M7.
-- [ ] **Fix steps.**
+- [x] **Where.** [apps/customer-web/src/components/table/table-landing.tsx:339-347](../apps/customer-web/src/components/table/table-landing.tsx#L339-L347)
+- [x] **What.** A translated label is split on a literal bullet character to extract a segment. Fragile across locales — most languages don't include a bullet.
+- [x] **Why it matters.** Currently produces an empty string or weird output for most locales (with a fallback to `t('tableLanding.items')`). Already covered as part of Phase 3 M7.
+- [x] **Fix steps.**
   1. Removed as part of M7 — restructure the banner to take `count` directly and render via a clean `t('tableLanding.activeOrder', { count, status })` pattern.
   2. If M7 hasn't shipped yet, treat this as a separate cleanup: replace the parse with a direct `t('tableLanding.items', { count })`.
-- [ ] **Verification.**
+- [x] **Verification.**
   - All 20 locales render the active-order banner cleanly with no fallback strings.
-- [ ] **Done when.** Parse removed.
+- [x] **Done when.** Parse removed.
 
 ---
 
 ## P9. Bundle-size guardrail in CI
 
-- [ ] **Where.** [apps/customer-web/next.config.js](../apps/customer-web/next.config.js) (already has `@next/bundle-analyzer`)
-- [ ] **What.** Analyzer is wired but not gated. Regressions ship silently.
-- [ ] **Why it matters.** customer-web is the surface most sensitive to bundle size (cold-load on a 3G phone). One stray import of `framer-motion` doubles JS payload.
-- [ ] **Fix steps.**
+- [x] **Where.** [apps/customer-web/next.config.js](../apps/customer-web/next.config.js) (already has `@next/bundle-analyzer`)
+- [x] **What.** Analyzer is wired but not gated. Regressions ship silently.
+- [x] **Why it matters.** customer-web is the surface most sensitive to bundle size (cold-load on a 3G phone). One stray import of `framer-motion` doubles JS payload.
+- [x] **Fix steps.**
   1. Add a CI step that runs `ANALYZE=true pnpm --filter customer-web build` and parses the resulting bundle JSON.
   2. Compare against a baseline JSON committed to the repo (`apps/customer-web/.bundle-baseline.json`).
   3. Fail CI if any first-load chunk regresses by >10kB or total first-load > 200kB.
   4. Update the baseline in the same PR that intentionally increases bundle size.
   5. **Alternative:** use `@next/bundle-analyzer` with a CI mode that just fails on a threshold. Or use `size-limit`.
-- [ ] **Verification.**
+- [x] **Verification.**
   - Add a 50kB dummy import → CI fails.
   - Revert → CI green.
-- [ ] **Done when.** CI gate active, baseline committed.
+- [x] **Done when.** CI gate active, baseline committed.
 
 ---
 

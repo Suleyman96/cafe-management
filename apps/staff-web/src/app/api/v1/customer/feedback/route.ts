@@ -12,14 +12,16 @@ export const preferredRegion = ['sin1'];
 
 // H1 length cap: `message` matches the
 // `customer_feedback_message_length_check` constraint added in PR 2.
-// Tenant is server-derived from `table_id`. No `client_request_id`
-// here — see comment in customer-engagement-service.ts on why feedback
-// dedupe is deferred (column doesn't exist; rate limiter handles spam).
+// Tenant is server-derived from `table_id`. Required `client_request_id`
+// (S4 / migration 20260517000001) so a rage-tap or network retry
+// dedupes on the (tenant_id, client_request_id) partial unique index
+// instead of stamping a second complaint row in the staff queue.
 const CreateFeedbackSchema = z.object({
   table_id: z.string().uuid(),
   order_id: z.string().uuid().optional().nullable(),
   feedback_type: z.enum(['complaint', 'praise']),
   message: z.string().min(1).max(1000),
+  client_request_id: z.string().uuid(),
 });
 
 export async function POST(request: NextRequest) {
@@ -31,9 +33,9 @@ export async function POST(request: NextRequest) {
     const { data, error } = await validateBody(request, CreateFeedbackSchema);
     if (error) return error;
 
-    const row = await createCustomerFeedback(getSupabaseAdmin(), data);
+    const { row, deduped } = await createCustomerFeedback(getSupabaseAdmin(), data);
 
-    return jsonOk({ feedback: row }, 201);
+    return jsonOk({ feedback: row }, deduped ? 200 : 201);
   } catch (err) {
     return handleRouteError(err);
   }

@@ -3,6 +3,20 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
 
+// H5 — build-time guard. `NEXT_PUBLIC_API_BASE_URL` is the origin of the
+// staff-web `/api/v1/customer/*` routes. If it's unset in a production
+// build, two things silently break:
+//   1. The middleware-emitted CSP's `connect-src` hint becomes the empty
+//      string and the browser blocks every customer mutation.
+//   2. `apiFetch` POSTs hit the dev-only `http://localhost:3001` fallback
+//      and never reach the real staff-web origin.
+// Both fail with no user-visible error. Fail fast at build instead.
+if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_API_BASE_URL) {
+  throw new Error(
+    'NEXT_PUBLIC_API_BASE_URL must be set for production builds — without it, customer mutations silently fail (CSP blocks the staff-web origin and apiFetch posts to localhost).',
+  );
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {

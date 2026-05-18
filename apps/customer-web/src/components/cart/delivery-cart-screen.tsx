@@ -1,29 +1,53 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { randomUUIDv4, useStableClientRequestId } from '@gustri/queries';
 import { Button } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { ArrowLeft, Edit3, MapPin, Phone, Truck, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useRef, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCartItemNotes } from '@/hooks/use-cart-item-notes';
+import { useCartMenuSync } from '@/hooks/use-cart-menu-sync';
+import { useCrossTabPlaceOrderKeys } from '@/hooks/use-cross-tab-place-order-keys';
 import { useAddDeliveryOrderItems, useCreateDeliveryOrder } from '@/hooks/use-delivery';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
+import { writeDeliveryOrderToken } from '@/lib/delivery-order-token-storage';
 import { useCartStore } from '@/store/cart-store';
 import { useDeliveryStore } from '@/store/delivery-store';
+import { useOrderConfirmationStore } from '@/store/order-confirmation-store';
 import { CartItemCard } from './cart-item-card';
 import { CartPriceSummary } from './cart-price-summary';
 
 export function DeliveryCartScreen() {
   const router = useRouter();
   const { t } = useTranslation('customer');
-  const { items, updateQuantity, removeItem, clearCart, getTotal } = useCartStore();
-  const { customerName, customerPhone, deliveryAddress, deliveryNotes, qrToken, setLastOrderId } =
-    useDeliveryStore();
+  // P6 — per-field selectors so the screen only re-renders when the
+  // slice it reads changes.
+  const items = useCartStore((s) => s.items);
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const removeItem = useCartStore((s) => s.removeItem);
+  const clearCart = useCartStore((s) => s.clearCart);
+  const getTotal = useCartStore((s) => s.getTotal);
+  const getItemCount = useCartStore((s) => s.getItemCount);
+
+  // H3 — same stale-cart audit as the dine-in cart screen. The delivery
+  // menu's `is_available` toggle is the same data source, so the same
+  // prune fits here.
+  useCartMenuSync();
+  const {
+    customerName,
+    customerPhone,
+    deliveryAddress,
+    deliveryNotes,
+    qrToken,
+    setLastOrderId,
+    clearCustomerInfo,
+    clearQrToken,
+  } = useDeliveryStore();
+  const showConfirmation = useOrderConfirmationStore((s) => s.show);
   const [orderNotes, setOrderNotes] = useState('');
   const {
     editingNotes,
@@ -39,22 +63,19 @@ export function DeliveryCartScreen() {
   const { data: settings } = useCafeSettings();
   const formatPrice = useFormatPrice();
   const taxMultiplier = useTaxMultiplier();
-  // Stable idempotency keys so a user-driven retry of the same submit
-  // (after a network error) reuses the prior `client_request_id` and the
-  // server dedupes via the `(tenant_id, client_request_id)` partial
-  // unique indexes on `orders` and `order_items`. Without this, every
-  // retry would mint fresh keys and the server would create a duplicate
-  // delivery order.
-  const orderIdempotencyKey = useStableClientRequestId();
-  const itemIdempotencyKeysRef = useRef<Map<string, string>>(new Map());
-  const getItemIdempotencyKey = useCallback((menuItemId: string) => {
-    let key = itemIdempotencyKeysRef.current.get(menuItemId);
-    if (!key) {
-      key = randomUUIDv4();
-      itemIdempotencyKeysRef.current.set(menuItemId, key);
-    }
-    return key;
-  }, []);
+  // C1 / H4 — cross-tab-aware idempotency keys. Two tabs of the same
+  // delivery QR (same `qrToken`) would previously mint independent
+  // `client_request_id`s and produce two orders if the customer tapped
+  // Place Order in both. The cross-tab hook persists the keys to
+  // localStorage under `delivery:${qrToken}` so every same-origin tab
+  // reuses the same id; the `storage` event also surfaces a sibling
+  // tab's successful submit so this tab's button can switch to a
+  // "submitted in another tab" state instead of hitting the dedup-
+  // reject path. Falls back to `delivery:none` while the QR token
+  // hasn't been captured yet (the handler short-circuits in that case
+  // anyway via the missingQrToken guard below).
+  const placeOrderKeys = useCrossTabPlaceOrderKeys(`delivery:${qrToken || 'none'}`);
+  const submittedByOtherTab = placeOrderKeys.submittedByOtherTab;
 
   const cartSubtotal = getTotal();
   const deliveryFee = settings?.delivery_fee_default ?? 0;
@@ -66,6 +87,13 @@ export function DeliveryCartScreen() {
 
   const handlePlaceOrder = async () => {
     if (items.length === 0) return;
+    // H4 — defense-in-depth: even with the button disabled, a
+    // programmatic re-trigger (testing, accidental focus + Enter on a
+    // sibling control) shouldn't proceed past a sibling-tab submit.
+    if (submittedByOtherTab) {
+      toast.error(t('cart.submittedInOtherTab'));
+      return;
+    }
 
     if (!minimumMet) {
       toast.error(
@@ -93,7 +121,7 @@ export function DeliveryCartScreen() {
         deliveryFee,
         orderNotes,
         qrToken,
-        client_request_id: orderIdempotencyKey.get(),
+        client_request_id: placeOrderKeys.getOrderKey(),
       });
 
       // The items route still needs a tenant scope; derive it from the
@@ -110,19 +138,49 @@ export function DeliveryCartScreen() {
           item_price: item.menuItem.price,
           quantity: item.quantity,
           notes: item.notes,
-          client_request_id: getItemIdempotencyKey(item.menuItem.id),
+          client_request_id: placeOrderKeys.getItemKey(item.menuItem.id),
         })),
       });
 
-      orderIdempotencyKey.reset();
-      itemIdempotencyKeysRef.current.clear();
+      // H4 — broadcast the consumed lock to sibling tabs. Overwrites
+      // the partition entry with `{ submittedAt }`; sibling tabs'
+      // storage listener flips `submittedByOtherTab`.
+      placeOrderKeys.markSubmitted();
 
       setLastOrderId(order.id);
-      toast.success(t('deliveryCart.orderSuccess'));
+      // S3 — persist the access_token to sessionStorage so the tracking
+      // page can recover it if the customer manually clears the URL bar
+      // or the fragment gets stripped by a share/copy-link surface. The
+      // helper wraps the value in `{ token, ts }` so a 24 h TTL sweep on
+      // the tracking page can prune stale bearers from long-running tabs.
+      // sessionStorage (NOT localStorage) so the bearer dies with the
+      // tab — cross-tab persistence isn't useful here and shared-device
+      // residue stays minimal.
+      if (order.delivery_access_token) {
+        writeDeliveryOrderToken(order.id, order.delivery_access_token);
+      }
+      // M1 — confirmation overlay owns the navigation timing. Capture
+      // item count BEFORE clearCart so the overlay can render the
+      // snapshot. Token stays in the URL fragment (M1, plans/17) — the
+      // overlay just embeds it in the trackHref so the auto-navigate /
+      // Track Order tap lands with the bearer still attached.
+      const itemCount = getItemCount();
+      showConfirmation({
+        orderNumber: order.order_number ?? '',
+        itemCount,
+        total: grandTotal,
+        flow: 'delivery',
+        trackHref: `/delivery/order/${order.id}#token=${order.delivery_access_token}`,
+      });
       clearCart();
-      // M1: token in the URL fragment (#) instead of query (?). Fragments
-      // never reach the server and never leak via Referer headers.
-      router.push(`/delivery/order/${order.id}#token=${order.delivery_access_token}`);
+      // S1 / S2 — wipe PII and bearer AFTER the confirmation overlay has
+      // captured what it needs. Calls are placed here (not earlier in the
+      // try block) so a failed order keeps the form pre-filled for retry.
+      // `lastOrderId` and the access_token survive: the former drives the
+      // confirmation-overlay snapshot, the latter is read from the URL
+      // fragment (and sessionStorage above) on the tracking page.
+      clearCustomerInfo();
+      clearQrToken();
     } catch (error) {
       Sentry.captureException(error);
       toast.error(t('deliveryCart.orderError'));
@@ -151,7 +209,7 @@ export function DeliveryCartScreen() {
       <div className="sticky top-0 z-10 bg-background border-b">
         <div className="flex items-center justify-between p-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 rtl:rotate-180" />
           </Button>
           <h1 className="text-xl font-bold">{t('deliveryCart.header')}</h1>
           <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive">
@@ -221,6 +279,9 @@ export function DeliveryCartScreen() {
               placeholder={t('deliveryCart.orderNotesPlaceholder')}
               value={orderNotes}
               onChange={(e) => setOrderNotes(e.target.value)}
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
         )}
@@ -242,7 +303,7 @@ export function DeliveryCartScreen() {
         isLoading={isLoading}
         onPlaceOrder={handlePlaceOrder}
         placeOrderLabel={t('deliveryCart.placeOrder', { price: formatPrice(grandTotal) })}
-        formatPrice={formatPrice}
+        submittedByOtherTab={submittedByOtherTab}
       />
     </div>
   );

@@ -1,0 +1,56 @@
+-- Close the cross-tenant enumeration leak on anon SELECT for `orders`,
+-- `order_items`, and `waiter_calls`.
+--
+-- Background
+-- ----------
+-- Migration 20260418000001 replaced an obviously-permissive
+-- `anon_read_orders USING (true)` with `anon_read_orders_scoped USING
+-- (table_id IS NOT NULL)`, with a header comment claiming "an attacker
+-- would need to know a valid UUID table_id to query." That's a
+-- misreading of RLS semantics — `USING (table_id IS NOT NULL)` is a
+-- per-row predicate; it does NOT require the *query* to filter by id.
+-- Result: `anonClient.from('orders').select('*')` returns every
+-- dine-in order across every tenant. Same bug class on
+-- `anon_read_order_items_scoped` and `anon_read_waiter_calls_scoped`.
+-- Caught by the long-standing `rls-policies.test.ts:56` assertion
+-- ("cannot read orders directly") that has been failing locally and in
+-- CI but flying under the radar.
+--
+-- Architectural constraint
+-- ------------------------
+-- We can't use the obvious tenant-scoping pattern
+-- `USING (tenant_id::text = current_setting('app.current_tenant_id'))`
+-- on anon paths: `set_table_context` binds session vars with
+-- `set_config(..., true)` (is_local), so they survive only within one
+-- PostgREST transaction. The next anon HTTP request sees NULL — see
+-- 20260515000004 for the postmortem. Anon SELECT is therefore either
+-- `USING (true)` (leaky), `USING (false)` (deny), or no-policy
+-- (deny by default).
+--
+-- Fix
+-- ---
+-- 1. DROP the three leaky `_scoped` policies. With RLS already
+--    enabled and no replacement policy, anon SELECT defaults to deny
+--    (matches the pattern already used on `order_payments`, which has
+--    no anon policy and passes the same shape of test).
+-- 2. Customer-web's data-read path is unaffected: dine-in and
+--    delivery reads already go through SECURITY DEFINER RPCs
+--    (`get_active_order_for_table`, `get_delivery_order`,
+--    `get_waiter_calls_for_table`) added in 20260418000001.
+-- 3. Realtime trade-off: `postgres_changes` events on these tables
+--    require the subscribing role to satisfy the SELECT policy for the
+--    row. With deny, anon realtime stops firing for dine-in order/items
+--    updates. Customer-web compensates by switching its existing H1
+--    polling fallback from "kicks in after 60 s of dead realtime" to
+--    "always on at 30 s." Delivery realtime was *already* silently
+--    broken by the previous policy (delivery orders have `table_id IS
+--    NULL`, so they failed `USING (table_id IS NOT NULL)`); no further
+--    degradation.
+--
+-- Constraint relaxation? No — this *tightens* a security-relevant
+-- policy. The reverse migration would re-add the leaky `_scoped`
+-- policies, which is the bug we're closing. No rollback file.
+
+DROP POLICY IF EXISTS "anon_read_orders_scoped" ON public.orders;
+DROP POLICY IF EXISTS "anon_read_order_items_scoped" ON public.order_items;
+DROP POLICY IF EXISTS "anon_read_waiter_calls_scoped" ON public.waiter_calls;

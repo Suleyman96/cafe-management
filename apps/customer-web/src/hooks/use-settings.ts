@@ -66,8 +66,23 @@ const DEFAULT_SETTINGS: CafeSettings = {
 };
 
 export function useCafeSettings() {
+  // C6 — tenant-scope the query key. Pre-fix the key was a bare
+  // [CAFE_SETTINGS] constant, so a single browser session that
+  // touched two tenants (one Vercel project serving many customer
+  // QR codes) reused the first tenant's settings cache for
+  // STALE_TIMES.MEDIUM after switching. Wrong restaurant name,
+  // wrong currency, wrong delivery fee until cache expired.
+  //
+  // `db.getTenantId()` returns null until either the QR landing
+  // page calls `setTableContext()` (dine-in) or the delivery flow
+  // resolves `qr_token` and binds the wrapper. `enabled: !!tenantId`
+  // prevents caching a fetch fired before binding — without that,
+  // the pre-bind read would land under a `null` key and the first
+  // post-bind tenant would reuse the null-cached row.
+  const tenantId = db.getTenantId();
+
   return useQuery({
-    queryKey: [QUERY_KEYS.CAFE_SETTINGS],
+    queryKey: [QUERY_KEYS.CAFE_SETTINGS, tenantId],
     queryFn: async (): Promise<CafeSettings> => {
       try {
         return await db.settings.get();
@@ -76,6 +91,7 @@ export function useCafeSettings() {
         return DEFAULT_SETTINGS;
       }
     },
+    enabled: !!tenantId,
     staleTime: STALE_TIMES.MEDIUM,
     placeholderData: DEFAULT_SETTINGS,
   });

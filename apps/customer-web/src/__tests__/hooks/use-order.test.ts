@@ -73,6 +73,66 @@ describe('useCreateOrder', () => {
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual([QUERY_KEYS.ORDER, 'table-1']);
   });
+
+  it('preserves an explicit client_request_id across user-driven retries (C1)', async () => {
+    // The call-site (usePlaceOrder) holds a stable id via
+    // `useStableClientRequestId` and threads it through `mutateAsync`.
+    // A failed-then-retried submit must reuse that id so the server
+    // dedupes via the `(tenant_id, client_request_id)` partial unique
+    // index. `onMutate` only mints when the caller doesn't pass one;
+    // when one IS passed, it must survive untouched.
+    const stableId = '11111111-1111-4111-8111-111111111111';
+
+    (apiRoutes.customerOrders.create as any)
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({ order: { id: 'order-1', status: 'pending_approval' } });
+
+    const { result } = renderHookWithProviders(() => useCreateOrder());
+
+    await result.current
+      .mutateAsync({ tableId: 'table-1', client_request_id: stableId })
+      .catch(() => {});
+    await result.current.mutateAsync({ tableId: 'table-1', client_request_id: stableId });
+
+    const calls = (apiRoutes.customerOrders.create as any).mock.calls;
+    expect(calls.length).toBe(2);
+    expect(calls[0][0].client_request_id).toBe(stableId);
+    expect(calls[1][0].client_request_id).toBe(stableId);
+  });
+});
+
+describe('useOrder - H1/H2 channel hooks', () => {
+  it('exposes rtStatus and refresh alongside the query (H1/H2)', async () => {
+    const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
+
+    const { result } = renderHookWithProviders(() => useOrder('table-1'));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // Banner consumer needs both fields. CONNECTING is the startup
+    // state — without a real Supabase server the mock never flips it,
+    // so we assert presence + initial value, not the transition.
+    expect(result.current.rtStatus).toBe('CONNECTING');
+    expect(typeof result.current.refresh).toBe('function');
+  });
+
+  it('refresh() tears down the channel and refetches (H1 manual recovery)', async () => {
+    const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
+    (supabase.rpc as any).mockResolvedValue({ data: mockOrder, error: null });
+
+    const { result } = renderHookWithProviders(() => useOrder('table-1'));
+
+    await waitFor(() => {
+      expect((supabase.channel as any).mock.calls.length).toBe(1);
+    });
+
+    const removeCountBefore = (supabase.removeChannel as any).mock.calls.length;
+    await result.current.refresh();
+
+    // Synchronous teardown — the refresh path doesn't go through the
+    // deferred-timer cleanup the unmount path uses.
+    expect((supabase.removeChannel as any).mock.calls.length).toBeGreaterThan(removeCountBefore);
+  });
 });
 
 describe('useCancelOrder', () => {
@@ -109,19 +169,64 @@ describe('useCancelOrder', () => {
 });
 
 describe('useCancelOrderItem', () => {
-  it('calls db.orderItems.cancel with itemId and quantity', async () => {
+  // C3: per-item cancel now routes through
+  // `/api/v1/customer/orders/[id]/items/[itemId]/cancel` so the Upstash
+  // limiter and the M6 `table_id`-match check apply on parity with the
+  // order-level cancel. Direct `db.orderItems.cancel` is forbidden from
+  // the customer-side path.
+  it('calls apiRoutes.customerOrders.cancelItem with orderId/itemId/tableId', async () => {
     const { result } = renderHookWithProviders(() => useCancelOrderItem());
 
-    await result.current.mutateAsync({ itemId: 'item-1', cancelQty: 2 });
+    await result.current.mutateAsync({
+      orderId: 'order-1',
+      itemId: 'item-1',
+      tableId: 'table-1',
+      cancelQty: 2,
+    });
 
-    expect(db.orderItems.cancel).toHaveBeenCalledWith('item-1', 2);
+    expect(apiRoutes.customerOrders.cancelItem).toHaveBeenCalledWith('order-1', 'item-1', {
+      table_id: 'table-1',
+      cancel_qty: 2,
+    });
+  });
+
+  it('does NOT call the legacy db.orderItems.cancel wrapper (C3)', async () => {
+    const { result } = renderHookWithProviders(() => useCancelOrderItem());
+
+    await result.current.mutateAsync({
+      orderId: 'order-1',
+      itemId: 'item-1',
+      tableId: 'table-1',
+      cancelQty: 1,
+    });
+
+    expect(db.orderItems.cancel).not.toHaveBeenCalled();
+  });
+
+  it('passes cancel_qty=null on full cancel (clamped server-side)', async () => {
+    const { result } = renderHookWithProviders(() => useCancelOrderItem());
+
+    await result.current.mutateAsync({
+      orderId: 'order-1',
+      itemId: 'item-1',
+      tableId: 'table-1',
+    });
+
+    expect(apiRoutes.customerOrders.cancelItem).toHaveBeenCalledWith('order-1', 'item-1', {
+      table_id: 'table-1',
+      cancel_qty: null,
+    });
   });
 
   it('invalidates all ORDER queries', async () => {
     const { result, queryClient } = renderHookWithProviders(() => useCancelOrderItem());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    await result.current.mutateAsync({ itemId: 'item-1' });
+    await result.current.mutateAsync({
+      orderId: 'order-1',
+      itemId: 'item-1',
+      tableId: 'table-1',
+    });
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual([QUERY_KEYS.ORDER]);
@@ -256,6 +361,43 @@ describe('useCancelOrder - scoped invalidation', () => {
   });
 });
 
+// RT2 — iOS App Switcher / rapid Android task-list flips can fire
+// three `visibilitychange` events in <500 ms. Pre-fix: each one
+// synchronously tore down + reopened the channel, the cleanup timers
+// stacked, and the `channelRef.current?.orderId === orderId`
+// early-return inside the subscribe effect could skip a reopen that
+// should have happened. Post-fix: a 250 ms leading-edge throttle
+// collapses the storm to a single resubscribe.
+describe('useOrder - RT2 visibility-restore throttle', () => {
+  it('collapses three rapid visibility-restore events into one channel reopen', async () => {
+    const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
+    (supabase.rpc as any).mockResolvedValue({ data: mockOrder, error: null });
+
+    renderHookWithProviders(() => useOrder('table-1'));
+
+    await waitFor(() => {
+      expect((supabase.channel as any).mock.calls.length).toBe(1);
+    });
+
+    const channelCallsBefore = (supabase.channel as any).mock.calls.length;
+
+    // Simulate three rapid foreground/background flips. Default jsdom
+    // `visibilityState` is 'visible' so dispatching the event with no
+    // state change matches the production path.
+    for (let i = 0; i < 3; i += 1) {
+      document.dispatchEvent(new Event('visibilitychange'));
+    }
+
+    // The effect that reopens the channel runs on a state update
+    // (resubscribeNonce bump). Flush microtasks/macrotasks.
+    await waitFor(() => {
+      // Expect exactly ONE new channel open across the three flips,
+      // not three. (Total channels = before + 1.)
+      expect((supabase.channel as any).mock.calls.length).toBe(channelCallsBefore + 1);
+    });
+  });
+});
+
 describe('useOrder - data flow', () => {
   it('returns fetched order data', async () => {
     const mockOrder = { id: 'o1', table_id: 't1', status: 'new', items: [] };
@@ -347,7 +489,7 @@ describe('useOrder - realtime lifecycle', () => {
     });
   });
 
-  it('orders channel callback invokes invalidateQueries', async () => {
+  it('orders channel callback invokes invalidateQueries (debounced — P1)', async () => {
     const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
     (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
 
@@ -364,8 +506,46 @@ describe('useOrder - realtime lifecycle', () => {
     expect(callback).toBeTypeOf('function');
 
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
+    // P1 — invalidations are 150ms-debounced now, so the assertion must
+    // wait for the trailing-edge fire rather than expecting synchronous.
     callback();
-    expect(spy).toHaveBeenCalledWith({ queryKey: [QUERY_KEYS.ORDER, 'table-1'] });
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith({ queryKey: [QUERY_KEYS.ORDER, 'table-1'] });
+    });
+  });
+
+  it('coalesces a burst of realtime events into a single invalidation (P1 debounce)', async () => {
+    // Staff bulk-edit of 10 items fires 10 events in ~1s; pre-fix that
+    // produced 10 invalidations + 10 refetches. The 150ms trailing-edge
+    // debounce collapses the storm to one refetch.
+    const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
+
+    const { queryClient } = renderHookWithProviders(() => useOrder('table-1'));
+
+    await waitFor(() => {
+      const channelObj = (supabase.channel as any).mock.results[0]?.value;
+      expect(channelObj?.on.mock.calls.some((c: any[]) => c[1]?.table === 'orders')).toBe(true);
+    });
+
+    const channelObj = (supabase.channel as any).mock.results[0].value;
+    const ordersCall = channelObj.on.mock.calls.find((c: any[]) => c[1]?.table === 'orders');
+    const itemsCall = channelObj.on.mock.calls.find((c: any[]) => c[1]?.table === 'order_items');
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    for (let i = 0; i < 10; i += 1) {
+      ordersCall[2]();
+      itemsCall[2]();
+    }
+
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith({ queryKey: [QUERY_KEYS.ORDER, 'table-1'] });
+    });
+    const orderInvalidations = spy.mock.calls.filter(
+      (c) =>
+        Array.isArray((c[0] as any)?.queryKey) && (c[0] as any).queryKey[0] === QUERY_KEYS.ORDER,
+    );
+    expect(orderInvalidations.length).toBe(1);
   });
 
   // ─── M5 — useRef dedupe + deferred teardown ──────────────────────────────
@@ -407,7 +587,46 @@ describe('useOrder - realtime lifecycle', () => {
     });
   });
 
-  it('order_items channel callback invokes invalidateQueries', async () => {
+  // RT1 — the customer's order create resolves, the channel opens for
+  // `order:${orderId}`, then a staff-side order_items echo fires
+  // BEFORE the order refetch lands. Pre-fix: the realtime callback
+  // invalidated against an empty cache, kicking off a redundant
+  // refetch (and risking optimistic clobber). Post-fix: the
+  // scheduleInvalidate guards on `queryClient.getQueryData(...)` and
+  // no-ops when the order isn't yet cached. The populating fetch
+  // from the create's `onSuccess` is already queued.
+  it('does not invalidate when the local order cache is missing (RT1)', async () => {
+    const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
+    (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
+
+    const { queryClient } = renderHookWithProviders(() => useOrder('table-1'));
+
+    await waitFor(() => {
+      const channelObj = (supabase.channel as any).mock.results[0]?.value;
+      expect(channelObj?.on.mock.calls.some((c: any[]) => c[1]?.table === 'order_items')).toBe(
+        true,
+      );
+    });
+
+    // Drop the cached order to simulate the race: channel is live,
+    // local cache empty, item echo about to fire.
+    queryClient.removeQueries({ queryKey: [QUERY_KEYS.ORDER, 'table-1'] });
+
+    const channelObj = (supabase.channel as any).mock.results[0].value;
+    const itemsCall = channelObj.on.mock.calls.find((c: any[]) => c[1]?.table === 'order_items');
+    const ordersCall = channelObj.on.mock.calls.find((c: any[]) => c[1]?.table === 'orders');
+
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+    itemsCall[2](); // order_items echo with no payload
+    ordersCall[2](); // orders UPDATE echo with no payload
+
+    // Wait long enough that the 150ms debounce would have fired if the
+    // guard were absent. Assert no invalidation happened.
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('order_items channel callback invokes invalidateQueries (debounced — P1)', async () => {
     const mockOrder = { id: 'order-1', table_id: 'table-1', status: 'new', items: [] };
     (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
 
@@ -431,6 +650,8 @@ describe('useOrder - realtime lifecycle', () => {
 
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     callback();
-    expect(spy).toHaveBeenCalledWith({ queryKey: [QUERY_KEYS.ORDER, 'table-1'] });
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith({ queryKey: [QUERY_KEYS.ORDER, 'table-1'] });
+    });
   });
 });

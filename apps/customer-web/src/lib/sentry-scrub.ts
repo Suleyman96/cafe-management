@@ -1,17 +1,18 @@
 /**
- * URL scrubbing helpers for Sentry browser events.
+ * URL + PII scrubbing helpers for Sentry browser events.
  *
  * Customer-web reaches the app via QR-coded URLs that carry a bearer
  * `qr_token` in the fragment (`#token=…`) or, on legacy paths, the query
  * string (`?token=…`). The token is treated as sensitive — anyone holding
- * it can derive a tenant and place orders against it. We never want it
- * landing in Sentry's UI as part of a navigation breadcrumb or
- * exception URL, so the `instrumentation-client.ts` `beforeSend` /
- * `beforeBreadcrumb` hooks pipe URLs through this helper.
+ * it can derive a tenant and place orders against it. Mutation request
+ * bodies for `/api/v1/customer/orders` (delivery) additionally carry
+ * the customer's name, phone, and address. Neither URL nor body should
+ * reach Sentry verbatim, so the `instrumentation-client.ts` `beforeSend`
+ * / `beforeBreadcrumb` hooks pipe events through this helper (S5).
  *
- * Pure-string transformation, no Sentry SDK imports — keeps the unit
- * test cheap and the helper reusable from any non-Sentry surface that
- * also wants to log a scrubbed URL.
+ * Pure-string + JSON transformation, no Sentry SDK imports — keeps the
+ * unit test cheap and the helper reusable from any non-Sentry surface
+ * that also wants to log a scrubbed URL or object.
  */
 
 /**
@@ -21,7 +22,46 @@
  */
 export const TOKEN_PARAM_NAMES = ['token', 'access_token', 'qr_token'] as const;
 
+/**
+ * Names of PII fields we redact when they appear as object keys anywhere
+ * in an event (request body, contexts, extras, breadcrumb data, …).
+ *
+ * Covers the mutation bodies for `/api/v1/customer/orders` (delivery)
+ * and `/api/v1/customer/waiter-calls` (which carries customer notes).
+ * `client_request_id` is low-risk on its own but it's identifying when
+ * paired with order metadata, so we strip it too.
+ *
+ * Matched case-insensitively against keys; exact match only (no
+ * substring) so unrelated fields like `customer_id` are left alone.
+ */
+export const PII_FIELD_NAMES = [
+  'customer_phone',
+  'customer_name',
+  'delivery_address',
+  'delivery_phone',
+  'delivery_customer_name',
+  'delivery_notes',
+  'customer_notes',
+  'internal_notes',
+  'notes',
+  'qr_token',
+  'access_token',
+  'delivery_access_token',
+  'token',
+  'client_request_id',
+] as const;
+
+const PII_FIELD_SET: Set<string> = new Set(PII_FIELD_NAMES.map((s) => s.toLowerCase()));
+
 const REDACTED = '[REDACTED]';
+
+/**
+ * Maximum recursion depth when walking nested event objects. Sentry
+ * events are usually shallow; the cap is a defensive guard against a
+ * pathological circular structure that would otherwise stack-overflow
+ * inside the SDK's `beforeSend` handler.
+ */
+const MAX_SCRUB_DEPTH = 8;
 
 /**
  * Replace any of the known bearer-credential param values in `url` with
@@ -53,43 +93,86 @@ export function scrubTokenFromUrl(url: string): string {
 }
 
 /**
- * Loose shape that matches the relevant Sentry event slices we need to
- * scrub. Avoids importing `@sentry/types` here so the unit test can run
- * without the full SDK in scope; the production caller passes in a real
- * `ErrorEvent` and the structural match is sufficient.
+ * Recursively walk `value` and redact any object property whose key
+ * matches `PII_FIELD_NAMES` (case-insensitive). Returns a new value;
+ * the input is not mutated. Strings/numbers/booleans/null are returned
+ * as-is. Arrays are mapped element-wise. Objects beyond `MAX_SCRUB_DEPTH`
+ * are returned unchanged as a circular/runaway guard.
+ *
+ * Exported for unit testing; the production entry point is
+ * `scrubSentryEvent`.
  */
-type ScrubbableSentryEvent = {
-  request?: { url?: string } & Record<string, unknown>;
-  breadcrumbs?: Array<
-    {
-      data?: { url?: string } & Record<string, unknown>;
-    } & Record<string, unknown>
-  >;
-} & Record<string, unknown>;
+export function scrubPiiFields<T>(value: T, depth = 0): T {
+  if (depth > MAX_SCRUB_DEPTH) return value;
+  if (value == null) return value;
+  if (Array.isArray(value)) {
+    return value.map((v) => scrubPiiFields(v, depth + 1)) as unknown as T;
+  }
+  if (typeof value !== 'object') return value;
+
+  const input = value as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(input)) {
+    if (PII_FIELD_SET.has(key.toLowerCase())) {
+      out[key] = REDACTED;
+    } else {
+      out[key] = scrubPiiFields(val, depth + 1);
+    }
+  }
+  return out as unknown as T;
+}
 
 /**
- * `beforeSend` hook for `Sentry.init`. Mutates a copy of the event so
- * the SDK's downstream serialization sees scrubbed URLs but the caller
+ * `beforeSend` hook for `Sentry.init`. Accepts any object-shaped event
+ * (the helper does runtime structural checks; the loose type signature
+ * keeps Sentry's narrower `ErrorEvent` assignable without coupling to
+ * `@sentry/types`). Returns a shallow copy with scrubbed values so the
+ * SDK's downstream serialization sees the redactions but the caller
  * doesn't observe in-place mutation.
+ *
+ * Covers (S5):
+ *   - `request.url` and `breadcrumb.data.url` — bearer tokens in query
+ *     or fragment params.
+ *   - `request.data` — JSON bodies posted to `/api/v1/customer/*` that
+ *     carry delivery PII.
+ *   - `contexts`, `extra`, `tags` — any custom payload attached at the
+ *     capture site (audit shows no current callers add PII here, but
+ *     the scrub is defensive against future additions).
+ *   - `breadcrumb.data` — fetch breadcrumbs may attach response/request
+ *     metadata that includes PII keys.
  */
-export function scrubSentryEvent<E extends ScrubbableSentryEvent>(event: E): E {
-  const next: ScrubbableSentryEvent = { ...event };
+export function scrubSentryEvent<E>(event: E): E {
+  if (event == null || typeof event !== 'object') return event;
+  const src = event as unknown as Record<string, unknown>;
+  const next: Record<string, unknown> = { ...src };
 
-  if (typeof next.request?.url === 'string') {
-    next.request = { ...next.request, url: scrubTokenFromUrl(next.request.url) };
+  const req = next.request as Record<string, unknown> | undefined;
+  if (req && typeof req === 'object') {
+    const reqCopy: Record<string, unknown> = { ...req };
+    if (typeof reqCopy.url === 'string') {
+      reqCopy.url = scrubTokenFromUrl(reqCopy.url);
+    }
+    if (reqCopy.data !== undefined) {
+      reqCopy.data = scrubPiiFields(reqCopy.data);
+    }
+    next.request = reqCopy;
   }
 
+  if (next.contexts) next.contexts = scrubPiiFields(next.contexts);
+  if (next.extra) next.extra = scrubPiiFields(next.extra);
+  if (next.tags) next.tags = scrubPiiFields(next.tags);
+
   if (Array.isArray(next.breadcrumbs)) {
-    next.breadcrumbs = next.breadcrumbs.map((crumb) => {
-      if (typeof crumb?.data?.url === 'string') {
-        return {
-          ...crumb,
-          data: { ...crumb.data, url: scrubTokenFromUrl(crumb.data.url) },
-        };
+    next.breadcrumbs = (next.breadcrumbs as Array<Record<string, unknown>>).map((crumb) => {
+      const crumbData = crumb?.data as Record<string, unknown> | undefined;
+      if (!crumbData) return crumb;
+      const data: Record<string, unknown> = { ...crumbData };
+      if (typeof data.url === 'string') {
+        data.url = scrubTokenFromUrl(data.url);
       }
-      return crumb;
+      return { ...crumb, data: scrubPiiFields(data) };
     });
   }
 
-  return next as E;
+  return next as unknown as E;
 }

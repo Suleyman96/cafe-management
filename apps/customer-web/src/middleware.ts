@@ -1,5 +1,11 @@
+import * as Sentry from '@sentry/nextjs';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+
+// Y1 — module-level dedup flag so a misconfigured env doesn't flood
+// Sentry with one event per request. Cold-start scoped: a fresh edge
+// isolate gets one event, which is what we want for paging.
+let hasReportedMissingApiBaseUrl = false;
 
 /**
  * Customer-web middleware.
@@ -37,6 +43,25 @@ export function middleware(request: NextRequest) {
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
   const isDev = process.env.NODE_ENV === 'development';
 
+  // H5 — Defensive: filter out empty origins so an unset env var doesn't
+  // produce a malformed `connect-src 'self' ... wss://...` with stray
+  // whitespace where a host should be. The build-time guard in
+  // `next.config.js` already throws in production, but a misconfigured
+  // dev env shouldn't silently emit a broken header — log it and skip.
+  const connectSrcOrigins = [supabaseUrl, apiBaseUrl, 'wss://*.supabase.co', 'https://*.sentry.io']
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // Y1 — emit through Sentry instead of stdout so the misconfiguration
+  // shows up on the dashboard / paging path. Module-level dedup keeps
+  // one event per cold-start instead of one per request.
+  if (!apiBaseUrl && !hasReportedMissingApiBaseUrl) {
+    hasReportedMissingApiBaseUrl = true;
+    Sentry.captureMessage('NEXT_PUBLIC_API_BASE_URL unset', {
+      level: 'error',
+      tags: { surface: 'middleware' },
+    });
+  }
+
   // `'strict-dynamic'` lets scripts loaded by trusted (nonce'd) scripts
   // also run, so we don't have to nonce every chunk Next.js emits.
   // `'unsafe-eval'` is dev-only — Webpack HMR needs it.
@@ -44,7 +69,7 @@ export function middleware(request: NextRequest) {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''}`,
     "style-src 'self' 'unsafe-inline'",
-    `connect-src 'self' ${supabaseUrl} ${apiBaseUrl} wss://*.supabase.co https://*.sentry.io`,
+    `connect-src 'self' ${connectSrcOrigins.join(' ')}`,
     "img-src 'self' data: blob: https://*.supabase.co",
     "font-src 'self'",
     "frame-ancestors 'none'",

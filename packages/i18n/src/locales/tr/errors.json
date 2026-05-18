@@ -16,5 +16,11 @@
   "plan_required": "Bu işlem için planınızı yükseltmeniz gerekir.",
   "client_outdated": "Uygulama güncel değil. Devam etmek için yeniden yükleyin.",
   "version_conflict": "Başka bir cihaz bu siparişi az önce değiştirdi. Yenileyin ve tekrar deneyin.",
-  "rate_limited": "Çok fazla istek. Lütfen biraz bekleyip tekrar deneyin."
+  "rate_limited": "Çok fazla istek. Lütfen biraz bekleyip tekrar deneyin.",
+  "order_cancel_too_late": "Mutfak siparişinizi hazırlamaya başladı. Lütfen bir garson çağırarak görüşün.",
+  "order_not_cancellable": "Bu sipariş artık iptal edilemez.",
+  "order_table_mismatch": "Bu sipariş başka bir masaya ait.",
+  "invalid_qr_token": "Geçersiz veya süresi dolmuş QR kodu. Lütfen tekrar tarayın.",
+  "qr_token_revoked": "Bu QR kodu artık etkin değil. Lütfen tekrar tarayın veya bir personele danışın.",
+  "qr_token_expired": "QR kodunuzun süresi doldu. Lütfen tekrar tarayın veya bir personele danışın."
 }

@@ -1,9 +1,9 @@
 import userEvent from '@testing-library/user-event';
-import { toast } from 'sonner';
 import { CartScreen } from '@/components/cart/cart-screen';
 import { apiRoutes } from '@/lib/api-routes';
 import { db } from '@/lib/supabase';
 import { useCartStore } from '@/store/cart-store';
+import { useOrderConfirmationStore } from '@/store/order-confirmation-store';
 import { renderWithProviders, screen, waitFor } from '../helpers/test-utils';
 
 const mockMenuItem = {
@@ -87,6 +87,27 @@ const defaultSettings = {
 describe('CartScreen — checkout flow', () => {
   beforeEach(() => {
     useCartStore.setState({ items: [] });
+    // H3 — CartScreen mounts `useCartMenuSync`, which audits cart items
+    // against the live menu and drops anything missing. The default
+    // mock returns `[]`, which would purge the test's pre-populated
+    // cart on first render. Stub the menu fetch to include both test
+    // items so the audit is a no-op and the place-order flow proceeds.
+    (db.menuItems.findAll as any).mockResolvedValue([
+      { ...mockMenuItem, category: null },
+      { ...mockMenuItem2, category: null },
+    ]);
+    // Also stub the order-confirmation overlay store between tests so
+    // a prior test's `showConfirmation` doesn't leak into this one.
+    useOrderConfirmationStore.setState({ pending: null });
+    // H4 — `useCrossTabPlaceOrderKeys` persists a submitted-lock in
+    // localStorage under `cw-place-order:dine_in:T01`. Without this
+    // cleanup, a test that places an order leaks the lock into the
+    // next test, which renders the cart with the button disabled and
+    // labeled `cart.alreadySubmittedButton`. The mock setup matches
+    // a real cross-tab leak isolation contract per-test.
+    if (typeof window !== 'undefined') {
+      window.localStorage.clear();
+    }
   });
 
   it('shows empty state when cart has no items', () => {
@@ -254,7 +275,14 @@ describe('CartScreen — checkout flow', () => {
       expect(useCartStore.getState().items).toHaveLength(0);
     });
 
-    // Verify success toast was shown
-    expect(toast.success).toHaveBeenCalled();
+    // M1 — submit now opens the persistent confirmation overlay
+    // (with order number, item count, total + Track Order CTA)
+    // instead of an auto-dismissing toast. Assert the store state
+    // since the overlay component lives in the root layout, which
+    // this test's renderWithProviders doesn't mount.
+    expect(useOrderConfirmationStore.getState().pending).toMatchObject({
+      flow: 'dine_in',
+      trackHref: '/table/T01/order',
+    });
   });
 });

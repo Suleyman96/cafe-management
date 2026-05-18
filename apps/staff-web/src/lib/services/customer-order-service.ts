@@ -355,10 +355,21 @@ export async function cancelCustomerOrder(
     throw new ValidationError('order_table_mismatch');
   }
 
-  // Match the existing `anon_cancel_early_orders` RLS policy: only
-  // pre-kitchen statuses are cancellable from the customer side. Past
-  // 'preparing' the kitchen has already started; staff-side cancel
-  // (with a reason) is the right surface there.
+  // H3 — differentiate two non-cancellable shapes so the client can
+  // localize them distinctly:
+  //   - Kitchen has progressed (`preparing` / `ready` / `served` /
+  //     `out_for_delivery`): the customer's food is being cooked. UI
+  //     should surface a "Call a waiter to discuss" path rather than a
+  //     generic error. Sentinel: `order_cancel_too_late`.
+  //   - Order already terminal (`closed` / `cancelled` / `delivered`):
+  //     there's nothing actionable; surface as `order_not_cancellable`.
+  // The RLS policy `anon_cancel_early_orders` blocks the customer-side
+  // raw write too, but the route returns a typed sentinel before the
+  // RLS path is hit so the client can map cleanly via i18n.
+  const kitchenStartedStatuses = ['preparing', 'ready', 'served', 'out_for_delivery'];
+  if (kitchenStartedStatuses.includes(order.status as string)) {
+    throw new ConflictError('order_cancel_too_late');
+  }
   if (!['pending_approval', 'new'].includes(order.status as string)) {
     throw new ConflictError('order_not_cancellable');
   }
@@ -374,6 +385,111 @@ export async function cancelCustomerOrder(
     .select()
     .single();
 
+  if (updateError) throw updateError;
+  return updated;
+}
+
+/**
+ * Cancel an order_item from the customer-web flow (C3).
+ *
+ * Symmetric with `cancelCustomerOrder` above: the customer-side hook
+ * used to call `db.orderItems.cancel()` directly (anon UPDATE through
+ * RLS for full cancel, RPC for partial — which only worked for staff).
+ * That bypassed both the Upstash limiter and the `table_id`-match
+ * defense M6 added for the order-level path.
+ *
+ * The route layer (`POST /api/v1/customer/orders/[id]/items/[itemId]/cancel`)
+ * gates this with rate-limiting; the service itself verifies:
+ *
+ *   1. The order exists and belongs to a cancellable status.
+ *   2. `tableId` matches `order.table_id` — same M6 bar an attacker
+ *      with a scraped item_id must clear.
+ *   3. The item belongs to that order (so an attacker can't cancel a
+ *      different tenant's item by guessing UUIDs paired with their
+ *      own order id).
+ *   4. The item is in a cancellable status — past `served`/`cancelled`
+ *      the kitchen has already invested labor.
+ *
+ * Partial cancel is done with an atomic UPDATE that decrements
+ * `quantity` in a single statement, so two concurrent customer-side
+ * cancel taps can't lost-update each other. We don't reuse the
+ * `cancel_order_item_qty` RPC because it gates on staff `auth.uid()`
+ * — admin-client calls have no `auth.uid()` and would fail
+ * authorization. The conditional in the WHERE clause replaces the
+ * `FOR UPDATE` lock the RPC takes: the single UPDATE atomically
+ * checks `quantity > p_cancel_qty` and decrements, so a racing
+ * cancel either commits cleanly or no-ops (returning zero rows).
+ */
+export async function cancelCustomerOrderItem(
+  supabaseAdmin: SupabaseClient,
+  args: { orderId: string; itemId: string; tableId: string; cancelQty?: number | null },
+) {
+  const { orderId, itemId, tableId, cancelQty } = args;
+
+  const { data: order, error: orderError } = await supabaseAdmin
+    .from('orders')
+    .select('id, tenant_id, table_id, status')
+    .eq('id', orderId)
+    .maybeSingle();
+  if (orderError) throw new Error(orderError.message);
+  if (!order) throw new NotFoundError('Order');
+
+  if (order.table_id !== tableId) {
+    throw new ValidationError('order_table_mismatch');
+  }
+
+  // Mirror the order-level cancel gate: pre-kitchen statuses only.
+  // Once the kitchen is preparing, item-level cancel becomes a staff
+  // decision (waste reason, partial refund) rather than a customer
+  // self-serve.
+  if (!['pending_approval', 'new'].includes(order.status as string)) {
+    throw new ConflictError('order_not_cancellable');
+  }
+
+  const { data: item, error: itemError } = await supabaseAdmin
+    .from('order_items')
+    .select('id, order_id, tenant_id, status, quantity')
+    .eq('id', itemId)
+    .maybeSingle();
+  if (itemError) throw new Error(itemError.message);
+  if (!item) throw new NotFoundError('OrderItem');
+  if (item.order_id !== orderId || item.tenant_id !== order.tenant_id) {
+    throw new ValidationError('order_item_tenant_mismatch');
+  }
+  if (['cancelled', 'served'].includes(item.status as string)) {
+    throw new ConflictError('order_not_cancellable');
+  }
+
+  const itemQty = item.quantity as number;
+  const isPartial =
+    cancelQty !== undefined && cancelQty !== null && cancelQty > 0 && cancelQty < itemQty;
+
+  if (isPartial) {
+    // Atomic decrement: `quantity > $1` in the WHERE clause is the
+    // race-loss guard. If a concurrent cancel already brought
+    // quantity to <= p_cancel_qty, this UPDATE matches zero rows
+    // and `.single()` raises — caller retries or refetches.
+    const { data: updated, error: updateError } = await supabaseAdmin
+      .from('order_items')
+      .update({ quantity: itemQty - cancelQty })
+      .eq('id', itemId)
+      .eq('tenant_id', order.tenant_id)
+      .gt('quantity', cancelQty)
+      .select()
+      .single();
+    if (updateError) throw updateError;
+    return updated;
+  }
+
+  // Full cancel — `cancelQty >= itemQty` collapses to status update,
+  // matching the wrapper's clamp-on-the-server contract.
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from('order_items')
+    .update({ status: 'cancelled' })
+    .eq('id', itemId)
+    .eq('tenant_id', order.tenant_id)
+    .select()
+    .single();
   if (updateError) throw updateError;
   return updated;
 }

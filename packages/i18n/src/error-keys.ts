@@ -38,6 +38,19 @@ export const SENTINEL_ERROR_CODES = [
   'client_outdated',
   'version_conflict',
   'rate_limited',
+  // H3 — kitchen-already-started cancel rejection. Distinct from
+  // `order_not_cancellable` (terminal status) so the client can show
+  // a "Call a waiter" recovery path rather than a generic error.
+  'order_cancel_too_late',
+  // S5 — customer-web sentinels. Pre-S5 these surfaced as raw codes in
+  // toasts because `apiFetch` threw bare `Error('rate_limited')` rather
+  // than `AppError`. Each is emitted by an `/api/v1/customer/*` route
+  // and needs a localized message in every `errors.json`.
+  'order_not_cancellable',
+  'order_table_mismatch',
+  'invalid_qr_token',
+  'qr_token_revoked',
+  'qr_token_expired',
 ] as const;
 
 export type SentinelErrorCode = (typeof SENTINEL_ERROR_CODES)[number];

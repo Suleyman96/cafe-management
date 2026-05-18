@@ -3,10 +3,21 @@
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
-import { Check, Loader2, X } from 'lucide-react';
-import { useState } from 'react';
+import {
+  AlertTriangle,
+  Check,
+  HelpCircle,
+  Loader2,
+  type LucideIcon,
+  MessageSquare,
+  Receipt,
+  Siren,
+  X,
+} from 'lucide-react';
+import { useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { useCreateWaiterCall } from '@/hooks/use-waiter-call';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
+import { useCreateWaiterCall, useOpenWaiterCallsForTable } from '@/hooks/use-waiter-call';
 
 type CallType = 'assistance' | 'bill' | 'question' | 'complaint' | 'emergency';
 type CallPriority = 'low' | 'normal' | 'high' | 'urgent';
@@ -19,7 +30,7 @@ interface CallStaffModalProps {
 
 interface CallReason {
   id: CallType;
-  icon: string;
+  icon: LucideIcon;
   label: string;
   priority: CallPriority;
 }
@@ -31,16 +42,19 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
   const [showSuccess, setShowSuccess] = useState(false);
 
   const createWaiterCall = useCreateWaiterCall();
+  // H6 — when an open call is already in flight for this table, render
+  // the modal in a "notified" mode so the customer sees who staff has
+  // been told about + how long ago, instead of getting a no-op submit
+  // or a duplicate row in the staff queue.
+  const { hasOpenCall, openCall } = useOpenWaiterCallsForTable(tableId);
 
-  const CALL_REASONS: CallReason[] = [
-    { id: 'assistance', icon: '💬', label: t('callStaff.reason.assistance'), priority: 'normal' },
-    { id: 'bill', icon: '🧾', label: t('callStaff.reason.bill'), priority: 'normal' },
-    { id: 'question', icon: '❓', label: t('callStaff.reason.question'), priority: 'normal' },
-    { id: 'complaint', icon: '⚠️', label: t('callStaff.reason.complaint'), priority: 'high' },
-    { id: 'emergency', icon: '🚨', label: t('callStaff.reason.emergency'), priority: 'urgent' },
-  ];
-
-  if (!isOpen) return null;
+  // MO3 — parity with Phase 5 modals (menu-item, cancel-order,
+  // cancel-item). This is the highest-stakes customer-side modal —
+  // urgent calls go through here — so keyboard semantics matter.
+  // Esc routes through `handleClose` so the focus-trap teardown runs
+  // the same reset path (clear reason / notes / success) as the X.
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
 
   const handleClose = () => {
     setSelectedReason(null);
@@ -49,8 +63,40 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
     onClose();
   };
 
+  useFocusTrap(dialogRef, { active: isOpen, onClose: handleClose });
+
+  // Y2 — Lucide icons instead of emoji. Emoji renders inconsistently
+  // across Android fonts and screen readers announce the raw Unicode
+  // name (e.g. "money bag" for 🧾) which leaks past the i18n label.
+  const CALL_REASONS: CallReason[] = [
+    {
+      id: 'assistance',
+      icon: MessageSquare,
+      label: t('callStaff.reason.assistance'),
+      priority: 'normal',
+    },
+    { id: 'bill', icon: Receipt, label: t('callStaff.reason.bill'), priority: 'normal' },
+    { id: 'question', icon: HelpCircle, label: t('callStaff.reason.question'), priority: 'normal' },
+    {
+      id: 'complaint',
+      icon: AlertTriangle,
+      label: t('callStaff.reason.complaint'),
+      priority: 'high',
+    },
+    { id: 'emergency', icon: Siren, label: t('callStaff.reason.emergency'), priority: 'urgent' },
+  ];
+
+  if (!isOpen) return null;
+
   const handleSubmit = async () => {
     if (!selectedReason) return;
+    // H6 — server-side gate. The submit button below is also disabled
+    // when an open call exists; this guard catches the keyboard /
+    // programmatic path.
+    if (hasOpenCall) {
+      toast.info(t('callStaff.alreadyNotified'));
+      return;
+    }
 
     try {
       await createWaiterCall.mutateAsync({
@@ -75,11 +121,20 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="bg-card rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto outline-none"
+      >
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">{t('callStaff.title')}</h2>
+            <h2 id={titleId} className="text-2xl font-bold">
+              {t('callStaff.title')}
+            </h2>
             <button
               onClick={handleClose}
               className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
@@ -89,14 +144,20 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
             </button>
           </div>
 
-          {showSuccess ? (
-            /* Success State */
+          {showSuccess || hasOpenCall ? (
+            /* Success / already-notified state. H6 — when staff has been
+               told but not yet responded, the modal opens directly into
+               this state instead of letting the customer pick a fresh
+               reason that would post a second row. The original call
+               type is read off the open `waiter_calls` row. */
             <div className="text-center py-8">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
               <p className="text-lg font-medium text-green-600 dark:text-green-400">
-                {t('callStaff.successMessage')}
+                {hasOpenCall && openCall
+                  ? t('callStaff.alreadyNotified')
+                  : t('callStaff.successMessage')}
               </p>
               <p className="text-sm text-muted-foreground mt-2">{t('callStaff.successSubtext')}</p>
             </div>
@@ -106,37 +167,46 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
               <div className="mb-6">
                 <p className="text-sm text-muted-foreground mb-4">{t('callStaff.selectReason')}</p>
                 <div className="space-y-3">
-                  {CALL_REASONS.map((reason) => (
-                    <button
-                      key={reason.id}
-                      onClick={() => setSelectedReason(reason)}
-                      className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
-                        selectedReason?.id === reason.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-muted-foreground/30'
-                      }`}
-                    >
-                      <div className="text-3xl">{reason.icon}</div>
-                      <div className="flex-1 text-left">
-                        <div className="font-medium">{reason.label}</div>
-                        {reason.priority === 'high' && (
-                          <div className="text-xs text-orange-600 dark:text-orange-400">
-                            {t('callStaff.priorityHigh')}
-                          </div>
-                        )}
-                        {reason.priority === 'urgent' && (
-                          <div className="text-xs text-red-600 dark:text-red-400 font-bold">
-                            {t('callStaff.priorityUrgent')}
-                          </div>
-                        )}
-                      </div>
-                      {selectedReason?.id === reason.id && (
-                        <div className="text-primary">
-                          <Check className="h-5 w-5" />
+                  {CALL_REASONS.map((reason) => {
+                    const ReasonIcon = reason.icon;
+                    const iconColorClass =
+                      reason.priority === 'urgent'
+                        ? 'text-red-500'
+                        : reason.priority === 'high'
+                          ? 'text-orange-500'
+                          : 'text-muted-foreground';
+                    return (
+                      <button
+                        key={reason.id}
+                        onClick={() => setSelectedReason(reason)}
+                        className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                          selectedReason?.id === reason.id
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-muted-foreground/30'
+                        }`}
+                      >
+                        <ReasonIcon className={`h-7 w-7 ${iconColorClass}`} aria-hidden="true" />
+                        <div className="flex-1 text-left">
+                          <div className="font-medium">{reason.label}</div>
+                          {reason.priority === 'high' && (
+                            <div className="text-xs text-orange-600 dark:text-orange-400">
+                              {t('callStaff.priorityHigh')}
+                            </div>
+                          )}
+                          {reason.priority === 'urgent' && (
+                            <div className="text-xs text-red-600 dark:text-red-400 font-bold">
+                              {t('callStaff.priorityUrgent')}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </button>
-                  ))}
+                        {selectedReason?.id === reason.id && (
+                          <div className="text-primary">
+                            <Check className="h-5 w-5" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -150,6 +220,9 @@ export function CallStaffModal({ tableId, isOpen, onClose }: CallStaffModalProps
                     value={additionalNotes}
                     onChange={(e) => setAdditionalNotes(e.target.value)}
                     placeholder={t('callStaff.notesPlaceholder')}
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     className="w-full px-4 py-3 border border-input rounded-xl bg-background focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                     rows={3}
                     maxLength={200}

@@ -1,10 +1,18 @@
 import { getOrCreateClientRequestId, QUERY_KEYS } from '@gustri/queries';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiRoutes } from '@/lib/api-routes';
-import { db, supabase } from '@/lib/supabase';
+import { isRecentClientRequestId, recordRecentClientRequestId } from '@/lib/realtime-dedup';
+import { supabase } from '@/lib/supabase';
 import type { Order, OrderItem, OrderWithItems } from '@/types';
+
+// H1 — realtime channel status surfaced to the UI. `CONNECTING` is the
+// startup state before `.subscribe()` reports back; we don't show a
+// banner during that window because every fresh mount would flash one.
+// The banner is only meaningful when paired with stale `query.data`
+// (see consumers).
+export type RealtimeStatus = 'CONNECTING' | 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED' | 'CHANNEL_ERROR';
 
 export function useOrder(tableId: string) {
   const queryClient = useQueryClient();
@@ -21,10 +29,21 @@ export function useOrder(tableId: string) {
       return data as OrderWithItems;
     },
     enabled: !!tableId,
-    staleTime: 10 * 1000, // 10s — realtime subscription handles freshness
+    // RT4 — realtime + visibility-restore + `refetchOnReconnect: 'always'`
+    // already keep the cache fresh; the staleTime is only the safety net
+    // for when ALL of those fail. 60s matches the global default and
+    // cuts ~3× refetches/min on flaky phone networks without any
+    // user-visible regression.
+    staleTime: 60 * 1000,
   });
 
   const orderId = query.data?.id;
+  const [rtStatus, setRtStatus] = useState<RealtimeStatus>('CONNECTING');
+  // H2 — incrementing this bumps the subscribe effect to re-run *without*
+  // changing the channel's identity key (orderId). Used by the visibility
+  // listener to force a fresh SUBSCRIBE after a phone sleep without
+  // doing so on every keystroke.
+  const [resubscribeNonce, setResubscribeNonce] = useState(0);
 
   // Real-time subscription (needs raw supabase client for channel API).
   //
@@ -50,6 +69,28 @@ export function useOrder(tableId: string) {
   // it fires.
   const channelRef = useRef<{ orderId: string; channel: RealtimeChannel } | null>(null);
   const teardownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // P1 — single shared debounce timer for both the orders + order_items
+  // subscriptions. Staff bulk-edits (10 status changes in ~1s) fanned
+  // out into 10 invalidations + 10 refetches pre-fix; 150ms trailing
+  // edge collapses the storm to one refetch ~150ms after the last
+  // event. Imperceptible to the user, kind to a phone on weak signal.
+  const invalidateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // H2 — invalidation also runs on visibility-restore and reconnect. Hold
+  // a ref to the latest `orderId` so the visibility listener (registered
+  // once per tableId) can recreate the channel without resubscribing the
+  // listener on every orderId change.
+  const orderIdRef = useRef<string | undefined>(orderId);
+  orderIdRef.current = orderId;
+  // RT2 — leading-edge throttle for the visibility-restore handler. iOS
+  // App Switcher and rapid Android task-list flips can fire three
+  // `visibilitychange` events in <500 ms; without this, each one
+  // synchronously tears down + reopens the channel, the cleanup timers
+  // stack, and the `channelRef.current?.orderId === orderId` early-return
+  // inside the subscribe effect can skip a reopen that should have
+  // happened. 250 ms is long enough to collapse a flip storm but short
+  // enough that a deliberate background → foreground transition still
+  // refreshes.
+  const lastResubscribeTsRef = useRef<number>(0);
 
   useEffect(() => {
     if (!orderId) return;
@@ -72,6 +113,27 @@ export function useOrder(tableId: string) {
       channelRef.current = null;
     }
 
+    // Reset transient status while a new channel is coming up so the UI
+    // banner has the right signal during the gap.
+    setRtStatus('CONNECTING');
+
+    const scheduleInvalidate = () => {
+      // RT1 — if the local order isn't in cache, there's nothing to
+      // refresh. This guards a real race: the customer's create
+      // mutation resolves → channel opens for `order:${orderId}` → a
+      // staff-side `order_items` echo fires BEFORE the order-level
+      // refetch lands the order row. Invalidating against an empty
+      // cache would just kick off another refetch into the same race;
+      // skipping is correct because the create's own `onSuccess`
+      // invalidate already queued the populating fetch.
+      if (!queryClient.getQueryData([QUERY_KEYS.ORDER, tableId])) return;
+      if (invalidateDebounceRef.current) clearTimeout(invalidateDebounceRef.current);
+      invalidateDebounceRef.current = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, tableId] });
+        invalidateDebounceRef.current = null;
+      }, 150);
+    };
+
     // `event: 'UPDATE'` on the orders subscription, `'*'` on order_items.
     // The customer's own order INSERT is a single event they themselves
     // triggered (already invalidated locally); orders are never DELETE-d.
@@ -89,8 +151,18 @@ export function useOrder(tableId: string) {
           table: 'orders',
           filter: `id=eq.${orderId}`,
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, tableId] });
+        (payload) => {
+          // M5 — skip the echo of the customer's own write. The mutation
+          // hook already invalidated in `onSuccess`; this event arrives
+          // ~200ms later and would trigger a redundant refetch + UI
+          // flicker. Staff-driven updates (status changes) carry no
+          // matching `client_request_id`, so they fall through. Guard
+          // `payload?.new` because test harnesses invoke the callback
+          // with no args.
+          const crid = (payload?.new as { client_request_id?: string | null } | null | undefined)
+            ?.client_request_id;
+          if (crid && isRecentClientRequestId(orderId, crid)) return;
+          scheduleInvalidate();
         },
       )
       .on(
@@ -101,13 +173,29 @@ export function useOrder(tableId: string) {
           table: 'order_items',
           filter: `order_id=eq.${orderId}`,
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, tableId] });
+        (payload) => {
+          // Same dedup for per-item INSERT/UPDATE. Waiter-side adds
+          // (no `client_request_id`) still surface to the customer.
+          const crid = (payload?.new as { client_request_id?: string | null } | null | undefined)
+            ?.client_request_id;
+          if (crid && isRecentClientRequestId(orderId, crid)) return;
+          scheduleInvalidate();
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        // H1 — surface subscription transitions so the consumer can show
+        // a "Reconnecting…" banner when paired with stale data. Supabase
+        // realtime emits these strings verbatim; we trust them rather
+        // than re-mapping per-state.
+        setRtStatus(status as RealtimeStatus);
+      });
 
     channelRef.current = { orderId, channel };
+    // `resubscribeNonce` is the explicit re-run trigger — read it once so
+    // the linter sees it consumed inside the effect, since Supabase's
+    // `.subscribe()` is fire-and-forget and the value would otherwise
+    // appear unused.
+    void resubscribeNonce;
 
     return () => {
       // Defer teardown one macrotask so a synchronous remount (strict-mode
@@ -121,10 +209,86 @@ export function useOrder(tableId: string) {
         }
         teardownTimerRef.current = null;
       }, 0);
+      // Cancel any pending debounced invalidate — its query key references
+      // `tableId`, which won't change here, but a fresh effect-run will
+      // schedule its own.
+      if (invalidateDebounceRef.current) {
+        clearTimeout(invalidateDebounceRef.current);
+        invalidateDebounceRef.current = null;
+      }
     };
-  }, [orderId, tableId, queryClient]);
+    // `resubscribeNonce` is in the deps so a visibility-restore forced
+    // bump re-runs this effect even when orderId/tableId are unchanged.
+  }, [orderId, tableId, queryClient, resubscribeNonce]);
 
-  return query;
+  // H2 — when the tab becomes visible after a sleep/lock the one-shot
+  // `refetchOnWindowFocus` covers the data, but the realtime channel
+  // can be in a stale `TIMED_OUT`/`CLOSED` state with no auto-recovery.
+  // Tear the channel down synchronously and force the subscribe effect
+  // to re-run by clearing the ref — every visibility-restore costs one
+  // RPC + one SUBSCRIBE round-trip, which is the right trade-off vs
+  // staring at a frozen status screen for arbitrary minutes.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!orderIdRef.current) return;
+      // RT2 — collapse rapid visibility flips. See ref decl above.
+      const now = Date.now();
+      if (now - lastResubscribeTsRef.current < 250) return;
+      lastResubscribeTsRef.current = now;
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, tableId] });
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current.channel);
+        channelRef.current = null;
+        setRtStatus('CONNECTING');
+      }
+      // Bumping the nonce re-fires the subscribe effect even when
+      // orderId/tableId are unchanged, recreating the channel against
+      // a fresh websocket. Intentionally synchronous teardown above —
+      // a deferred unsubscribe would race with the new subscribe.
+      setResubscribeNonce((n) => n + 1);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [tableId, queryClient]);
+
+  // Manual refresh handle for the "Reconnecting" banner CTA.
+  const refresh = useCallback(() => {
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current.channel);
+      channelRef.current = null;
+      setRtStatus('CONNECTING');
+    }
+    setResubscribeNonce((n) => n + 1);
+    return query.refetch();
+  }, [query.refetch]);
+
+  // Polling is the primary freshness mechanism for the customer-web
+  // (anon) order surface. Migration 20260517000003 closed the
+  // cross-tenant enumeration leak on `orders` by removing the anon
+  // SELECT policy entirely — anon HTTP reads now go through the
+  // `get_active_order_for_table` SECURITY DEFINER RPC. As a side effect,
+  // Supabase Realtime `postgres_changes` events for anon also stop
+  // firing (they evaluate the SELECT policy per-row). The realtime
+  // channel above still subscribes (cheap, instrumentation surface for
+  // the Reconnecting banner), but events no longer reliably deliver.
+  //
+  // So the original H1 60 s-gated fallback becomes always-on: refetch
+  // every 30 s for the lifetime of the order subscription. Acceptable
+  // staffing freshness for kitchen status changes, and the customer's
+  // own mutations still invalidate the cache instantly via the mutation
+  // hook's `onSuccess`. If the realtime path is ever restored (e.g. via
+  // per-customer JWT auth), this can revert to a gated fallback.
+  useEffect(() => {
+    if (!orderId) return;
+    const intervalId = setInterval(() => {
+      query.refetch();
+    }, 30_000);
+    return () => clearInterval(intervalId);
+  }, [orderId, query.refetch]);
+
+  return { ...query, rtStatus, refresh };
 }
 
 export function useCreateOrder() {
@@ -136,8 +300,11 @@ export function useCreateOrder() {
     // retry happens.
     retry: 0,
     onMutate: (variables: { tableId: string; notes?: string; client_request_id?: string }) => {
-      // Stamp once per logical user action; React Query reuses the same
-      // variables object across retries, so the id stays stable.
+      // Safety net: mint an id if the caller didn't pass one. The
+      // dedupe contract is *the caller* holding a stable id across
+      // user-driven retries (see `useStableClientRequestId`); `retry: 0`
+      // disables auto-retry, so this fallback only fires when the
+      // caller forgot to stamp.
       variables.client_request_id = getOrCreateClientRequestId(variables.client_request_id);
     },
     mutationFn: async ({
@@ -160,7 +327,19 @@ export function useCreateOrder() {
       });
       return order as Order;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (order, variables) => {
+      // M5 — register the freshly-persisted `client_request_id` so the
+      // realtime echo for *this* INSERT doesn't re-trigger an
+      // invalidate after we already did it locally. The id is recorded
+      // against both the new orderId AND the global bucket — the
+      // INSERT echo's payload key matches the new order's id, but the
+      // dedup lookup happens inside `useOrder`'s subscription which
+      // was opened for the same orderId.
+      const crid = (variables as { client_request_id?: string }).client_request_id;
+      if (crid) {
+        recordRecentClientRequestId(order.id, crid);
+        recordRecentClientRequestId(null, crid);
+      }
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, variables.tableId] });
     },
   });
@@ -192,8 +371,30 @@ export function useCancelOrderItem() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ itemId, cancelQty }: { itemId: string; cancelQty?: number }) => {
-      return db.orderItems.cancel(itemId, cancelQty);
+    // C3 — route through `/api/v1/customer/orders/[id]/items/[itemId]/cancel`
+    // instead of `db.orderItems.cancel()`. The wrapper version is
+    // staff-only on the partial path (the `cancel_order_item_qty`
+    // RPC gates on `auth.uid()` → active staff), so the customer-side
+    // partial cancel never worked through it; the new route uses the
+    // service-role admin client to do the atomic update. Routing
+    // through the API also brings the Upstash edge limiter and the
+    // M6 `table_id`-match check to parity with the order-level cancel.
+    mutationFn: async ({
+      orderId,
+      itemId,
+      tableId,
+      cancelQty,
+    }: {
+      orderId: string;
+      itemId: string;
+      tableId: string;
+      cancelQty?: number;
+    }) => {
+      const { item } = await apiRoutes.customerOrders.cancelItem(orderId, itemId, {
+        table_id: tableId,
+        cancel_qty: cancelQty ?? null,
+      });
+      return item;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
@@ -243,7 +444,14 @@ export function useAddOrderItems() {
       );
       return createdItems as OrderItem[];
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      // M5 — register each per-item `client_request_id` so the order_items
+      // INSERT echoes dedup. Each item is its own realtime event.
+      for (const item of variables.items) {
+        if (item.client_request_id) {
+          recordRecentClientRequestId(variables.orderId, item.client_request_id);
+        }
+      }
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER] });
     },
   });

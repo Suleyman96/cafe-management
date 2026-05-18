@@ -13,20 +13,30 @@ import {
   Clock,
   Globe,
   Instagram,
+  Loader2,
   MapPin,
   MapPinned,
   Phone,
+  RefreshCw,
   UtensilsCrossed,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
+import { useFormatPrice } from '@/hooks/use-format-price';
 import { useOrder } from '@/hooks/use-order';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
 import { setTableContext } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { useLanguageStore } from '@/store/language-store';
+
+// H4 — escalate after this many consecutive non-sentinel failures. Below
+// this, retries are silent except for the CTA. At this threshold the
+// banner switches to a stronger "your network looks unstable" copy so
+// the customer knows further taps probably won't fix it.
+const MAX_TABLE_CONTEXT_RETRIES = 3;
 
 interface TableLandingProps {
   tableId: string;
@@ -41,50 +51,112 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
   const { data: settings } = useCafeSettings();
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const [tenantPlan, setTenantPlan] = useState<string | null>(null);
-  // H2 — when the QR has been rotated, expired, or revoked,
-  // `set_table_context` raises a sentinel-shaped error
+  const formatPrice = useFormatPrice();
+  // The three QR-failure sentinels look identical at the UI layer
   // (`invalid_qr_token` / `qr_token_expired` / `qr_token_revoked`).
-  // We collapse all three into a single "QR is no longer valid" UI
-  // since the customer's required action is identical: ask staff for
-  // a fresh code. Differentiating the three at the UI layer would
-  // burn 3 × 20 locale entries for negligible UX gain.
+  // Collapse them into a single "QR is no longer valid" UI since the
+  // customer's required action is identical: ask staff for a fresh
+  // code. Differentiating the three would burn 3 × 20 locale entries
+  // for negligible UX gain.
   const [qrTokenError, setQrTokenError] = useState(false);
+  // H4 — non-sentinel `set_table_context` failures (transient RPC
+  // blips) used to land in Sentry silently while `tenantPlan` stayed
+  // null and the Browse Menu area rendered an empty 48px placeholder.
+  // Surface a "Couldn't load — tap to retry" CTA instead; escalate
+  // copy after MAX_TABLE_CONTEXT_RETRIES failed attempts so a
+  // hard-broken connection doesn't trick the customer into infinite
+  // taps.
+  const [retryNeeded, setRetryNeeded] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [retryPending, setRetryPending] = useState(false);
+  // A3 — scroll affordance for the 20-locale grid. `hasMoreBelow` drives the
+  // bottom gradient so the list visually hints that more languages exist
+  // below the fold instead of relying on a hidden scrollbar.
+  const langGridRef = useRef<HTMLDivElement | null>(null);
+  const langSheetRef = useRef<HTMLDivElement | null>(null);
+  const [hasMoreBelow, setHasMoreBelow] = useState(false);
+
+  // A5 — focus trap on the language-picker bottom sheet so keyboard
+  // customers (rare on phones, common on tablet menus) don't escape
+  // the modal via Tab and lose their place.
+  useFocusTrap(langSheetRef, {
+    active: showLanguagePicker,
+    onClose: () => setShowLanguagePicker(false),
+  });
+
+  const updateHasMoreBelow = useCallback(() => {
+    const el = langGridRef.current;
+    if (!el) {
+      setHasMoreBelow(false);
+      return;
+    }
+    // 4px tolerance — `scrollTop` and `scrollHeight` can be sub-pixel on
+    // zoomed mobile viewports and we don't want the gradient flickering
+    // when the user reaches the natural end of the list.
+    setHasMoreBelow(el.scrollHeight - el.scrollTop - el.clientHeight > 4);
+  }, []);
+
+  useEffect(() => {
+    if (!showLanguagePicker) return;
+    // Wait one paint so the sheet's enter animation settles before we
+    // measure scroll metrics.
+    const id = window.requestAnimationFrame(updateHasMoreBelow);
+    return () => window.cancelAnimationFrame(id);
+  }, [showLanguagePicker, updateHasMoreBelow]);
 
   const actualTableId = table?.id || '';
   const { data: activeOrder, isLoading: orderLoading } = useOrder(actualTableId);
 
   const currentLang = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
 
+  const resolveTableContext = useCallback(async (qrToken: string) => {
+    setRetryPending(true);
+    try {
+      const plan = await setTableContext(qrToken);
+      if (plan) setTenantPlan(plan);
+      // H4 — if `set_table_context` returns no plan, fall back to
+      // letting the customer browse with the default `standard`
+      // tier rather than rendering an empty 48px gap. Capture to
+      // Sentry so the contract change doesn't go unnoticed; the
+      // RPC's contract is "tenant_id + plan" since migration
+      // 20260515000003.
+      if (!plan) {
+        Sentry.captureMessage('set_table_context returned no plan; falling back to menu CTA', {
+          level: 'warning',
+          tags: { surface: 'table-landing.plan-fallback' },
+        });
+        setTenantPlan('standard');
+      }
+      setRetryNeeded(false);
+      setRetryCount(0);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (
+        message === 'invalid_qr_token' ||
+        message === 'qr_token_expired' ||
+        message === 'qr_token_revoked'
+      ) {
+        // Policy failures — different UI surface, no retry path.
+        setQrTokenError(true);
+      } else {
+        // Network jitter / transient RPC failure. Show the retry
+        // CTA and let the customer drive recovery. The Sentry
+        // capture stays so we still see real outages.
+        Sentry.captureException(err);
+        setRetryNeeded(true);
+        setRetryCount((n) => n + 1);
+      }
+    } finally {
+      setRetryPending(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (token) {
-      setTableContext(token)
-        .then((plan) => {
-          // `setTableContext` now returns the tenant's plan in the same
-          // RPC roundtrip — see the migration comment for why a separate
-          // `get_tenant_plan_from_context` call ALWAYS returned null
-          // (session-var transaction scope).
-          if (plan) setTenantPlan(plan);
-        })
-        .catch((err: unknown) => {
-          // The three QR-failure sentinels look identical at the UI
-          // layer — surface the existing "Invalid Table" screen so
-          // the customer is prompted to ask staff for a new code.
-          // Anything else is an unexpected error and goes to Sentry
-          // without a UI change (so a transient network blip on the
-          // RPC doesn't block a customer with an otherwise-valid QR).
-          const message = err instanceof Error ? err.message : String(err);
-          if (
-            message === 'invalid_qr_token' ||
-            message === 'qr_token_expired' ||
-            message === 'qr_token_revoked'
-          ) {
-            setQrTokenError(true);
-          } else {
-            Sentry.captureException(err);
-          }
-        });
+      // Fire-and-forget; resolveTableContext owns its own state.
+      void resolveTableContext(token);
     }
-  }, [token]);
+  }, [token, resolveTableContext]);
 
   useEffect(() => {
     if (showLanguagePicker) {
@@ -122,7 +194,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
 
   if (error || !table || qrTokenError) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-[#0a0a0a] p-4">
+      <div className="flex h-[100svh] flex-col items-center justify-center bg-[#0a0a0a] p-4">
         <h1 className="text-2xl font-bold text-red-400">{t('table.invalidTitle')}</h1>
         <p className="mt-2 text-neutral-400">{t('table.invalidDescription')}</p>
       </div>
@@ -175,7 +247,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0C0C0E]">
+    <div className="flex min-h-[100svh] flex-col bg-[#0C0C0E]">
       {/* ===== HERO ===== */}
       <div className="relative">
         <div className="relative overflow-hidden px-6 pt-12 pb-28">
@@ -190,7 +262,13 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                 priority
                 sizes="100vw"
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-[#0C0C0E]" />
+              {/* A8 — customer-uploaded hero images vary wildly in
+                  brightness (e.g. sunlit dishes). Stronger gradient +
+                  uniform dark wash ensures the welcome copy clears
+                  WCAG AA contrast across the range without sacrificing
+                  too much imagery on already-dark photos. */}
+              <div className="absolute inset-0 bg-black/30" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/65 to-[#0C0C0E]" />
             </>
           ) : (
             <div
@@ -252,7 +330,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                 {settings.welcome_heading}
               </p>
             )}
-            <p className="mt-1 text-xs text-white/50 max-w-[240px] font-light">
+            <p className="mt-1 text-xs text-white/55 max-w-[240px] font-light">
               {settings?.welcome_message || t('table.tagline')}
             </p>
           </div>
@@ -285,13 +363,13 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-white truncate">{table.table_number}</p>
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-white/55">
                   {t('table.yourTable')}
                   {table.capacity ? ` · ${t('table.capacity', { count: table.capacity })}` : ''}
                 </p>
               </div>
               {table.location && (
-                <div className="flex items-center gap-1 text-xs text-white/30 shrink-0">
+                <div className="flex items-center gap-1 text-xs text-white/55 shrink-0">
                   <MapPin className="h-3 w-3" />
                   <span>{table.location}</span>
                 </div>
@@ -335,15 +413,16 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                             <p className="text-sm font-semibold text-white">
                               {t('table.activeOrderTitle')} #{activeOrder.order_number}
                             </p>
-                            <p className="text-xs text-white/40">
-                              {statusInfo.label} · {activeOrder.order_items?.length || 0}{' '}
-                              {t('table.activeOrderSubtext', {
-                                status: statusInfo.label,
-                                count: activeOrder.order_items?.length || 0,
-                              })
-                                .split('•')
-                                .pop()
-                                ?.trim() || t('tableLanding.items')}
+                            {/* M7 — drop the `.split('•').pop()` parsing
+                                that was reading the count back out of a
+                                translation. We have the count, the
+                                status, and the total in hand — stitch
+                                them with `·` from primitives instead of
+                                round-tripping through i18n. */}
+                            <p className="text-xs text-white/55">
+                              {formatPrice(activeOrder.total)} ·{' '}
+                              {activeOrder.order_items?.length || 0} {t('tableLanding.items')} ·{' '}
+                              {statusInfo.label}
                             </p>
                           </div>
                         </>
@@ -354,7 +433,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                     className="flex h-8 w-8 items-center justify-center rounded-full"
                     style={{ backgroundColor: `${accentColor}15` }}
                   >
-                    <ArrowRight className="h-4 w-4" style={{ color: accentColor }} />
+                    <ArrowRight className="h-4 w-4 rtl:rotate-180" style={{ color: accentColor }} />
                   </div>
                 </div>
               </div>
@@ -373,7 +452,34 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
           </button>
 
           {/* Browse Menu CTA */}
-          {tenantPlan === null ? (
+          {tenantPlan === null && retryNeeded ? (
+            // H4 — show a retryable CTA when set_table_context failed
+            // for a non-sentinel reason. After MAX_TABLE_CONTEXT_RETRIES
+            // attempts the copy escalates to make it clear further
+            // taps probably won't help.
+            <button
+              type="button"
+              onClick={() => token && resolveTableContext(token)}
+              disabled={retryPending || !token}
+              className="w-full rounded-2xl py-4 px-6 text-center backdrop-blur-xl transition-all active:scale-[0.97] disabled:opacity-60"
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
+                border: '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              <span className="flex items-center justify-center gap-2 text-sm font-medium text-white/80">
+                {retryPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                {retryCount >= MAX_TABLE_CONTEXT_RETRIES
+                  ? t('tableLanding.networkUnstable')
+                  : t('tableLanding.retryLoad')}
+              </span>
+            </button>
+          ) : tenantPlan === null ? (
             <div className="h-12" />
           ) : tenantPlan === 'free' ? (
             <div
@@ -387,7 +493,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
               <p className="text-sm font-medium text-white/70">
                 {t('tableLanding.qrNotAvailable')}
               </p>
-              <p className="text-xs text-white/40 mt-1">{t('tableLanding.orderAtCounter')}</p>
+              <p className="text-xs text-white/55 mt-1">{t('tableLanding.orderAtCounter')}</p>
             </div>
           ) : (
             <button
@@ -405,7 +511,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                   : activeOrder
                     ? t('table.addMoreItems')
                     : t('table.browseMenu')}
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                <ArrowRight className="h-4 w-4 rtl:rotate-180 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
               </span>
             </button>
           )}
@@ -506,7 +612,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                   {settings?.contact_phone && (
                     <a
                       href={getPhoneUrl(settings.contact_phone)}
-                      className="flex items-center gap-2 text-xs text-white/40 hover:text-white/60 transition-colors"
+                      className="flex items-center gap-2 text-xs text-white/55 hover:text-white/70 transition-colors"
                     >
                       <Phone className="h-3.5 w-3.5" />
                       <span>{settings.contact_phone}</span>
@@ -519,7 +625,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
                       }
                       target={settings?.location_maps_url ? '_blank' : undefined}
                       rel={settings?.location_maps_url ? 'noopener noreferrer' : undefined}
-                      className="flex items-center gap-2 text-xs text-white/40 hover:text-white/60 transition-colors text-center max-w-[280px]"
+                      className="flex items-center gap-2 text-xs text-white/55 hover:text-white/70 transition-colors text-center max-w-[280px]"
                     >
                       <MapPin className="h-3.5 w-3.5 shrink-0" />
                       <span>{settings.restaurant_address}</span>
@@ -532,7 +638,7 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
 
           {/* Footer — pushed to bottom */}
           <div className="mt-auto text-center py-4 pt-8">
-            <p className="text-xs text-white/20 font-light">
+            <p className="text-xs text-white/55 font-light">
               {t('tableLanding.poweredBy')}{' '}
               <span className="font-medium" style={{ color: `${accentColor}80` }}>
                 gustri
@@ -549,7 +655,14 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setShowLanguagePicker(false)}
           />
-          <div className="fixed inset-x-0 bottom-0 z-50 animate-in slide-in-from-bottom duration-300">
+          <div
+            ref={langSheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('tableLanding.languagePickerAria')}
+            tabIndex={-1}
+            className="fixed inset-x-0 bottom-0 z-50 animate-in slide-in-from-bottom duration-300 focus:outline-none"
+          >
             <div
               className="rounded-t-3xl px-5 pb-8 pt-3 shadow-2xl"
               style={{
@@ -559,42 +672,62 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
             >
               <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/15" />
 
-              <div className="grid grid-cols-4 gap-1.5 max-h-[50vh] overflow-y-auto scrollbar-hide">
-                {LANGUAGES.map((lang) => {
-                  const isSelected = language === lang.code;
-                  return (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        setLanguage(lang.code as Language);
-                        setShowLanguagePicker(false);
-                      }}
-                      className={cn(
-                        'flex flex-col items-center gap-1 rounded-2xl py-3 px-2 text-center transition-all active:scale-95',
-                        isSelected ? '' : 'hover:bg-white/5',
-                      )}
-                      style={
-                        isSelected
-                          ? {
-                              backgroundColor: `${accentColor}15`,
-                              boxShadow: `inset 0 0 0 1.5px ${accentColor}60`,
-                            }
-                          : {}
-                      }
-                    >
-                      <span className="text-[22px] leading-none">{lang.flag}</span>
-                      <span
+              {/* A3 — keep scrollbar-hide for the polished aesthetic, but
+                  layer a fading bottom gradient that disappears once the
+                  user reaches the end. Without this, customers in
+                  lower-listed locales (TR, RU, UK, UZ, …) can't see the
+                  list continues past the first four rows. */}
+              <div className="relative">
+                <div
+                  ref={langGridRef}
+                  onScroll={updateHasMoreBelow}
+                  className="grid grid-cols-4 gap-1.5 max-h-[50vh] overflow-y-auto scrollbar-hide"
+                >
+                  {LANGUAGES.map((lang) => {
+                    const isSelected = language === lang.code;
+                    return (
+                      <button
+                        key={lang.code}
+                        onClick={() => {
+                          setLanguage(lang.code as Language);
+                          setShowLanguagePicker(false);
+                        }}
                         className={cn(
-                          'text-[10px] leading-tight font-medium',
-                          isSelected ? '' : 'text-white/40',
+                          'flex flex-col items-center gap-1 rounded-2xl py-3 px-2 text-center transition-all active:scale-95',
+                          isSelected ? '' : 'hover:bg-white/5',
                         )}
-                        style={isSelected ? { color: accentColor } : {}}
+                        style={
+                          isSelected
+                            ? {
+                                backgroundColor: `${accentColor}15`,
+                                boxShadow: `inset 0 0 0 1.5px ${accentColor}60`,
+                              }
+                            : {}
+                        }
                       >
-                        {lang.code.toUpperCase()}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <span className="text-[22px] leading-none">{lang.flag}</span>
+                        <span
+                          className={cn(
+                            'text-[10px] leading-tight font-medium',
+                            isSelected ? '' : 'text-white/40',
+                          )}
+                          style={isSelected ? { color: accentColor } : {}}
+                        >
+                          {lang.code.toUpperCase()}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {hasMoreBelow && (
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-6 rounded-b-2xl"
+                    style={{
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
+                    }}
+                  />
+                )}
               </div>
             </div>
           </div>

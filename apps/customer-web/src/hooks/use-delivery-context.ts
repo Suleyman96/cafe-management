@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { apiRoutes } from '@/lib/api-routes';
-import { db } from '@/lib/supabase';
+import { bindCustomerTenantContext } from '@/lib/supabase';
+import { useCartStore } from '@/store/cart-store';
 
 /**
  * Resolve the bearer `qr_token` to a `tenant_id` and bind it to the
@@ -43,9 +44,17 @@ export function useDeliveryContext(qrToken: string | null) {
   // succeeds. `setTenantContext` is idempotent — re-binding the same id
   // on a re-render is a no-op, and a refetch returning the same id
   // doesn't churn anything downstream.
+  //
+  // M4 — bind the cart partition in the same effect. Delivery carts
+  // are scoped by (flow: 'delivery', tenantId) with no tableId; a
+  // single tenant has one delivery cart at a time per device.
   useEffect(() => {
     if (query.data?.tenant_id) {
-      db.setTenantContext(query.data.tenant_id);
+      bindCustomerTenantContext(query.data.tenant_id, 'delivery-context');
+      useCartStore.getState().setPartition({
+        flow: 'delivery',
+        tenantId: query.data.tenant_id,
+      });
     }
   }, [query.data?.tenant_id]);
 

@@ -1,8 +1,10 @@
 import { getOrCreateClientRequestId, QUERY_KEYS } from '@gustri/queries';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { RealtimeStatus } from '@/hooks/use-order';
 import { apiRoutes } from '@/lib/api-routes';
+import { isRecentClientRequestId, recordRecentClientRequestId } from '@/lib/realtime-dedup';
 import { supabase } from '@/lib/supabase';
 import type { DeliveryOrderWithDetails, Order, OrderItem } from '@/types';
 
@@ -21,8 +23,24 @@ export function useDeliveryOrder(orderId: string, accessToken?: string) {
       return data as DeliveryOrderWithDetails;
     },
     enabled: !!orderId && !!accessToken,
-    staleTime: 10 * 1000, // 10s — realtime subscription handles freshness
+    // RT4 — mirror dine-in. Realtime + visibility-restore +
+    // `refetchOnReconnect: 'always'` (Phase 2 H2) already keep this
+    // fresh; the staleTime is just the safety net for when ALL of
+    // those fail. 60s matches the global default.
+    staleTime: 60 * 1000,
   });
+
+  // H1 / H2 — mirror the dine-in pattern in `useOrder`. Same trade-offs,
+  // same banner contract; the delivery surface has identical failure
+  // modes (phone sleeps mid-tracking, websocket dies, no UI signal).
+  const [rtStatus, setRtStatus] = useState<RealtimeStatus>('CONNECTING');
+  const [resubscribeNonce, setResubscribeNonce] = useState(0);
+  const orderIdRef = useRef<string>(orderId);
+  orderIdRef.current = orderId;
+  // RT2 — leading-edge throttle for the visibility-restore handler.
+  // Mirrors the dine-in fix in `useOrder`; same iOS App Switcher /
+  // rapid background-foreground flip failure mode.
+  const lastResubscribeTsRef = useRef<number>(0);
 
   // Realtime subscription — mirrors the M5 pattern in `use-order.ts` (PR
   // #101): a `useRef` holds the live channel keyed on orderId so dep-
@@ -42,6 +60,10 @@ export function useDeliveryOrder(orderId: string, accessToken?: string) {
   // those INSERTs do need to surface to the customer.
   const channelRef = useRef<{ orderId: string; channel: RealtimeChannel } | null>(null);
   const teardownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // P1 — shared debounce timer for both subscriptions; mirrors the
+  // dine-in fix in `useOrder`. Same 150ms trailing-edge collapses
+  // staff-side bulk-edits to a single refetch.
+  const invalidateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!orderId) return;
@@ -58,6 +80,21 @@ export function useDeliveryOrder(orderId: string, accessToken?: string) {
       channelRef.current = null;
     }
 
+    setRtStatus('CONNECTING');
+
+    const scheduleInvalidate = () => {
+      // RT1 — mirror dine-in. If the local delivery order isn't in
+      // cache, skip — there's nothing to refresh, and the populating
+      // refetch from the create's `onSuccess` is already queued. See
+      // useOrder for the full rationale.
+      if (!queryClient.getQueryData([QUERY_KEYS.DELIVERY_ORDER, orderId])) return;
+      if (invalidateDebounceRef.current) clearTimeout(invalidateDebounceRef.current);
+      invalidateDebounceRef.current = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderId] });
+        invalidateDebounceRef.current = null;
+      }, 150);
+    };
+
     const channel: RealtimeChannel = supabase
       .channel(`delivery_order:${orderId}`)
       .on(
@@ -68,8 +105,13 @@ export function useDeliveryOrder(orderId: string, accessToken?: string) {
           table: 'orders',
           filter: `id=eq.${orderId}`,
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderId] });
+        (payload) => {
+          // M5 — mirror the dine-in dedup; same trade-off. Guard
+          // `payload?.new` for callback-with-no-args test harnesses.
+          const crid = (payload?.new as { client_request_id?: string | null } | null | undefined)
+            ?.client_request_id;
+          if (crid && isRecentClientRequestId(orderId, crid)) return;
+          scheduleInvalidate();
         },
       )
       .on(
@@ -80,13 +122,19 @@ export function useDeliveryOrder(orderId: string, accessToken?: string) {
           table: 'order_items',
           filter: `order_id=eq.${orderId}`,
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderId] });
+        (payload) => {
+          const crid = (payload?.new as { client_request_id?: string | null } | null | undefined)
+            ?.client_request_id;
+          if (crid && isRecentClientRequestId(orderId, crid)) return;
+          scheduleInvalidate();
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        setRtStatus(status as RealtimeStatus);
+      });
 
     channelRef.current = { orderId, channel };
+    void resubscribeNonce; // explicit re-run trigger; see useOrder
 
     return () => {
       teardownTimerRef.current = setTimeout(() => {
@@ -96,10 +144,67 @@ export function useDeliveryOrder(orderId: string, accessToken?: string) {
         }
         teardownTimerRef.current = null;
       }, 0);
+      if (invalidateDebounceRef.current) {
+        clearTimeout(invalidateDebounceRef.current);
+        invalidateDebounceRef.current = null;
+      }
     };
-  }, [orderId, queryClient]);
+  }, [orderId, queryClient, resubscribeNonce]);
 
-  return query;
+  // H2 — visibility-restore re-subscribe, same trade-off as useOrder.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!orderIdRef.current) return;
+      // RT2 — leading-edge throttle. See ref decl above.
+      const now = Date.now();
+      if (now - lastResubscribeTsRef.current < 250) return;
+      lastResubscribeTsRef.current = now;
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.DELIVERY_ORDER, orderIdRef.current],
+      });
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current.channel);
+        channelRef.current = null;
+        setRtStatus('CONNECTING');
+      }
+      setResubscribeNonce((n) => n + 1);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [queryClient]);
+
+  const refresh = useCallback(() => {
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current.channel);
+      channelRef.current = null;
+      setRtStatus('CONNECTING');
+    }
+    setResubscribeNonce((n) => n + 1);
+    return query.refetch();
+  }, [query.refetch]);
+
+  // Always-on 30 s polling — mirrors the rationale in `useOrder`.
+  // Migration 20260517000003 dropped the leaky anon SELECT policy on
+  // `orders`, which also stops Supabase Realtime `postgres_changes`
+  // events from firing for anon. The realtime channel above still
+  // subscribes (so the Reconnecting banner has a status signal), but
+  // events no longer reliably deliver. Polling is the primary
+  // freshness mechanism. Delivery realtime was *already* silently
+  // broken before this migration (delivery orders have `table_id IS
+  // NULL` so they failed the prior `USING (table_id IS NOT NULL)`
+  // policy), so this is no functional regression — it's just made
+  // explicit.
+  useEffect(() => {
+    if (!orderId) return;
+    const intervalId = setInterval(() => {
+      query.refetch();
+    }, 30_000);
+    return () => clearInterval(intervalId);
+  }, [orderId, query.refetch]);
+
+  return { ...query, rtStatus, refresh };
 }
 
 type CreateDeliveryOrderVariables = {
@@ -139,7 +244,12 @@ export function useCreateDeliveryOrder() {
       });
       return order as Order;
     },
-    onSuccess: () => {
+    onSuccess: (order, variables) => {
+      // M5 — register so the INSERT echo for this new order dedups.
+      if (variables.client_request_id) {
+        recordRecentClientRequestId(order.id, variables.client_request_id);
+        recordRecentClientRequestId(null, variables.client_request_id);
+      }
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER] });
     },
   });
@@ -184,7 +294,13 @@ export function useAddDeliveryOrderItems() {
       );
       return createdItems as OrderItem[];
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      // M5 — per-item dedup so the INSERT echo doesn't double-invalidate.
+      for (const item of variables.items) {
+        if (item.client_request_id) {
+          recordRecentClientRequestId(variables.orderId, item.client_request_id);
+        }
+      }
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERY_ORDER] });
     },
   });

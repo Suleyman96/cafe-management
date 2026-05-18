@@ -227,6 +227,12 @@ export function useAuth() {
           clearAuth();
           routerRef.current.push('/login');
         }
+        // Defensive: every code path through `initSession` must leave
+        // `isLoading` at false so ProtectedRoute can stop spinning. The
+        // rehydrate branch relied on `setStaff` (called earlier by cold
+        // init or `installSession`) already having cleared the flag — a
+        // brittle implicit dependency. Flip it explicitly here too.
+        if (!cancelled) setIsLoading(false);
         return;
       }
 

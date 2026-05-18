@@ -231,6 +231,7 @@ export type Database = {
       customer_feedback: {
         Row: {
           acknowledged_at: string | null
+          client_request_id: string | null
           created_at: string | null
           feedback_type: string
           id: string
@@ -245,6 +246,7 @@ export type Database = {
         }
         Insert: {
           acknowledged_at?: string | null
+          client_request_id?: string | null
           created_at?: string | null
           feedback_type: string
           id?: string
@@ -259,6 +261,7 @@ export type Database = {
         }
         Update: {
           acknowledged_at?: string | null
+          client_request_id?: string | null
           created_at?: string | null
           feedback_type?: string
           id?: string

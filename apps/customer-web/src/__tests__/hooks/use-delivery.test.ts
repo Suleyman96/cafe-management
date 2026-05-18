@@ -177,13 +177,22 @@ describe('useCreateDeliveryOrder', () => {
 // ─── Realtime Callback Invocation ───────────────────────────────────────────
 
 describe('useDeliveryOrder - realtime callback', () => {
-  it('orders channel callback invalidates DELIVERY_ORDER query', async () => {
+  it('orders channel callback invalidates DELIVERY_ORDER query (debounced — P1)', async () => {
     const mockOrder = { id: 'order-1', status: 'new', items: [] };
     (supabase.rpc as any).mockResolvedValueOnce({ data: mockOrder, error: null });
 
-    const { queryClient } = renderHookWithProviders(() => useDeliveryOrder('order-1'));
+    // RT1 — provide accessToken so the query actually fetches and the
+    // cache holds the order. The realtime invalidate guard (added in
+    // RT1) returns early when the cache is empty, so the previous
+    // shape of this test — without the token — would no-op.
+    const { queryClient } = renderHookWithProviders(() =>
+      useDeliveryOrder('order-1', 'test-token'),
+    );
 
-    // Wait for channel to be set up
+    await waitFor(() => {
+      expect(queryClient.getQueryData([QUERY_KEYS.DELIVERY_ORDER, 'order-1'])).toEqual(mockOrder);
+    });
+
     await waitFor(() => {
       expect(supabase.channel).toHaveBeenCalledWith('delivery_order:order-1');
     });
@@ -195,7 +204,10 @@ describe('useDeliveryOrder - realtime callback', () => {
 
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
     callback();
-    expect(spy).toHaveBeenCalledWith({ queryKey: [QUERY_KEYS.DELIVERY_ORDER, 'order-1'] });
+    // P1 — 150ms trailing-edge debounce; await rather than expect sync.
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith({ queryKey: [QUERY_KEYS.DELIVERY_ORDER, 'order-1'] });
+    });
   });
 });
 

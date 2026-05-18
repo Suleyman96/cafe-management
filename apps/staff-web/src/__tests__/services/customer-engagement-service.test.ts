@@ -134,6 +134,7 @@ describe('createCustomerFeedback — plan gate (M3)', () => {
         table_id: TABLE,
         feedback_type: 'praise',
         message: 'Great food!',
+        client_request_id: CRID,
       }),
     ).rejects.toThrow(/plan_required/);
   });
@@ -143,16 +144,21 @@ describe('createCustomerFeedback — plan gate (M3)', () => {
     const client = buildClient({
       tables: [{ data: { id: TABLE, tenant_id: TENANT }, error: null }],
       tenants: [{ data: { plan: 'pro' }, error: null }],
-      customer_feedback: [{ data: created, error: null }], // direct insert
+      customer_feedback: [
+        { data: null, error: null }, // dedupe lookup → no replay
+        { data: created, error: null }, // insert
+      ],
     });
 
-    const result = await createCustomerFeedback(client, {
+    const { row, deduped } = await createCustomerFeedback(client, {
       table_id: TABLE,
       feedback_type: 'praise',
       message: 'Great food!',
+      client_request_id: CRID,
     });
 
-    expect(result).toEqual(created);
+    expect(deduped).toBe(false);
+    expect(row).toEqual(created);
   });
 
   it('runs plan gate AFTER tenant resolution so a missing table 404s', async () => {
@@ -165,6 +171,7 @@ describe('createCustomerFeedback — plan gate (M3)', () => {
         table_id: TABLE,
         feedback_type: 'praise',
         message: 'Great food!',
+        client_request_id: CRID,
       }),
     ).rejects.toBeInstanceOf(NotFoundError);
   });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { useStableClientRequestId } from '@gustri/queries';
 import { Button } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
 import { useMutation } from '@tanstack/react-query';
@@ -28,6 +29,12 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
   const [showSuccess, setShowSuccess] = useState(false);
 
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // S4 — stable idempotency key for this submit. Reset on success so a
+  // *new* feedback submission after the success screen mints a fresh
+  // id; retries of the same submit (network blip, rage-tap) all share
+  // the id and dedupe on the `(tenant_id, client_request_id)` partial
+  // unique index added in migration 20260517000001.
+  const idempotencyKey = useStableClientRequestId();
 
   useEffect(() => {
     return () => {
@@ -38,10 +45,9 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
   }, []);
 
   const createFeedbackMutation = useMutation({
-    // `retry: 0` so a network blip can't post duplicate complaints — the
-    // feedback table doesn't carry a `client_request_id` column today,
-    // so the API path can't dedupe server-side. The Upstash limiter on
-    // `/api/v1/customer/feedback` (3 / 5 min / IP) caps the worst case.
+    // `retry: 0` still applies: user-driven retries are intentional, and
+    // a network-blip retry now hits the server's dedupe path via
+    // `client_request_id` so it can't post duplicates either way.
     retry: 0,
     mutationFn: (data: { feedback_type: FeedbackType; message: string }) =>
       apiRoutes.customerFeedback.create({
@@ -49,8 +55,10 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
         order_id: orderId ?? null,
         feedback_type: data.feedback_type,
         message: data.message,
+        client_request_id: idempotencyKey.get(),
       }),
     onSuccess: () => {
+      idempotencyKey.reset();
       setShowSuccess(true);
       successTimeoutRef.current = setTimeout(() => {
         onSuccess?.();

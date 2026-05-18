@@ -16,5 +16,11 @@
   "plan_required": "Questa azione richiede l'aggiornamento del tuo piano.",
   "client_outdated": "La tua app è obsoleta. Ricaricala per continuare.",
   "version_conflict": "Un altro dispositivo ha appena modificato questo ordine. Aggiorna e riprova.",
-  "rate_limited": "Troppe richieste. Attendi un momento e riprova."
+  "rate_limited": "Troppe richieste. Attendi un momento e riprova.",
+  "order_cancel_too_late": "La cucina ha già iniziato a preparare il tuo ordine. Chiama un cameriere per discuterne.",
+  "order_not_cancellable": "Questo ordine non può più essere annullato.",
+  "order_table_mismatch": "Questo ordine appartiene a un altro tavolo.",
+  "invalid_qr_token": "Codice QR non valido o scaduto. Effettua nuovamente la scansione.",
+  "qr_token_revoked": "Questo codice QR non è più attivo. Effettua nuovamente la scansione o rivolgiti al personale.",
+  "qr_token_expired": "Il tuo codice QR è scaduto. Effettua nuovamente la scansione o rivolgiti al personale."
 }

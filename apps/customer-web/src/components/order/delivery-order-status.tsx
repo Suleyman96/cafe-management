@@ -6,10 +6,18 @@ import { CheckCircle2, Clock, Hourglass, MapPin, Phone, Truck, User } from 'luci
 import { useEffect, useState } from 'react';
 import { OrderTimeline } from '@/components/order/order-timeline';
 import { PlatformFooter } from '@/components/ui/platform-footer';
+import { ReconnectingBanner } from '@/components/ui/reconnecting-banner';
 import { useDeliveryOrder } from '@/hooks/use-delivery';
 import { useFormatPrice } from '@/hooks/use-format-price';
+import { useOrderEta } from '@/hooks/use-order-eta';
 import { useCafeSettings } from '@/hooks/use-settings';
+import {
+  clearDeliveryOrderToken,
+  readDeliveryOrderToken,
+  sweepStaleDeliveryOrderTokens,
+} from '@/lib/delivery-order-token-storage';
 import { getStatusColor, timeAgo } from '@/lib/utils';
+import { useOrderConfirmationStore } from '@/store/order-confirmation-store';
 
 interface DeliveryOrderStatusProps {
   orderId: string;
@@ -37,15 +45,62 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
   // broken to the customer.
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [tokenChecked, setTokenChecked] = useState(false);
+  // CR3 — dismiss the confirmation overlay on mount of the tracking
+  // destination. After a mid-overlay refresh the persisted overlay
+  // would otherwise render on top of this page until its 15 s auto-
+  // dismiss fires; explicitly tearing it down here keeps the
+  // tracking screen the only thing visible once the customer is here.
+  const dismissConfirmation = useOrderConfirmationStore((s) => s.dismiss);
 
   useEffect(() => {
-    setAccessToken(readAccessTokenFromHash());
-    setTokenChecked(true);
-  }, []);
+    dismissConfirmation();
+  }, [dismissConfirmation]);
 
-  const { data: order, isLoading } = useDeliveryOrder(orderId, accessToken ?? undefined);
+  useEffect(() => {
+    // S3 — sweep stale `delivery-order-token:*` entries on every mount.
+    // sessionStorage dies with the tab, but a long-running tab (kiosk,
+    // shared tablet left on overnight) can otherwise accumulate bearers
+    // for orders that never reached a terminal status. The 24 h TTL in
+    // the helper bounds residue without disrupting same-day recovery.
+    sweepStaleDeliveryOrderTokens();
+    // Prefer the URL fragment (canonical carrier from the success path)
+    // and fall back to sessionStorage if the customer cleared the URL
+    // bar or a share-link surface stripped the fragment. Both routes
+    // require the same bearer; sessionStorage is just a redundant copy
+    // pinned to this tab.
+    const hashToken = readAccessTokenFromHash();
+    setAccessToken(hashToken ?? readDeliveryOrderToken(orderId));
+    setTokenChecked(true);
+  }, [orderId]);
+
+  const {
+    data: order,
+    isLoading,
+    rtStatus,
+    dataUpdatedAt,
+    refresh: refreshDeliveryOrder,
+  } = useDeliveryOrder(orderId, accessToken ?? undefined);
   const { data: settings } = useCafeSettings();
   const formatPrice = useFormatPrice();
+
+  // S3 — drop the sessionStorage bearer once the order is terminal. The
+  // URL fragment is still the customer's record of access; clearing the
+  // storage entry just trims stale credentials on a shared device once
+  // the tracking session has nothing left to do.
+  useEffect(() => {
+    if (order?.status === 'delivered' || order?.status === 'cancelled') {
+      clearDeliveryOrderToken(orderId);
+    }
+  }, [order?.status, orderId]);
+  // M6 — call the hook unconditionally (rules of hooks); it returns null
+  // when the order isn't loaded yet or isn't in a window where ETA
+  // applies, and consumers gate the render on that null.
+  const eta = useOrderEta(
+    order?.order_items ?? undefined,
+    order?.status,
+    order?.created_at,
+    order?.id,
+  );
 
   if (!tokenChecked || isLoading) {
     return <LoadingSpinner fullScreen />;
@@ -85,6 +140,13 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="p-4 space-y-6">
+        {/* H1 — mirror of the dine-in banner; same trade-offs. */}
+        <ReconnectingBanner
+          rtStatus={rtStatus}
+          dataUpdatedAt={dataUpdatedAt}
+          onRefresh={refreshDeliveryOrder}
+        />
+
         {/* Order Header */}
         <div className="bg-card rounded-lg p-4 border">
           <div className="flex items-center justify-between mb-2">
@@ -151,6 +213,18 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
             currentStatus={order.status}
             inProgressLabel={t('deliveryStatus.inProgress')}
           />
+
+          {/* M6 — kitchen-window ETA. Null past `ready`; the existing
+              out_for_delivery / delivered banners take over from there. */}
+          {eta && (
+            <div className="mt-4 p-3 bg-emerald-50 dark:bg-emerald-950 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              <p className="text-sm text-center font-medium text-emerald-800 dark:text-emerald-200">
+                {eta.almostReady
+                  ? t('orderStatus.eta.almostReady')
+                  : t('orderStatus.eta.preparing', { minutes: eta.minutes })}
+              </p>
+            </div>
+          )}
 
           {order.status === 'pending_approval' && (
             <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">

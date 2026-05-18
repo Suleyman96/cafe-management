@@ -1,9 +1,10 @@
 /**
  * Route-level test for `/api/v1/customer/feedback` (H1 / PR3).
  *
- * Same shape as the waiter-calls test. Feedback has no
- * `client_request_id` column today, so this route doesn't require
- * idempotency — the rate limiter is the spam guard.
+ * Same shape as the waiter-calls test. S4 — feedback now carries a
+ * `client_request_id` so a replay/rage-tap dedupes on the partial
+ * unique index in migration 20260517000001. The rate limiter remains
+ * the outer spam guard.
  */
 
 import type { NextRequest } from 'next/server';
@@ -29,6 +30,7 @@ const { POST } = await import('@/app/api/v1/customer/feedback/route');
 
 const TABLE_ID = '11111111-1111-4111-8111-111111111111';
 const ORDER_ID = '22222222-2222-4222-8222-222222222222';
+const CLIENT_REQUEST_ID = '33333333-3333-4333-8333-333333333333';
 
 function buildRequest(body: Record<string, unknown>): NextRequest {
   return {
@@ -45,7 +47,13 @@ beforeEach(() => {
 
 describe('POST /api/v1/customer/feedback — schema gate', () => {
   it('rejects payload missing table_id', async () => {
-    const res = await POST(buildRequest({ feedback_type: 'praise', message: 'Loved it!' }));
+    const res = await POST(
+      buildRequest({
+        feedback_type: 'praise',
+        message: 'Loved it!',
+        client_request_id: CLIENT_REQUEST_ID,
+      }),
+    );
 
     expect(res.status).toBe(400);
     expect(createFeedbackMock).not.toHaveBeenCalled();
@@ -57,6 +65,7 @@ describe('POST /api/v1/customer/feedback — schema gate', () => {
         table_id: TABLE_ID,
         feedback_type: 'rant',
         message: 'Hello',
+        client_request_id: CLIENT_REQUEST_ID,
       }),
     );
 
@@ -70,6 +79,7 @@ describe('POST /api/v1/customer/feedback — schema gate', () => {
         table_id: TABLE_ID,
         feedback_type: 'praise',
         message: '',
+        client_request_id: CLIENT_REQUEST_ID,
       }),
     );
 
@@ -83,6 +93,7 @@ describe('POST /api/v1/customer/feedback — schema gate', () => {
         table_id: TABLE_ID,
         feedback_type: 'complaint',
         message: 'x'.repeat(1001),
+        client_request_id: CLIENT_REQUEST_ID,
       }),
     );
 
@@ -90,8 +101,21 @@ describe('POST /api/v1/customer/feedback — schema gate', () => {
     expect(createFeedbackMock).not.toHaveBeenCalled();
   });
 
-  it('forwards a valid payload to the service WITHOUT tenant_id', async () => {
-    createFeedbackMock.mockResolvedValue({ id: 'f1' });
+  it('rejects payload missing client_request_id (S4)', async () => {
+    const res = await POST(
+      buildRequest({
+        table_id: TABLE_ID,
+        feedback_type: 'praise',
+        message: 'Nice',
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(createFeedbackMock).not.toHaveBeenCalled();
+  });
+
+  it('forwards a valid payload to the service WITHOUT tenant_id and threads client_request_id', async () => {
+    createFeedbackMock.mockResolvedValue({ row: { id: 'f1' }, deduped: false });
 
     const res = await POST(
       buildRequest({
@@ -99,6 +123,7 @@ describe('POST /api/v1/customer/feedback — schema gate', () => {
         order_id: ORDER_ID,
         feedback_type: 'praise',
         message: 'Great service',
+        client_request_id: CLIENT_REQUEST_ID,
         // Attacker tries to inject a tenant_id; route schema strips it.
         tenant_id: '99999999-9999-4999-8999-999999999999',
       }),
@@ -110,6 +135,22 @@ describe('POST /api/v1/customer/feedback — schema gate', () => {
     expect(call).not.toHaveProperty('tenant_id');
     expect(call.table_id).toBe(TABLE_ID);
     expect(call.order_id).toBe(ORDER_ID);
+    expect(call.client_request_id).toBe(CLIENT_REQUEST_ID);
+  });
+
+  it('returns 200 when the service reports a deduped replay (S4)', async () => {
+    createFeedbackMock.mockResolvedValue({ row: { id: 'f1' }, deduped: true });
+
+    const res = await POST(
+      buildRequest({
+        table_id: TABLE_ID,
+        feedback_type: 'praise',
+        message: 'Great service',
+        client_request_id: CLIENT_REQUEST_ID,
+      }),
+    );
+
+    expect(res.status).toBe(200);
   });
 });
 
@@ -126,6 +167,7 @@ describe('POST /api/v1/customer/feedback — rate limiter', () => {
         table_id: TABLE_ID,
         feedback_type: 'praise',
         message: 'Nice',
+        client_request_id: CLIENT_REQUEST_ID,
       }),
     );
 
@@ -134,13 +176,14 @@ describe('POST /api/v1/customer/feedback — rate limiter', () => {
   });
 
   it('routes the request through the "feedback" rate-limit category', async () => {
-    createFeedbackMock.mockResolvedValue({ id: 'f1' });
+    createFeedbackMock.mockResolvedValue({ row: { id: 'f1' }, deduped: false });
 
     await POST(
       buildRequest({
         table_id: TABLE_ID,
         feedback_type: 'praise',
         message: 'Nice',
+        client_request_id: CLIENT_REQUEST_ID,
       }),
     );
 

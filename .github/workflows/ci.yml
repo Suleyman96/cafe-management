@@ -216,6 +216,15 @@ jobs:
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
+      # P9 — customer-web is the cold-load surface; gate against silent
+      # bundle regressions. Compares per-route first-load JS bytes
+      # against the committed baseline; fails on >10 kB regression per
+      # route or any route exceeding the 200 kB hard ceiling. Update via
+      # `pnpm --filter @gustri/customer-web bundle-baseline` and commit
+      # in the same PR as the intended size increase.
+      - name: Bundle-size guardrail (customer-web)
+        run: pnpm --filter @gustri/customer-web bundle-check
+
   peer-deps-check:
     name: Verify React peers accept v18 + v19
     runs-on: ubuntu-latest

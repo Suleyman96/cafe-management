@@ -1,7 +1,15 @@
 import { QUERY_KEYS } from '@gustri/queries';
 import { useCreateWaiterCall } from '@/hooks/use-waiter-call';
 import { apiRoutes } from '@/lib/api-routes';
+import { useWaiterCallIdempotency } from '@/store/waiter-call-store';
 import { renderHookWithProviders } from '../helpers/test-utils';
+
+beforeEach(() => {
+  // C2: shared slice carries idempotency state across the FAB + the
+  // order-screen Call Staff button. Reset before each test so we don't
+  // see ids leaked from a prior case.
+  useWaiterCallIdempotency.setState({ pendingClientRequestId: null });
+});
 
 // PR3 / H1: this hook now POSTs through `/api/v1/customer/waiter-calls` so
 // the Upstash limiter at the staff-web edge gates it. The wrapper path
@@ -112,6 +120,58 @@ describe('useCreateWaiterCall', () => {
 
     // Same variables object — the id stamped onto it should persist.
     expect((variables as { client_request_id?: string }).client_request_id).toBe(firstId);
+  });
+
+  it('reuses the same client_request_id across user-driven retries until success (C2)', async () => {
+    // Failure scenario #2: flaky network, customer taps the FAB twice.
+    // Without the shared idempotency slice the second tap would mint a
+    // fresh UUID and the server-side (tenant_id, client_request_id)
+    // partial unique index would let the duplicate through.
+    (apiRoutes.customerWaiterCalls.create as any)
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({ waiter_call: { id: 'call-1', status: 'pending' } });
+
+    const { result } = renderHookWithProviders(() => useCreateWaiterCall());
+
+    const submit = () =>
+      result.current.mutateAsync({
+        tableId: 'table-1',
+        callType: 'assistance',
+        reason: 'Help',
+        priority: 'normal',
+      });
+
+    await submit().catch(() => {});
+    await submit();
+
+    const calls = (apiRoutes.customerWaiterCalls.create as any).mock.calls;
+    expect(calls.length).toBe(2);
+    expect(calls[0][0].client_request_id).toBe(calls[1][0].client_request_id);
+  });
+
+  it('mints a fresh client_request_id for the next call cycle after success (C2)', async () => {
+    // The shared slice resets in `onSuccess` so the *next* logical
+    // call (a later flag for a different reason) gets its own id —
+    // otherwise every customer would only ever raise one waiter call
+    // per session.
+    const { result } = renderHookWithProviders(() => useCreateWaiterCall());
+
+    await result.current.mutateAsync({
+      tableId: 'table-1',
+      callType: 'assistance',
+      reason: 'Help',
+      priority: 'normal',
+    });
+    await result.current.mutateAsync({
+      tableId: 'table-1',
+      callType: 'bill',
+      reason: 'Bill please',
+      priority: 'normal',
+    });
+
+    const calls = (apiRoutes.customerWaiterCalls.create as any).mock.calls;
+    expect(calls.length).toBe(2);
+    expect(calls[0][0].client_request_id).not.toBe(calls[1][0].client_request_id);
   });
 });
 

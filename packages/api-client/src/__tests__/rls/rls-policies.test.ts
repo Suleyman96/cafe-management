@@ -56,6 +56,24 @@ describe('RLS Policies — Anonymous Access', () => {
     expect(data).toHaveLength(0);
   });
 
+  // Same enumeration-leak class as `cannot read orders directly`. The
+  // previous `anon_read_order_items_scoped USING (EXISTS … table_id IS
+  // NOT NULL)` policy was a per-row predicate, not a query-shape gate
+  // — bare SELECT returned every item attached to a dine-in order
+  // across every tenant. Migration 20260517000003 drops it.
+  test('cannot read order_items directly', async () => {
+    const { data } = await anonClient.from('order_items').select('*');
+    expect(data).toHaveLength(0);
+  });
+
+  // Same class. Previous `anon_read_waiter_calls_scoped USING (table_id
+  // IS NOT NULL)` leaked every dine-in waiter call cross-tenant.
+  // Migration 20260517000003 drops it.
+  test('cannot read waiter_calls directly', async () => {
+    const { data } = await anonClient.from('waiter_calls').select('*');
+    expect(data).toHaveLength(0);
+  });
+
   test('cannot read order_payments', async () => {
     const { data } = await anonClient.from('order_payments').select('*');
     expect(data).toHaveLength(0);

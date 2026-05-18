@@ -111,7 +111,11 @@ describe('orders_takeout_customer_check — delivery relaxation', () => {
     expect(error?.code).toBe(PG_CHECK_VIOLATION);
   });
 
-  test('takeout order still requires customer_phone (regression guard)', async () => {
+  test('takeout order inserts with only customer_name (phone optional)', async () => {
+    // Migration 20260517000002 relaxed the takeout branch of
+    // orders_takeout_customer_check to mirror the earlier delivery
+    // relaxation. Staff often take a takeout order over the counter
+    // where only the name is available up front.
     const { error } = await svc.from('orders').insert({
       tenant_id: TENANT_1,
       order_number: uniqueOrderNumber(),
@@ -122,6 +126,22 @@ describe('orders_takeout_customer_check — delivery relaxation', () => {
       tax: 0,
       total: 0,
       customer_name: 'Takeout Customer',
+    });
+
+    expect(error).toBeNull();
+  });
+
+  test('takeout order still requires customer_name (regression guard)', async () => {
+    const { error } = await svc.from('orders').insert({
+      tenant_id: TENANT_1,
+      order_number: uniqueOrderNumber(),
+      status: 'new',
+      order_type: 'takeout',
+      source: 'waiter',
+      subtotal: 0,
+      tax: 0,
+      total: 0,
+      customer_phone: '+994500000000',
     });
 
     expect(error).not.toBeNull();

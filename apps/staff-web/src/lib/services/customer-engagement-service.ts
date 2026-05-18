@@ -46,6 +46,7 @@ type CreateCustomerFeedbackInput = {
   order_id?: string | null;
   feedback_type: 'complaint' | 'praise';
   message: string;
+  client_request_id: string;
 };
 
 async function resolveTenantFromTable(
@@ -104,15 +105,12 @@ export async function createCustomerWaiterCall(
 /**
  * Customer feedback insert.
  *
- * No `client_request_id` dedupe: the `customer_feedback` table doesn't
- * carry the column today (only `orders`, `order_items`, `payments`,
- * `refunds`, `stock_movements`, `waiter_calls`, `tasks`, `expenses` do
- * — see migration 20260428000002). A duplicate-submit therefore lands
- * twice in the worst case, which is a low-impact UX blemish (staff sees
- * two identical complaint rows) — the H1 rate limiter caps the rate at
- * 3 / 5 min / IP so an attacker can't weaponize the lack of dedupe.
- * Adding the column + index would be a wider migration; defer until a
- * real duplicate-feedback complaint surfaces.
+ * Idempotent on `client_request_id` via the partial unique index on
+ * `customer_feedback(tenant_id, client_request_id)` from migration
+ * 20260517000001 (S4). A retried POST returns the original row instead
+ * of stamping a second complaint in the staff queue. The H1 rate
+ * limiter (3 / 5 min / IP) still caps the worst case; this just closes
+ * the within-window double-submit path.
  */
 export async function createCustomerFeedback(
   supabaseAdmin: SupabaseClient,
@@ -121,19 +119,27 @@ export async function createCustomerFeedback(
   const tenantId = await resolveTenantFromTable(supabaseAdmin, input.table_id);
   await assertCustomerPlanAllowsWrites(supabaseAdmin, tenantId);
 
-  const { data, error } = await supabaseAdmin
-    .from('customer_feedback')
-    .insert({
-      tenant_id: tenantId,
-      table_id: input.table_id,
-      order_id: input.order_id ?? null,
-      feedback_type: input.feedback_type,
-      message: input.message,
-      status: 'pending',
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as Record<string, unknown>;
+  return findOrCreateByClientRequestId<Record<string, unknown>>(supabaseAdmin, {
+    table: 'customer_feedback',
+    tenantId,
+    clientRequestId: input.client_request_id,
+    selectShape: '*',
+    create: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('customer_feedback')
+        .insert({
+          tenant_id: tenantId,
+          table_id: input.table_id,
+          order_id: input.order_id ?? null,
+          feedback_type: input.feedback_type,
+          message: input.message,
+          status: 'pending',
+          client_request_id: input.client_request_id,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as Record<string, unknown>;
+    },
+  });
 }

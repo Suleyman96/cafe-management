@@ -16,5 +16,11 @@
   "plan_required": "Für diese Aktion müssen Sie Ihren Tarif upgraden.",
   "client_outdated": "Ihre App ist veraltet. Bitte neu laden, um fortzufahren.",
   "version_conflict": "Ein anderes Gerät hat diese Bestellung gerade geändert. Aktualisieren und erneut versuchen.",
-  "rate_limited": "Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut."
+  "rate_limited": "Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.",
+  "order_cancel_too_late": "Die Küche hat bereits mit der Zubereitung Ihrer Bestellung begonnen. Bitte rufen Sie einen Kellner zur Klärung.",
+  "order_not_cancellable": "Diese Bestellung kann nicht mehr storniert werden.",
+  "order_table_mismatch": "Diese Bestellung gehört zu einem anderen Tisch.",
+  "invalid_qr_token": "Ungültiger oder abgelaufener QR-Code. Bitte erneut scannen.",
+  "qr_token_revoked": "Dieser QR-Code ist nicht mehr aktiv. Bitte erneut scannen oder einen Mitarbeiter ansprechen.",
+  "qr_token_expired": "Ihr QR-Code ist abgelaufen. Bitte erneut scannen oder einen Mitarbeiter ansprechen."
 }

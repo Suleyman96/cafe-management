@@ -16,5 +16,11 @@
   "plan_required": "Esta ação requer a atualização do seu plano.",
   "client_outdated": "A sua aplicação está desatualizada. Recarregue para continuar.",
   "version_conflict": "Outro dispositivo acabou de alterar este pedido. Atualize e tente novamente.",
-  "rate_limited": "Demasiadas solicitações. Aguarde um momento e tente novamente."
+  "rate_limited": "Demasiadas solicitações. Aguarde um momento e tente novamente.",
+  "order_cancel_too_late": "A cozinha já começou a preparar seu pedido. Por favor, chame um garçom para conversar.",
+  "order_not_cancellable": "Este pedido já não pode ser cancelado.",
+  "order_table_mismatch": "Este pedido pertence a outra mesa.",
+  "invalid_qr_token": "Código QR inválido ou expirado. Por favor, faça novamente a leitura.",
+  "qr_token_revoked": "Este código QR já não está ativo. Por favor, faça nova leitura ou peça a um membro da equipa.",
+  "qr_token_expired": "O seu código QR expirou. Por favor, faça nova leitura ou peça a um membro da equipa."
 }

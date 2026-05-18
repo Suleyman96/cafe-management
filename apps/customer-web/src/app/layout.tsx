@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
+import { OrderConfirmationOverlay } from '@/components/order/order-confirmation-overlay';
 import { Providers } from '@/components/providers';
 import { HtmlLangSetter } from '@/components/ui/html-lang-setter';
 
@@ -33,6 +34,10 @@ export default function RootLayout({
         <Providers>
           <HtmlLangSetter />
           {children}
+          {/* M1 — mounted at the root so it survives the route push the
+              Track Order tap triggers; the overlay outlives the
+              cart-screen unmount. */}
+          <OrderConfirmationOverlay />
           <Toaster position="top-center" />
         </Providers>
       </body>

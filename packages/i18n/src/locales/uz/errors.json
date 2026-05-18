@@ -16,5 +16,11 @@
   "plan_required": "Ushbu amal uchun rejani yangilash kerak.",
   "client_outdated": "Ilova eskirgan. Davom etish uchun qayta yuklang.",
   "version_conflict": "Boshqa qurilma hozirgina ushbu buyurtmani o'zgartirdi. Yangilang va qayta urinib ko'ring.",
-  "rate_limited": "Juda ko‘p so‘rovlar. Iltimos, biroz kuting va qayta urinib ko‘ring."
+  "rate_limited": "Juda ko‘p so‘rovlar. Iltimos, biroz kuting va qayta urinib ko‘ring.",
+  "order_cancel_too_late": "Oshxona sizning buyurtmangizni tayyorlashni boshlab boʻldi. Iltimos, ofitsiantni chaqirib gaplashing.",
+  "order_not_cancellable": "Ushbu buyurtmani endi bekor qilib boʻlmaydi.",
+  "order_table_mismatch": "Ushbu buyurtma boshqa stolga tegishli.",
+  "invalid_qr_token": "QR kodi notoʻgʻri yoki muddati oʻtgan. Iltimos, qayta skanerlang.",
+  "qr_token_revoked": "Ushbu QR kodi endi faol emas. Iltimos, qayta skanerlang yoki xodimga murojaat qiling.",
+  "qr_token_expired": "QR kodingiz muddati tugagan. Iltimos, qayta skanerlang yoki xodimga murojaat qiling."
 }

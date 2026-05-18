@@ -13,7 +13,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { scrubSentryEvent, scrubTokenFromUrl, TOKEN_PARAM_NAMES } from '@/lib/sentry-scrub';
+import {
+  PII_FIELD_NAMES,
+  scrubPiiFields,
+  scrubSentryEvent,
+  scrubTokenFromUrl,
+  TOKEN_PARAM_NAMES,
+} from '@/lib/sentry-scrub';
 
 describe('scrubTokenFromUrl', () => {
   describe('redacts known param names', () => {
@@ -111,5 +117,121 @@ describe('scrubSentryEvent', () => {
     const scrubbed = scrubSentryEvent(event);
     expect(scrubbed.request?.url).toBe('https://example.com/p');
     expect(scrubbed.breadcrumbs).toHaveLength(1);
+  });
+});
+
+// S5 — every PII field that appears in `/api/v1/customer/orders`
+// (delivery) bodies or downstream contexts must redact to `[REDACTED]`
+// before the event ships. The denylist lives in `PII_FIELD_NAMES`; this
+// suite locks the round-trip behavior.
+describe('scrubPiiFields', () => {
+  it.each(PII_FIELD_NAMES)('redacts top-level key "%s"', (field) => {
+    const out = scrubPiiFields({ [field]: 'sensitive', safe: 'ok' });
+    expect((out as Record<string, unknown>)[field]).toBe('[REDACTED]');
+    expect((out as Record<string, unknown>).safe).toBe('ok');
+  });
+
+  it('redacts PII keys nested inside arrays and objects', () => {
+    const out = scrubPiiFields({
+      order: {
+        delivery_address: '12 Main St',
+        items: [{ menu_item_id: 'm1', notes: 'no cilantro' }],
+      },
+      safe_field: 'keep',
+    }) as Record<string, unknown>;
+    const order = out.order as Record<string, unknown>;
+    expect(order.delivery_address).toBe('[REDACTED]');
+    const items = order.items as Array<Record<string, unknown>>;
+    expect(items[0].notes).toBe('[REDACTED]');
+    expect(items[0].menu_item_id).toBe('m1');
+    expect(out.safe_field).toBe('keep');
+  });
+
+  it('matches keys case-insensitively', () => {
+    const out = scrubPiiFields({ Customer_Phone: '+994551234567' }) as Record<string, unknown>;
+    expect(out.Customer_Phone).toBe('[REDACTED]');
+  });
+
+  it('does not redact unrelated keys that share a prefix or substring', () => {
+    const out = scrubPiiFields({
+      customer_id: 'abc', // not PII; foreign key
+      tokenize_url: 'https://x',
+    }) as Record<string, unknown>;
+    expect(out.customer_id).toBe('abc');
+    expect(out.tokenize_url).toBe('https://x');
+  });
+
+  it('returns primitives unchanged', () => {
+    expect(scrubPiiFields('plain string')).toBe('plain string');
+    expect(scrubPiiFields(42)).toBe(42);
+    expect(scrubPiiFields(null)).toBe(null);
+    expect(scrubPiiFields(undefined)).toBe(undefined);
+  });
+
+  it('does not mutate the input', () => {
+    const input = { customer_phone: '+994', items: [{ notes: 'spicy' }] };
+    const before = JSON.stringify(input);
+    scrubPiiFields(input);
+    expect(JSON.stringify(input)).toBe(before);
+  });
+});
+
+describe('scrubSentryEvent — PII fields (S5)', () => {
+  it('redacts PII in request.data (mutation body)', () => {
+    const event = {
+      request: {
+        url: 'https://example.com/api/v1/customer/orders',
+        data: {
+          order_type: 'delivery',
+          delivery_address: '12 Main St',
+          customer_phone: '+994551234567',
+          customer_name: 'Jane Doe',
+          delivery_fee: 25,
+        },
+      },
+    };
+    const scrubbed = scrubSentryEvent(event);
+    const data = scrubbed.request?.data as Record<string, unknown>;
+    expect(data.delivery_address).toBe('[REDACTED]');
+    expect(data.customer_phone).toBe('[REDACTED]');
+    expect(data.customer_name).toBe('[REDACTED]');
+    // Non-PII fields stay verbatim so the error context remains useful.
+    expect(data.order_type).toBe('delivery');
+    expect(data.delivery_fee).toBe(25);
+  });
+
+  it('redacts PII inside contexts, extra, and tags', () => {
+    const event = {
+      contexts: { delivery: { customer_phone: '+994' } },
+      extra: { qr_token: 'bearer-abc' },
+      tags: { client_request_id: 'crid-1' },
+    };
+    const scrubbed = scrubSentryEvent(event);
+    expect(
+      (scrubbed.contexts?.delivery as Record<string, unknown> | undefined)?.customer_phone,
+    ).toBe('[REDACTED]');
+    expect(scrubbed.extra?.qr_token).toBe('[REDACTED]');
+    expect(scrubbed.tags?.client_request_id).toBe('[REDACTED]');
+  });
+
+  it('redacts PII inside breadcrumb fetch data', () => {
+    const event = {
+      breadcrumbs: [
+        {
+          category: 'fetch',
+          data: {
+            url: 'https://api/v1/customer/orders?token=abc',
+            method: 'POST',
+            body: { customer_phone: '+994', delivery_address: '12 Main' },
+          },
+        },
+      ],
+    };
+    const scrubbed = scrubSentryEvent(event);
+    const data = scrubbed.breadcrumbs?.[0].data as Record<string, unknown>;
+    expect(data.url).toBe('https://api/v1/customer/orders?token=[REDACTED]');
+    const body = data.body as Record<string, unknown>;
+    expect(body.customer_phone).toBe('[REDACTED]');
+    expect(body.delivery_address).toBe('[REDACTED]');
   });
 });

@@ -14,8 +14,16 @@ export default function GlobalError({
     Sentry.captureException(error);
   }, [error]);
 
+  // C5: `lang="en"` matches the strings rendered below. The i18n
+  // provider isn't mounted at the `global-error` boundary by design
+  // (this is the catch-all when the React tree explodes), so `t()` is
+  // unavailable and translating dynamically would require either
+  // bundling locale JSON inline or trusting a possibly-broken global —
+  // neither is worth it for the rare "everything failed" path. The
+  // previous `lang="ja"` triggered screen readers to pronounce English
+  // text using Japanese phonology.
   return (
-    <html lang="ja">
+    <html lang="en">
       <body>
         <div
           style={{

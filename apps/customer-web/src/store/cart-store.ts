@@ -2,31 +2,56 @@ import { create } from 'zustand';
 import type { CartItem, MenuItem } from '@/types';
 
 /**
- * In-memory cart for the customer-web QR-ordering session.
+ * Customer-web QR-ordering cart, partitioned by `(flow, tenantId, tableId?)`.
  *
- * Why no persistence. The pre-PR version persisted to `localStorage` under
- * a single global key (`cart-storage`) and a comment claimed it was
- * "partition[ed] by table" — it wasn't. A customer who scanned table A,
- * added items, then walked to table B and scanned the new QR opened the
- * same browser context with table A's cart still in state. The audit
- * (post-#107 fresh pass) flagged this as the cleanest fix path: drop
- * persistence entirely.
+ * Why partitioned: pre-M4 the cart was a single global, so a customer
+ * who scanned tenant A's QR, added items, then opened `/delivery?token=B`
+ * carried those items forward. The server then rejected because
+ * `menu_item_id` is tenant-scoped via RLS, and the customer saw a
+ * generic error with no way to recover. The cleanest fix is to make
+ * the cart a *property of* the (flow, tenantId, tableId) tuple — not
+ * a global piece of state — so navigating between contexts is an
+ * automatic switch rather than a leaky carry-over.
  *
- * QR ordering is a session-bound flow — the customer scans, browses,
- * checks out, leaves. Reload mid-session is rare, and the cost of losing
- * a few items to a refresh is much smaller than the cost of placing an
- * order with the wrong table's items. The cross-tab `storage`-event
- * listener went with persistence; two tabs of the customer flow now
- * keep independent carts (which matches the contract — each tab is its
- * own session).
+ * Why persisted (a reversal of the pre-M4 stance documented in the
+ * earlier comment): with the partition key in place, persistence no
+ * longer creates the cross-tenant leak it used to. The benefit — a
+ * reload mid-session preserves the cart — comes back for free now.
  *
- * If reload-survives-cart ever becomes a real ask, the right shape is a
- * per-tableId / per-qrToken partition (custom storage adapter that keys
- * on the route param), NOT a global `localStorage` key.
+ * Storage shape: `localStorage` key per partition, value `{ items,
+ * lastTouchedAt }`. Stale partitions older than `TTL_MS` are ignored
+ * on load — a customer who scanned three days ago shouldn't have a
+ * surprise pre-loaded cart waiting.
+ *
+ * The partition is set imperatively from the route layouts:
+ *   - `app/table/[tableId]/layout.tsx` calls `setPartition({ flow:
+ *     'dine_in', tenantId, tableId })` once `useTable` resolves.
+ *   - `hooks/use-delivery-context.ts` calls `setPartition({ flow:
+ *     'delivery', tenantId })` once the qr_token lookup resolves.
+ *
+ * Until a partition is set, the cart is read-only-ish: mutations are
+ * still allowed (so legacy paths don't break) but they don't persist.
+ * Persistence is opt-in via `setPartition`, not opt-out, so a forgotten
+ * call site degrades gracefully instead of writing to a phantom key.
  */
+
+export type CartFlow = 'dine_in' | 'delivery';
+
+export interface CartPartition {
+  flow: CartFlow;
+  tenantId: string;
+  tableId?: string;
+}
+
+interface PersistedCart {
+  items: CartItem[];
+  lastTouchedAt: number;
+}
 
 interface CartStore {
   items: CartItem[];
+  partition: CartPartition | null;
+  lastTouchedAt: number;
   addItem: (menuItem: MenuItem, quantity: number, notes?: string) => void;
   removeItem: (menuItemId: string) => void;
   updateQuantity: (menuItemId: string, quantity: number) => void;
@@ -34,75 +59,164 @@ interface CartStore {
   clearCart: () => void;
   getTotal: () => number;
   getItemCount: () => number;
+  /**
+   * Swap the active partition. If the new partition is different, the
+   * current items are flushed to disk under the old key and the new
+   * key's items are loaded (or reset if missing/expired).
+   */
+  setPartition: (partition: CartPartition | null) => void;
 }
 
-export const useCartStore = create<CartStore>()((set, get) => ({
-  items: [],
+// 4h freshness window. Long enough that a customer who paused for a
+// snack returns to their cart; short enough that a stale session from
+// yesterday doesn't re-surface uninvited. Matches the "session-bound"
+// framing of QR-code ordering — the table changes hands faster than a
+// day.
+const TTL_MS = 4 * 60 * 60 * 1000;
 
-  addItem: (menuItem, quantity, notes) => {
-    set((state) => {
-      const existingItem = state.items.find((item) => item.menuItem.id === menuItem.id);
+function storageKey(p: CartPartition): string {
+  // `_` sentinel for the delivery flow which has no table id, so the
+  // key shape stays grep-able and the empty-segment doesn't collapse.
+  return `cart:${p.flow}:${p.tenantId}:${p.tableId ?? '_'}`;
+}
 
-      if (existingItem) {
-        // Update existing item
-        return {
-          items: state.items.map((item) =>
-            item.menuItem.id === menuItem.id
-              ? {
-                  ...item,
-                  quantity: item.quantity + quantity,
-                  notes: notes || item.notes,
-                }
-              : item,
-          ),
-        };
-      }
+function safeStorage(): Storage | null {
+  // The first commit after SSR runs on the server where `localStorage`
+  // is absent. Guard with typeof rather than try/catch so we don't
+  // swallow a real corruption error.
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
-      // Add new item
-      return {
-        items: [...state.items, { menuItem, quantity, notes }],
-      };
-    });
-  },
+function loadPartition(p: CartPartition): CartItem[] {
+  const storage = safeStorage();
+  if (!storage) return [];
+  const raw = storage.getItem(storageKey(p));
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as PersistedCart;
+    if (!parsed || !Array.isArray(parsed.items)) return [];
+    if (typeof parsed.lastTouchedAt !== 'number' || Date.now() - parsed.lastTouchedAt > TTL_MS) {
+      storage.removeItem(storageKey(p));
+      return [];
+    }
+    return parsed.items;
+  } catch {
+    // Corrupted JSON — drop it; better an empty cart than a runtime
+    // throw on hydration.
+    storage.removeItem(storageKey(p));
+    return [];
+  }
+}
 
-  removeItem: (menuItemId) => {
-    set((state) => ({
-      items: state.items.filter((item) => item.menuItem.id !== menuItemId),
-    }));
-  },
-
-  updateQuantity: (menuItemId, quantity) => {
-    if (quantity <= 0) {
-      get().removeItem(menuItemId);
+function savePartition(p: CartPartition, items: CartItem[], lastTouchedAt: number) {
+  const storage = safeStorage();
+  if (!storage) return;
+  try {
+    // Empty carts shouldn't pin a partition entry — frees the slot
+    // when the customer clears or submits.
+    if (items.length === 0) {
+      storage.removeItem(storageKey(p));
       return;
     }
+    const payload: PersistedCart = { items, lastTouchedAt };
+    storage.setItem(storageKey(p), JSON.stringify(payload));
+  } catch {
+    // Quota exceeded / private mode rejection. Cart still works
+    // in-memory; we just lose reload-survive on this device.
+  }
+}
 
-    set((state) => ({
-      items: state.items.map((item) =>
+function partitionsEqual(a: CartPartition | null, b: CartPartition | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.flow === b.flow && a.tenantId === b.tenantId && a.tableId === b.tableId;
+}
+
+export const useCartStore = create<CartStore>()((set, get) => {
+  // Persist on every mutation. Pulled into a closure so each action
+  // doesn't have to repeat the partition lookup + lastTouchedAt stamp.
+  const persistMutation = (items: CartItem[]) => {
+    const now = Date.now();
+    const { partition } = get();
+    if (partition) savePartition(partition, items, now);
+    return now;
+  };
+
+  return {
+    items: [],
+    partition: null,
+    lastTouchedAt: 0,
+
+    addItem: (menuItem, quantity, notes) => {
+      const existing = get().items.find((item) => item.menuItem.id === menuItem.id);
+      const items = existing
+        ? get().items.map((item) =>
+            item.menuItem.id === menuItem.id
+              ? { ...item, quantity: item.quantity + quantity, notes: notes || item.notes }
+              : item,
+          )
+        : [...get().items, { menuItem, quantity, notes }];
+      set({ items, lastTouchedAt: persistMutation(items) });
+    },
+
+    removeItem: (menuItemId) => {
+      const items = get().items.filter((item) => item.menuItem.id !== menuItemId);
+      set({ items, lastTouchedAt: persistMutation(items) });
+    },
+
+    updateQuantity: (menuItemId, quantity) => {
+      if (quantity <= 0) {
+        get().removeItem(menuItemId);
+        return;
+      }
+      const items = get().items.map((item) =>
         item.menuItem.id === menuItemId ? { ...item, quantity } : item,
-      ),
-    }));
-  },
+      );
+      set({ items, lastTouchedAt: persistMutation(items) });
+    },
 
-  updateNotes: (menuItemId, notes) => {
-    set((state) => ({
-      items: state.items.map((item) =>
+    updateNotes: (menuItemId, notes) => {
+      const items = get().items.map((item) =>
         item.menuItem.id === menuItemId ? { ...item, notes } : item,
-      ),
-    }));
-  },
+      );
+      set({ items, lastTouchedAt: persistMutation(items) });
+    },
 
-  clearCart: () => {
-    set({ items: [] });
-  },
+    clearCart: () => {
+      const now = Date.now();
+      const { partition } = get();
+      if (partition) savePartition(partition, [], now);
+      set({ items: [], lastTouchedAt: now });
+    },
 
-  getTotal: () => {
-    const { items } = get();
-    return items.reduce((total, item) => total + item.menuItem.price * item.quantity, 0);
-  },
+    getTotal: () =>
+      get().items.reduce((total, item) => total + item.menuItem.price * item.quantity, 0),
 
-  getItemCount: () => {
-    const { items } = get();
-    return items.reduce((count, item) => count + item.quantity, 0);
-  },
-}));
+    getItemCount: () => get().items.reduce((count, item) => count + item.quantity, 0),
+
+    setPartition: (next) => {
+      const { partition: prev, items } = get();
+      if (partitionsEqual(prev, next)) return;
+
+      // Flush whatever's in memory under the previous partition before
+      // we swap — the customer may have added items before the
+      // partition resolved (legacy path) or under the prior tenant.
+      if (prev && items.length > 0) {
+        savePartition(prev, items, get().lastTouchedAt || Date.now());
+      }
+
+      if (!next) {
+        set({ partition: null, items: [], lastTouchedAt: 0 });
+        return;
+      }
+
+      const loaded = loadPartition(next);
+      set({ partition: next, items: loaded, lastTouchedAt: loaded.length > 0 ? Date.now() : 0 });
+    },
+  };
+});

@@ -16,5 +16,11 @@
   "plan_required": "This action requires upgrading your plan.",
   "client_outdated": "Your app is out of date. Please reload to continue.",
   "version_conflict": "Another device just changed this order. Refresh and try again.",
-  "rate_limited": "Too many requests. Please wait a moment and try again."
+  "rate_limited": "Too many requests. Please wait a moment and try again.",
+  "order_cancel_too_late": "Kitchen has already started preparing your order. Please call a waiter to discuss.",
+  "order_not_cancellable": "This order can no longer be cancelled.",
+  "order_table_mismatch": "This order belongs to a different table.",
+  "invalid_qr_token": "Invalid or expired QR code. Please rescan and try again.",
+  "qr_token_revoked": "This QR code is no longer active. Please rescan or ask a staff member.",
+  "qr_token_expired": "Your QR code has expired. Please rescan or ask a staff member."
 }

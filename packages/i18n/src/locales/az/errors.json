@@ -16,5 +16,11 @@
   "plan_required": "Bu əməliyyat üçün planınızı yüksəltmək tələb olunur.",
   "client_outdated": "Tətbiq köhnəlmişdir. Davam etmək üçün yeniləyin.",
   "version_conflict": "Başqa bir cihaz indi bu sifarişi dəyişdi. Yeniləyin və yenidən cəhd edin.",
-  "rate_limited": "Çoxlu sorğu. Zəhmət olmasa bir az gözləyin və yenidən cəhd edin."
+  "rate_limited": "Çoxlu sorğu. Zəhmət olmasa bir az gözləyin və yenidən cəhd edin.",
+  "order_cancel_too_late": "Mətbəx artıq sifarişinizi hazırlamağa başlayıb. Müzakirə üçün ofisiantı çağırın.",
+  "order_not_cancellable": "Bu sifarişi artıq ləğv etmək mümkün deyil.",
+  "order_table_mismatch": "Bu sifariş başqa bir masaya aiddir.",
+  "invalid_qr_token": "QR kodu yanlış və ya müddəti bitib. Zəhmət olmasa yenidən skan edin.",
+  "qr_token_revoked": "Bu QR kodu artıq aktiv deyil. Yenidən skan edin və ya işçilərə müraciət edin.",
+  "qr_token_expired": "QR kodunuzun müddəti bitib. Yenidən skan edin və ya işçilərə müraciət edin."
 }

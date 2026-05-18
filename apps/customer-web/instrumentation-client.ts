@@ -2,7 +2,7 @@
 // (the legacy filename Sentry deprecated and Turbopack will not load
 // — see https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation-client).
 import * as Sentry from '@sentry/nextjs';
-import { scrubTokenFromUrl } from '@/lib/sentry-scrub';
+import { scrubPiiFields, scrubSentryEvent, scrubTokenFromUrl } from '@/lib/sentry-scrub';
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -28,34 +28,32 @@ Sentry.init({
     // the customer typed.
     Sentry.replayIntegration({ maskAllInputs: true, maskAllText: false }),
   ],
-  // Strip bearer `qr_token`/`access_token` from URLs before they ship.
-  // The token reaches Sentry primarily via navigation breadcrumbs after
-  // a QR scan — `?token=…` (legacy share-link form) and `#token=…`
-  // (fragment form, plan 17 M1) are both scrubbed. `beforeSend` covers
-  // the top-level `event.request.url`; `beforeBreadcrumb` covers each
-  // navigation breadcrumb at capture time so by the time the event
-  // ships, breadcrumbs are already clean. Inlined here (rather than
-  // delegating to a typed helper) because Sentry's `ErrorEvent` type
-  // has narrower `request` shape than `Record<string, unknown>`; the
-  // pure scrubbing primitive lives in `lib/sentry-scrub.ts` for unit
-  // testing.
+  // S5 — Two layers of redaction before events leave the browser:
+  //
+  //   1. URL scrub. `qr_token`/`access_token`/`token` are stripped from
+  //      `?` and `#` forms in `event.request.url` and every
+  //      breadcrumb's `data.url`. The token reaches Sentry primarily
+  //      via navigation breadcrumbs after a QR scan.
+  //
+  //   2. PII key scrub. Mutation request bodies for
+  //      `/api/v1/customer/orders` (delivery) carry `customer_name`,
+  //      `customer_phone`, `delivery_address`, … — if Sentry's SDK
+  //      attaches them via `request.data`, breadcrumb fetch data, or
+  //      any custom `extra`/`tags`/`contexts` payload at a capture
+  //      site, they're replaced with `[REDACTED]` field-by-field.
+  //
+  // The pure scrubbing primitive lives in `lib/sentry-scrub.ts` for
+  // unit testing; this file just wires it into the Sentry lifecycle.
   beforeSend(event) {
-    if (typeof event.request?.url === 'string') {
-      event.request.url = scrubTokenFromUrl(event.request.url);
-    }
-    if (Array.isArray(event.breadcrumbs)) {
-      for (const crumb of event.breadcrumbs) {
-        if (typeof crumb.data?.url === 'string') {
-          crumb.data.url = scrubTokenFromUrl(crumb.data.url);
-        }
-      }
-    }
-    return event;
+    return scrubSentryEvent(event);
   },
   beforeBreadcrumb(crumb) {
-    if (typeof crumb?.data?.url === 'string') {
-      return { ...crumb, data: { ...crumb.data, url: scrubTokenFromUrl(crumb.data.url) } };
+    const data = crumb?.data;
+    if (!data) return crumb;
+    const next: Record<string, unknown> = { ...data };
+    if (typeof next.url === 'string') {
+      next.url = scrubTokenFromUrl(next.url);
     }
-    return crumb;
+    return { ...crumb, data: scrubPiiFields(next) };
   },
 });

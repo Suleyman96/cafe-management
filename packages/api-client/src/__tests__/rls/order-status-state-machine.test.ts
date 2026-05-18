@@ -54,10 +54,11 @@ async function seedOrder(opts: {
   if (opts.order_type === 'dine_in') {
     insert.table_id = SEED_TABLE_ID;
   } else {
-    // takeout requires customer name+phone per orders_takeout_customer_check;
-    // delivery only requires customer_name (phone optional). The seed
-    // sets both so the same helper works for either type. customer_name
-    // and customer_phone are encrypted by trg_encrypt_order_pii on insert.
+    // takeout and delivery both require customer_name per
+    // orders_takeout_customer_check; customer_phone is optional in both
+    // branches (delivery relaxed in 20260515000005, takeout in
+    // 20260517000002). The seed still supplies a phone so the encryption
+    // trigger trg_encrypt_order_pii is exercised on both columns.
     insert.customer_name = 'Test Customer';
     insert.customer_phone = '+994500000000';
   }

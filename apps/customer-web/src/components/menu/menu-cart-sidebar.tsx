@@ -2,8 +2,10 @@
 
 import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
-import { Minus, Plus, Trash2 } from 'lucide-react';
+import { LoadingSpinner } from '@gustri/ui-web';
+import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { Price } from '@/components/ui/price';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useOrder } from '@/hooks/use-order';
 import { usePlaceOrder } from '@/hooks/use-place-order';
@@ -26,7 +28,14 @@ interface MenuCartSidebarProps {
 
 export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCartSidebarProps) {
   const { t } = useTranslation('customer');
-  const { items, updateQuantity, removeItem, clearCart, getTotal } = useCartStore();
+  // P6 — per-field selectors so the sidebar only re-renders on the
+  // slice it reads; mutations targeting another field (e.g. partition
+  // swap) don't churn the bottom-cart while the menu grid is mounted.
+  const items = useCartStore((s) => s.items);
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const removeItem = useCartStore((s) => s.removeItem);
+  const clearCart = useCartStore((s) => s.clearCart);
+  const getTotal = useCartStore((s) => s.getTotal);
   const [orderNotes, setOrderNotes] = useState('');
 
   const { data: table } = useTable(tableId);
@@ -42,7 +51,7 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
 
   const priceDisplay = useFormatPrice();
 
-  const { handlePlaceOrder, isPlacing } = usePlaceOrder({
+  const { handlePlaceOrder, isPlacing, submittedByOtherTab } = usePlaceOrder({
     tableId,
     minimumOrderAmount: settings?.minimum_order_amount,
     orderNotes,
@@ -53,9 +62,10 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
   if (items.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
-        <div className="text-4xl mb-3">🛒</div>
+        {/* Y2 — Lucide ShoppingCart replaces emoji empty-state. */}
+        <ShoppingCart className="mb-3 h-10 w-10 text-white/55" aria-hidden="true" />
         <p className="text-sm font-medium text-white/60 mb-1">{t('cart.emptyTitle')}</p>
-        <p className="text-xs text-white/30">
+        <p className="text-xs text-white/55">
           {existingOrder ? t('cart.emptyWithOrder') : t('cart.emptyNoOrder')}
         </p>
       </div>
@@ -84,40 +94,61 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xs font-semibold text-white truncate">{name}</h4>
-                  <p className="text-[11px] text-white/30">
+                  <p className="text-[11px] text-white/55">
                     {priceDisplay(item.menuItem.price * taxMultiplier)}
                   </p>
                 </div>
+                {/* A1 — 44×44 hit area; visual icon stays compact so
+                    the cart row's vertical rhythm is unchanged. */}
                 <button
+                  type="button"
+                  aria-label={t('cart.removeItemAria', { name })}
                   onClick={() => removeItem(item.menuItem.id)}
-                  className="flex h-6 w-6 items-center justify-center rounded-lg text-white/30 hover:text-red-400 hover:bg-red-400/10 transition-all ml-2"
+                  className="flex h-11 w-11 items-center justify-center -m-2.5 text-white/55 hover:text-red-400 transition-all"
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg hover:bg-red-400/10">
+                    <Trash2 className="h-3 w-3" />
+                  </span>
                 </button>
               </div>
 
               {item.notes && (
-                <p className="text-[10px] text-white/30 mb-2 truncate">📝 {item.notes}</p>
+                <p className="text-[10px] text-white/55 mb-2 truncate">📝 {item.notes}</p>
               )}
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
+                  {/* A1 — 44×44 hit area wrappers; the inner visual chip
+                      keeps the existing glassmorphic look so the cart row
+                      rhythm is preserved. */}
                   <button
+                    type="button"
+                    aria-label={t('cart.decreaseQuantityAria')}
                     onClick={() => updateQuantity(item.menuItem.id, item.quantity - 1)}
-                    className="flex h-6 w-6 items-center justify-center rounded-lg transition-all active:scale-95"
-                    style={glassControlStyle}
+                    className="flex h-11 w-11 items-center justify-center -m-2.5 transition-all active:scale-95"
                   >
-                    <Minus className="h-3 w-3 text-white/60" />
+                    <span
+                      className="flex h-6 w-6 items-center justify-center rounded-lg"
+                      style={glassControlStyle}
+                    >
+                      <Minus className="h-3 w-3 text-white/60" />
+                    </span>
                   </button>
                   <span className="text-xs font-bold text-white w-5 text-center">
                     {item.quantity}
                   </span>
                   <button
+                    type="button"
+                    aria-label={t('cart.increaseQuantityAria')}
                     onClick={() => updateQuantity(item.menuItem.id, item.quantity + 1)}
-                    className="flex h-6 w-6 items-center justify-center rounded-lg transition-all active:scale-95"
-                    style={glassControlStyle}
+                    className="flex h-11 w-11 items-center justify-center -m-2.5 transition-all active:scale-95"
                   >
-                    <Plus className="h-3 w-3 text-white/60" />
+                    <span
+                      className="flex h-6 w-6 items-center justify-center rounded-lg"
+                      style={glassControlStyle}
+                    >
+                      <Plus className="h-3 w-3 text-white/60" />
+                    </span>
                   </button>
                 </div>
                 <span className="text-xs font-bold" style={{ color: accentColor }}>
@@ -132,11 +163,14 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
         {settings?.allow_order_notes !== false && (
           <div className="pt-2 pb-1">
             <textarea
-              className="w-full min-h-[56px] p-2.5 rounded-xl text-xs text-white placeholder:text-white/20 focus:outline-none resize-none"
+              className="w-full min-h-[56px] p-2.5 rounded-xl text-xs text-white placeholder:text-white/55 focus:outline-none resize-none"
               style={glassCardStyle}
               placeholder={t('cart.orderNotesPlaceholder')}
               value={orderNotes}
               onChange={(e) => setOrderNotes(e.target.value)}
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
         )}
@@ -147,10 +181,10 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
         <div className="space-y-1.5 mb-3">
           <div className="flex justify-between text-sm font-bold">
             <span className="text-white">{t('total', { ns: 'common' })}</span>
-            <span style={{ color: accentColor }}>{priceDisplay(total)}</span>
+            <Price amount={total} style={{ color: accentColor }} />
           </div>
           {taxMultiplier !== 1 && (
-            <p className="text-[10px] text-white/20 text-right">
+            <p className="text-[10px] text-white/55 text-right">
               {t('menu.inclTax', {
                 percent: String(settings?.tax_percentage ?? DEFAULT_TAX_PERCENTAGE),
               })}
@@ -173,13 +207,50 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
           </div>
         )}
 
+        {/* H4 — sibling tab consumed this cart partition; mirror the
+            full cart-screen banner so the inline sidebar surfaces the
+            same recovery hint instead of a generic disabled state. */}
+        {submittedByOtherTab && (
+          <div
+            className="mb-3 p-2 rounded-lg text-center"
+            style={{
+              background: 'rgba(59,130,246,0.08)',
+              border: '1px solid rgba(59,130,246,0.18)',
+            }}
+          >
+            <p className="text-[11px] text-blue-300/90">{t('cart.submittedInOtherTab')}</p>
+          </div>
+        )}
+
         <button
           onClick={handlePlaceOrder}
-          disabled={isPlacing || !minimumOrderMet}
+          disabled={isPlacing || !minimumOrderMet || submittedByOtherTab}
           className="w-full rounded-xl py-3 text-sm font-semibold transition-all active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100"
           style={accentButtonStyle(accentColor)}
         >
-          {isPlacing ? '...' : t('cart.placeOrder', { price: priceDisplay(total) })}
+          {isPlacing ? (
+            // M2 — match the dine-in cart-price-summary loading pattern
+            // instead of an ambiguous `'...'` ellipsis on the single
+            // highest-stakes button in the app.
+            // CV3 — keep the price visible mid-mutation; dropping it
+            // creates mid-tap anxiety on the highest-stakes button.
+            <span className="inline-flex items-center justify-center gap-2">
+              <LoadingSpinner size="sm" />
+              {t('cart.placingOrderWithPrice', { price: priceDisplay(total) })}
+            </span>
+          ) : submittedByOtherTab ? (
+            t('cart.alreadySubmittedButton')
+          ) : existingOrder?.order_number ? (
+            // M5 — append-to-active intent. Label flips to "Add to
+            // order #A123" so the customer trusts they're not minting
+            // a duplicate.
+            t('cart.addToOrder', {
+              orderNumber: existingOrder.order_number,
+              price: priceDisplay(total),
+            })
+          ) : (
+            t('cart.placeOrder', { price: priceDisplay(total) })
+          )}
         </button>
       </div>
     </div>

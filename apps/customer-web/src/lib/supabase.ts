@@ -1,4 +1,5 @@
 import { createSupabaseWrapper, handleSupabaseError } from '@gustri/api-client';
+import { RateLimitError } from '@gustri/core';
 import type { Database } from '@gustri/database';
 import * as Sentry from '@sentry/nextjs';
 import { createClient } from '@supabase/supabase-js';
@@ -12,15 +13,25 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 /**
  * Custom fetch wrapper that throttles Supabase REST API calls.
- * Limits to 20 requests per 10 seconds to prevent client-side abuse
+ *
+ * Limits to 40 requests per 10 seconds to prevent client-side abuse
  * (e.g. rapid page navigation, automated scraping via the anon key).
+ *
+ * P2 — budget bumped from 20 → 40. The pre-fix budget tripped on a
+ * legitimate first menu load (6–10 requests for tables/settings/
+ * categories/menu items) once a retry happened on a flaky network.
+ * Throws `RateLimitError` (from `@gustri/core`) instead of a bare
+ * `new Error(...)` so the mutation cache `onError` can localize via
+ * the existing sentinel pipeline instead of showing a cryptic English
+ * toast. Drops a Sentry breadcrumb on every trip so we have visibility
+ * into how often the cap is hit in production.
  */
 const supabaseFetchTimestamps: number[] = [];
 
 const throttledFetch: typeof fetch = (input, init) => {
   const now = Date.now();
   const windowMs = 10_000;
-  const maxRequests = 20;
+  const maxRequests = 40;
 
   // Remove timestamps outside the window
   while (supabaseFetchTimestamps.length > 0 && now - supabaseFetchTimestamps[0] > windowMs) {
@@ -28,7 +39,13 @@ const throttledFetch: typeof fetch = (input, init) => {
   }
 
   if (supabaseFetchTimestamps.length >= maxRequests) {
-    return Promise.reject(new Error('Too many requests. Please wait a moment.'));
+    Sentry.addBreadcrumb({
+      category: 'supabase-throttle',
+      level: 'warning',
+      message: 'client-side throttle tripped',
+      data: { windowMs, maxRequests, inWindow: supabaseFetchTimestamps.length },
+    });
+    return Promise.reject(new RateLimitError());
   }
 
   supabaseFetchTimestamps.push(now);
@@ -99,7 +116,7 @@ export async function setTableContext(qrToken: string): Promise<string | null> {
   const plan = typeof payload?.plan === 'string' ? payload.plan : null;
 
   if (tenantId) {
-    db.setTenantContext(tenantId);
+    bindCustomerTenantContext(tenantId, 'set-table-context');
   } else {
     // Impossible with the current function body. Surface to Sentry so
     // we notice if a future migration changes the contract; the
@@ -111,4 +128,41 @@ export async function setTableContext(qrToken: string): Promise<string | null> {
   }
 
   return plan;
+}
+
+/**
+ * S4 — single audited entry point for `db.setTenantContext(...)` in
+ * customer-web. The wrapper is a process-singleton; with multiple
+ * surfaces (table layout, delivery context hook, `setTableContext`) all
+ * mutating it, a stale-bind racing a fresh-route read is hard to
+ * diagnose after the fact. Every bind drops a Sentry breadcrumb with
+ * the prior + next tenant + the surface that issued the call, so a
+ * mis-routed query later in the session leaves a trail.
+ *
+ * Idempotent: a bind that doesn't change the tenant is a breadcrumb-free
+ * no-op so we don't drown Sentry in render-loop noise.
+ *
+ * Stronger mitigation (binding tenant into the React Query queryKey)
+ * lives in Phase 1 C6 — once that lands, an in-flight read against a
+ * stale tenant naturally keys under the old tenant and doesn't leak
+ * into the new tenant's cache. This helper is the bridge.
+ */
+export function bindCustomerTenantContext(
+  tenantId: string | null,
+  surface:
+    | 'table-layout'
+    | 'table-layout-unmount'
+    | 'delivery-context'
+    | 'set-table-context'
+    | 'route-reset',
+): void {
+  const prior = db.getTenantId();
+  if (prior === tenantId) return;
+  db.setTenantContext(tenantId);
+  Sentry.addBreadcrumb({
+    category: 'tenant-context',
+    level: 'info',
+    message: 'bindCustomerTenantContext',
+    data: { surface, prior, next: tenantId },
+  });
 }

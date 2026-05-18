@@ -16,5 +16,11 @@
   "plan_required": "Cette action nécessite la mise à niveau de votre forfait.",
   "client_outdated": "Votre application est obsolète. Veuillez la recharger pour continuer.",
   "version_conflict": "Un autre appareil vient de modifier cette commande. Actualisez et réessayez.",
-  "rate_limited": "Trop de requêtes. Veuillez patienter un instant et réessayer."
+  "rate_limited": "Trop de requêtes. Veuillez patienter un instant et réessayer.",
+  "order_cancel_too_late": "La cuisine a déjà commencé à préparer votre commande. Veuillez appeler un serveur pour en discuter.",
+  "order_not_cancellable": "Cette commande ne peut plus être annulée.",
+  "order_table_mismatch": "Cette commande appartient à une autre table.",
+  "invalid_qr_token": "Code QR invalide ou expiré. Veuillez le scanner à nouveau.",
+  "qr_token_revoked": "Ce code QR n'est plus actif. Veuillez le scanner à nouveau ou demander à un membre du personnel.",
+  "qr_token_expired": "Votre code QR a expiré. Veuillez le scanner à nouveau ou demander à un membre du personnel."
 }

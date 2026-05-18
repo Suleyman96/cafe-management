@@ -141,6 +141,8 @@ function DeliveryPageInner() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('deliveryLanding.namePlaceholder')}
+                autoComplete="name"
+                autoCapitalize="words"
                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -158,6 +160,8 @@ function DeliveryPageInner() {
                 onChange={(e) => setPhone(e.target.value)}
                 maxLength={20}
                 placeholder={t('deliveryLanding.phonePlaceholder')}
+                autoComplete="tel"
+                inputMode="tel"
                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -174,6 +178,10 @@ function DeliveryPageInner() {
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder={t('deliveryLanding.addressPlaceholder')}
                 rows={3}
+                autoComplete="street-address"
+                autoCapitalize="sentences"
+                autoCorrect="off"
+                spellCheck={false}
                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               />
             </div>
@@ -188,6 +196,9 @@ function DeliveryPageInner() {
               onChange={(e) => setNotes(e.target.value)}
               placeholder={t('deliveryLanding.notesPlaceholder')}
               rows={2}
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
               className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary resize-none"
             />
           </div>

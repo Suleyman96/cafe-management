@@ -16,8 +16,12 @@ export function createMockDb() {
     // Top-level wrapper methods (not domain resources). The delivery-context
     // hook calls db.setTenantContext after resolving the qr_token; without
     // this stub the post-resolve effect would throw on a real prod build.
+    // Default tenant id pretends the wrapper is bound — `useCafeSettings`
+    // (C6) gates fetches on `!!tenantId`, so an unset mock would make the
+    // existing settings tests skip the fetch. Tests that want to exercise
+    // the pre-bind path override with `.mockReturnValue(null)`.
     setTenantContext: vi.fn(),
-    getTenantId: vi.fn().mockReturnValue(null),
+    getTenantId: vi.fn().mockReturnValue('test-tenant-id'),
     tables: mockResource(
       'findAll',
       'findById',

@@ -9,7 +9,9 @@
     "lint": "biome check ./src",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "bundle-check": "node ./scripts/check-bundle-size.mjs",
+    "bundle-baseline": "node ./scripts/check-bundle-size.mjs --update-baseline"
   },
   "dependencies": {
     "@bprogress/next": "^3.2.12",

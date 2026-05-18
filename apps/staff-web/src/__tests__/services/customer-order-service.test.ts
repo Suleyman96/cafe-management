@@ -632,6 +632,48 @@ describe('cancelCustomerOrder — M6', () => {
     ).rejects.toBeInstanceOf(ConflictError);
   });
 
+  it.each([
+    ['preparing'],
+    ['ready'],
+    ['served'],
+    ['out_for_delivery'],
+  ])('rejects with `order_cancel_too_late` when kitchen has progressed to %s (H3)', async (status) => {
+    // H3 — the client distinguishes this from `order_not_cancellable`
+    // so the "Call a waiter" CTA renders for the kitchen-has-started
+    // case but not for the already-terminal case.
+    const client = buildClient({
+      orders: [
+        {
+          data: { id: ORDER_ID, tenant_id: TENANT, table_id: TABLE, status },
+          error: null,
+        },
+      ],
+    });
+
+    await expect(
+      cancelCustomerOrder(client, { orderId: ORDER_ID, tableId: TABLE }),
+    ).rejects.toMatchObject({ message: 'order_cancel_too_late' });
+  });
+
+  it.each([
+    ['delivered'],
+    ['closed'],
+    ['cancelled'],
+  ])('rejects with `order_not_cancellable` for terminal status %s', async (status) => {
+    const client = buildClient({
+      orders: [
+        {
+          data: { id: ORDER_ID, tenant_id: TENANT, table_id: TABLE, status },
+          error: null,
+        },
+      ],
+    });
+
+    await expect(
+      cancelCustomerOrder(client, { orderId: ORDER_ID, tableId: TABLE }),
+    ).rejects.toMatchObject({ message: 'order_not_cancellable' });
+  });
+
   it('cancels successfully when order is in pending_approval and table matches', async () => {
     const cancelled = {
       id: ORDER_ID,

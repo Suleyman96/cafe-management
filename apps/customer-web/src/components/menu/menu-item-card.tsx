@@ -5,7 +5,7 @@ import { Clock, Plus, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useFormatPrice } from '@/hooks/use-format-price';
+import { Price } from '@/components/ui/price';
 import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
 import { getLocalizedField } from '@/lib/utils';
 import { useCartStore } from '@/store/cart-store';
@@ -18,20 +18,39 @@ interface MenuItemCardProps {
   item: MenuItemWithCategory;
   accentColor: string;
   priority?: boolean;
+  /**
+   * P5 — when the parent list has already localized the item (memoized
+   * once per language per render in `MenuScreen`), pass the precomputed
+   * values to skip the per-card `getLocalizedField` work. Standalone
+   * uses (e.g. the modal preview) can still mount without them and
+   * fall back to in-place localization.
+   */
+  localizedName?: string;
+  localizedDescription?: string;
+  /**
+   * M2 — cart route to surface in the post-add "Go to cart" affordance.
+   * Optional: when omitted the modal's confirmation strip falls back to
+   * just "Add another", which is what tests / standalone mounts need.
+   */
+  cartHref?: string;
 }
 
-export function MenuItemCard({ item, accentColor, priority = false }: MenuItemCardProps) {
+export function MenuItemCard({
+  item,
+  accentColor,
+  priority = false,
+  localizedName,
+  localizedDescription,
+  cartHref,
+}: MenuItemCardProps) {
   const { t } = useTranslation('customer');
   const addItem = useCartStore((state) => state.addItem);
   const [showModal, setShowModal] = useState(false);
   const { language } = useLanguageStore();
-  const formatPrice = useFormatPrice();
   const taxMultiplier = useTaxMultiplier();
 
-  const name = getLocalizedField(item, 'name', language);
-  const description = getLocalizedField(item, 'description', language);
-
-  const displayPrice = (amount: number) => formatPrice(amount * taxMultiplier);
+  const name = localizedName ?? getLocalizedField(item, 'name', language);
+  const description = localizedDescription ?? getLocalizedField(item, 'description', language);
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -116,16 +135,22 @@ export function MenuItemCard({ item, accentColor, priority = false }: MenuItemCa
         <div className="p-2.5">
           <h3 className="font-semibold text-[13px] text-white line-clamp-1">{name}</h3>
           {description && (
-            <p className="text-xs text-white/40 line-clamp-1 mt-0.5">{description}</p>
+            <p className="text-xs text-white/55 line-clamp-1 mt-0.5">{description}</p>
           )}
 
           {/* Price + Prep time row */}
           <div className="flex items-center justify-between mt-2">
-            <span className="text-sm font-bold" style={{ color: accentColor }}>
-              {displayPrice(item.price)}
-            </span>
+            {/* P4 — Skeleton swap while settings are placeholder so the
+                currency symbol doesn't flicker from `$` to the real value
+                on slow networks. */}
+            <Price
+              amount={item.price * taxMultiplier}
+              className="text-sm font-bold"
+              skeletonClassName="h-4 w-12 bg-white/[0.08]"
+              style={{ color: accentColor }}
+            />
             {item.preparation_time && (
-              <span className="flex items-center gap-1 text-[11px] text-white/30">
+              <span className="flex items-center gap-1 text-[11px] text-white/55">
                 <Clock className="h-3 w-3" />~{item.preparation_time} min
               </span>
             )}
@@ -146,6 +171,7 @@ export function MenuItemCard({ item, accentColor, priority = false }: MenuItemCa
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         accentColor={accentColor}
+        cartHref={cartHref}
       />
     </>
   );

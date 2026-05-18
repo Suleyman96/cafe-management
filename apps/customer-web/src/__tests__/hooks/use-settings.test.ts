@@ -1,3 +1,4 @@
+import { QUERY_KEYS } from '@gustri/queries';
 import {
   type CafeSettings,
   calculateTax,
@@ -83,6 +84,38 @@ describe('useCafeSettings', () => {
 
     // placeholderData provides DEFAULT_SETTINGS immediately, wait for actual fetch
     await waitFor(() => expect(result.current.data?.restaurant_name).toBe('My Cafe'));
+  });
+
+  it('keys the query by tenantId so cross-tenant cache reuse cannot happen (C6)', async () => {
+    // Pre-fix the key was [CAFE_SETTINGS] (no tenant). A browser session
+    // that touched two tenants (one Vercel project, multiple QR codes)
+    // would reuse the first tenant's settings cache for STALE_TIMES.MEDIUM
+    // after switching — wrong currency, wrong restaurant name. The fix
+    // threads `db.getTenantId()` into the query key.
+    (db.getTenantId as any).mockReturnValue('tenant-A');
+
+    const { queryClient } = renderHookWithProviders(() => useCafeSettings());
+
+    await waitFor(() => {
+      const entries = queryClient.getQueryCache().getAll();
+      const settingsKeys = entries
+        .map((e) => e.queryKey)
+        .filter((k) => Array.isArray(k) && (k as unknown[])[0] === QUERY_KEYS.CAFE_SETTINGS);
+      expect(settingsKeys).toContainEqual([QUERY_KEYS.CAFE_SETTINGS, 'tenant-A']);
+    });
+  });
+
+  it('does not fetch before a tenant is bound (avoids caching under a null key, C6)', async () => {
+    // Without `enabled: !!tenantId`, a fetch fired before the wrapper
+    // is bound would land in the cache under [CAFE_SETTINGS, null] and
+    // the first post-bind tenant would re-use that row.
+    (db.getTenantId as any).mockReturnValue(null);
+
+    renderHookWithProviders(() => useCafeSettings());
+
+    // Give React Query a tick to fire if it were going to
+    await new Promise((r) => setTimeout(r, 10));
+    expect(db.settings.get).not.toHaveBeenCalled();
   });
 });
 
