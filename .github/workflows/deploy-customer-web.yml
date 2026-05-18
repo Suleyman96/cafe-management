@@ -1,8 +1,12 @@
 name: Deploy Customer Web
 
 on:
+  # Chained behind "Deploy Migrations" (not CI directly) so the Vercel
+  # deploy can never ship app code that depends on schema the prod DB
+  # hasn't received yet. If migrations fail, this workflow is skipped
+  # via the `workflow_run.conclusion == 'success'` gate below.
   workflow_run:
-    workflows: [CI]
+    workflows: [Deploy Migrations]
     types: [completed]
     branches: [main]
   workflow_dispatch:

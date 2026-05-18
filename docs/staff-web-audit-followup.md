@@ -14,6 +14,8 @@ For context only — do not redo.
 - `8fb6cd8` — Explicit Retry UX + reassurance banner on payment failure
 - `e7a9044` — Distinguish already-handled call from generic failure
 - `b794b3c` — Anchor kitchen elapsed time to server clock + skew banner
+- `863c471` — Show actionable error when delivery list is missing a driver
+- CI gap closed: `deploy-migrations.yml` chains app deploys behind a `supabase db push` step. Prior to this, app code shipped without the matching schema, which caused the May 2026 prod incident (PGRST204 on `is_takeoutable`). See workflow header for ordering / failure semantics.
 
 ---
 

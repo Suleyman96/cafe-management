@@ -1,0 +1,78 @@
+name: Deploy Migrations
+
+# Pushes any unapplied supabase/migrations/*.sql files to the production
+# Supabase project, then unblocks the app-deploy workflows.
+#
+# Why this exists:
+#   Prior to this workflow, `deploy-staff-web` and `deploy-customer-web`
+#   chained directly off CI success. App code shipped to Vercel the
+#   moment CI went green; migrations were a manual `supabase db push`
+#   from a developer laptop. The May 2026 prod incident — staff-web
+#   menu page throwing PGRST204 on `is_takeoutable` — was the
+#   inevitable failure mode: a PR that added a column got merged,
+#   apps deployed, schema didn't.
+#
+# Ordering guarantee:
+#   The app-deploy workflows now trigger on "Deploy Migrations" success
+#   (not CI success). If `supabase db push` fails for any reason, the
+#   app deploys are skipped and the previous prod version stays live.
+#   Roll-forward = fix the migration and merge again; roll-back = run
+#   the matching `_rollbacks/*.down.sql` manually and revert the app
+#   commit.
+#
+# Idempotency:
+#   `supabase db push` is a no-op when nothing is pending, so this
+#   workflow runs on every main push (even app-only ones) at a cost of
+#   ~10s — that's the price of guaranteeing apps never ship ahead of
+#   schema. Don't add a paths filter on `supabase/migrations/**` here:
+#   `workflow_run` triggers don't support paths, and even if they did,
+#   gating this workflow on migration changes would also gate the
+#   downstream app deploys on migration changes (since they chain off
+#   *this* workflow), which is the wrong policy.
+#
+# Concurrency:
+#   `cancel-in-progress: false` is deliberate. A half-applied migration
+#   that gets interrupted mid-transaction leaves the schema in a state
+#   the next push can't easily reconcile. Queue, don't cancel.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-migrations
+  cancel-in-progress: false
+
+jobs:
+  push:
+    name: Apply migrations to production
+    runs-on: ubuntu-latest
+    environment: production
+    # Skip when CI failed. `workflow_dispatch` is always allowed so an
+    # operator can force-run from the Actions tab during incident response.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link to production project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Push pending migrations
+        # `--linked` is the default but pinned for clarity. The CLI
+        # tracks applied migrations in supabase_migrations.schema_migrations
+        # remotely, so re-runs only apply genuinely-new files.
+        run: supabase db push --linked
