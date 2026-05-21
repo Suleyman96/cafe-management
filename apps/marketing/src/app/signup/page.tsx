@@ -4,7 +4,22 @@ import { ArrowLeft, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
+import { STAFF_APP_URL } from '@/lib/constants';
 import { getSupabase } from '@/lib/supabase';
+
+const VALID_PLANS = ['free', 'standard', 'pro', 'business'] as const;
+type Plan = (typeof VALID_PLANS)[number];
+
+function normalizePlan(value: string | null): Plan {
+  return VALID_PLANS.includes(value as Plan) ? (value as Plan) : 'free';
+}
+
+const PLAN_LABELS: Record<Plan, string> = {
+  free: 'Free',
+  standard: 'Standard',
+  pro: 'Pro',
+  business: 'Business',
+};
 
 export default function SignupPage() {
   return (
@@ -16,18 +31,13 @@ export default function SignupPage() {
 
 function SignupForm() {
   const searchParams = useSearchParams();
-  const plan = searchParams.get('plan') || 'free';
+  const plan = normalizePlan(searchParams.get('plan'));
 
-  const [fullName, setFullName] = useState('');
-  const [restaurantName, setRestaurantName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-
-  const staffAppUrl = process.env.NEXT_PUBLIC_STAFF_APP_URL || 'http://localhost:3001';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,11 +45,6 @@ function SignupForm() {
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
       return;
     }
 
@@ -51,12 +56,10 @@ function SignupForm() {
         password,
         options: {
           data: {
-            full_name: fullName,
-            restaurant_name: restaurantName,
             signup: 'true',
             plan,
           },
-          emailRedirectTo: `${staffAppUrl}/auth/callback?next=/`,
+          emailRedirectTo: `${STAFF_APP_URL}/auth/callback?next=/`,
         },
       });
 
@@ -88,7 +91,7 @@ function SignupForm() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Check your email</h1>
           <p className="mt-4 text-gray-600 leading-relaxed">
             We sent a confirmation link to <strong className="text-gray-900">{email}</strong>. Click
-            the link to activate your account and start managing your restaurant.
+            the link to activate your account and start setting up your cafe.
           </p>
           <Link
             href="/"
@@ -115,46 +118,22 @@ function SignupForm() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
             Create your account
           </h1>
-          <p className="mt-2 text-gray-600">Get started free — no credit card required.</p>
+          <p className="mt-2 text-gray-600">
+            Just email and password. We'll set up your cafe inside.
+          </p>
         </div>
+
+        {plan !== 'free' && (
+          <div className="mb-6 rounded-xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm text-primary-800">
+            You picked the <strong>{PLAN_LABELS[plan]}</strong> plan. You'll start free — we'll
+            prompt you to confirm billing only when you're ready to use paid features.
+          </div>
+        )}
 
         <form
           onSubmit={handleSubmit}
           className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm space-y-5"
         >
-          <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Full name
-            </label>
-            <input
-              id="fullName"
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="John Doe"
-              className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="restaurantName"
-              className="block text-sm font-medium text-gray-700 mb-1.5"
-            >
-              Restaurant name
-            </label>
-            <input
-              id="restaurantName"
-              type="text"
-              required
-              value={restaurantName}
-              onChange={(e) => setRestaurantName(e.target.value)}
-              placeholder="My Restaurant"
-              className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
-            />
-          </div>
-
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
               Email address
@@ -163,9 +142,10 @@ function SignupForm() {
               id="email"
               type="email"
               required
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@restaurant.com"
+              placeholder="you@cafe.com"
               className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
             />
           </div>
@@ -179,28 +159,10 @@ function SignupForm() {
               type="password"
               required
               minLength={8}
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 8 characters"
-              className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium text-gray-700 mb-1.5"
-            >
-              Confirm password
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              required
-              minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Repeat your password"
               className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
             />
           </div>
@@ -227,16 +189,46 @@ function SignupForm() {
             )}
           </button>
 
+          <p className="text-center text-xs text-gray-500">
+            No credit card. Free forever for ≤100 orders/mo.
+          </p>
+
           <p className="text-center text-sm text-gray-500">
             Already have an account?{' '}
             <a
-              href={`${staffAppUrl}/login`}
+              href={`${STAFF_APP_URL}/login`}
               className="font-medium text-primary-600 hover:text-primary-700 transition-colors"
             >
               Sign in
             </a>
           </p>
         </form>
+
+        {/* What happens next */}
+        <div className="mt-8 rounded-2xl border border-gray-100 bg-gray-50 px-5 py-5">
+          <p className="text-sm font-semibold text-gray-900">What happens after you sign up</p>
+          <ol className="mt-3 space-y-2 text-sm text-gray-600">
+            <li className="flex gap-2">
+              <span className="font-semibold text-primary-600">1.</span> Confirm your email (30
+              seconds)
+            </li>
+            <li className="flex gap-2">
+              <span className="font-semibold text-primary-600">2.</span> Name your cafe and pick a
+              language for your staff
+            </li>
+            <li className="flex gap-2">
+              <span className="font-semibold text-primary-600">3.</span> Add your first menu items
+              and print a QR code
+            </li>
+            <li className="flex gap-2">
+              <span className="font-semibold text-primary-600">4.</span> Take your first order —
+              you're live
+            </li>
+          </ol>
+          <p className="mt-4 text-xs text-gray-500">
+            Total: 5–15 minutes. No download. No installation. Works on the tablet you already own.
+          </p>
+        </div>
       </div>
     </section>
   );

@@ -4,7 +4,7 @@ import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { NAV_LINKS, SITE_NAME } from '@/lib/constants';
+import { NAV_LINKS, SITE_NAME, STAFF_APP_URL } from '@/lib/constants';
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -78,14 +78,14 @@ export function Header() {
 
           {/* CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/pricing"
+            <a
+              href={`${STAFF_APP_URL}/login`}
               className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
             >
               Sign in
-            </Link>
+            </a>
             <Link
-              href="/pricing"
+              href="/signup"
               className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 transition-colors"
             >
               Start Free
@@ -119,11 +119,17 @@ export function Header() {
             ))}
             <div className="pt-3 border-t border-gray-100 space-y-2">
               <Link
-                href="/pricing"
+                href="/signup"
                 className="block w-full text-center rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-medium text-white"
               >
                 Start Free
               </Link>
+              <a
+                href={`${STAFF_APP_URL}/login`}
+                className="block w-full text-center rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700"
+              >
+                Sign in
+              </a>
             </div>
           </div>
         </div>

@@ -14,11 +14,10 @@ export function CTA() {
 
           <div className="relative z-10">
             <h2 className="text-3xl sm:text-4xl font-bold text-white">
-              Start managing your restaurant today
+              Open Gustri before your next shift starts
             </h2>
             <p className="mt-4 text-lg text-primary-100 max-w-xl mx-auto">
-              Join restaurants using Gustri to streamline operations, reduce waste, and serve
-              customers better.
+              Set up in 5 minutes. Run your first orders today. Stay free until you outgrow it.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -29,12 +28,15 @@ export function CTA() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/contact"
+                href="/pricing"
                 className="inline-flex items-center gap-2 rounded-xl border border-white/30 px-8 py-3.5 text-base font-semibold text-white hover:bg-white/10 transition-colors"
               >
-                Talk to Sales
+                See plans & pricing
               </Link>
             </div>
+            <p className="mt-5 text-sm text-primary-100">
+              No credit card. 5-minute setup. Free forever for ≤100 orders/mo.
+            </p>
           </div>
         </div>
       </div>

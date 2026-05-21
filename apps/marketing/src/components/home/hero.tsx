@@ -1,5 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { FREE_PLAN_REASSURANCE } from '@/lib/constants';
 
 export function Hero() {
   return (
@@ -14,18 +15,20 @@ export function Hero() {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 rounded-full bg-primary-50 px-4 py-1.5 text-sm font-medium text-primary-700 mb-8">
           <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
-          Free plan available — no credit card required
+          Free for your first 100 orders/month — no credit card
         </div>
 
         {/* Heading */}
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 text-balance max-w-4xl mx-auto">
-          Your restaurant, <span className="text-primary-500">one platform.</span>
+          Run your cafe from your phone —{' '}
+          <span className="text-primary-500">without paying for software built for chains.</span>
         </h1>
 
         {/* Subheading */}
         <p className="mt-6 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto text-balance leading-relaxed">
-          POS, QR ordering, kitchen display, delivery, inventory, and staff scheduling — all in one
-          place. Start free, scale as you grow.
+          The affordable, modern platform for small cafes, coffee shops, and bakeries. POS, QR
+          ordering, kitchen tickets, and inventory — free for your first 100 orders/month. No card
+          processor lock-in. Setup in 5 minutes.
         </p>
 
         {/* CTAs */}
@@ -45,9 +48,12 @@ export function Hero() {
           </Link>
         </div>
 
+        {/* CTA reassurance */}
+        <p className="mt-4 text-sm text-gray-500">{FREE_PLAN_REASSURANCE}</p>
+
         {/* Social proof */}
-        <p className="mt-12 text-sm text-gray-500">
-          Trusted by cafes and restaurants. 20 languages supported.
+        <p className="mt-10 text-sm text-gray-500">
+          Works on any tablet you already own. 20 languages supported. No setup fees.
         </p>
       </div>
     </section>

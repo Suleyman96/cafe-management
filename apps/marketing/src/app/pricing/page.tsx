@@ -91,6 +91,13 @@ export default function PricingPage() {
                 >
                   {plan.cta}
                 </Link>
+                <p
+                  className={`mt-3 text-center text-xs ${
+                    plan.highlighted ? 'text-primary-100' : 'text-gray-500'
+                  }`}
+                >
+                  {plan.microcopy}
+                </p>
               </div>
             ))}
           </div>

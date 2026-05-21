@@ -64,7 +64,11 @@ export function Pricing() {
               </ul>
 
               <Link
-                href={`/signup?plan=${plan.name.toLowerCase()}`}
+                href={
+                  plan.cta === 'Contact Sales'
+                    ? '/contact'
+                    : `/signup?plan=${plan.name.toLowerCase()}`
+                }
                 className={`mt-8 block w-full rounded-lg py-2.5 text-center text-sm font-semibold transition-colors ${
                   plan.highlighted
                     ? 'bg-white text-primary-600 hover:bg-primary-50'
@@ -73,6 +77,13 @@ export function Pricing() {
               >
                 {plan.cta}
               </Link>
+              <p
+                className={`mt-3 text-center text-xs ${
+                  plan.highlighted ? 'text-primary-100' : 'text-gray-500'
+                }`}
+              >
+                {plan.microcopy}
+              </p>
             </div>
           ))}
         </div>

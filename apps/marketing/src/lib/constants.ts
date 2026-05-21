@@ -4,6 +4,11 @@ export const SITE_DESCRIPTION =
 export const SITE_URL = 'https://gustri.com';
 export const SITE_TAGLINE = 'Your restaurant, one platform.';
 
+export const STAFF_APP_URL = process.env.NEXT_PUBLIC_STAFF_APP_URL || 'http://localhost:3001';
+
+export const FREE_PLAN_REASSURANCE =
+  'No credit card. 5-minute setup. Free forever for ≤100 orders/mo.';
+
 export const NAV_LINKS = [
   { label: 'Features', href: '/features' },
   { label: 'Pricing', href: '/pricing' },
@@ -32,6 +37,7 @@ export const PLANS = [
       'Community support',
     ],
     cta: 'Start Free',
+    microcopy: 'No credit card. Free forever for ≤100 orders/mo.',
     highlighted: false,
   },
   {
@@ -47,6 +53,7 @@ export const PLANS = [
       'Email support',
     ],
     cta: 'Get Started',
+    microcopy: '$10/mo. Cancel anytime.',
     highlighted: false,
   },
   {
@@ -62,6 +69,7 @@ export const PLANS = [
       'Priority support',
     ],
     cta: 'Get Started',
+    microcopy: '$25/mo. Cancel anytime. Most popular.',
     highlighted: true,
   },
   {
@@ -77,6 +85,7 @@ export const PLANS = [
       'Dedicated onboarding',
     ],
     cta: 'Contact Sales',
+    microcopy: 'Custom onboarding for larger restaurants.',
     highlighted: false,
   },
 ] as const;
