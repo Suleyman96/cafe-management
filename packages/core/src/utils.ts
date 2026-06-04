@@ -58,16 +58,31 @@ export function formatPriceWithSettings(
 }
 
 /**
+ * Tax fraction (e.g. 0.18) from settings, clamped to a finite, non-negative
+ * value. A corrupt or negative `tax_percentage` must never reach the division
+ * in the tax-inclusive branches: `tax_percentage <= -100` makes `1 + rate <= 0`
+ * (divide-by-zero/Infinity) and a `NaN` percentage would silently poison every
+ * downstream order total. The DB also enforces `tax_percentage >= 0` (migration
+ * 20260604000001); this is the in-process backstop that runs in every runtime
+ * (server endpoints, scripts, web, RN).
+ */
+function safeTaxFraction(settings: PricingSettings): number {
+  const pct = settings.tax_percentage;
+  if (!Number.isFinite(pct) || pct < 0) return 0;
+  return pct / 100;
+}
+
+/**
  * Calculate tax amount based on cafe settings
  * Handles both tax-inclusive and tax-exclusive pricing
  */
 export function calculateTaxWithSettings(subtotal: number, settings: PricingSettings): number {
   if (!settings.tax_enabled) return 0;
+  const rate = safeTaxFraction(settings);
   if (settings.prices_include_tax) {
-    const rate = settings.tax_percentage / 100;
     return subtotal - subtotal / (1 + rate);
   }
-  return subtotal * (settings.tax_percentage / 100);
+  return subtotal * rate;
 }
 
 /**
@@ -85,7 +100,7 @@ export function calculateTotalWithSettings(subtotal: number, settings: PricingSe
 export function getDisplaySubtotal(subtotal: number, settings: PricingSettings): number {
   if (!settings.tax_enabled) return subtotal;
   if (settings.prices_include_tax) {
-    const rate = settings.tax_percentage / 100;
+    const rate = safeTaxFraction(settings);
     return subtotal / (1 + rate);
   }
   return subtotal;

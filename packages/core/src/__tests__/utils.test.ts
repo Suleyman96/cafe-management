@@ -162,6 +162,32 @@ describe('calculateTaxWithSettings', () => {
     const tax = calculateTaxWithSettings(-118, settings);
     expect(tax).toBeCloseTo(-18, 2);
   });
+
+  // Guard against a corrupt tax_percentage poisoning every order total.
+  // The DB CHECK (migration 20260604000001) is the primary defense; these
+  // assert the in-process backstop in case a bad value ever reaches the code.
+  it('treats a negative tax_percentage as 0 (exclusive)', () => {
+    const settings = { ...defaultSettings, tax_percentage: -5 };
+    expect(calculateTaxWithSettings(100, settings)).toBe(0);
+  });
+
+  it('never divides by zero/Infinity for tax_percentage <= -100 (inclusive)', () => {
+    const settings = { ...defaultSettings, tax_percentage: -100, prices_include_tax: true };
+    const tax = calculateTaxWithSettings(100, settings);
+    expect(Number.isFinite(tax)).toBe(true);
+    expect(tax).toBe(0);
+  });
+
+  it.each([
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+  ])('returns a finite 0 for non-finite tax_percentage %p (inclusive)', (pct) => {
+    const settings = { ...defaultSettings, tax_percentage: pct, prices_include_tax: true };
+    const tax = calculateTaxWithSettings(100, settings);
+    expect(Number.isFinite(tax)).toBe(true);
+    expect(tax).toBe(0);
+  });
 });
 
 describe('calculateTotalWithSettings', () => {
@@ -198,5 +224,12 @@ describe('getDisplaySubtotal', () => {
   it('handles negative subtotal with inclusive pricing', () => {
     const settings = { ...defaultSettings, prices_include_tax: true };
     expect(getDisplaySubtotal(-118, settings)).toBeCloseTo(-100, 2);
+  });
+
+  it('returns a finite value for a corrupt tax_percentage (inclusive)', () => {
+    const settings = { ...defaultSettings, tax_percentage: -100, prices_include_tax: true };
+    const result = getDisplaySubtotal(100, settings);
+    expect(Number.isFinite(result)).toBe(true);
+    expect(result).toBe(100);
   });
 });
