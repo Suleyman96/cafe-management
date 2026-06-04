@@ -399,7 +399,7 @@ When mobile apps are needed:
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Migration path**: See `MIGRATION_TO_RN_WEB.md`
+**Migration path**: See `docs/history/MIGRATION_TO_RN_WEB.md` (historical)
 
 ---
 

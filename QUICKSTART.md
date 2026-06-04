@@ -298,7 +298,7 @@ npm run dev -- --port 3002
 - `README.md` - Overview
 - `docs/architecture.md` - System design
 - `DEPLOYMENT.md` - Production deployment
-- `MIGRATION_TO_RN_WEB.md` - Mobile app guide
+- `docs/history/MIGRATION_TO_RN_WEB.md` - Mobile migration notes (historical)
 
 **Common issues:**
 - Database schema: `docs/database-schema.md`
