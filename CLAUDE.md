@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Gustri — a restaurant management system built as a Turborepo monorepo with 4 client apps and 6 shared packages, powered by Supabase (PostgreSQL + Auth + Realtime).
+Gustri — a restaurant management system built as a Turborepo monorepo with 4 client apps and 9 shared packages, powered by Supabase (PostgreSQL + Auth + Realtime).
 
 ## Monorepo Structure
 
@@ -20,6 +20,9 @@ packages/
   queries/          Shared TanStack Query hooks/mutations (web + mobile)
   i18n/             i18next setup + locale bundles (20 languages)
   ui/               Shared React components (Button, Badge, LoadingSpinner, …)
+  ui-web/           Web-specific shared components
+  ui-mobile/        Mobile-specific shared components
+  design-tokens/    Shared design tokens (colors, spacing, typography)
 
 supabase/           Migrations, seed data, config
 scripts/            Utility scripts (admin user, type generation, i18n sync)
@@ -42,6 +45,20 @@ pnpm db:studio        # Open Supabase Studio (port 54323)
 pnpm db:types:generate # Regenerate packages/database/src/types/generated.ts from local DB
 pnpm db:types:check   # CI gate: fails if committed types drift from the live schema
 ```
+
+## Before You Push (conserve CI)
+
+CI runs the full matrix on every push and CI minutes are limited. Run the local
+equivalent **before** pushing so the first run is the only run:
+
+- `pnpm check` · `pnpm test` · `pnpm type-check` · **`pnpm build`**
+  (building the apps catches `next build`/webpack failures that `tsc` misses —
+  always run it for app changes).
+- When a migration changes: `supabase db reset` then `pnpm db:types:check`.
+
+Batch a whole work item into **one PR / one push** — avoid "push-and-see"
+debugging loops, and fold small doc/config edits into the next functional PR
+rather than a standalone push.
 
 ## Tech Stack
 

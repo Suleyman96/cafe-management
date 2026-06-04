@@ -27,17 +27,21 @@ conversion ceiling.
   required/multi-select logic + pricing, 20-locale i18n for option labels.
 - **Source:** `docs/history/plans/28-CW-POST-PHASE-6-AUDIT.md` §M1 (line ~201).
 
-## Realtime / cache audit — open design questions (carried forward)
-Three "leftovers" from the realtime + cache-integrity audit that each need a
-focused design/decision pass (the other six findings shipped).
+## Realtime / cache audit — ✅ DONE (verified 2026-06-04)
+All three "leftovers" turned out already implemented (the source plan in
+`docs/history/` predates the work):
 
-- **#4 — Refund pre-check: drop or atomicize.** Decide the correct shape for
-  the service-side refund balance check vs. the atomic locking already added
-  (`supabase/migrations/20260503000003_atomic_payment_refund_locking.sql`).
-- **#7 — Realtime cache version-aware writes.** Guard cache writes so a stale
-  realtime event can't clobber a newer optimistic/explicit write.
-- **#9 — Customer-web cross-tenant realtime defense-in-depth.** Extra guard so
-  a customer-web realtime channel can't surface another tenant's events.
+- **#4 — Refund pre-check.** Already atomicized via the `create_refund_with_audit`
+  RPC (order-row lock + `validate_refund_amount` trigger as the balance
+  authority); `check_violation` → `ConflictError(409)` mapping lives in
+  `packages/api-client/src/errors.ts`.
+- **#7 — Realtime cache version-aware writes.** ADR
+  `docs/adr/0001-realtime-cache-version-strategy.md` (Accepted) records the
+  "invalidate, never `setQueryData`" decision, with a guard test in
+  `apps/staff-web/src/__tests__/hooks/use-realtime-sync.test.ts`.
+- **#9 — Cross-tenant realtime defense.** `apps/customer-web/README.md`
+  "safe-by-UUID" section + the guard test
+  `apps/customer-web/src/__tests__/lint/realtime-filter-guard.test.ts`.
 - **Source:** `docs/history/plans/realtime-cache-audit-remaining-prompts.md`.
 
 ## Database / multi-tenant hardening — deferred (carried forward, partially code-verified)
