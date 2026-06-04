@@ -175,16 +175,19 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
   const { data: cafeSettings } = useCafeSettings();
   const { plan: tenantPlan } = useTenantPlan();
 
-  const isOwner = staff?.role === 'owner';
   // Sidebar uses `manage_staff` as a stand-in for "admin tier UI" — both
   // admin and owner pass this check, matching the prior `role === 'admin'
   // || isOwner` semantics. Inline role expressions are banned in new code;
   // see CLAUDE.md "Authorization vs connectivity gates".
   const isAdmin = useCanPerform('manage_staff');
+  // `view_reports` gates the owner-only Reports entry (the sole `ownerOnly`
+  // nav item). Routed through the permissions policy rather than an inline
+  // `role === 'owner'` check for the same reason as `isAdmin` above.
+  const canViewReports = useCanPerform('view_reports');
 
   const filterItems = (items: NavItem[]) =>
     items.filter((item) => {
-      if (item.ownerOnly && !isOwner) return false;
+      if (item.ownerOnly && !canViewReports) return false;
       if (item.adminOnly && !isAdmin) return false;
       // Plan unknown (post-login fetch pending or failed) → hide gated
       // items rather than coercing to 'free'. The gated entry will appear

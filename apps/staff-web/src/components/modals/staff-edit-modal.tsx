@@ -1,5 +1,7 @@
 'use client';
 
+import { canPerform } from '@gustri/core';
+import type { UserRole } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui-web';
 import { Trash2 } from 'lucide-react';
@@ -190,7 +192,7 @@ export function StaffEditModal({
               <option value="waiter">{t('waiter', { ns: 'roles' })}</option>
               <option value="kitchen">{t('staffMgmt.kitchenStaff')}</option>
               <option value="admin">{t('admin', { ns: 'roles' })}</option>
-              {currentUserRole === 'owner' && (
+              {canPerform(currentUserRole as UserRole | undefined, 'grant_owner_role') && (
                 <option value="owner">{t('owner', { ns: 'roles' })}</option>
               )}
             </select>

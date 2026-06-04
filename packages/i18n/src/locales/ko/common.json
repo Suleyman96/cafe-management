@@ -33,6 +33,7 @@
   "email": "이메일",
   "error": "오류",
   "error.goToDashboard": "대시보드로 이동",
+  "error.copyDiagnostic": "진단 코드 복사",
   "error.message": "예기치 않은 오류가 발생했습니다. 앱을 다시 시작해 주세요.",
   "error.pageMessage": "이 페이지에 오류가 발생했습니다. 사이드바와 내비게이션은 계속 작동합니다.",
   "error.title": "문제가 발생했습니다",

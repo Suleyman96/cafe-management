@@ -33,6 +33,7 @@
   "email": "Elektron pochta",
   "error": "Xato",
   "error.goToDashboard": "Boshqaruv paneliga o‘tish",
+  "error.copyDiagnostic": "Diagnostika kodini nusxalash",
   "error.message": "Kutilmagan xato yuz berdi. Iltimos, ilovani qayta ishga tushiring.",
   "error.pageMessage": "Ushbu sahifada xato yuz berdi. Yon panel va navigatsiya hali ham ishlamoqda.",
   "error.title": "Nimadir noto‘g‘ri ketdi",

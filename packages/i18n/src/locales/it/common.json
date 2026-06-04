@@ -33,6 +33,7 @@
   "email": "Email",
   "error": "Errore",
   "error.goToDashboard": "Vai alla dashboard",
+  "error.copyDiagnostic": "Copia codice diagnostico",
   "error.message": "Si è verificato un errore imprevisto. Riavvia l’app.",
   "error.pageMessage": "Questa pagina ha riscontrato un errore. La barra laterale e la navigazione funzionano ancora.",
   "error.title": "Qualcosa è andato storto",

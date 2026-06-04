@@ -27,6 +27,7 @@ export type Action =
   | 'manage_stock'
   | 'manage_expenses'
   | 'mark_item_ready'
+  | 'view_reports'
   | 'grant_owner_role';
 
 const ADMIN_OR_OWNER: ReadonlySet<UserRole> = new Set(['admin', 'owner']);
@@ -45,6 +46,7 @@ const ACTION_ALLOWED_ROLES: Record<Action, ReadonlySet<UserRole>> = {
   manage_stock: ADMIN_OR_OWNER,
   manage_expenses: ADMIN_OR_OWNER,
   mark_item_ready: KITCHEN_ADMIN_OR_OWNER,
+  view_reports: OWNER_ONLY,
   grant_owner_role: OWNER_ONLY,
 };
 

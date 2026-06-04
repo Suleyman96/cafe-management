@@ -33,6 +33,7 @@
   "email": "E-posta",
   "error": "Hata",
   "error.goToDashboard": "Panele git",
+  "error.copyDiagnostic": "Tanı kodunu kopyala",
   "error.message": "Beklenmeyen bir hata oluştu. Lütfen uygulamayı yeniden başlatın.",
   "error.pageMessage": "Bu sayfada bir hata oluştu. Kenar çubuğu ve gezinme hâlâ çalışıyor.",
   "error.title": "Bir şeyler yanlış gitti",

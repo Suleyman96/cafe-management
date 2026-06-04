@@ -3,7 +3,7 @@
 import { useTranslation } from '@gustri/i18n';
 import * as Sentry from '@sentry/nextjs';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function StaffError({
   error,
@@ -13,10 +13,25 @@ export default function StaffError({
   reset: () => void;
 }) {
   const { t } = useTranslation('common');
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    Sentry.captureException(error);
+    // Capture and keep the resulting Sentry event id so support / dev
+    // can grep it directly in Sentry. Without this, prod users have no
+    // way to reference the specific crash they hit — they only see the
+    // generic toast and "An error occurred" page, and the only link
+    // back to the underlying stack is server-time correlation (slow
+    // and lossy). The displayed id is also a fingerprint we can ask the
+    // user to share in support.
+    const id = Sentry.captureException(error);
+    setEventId(id);
   }, [error]);
+
+  // Compact identifier the user can quote: prefer Next's request digest
+  // (server-set, surfaces in vercel logs too) and fall back to the
+  // Sentry event id. Both are useful — we show whichever is shorter.
+  const diagnosticCode = error.digest ?? eventId;
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
@@ -37,7 +52,29 @@ export default function StaffError({
           </svg>
         </div>
         <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('error.title')}</h2>
-        <p className="mb-6 text-sm text-gray-500">{t('error.pageMessage')}</p>
+        <p className="mb-4 text-sm text-gray-500">{t('error.pageMessage')}</p>
+
+        {diagnosticCode && (
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(diagnosticCode);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              } catch {
+                // Clipboard blocked (older browsers, insecure context) —
+                // show the value selected so the user can copy manually.
+              }
+            }}
+            className="mb-6 inline-flex items-center gap-2 rounded-md bg-gray-50 px-3 py-1.5 text-xs font-mono text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors"
+            title={t('error.copyDiagnostic', { defaultValue: 'Copy diagnostic code' })}
+          >
+            <span>{copied ? '✓' : '⧉'}</span>
+            <span className="select-all">{diagnosticCode}</span>
+          </button>
+        )}
+
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={reset}

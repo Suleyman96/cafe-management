@@ -33,6 +33,7 @@
   "email": "Email",
   "error": "Kesalahan",
   "error.goToDashboard": "Ke dasbor",
+  "error.copyDiagnostic": "Salin kode diagnostik",
   "error.message": "Terjadi kesalahan yang tidak terduga. Silakan mulai ulang aplikasi.",
   "error.pageMessage": "Halaman ini mengalami kesalahan. Sidebar dan navigasi tetap berfungsi.",
   "error.title": "Terjadi kesalahan",

@@ -33,6 +33,7 @@
   "email": "E-poçt",
   "error": "Xəta",
   "error.goToDashboard": "İdarə panelinə keç",
+  "error.copyDiagnostic": "Diaqnostika kodunu kopyalayın",
   "error.message": "Gözlənilməz xəta baş verdi. Zəhmət olmasa tətbiqi yenidən başladın.",
   "error.pageMessage": "Bu səhifədə xəta baş verdi. Yan panel və naviqasiya hələ də işləyir.",
   "error.title": "Nəsə səhv getdi",

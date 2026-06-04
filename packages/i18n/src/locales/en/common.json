@@ -100,6 +100,7 @@
   "error.tryAgain": "Try again",
   "error.pageMessage": "This page encountered an error. Your sidebar and navigation are still working.",
   "error.goToDashboard": "Go to Dashboard",
+  "error.copyDiagnostic": "Copy diagnostic code",
   "sync.pending": "{{count}} pending",
   "syncReplayFailedPrefix": "Failed to sync queued change",
   "forceUpdateTitle": "Update required",

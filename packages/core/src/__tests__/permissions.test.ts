@@ -52,15 +52,17 @@ describe('canPerform', () => {
     });
   });
 
-  describe('grant_owner_role', () => {
-    it('allows owner only', () => {
-      expect(canPerform('owner', 'grant_owner_role')).toBe(true);
+  describe('owner-only gates', () => {
+    const ownerOnlyActions: Action[] = ['view_reports', 'grant_owner_role'];
+
+    it.each(ownerOnlyActions)('allows owner only for %s', (action) => {
+      expect(canPerform('owner', action)).toBe(true);
     });
 
-    it('rejects admin, kitchen, waiter', () => {
-      expect(canPerform('admin', 'grant_owner_role')).toBe(false);
-      expect(canPerform('kitchen', 'grant_owner_role')).toBe(false);
-      expect(canPerform('waiter', 'grant_owner_role')).toBe(false);
+    it.each(ownerOnlyActions)('rejects admin, kitchen, waiter for %s', (action) => {
+      expect(canPerform('admin', action)).toBe(false);
+      expect(canPerform('kitchen', action)).toBe(false);
+      expect(canPerform('waiter', action)).toBe(false);
     });
   });
 });

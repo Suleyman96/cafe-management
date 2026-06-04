@@ -33,6 +33,7 @@
   "email": "E-mail",
   "error": "Erro",
   "error.goToDashboard": "Ir para o painel",
+  "error.copyDiagnostic": "Copiar código de diagnóstico",
   "error.message": "Ocorreu um erro inesperado. Por favor, reinicie a aplicação.",
   "error.pageMessage": "Esta página teve um erro. A barra lateral e a navegação continuam a funcionar.",
   "error.title": "Algo deu errado",

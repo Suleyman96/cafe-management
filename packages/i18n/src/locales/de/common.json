@@ -33,6 +33,7 @@
   "email": "E-Mail",
   "error": "Fehler",
   "error.goToDashboard": "Zum Dashboard",
+  "error.copyDiagnostic": "Diagnosecode kopieren",
   "error.message": "Ein unerwarteter Fehler ist aufgetreten. Bitte starte die App neu.",
   "error.pageMessage": "Diese Seite hat einen Fehler. Seitenleiste und Navigation funktionieren weiterhin.",
   "error.title": "Etwas ist schiefgelaufen",

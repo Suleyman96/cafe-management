@@ -193,6 +193,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'pnpm'
 
       - name: Restore workspace cache
         uses: actions/cache/restore@v4
@@ -204,6 +205,15 @@ jobs:
             apps/*/node_modules
           key: workspace-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
 
+      # The restored workspace cache provides built package dist/ outputs, but
+      # pnpm's symlinked node_modules store does not round-trip reliably through
+      # actions/cache — `next build` (webpack) can fail to resolve a dependency
+      # that tsc still sees (observed: @bprogress/next in customer-web). Reinstall
+      # to materialize a correct node_modules; the pnpm store cache keeps it fast
+      # and the restored packages/*/dist is left untouched.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Type check
         run: pnpm type-check --filter='./apps/*'
 
@@ -212,6 +222,12 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # customer-web's next.config.js hard-fails a production build if this
+          # is unset (the H5 build-time guard). The real value is injected by
+          # Vercel at deploy time; this CI step only compiles + runs the
+          # bundle-size guardrail, so a placeholder (overridable by a secret)
+          # is sufficient to satisfy the guard.
+          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL || 'https://staff-web.example.com' }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}

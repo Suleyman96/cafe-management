@@ -33,6 +33,7 @@
   "email": "メール",
   "error": "エラー",
   "error.goToDashboard": "ダッシュボードへ",
+  "error.copyDiagnostic": "診断コードをコピー",
   "error.message": "予期しないエラーが発生しました。アプリを再起動してください。",
   "error.pageMessage": "このページでエラーが発生しました。サイドバーとナビゲーションは引き続き利用できます。",
   "error.title": "エラーが発生しました",

@@ -33,6 +33,7 @@
   "email": "E-mail",
   "error": "Erreur",
   "error.goToDashboard": "Aller au tableau de bord",
+  "error.copyDiagnostic": "Copier le code de diagnostic",
   "error.message": "Une erreur inattendue est survenue. Veuillez redémarrer l’application.",
   "error.pageMessage": "Cette page a rencontré une erreur. La barre latérale et la navigation fonctionnent toujours.",
   "error.title": "Une erreur est survenue",
