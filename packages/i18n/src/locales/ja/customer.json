@@ -255,5 +255,6 @@
   "cart.addingToOrder": "注文 #{{orderNumber}} に追加中",
   "cart.addingToOrderAria": "アクティブな注文 #{{orderNumber}} を表示",
   "cart.viewActiveOrder": "タップしてアクティブな注文を表示",
-  "cart.addToOrder": "注文 #{{orderNumber}} に追加 · {{price}}"
+  "cart.addToOrder": "注文 #{{orderNumber}} に追加 · {{price}}",
+  "menuItem.selectRequiredOptions": "必須オプションを選択してください"
 }

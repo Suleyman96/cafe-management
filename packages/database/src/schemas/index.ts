@@ -425,6 +425,34 @@ export const CategorySchema = z.object({
   updated_at: z.string(),
 });
 
+export const MenuItemOptionSchema = z.object({
+  id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
+  menu_item_id: z.string().uuid(),
+  name: z.string().min(1).max(100),
+  selection_type: z.enum(['single', 'multi']),
+  is_required: z.boolean(),
+  min_select: z.number().int().nonnegative(),
+  max_select: z.number().int().positive().nullable(),
+  display_order: z.number().int(),
+  is_available: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const MenuItemOptionValueSchema = z.object({
+  id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
+  option_id: z.string().uuid(),
+  name: z.string().min(1).max(100),
+  price_delta: z.number().nonnegative(),
+  is_default: z.boolean(),
+  is_available: z.boolean(),
+  display_order: z.number().int(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
 export const DeliveryCustomerSchema = z.object({
   id: z.string().uuid(),
   tenant_id: z.string().uuid(),
@@ -467,6 +495,8 @@ export type OrderInput = z.infer<typeof OrderSchema>;
 export type OrderItemInput = z.infer<typeof OrderItemSchema>;
 export type TableInput = z.infer<typeof TableSchema>;
 export type MenuItemInput = z.infer<typeof MenuItemSchema>;
+export type MenuItemOptionInput = z.infer<typeof MenuItemOptionSchema>;
+export type MenuItemOptionValueInput = z.infer<typeof MenuItemOptionValueSchema>;
 export type StaffInput = z.infer<typeof StaffSchema>;
 export type WaiterCallInput = z.infer<typeof WaiterCallSchema>;
 export type CustomerFeedbackInput = z.infer<typeof CustomerFeedbackSchema>;

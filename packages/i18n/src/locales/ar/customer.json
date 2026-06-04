@@ -255,5 +255,6 @@
   "cart.addingToOrder": "تمت الإضافة إلى الطلب #{{orderNumber}}",
   "cart.addingToOrderAria": "عرض الطلب النشط #{{orderNumber}}",
   "cart.viewActiveOrder": "اضغط لعرض الطلب النشط",
-  "cart.addToOrder": "إضافة إلى الطلب #{{orderNumber}} · {{price}}"
+  "cart.addToOrder": "إضافة إلى الطلب #{{orderNumber}} · {{price}}",
+  "menuItem.selectRequiredOptions": "اختر الخيارات المطلوبة"
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { formatSelectedOptions } from '@gustri/core';
 import type { Database, OrderItemStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import { ORDER_ITEM_STATUS_BADGES } from '@gustri/ui-web';
@@ -58,6 +59,7 @@ export function OrderItemsList({
         {items.map((item: OrderItem) => {
           const statusBadge = getItemStatusBadge(item.status, t);
           const isCancelled = item.status === 'cancelled';
+          const modifiers = formatSelectedOptions(item.selected_options);
 
           return (
             <div
@@ -66,6 +68,7 @@ export function OrderItemsList({
             >
               <span className={`flex-1 ${isCancelled ? 'line-through text-gray-400' : ''}`}>
                 {item.quantity}x {item.item_name}
+                {modifiers && <span className="block text-xs text-gray-500">{modifiers}</span>}
               </span>
 
               {/* Quick Action Buttons */}

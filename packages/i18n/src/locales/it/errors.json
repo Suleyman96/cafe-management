@@ -24,5 +24,9 @@
   "refund_tenant_mismatch": "Questo rimborso non appartiene al ristorante corrente.",
   "version_conflict": "Un altro dispositivo ha appena modificato questo ordine. Aggiorna e riprova.",
   "waiter_call_already_acknowledged": "Un altro membro del team ha appena risposto a questa chiamata.",
-  "waiter_call_already_resolved": "Un altro membro del team ha appena risolto questa chiamata."
+  "waiter_call_already_resolved": "Un altro membro del team ha appena risolto questa chiamata.",
+  "invalid_option": "Quell'opzione non è disponibile per questo prodotto.",
+  "option_unavailable": "Una delle opzioni selezionate non è più disponibile.",
+  "required_option_missing": "Seleziona tutte le opzioni obbligatorie.",
+  "too_many_options": "Hai selezionato troppe opzioni."
 }

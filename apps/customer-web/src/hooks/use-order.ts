@@ -411,6 +411,7 @@ type AddOrderItemsVariables = {
     quantity: number;
     notes?: string;
     client_request_id?: string;
+    selected_options?: Array<{ option_id: string; value_id: string }>;
   }>;
   tenantId: string;
 };

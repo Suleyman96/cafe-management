@@ -225,3 +225,17 @@ export function invalidateMenuAndCategories(qc: QueryClient, tenantId: TenantId)
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.MENU_ITEMS) });
   qc.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.MENU_ITEM) });
 }
+
+export function invalidateMenuItemOptions(
+  qc: QueryClient,
+  tenantId: TenantId,
+  menuItemId?: string,
+) {
+  // A group/value change affects one menu item's modifier set. Without a
+  // menuItemId we fall back to invalidating the whole namespace.
+  qc.invalidateQueries({
+    queryKey: menuItemId
+      ? tenantKey(tenantId, QUERY_KEYS.MENU_ITEM_OPTIONS, menuItemId)
+      : tenantKey(tenantId, QUERY_KEYS.MENU_ITEM_OPTIONS),
+  });
+}

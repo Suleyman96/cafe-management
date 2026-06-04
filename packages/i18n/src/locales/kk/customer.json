@@ -255,5 +255,6 @@
   "cart.addingToOrder": "#{{orderNumber}} тапсырысқа қосылуда",
   "cart.addingToOrderAria": "#{{orderNumber}} белсенді тапсырысты қарау",
   "cart.viewActiveOrder": "Белсенді тапсырысты көру үшін түртіңіз",
-  "cart.addToOrder": "#{{orderNumber}} тапсырысқа қосу · {{price}}"
+  "cart.addToOrder": "#{{orderNumber}} тапсырысқа қосу · {{price}}",
+  "menuItem.selectRequiredOptions": "Қажетті опцияларды таңдаңыз"
 }

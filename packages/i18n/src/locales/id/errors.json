@@ -24,5 +24,9 @@
   "refund_tenant_mismatch": "Pengembalian ini bukan milik restoran saat ini.",
   "version_conflict": "Perangkat lain baru saja mengubah pesanan ini. Segarkan dan coba lagi.",
   "waiter_call_already_acknowledged": "Panggilan ini baru saja dijawab oleh anggota tim lain.",
-  "waiter_call_already_resolved": "Panggilan ini baru saja diselesaikan oleh anggota tim lain."
+  "waiter_call_already_resolved": "Panggilan ini baru saja diselesaikan oleh anggota tim lain.",
+  "invalid_option": "Opsi itu tidak tersedia untuk item ini.",
+  "option_unavailable": "Salah satu opsi yang dipilih tidak lagi tersedia.",
+  "required_option_missing": "Silakan pilih semua opsi yang diperlukan.",
+  "too_many_options": "Anda memilih terlalu banyak opsi."
 }

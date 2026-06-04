@@ -255,5 +255,6 @@
   "cart.addingToOrder": "Menambahkan ke pesanan #{{orderNumber}}",
   "cart.addingToOrderAria": "Lihat pesanan aktif #{{orderNumber}}",
   "cart.viewActiveOrder": "Ketuk untuk lihat pesanan aktif",
-  "cart.addToOrder": "Tambah ke pesanan #{{orderNumber}} · {{price}}"
+  "cart.addToOrder": "Tambah ke pesanan #{{orderNumber}} · {{price}}",
+  "menuItem.selectRequiredOptions": "Pilih opsi yang diperlukan"
 }

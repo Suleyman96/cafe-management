@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { useMenuItemOptions } from '@gustri/queries';
 import { AlertCircle, Check, Clock, Minus, Plus, ShoppingCart, Star, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -12,7 +13,7 @@ import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
 import { getLocalizedField } from '@/lib/utils';
 import { useCartStore } from '@/store/cart-store';
 import { useLanguageStore } from '@/store/language-store';
-import type { MenuItemWithCategory } from '@/types';
+import type { MenuItemWithCategory, SelectedOption } from '@/types';
 import { DietaryBadges } from './dietary-badges';
 
 interface MenuItemModalProps {
@@ -51,6 +52,8 @@ export function MenuItemModal({
   // `addedCount` reflects how many of *this* item the customer added
   // during the current modal session (sum across taps).
   const [addedCount, setAddedCount] = useState(0);
+  // Modifier selections (Phase 3): optionId -> chosen value ids.
+  const [selections, setSelections] = useState<Record<string, string[]>>({});
   const { data: settings } = useCafeSettings();
   const { language } = useLanguageStore();
   // A5 — focus trap + Esc to close + focus restoration on the menu-item
@@ -79,8 +82,69 @@ export function MenuItemModal({
   const displayPrice = (amount: number) => formatPrice(amount * taxMultiplier);
   const cartTotal = cartSubtotal * taxMultiplier;
 
+  // ─── Modifiers (Phase 3) ────────────────────────────────────────
+  const { data: optionGroups = [] } = useMenuItemOptions(item.id);
+  // Only offer available groups/values to customers.
+  const availableGroups = optionGroups
+    .filter((g) => g.is_available)
+    .map((g) => ({ ...g, values: g.values.filter((v) => v.is_available) }))
+    .filter((g) => g.values.length > 0);
+
+  // Pre-select default values when the option set resolves / item changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on item + group count, not the derived array identity
+  useEffect(() => {
+    const defaults: Record<string, string[]> = {};
+    for (const g of availableGroups) {
+      const def = g.values.filter((v) => v.is_default).map((v) => v.id);
+      if (def.length > 0) defaults[g.id] = g.selection_type === 'single' ? [def[0]] : def;
+    }
+    setSelections(defaults);
+  }, [item.id, optionGroups.length]);
+
+  const toggleValue = (group: (typeof availableGroups)[number], valueId: string) => {
+    setSelections((prev) => {
+      const cur = prev[group.id] ?? [];
+      if (group.selection_type === 'single') {
+        // Re-tapping a selected value clears it only when the group is optional.
+        const next = cur.includes(valueId) && !group.is_required ? [] : [valueId];
+        return { ...prev, [group.id]: next };
+      }
+      if (cur.includes(valueId)) return { ...prev, [group.id]: cur.filter((v) => v !== valueId) };
+      if (group.max_select != null && cur.length >= group.max_select) return prev; // at cap
+      return { ...prev, [group.id]: [...cur, valueId] };
+    });
+  };
+
+  const selectedOptions: SelectedOption[] = availableGroups.flatMap((group) =>
+    (selections[group.id] ?? []).flatMap((valueId) => {
+      const value = group.values.find((v) => v.id === valueId);
+      if (!value) return [];
+      return [
+        {
+          optionId: group.id,
+          optionName: group.name,
+          valueId,
+          valueName: value.name,
+          priceDelta: Number(value.price_delta),
+        },
+      ];
+    }),
+  );
+
+  const unitPrice = item.price + selectedOptions.reduce((sum, o) => sum + o.priceDelta, 0);
+
+  // Required groups must meet their minimum; multi groups must respect max.
+  const optionsValid = availableGroups.every((group) => {
+    const n = (selections[group.id] ?? []).length;
+    const min = group.is_required ? Math.max(1, group.min_select) : group.min_select;
+    if (n < min) return false;
+    if (group.max_select != null && n > group.max_select) return false;
+    return true;
+  });
+
   const handleAdd = () => {
-    addItem(item, quantity, notes);
+    if (!optionsValid) return;
+    addItem(item, quantity, notes, selectedOptions.length > 0 ? selectedOptions : undefined);
     // M2 — instead of closing on add, transition the modal to the
     // confirmation strip. The strip lets the customer return to the
     // menu (most common follow-up) or jump straight to the cart with
@@ -228,11 +292,77 @@ export function MenuItemModal({
 
             {/* Price */}
             <div className="text-3xl font-bold mb-5" style={{ color: accentColor }}>
-              {displayPrice(item.price)}
+              {displayPrice(unitPrice)}
             </div>
 
             {addedCount === 0 ? (
               <>
+                {/* Modifiers (Phase 3) */}
+                {availableGroups.length > 0 && (
+                  <div className="mb-5 space-y-4">
+                    {availableGroups.map((group) => (
+                      <div key={group.id}>
+                        <div className="mb-2 flex items-baseline justify-between">
+                          <span className="text-sm font-semibold text-white/85">{group.name}</span>
+                          {group.is_required && (
+                            <span className="text-[11px] uppercase tracking-wide text-white/40">
+                              {t('required', { ns: 'common' })}
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-1.5">
+                          {group.values.map((value) => {
+                            const checked = (selections[group.id] ?? []).includes(value.id);
+                            return (
+                              <button
+                                key={value.id}
+                                type="button"
+                                aria-pressed={checked}
+                                onClick={() => toggleValue(group, value.id)}
+                                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all active:scale-[0.99]"
+                                style={{
+                                  background: checked
+                                    ? `${accentColor}1f`
+                                    : 'rgba(255,255,255,0.05)',
+                                  border: `1px solid ${checked ? `${accentColor}66` : 'rgba(255,255,255,0.08)'}`,
+                                }}
+                              >
+                                <span className="flex items-center gap-2.5">
+                                  <span
+                                    className={`flex h-4 w-4 items-center justify-center border ${
+                                      group.selection_type === 'single' ? 'rounded-full' : 'rounded'
+                                    }`}
+                                    style={{
+                                      borderColor: checked ? accentColor : 'rgba(255,255,255,0.3)',
+                                    }}
+                                  >
+                                    {checked && (
+                                      <span
+                                        className={
+                                          group.selection_type === 'single'
+                                            ? 'h-2 w-2 rounded-full'
+                                            : 'h-2.5 w-2.5 rounded-[2px]'
+                                        }
+                                        style={{ background: accentColor }}
+                                      />
+                                    )}
+                                  </span>
+                                  <span className="text-white/90">{value.name}</span>
+                                </span>
+                                {value.price_delta > 0 && (
+                                  <span className="text-white/55">
+                                    +{displayPrice(value.price_delta)}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {/* Quantity Selector */}
                 <div className="mb-4">
                   <label className="text-xs font-medium text-white/50 mb-2 block">
@@ -301,14 +431,17 @@ export function MenuItemModal({
                 {/* Add to Cart Button */}
                 <button
                   onClick={handleAdd}
-                  className="w-full rounded-2xl py-4 px-6 text-base font-semibold transition-all active:scale-[0.97]"
+                  disabled={!optionsValid}
+                  className="w-full rounded-2xl py-4 px-6 text-base font-semibold transition-all active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100"
                   style={{
                     background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
                     color: '#0C0C0E',
                     boxShadow: `0 8px 32px ${accentColor}30, 0 0 0 1px ${accentColor}40`,
                   }}
                 >
-                  {t('menuItem.addToOrder', { price: displayPrice(item.price * quantity) })}
+                  {optionsValid
+                    ? t('menuItem.addToOrder', { price: displayPrice(unitPrice * quantity) })
+                    : t('menuItem.selectRequiredOptions')}
                 </button>
               </>
             ) : (

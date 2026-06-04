@@ -1,4 +1,4 @@
-import { getKitchenUrgencyBand } from '@gustri/core';
+import { formatSelectedOptions, getKitchenUrgencyBand } from '@gustri/core';
 import { ORDER_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import type { HiddenCategoryBucket } from '@gustri/queries';
@@ -39,6 +39,7 @@ type KitchenItem = {
   quantity: number;
   status: string;
   notes?: string | null;
+  selected_options?: unknown;
   menu_item?: { name?: string | null } | null;
 };
 
@@ -116,6 +117,9 @@ const KitchenOrderItemRow = React.memo(function KitchenOrderItemRow({
         <Text style={styles.itemName}>
           {item.quantity}x {item.menu_item?.name || t('kitchen.unknownItem')}
         </Text>
+        {formatSelectedOptions(item.selected_options) ? (
+          <Text style={styles.itemNotes}>{formatSelectedOptions(item.selected_options)}</Text>
+        ) : null}
         {item.notes && <Text style={styles.itemNotes}>{item.notes}</Text>}
       </View>
       {(item.status === 'pending' || item.status === 'preparing') && (

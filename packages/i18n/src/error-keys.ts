@@ -58,6 +58,15 @@ export const SENTINEL_ERROR_CODES = [
   // means a bypass attempt or a race between toggle + add-to-order.
   'menu_item_not_takeoutable',
   'menu_item_not_deliverable',
+  // Menu-modifier validation (customer order items). Emitted by
+  // customer-order-service when a selected modifier value doesn't belong to
+  // the item / is unavailable, a required group is unmet, or a multi group
+  // exceeds its max. The customer modal prevents these for UI users; they
+  // surface only on a bypass / tampered client.
+  'invalid_option',
+  'option_unavailable',
+  'required_option_missing',
+  'too_many_options',
 ] as const;
 
 export type SentinelErrorCode = (typeof SENTINEL_ERROR_CODES)[number];

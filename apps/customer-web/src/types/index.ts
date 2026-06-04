@@ -23,11 +23,25 @@ export interface OrderItemWithMenuItem extends OrderItem {
   menu_item: MenuItem;
 }
 
+// A chosen modifier on a cart item — an immutable snapshot of one option value
+// (so the cart/order is stable even if the menu changes later).
+export interface SelectedOption {
+  optionId: string;
+  optionName: string;
+  valueId: string;
+  valueName: string;
+  priceDelta: number;
+}
+
 // Cart item (client-side only)
 export interface CartItem {
   menuItem: MenuItem;
   quantity: number;
   notes?: string;
+  selectedOptions?: SelectedOption[];
+  // Composite identity: menuItem.id + sorted selected value ids. Two adds of the
+  // same item with different modifiers are kept as distinct cart lines.
+  lineKey: string;
 }
 
 // Order status type

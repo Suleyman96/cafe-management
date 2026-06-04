@@ -24,5 +24,9 @@
   "refund_tenant_mismatch": "Bu geri qaytarma cari restorana aid deyil.",
   "version_conflict": "Başqa bir cihaz indi bu sifarişi dəyişdi. Yeniləyin və yenidən cəhd edin.",
   "waiter_call_already_acknowledged": "Bu çağırışa artıq başqa bir komanda üzvü cavab verdi.",
-  "waiter_call_already_resolved": "Bu çağırışı artıq başqa bir komanda üzvü həll etdi."
+  "waiter_call_already_resolved": "Bu çağırışı artıq başqa bir komanda üzvü həll etdi.",
+  "invalid_option": "Bu seçim həmin məhsul üçün mövcud deyil.",
+  "option_unavailable": "Seçilmiş seçimlərdən biri artıq mövcud deyil.",
+  "required_option_missing": "Zəhmət olmasa bütün tələb olunan seçimləri seçin.",
+  "too_many_options": "Çox sayda seçim etmisiniz."
 }

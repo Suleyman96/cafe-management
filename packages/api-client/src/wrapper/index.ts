@@ -11,6 +11,7 @@ import { createDeliveryCustomersWrapper } from './delivery-customers';
 import { createExpenseCategoriesWrapper, createExpensesWrapper } from './expenses';
 import { createFeedbackWrapper } from './feedback';
 import { createCategoriesWrapper, createMenuItemsWrapper } from './menu';
+import { createMenuItemOptionsWrapper } from './menu-options';
 import { createOrderItemsWrapper } from './order-items';
 import { createOrdersWrapper } from './orders';
 import { createPaymentsWrapper } from './payments';
@@ -48,6 +49,7 @@ export class SupabaseWrapper {
   private _orders?: ReturnType<typeof createOrdersWrapper>;
   private _orderItems?: ReturnType<typeof createOrderItemsWrapper>;
   private _menuItems?: ReturnType<typeof createMenuItemsWrapper>;
+  private _menuItemOptions?: ReturnType<typeof createMenuItemOptionsWrapper>;
   private _categories?: ReturnType<typeof createCategoriesWrapper>;
   private _staff?: ReturnType<typeof createStaffWrapper>;
   private _staffKitchenFilters?: ReturnType<typeof createStaffKitchenFiltersWrapper>;
@@ -114,6 +116,10 @@ export class SupabaseWrapper {
   get menuItems() {
     if (!this._menuItems) this._menuItems = createMenuItemsWrapper(this.ctx);
     return this._menuItems;
+  }
+  get menuItemOptions() {
+    if (!this._menuItemOptions) this._menuItemOptions = createMenuItemOptionsWrapper(this.ctx);
+    return this._menuItemOptions;
   }
   get categories() {
     if (!this._categories) this._categories = createCategoriesWrapper(this.ctx);
@@ -212,6 +218,7 @@ export type { DeliveryCustomersWrapper } from './delivery-customers';
 export type { ExpenseCategoriesWrapper, ExpensesWrapper } from './expenses';
 export type { FeedbackWrapper } from './feedback';
 export type { CategoriesWrapper, MenuItemsWrapper } from './menu';
+export type { MenuItemOptionsWrapper, MenuItemOptionWithValues } from './menu-options';
 export type { OrderItemsWrapper } from './order-items';
 export { ORDER_VERSION_CONFLICT, type OrdersWrapper } from './orders';
 export type { PaymentsWrapper } from './payments';

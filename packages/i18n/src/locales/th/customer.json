@@ -255,5 +255,6 @@
   "cart.addingToOrder": "กำลังเพิ่มในคำสั่งซื้อ #{{orderNumber}}",
   "cart.addingToOrderAria": "ดูคำสั่งซื้อปัจจุบัน #{{orderNumber}}",
   "cart.viewActiveOrder": "แตะเพื่อดูคำสั่งซื้อปัจจุบัน",
-  "cart.addToOrder": "เพิ่มในคำสั่งซื้อ #{{orderNumber}} · {{price}}"
+  "cart.addToOrder": "เพิ่มในคำสั่งซื้อ #{{orderNumber}} · {{price}}",
+  "menuItem.selectRequiredOptions": "เลือกตัวเลือกที่จำเป็น"
 }

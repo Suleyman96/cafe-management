@@ -29,6 +29,7 @@ export {
   type KitchenOrderView,
   useKitchenView,
 } from './hooks/use-kitchen-view';
+export { useMenuItemOptions } from './hooks/use-menu-item-options';
 export { useMenuItem, useMenuItems, useMenuItemsPaginated } from './hooks/use-menu-items';
 // Read hooks — Orders
 export {
@@ -163,6 +164,14 @@ export {
   useUpdateCategory,
   useUpdateMenuItem,
 } from './mutations/use-menu-mutations';
+export {
+  useCreateMenuItemOption,
+  useCreateMenuItemOptionValue,
+  useDeleteMenuItemOption,
+  useDeleteMenuItemOptionValue,
+  useUpdateMenuItemOption,
+  useUpdateMenuItemOptionValue,
+} from './mutations/use-menu-option-mutations';
 // Order mutations
 export {
   useAddOrderItems,

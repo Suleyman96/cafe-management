@@ -90,7 +90,7 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
         {items.map((item) => {
           const name = item.menuItem.name;
           return (
-            <div key={item.menuItem.id} className="rounded-xl p-3" style={glassCardStyle}>
+            <div key={item.lineKey} className="rounded-xl p-3" style={glassCardStyle}>
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xs font-semibold text-white truncate">{name}</h4>
@@ -103,7 +103,7 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
                 <button
                   type="button"
                   aria-label={t('cart.removeItemAria', { name })}
-                  onClick={() => removeItem(item.menuItem.id)}
+                  onClick={() => removeItem(item.lineKey)}
                   className="flex h-11 w-11 items-center justify-center -m-2.5 text-white/55 hover:text-red-400 transition-all"
                 >
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg hover:bg-red-400/10">
@@ -124,7 +124,7 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
                   <button
                     type="button"
                     aria-label={t('cart.decreaseQuantityAria')}
-                    onClick={() => updateQuantity(item.menuItem.id, item.quantity - 1)}
+                    onClick={() => updateQuantity(item.lineKey, item.quantity - 1)}
                     className="flex h-11 w-11 items-center justify-center -m-2.5 transition-all active:scale-95"
                   >
                     <span
@@ -140,7 +140,7 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
                   <button
                     type="button"
                     aria-label={t('cart.increaseQuantityAria')}
-                    onClick={() => updateQuantity(item.menuItem.id, item.quantity + 1)}
+                    onClick={() => updateQuantity(item.lineKey, item.quantity + 1)}
                     className="flex h-11 w-11 items-center justify-center -m-2.5 transition-all active:scale-95"
                   >
                     <span

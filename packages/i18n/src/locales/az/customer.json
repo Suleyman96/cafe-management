@@ -255,5 +255,6 @@
   "cart.addingToOrder": "#{{orderNumber}} nömrəli sifarişə əlavə olunur",
   "cart.addingToOrderAria": "#{{orderNumber}} aktiv sifarişə bax",
   "cart.viewActiveOrder": "Aktiv sifarişi görmək üçün toxunun",
-  "cart.addToOrder": "#{{orderNumber}} sifarişə əlavə et · {{price}}"
+  "cart.addToOrder": "#{{orderNumber}} sifarişə əlavə et · {{price}}",
+  "menuItem.selectRequiredOptions": "Tələb olunan seçimləri seçin"
 }

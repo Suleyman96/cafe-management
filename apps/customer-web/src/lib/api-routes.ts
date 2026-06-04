@@ -140,6 +140,7 @@ type AddCustomerOrderItem = {
   notes?: string | null;
   tenant_id: string;
   client_request_id?: string;
+  selected_options?: Array<{ option_id: string; value_id: string }>;
 };
 
 type CreateWaiterCallPayload = {

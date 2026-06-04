@@ -30,6 +30,12 @@ const CRID_ITEM_B = '44444444-4444-4444-8444-444444444444';
 const QR_TOKEN_VALID = 'tkn_valid_1234567890';
 const QR_TOKEN_REVOKED = 'tkn_revoked_xxx';
 const QR_TOKEN_EXPIRED = 'tkn_expired_xxx';
+const MENU_ITEM = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const OPTION = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const VALUE = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+const ORDER_ID = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+const CRID_PRICE = '55555555-5555-4555-8555-555555555555';
+const CRID_INVALID = '66666666-6666-4666-8666-666666666666';
 
 interface QueuedResponse {
   data: unknown;
@@ -39,6 +45,7 @@ interface QueuedResponse {
 
 function buildClient(plan: Record<string, QueuedResponse[]>): SupabaseClient {
   const cursor: Record<string, number> = {};
+  const inserts: Array<{ table: string; payload: unknown }> = [];
 
   function next(table: string): QueuedResponse {
     const queue = plan[table] ?? [];
@@ -47,7 +54,7 @@ function buildClient(plan: Record<string, QueuedResponse[]>): SupabaseClient {
     return queue[i] ?? { data: null, error: { message: `unexpected ${table}[${i}]` } };
   }
 
-  return {
+  const client = {
     from: (table: string) => {
       const builder: Record<string, unknown> = {};
       const chain =
@@ -74,9 +81,16 @@ function buildClient(plan: Record<string, QueuedResponse[]>): SupabaseClient {
       // that don't end the chain with `.single()` / `.maybeSingle()`.
       // biome-ignore lint/suspicious/noThenProperty: required to mock the supabase builder shape
       builder.then = (resolve: (v: QueuedResponse) => unknown) => resolve(next(table));
+      // Capture insert payloads so tests can assert server-computed values.
+      builder.insert = (payload: unknown) => {
+        inserts.push({ table, payload });
+        return builder;
+      };
       return builder;
     },
   } as unknown as SupabaseClient;
+  (client as unknown as { __inserts: typeof inserts }).__inserts = inserts;
+  return client;
 }
 
 describe('createCustomerOrder — tenant binding (C1)', () => {
@@ -453,6 +467,137 @@ describe('createCustomerOrder — dedupe', () => {
 
     expect(result.deduped).toBe(false);
     expect(result.order).toEqual(fresh);
+  });
+});
+
+describe('addCustomerOrderItems — server-side pricing + modifier validation', () => {
+  function priceClient(menuItemOptions: QueuedResponse) {
+    return buildClient({
+      order_items: [
+        { data: [], error: null }, // dedupe lookup → no replay
+        { data: [{ id: 'oi-1' }], error: null }, // insert
+      ],
+      orders: [{ data: { id: ORDER_ID, status: 'new', tenant_id: TENANT }, error: null }],
+      menu_items: [{ data: [{ id: MENU_ITEM, is_available: true, price: 5 }], error: null }],
+      menu_item_option_values: [
+        {
+          data: [
+            { id: VALUE, name: 'Large', price_delta: 2, is_available: true, option_id: OPTION },
+          ],
+          error: null,
+        },
+      ],
+      menu_item_options: [menuItemOptions],
+    });
+  }
+
+  it('recomputes item_price as base + modifier delta, ignoring the client price', async () => {
+    const client = priceClient({
+      data: [
+        {
+          id: OPTION,
+          name: 'Size',
+          menu_item_id: MENU_ITEM,
+          is_available: true,
+          is_required: false,
+          min_select: 0,
+          max_select: 1,
+        },
+      ],
+      error: null,
+    });
+
+    await addCustomerOrderItems(client, {
+      orderId: ORDER_ID,
+      items: [
+        {
+          menu_item_id: MENU_ITEM,
+          item_name: 'Coffee',
+          item_price: 0.01, // tampered client price — must be ignored
+          quantity: 1,
+          tenant_id: TENANT,
+          client_request_id: CRID_PRICE,
+          selected_options: [{ option_id: OPTION, value_id: VALUE }],
+        },
+      ],
+    });
+
+    const captured = (client as unknown as { __inserts: { table: string; payload: unknown }[] })
+      .__inserts;
+    const row = (
+      captured.find((i) => i.table === 'order_items')?.payload as Record<string, unknown>[]
+    )[0];
+    expect(row.item_price).toBe(7); // 5 + 2, not 0.01
+    expect(row.selected_options).toHaveLength(1);
+    expect((row.selected_options as Record<string, unknown>[])[0].value_name).toBe('Large');
+  });
+
+  it('rejects a selected value whose option belongs to a different menu item', async () => {
+    const client = priceClient({
+      data: [
+        {
+          id: OPTION,
+          name: 'Size',
+          menu_item_id: 'other-item',
+          is_available: true,
+          is_required: false,
+          min_select: 0,
+          max_select: 1,
+        },
+      ],
+      error: null,
+    });
+
+    await expect(
+      addCustomerOrderItems(client, {
+        orderId: ORDER_ID,
+        items: [
+          {
+            menu_item_id: MENU_ITEM,
+            item_name: 'Coffee',
+            item_price: 5,
+            quantity: 1,
+            tenant_id: TENANT,
+            client_request_id: CRID_INVALID,
+            selected_options: [{ option_id: OPTION, value_id: VALUE }],
+          },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('rejects when a required option group has no selection', async () => {
+    const client = priceClient({
+      data: [
+        {
+          id: OPTION,
+          name: 'Size',
+          menu_item_id: MENU_ITEM,
+          is_available: true,
+          is_required: true,
+          min_select: 1,
+          max_select: 1,
+        },
+      ],
+      error: null,
+    });
+
+    await expect(
+      addCustomerOrderItems(client, {
+        orderId: ORDER_ID,
+        items: [
+          {
+            menu_item_id: MENU_ITEM,
+            item_name: 'Coffee',
+            item_price: 5,
+            quantity: 1,
+            tenant_id: TENANT,
+            client_request_id: CRID_INVALID,
+            // no selected_options → required "Size" group is unmet
+          },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
   });
 });
 

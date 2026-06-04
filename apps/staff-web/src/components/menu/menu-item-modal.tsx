@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase/client';
 import { toastLocalizedError } from '@/lib/toast/localized-error';
 import { validateImageFile } from '@/lib/uploads/validate-image';
 import { useAuthStore } from '@/store/auth-store';
+import { MenuItemModifiersModal } from './menu-item-modifiers-modal';
 
 const MENU_IMAGE_MAX_SIZE_MB = 5;
 
@@ -41,6 +42,7 @@ export function MenuItemModal({ item, categories, menuItems = [], onClose }: Men
   const isEditing = !!item;
   const createItem = useCreateMenuItem();
   const updateItem = useUpdateMenuItem();
+  const [showModifiers, setShowModifiers] = useState(false);
 
   const nextDisplayOrder = isEditing
     ? item.display_order?.toString() || '0'
@@ -192,235 +194,258 @@ export function MenuItemModal({ item, categories, menuItems = [], onClose }: Men
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {isEditing ? t('menu.editMenuItem') : t('menu.addMenuItem')}
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
-            ×
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('category', { ns: 'common' })}
-            </label>
-            <select
-              value={formData.category_id}
-              onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">{t('menu.noCategory')}</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {isEditing ? t('menu.editMenuItem') : t('menu.addMenuItem')}
+            </h2>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
+              ×
+            </button>
           </div>
 
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('name', { ns: 'common' })} *
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder={t('menu.itemNamePlaceholder')}
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('description', { ns: 'common' })}
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder={t('menu.itemDescriptionPlaceholder')}
-            />
-          </div>
-
-          {/* Price and Preparation Time */}
-          <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Category */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('menu.priceLabel')} *
+                {t('category', { ns: 'common' })}
               </label>
-              <NumberInput
-                value={formData.price}
-                onChange={(v) => setFormData({ ...formData, price: v })}
-                min={0}
-                step={0.01}
-                placeholder="0.00"
-              />
+              <select
+                value={formData.category_id}
+                onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">{t('menu.noCategory')}</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('menu.preparationTimeMinutes')}
+                {t('name', { ns: 'common' })} *
               </label>
-              <NumberInput
-                value={formData.preparation_time}
-                onChange={(v) => setFormData({ ...formData, preparation_time: v })}
-                min={0}
-                integer
-                placeholder="0"
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder={t('menu.itemNamePlaceholder')}
               />
             </div>
-          </div>
 
-          {/* Image Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('menu.image')}
-            </label>
-            {imagePreview && (
-              <img
-                src={imagePreview}
-                alt="Preview"
-                className="w-32 h-32 object-cover rounded-lg mb-2"
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('description', { ns: 'common' })}
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder={t('menu.itemDescriptionPlaceholder')}
               />
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+            </div>
 
-          {/* Dietary Options */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('menu.dietaryOptions')}
-            </label>
-            <div className="flex flex-wrap gap-3">
-              {[
-                { key: 'is_vegetarian', icon: '🌱', labelKey: 'menu.vegetarian' },
-                { key: 'is_vegan', icon: '🌿', labelKey: 'menu.vegan' },
-                { key: 'is_gluten_free', icon: '🌾', labelKey: 'menu.glutenFree' },
-                { key: 'is_spicy', icon: '🌶️', labelKey: 'menu.spicy' },
-                { key: 'is_popular', icon: '⭐', labelKey: 'menu.popular' },
-                { key: 'is_daily_special', icon: '🎯', labelKey: 'menu.dailySpecial' },
-              ].map((option) => (
-                <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+            {/* Price and Preparation Time */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('menu.priceLabel')} *
+                </label>
+                <NumberInput
+                  value={formData.price}
+                  onChange={(v) => setFormData({ ...formData, price: v })}
+                  min={0}
+                  step={0.01}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('menu.preparationTimeMinutes')}
+                </label>
+                <NumberInput
+                  value={formData.preparation_time}
+                  onChange={(v) => setFormData({ ...formData, preparation_time: v })}
+                  min={0}
+                  integer
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            {/* Image Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('menu.image')}
+              </label>
+              {imagePreview && (
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-32 h-32 object-cover rounded-lg mb-2"
+                />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Dietary Options */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('menu.dietaryOptions')}
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { key: 'is_vegetarian', icon: '🌱', labelKey: 'menu.vegetarian' },
+                  { key: 'is_vegan', icon: '🌿', labelKey: 'menu.vegan' },
+                  { key: 'is_gluten_free', icon: '🌾', labelKey: 'menu.glutenFree' },
+                  { key: 'is_spicy', icon: '🌶️', labelKey: 'menu.spicy' },
+                  { key: 'is_popular', icon: '⭐', labelKey: 'menu.popular' },
+                  { key: 'is_daily_special', icon: '🎯', labelKey: 'menu.dailySpecial' },
+                ].map((option) => (
+                  <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData[option.key as keyof typeof formData] as boolean}
+                      onChange={(e) => setFormData({ ...formData, [option.key]: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">
+                      {option.icon} {t(option.labelKey)}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Allergens */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('menu.allergens')}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {COMMON_ALLERGENS.map((allergen) => (
+                  <button
+                    key={allergen.value}
+                    type="button"
+                    onClick={() => toggleAllergen(allergen.value)}
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      selectedAllergens.includes(allergen.value)
+                        ? 'bg-red-100 text-red-800 border border-red-300'
+                        : 'bg-gray-100 text-gray-700 border border-gray-300'
+                    }`}
+                  >
+                    {t(allergen.labelKey)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Other Options */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('menu.displayOrder')}
+                </label>
+                <NumberInput
+                  value={formData.display_order}
+                  onChange={(v) => setFormData({ ...formData, display_order: v })}
+                  min={0}
+                  integer
+                  placeholder="0"
+                />
+              </div>
+              <div className="flex flex-col gap-2 pt-6">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={formData[option.key as keyof typeof formData] as boolean}
-                    onChange={(e) => setFormData({ ...formData, [option.key]: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    checked={formData.is_available}
+                    onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
+                    className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
                   />
-                  <span className="text-sm text-gray-700">
-                    {option.icon} {t(option.labelKey)}
+                  <span className="text-sm font-medium text-gray-700">{t('menu.available')}</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_takeoutable}
+                    onChange={(e) => setFormData({ ...formData, is_takeoutable: e.target.checked })}
+                    className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    {t('menu.availableForTakeout')}
                   </span>
                 </label>
-              ))}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_deliverable}
+                    onChange={(e) => setFormData({ ...formData, is_deliverable: e.target.checked })}
+                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    {t('menu.availableForDelivery')}
+                  </span>
+                </label>
+              </div>
             </div>
-          </div>
 
-          {/* Allergens */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('menu.allergens')}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {COMMON_ALLERGENS.map((allergen) => (
-                <button
-                  key={allergen.value}
+            {/* Modifiers (existing items only) */}
+            {item && (
+              <div className="pt-4 border-t">
+                <Button
                   type="button"
-                  onClick={() => toggleAllergen(allergen.value)}
-                  className={`px-3 py-1 rounded-full text-sm ${
-                    selectedAllergens.includes(allergen.value)
-                      ? 'bg-red-100 text-red-800 border border-red-300'
-                      : 'bg-gray-100 text-gray-700 border border-gray-300'
-                  }`}
+                  variant="outline"
+                  onClick={() => setShowModifiers(true)}
+                  className="w-full"
                 >
-                  {t(allergen.labelKey)}
-                </button>
-              ))}
-            </div>
-          </div>
+                  {t('menu.manageModifiers')}
+                </Button>
+              </div>
+            )}
 
-          {/* Other Options */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('menu.displayOrder')}
-              </label>
-              <NumberInput
-                value={formData.display_order}
-                onChange={(v) => setFormData({ ...formData, display_order: v })}
-                min={0}
-                integer
-                placeholder="0"
-              />
+            {/* Actions */}
+            <div className="flex gap-3 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="flex-1"
+                disabled={uploading}
+              >
+                {t('cancel', { ns: 'common' })}
+              </Button>
+              <Button type="submit" disabled={!isValid || uploading} className="flex-1">
+                {uploading
+                  ? t('staffMgmt.saving')
+                  : isEditing
+                    ? t('menu.updateItem')
+                    : t('menu.createItem')}
+              </Button>
             </div>
-            <div className="flex flex-col gap-2 pt-6">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.is_available}
-                  onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
-                  className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                />
-                <span className="text-sm font-medium text-gray-700">{t('menu.available')}</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.is_takeoutable}
-                  onChange={(e) => setFormData({ ...formData, is_takeoutable: e.target.checked })}
-                  className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  {t('menu.availableForTakeout')}
-                </span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.is_deliverable}
-                  onChange={(e) => setFormData({ ...formData, is_deliverable: e.target.checked })}
-                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  {t('menu.availableForDelivery')}
-                </span>
-              </label>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1"
-              disabled={uploading}
-            >
-              {t('cancel', { ns: 'common' })}
-            </Button>
-            <Button type="submit" disabled={!isValid || uploading} className="flex-1">
-              {uploading
-                ? t('staffMgmt.saving')
-                : isEditing
-                  ? t('menu.updateItem')
-                  : t('menu.createItem')}
-            </Button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
+      {item && showModifiers && (
+        <MenuItemModifiersModal
+          menuItemId={item.id}
+          menuItemName={item.name}
+          onClose={() => setShowModifiers(false)}
+        />
+      )}
+    </>
   );
 }

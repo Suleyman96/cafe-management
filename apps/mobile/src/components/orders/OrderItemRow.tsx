@@ -1,3 +1,4 @@
+import { formatSelectedOptions } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { StatusBadge } from '@gustri/ui-mobile';
 import React from 'react';
@@ -14,6 +15,7 @@ interface OrderItemRowProps {
     total_price?: number | null;
     status: string;
     notes?: string | null;
+    selected_options?: unknown;
     menu_item?: {
       name?: string | null;
     } | null;
@@ -40,6 +42,11 @@ export const OrderItemRow = React.memo(function OrderItemRow({
           <Text variant="bodyMedium" style={styles.name}>
             {item.quantity}x {name}
           </Text>
+          {formatSelectedOptions(item.selected_options) ? (
+            <Text variant="bodySmall" style={styles.notes}>
+              {formatSelectedOptions(item.selected_options)}
+            </Text>
+          ) : null}
           {item.notes && (
             <Text variant="bodySmall" style={styles.notes}>
               {t('orders.note')} {item.notes}

@@ -32,6 +32,13 @@ const AddItemsSchema = z.object({
         // (tenant_id, client_request_id) partial-unique index instead of
         // creating duplicate order_items rows.
         client_request_id: z.string().uuid(),
+        // Chosen modifier values (ids only). The service validates each value
+        // belongs to the item + is available and recomputes item_price; the
+        // client-sent item_price is ignored. Capped to bound per-item work.
+        selected_options: z
+          .array(z.object({ option_id: z.string().uuid(), value_id: z.string().uuid() }))
+          .max(20)
+          .optional(),
       }),
     )
     .min(1)

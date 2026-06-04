@@ -255,5 +255,6 @@
   "cart.addingToOrder": "Додається до замовлення №{{orderNumber}}",
   "cart.addingToOrderAria": "Подивитись активне замовлення №{{orderNumber}}",
   "cart.viewActiveOrder": "Натисніть, щоб відкрити активне замовлення",
-  "cart.addToOrder": "Додати до замовлення №{{orderNumber}} · {{price}}"
+  "cart.addToOrder": "Додати до замовлення №{{orderNumber}} · {{price}}",
+  "menuItem.selectRequiredOptions": "Виберіть обовʼязкові опції"
 }

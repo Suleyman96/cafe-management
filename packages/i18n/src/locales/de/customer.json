@@ -255,5 +255,6 @@
   "cart.addingToOrder": "Wird zu Bestellung #{{orderNumber}} hinzugefügt",
   "cart.addingToOrderAria": "Aktive Bestellung #{{orderNumber}} ansehen",
   "cart.viewActiveOrder": "Tippen, um aktive Bestellung anzusehen",
-  "cart.addToOrder": "Zu Bestellung #{{orderNumber}} hinzufügen · {{price}}"
+  "cart.addToOrder": "Zu Bestellung #{{orderNumber}} hinzufügen · {{price}}",
+  "menuItem.selectRequiredOptions": "Erforderliche Optionen wählen"
 }

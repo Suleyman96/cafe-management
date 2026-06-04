@@ -24,5 +24,9 @@
   "refund_tenant_mismatch": "Ushbu qaytarish joriy restoranga tegishli emas.",
   "version_conflict": "Boshqa qurilma hozirgina ushbu buyurtmani o'zgartirdi. Yangilang va qayta urinib ko'ring.",
   "waiter_call_already_acknowledged": "Ushbu chaqiruvga boshqa xodim allaqachon javob bergan.",
-  "waiter_call_already_resolved": "Ushbu chaqiruvni boshqa xodim allaqachon hal qilgan."
+  "waiter_call_already_resolved": "Ushbu chaqiruvni boshqa xodim allaqachon hal qilgan.",
+  "invalid_option": "Bu variant ushbu mahsul uchun mavjud emas.",
+  "option_unavailable": "Tanlangan variantlardan biri endi mavjud emas.",
+  "required_option_missing": "Iltimos, barcha majburiy variantlarni tanlang.",
+  "too_many_options": "Siz juda koʻp variant tanladingiz."
 }

@@ -24,5 +24,9 @@
   "refund_tenant_mismatch": "この返金は現在のレストランのものではありません。",
   "version_conflict": "別のデバイスがこの注文を変更しました。更新してからやり直してください。",
   "waiter_call_already_acknowledged": "この呼び出しは他のスタッフがすでに対応しました。",
-  "waiter_call_already_resolved": "この呼び出しは他のスタッフがすでに解決しました。"
+  "waiter_call_already_resolved": "この呼び出しは他のスタッフがすでに解決しました。",
+  "invalid_option": "その商品にはこのオプションは利用できません。",
+  "option_unavailable": "選択したオプションのひとつが利用できなくなりました。",
+  "required_option_missing": "必須オプションをすべて選択してください。",
+  "too_many_options": "オプションを選びすぎています。"
 }

@@ -255,5 +255,6 @@
   "cart.addingToOrder": "افزودن به سفارش #{{orderNumber}}",
   "cart.addingToOrderAria": "مشاهده سفارش فعال #{{orderNumber}}",
   "cart.viewActiveOrder": "برای دیدن سفارش فعال ضربه بزنید",
-  "cart.addToOrder": "افزودن به سفارش #{{orderNumber}} · {{price}}"
+  "cart.addToOrder": "افزودن به سفارش #{{orderNumber}} · {{price}}",
+  "menuItem.selectRequiredOptions": "گزینه‌های الزامی را انتخاب کنید"
 }

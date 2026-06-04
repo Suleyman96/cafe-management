@@ -103,7 +103,14 @@ export function usePlaceOrder({
           item_price: item.menuItem.price,
           quantity: item.quantity,
           notes: item.notes,
-          client_request_id: placeOrderKeys.getItemKey(item.menuItem.id),
+          // Key the dedupe id by lineKey, not menuItem.id — two combos of the
+          // same item are distinct rows and must not collide on the
+          // (tenant_id, client_request_id) unique index.
+          client_request_id: placeOrderKeys.getItemKey(item.lineKey),
+          selected_options: (item.selectedOptions ?? []).map((o) => ({
+            option_id: o.optionId,
+            value_id: o.valueId,
+          })),
         })),
       });
 

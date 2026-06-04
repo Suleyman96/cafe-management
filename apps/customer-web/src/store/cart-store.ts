@@ -1,5 +1,25 @@
 import { create } from 'zustand';
-import type { CartItem, MenuItem } from '@/types';
+import type { CartItem, MenuItem, SelectedOption } from '@/types';
+
+/**
+ * Composite identity for a cart line: the menu item plus the (order-independent)
+ * set of selected option-value ids. Two adds of the same item with different
+ * modifiers are distinct lines; with no modifiers the key collapses to the bare
+ * menu-item id, so behavior is unchanged for items without options.
+ */
+export function cartLineKey(menuItemId: string, selectedOptions?: SelectedOption[]): string {
+  const sig = (selectedOptions ?? [])
+    .map((o) => o.valueId)
+    .sort()
+    .join(',');
+  return sig ? `${menuItemId}#${sig}` : menuItemId;
+}
+
+/** Per-unit price including modifier deltas (base + Σ priceDelta). */
+export function cartItemUnitPrice(item: CartItem): number {
+  const delta = (item.selectedOptions ?? []).reduce((sum, o) => sum + o.priceDelta, 0);
+  return item.menuItem.price + delta;
+}
 
 /**
  * Customer-web QR-ordering cart, partitioned by `(flow, tenantId, tableId?)`.
@@ -52,10 +72,15 @@ interface CartStore {
   items: CartItem[];
   partition: CartPartition | null;
   lastTouchedAt: number;
-  addItem: (menuItem: MenuItem, quantity: number, notes?: string) => void;
-  removeItem: (menuItemId: string) => void;
-  updateQuantity: (menuItemId: string, quantity: number) => void;
-  updateNotes: (menuItemId: string, notes: string) => void;
+  addItem: (
+    menuItem: MenuItem,
+    quantity: number,
+    notes?: string,
+    selectedOptions?: SelectedOption[],
+  ) => void;
+  removeItem: (lineKey: string) => void;
+  updateQuantity: (lineKey: string, quantity: number) => void;
+  updateNotes: (lineKey: string, notes: string) => void;
   clearCart: () => void;
   getTotal: () => number;
   getItemCount: () => number;
@@ -104,7 +129,11 @@ function loadPartition(p: CartPartition): CartItem[] {
       storage.removeItem(storageKey(p));
       return [];
     }
-    return parsed.items;
+    // Backfill lineKey for carts persisted before modifiers existed.
+    return parsed.items.map((item) => ({
+      ...item,
+      lineKey: item.lineKey ?? cartLineKey(item.menuItem.id, item.selectedOptions),
+    }));
   } catch {
     // Corrupted JSON — drop it; better an empty cart than a runtime
     // throw on hydration.
@@ -152,37 +181,38 @@ export const useCartStore = create<CartStore>()((set, get) => {
     partition: null,
     lastTouchedAt: 0,
 
-    addItem: (menuItem, quantity, notes) => {
-      const existing = get().items.find((item) => item.menuItem.id === menuItem.id);
+    addItem: (menuItem, quantity, notes, selectedOptions) => {
+      const lineKey = cartLineKey(menuItem.id, selectedOptions);
+      const existing = get().items.find((item) => item.lineKey === lineKey);
       const items = existing
         ? get().items.map((item) =>
-            item.menuItem.id === menuItem.id
+            item.lineKey === lineKey
               ? { ...item, quantity: item.quantity + quantity, notes: notes || item.notes }
               : item,
           )
-        : [...get().items, { menuItem, quantity, notes }];
+        : [...get().items, { menuItem, quantity, notes, selectedOptions, lineKey }];
       set({ items, lastTouchedAt: persistMutation(items) });
     },
 
-    removeItem: (menuItemId) => {
-      const items = get().items.filter((item) => item.menuItem.id !== menuItemId);
+    removeItem: (lineKey) => {
+      const items = get().items.filter((item) => item.lineKey !== lineKey);
       set({ items, lastTouchedAt: persistMutation(items) });
     },
 
-    updateQuantity: (menuItemId, quantity) => {
+    updateQuantity: (lineKey, quantity) => {
       if (quantity <= 0) {
-        get().removeItem(menuItemId);
+        get().removeItem(lineKey);
         return;
       }
       const items = get().items.map((item) =>
-        item.menuItem.id === menuItemId ? { ...item, quantity } : item,
+        item.lineKey === lineKey ? { ...item, quantity } : item,
       );
       set({ items, lastTouchedAt: persistMutation(items) });
     },
 
-    updateNotes: (menuItemId, notes) => {
+    updateNotes: (lineKey, notes) => {
       const items = get().items.map((item) =>
-        item.menuItem.id === menuItemId ? { ...item, notes } : item,
+        item.lineKey === lineKey ? { ...item, notes } : item,
       );
       set({ items, lastTouchedAt: persistMutation(items) });
     },
@@ -195,7 +225,7 @@ export const useCartStore = create<CartStore>()((set, get) => {
     },
 
     getTotal: () =>
-      get().items.reduce((total, item) => total + item.menuItem.price * item.quantity, 0),
+      get().items.reduce((total, item) => total + cartItemUnitPrice(item) * item.quantity, 0),
 
     getItemCount: () => get().items.reduce((count, item) => count + item.quantity, 0),
 

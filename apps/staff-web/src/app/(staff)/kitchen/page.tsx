@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  formatSelectedOptions,
   getKitchenUrgencyBand,
   isDeliveryOrder,
   isDineInOrder,
@@ -606,7 +607,15 @@ export default function KitchenDisplayPage() {
                           <span className="font-bold text-white bg-white/10 px-1.5 py-0.5 rounded text-xs">
                             {item.quantity}x
                           </span>
-                          <span className="truncate">{item.menu_item?.name}</span>
+                          <span className="truncate">
+                            {item.menu_item?.name}
+                            {formatSelectedOptions(item.selected_options) && (
+                              <span className="text-gray-400">
+                                {' · '}
+                                {formatSelectedOptions(item.selected_options)}
+                              </span>
+                            )}
+                          </span>
                         </div>
                       ))}
                   </div>
@@ -800,6 +809,11 @@ export default function KitchenDisplayPage() {
                             )}
                           </div>
                         </div>
+                        {formatSelectedOptions(item.selected_options) && (
+                          <p className="mt-0.5 pl-7 text-xs font-medium text-gray-600">
+                            {formatSelectedOptions(item.selected_options)}
+                          </p>
+                        )}
                       </div>
                     );
                   })}

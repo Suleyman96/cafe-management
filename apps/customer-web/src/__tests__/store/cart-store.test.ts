@@ -151,6 +151,47 @@ describe('useCartStore', () => {
     });
   });
 
+  describe('modifiers (selected options)', () => {
+    const large = [
+      { optionId: 'o1', optionName: 'Size', valueId: 'vL', valueName: 'Large', priceDelta: 2 },
+    ];
+    const small = [
+      { optionId: 'o1', optionName: 'Size', valueId: 'vS', valueName: 'Small', priceDelta: 0 },
+    ];
+
+    it('keeps the same item with different options as separate lines', () => {
+      useCartStore.getState().addItem(mockMenuItem({ id: 'm1', price: 5 }), 1, undefined, large);
+      useCartStore.getState().addItem(mockMenuItem({ id: 'm1', price: 5 }), 1, undefined, small);
+      expect(useCartStore.getState().items).toHaveLength(2);
+    });
+
+    it('merges identical option combos into one line', () => {
+      useCartStore.getState().addItem(mockMenuItem({ id: 'm1', price: 5 }), 1, undefined, large);
+      useCartStore.getState().addItem(mockMenuItem({ id: 'm1', price: 5 }), 2, undefined, large);
+      const { items } = useCartStore.getState();
+      expect(items).toHaveLength(1);
+      expect(items[0].quantity).toBe(3);
+    });
+
+    it('getTotal includes price deltas', () => {
+      useCartStore.getState().addItem(mockMenuItem({ id: 'm1', price: 5 }), 2, undefined, large);
+      // (5 + 2) * 2
+      expect(useCartStore.getState().getTotal()).toBe(14);
+    });
+
+    it('removeItem targets a specific option line by lineKey', () => {
+      useCartStore.getState().addItem(mockMenuItem({ id: 'm1', price: 5 }), 1, undefined, large);
+      useCartStore.getState().addItem(mockMenuItem({ id: 'm1', price: 5 }), 1, undefined, small);
+      const lineLarge = useCartStore
+        .getState()
+        .items.find((i) => i.selectedOptions?.[0]?.valueId === 'vL');
+      useCartStore.getState().removeItem(lineLarge?.lineKey ?? '');
+      const { items } = useCartStore.getState();
+      expect(items).toHaveLength(1);
+      expect(items[0].selectedOptions?.[0]?.valueId).toBe('vS');
+    });
+  });
+
   describe('persistence (audit fix — H7 cross-table contamination)', () => {
     // Pre-PR the store used `persist({ name: 'cart-storage' })` with a
     // single global localStorage key — a customer who scanned table A,

@@ -30,6 +30,15 @@ export type MenuItems = MenuItem; // Alias for compatibility
 export type MenuItemsInsert = Database['public']['Tables']['menu_items']['Insert'];
 export type MenuItemsUpdate = Database['public']['Tables']['menu_items']['Update'];
 
+export type MenuItemOption = Database['public']['Tables']['menu_item_options']['Row'];
+export type MenuItemOptionInsert = Database['public']['Tables']['menu_item_options']['Insert'];
+export type MenuItemOptionUpdate = Database['public']['Tables']['menu_item_options']['Update'];
+export type MenuItemOptionValue = Database['public']['Tables']['menu_item_option_values']['Row'];
+export type MenuItemOptionValueInsert =
+  Database['public']['Tables']['menu_item_option_values']['Insert'];
+export type MenuItemOptionValueUpdate =
+  Database['public']['Tables']['menu_item_option_values']['Update'];
+
 export type Order = Database['public']['Tables']['orders']['Row'];
 export type Orders = Order; // Alias for compatibility
 export type OrdersInsert = Database['public']['Tables']['orders']['Insert'];

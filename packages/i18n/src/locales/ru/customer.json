@@ -255,5 +255,6 @@
   "cart.addingToOrder": "Добавляется к заказу №{{orderNumber}}",
   "cart.addingToOrderAria": "Посмотреть активный заказ №{{orderNumber}}",
   "cart.viewActiveOrder": "Нажмите, чтобы открыть активный заказ",
-  "cart.addToOrder": "Добавить к заказу №{{orderNumber}} · {{price}}"
+  "cart.addToOrder": "Добавить к заказу №{{orderNumber}} · {{price}}",
+  "menuItem.selectRequiredOptions": "Выберите обязательные опции"
 }

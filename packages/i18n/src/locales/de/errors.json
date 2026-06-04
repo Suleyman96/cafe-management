@@ -24,5 +24,9 @@
   "refund_tenant_mismatch": "Diese Erstattung gehört nicht zum aktuellen Restaurant.",
   "version_conflict": "Ein anderes Gerät hat diese Bestellung gerade geändert. Aktualisieren und erneut versuchen.",
   "waiter_call_already_acknowledged": "Dieser Ruf wurde bereits von einem anderen Teammitglied beantwortet.",
-  "waiter_call_already_resolved": "Dieser Ruf wurde bereits von einem anderen Teammitglied erledigt."
+  "waiter_call_already_resolved": "Dieser Ruf wurde bereits von einem anderen Teammitglied erledigt.",
+  "invalid_option": "Diese Option ist für diesen Artikel nicht verfügbar.",
+  "option_unavailable": "Eine der gewählten Optionen ist nicht mehr verfügbar.",
+  "required_option_missing": "Bitte wählen Sie alle erforderlichen Optionen.",
+  "too_many_options": "Sie haben zu viele Optionen ausgewählt."
 }

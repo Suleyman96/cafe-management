@@ -255,5 +255,6 @@
   "cart.addingToOrder": "주문 #{{orderNumber}}에 추가 중",
   "cart.addingToOrderAria": "진행 중인 주문 #{{orderNumber}} 보기",
   "cart.viewActiveOrder": "탭하여 진행 중인 주문 보기",
-  "cart.addToOrder": "주문 #{{orderNumber}}에 추가 · {{price}}"
+  "cart.addToOrder": "주문 #{{orderNumber}}에 추가 · {{price}}",
+  "menuItem.selectRequiredOptions": "필수 옵션을 선택하세요"
 }

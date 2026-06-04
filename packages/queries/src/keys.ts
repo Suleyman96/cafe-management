@@ -13,6 +13,7 @@ export const QUERY_KEYS = {
   ORDER: 'order',
   MENU_ITEMS: 'menu_items',
   MENU_ITEM: 'menu_item',
+  MENU_ITEM_OPTIONS: 'menu_item_options',
   CATEGORIES: 'categories',
   STAFF: 'staff',
   WAITER_CALLS: 'waiter_calls',

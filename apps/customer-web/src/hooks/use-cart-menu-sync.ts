@@ -51,7 +51,7 @@ export function useCartMenuSync() {
 
     if (stale.length > 0) {
       for (const item of stale) {
-        removeItem(item.menuItem.id);
+        removeItem(item.lineKey);
       }
       toast.warning(t('cart.staleItemsRemoved', { count: stale.length }));
     }

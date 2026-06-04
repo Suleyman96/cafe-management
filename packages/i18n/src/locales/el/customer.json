@@ -255,5 +255,6 @@
   "cart.addingToOrder": "Προσθήκη στην παραγγελία #{{orderNumber}}",
   "cart.addingToOrderAria": "Δείτε ενεργή παραγγελία #{{orderNumber}}",
   "cart.viewActiveOrder": "Πατήστε για ενεργή παραγγελία",
-  "cart.addToOrder": "Προσθήκη στην παραγγελία #{{orderNumber}} · {{price}}"
+  "cart.addToOrder": "Προσθήκη στην παραγγελία #{{orderNumber}} · {{price}}",
+  "menuItem.selectRequiredOptions": "Επιλέξτε τις απαιτούμενες επιλογές"
 }

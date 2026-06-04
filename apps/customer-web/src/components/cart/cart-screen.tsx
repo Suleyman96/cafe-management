@@ -156,7 +156,7 @@ export function CartScreen({ tableId }: CartScreenProps) {
         <div className="space-y-4 mb-6">
           {items.map((item) => (
             <CartItemCard
-              key={item.menuItem.id}
+              key={item.lineKey}
               item={item}
               taxMultiplier={taxMultiplier}
               allowItemNotes={settings?.allow_item_notes !== false}

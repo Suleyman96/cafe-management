@@ -573,6 +573,120 @@ export type Database = {
           },
         ]
       }
+      menu_item_option_values: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_available: boolean
+          is_default: boolean
+          name: string
+          option_id: string
+          price_delta: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_available?: boolean
+          is_default?: boolean
+          name: string
+          option_id: string
+          price_delta?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_available?: boolean
+          is_default?: boolean
+          name?: string
+          option_id?: string
+          price_delta?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_option_values_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "menu_item_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_item_option_values_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_item_options: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_available: boolean
+          is_required: boolean
+          max_select: number | null
+          menu_item_id: string
+          min_select: number
+          name: string
+          selection_type: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_available?: boolean
+          is_required?: boolean
+          max_select?: number | null
+          menu_item_id: string
+          min_select?: number
+          name: string
+          selection_type?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_available?: boolean
+          is_required?: boolean
+          max_select?: number | null
+          menu_item_id?: string
+          min_select?: number
+          name?: string
+          selection_type?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_options_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_item_options_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           allergens: string[] | null
@@ -672,6 +786,7 @@ export type Database = {
           notes: string | null
           order_id: string
           quantity: number
+          selected_options: Json | null
           status: string
           tenant_id: string
           updated_at: string | null
@@ -687,6 +802,7 @@ export type Database = {
           notes?: string | null
           order_id: string
           quantity?: number
+          selected_options?: Json | null
           status?: string
           tenant_id?: string
           updated_at?: string | null
@@ -702,6 +818,7 @@ export type Database = {
           notes?: string | null
           order_id?: string
           quantity?: number
+          selected_options?: Json | null
           status?: string
           tenant_id?: string
           updated_at?: string | null
@@ -2256,6 +2373,7 @@ export type Database = {
           notes: string | null
           order_id: string
           quantity: number
+          selected_options: Json | null
           status: string
           tenant_id: string
           updated_at: string | null

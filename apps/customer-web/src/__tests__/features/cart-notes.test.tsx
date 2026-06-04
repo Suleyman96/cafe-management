@@ -10,6 +10,7 @@ describe('Cart notes editing persists correctly', () => {
     menuItem: { id: 'item-1', name: 'Latte', price: 5 },
     quantity: 2,
     notes: 'extra milk',
+    lineKey: 'item-1',
   };
 
   const defaultProps = {

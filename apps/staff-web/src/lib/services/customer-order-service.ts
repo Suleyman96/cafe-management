@@ -47,6 +47,9 @@ interface AddCustomerOrderItemsParams {
     notes?: string | null;
     tenant_id: string;
     client_request_id?: string;
+    // Chosen modifier values (ids only). The server resolves names/prices and
+    // recomputes item_price — client-supplied item_price is ignored.
+    selected_options?: Array<{ option_id: string; value_id: string }>;
   }>;
 }
 
@@ -257,11 +260,12 @@ export async function addCustomerOrderItems(
     throw new Error('Order is no longer accepting new items');
   }
 
-  // Validate all menu items exist and are available
+  // Validate all menu items exist + are available, and capture the
+  // server-side base price (the client-supplied item_price is NOT trusted).
   const menuItemIds = items.map((i) => i.menu_item_id);
   const { data: menuItems, error: menuError } = await supabaseAdmin
     .from('menu_items')
-    .select('id, is_available')
+    .select('id, is_available, price')
     .in('id', menuItemIds)
     .eq('tenant_id', tenantId);
 
@@ -269,25 +273,128 @@ export async function addCustomerOrderItems(
     throw new Error('Failed to validate menu items');
   }
 
-  const availableIds = new Set((menuItems || []).filter((m) => m.is_available).map((m) => m.id));
+  const menuItemById = new Map((menuItems || []).map((m) => [m.id, m]));
   for (const item of items) {
-    if (!availableIds.has(item.menu_item_id)) {
-      throw new Error(`Menu item ${item.item_name} is not available`);
+    const mi = menuItemById.get(item.menu_item_id);
+    if (!mi || !mi.is_available) {
+      throw new ValidationError(`Menu item ${item.item_name} is not available`);
     }
   }
 
-  // Insert items
-  const insertData = items.map((item) => ({
-    order_id: orderId,
-    menu_item_id: item.menu_item_id,
-    item_name: item.item_name,
-    item_price: item.item_price,
-    quantity: item.quantity,
-    notes: item.notes || null,
-    status: 'pending' as const,
-    tenant_id: tenantId,
-    client_request_id: item.client_request_id ?? null,
-  }));
+  // Validate + price selected modifiers SERVER-SIDE. Fetch every option GROUP
+  // for these items once — it drives both value validation (a selected value
+  // must belong to one of its item's available groups) and required-group
+  // completeness. item_price is recomputed as base + Σ value.price_delta so a
+  // tampered client price/delta can never reach the order total.
+  const optionById = new Map<
+    string,
+    {
+      name: string;
+      menu_item_id: string;
+      is_available: boolean;
+      is_required: boolean;
+      min_select: number;
+      max_select: number | null;
+    }
+  >();
+  {
+    const { data: groups, error: grpError } = await supabaseAdmin
+      .from('menu_item_options')
+      .select('id, name, menu_item_id, is_available, is_required, min_select, max_select')
+      .in('menu_item_id', menuItemIds)
+      .eq('tenant_id', tenantId);
+    if (grpError) throw new Error('Failed to validate options');
+    for (const o of groups || []) {
+      optionById.set(o.id, {
+        name: o.name,
+        menu_item_id: o.menu_item_id,
+        is_available: o.is_available,
+        is_required: o.is_required,
+        min_select: o.min_select,
+        max_select: o.max_select,
+      });
+    }
+  }
+
+  const allValueIds = [
+    ...new Set(items.flatMap((i) => (i.selected_options ?? []).map((o) => o.value_id))),
+  ];
+  const valueById = new Map<
+    string,
+    { option_id: string; price_delta: number; name: string; is_available: boolean }
+  >();
+  if (allValueIds.length > 0) {
+    const { data: values, error: valError } = await supabaseAdmin
+      .from('menu_item_option_values')
+      .select('id, name, price_delta, is_available, option_id')
+      .in('id', allValueIds)
+      .eq('tenant_id', tenantId);
+    if (valError) throw new Error('Failed to validate options');
+    for (const v of values || []) {
+      valueById.set(v.id, {
+        option_id: v.option_id,
+        price_delta: Number(v.price_delta),
+        name: v.name,
+        is_available: v.is_available,
+      });
+    }
+  }
+
+  // Required-group completeness: every required + available group on an item
+  // must have a selection meeting its minimum (and within its max). Server-side
+  // counterpart to the customer modal's enforcement — guards the quick-add path
+  // and any client that skips the modal.
+  for (const item of items) {
+    for (const [optionId, group] of optionById) {
+      if (group.menu_item_id !== item.menu_item_id || !group.is_required || !group.is_available) {
+        continue;
+      }
+      const count = (item.selected_options ?? []).filter((s) => s.option_id === optionId).length;
+      if (count < Math.max(1, group.min_select)) {
+        throw new ValidationError('required_option_missing');
+      }
+      if (group.max_select != null && count > group.max_select) {
+        throw new ValidationError('too_many_options');
+      }
+    }
+  }
+
+  // Insert items with server-computed price + an immutable options snapshot.
+  const insertData = items.map((item) => {
+    const mi = menuItemById.get(item.menu_item_id);
+    let unitPrice = Number(mi?.price ?? 0);
+    const snapshot: Array<Record<string, unknown>> = [];
+    for (const sel of item.selected_options ?? []) {
+      const value = valueById.get(sel.value_id);
+      if (!value || value.option_id !== sel.option_id || !value.is_available) {
+        throw new ValidationError('invalid_option');
+      }
+      const option = optionById.get(value.option_id);
+      if (!option || option.menu_item_id !== item.menu_item_id || !option.is_available) {
+        throw new ValidationError('invalid_option');
+      }
+      unitPrice += value.price_delta;
+      snapshot.push({
+        option_id: sel.option_id,
+        option_name: option.name,
+        value_id: sel.value_id,
+        value_name: value.name,
+        price_delta: value.price_delta,
+      });
+    }
+    return {
+      order_id: orderId,
+      menu_item_id: item.menu_item_id,
+      item_name: item.item_name,
+      item_price: unitPrice,
+      quantity: item.quantity,
+      notes: item.notes || null,
+      status: 'pending' as const,
+      tenant_id: tenantId,
+      client_request_id: item.client_request_id ?? null,
+      selected_options: snapshot.length > 0 ? snapshot : null,
+    };
+  });
 
   const { data: createdItems, error: insertError } = await supabaseAdmin
     .from('order_items')

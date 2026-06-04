@@ -95,6 +95,7 @@ export function buildOrderItem(overrides?: Partial<OrderItemRow>): OrderItemRow 
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     client_request_id: null,
+    selected_options: null,
     ...overrides,
   };
 }

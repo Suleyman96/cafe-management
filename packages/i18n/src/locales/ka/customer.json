@@ -255,5 +255,6 @@
   "cart.addingToOrder": "ემატება შეკვეთას #{{orderNumber}}",
   "cart.addingToOrderAria": "ნახე აქტიური შეკვეთა #{{orderNumber}}",
   "cart.viewActiveOrder": "შეეხე აქტიური შეკვეთის სანახავად",
-  "cart.addToOrder": "დაამატე შეკვეთას #{{orderNumber}} · {{price}}"
+  "cart.addToOrder": "დაამატე შეკვეთას #{{orderNumber}} · {{price}}",
+  "menuItem.selectRequiredOptions": "აირჩიეთ სავალდებულო ვარიანტები"
 }

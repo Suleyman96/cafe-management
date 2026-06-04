@@ -24,5 +24,9 @@
   "refund_tenant_mismatch": "This refund doesn't belong to the current restaurant.",
   "version_conflict": "Another device just changed this order. Refresh and try again.",
   "waiter_call_already_acknowledged": "This call was just answered by another team member.",
-  "waiter_call_already_resolved": "This call was just resolved by another team member."
+  "waiter_call_already_resolved": "This call was just resolved by another team member.",
+  "invalid_option": "That option isn't available for this item.",
+  "option_unavailable": "One of the selected options is no longer available.",
+  "required_option_missing": "Please choose all required options.",
+  "too_many_options": "You've selected too many options."
 }

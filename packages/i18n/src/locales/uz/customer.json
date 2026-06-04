@@ -255,5 +255,6 @@
   "cart.addingToOrder": "#{{orderNumber}} buyurtmaga qo'shilmoqda",
   "cart.addingToOrderAria": "#{{orderNumber}} faol buyurtmani ko'rish",
   "cart.viewActiveOrder": "Faol buyurtmani ko'rish uchun bosing",
-  "cart.addToOrder": "#{{orderNumber}} buyurtmaga qo'shish · {{price}}"
+  "cart.addToOrder": "#{{orderNumber}} buyurtmaga qo'shish · {{price}}",
+  "menuItem.selectRequiredOptions": "Majburiy variantlarni tanlang"
 }

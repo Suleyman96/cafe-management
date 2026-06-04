@@ -194,3 +194,9 @@ export const CURRENCY_POSITION = {
   BEFORE: 'before',
   AFTER: 'after',
 } as const;
+
+// Menu item option selection type — matches menu_item_options_selection_type_check
+export const MENU_OPTION_SELECTION_TYPE = {
+  SINGLE: 'single',
+  MULTI: 'multi',
+} as const;
