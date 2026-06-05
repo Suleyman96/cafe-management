@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiRoutes } from '@/lib/api-routes';
 import { isRecentClientRequestId, recordRecentClientRequestId } from '@/lib/realtime-dedup';
+import { STALE_TIMES } from '@/lib/stale-times';
 import { supabase } from '@/lib/supabase';
 import type { Order, OrderItem, OrderWithItems } from '@/types';
 
@@ -34,7 +35,7 @@ export function useOrder(tableId: string) {
     // for when ALL of those fail. 60s matches the global default and
     // cuts ~3× refetches/min on flaky phone networks without any
     // user-visible regression.
-    staleTime: 60 * 1000,
+    staleTime: STALE_TIMES.SHORT,
   });
 
   const orderId = query.data?.id;

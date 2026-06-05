@@ -1,4 +1,4 @@
-import type { MenuItem, Order } from '@gustri/database';
+import type { MenuItem, Order } from '@gustri/database/types';
 import { describe, expect, it } from 'vitest';
 import { applyMenuFilter, deriveChannelFilter } from '../menu-channel-filter';
 

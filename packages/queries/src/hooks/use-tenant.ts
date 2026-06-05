@@ -3,6 +3,7 @@ import type { PlanName } from '@gustri/core';
 import { useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from '../keys';
 import { useDb, useTenantId } from '../provider';
+import { STALE_TIMES } from '../stale-times';
 
 /**
  * The slice of the tenants row that the wrapper exposes to clients.
@@ -24,7 +25,7 @@ export function useTenant() {
     queryKey: tenantKey(tenantId, QUERY_KEYS.TENANT),
     queryFn: () => db.tenants.getCurrent(),
     enabled: !!tenantId,
-    staleTime: 5 * 60_000,
+    staleTime: STALE_TIMES.MEDIUM,
   });
 }
 

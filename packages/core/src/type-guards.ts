@@ -28,7 +28,7 @@ import type {
   Tenant,
   WaiterCall,
   WasteLog,
-} from '@gustri/database';
+} from '@gustri/database/types';
 
 // Order type guards
 export function isOrder(value: unknown): value is Order {

@@ -1,6 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import { createSupabaseWrapper } from '@gustri/api-client';
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import * as Sentry from '@sentry/react-native';
 import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';

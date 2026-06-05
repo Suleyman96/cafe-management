@@ -1,4 +1,4 @@
-import type { TaskInsert, TaskUpdate } from '@gustri/database';
+import type { TaskInsert, TaskUpdate } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { DestructiveConfirmModal, EmptyState, LoadingScreen } from '@gustri/ui-mobile';
 import * as Sentry from '@sentry/react-native';

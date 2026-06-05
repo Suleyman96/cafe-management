@@ -1,7 +1,7 @@
 'use client';
 
 import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui-web';
 import { Check, Loader2, Minus, Plus, ShoppingCart } from 'lucide-react';

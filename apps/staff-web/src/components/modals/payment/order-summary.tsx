@@ -1,6 +1,6 @@
 'use client';
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import type { useTranslation } from '@gustri/i18n';
 
 type Order = Database['public']['Tables']['orders']['Row'];

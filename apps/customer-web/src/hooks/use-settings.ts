@@ -4,7 +4,7 @@ import {
   formatPriceWithSettings,
   getDisplaySubtotal,
 } from '@gustri/core';
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { QUERY_KEYS } from '@gustri/queries';
 import * as Sentry from '@sentry/nextjs';
 import { useQuery } from '@tanstack/react-query';

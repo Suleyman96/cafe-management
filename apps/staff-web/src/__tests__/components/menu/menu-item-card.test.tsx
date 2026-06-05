@@ -1,4 +1,4 @@
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 

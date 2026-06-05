@@ -1,4 +1,4 @@
-import type { OrderWithDetails } from '@gustri/database';
+import type { OrderWithDetails } from '@gustri/database/types';
 import { fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../helpers/test-utils';

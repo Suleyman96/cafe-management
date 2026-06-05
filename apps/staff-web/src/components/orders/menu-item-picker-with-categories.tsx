@@ -1,6 +1,6 @@
 'use client';
 
-import type { Category, MenuItem } from '@gustri/database';
+import type { Category, MenuItem } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { useMemo, useState } from 'react';
 import { MenuItemThumb } from '@/components/menu/menu-item-thumb';

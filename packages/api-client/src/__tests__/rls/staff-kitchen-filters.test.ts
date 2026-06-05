@@ -14,7 +14,7 @@
  * Run: pnpm test:rls
  */
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
 import { createSupabaseWrapper } from '../../wrapper';

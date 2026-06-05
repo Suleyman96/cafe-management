@@ -1,4 +1,4 @@
-import type { WasteLogInsert, WasteLogUpdate } from '@gustri/database';
+import type { WasteLogInsert, WasteLogUpdate } from '@gustri/database/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invalidateWaste } from '../invalidation';
 import { useDb, useTenantId } from '../provider';

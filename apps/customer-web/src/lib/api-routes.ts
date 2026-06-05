@@ -1,6 +1,6 @@
 import { httpStatusToAppError } from '@gustri/api-client';
 import { RateLimitError } from '@gustri/core';
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { getOrCreateClientRequestId } from '@gustri/queries';
 import * as Sentry from '@sentry/nextjs';
 

@@ -3,7 +3,7 @@ export { useCafeSettings } from '@gustri/queries';
 
 // Local hook — uses apiRoutes for settings update
 import { validateOrThrow } from '@gustri/core';
-import { CafeSettingsUpdateInputSchema } from '@gustri/database';
+import { CafeSettingsUpdateInputSchema } from '@gustri/database/schemas/inputs';
 import { QUERY_KEYS } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';

@@ -1,4 +1,4 @@
-import type { StaffScheduleInsert, StaffScheduleUpdate } from '@gustri/database';
+import type { StaffScheduleInsert, StaffScheduleUpdate } from '@gustri/database/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invalidateSchedules } from '../invalidation';
 import { useDb, useTenantId } from '../provider';

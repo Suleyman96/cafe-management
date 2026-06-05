@@ -1,6 +1,6 @@
 'use client';
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { useStableClientRequestId } from '@gustri/queries';
 import { Button, NumberInput } from '@gustri/ui-web';

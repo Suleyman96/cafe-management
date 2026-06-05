@@ -3,7 +3,7 @@
  * Re-exports from @gustri/queries, with local mutations for param shape compatibility
  */
 
-import type { StaffScheduleUpdate } from '@gustri/database';
+import type { StaffScheduleUpdate } from '@gustri/database/types';
 import { invalidateSchedules, useDb, useTenantId } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 

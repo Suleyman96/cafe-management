@@ -127,6 +127,8 @@ export { MUTATION_KEYS, type MutationKey, type MutationKeyName } from './mutatio
 // Mutation types
 export type { MutationCallbacks } from './mutations/types';
 export { DbProvider, REALTIME_INVALIDATE_DEBOUNCE_MS, useDb, useTenantId } from './provider';
+// Centralized staleTime tiers
+export { STALE_TIMES } from './stale-times';
 export {
   type StableClientRequestId,
   useStableClientRequestId,

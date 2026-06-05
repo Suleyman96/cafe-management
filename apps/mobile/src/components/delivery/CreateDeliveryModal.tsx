@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import type { MenuItem, OrdersInsert } from '@gustri/database';
+import type { MenuItem, OrdersInsert } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {

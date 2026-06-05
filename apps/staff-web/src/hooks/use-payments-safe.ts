@@ -3,7 +3,7 @@
  * Re-exports from @gustri/queries, with local overrides for apiRoutes mutations
  */
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import {
   getOrCreateClientRequestId,
   QUERY_KEYS,

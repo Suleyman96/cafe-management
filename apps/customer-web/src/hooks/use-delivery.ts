@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RealtimeStatus } from '@/hooks/use-order';
 import { apiRoutes } from '@/lib/api-routes';
 import { isRecentClientRequestId, recordRecentClientRequestId } from '@/lib/realtime-dedup';
+import { STALE_TIMES } from '@/lib/stale-times';
 import { supabase } from '@/lib/supabase';
 import type { DeliveryOrderWithDetails, Order, OrderItem } from '@/types';
 
@@ -27,7 +28,7 @@ export function useDeliveryOrder(orderId: string, accessToken?: string) {
     // `refetchOnReconnect: 'always'` (Phase 2 H2) already keep this
     // fresh; the staleTime is just the safety net for when ALL of
     // those fail. 60s matches the global default.
-    staleTime: 60 * 1000,
+    staleTime: STALE_TIMES.SHORT,
   });
 
   // H1 / H2 — mirror the dine-in pattern in `useOrder`. Same trade-offs,

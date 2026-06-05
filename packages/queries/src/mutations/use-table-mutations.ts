@@ -1,4 +1,4 @@
-import type { Table, TablesInsert, TablesUpdate } from '@gustri/database';
+import type { Table, TablesInsert, TablesUpdate } from '@gustri/database/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from '../keys';
 import { useDb, useTenantId } from '../provider';

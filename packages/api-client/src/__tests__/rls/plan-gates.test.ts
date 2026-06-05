@@ -31,7 +31,7 @@
  * restored in `afterAll` even if a test fails mid-run.
  */
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 

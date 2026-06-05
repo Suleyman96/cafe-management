@@ -1,4 +1,4 @@
-import type { StaffSchedule, StaffScheduleInsert } from '@gustri/database';
+import type { StaffSchedule, StaffScheduleInsert } from '@gustri/database/types';
 import { useLocale, useTranslation } from '@gustri/i18n';
 
 // The schedules hook joins staff data via Supabase select

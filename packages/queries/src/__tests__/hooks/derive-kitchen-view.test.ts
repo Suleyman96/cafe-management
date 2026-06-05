@@ -6,7 +6,7 @@
  * filter is described back to the UI.
  */
 
-import type { Category, OrderItemWithMenuItem, OrderWithDetails } from '@gustri/database';
+import type { Category, OrderItemWithMenuItem, OrderWithDetails } from '@gustri/database/types';
 import { describe, expect, it } from 'vitest';
 import { deriveKitchenView } from '../../hooks/use-kitchen-view';
 
@@ -203,6 +203,7 @@ function buildCategory(overrides: { id: string; name: string }): Category {
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    deleted_at: null,
   };
 }
 

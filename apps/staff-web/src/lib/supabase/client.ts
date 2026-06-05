@@ -1,4 +1,4 @@
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { createBrowserClient } from '@supabase/ssr';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

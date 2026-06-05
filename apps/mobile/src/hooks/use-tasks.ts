@@ -14,7 +14,7 @@ export {
   useUpdateTask,
 } from '@gustri/queries';
 
-import type { Task } from '@gustri/database';
+import type { Task } from '@gustri/database/types';
 // Local useMyTasks — accepts string | undefined (shared requires string)
 import { QUERY_KEYS, useDb } from '@gustri/queries';
 import { useQuery } from '@tanstack/react-query';

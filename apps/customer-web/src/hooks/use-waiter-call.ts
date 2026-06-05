@@ -3,6 +3,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { apiRoutes } from '@/lib/api-routes';
+import { STALE_TIMES } from '@/lib/stale-times';
 import { db, supabase } from '@/lib/supabase';
 import { useWaiterCallIdempotency } from '@/store/waiter-call-store';
 import type { WaiterCall } from '@/types';
@@ -112,7 +113,7 @@ export function useOpenWaiterCallsForTable(tableId: string | undefined | null) {
     // customer-web queries use so the loading state isn't pegged to
     // an empty key.
     enabled: !!tableId,
-    staleTime: 10 * 1000,
+    staleTime: STALE_TIMES.REALTIME,
   });
 
   // Realtime subscription on `waiter_calls` filtered by `table_id`.

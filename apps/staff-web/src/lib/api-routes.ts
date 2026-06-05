@@ -1,4 +1,4 @@
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { supabase } from '@/lib/supabase/client';
 
 type OrderInsert = Database['public']['Tables']['orders']['Insert'];

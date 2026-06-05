@@ -1,6 +1,6 @@
 'use client';
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import type { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui-web';
 import { Search } from 'lucide-react';

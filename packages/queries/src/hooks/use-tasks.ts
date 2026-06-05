@@ -1,4 +1,4 @@
-import type { Task } from '@gustri/database';
+import type { Task } from '@gustri/database/types';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from '../keys';
 import { useDb, useTenantId } from '../provider';

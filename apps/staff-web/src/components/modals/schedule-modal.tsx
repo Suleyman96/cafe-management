@@ -6,7 +6,7 @@ import {
   TIME_OPTIONS,
   WEEKDAY_TRANSLATION_KEY,
 } from '@gustri/core';
-import type { StaffSchedule, StaffScheduleInsert } from '@gustri/database';
+import type { StaffSchedule, StaffScheduleInsert } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui-web';
 import { useEffect, useState } from 'react';

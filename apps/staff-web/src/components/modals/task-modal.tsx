@@ -1,7 +1,7 @@
 'use client';
 
 import { getLocalDateString, TIME_OPTIONS, WEEKDAY_TRANSLATION_KEY, WEEKDAYS } from '@gustri/core';
-import type { Database, TaskInsert } from '@gustri/database';
+import type { Database, TaskInsert } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { Button, NumberInput } from '@gustri/ui-web';
 import { useState } from 'react';

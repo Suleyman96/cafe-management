@@ -123,6 +123,7 @@ export function buildMenuItem(overrides?: Partial<MenuItemRow>): MenuItemRow {
     display_order: 0,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    deleted_at: null,
     ...overrides,
   };
 }
@@ -138,6 +139,7 @@ export function buildCategory(overrides?: Partial<CategoryRow>): CategoryRow {
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    deleted_at: null,
     ...overrides,
   };
 }

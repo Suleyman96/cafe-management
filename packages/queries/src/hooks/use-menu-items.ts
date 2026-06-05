@@ -1,7 +1,8 @@
-import type { MenuItemWithCategory } from '@gustri/database';
+import type { MenuItemWithCategory } from '@gustri/database/types';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from '../keys';
 import { useDb, useTenantId } from '../provider';
+import { STALE_TIMES } from '../stale-times';
 
 export function useMenuItems(options?: {
   categoryId?: string;
@@ -32,7 +33,7 @@ export function useMenuItems(options?: {
   return useQuery({
     queryKey: tenantKey(tenantId, QUERY_KEYS.MENU_ITEMS, filterOptions),
     queryFn: () => db.menuItems.findAll(filterOptions) as Promise<MenuItemWithCategory[]>,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_TIMES.MEDIUM,
     enabled,
     ...(initialData ? { initialData } : {}),
   });

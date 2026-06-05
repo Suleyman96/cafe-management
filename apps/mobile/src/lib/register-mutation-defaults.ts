@@ -10,7 +10,7 @@ import type {
   StaffUpdate,
   StockItemUpdate,
   Table,
-} from '@gustri/database';
+} from '@gustri/database/types';
 import { MUTATION_KEYS, type MutationKeyName } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import type { MutationFunction, QueryClient } from '@tanstack/react-query';

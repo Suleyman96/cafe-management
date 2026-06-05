@@ -1,5 +1,5 @@
-import type { Table } from '@gustri/database';
 import { WaiterCallsRealtimeInsertSchema, WaiterCallsRealtimeUpdateSchema } from '@gustri/database';
+import type { Table } from '@gustri/database/types';
 import { QUERY_KEYS } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';

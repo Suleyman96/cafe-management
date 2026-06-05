@@ -20,7 +20,7 @@
  */
 
 import { PLAN_LIMITS, type PlanName } from '@gustri/core';
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { createClient } from '@supabase/supabase-js';
 import { describe, expect, test } from 'vitest';
 

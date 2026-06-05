@@ -1,7 +1,7 @@
 'use client';
 
 import type { ORDER_STATUS } from '@gustri/core';
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import * as Sentry from '@sentry/nextjs';
 import { AlertTriangle, CheckCircle, X } from 'lucide-react';

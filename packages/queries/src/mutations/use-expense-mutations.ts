@@ -1,4 +1,4 @@
-import type { ExpenseCategoryInsert, ExpenseInsert, ExpenseUpdate } from '@gustri/database';
+import type { ExpenseCategoryInsert, ExpenseInsert, ExpenseUpdate } from '@gustri/database/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrCreateClientRequestId } from '../idempotency';
 import { invalidateExpenses } from '../invalidation';

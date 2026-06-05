@@ -1,4 +1,4 @@
-import type { OrdersInsert } from '@gustri/database';
+import type { OrdersInsert } from '@gustri/database/types';
 import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';

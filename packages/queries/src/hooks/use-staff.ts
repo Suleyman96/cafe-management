@@ -1,7 +1,8 @@
-import type { Staff } from '@gustri/database';
+import type { Staff } from '@gustri/database/types';
 import { useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from '../keys';
 import { useDb, useTenantId } from '../provider';
+import { STALE_TIMES } from '../stale-times';
 
 export function useStaff(role?: Staff['role'], options?: { enabled?: boolean }) {
   const db = useDb();
@@ -9,7 +10,7 @@ export function useStaff(role?: Staff['role'], options?: { enabled?: boolean }) 
   return useQuery({
     queryKey: tenantKey(tenantId, QUERY_KEYS.STAFF, role),
     queryFn: () => db.staff.findAll(role ? { role } : undefined) as Promise<Staff[]>,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_TIMES.MEDIUM,
     enabled: options?.enabled ?? true,
   });
 }

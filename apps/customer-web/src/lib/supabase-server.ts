@@ -1,4 +1,4 @@
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 

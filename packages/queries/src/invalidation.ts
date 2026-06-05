@@ -8,7 +8,7 @@
  * or we re-introduce the cross-tenant cache bleed the audit flagged.
  */
 
-import type { Order } from '@gustri/database';
+import type { Order } from '@gustri/database/types';
 import type { QueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from './keys';
 

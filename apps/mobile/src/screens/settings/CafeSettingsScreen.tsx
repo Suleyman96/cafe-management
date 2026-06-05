@@ -1,5 +1,5 @@
 import { isAppError } from '@gustri/core';
-import type { CafeSettings } from '@gustri/database';
+import type { CafeSettings } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import { useEffect, useState } from 'react';

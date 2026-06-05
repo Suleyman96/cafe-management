@@ -2,7 +2,7 @@
  * Tenants wrapper module
  */
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { handleSupabaseError } from '../errors';
 import { rpc } from './rpc-typed';
 import type { WrapperContext } from './types';

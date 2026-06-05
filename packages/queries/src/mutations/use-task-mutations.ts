@@ -1,4 +1,4 @@
-import type { TaskInsert, TaskUpdate } from '@gustri/database';
+import type { TaskInsert, TaskUpdate } from '@gustri/database/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrCreateClientRequestId } from '../idempotency';
 import { invalidateTasks } from '../invalidation';

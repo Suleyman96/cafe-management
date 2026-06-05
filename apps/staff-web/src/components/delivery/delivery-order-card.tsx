@@ -1,7 +1,7 @@
 'use client';
 
 import { calculateOrderTotal, formatTime, ORDER_STATUS_KEYS } from '@gustri/core';
-import type { OrderWithDetails } from '@gustri/database';
+import type { OrderWithDetails } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { Button, getOrderStatusColor } from '@gustri/ui-web';
 import {

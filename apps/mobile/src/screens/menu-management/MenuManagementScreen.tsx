@@ -1,4 +1,4 @@
-import type { Category, MenuItem, MenuItemsInsert, MenuItemsUpdate } from '@gustri/database';
+import type { Category, MenuItem, MenuItemsInsert, MenuItemsUpdate } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import { FlashList } from '@shopify/flash-list';

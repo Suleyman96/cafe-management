@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { apiRoutes } from '@/lib/api-routes';
+import { STALE_TIMES } from '@/lib/stale-times';
 import { bindCustomerTenantContext } from '@/lib/supabase';
 import { useCartStore } from '@/store/cart-store';
 
@@ -36,7 +37,7 @@ export function useDeliveryContext(qrToken: string | null) {
       return apiRoutes.customerQrTokens.resolve(qrToken);
     },
     enabled: !!qrToken,
-    staleTime: Number.POSITIVE_INFINITY,
+    staleTime: STALE_TIMES.STATIC,
     retry: false,
   });
 

@@ -1,4 +1,4 @@
-import type { StockItem, StockItemInsert, StockItemUpdate } from '@gustri/database';
+import type { StockItem, StockItemInsert, StockItemUpdate } from '@gustri/database/types';
 import { useLocale, useTranslation } from '@gustri/i18n';
 import { ConfirmDialog, EmptyState, ErrorScreen, LoadingScreen } from '@gustri/ui-mobile';
 import { FlashList } from '@shopify/flash-list';

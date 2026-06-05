@@ -15,7 +15,7 @@
  * resolves to.
  */
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { handleSupabaseError } from '../errors';
 import type { WrapperContext } from './types';
 

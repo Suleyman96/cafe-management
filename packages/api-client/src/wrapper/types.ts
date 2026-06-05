@@ -2,7 +2,7 @@
  * Shared types for Supabase wrapper modules
  */
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Type aliases for cleaner code

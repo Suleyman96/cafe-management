@@ -2,7 +2,7 @@
  * Cafe settings wrapper module
  */
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { handleSupabaseError } from '../errors';
 import { applyTenantScope } from './_tenant-scope';
 import type { WrapperContext } from './types';

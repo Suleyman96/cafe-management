@@ -6,7 +6,7 @@
 
 import { ORDER_VERSION_CONFLICT } from '@gustri/api-client';
 import { ConflictError, isAppError, ORDER_STATUS } from '@gustri/core';
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { localizeErrorMessage, useTranslation } from '@gustri/i18n';
 import {
   getOrCreateClientRequestId,

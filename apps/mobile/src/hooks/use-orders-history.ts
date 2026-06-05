@@ -1,4 +1,4 @@
-import type { Order, OrderWithDetails } from '@gustri/database';
+import type { Order, OrderWithDetails } from '@gustri/database/types';
 import { QUERY_KEYS, useDb } from '@gustri/queries';
 import { useInfiniteQuery } from '@tanstack/react-query';
 

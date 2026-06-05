@@ -11,6 +11,26 @@
       "types": "./dist/index.d.ts",
       "require": "./dist/index.js",
       "import": "./dist/index.mjs"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/types/index.js",
+      "import": "./dist/types/index.mjs"
+    },
+    "./enums": {
+      "types": "./dist/enums/index.d.ts",
+      "require": "./dist/enums/index.js",
+      "import": "./dist/enums/index.mjs"
+    },
+    "./schemas": {
+      "types": "./dist/schemas/index.d.ts",
+      "require": "./dist/schemas/index.js",
+      "import": "./dist/schemas/index.mjs"
+    },
+    "./schemas/inputs": {
+      "types": "./dist/schemas/inputs.d.ts",
+      "require": "./dist/schemas/inputs.js",
+      "import": "./dist/schemas/inputs.mjs"
     }
   },
   "scripts": {

@@ -1,7 +1,7 @@
 'use client';
 
 import { getLocalDateString } from '@gustri/core';
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { Button, NumberInput } from '@gustri/ui-web';
 import { useState } from 'react';

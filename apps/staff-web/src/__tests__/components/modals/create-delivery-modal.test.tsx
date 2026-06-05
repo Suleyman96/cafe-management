@@ -1,4 +1,4 @@
-import type { MenuItem } from '@gustri/database';
+import type { MenuItem } from '@gustri/database/types';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../helpers/test-utils';

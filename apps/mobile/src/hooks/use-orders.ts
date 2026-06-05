@@ -1,6 +1,6 @@
-import type { Order, OrderItem, Table } from '@gustri/database';
 import { OrdersRealtimeInsertSchema, OrdersRealtimeUpdateSchema } from '@gustri/database';
-import { QUERY_KEYS, useDb } from '@gustri/queries';
+import type { Order, OrderItem, Table } from '@gustri/database/types';
+import { QUERY_KEYS, STALE_TIMES, useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -71,7 +71,7 @@ export function useOrders(filters?: {
   const query = useQuery({
     queryKey: [QUERY_KEYS.ORDERS, filters],
     queryFn: async (): Promise<OrderWithDetails[]> => dbClient.orders.findAll(filters || undefined),
-    staleTime: 10 * 1000, // 10s — realtime subscription handles freshness
+    staleTime: STALE_TIMES.REALTIME, // realtime subscription handles freshness
   });
 
   // Stable handler refs for realtime side effects

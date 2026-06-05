@@ -8,7 +8,7 @@
  * are web-only flows (item-level transfer).
  */
 
-import type { OrderWithItems } from '@gustri/database';
+import type { OrderWithItems } from '@gustri/database/types';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';

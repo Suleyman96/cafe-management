@@ -112,6 +112,20 @@ When adding a feature, work through this in order:
 ### Imports
 - All apps use `@/*` path alias mapping to `./src/*`
 - Cross-package imports use workspace names: `@gustri/core`, `@gustri/database`, `@gustri/api-client`
+- **`@gustri/database` subpath imports.** The package exposes focused
+  subpaths so consumers don't pull the whole barrel — prefer them:
+  - `@gustri/database/types` — DB-shaped types (`Database`, `Order`,
+    `MenuItem`, `*Insert`/`*Update`, extended view types). Use `import type`.
+  - `@gustri/database/schemas` — Zod table/enum schemas + inferred status
+    types (`OrderStatus`, `UserRole`, `*Schema`).
+  - `@gustri/database/schemas/inputs` — mutation input schemas
+    (`OrderCreateInputSchema`, …); see Runtime Validation below.
+  - `@gustri/database/enums` — const enum objects (`ORDER_STATUS`, …).
+  - The root `@gustri/database` barrel still re-exports everything and is
+    fine for mixed imports; reach for a subpath when a line is wholly one
+    domain. The export map ↔ tsup entries are guarded by
+    `packages/database/src/__tests__/exports-contract.test.ts` — add new
+    subpaths in both places.
 
 ### Data Access
 - All database operations go through `@gustri/api-client` wrapper (never raw supabase queries in app code)

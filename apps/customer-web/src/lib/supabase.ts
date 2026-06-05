@@ -1,6 +1,6 @@
 import { createSupabaseWrapper, handleSupabaseError } from '@gustri/api-client';
 import { RateLimitError } from '@gustri/core';
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import * as Sentry from '@sentry/nextjs';
 import { createClient } from '@supabase/supabase-js';
 

@@ -1,7 +1,8 @@
-import type { Category } from '@gustri/database';
+import type { Category } from '@gustri/database/types';
 import { useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from '../keys';
 import { useDb, useTenantId } from '../provider';
+import { STALE_TIMES } from '../stale-times';
 
 export function useCategories(options?: {
   isActive?: boolean;
@@ -20,7 +21,7 @@ export function useCategories(options?: {
   return useQuery({
     queryKey: tenantKey(tenantId, QUERY_KEYS.CATEGORIES, filterOptions),
     queryFn: () => db.categories.findAll(filterOptions) as Promise<Category[]>,
-    staleTime: 10 * 60 * 1000,
+    staleTime: STALE_TIMES.LONG,
     enabled,
     ...(initialData ? { initialData } : {}),
   });

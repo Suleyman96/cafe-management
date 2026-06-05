@@ -1,5 +1,5 @@
-import type { OrderItemWithMenuItem, OrderWithDetails } from '@gustri/database';
 import { OrderItemsRealtimeUpdateSchema } from '@gustri/database';
+import type { OrderItemWithMenuItem, OrderWithDetails } from '@gustri/database/types';
 import { QUERY_KEYS } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import type { QueryClient } from '@tanstack/react-query';

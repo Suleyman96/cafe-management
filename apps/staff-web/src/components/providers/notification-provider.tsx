@@ -1,6 +1,6 @@
 'use client';
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/nextjs';

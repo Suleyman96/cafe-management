@@ -2,7 +2,8 @@ export { useAddOrderItems } from '@gustri/queries';
 
 // useCreateOrder is not available in @gustri/queries — keep local implementation
 import { validateOrThrow } from '@gustri/core';
-import { OrderCreateInputSchema, type OrdersInsert } from '@gustri/database';
+import { OrderCreateInputSchema } from '@gustri/database/schemas/inputs';
+import type { OrdersInsert } from '@gustri/database/types';
 import { QUERY_KEYS, tenantKey, useDb, useTenantId } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';

@@ -187,6 +187,7 @@ export type Database = {
       categories: {
         Row: {
           created_at: string | null
+          deleted_at: string | null
           description: string | null
           display_order: number | null
           icon: string | null
@@ -198,6 +199,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           display_order?: number | null
           icon?: string | null
@@ -209,6 +211,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           display_order?: number | null
           icon?: string | null
@@ -692,6 +695,7 @@ export type Database = {
           allergens: string[] | null
           category_id: string | null
           created_at: string | null
+          deleted_at: string | null
           description: string | null
           display_order: number | null
           id: string
@@ -715,6 +719,7 @@ export type Database = {
           allergens?: string[] | null
           category_id?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           display_order?: number | null
           id?: string
@@ -738,6 +743,7 @@ export type Database = {
           allergens?: string[] | null
           category_id?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           display_order?: number | null
           id?: string
@@ -2587,6 +2593,8 @@ export type Database = {
         }[]
       }
       set_table_context: { Args: { qr_token: string }; Returns: Json }
+      soft_delete_category: { Args: { p_id: string }; Returns: undefined }
+      soft_delete_menu_item: { Args: { p_id: string }; Returns: undefined }
       transfer_order_items: {
         Args: {
           p_destination_table_id: string

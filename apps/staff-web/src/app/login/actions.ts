@@ -1,7 +1,7 @@
 'use server';
 
 import { createSupabaseWrapper } from '@gustri/api-client';
-import type { Staff } from '@gustri/database';
+import type { Staff } from '@gustri/database/types';
 import * as Sentry from '@sentry/nextjs';
 import { createServerActionClient } from '@/lib/supabase/server';
 

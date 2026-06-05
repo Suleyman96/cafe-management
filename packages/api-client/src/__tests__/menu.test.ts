@@ -220,7 +220,10 @@ describe('MenuItemsWrapper', () => {
     });
     const items = createMenuItemsWrapper(deleteCtx);
     await items.delete(validMenuItem.id);
-    expect(deleteCtx.getCalls()[0].method).toBe('delete');
+    // Soft-delete (M8): routed through the SECURITY DEFINER RPC, not a DELETE.
+    const call = deleteCtx.getCalls()[0];
+    expect(call.method).toBe('soft_delete_menu_item');
+    expect(call.args[0]).toEqual({ p_id: validMenuItem.id });
   });
 
   it('throws on supabase error', async () => {
@@ -353,7 +356,10 @@ describe('CategoriesWrapper', () => {
     });
     const cats = createCategoriesWrapper(deleteCtx);
     await cats.delete(validCategory.id);
-    expect(deleteCtx.getCalls()[0].method).toBe('delete');
+    // Soft-delete (M8): routed through the SECURITY DEFINER RPC, not a DELETE.
+    const call = deleteCtx.getCalls()[0];
+    expect(call.method).toBe('soft_delete_category');
+    expect(call.args[0]).toEqual({ p_id: validCategory.id });
   });
 
   it('throws on supabase error', async () => {

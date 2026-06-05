@@ -1,4 +1,4 @@
-import type { StaffSchedule } from '@gustri/database';
+import type { StaffSchedule } from '@gustri/database/types';
 import { useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from '../keys';
 import { useDb, useTenantId } from '../provider';

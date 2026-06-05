@@ -1,4 +1,4 @@
-import type { ExpenseCategoryUpdate, ExpenseUpdate } from '@gustri/database';
+import type { ExpenseCategoryUpdate, ExpenseUpdate } from '@gustri/database/types';
 import { QUERY_KEYS, useDb } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';

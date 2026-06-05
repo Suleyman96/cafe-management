@@ -3,7 +3,7 @@ import type {
   MenuItemOptionUpdate,
   MenuItemOptionValueInsert,
   MenuItemOptionValueUpdate,
-} from '@gustri/database';
+} from '@gustri/database/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invalidateMenuItemOptions } from '../invalidation';
 import { useDb, useTenantId } from '../provider';

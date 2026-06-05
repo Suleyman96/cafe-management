@@ -1,7 +1,7 @@
 'use client';
 
 import { ACTIVE_ORDER_STATUSES } from '@gustri/core';
-import type { OrderWithDetails, Table, WaiterCalls } from '@gustri/database';
+import type { OrderWithDetails, Table, WaiterCalls } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { Button, Skeleton } from '@gustri/ui-web';

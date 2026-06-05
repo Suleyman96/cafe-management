@@ -17,6 +17,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from '../keys';
 import type { MutationCallbacks } from '../mutations/types';
 import { useDb, useTenantId } from '../provider';
+import { STALE_TIMES } from '../stale-times';
 
 export function useStaffKitchenFilters(
   staffId: string | null | undefined,
@@ -30,7 +31,7 @@ export function useStaffKitchenFilters(
     enabled: !!staffId && (options?.enabled ?? true),
     // Filters change rarely; don't refetch aggressively. Realtime + the
     // staff_kitchen_filters subscription keeps us fresh.
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_TIMES.MEDIUM,
   });
 }
 

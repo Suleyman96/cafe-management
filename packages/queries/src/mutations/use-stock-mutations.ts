@@ -1,4 +1,4 @@
-import type { StockItemInsert, StockItemUpdate } from '@gustri/database';
+import type { StockItemInsert, StockItemUpdate } from '@gustri/database/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invalidateStock } from '../invalidation';
 import { useDb, useTenantId } from '../provider';

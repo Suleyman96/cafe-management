@@ -1,4 +1,4 @@
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 
 // Type aliases for easier use
 export type Table = Database['public']['Tables']['tables']['Row'];

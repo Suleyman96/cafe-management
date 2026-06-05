@@ -1,7 +1,7 @@
 'use client';
 
 import { getLocalDateString, WEEKDAY_TRANSLATION_KEY } from '@gustri/core';
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui-web';
 import {

@@ -1,4 +1,4 @@
-import type { Order, OrderItem, OrderItemsInsert } from '@gustri/database';
+import type { Order, OrderItem, OrderItemsInsert } from '@gustri/database/types';
 import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrCreateClientRequestId } from '../idempotency';
 import { invalidateOrders, invalidateOrdersAndTables } from '../invalidation';

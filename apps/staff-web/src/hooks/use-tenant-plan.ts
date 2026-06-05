@@ -1,5 +1,12 @@
 import { PLAN_LIMITS, type PlanName } from '@gustri/core';
-import { QUERY_KEYS, tenantKey, useTenant, useTenantId, useTenantPlan } from '@gustri/queries';
+import {
+  QUERY_KEYS,
+  STALE_TIMES,
+  tenantKey,
+  useTenant,
+  useTenantId,
+  useTenantPlan,
+} from '@gustri/queries';
 import { useQuery } from '@tanstack/react-query';
 import { db } from '@/lib/supabase/wrapped-client';
 
@@ -23,6 +30,6 @@ export function useMonthlyOrderCount() {
   return useQuery({
     queryKey: tenantKey(tenantId, QUERY_KEYS.MONTHLY_ORDER_COUNT),
     queryFn: () => db.tenants.getMonthlyOrderCount(),
-    staleTime: 60_000,
+    staleTime: STALE_TIMES.SHORT,
   });
 }

@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import type { OrdersInsert } from '@gustri/database';
+import type { OrdersInsert } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';

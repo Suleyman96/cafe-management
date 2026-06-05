@@ -1,7 +1,7 @@
 'use client';
 
 import { DEFAULT_TAX_PERCENTAGE } from '@gustri/core';
-import type { Category, MenuItem, OrdersInsert } from '@gustri/database';
+import type { Category, MenuItem, OrdersInsert } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { randomUUIDv4, useStableClientRequestId } from '@gustri/queries';
 import { Button } from '@gustri/ui-web';

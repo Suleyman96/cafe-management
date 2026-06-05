@@ -4,7 +4,7 @@ import type {
   MenuItem,
   MenuItemsInsert,
   MenuItemsUpdate,
-} from '@gustri/database';
+} from '@gustri/database/types';
 import {
   type QueryClient,
   type QueryKey,

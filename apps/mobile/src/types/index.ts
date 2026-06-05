@@ -22,7 +22,7 @@ export type {
   WasteLog,
 } from '@gustri/database';
 
-import type { Staff } from '@gustri/database';
+import type { Staff } from '@gustri/database/types';
 
 // User role type
 export type UserRole = Staff['role'];

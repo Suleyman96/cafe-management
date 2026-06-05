@@ -1,6 +1,6 @@
 'use client';
 
-import type { MenuItem } from '@gustri/database';
+import type { MenuItem } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { useFormatPrice } from '@/hooks/use-format-price';
 

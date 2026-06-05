@@ -1,4 +1,4 @@
-import type { MenuItem, Order } from '@gustri/database';
+import type { MenuItem, Order } from '@gustri/database/types';
 
 /**
  * Channel-policy filter applied to "add items" pickers (mobile

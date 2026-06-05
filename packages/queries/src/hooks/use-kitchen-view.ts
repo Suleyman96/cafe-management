@@ -27,7 +27,7 @@
  * the kitchen lead sees they exist and can fix the menu config.
  */
 
-import type { Category, OrderItemWithMenuItem, OrderWithDetails } from '@gustri/database';
+import type { Category, OrderItemWithMenuItem, OrderWithDetails } from '@gustri/database/types';
 import { useMemo } from 'react';
 import { useCategories } from './use-categories';
 import { useOrders } from './use-orders';

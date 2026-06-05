@@ -1,4 +1,4 @@
-import type { Category } from '@gustri/database';
+import type { Category } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { useReplaceStaffKitchenFilters, useStaffKitchenFilters } from '@gustri/queries';
 import { useEffect, useMemo, useState } from 'react';

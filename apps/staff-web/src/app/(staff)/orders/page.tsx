@@ -1,7 +1,7 @@
 'use client';
 
 import { ORDER_STATUS, ORDER_STATUS_KEYS } from '@gustri/core';
-import type { OrderWithDetails } from '@gustri/database';
+import type { OrderWithDetails } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { Button, Skeleton } from '@gustri/ui-web';

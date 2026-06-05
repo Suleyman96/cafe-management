@@ -3,7 +3,7 @@
  * Re-exports from @gustri/queries, with local overrides for app-specific logic
  */
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { withOptimisticTtl } from '@/lib/optimistic-ttl';

@@ -1,5 +1,6 @@
 import { validateOrThrow } from '@gustri/core';
-import { StockAdjustInputSchema, type StockItemUpdate } from '@gustri/database';
+import { StockAdjustInputSchema } from '@gustri/database/schemas/inputs';
+import type { StockItemUpdate } from '@gustri/database/types';
 import { QUERY_KEYS, tenantKey, useDb, useTenantId } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';

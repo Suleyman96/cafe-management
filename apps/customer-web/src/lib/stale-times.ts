@@ -1,10 +1,8 @@
 /**
- * Query configuration for customer-web.
- * QUERY_KEYS are imported from @gustri/core.
+ * Cache-tier policy for customer-web.
+ *
+ * Re-exports the shared `STALE_TIMES` from @gustri/queries so the app uses one
+ * source of truth (this was a local duplicate). Importers keep using
+ * `@/lib/stale-times`; the values now live alongside the shared query hooks.
  */
-
-/** Stale time presets (ms) */
-export const STALE_TIMES = {
-  SHORT: 1000 * 60, // 1 minute
-  MEDIUM: 1000 * 60 * 5, // 5 minutes
-} as const;
+export { STALE_TIMES } from '@gustri/queries';

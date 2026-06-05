@@ -1,6 +1,6 @@
 'use client';
 
-import type { OrdersInsert } from '@gustri/database';
+import type { OrdersInsert } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { useStableClientRequestId } from '@gustri/queries';
 import { Button } from '@gustri/ui-web';

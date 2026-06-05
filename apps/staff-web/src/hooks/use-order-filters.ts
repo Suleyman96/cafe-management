@@ -1,4 +1,4 @@
-import type { OrderWithDetails } from '@gustri/database';
+import type { OrderWithDetails } from '@gustri/database/types';
 import { useMemo, useState } from 'react';
 
 interface UseOrderFiltersOptions {

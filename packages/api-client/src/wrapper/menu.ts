@@ -144,8 +144,13 @@ export function createMenuItemsWrapper(ctx: WrapperContext) {
       return data;
     },
 
+    // Soft-delete (M8): tombstone the row instead of hard-deleting so historical
+    // orders and the catalog audit trail survive. Routed through a SECURITY
+    // DEFINER RPC (migration 20260605000001) because the restrictive SELECT
+    // policy that hides deleted rows is also enforced against a direct UPDATE's
+    // new row — the RPC bypasses RLS but re-checks role + tenant.
     delete: async (id: string) => {
-      const { error } = await ctx.anyClient.from('menu_items').delete().eq('id', id);
+      const { error } = await ctx.anyClient.rpc('soft_delete_menu_item', { p_id: id });
 
       if (error) throw handleSupabaseError(error);
     },
@@ -244,8 +249,11 @@ export function createCategoriesWrapper(ctx: WrapperContext) {
       return data;
     },
 
+    // Soft-delete (M8): see menu_items.delete above. Tombstone the category via
+    // the SECURITY DEFINER RPC; menu_items that still reference it simply read as
+    // uncategorized (the join is RLS-hidden).
     delete: async (id: string) => {
-      const { error } = await ctx.anyClient.from('categories').delete().eq('id', id);
+      const { error } = await ctx.anyClient.rpc('soft_delete_category', { p_id: id });
 
       if (error) throw handleSupabaseError(error);
     },

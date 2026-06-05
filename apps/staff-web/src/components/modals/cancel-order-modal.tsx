@@ -1,7 +1,7 @@
 'use client';
 
 import { orderCancellationRequiresTypeConfirm } from '@gustri/core';
-import type { OrderWithDetails } from '@gustri/database';
+import type { OrderWithDetails } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui-web';
 import { AlertTriangle, Loader2, X, XCircle } from 'lucide-react';

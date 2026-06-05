@@ -1,6 +1,6 @@
 'use client';
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import { useCallback, useState } from 'react';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];

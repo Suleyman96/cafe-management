@@ -1,4 +1,4 @@
-import type { CafeSettings } from '@gustri/database';
+import type { CafeSettings } from '@gustri/database/types';
 import { StyleSheet, View } from 'react-native';
 import { Switch, Text } from 'react-native-paper';
 

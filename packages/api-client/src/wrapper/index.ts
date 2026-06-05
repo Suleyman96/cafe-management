@@ -5,7 +5,7 @@
  * This module composes all domain-specific wrappers into a single unified API.
  */
 
-import type { Database } from '@gustri/database';
+import type { Database } from '@gustri/database/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createDeliveryCustomersWrapper } from './delivery-customers';
 import { createExpenseCategoriesWrapper, createExpensesWrapper } from './expenses';

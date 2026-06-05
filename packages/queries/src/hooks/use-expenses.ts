@@ -1,7 +1,8 @@
-import type { Expense, ExpenseCategory } from '@gustri/database';
+import type { Expense, ExpenseCategory } from '@gustri/database/types';
 import { useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from '../keys';
 import { useDb, useTenantId } from '../provider';
+import { STALE_TIMES } from '../stale-times';
 
 export function useExpenses(options?: Record<string, unknown> & { enabled?: boolean }) {
   const db = useDb();
@@ -34,7 +35,7 @@ export function useExpenseCategories(options?: { enabled?: boolean }) {
     // Quasi-static reference data — admins add/edit categories rarely.
     // Used in select dropdowns on the expenses form, so a stale read
     // is harmless (mutation invalidates on category create/edit).
-    staleTime: 10 * 60 * 1000,
+    staleTime: STALE_TIMES.LONG,
     enabled: options?.enabled ?? true,
   });
 }

@@ -1,4 +1,4 @@
-import type { Staff } from '@gustri/database';
+import type { Staff } from '@gustri/database/types';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCanPerform } from '../../hooks/use-can-perform';

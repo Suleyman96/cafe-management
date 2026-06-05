@@ -1,4 +1,4 @@
-import type { Table } from '@gustri/database';
+import type { Table } from '@gustri/database/types';
 import { QUERY_KEYS, useDb, useTables as useSharedTables } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
