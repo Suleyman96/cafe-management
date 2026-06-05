@@ -2,18 +2,13 @@
 
 import {
   formatSelectedOptions,
-  getKitchenUrgencyBand,
   isDeliveryOrder,
   isDineInOrder,
   isTakeoutOrder,
-  ORDER_STATUS_KEYS,
   TIME_ELAPSED_THRESHOLDS,
 } from '@gustri/core';
-import type { OrderItemStatus, OrderStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
-import type { KitchenOrderView } from '@gustri/queries';
-import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
-import { LoadingSpinner, ORDER_ITEM_STATUS_BADGES, Skeleton } from '@gustri/ui-web';
+import { LoadingSpinner, Skeleton } from '@gustri/ui-web';
 import {
   AlertCircle,
   CheckCircle,
@@ -28,427 +23,52 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
 import { FreshnessIndicator } from '@/components/common/freshness-indicator';
 import { ElapsedTime } from '@/components/kitchen/elapsed-time';
 import { HiddenItemsSummary } from '@/components/kitchen/hidden-items-summary';
 import { KitchenFilterBar } from '@/components/kitchen/kitchen-filter-bar';
 import { KitchenFilterDrawer } from '@/components/kitchen/kitchen-filter-drawer';
-import {
-  useCancelOrder,
-  useCategories,
-  useFeatureFlag,
-  useKitchenView,
-  useUpdateOrderItemStatus,
-  useUpdateOrderStatus,
-} from '@/hooks';
-import { useClockSync } from '@/hooks/use-clock-sync';
-import { usePendingAction } from '@/hooks/use-pending-action';
-import { useRealtimeSync } from '@/hooks/use-realtime-sync';
-import { ORDER_ITEM_STATUS_ICONS } from '@/lib/enum-icons';
-import { getServerNow } from '@/lib/server-clock';
-import { useAuthStore } from '@/store/auth-store';
-
-/**
- * Skew threshold above which the kitchen view surfaces a "device clock is
- * off" banner. Two minutes is the smallest gap that meaningfully distorts
- * elapsed-time on a typical 5-15 minute kitchen prep cycle — below it,
- * the existing 30s tick granularity masks the difference. Above it, every
- * card's elapsed-minutes count is visibly wrong and staff would
- * mis-prioritise. The banner asks the user to fix the device, not the
- * app — there is no way for the app to override the OS clock.
- */
-const CLOCK_SKEW_BANNER_THRESHOLD_MS = 2 * 60 * 1000;
-
-// Item-status progression order for the per-station bulk advance check.
-// `cancelled` is excluded — cancellation is terminal but does not block
-// the rest of an order from progressing.
-const ITEM_STATUS_PROGRESS: Record<OrderItemStatus, number> = {
-  pending: 0,
-  preparing: 1,
-  ready: 2,
-  served: 3,
-  cancelled: -1,
-};
-
-function isAtOrPast(actual: OrderItemStatus, target: OrderItemStatus): boolean {
-  return ITEM_STATUS_PROGRESS[actual] >= ITEM_STATUS_PROGRESS[target];
-}
+import { useKitchenDisplay } from '@/components/kitchen/use-kitchen-display';
 
 export default function KitchenDisplayPage() {
   const { t } = useTranslation('staff');
   const router = useRouter();
-  const rawStaffId = useAuthStore((s) => s.staff?.id ?? null);
-  // Per-tenant kill switch. Default false ⇒ pre-feature behavior. We pass
-  // `null` for staff_id when the flag is off so `useStaffKitchenFilters`
-  // never fires, `useKitchenView` derives "show all", and the bulk
-  // handlers degenerate to their original semantics. Removing this flag
-  // (target: 2 weeks after enable per CLAUDE.md) is a 3-line edit:
-  // delete the flag check and inline `staffId = rawStaffId`.
-  const filteringEnabled = useFeatureFlag('kitchen_category_filters');
-  const staffId = filteringEnabled ? rawStaffId : null;
-  // Kitchen view shows only the active queue, filtered to the categories
-  // this staff member has selected (or all categories when no filter is set).
-  // The hook composes useOrders + useStaffKitchenFilters + useCategories
-  // and is the single source of truth for what this device should render.
-  const { visibleOrders, activeFilter, isLoading: loading, error } = useKitchenView(staffId);
-  // Categories drive the filter drawer's chip list. Fetched once and
-  // shared with the drawer via prop so the drawer doesn't re-trigger
-  // its own request on every open.
-  const { data: categories = [] } = useCategories();
-  const updateOrderStatus = useUpdateOrderStatus();
-  const updateItemStatus = useUpdateOrderItemStatus();
-  const cancelOrder = useCancelOrder();
-  const [rejectingOrder, setRejectingOrder] = useState<KitchenOrderView | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
-  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
-  const tenantId = useTenantId();
-  // Per-button pending lock — keys are scoped per row/item (`order:<id>:<verb>`,
-  // `item:<id>:<status>`, `reject`) so one stuck mutation doesn't disable
-  // unrelated rows. The ref-based gate inside the hook collapses a triple-tap
-  // to a single in-flight call even before React re-renders.
-  const { isPending, run } = usePendingAction<string>();
 
-  // Elapsed-time tick lives in the <ElapsedTime> leaf — no parent rerender.
-
-  // Check if all non-cancelled items in an order are served
-  const allItemsServed = (order: KitchenOrderView) => {
-    const items = order.order_items?.filter((item) => item.status !== 'cancelled') || [];
-    if (items.length === 0) return false;
-    return items.every((item) => item.status === 'served');
-  };
-
-  // Check if all non-cancelled items in an order are ready (or served)
-  const allItemsReady = (order: KitchenOrderView) => {
-    const items = order.order_items?.filter((item) => item.status !== 'cancelled') || [];
-    if (items.length === 0) return false;
-    return items.every((item) => item.status === 'ready' || item.status === 'served');
-  };
-
-  // Filter orders for kitchen display (new, preparing, ready) - exclude orders where all items are served.
-  // `visibleOrders` is already category-filtered for this station; orders with no
-  // matching items have already been dropped upstream.
-  const kitchenOrders = visibleOrders
-    .filter(
-      (order) => ['new', 'preparing', 'ready'].includes(order.status) && !allItemsServed(order),
-    )
-    .sort((a, b) => {
-      // Sort by status priority (new > preparing > ready) then by time
-      const statusPriority = { 'new': 0, preparing: 1, ready: 2 };
-      const aPriority = statusPriority[a.status as keyof typeof statusPriority];
-      const bPriority = statusPriority[b.status as keyof typeof statusPriority];
-      if (aPriority !== bPriority) return aPriority - bPriority;
-      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-    });
-
-  // Filter pending approval orders (QR orders awaiting staff approval).
-  // Pending approvals follow the same per-category filter — a station that
-  // doesn't see any of an order's items shouldn't be the one approving it.
-  const pendingApprovalOrders = visibleOrders
-    .filter((order) => order.status === 'pending_approval')
-    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-
-  // Count orders by status
-  const newOrdersCount = kitchenOrders?.filter((o) => o.status === 'new').length || 0;
-  const preparingCount = kitchenOrders?.filter((o) => o.status === 'preparing').length || 0;
-  const readyCount = kitchenOrders?.filter((o) => o.status === 'ready').length || 0;
-
-  // Real-time: invalidate queries on DB changes. The third subscription
-  // is staff-scoped (not tenant-scoped) so a manager updating *another*
-  // staff member's filter doesn't fan out to every kitchen device.
-  const { lastEventAtRef } = useRealtimeSync('kitchen-realtime', [
-    {
-      table: 'orders',
-      queryKeys: [
-        tenantKey(tenantId, QUERY_KEYS.ORDERS),
-        tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS),
-      ],
-    },
-    {
-      table: 'order_items',
-      queryKeys: [tenantKey(tenantId, QUERY_KEYS.ORDERS)],
-    },
-    ...(staffId
-      ? [
-          {
-            table: 'staff_kitchen_filters',
-            queryKeys: [tenantKey(tenantId, QUERY_KEYS.STAFF_KITCHEN_FILTERS, staffId)],
-            filter: `staff_id=eq.${staffId}`,
-          },
-        ]
-      : []),
-  ]);
-
-  // Calculate elapsed time. Uses server-anchored `getServerNow()` rather
-  // than `Date.now()` so a drifted device clock can't reclassify orders
-  // as overdue (or wrongly fresh). See lib/server-clock.ts.
-  const calculateElapsedTime = (createdAt: string) => {
-    const startMs = new Date(createdAt).getTime();
-    const diffMinutes = Math.floor((getServerNow() - startMs) / 1000 / 60);
-    return diffMinutes;
-  };
-
-  // Surface a banner when the device clock is meaningfully out of sync
-  // with the server. Reads from useSyncExternalStore so it only re-renders
-  // when a sync sample actually lands, not on every Date.now() tick.
-  const clockSync = useClockSync();
-  const showClockSkewBanner =
-    clockSync.lastSyncedAt > 0 && Math.abs(clockSync.offsetMs) >= CLOCK_SKEW_BANNER_THRESHOLD_MS;
-  const clockSkewMinutes = Math.round(Math.abs(clockSync.offsetMs) / 60_000);
-  const deviceIsBehind = clockSync.offsetMs > 0;
-
-  // Get time color based on elapsed time. Band comes from the canonical
-  // classifier in `@gustri/core` so this and the mobile kitchen agree on
-  // what counts as "critical" etc.
-  const getTimeColor = (minutes: number, status: string) => {
-    const band = getKitchenUrgencyBand({ minutesElapsed: minutes, status });
-    if (band === 'ready') return 'text-green-600';
-    if (band === 'critical') return 'text-red-600';
-    if (band === 'elevated') return 'text-orange-600';
-    if (band === 'warning') return 'text-yellow-600';
-    // 'new' and 'default' fall through to gray — preserves original
-    // behavior where new orders' inline minute text was gray (the blue
-    // tint lives on the card surface, not the numeric).
-    return 'text-gray-600';
-  };
-
-  // Get card color based on status, time, and item statuses.
-  const getCardColor = (order: KitchenOrderView, minutes: number) => {
-    const band = getKitchenUrgencyBand({
-      minutesElapsed: minutes,
-      status: order.status,
-      allItemsReady: allItemsReady(order),
-    });
-    if (band === 'ready') return 'bg-green-50 border-green-400 shadow-green-200';
-    if (band === 'new')
-      return 'bg-blue-100 border-blue-400 ring-4 ring-blue-500/50 shadow-blue-200';
-    if (band === 'critical') return 'bg-red-100 border-red-400 shadow-red-200';
-    if (band === 'elevated') return 'bg-orange-100 border-orange-400 shadow-orange-200';
-    // 'warning' AND 'default' both render yellow — preserves current web
-    // behavior (no separate neutral surface below WARNING). Aligning with
-    // mobile's distinct default surface is a UX decision tracked
-    // separately; do not silently change it here.
-    return 'bg-yellow-50 border-yellow-400 shadow-yellow-200';
-  };
-
-  // Get order number from ID (last 4 characters)
-  const getOrderNumber = (orderId: string) => {
-    return orderId.slice(-4).toUpperCase();
-  };
-
-  // Kitchen-specific overrides — high-contrast colors for visibility on the
-  // dark kitchen display, and dedicated label keys ("Cooking" not "Preparing").
-  // Only the three active kitchen states get an override; everything else falls
-  // back to the shared `ORDER_STATUS_KEYS` and the gray default.
-  const KITCHEN_STATUS_LABEL_KEYS: Partial<Record<OrderStatus, string>> = {
-    new: 'kitchen.newStatus',
-    preparing: 'kitchen.cookingStatus',
-    ready: 'kitchen.readyStatus',
-  };
-
-  const KITCHEN_STATUS_BADGE_COLORS: Partial<Record<OrderStatus, string>> = {
-    new: 'bg-blue-600 text-white',
-    preparing: 'bg-yellow-500 text-black',
-    ready: 'bg-green-600 text-white',
-  };
-
-  const getStatusLabel = (status: string) => {
-    const kitchenKey = KITCHEN_STATUS_LABEL_KEYS[status as OrderStatus];
-    if (kitchenKey) return t(kitchenKey);
-    const key = ORDER_STATUS_KEYS[status];
-    return key ? t(key) : status;
-  };
-
-  const getStatusBadgeColor = (status: string) => {
-    return KITCHEN_STATUS_BADGE_COLORS[status as OrderStatus] ?? 'bg-gray-500 text-white';
-  };
-
-  // Handle status update — also updates all item statuses to stay in sync.
-  // Per-station filtering: the bulk button advances only THIS station's items
-  // (visibleItems), and the order-level status only advances when every item
-  // across every station would be at/past the target. Without this guard the
-  // Pizza station's "All ready" click would mark an order ready while the bar
-  // is still pouring drinks.
-  const handleStatusUpdate = (orderId: string, newStatus: 'PREPARING' | 'READY' | 'SERVED') =>
-    run(`order:${orderId}:${newStatus}`, async () => {
-      try {
-        const order = kitchenOrders?.find((o) => o.id === orderId);
-        if (!order) return;
-
-        const targetItemStatus =
-          newStatus === 'PREPARING' ? 'preparing' : newStatus === 'READY' ? 'ready' : 'served';
-
-        // Track ids we just advanced so the order-level decision below
-        // reflects the post-mutation state without re-reading the cache.
-        const advancedIds = new Set<string>();
-        for (const item of order.visibleItems) {
-          if (item.status === 'cancelled' || item.status === targetItemStatus) continue;
-          if (targetItemStatus === 'preparing' && item.status !== 'pending') continue;
-          if (
-            targetItemStatus === 'ready' &&
-            item.status !== 'pending' &&
-            item.status !== 'preparing'
-          )
-            continue;
-
-          await updateItemStatus.mutateAsync({
-            itemId: item.id,
-            status: targetItemStatus as 'pending' | 'preparing' | 'ready' | 'served',
-          });
-          advancedIds.add(item.id);
-        }
-
-        // Order-level advancement is only safe when EVERY non-cancelled item
-        // (across every station) is at or past the target. For PREPARING the
-        // existing flow already allows moving early — keep that behavior.
-        const wholeOrderReadyToAdvance =
-          targetItemStatus === 'preparing' ||
-          order.order_items.every(
-            (item) =>
-              item.status === 'cancelled' ||
-              advancedIds.has(item.id) ||
-              isAtOrPast(item.status, targetItemStatus),
-          );
-
-        // Don't set delivery/takeout orders to "served" — they follow a different flow
-        const isTerminalServed =
-          newStatus === 'SERVED' && (isDeliveryOrder(order) || isTakeoutOrder(order));
-        if (!isTerminalServed && wholeOrderReadyToAdvance) {
-          await updateOrderStatus.mutateAsync({
-            orderId,
-            status: newStatus,
-          });
-        }
-        // Don't show toast in kitchen view to avoid distractions
-      } catch (_error) {
-        toast.error(t('orders.failedUpdateStatus'));
-      }
-    });
-
-  // Handle QR order approval
-  const handleApproveOrder = (orderId: string) =>
-    run(`order:${orderId}:APPROVE`, async () => {
-      try {
-        await updateOrderStatus.mutateAsync({ orderId, status: 'NEW' });
-        toast.success(t('kitchen.orderApproved'));
-      } catch (_error) {
-        toast.error(t('orders.failedUpdateStatus'));
-      }
-    });
-
-  // Handle QR order rejection
-  const handleRejectOrder = () =>
-    run('reject', async () => {
-      if (!rejectingOrder || !rejectReason.trim()) return;
-      try {
-        await cancelOrder.mutateAsync({
-          orderId: rejectingOrder.id,
-          reason: rejectReason,
-          tableId: rejectingOrder.table_id,
-        });
-        toast.success(t('kitchen.orderRejected'));
-        setRejectingOrder(null);
-        setRejectReason('');
-      } catch (_error) {
-        toast.error(t('orders.failedUpdateStatus'));
-      }
-    });
-
-  // Item-status display in the kitchen overrides two labels (pending →
-  // common.pending, preparing → kitchen.cooking) but otherwise mirrors the
-  // shared `ORDER_ITEM_STATUS_BADGES` colors and icons.
-  const KITCHEN_ITEM_LABEL_OVERRIDES: Partial<
-    Record<OrderItemStatus, { key: string; ns?: string }>
-  > = {
-    pending: { key: 'pending', ns: 'common' },
-    preparing: { key: 'kitchen.cooking' },
-  };
-
-  const getItemStatusStyle = (status: string) => {
-    const config = ORDER_ITEM_STATUS_BADGES[status as OrderItemStatus];
-    const Icon = ORDER_ITEM_STATUS_ICONS[status as OrderItemStatus];
-    if (!config) {
-      return {
-        bg: 'bg-gray-100',
-        border: 'border-gray-300',
-        text: 'text-gray-700',
-        icon: null,
-        label: status,
-      };
-    }
-    const override = KITCHEN_ITEM_LABEL_OVERRIDES[status as OrderItemStatus];
-    const label = override
-      ? t(override.key, override.ns ? { ns: override.ns } : undefined)
-      : t(config.labelKey);
-    return {
-      bg: config.bg,
-      border: config.border ?? 'border-gray-300',
-      text: config.text,
-      icon: Icon ? <Icon className="h-4 w-4" /> : null,
-      label,
-    };
-  };
-
-  // Handle item status update - also auto-update order status if needed
-  const handleItemStatusUpdate = (itemId: string, newStatus: string, order: KitchenOrderView) =>
-    run(`item:${itemId}:${newStatus}`, async () => {
-      try {
-        // If order is still "new", automatically change to "preparing"
-        if (order.status === 'new') {
-          await updateOrderStatus.mutateAsync({
-            orderId: order.id,
-            status: 'PREPARING',
-          });
-        }
-
-        await updateItemStatus.mutateAsync({
-          itemId,
-          status: newStatus as 'pending' | 'preparing' | 'ready' | 'served',
-        });
-
-        // Check if all items will be ready after this update
-        if (newStatus === 'ready' && order.status === 'preparing') {
-          const otherItems =
-            order.order_items?.filter(
-              (item) => item.id !== itemId && item.status !== 'cancelled',
-            ) || [];
-          const allOthersReady = otherItems.every(
-            (item) => item.status === 'ready' || item.status === 'served',
-          );
-
-          // If all other items are ready/served, update order status to ready
-          if (allOthersReady) {
-            await updateOrderStatus.mutateAsync({
-              orderId: order.id,
-              status: 'READY',
-            });
-          }
-        }
-
-        // Check if all items will be served after this update
-        if (newStatus === 'served' && order.status === 'ready') {
-          const otherItems =
-            order.order_items?.filter(
-              (item) => item.id !== itemId && item.status !== 'cancelled',
-            ) || [];
-          const allOthersServed = otherItems.every((item) => item.status === 'served');
-
-          // If all other items are served, update order status to served
-          // Skip for delivery/takeout orders — they follow different flows
-          if (allOthersServed && isDineInOrder(order)) {
-            await updateOrderStatus.mutateAsync({
-              orderId: order.id,
-              status: 'SERVED',
-            });
-          }
-        }
-
-        // No toast for kitchen - faster feedback via visual change
-      } catch (_error) {
-        toast.error(t('orders.failedUpdateStatus'));
-      }
-    });
+  const {
+    loading,
+    error,
+    staffId,
+    categories,
+    activeFilter,
+    kitchenOrders,
+    pendingApprovalOrders,
+    newOrdersCount,
+    preparingCount,
+    readyCount,
+    lastEventAtRef,
+    showClockSkewBanner,
+    deviceIsBehind,
+    clockSkewMinutes,
+    rejectingOrder,
+    setRejectingOrder,
+    rejectReason,
+    setRejectReason,
+    filterDrawerOpen,
+    setFilterDrawerOpen,
+    isPending,
+    calculateElapsedTime,
+    getTimeColor,
+    getCardColor,
+    getOrderNumber,
+    getStatusLabel,
+    getStatusBadgeColor,
+    getItemStatusStyle,
+    handleStatusUpdate,
+    handleApproveOrder,
+    handleMarkOutForDelivery,
+    handleRejectOrder,
+    handleItemStatusUpdate,
+  } = useKitchenDisplay();
 
   if (loading) {
     return (
@@ -867,18 +487,7 @@ export default function KitchenDisplayPage() {
                 )}
                 {order.status === 'ready' && isDeliveryOrder(order) && (
                   <button
-                    onClick={() =>
-                      run(`order:${order.id}:OUT_FOR_DELIVERY`, async () => {
-                        try {
-                          await updateOrderStatus.mutateAsync({
-                            orderId: order.id,
-                            status: 'OUT_FOR_DELIVERY',
-                          });
-                        } catch (_error) {
-                          toast.error(t('orders.failedUpdateStatus'));
-                        }
-                      })
-                    }
+                    onClick={() => handleMarkOutForDelivery(order.id)}
                     disabled={isPending(`order:${order.id}:OUT_FOR_DELIVERY`)}
                     className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 disabled:bg-purple-800/60 disabled:cursor-not-allowed text-white text-base font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
                   >

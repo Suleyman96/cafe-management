@@ -111,7 +111,9 @@ describe('Phase 5.1/5.3/5.4 — kitchen urgency band contract', () => {
     const REPO_ROOT = resolve(dirname(__filename), '..', '..', '..', '..');
     const CALLERS = [
       'apps/mobile/src/components/kitchen/KitchenOrderCard.tsx',
-      'apps/staff-web/src/app/(staff)/kitchen/page.tsx',
+      // The web kitchen controller hook owns the urgency-band wiring (the page
+      // is a thin orchestrator since the kitchen-page decomposition).
+      'apps/staff-web/src/components/kitchen/use-kitchen-display.tsx',
     ] as const;
 
     it.each(CALLERS)('%s imports and calls getKitchenUrgencyBand', (relPath) => {
