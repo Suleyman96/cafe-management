@@ -5,6 +5,7 @@ import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
 import { jsonError, jsonOk, jsonRateLimited } from '@/lib/api/response';
 import { validateBody } from '@/lib/api/validate';
 import { getSupabaseAdmin } from '@/lib/api/verify-admin';
+import { verifyCustomerSignature } from '@/lib/api/verify-customer-signature';
 import { addCustomerOrderItems } from '@/lib/services/customer-order-service';
 
 export const dynamic = 'force-dynamic';
@@ -53,6 +54,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { success, resetAt } = await rateLimit('order-create', ip);
     if (!success) return jsonRateLimited(resetAt);
 
+    // ADD-8: verify the BFF proxy's HMAC signature (no-op unless the secret is set).
+    await verifyCustomerSignature(request);
+
     const { data, error } = await validateBody(request, AddItemsSchema);
     if (error) return error;
 
@@ -69,6 +73,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return jsonOk({ items }, 201);
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

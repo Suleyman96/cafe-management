@@ -28,5 +28,6 @@
   "invalid_option": "Bu seçim həmin məhsul üçün mövcud deyil.",
   "option_unavailable": "Seçilmiş seçimlərdən biri artıq mövcud deyil.",
   "required_option_missing": "Zəhmət olmasa bütün tələb olunan seçimləri seçin.",
-  "too_many_options": "Çox sayda seçim etmisiniz."
+  "too_many_options": "Çox sayda seçim etmisiniz.",
+  "invalid_signature": "Sorğunu doğrulamaq mümkün olmadı. Zəhmət olmasa yenidən cəhd edin."
 }

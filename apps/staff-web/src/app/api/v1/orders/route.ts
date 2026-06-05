@@ -59,6 +59,6 @@ export async function POST(request: NextRequest) {
 
     return jsonOk({ order }, deduped ? 200 : 201);
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

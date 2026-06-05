@@ -67,6 +67,13 @@ export const SENTINEL_ERROR_CODES = [
   'option_unavailable',
   'required_option_missing',
   'too_many_options',
+  // ADD-8 — customer→staff HMAC signature verification failure. Emitted by
+  // `/api/v1/customer/*` when request signing is enforced
+  // (`CUSTOMER_API_SIGNING_SECRET` set) and the signature is missing/invalid/
+  // expired. Legitimate traffic is signed by customer-web's BFF proxy, so a
+  // real user never sees this — it fires on a direct (non-proxy) or tampered
+  // request.
+  'invalid_signature',
 ] as const;
 
 export type SentinelErrorCode = (typeof SENTINEL_ERROR_CODES)[number];

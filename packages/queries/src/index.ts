@@ -126,6 +126,8 @@ export { NO_TENANT_KEY_SEGMENT, QUERY_KEYS, tenantKey } from './keys';
 export { MUTATION_KEYS, type MutationKey, type MutationKeyName } from './mutation-keys';
 // Mutation types
 export type { MutationCallbacks } from './mutations/types';
+// Optimistic-update primitives (ADD-5)
+export { type OptimisticSnapshot, patchQueries, rollbackQueries } from './optimistic';
 export { DbProvider, REALTIME_INVALIDATE_DEBOUNCE_MS, useDb, useTenantId } from './provider';
 // Centralized staleTime tiers
 export { STALE_TIMES } from './stale-times';

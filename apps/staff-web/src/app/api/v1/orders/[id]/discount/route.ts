@@ -47,6 +47,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return jsonOk({ success: true, order: updatedOrder, deduped });
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

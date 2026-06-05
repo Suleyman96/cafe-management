@@ -79,6 +79,6 @@ export async function POST(request: NextRequest) {
 
     return jsonOk({ success: true, revoked: revokedCount ?? 0 });
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

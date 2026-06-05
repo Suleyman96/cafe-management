@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/react-query';
+import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { QUERY_KEYS, tenantKey } from '../../keys';
 import {
@@ -14,7 +16,7 @@ import {
   useUpdateOrderNotes,
   useUpdateOrderStatus,
 } from '../../mutations/use-order-mutations';
-import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 function getInvalidatedKeys(spy: ReturnType<typeof vi.spyOn>) {
   return spy.mock.calls.map((c: any) => (c[0] as any).queryKey);
@@ -215,5 +217,108 @@ describe('delivery mutations', () => {
     const { result, mockDb } = renderHookWithProviders(() => useMarkDelivered());
     await result.current.mutateAsync('o1');
     expect(mockDb.orders.markDelivered).toHaveBeenCalledWith('o1');
+  });
+});
+
+// ─── ADD-5 optimistic updates ────────────────────────────────────────────────
+
+const ordersKey = tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS);
+const activeKey = tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS);
+
+function seedOrders(queryClient: QueryClient) {
+  // Two cached order lists (board + active) so we verify the optimistic write
+  // fans out across keys; each order carries items so item-status patches hit.
+  const orders = [
+    {
+      id: 'o1',
+      status: 'new',
+      order_type: 'dine_in',
+      order_items: [
+        { id: 'i1', status: 'pending' },
+        { id: 'i2', status: 'pending' },
+      ],
+    },
+    {
+      id: 'o2',
+      status: 'new',
+      order_type: 'dine_in',
+      order_items: [{ id: 'i3', status: 'pending' }],
+    },
+  ];
+  queryClient.setQueryData(ordersKey, structuredClone(orders));
+  queryClient.setQueryData(activeKey, structuredClone(orders));
+}
+
+describe('useUpdateOrderStatus — optimistic', () => {
+  it('flips the order status across all cached lists before the network resolves', async () => {
+    const { wrapper, queryClient, mockDb } = createWrapper();
+    seedOrders(queryClient);
+
+    let cachedDuringWrapper: any[] | undefined;
+    (mockDb.orders.updateStatus as any).mockImplementationOnce(async () => {
+      cachedDuringWrapper = queryClient.getQueryData<any[]>(ordersKey);
+      return { id: 'o1', status: 'preparing' };
+    });
+
+    const { result } = renderHook(() => useUpdateOrderStatus(), { wrapper });
+    await result.current.mutateAsync({ id: 'o1', status: 'preparing' });
+
+    expect(cachedDuringWrapper?.find((o) => o.id === 'o1')?.status).toBe('preparing');
+    // active list patched too
+    expect(queryClient.getQueryData<any[]>(activeKey)?.find((o) => o.id === 'o1')?.status).toBe(
+      'preparing',
+    );
+    // unrelated order untouched
+    expect(queryClient.getQueryData<any[]>(ordersKey)?.find((o) => o.id === 'o2')?.status).toBe(
+      'new',
+    );
+  });
+
+  it('rolls back the optimistic status on error', async () => {
+    const { wrapper, queryClient, mockDb } = createWrapper();
+    seedOrders(queryClient);
+    (mockDb.orders.updateStatus as any).mockRejectedValueOnce(new Error('rls'));
+
+    const { result } = renderHook(() => useUpdateOrderStatus(), { wrapper });
+    await expect(result.current.mutateAsync({ id: 'o1', status: 'preparing' })).rejects.toThrow(
+      'rls',
+    );
+
+    expect(queryClient.getQueryData<any[]>(ordersKey)?.find((o) => o.id === 'o1')?.status).toBe(
+      'new',
+    );
+  });
+});
+
+describe('useUpdateOrderItemStatus — optimistic', () => {
+  it('patches the matching item status inside its order before the network resolves', async () => {
+    const { wrapper, queryClient, mockDb } = createWrapper();
+    seedOrders(queryClient);
+
+    let cachedDuringWrapper: any[] | undefined;
+    (mockDb.orderItems.updateStatus as any).mockImplementationOnce(async () => {
+      cachedDuringWrapper = queryClient.getQueryData<any[]>(ordersKey);
+      return { id: 'i1', status: 'ready' };
+    });
+
+    const { result } = renderHook(() => useUpdateOrderItemStatus(), { wrapper });
+    await result.current.mutateAsync({ id: 'i1', status: 'ready' });
+
+    const o1 = cachedDuringWrapper?.find((o) => o.id === 'o1');
+    expect(o1?.order_items.find((it: any) => it.id === 'i1')?.status).toBe('ready');
+    // sibling item in the same order untouched
+    expect(o1?.order_items.find((it: any) => it.id === 'i2')?.status).toBe('pending');
+  });
+
+  it('rolls back the item status on error', async () => {
+    const { wrapper, queryClient, mockDb } = createWrapper();
+    seedOrders(queryClient);
+    (mockDb.orderItems.updateStatus as any).mockRejectedValueOnce(new Error('boom'));
+
+    const { result } = renderHook(() => useUpdateOrderItemStatus(), { wrapper });
+    await expect(result.current.mutateAsync({ id: 'i1', status: 'ready' })).rejects.toThrow('boom');
+
+    const o1 = queryClient.getQueryData<any[]>(ordersKey)?.find((o) => o.id === 'o1');
+    expect(o1?.order_items.find((it: any) => it.id === 'i1')?.status).toBe('pending');
   });
 });

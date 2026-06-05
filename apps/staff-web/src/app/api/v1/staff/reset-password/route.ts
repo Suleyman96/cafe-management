@@ -79,6 +79,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

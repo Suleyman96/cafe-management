@@ -53,6 +53,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return jsonOk({ order: updated });
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

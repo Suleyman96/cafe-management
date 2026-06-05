@@ -63,6 +63,6 @@ export async function POST(request: NextRequest) {
 
     return jsonOk({ token: inserted }, 201);
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

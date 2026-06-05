@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { getRequestId, REQUEST_ID_HEADER } from '@/lib/api/request-id';
 import { createMiddlewareClient } from '@/lib/supabase/server';
 
 const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password', '/auth/callback'];
@@ -38,6 +39,22 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/api/')) {
     const corsHeaders = getCorsHeaders(origin);
 
+    // ADD-9: per-request correlation ID. Honor an inbound x-request-id so an
+    // upstream caller (mobile / customer-web / a proxy) keeps the chain; mint
+    // one otherwise. We forward it to the route handler on the request (so
+    // handleRouteError can tag logs + Sentry with it) and echo it on every
+    // response (so the client can capture it for an error report).
+    const requestId = getRequestId(request);
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set(REQUEST_ID_HEADER, requestId);
+    const withCommonHeaders = (response: NextResponse) => {
+      for (const [key, value] of Object.entries(corsHeaders)) {
+        response.headers.set(key, value);
+      }
+      response.headers.set(REQUEST_ID_HEADER, requestId);
+      return response;
+    };
+
     // Customer-facing endpoints are intentionally unauthenticated (QR code ordering).
     // Individual route handlers validate tenant/table relationships.
     // /api/v1/health is unauthenticated by design (Blocker 7) — uptime
@@ -48,16 +65,12 @@ export async function middleware(request: NextRequest) {
       pathname === '/api/health' ||
       pathname === '/api/v1/health';
     if (isPublicApi) {
-      const response = NextResponse.next();
-      for (const [key, value] of Object.entries(corsHeaders)) {
-        response.headers.set(key, value);
-      }
-      return response;
+      return withCommonHeaders(NextResponse.next({ request: { headers: requestHeaders } }));
     }
 
     // All other API routes require authentication at the middleware level.
     // Individual route handlers still enforce role-based access (verifyStaff/verifyAdmin).
-    const { supabase, response } = createMiddlewareClient(request);
+    const { supabase, response } = createMiddlewareClient(request, requestHeaders);
     const {
       data: { user },
       error: authError,
@@ -65,14 +78,15 @@ export async function middleware(request: NextRequest) {
     if (authError || !user) {
       return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        headers: {
+          'Content-Type': 'application/json',
+          [REQUEST_ID_HEADER]: requestId,
+          ...corsHeaders,
+        },
       });
     }
 
-    for (const [key, value] of Object.entries(corsHeaders)) {
-      response.headers.set(key, value);
-    }
-    return response;
+    return withCommonHeaders(response);
   }
 
   // Skip public paths

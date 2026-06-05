@@ -11,16 +11,16 @@
 
 ## Summary
 
-| Priority | Issues | Status (2026-05-01) | Source |
+| Priority | Issues | Status (reconciled 2026-06-05) | Source |
 |----------|--------|---------------------|--------|
 | [CRITICAL](01-CRITICAL-fixes.md) | 2 | ✅ all shipped | CRIT-1, CRIT-2 |
 | [HIGH](02-HIGH-fixes.md) | 6 | ✅ all shipped | HIGH-1..6 |
-| [MEDIUM](03-MEDIUM-fixes.md) | 10 | 🟡 9 done, 1 partial (MED-8 global staleTime) | — |
+| [MEDIUM](03-MEDIUM-fixes.md) | 10 | ✅ all shipped (MED-8 global staleTime done 2026-06-04) | — |
 | [LOW](04-LOW-fixes.md) | 7 | ✅ all shipped | — |
-| [ADDITIONAL](05-ADDITIONAL-findings.md) | 9 | 🟡 6 done, 3 backlog (ADD-5 optimistic, ADD-8 HMAC, ADD-9 logging) | — |
-| [SCALE](07-SCALING-AND-ARCHITECTURE-fixes.md) | 34 | 🟡 26 done, 8 pending — see file (Tier 3 closed SCALE-14/17/18/21) | — |
-| [DB-SECURITY](09-DB-SECURITY-DEFERRED.md) | 20 | 🟡 15 done in `20260428/30/501`, 5 deferred (M4, M8, M9, M11, L4) | — |
-| [PACKAGE-ARCH](10-PACKAGE-ARCHITECTURE-DEFERRED.md) | 8 deferred | 🟠 0 of remaining shipped (H0/H4/H5/M1/M3/M4/M5/L*) — gate for tenant #2 | — |
+| [ADDITIONAL](05-ADDITIONAL-findings.md) | 9 | ✅ all 9 done (ADD-9 logging, ADD-5 optimistic updates, ADD-8 HMAC via server-side BFF proxy — all shipped 2026-06-05) | — |
+| [SCALE](07-SCALING-AND-ARCHITECTURE-fixes.md) | 34 | ✅ all 34 shipped — verified against code 2026-06-05 (prior "8 pending" was stale; tail items 22–34 confirmed present) | — |
+| [DB-SECURITY](09-DB-SECURITY-DEFERRED.md) | 20 | ✅ all 20 resolved — M4/M9 reviewed-safe, M8 (staff)/M11/L4 fixed 2026-06-05 (`20260605000001/2`) | — |
+| [PACKAGE-ARCH](10-PACKAGE-ARCHITECTURE-DEFERRED.md) | 8 deferred | 🟡 H4 (subpath exports) + H5 (tenant-filter) shipped 2026-06-04; remainder is the tenant #2 onboarding gate | — |
 | [LAUNCH](08-LAUNCH-PLAN.md) | operational | 🟡 code-side ready, infra pending | — |
 
 ## Recommended Execution Order (historical — kept for context)

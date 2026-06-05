@@ -61,3 +61,42 @@ describe('useUpdateTableStatus - QUERY_KEYS', () => {
     expect(keys).toContainEqual([QUERY_KEYS.TABLES]);
   });
 });
+
+describe('useUpdateTableStatus - optimistic (ADD-5)', () => {
+  it('flips the table status in the cache before the network resolves', async () => {
+    const { wrapper, queryClient, mockDb } = createWrapper();
+    queryClient.setQueryData(
+      [QUERY_KEYS.TABLES],
+      [
+        { id: 't1', status: 'free' },
+        { id: 't2', status: 'free' },
+      ],
+    );
+    let cached: any[] | undefined;
+    (mockDb.tables.updateStatus as any).mockImplementationOnce(async () => {
+      cached = queryClient.getQueryData([QUERY_KEYS.TABLES]);
+      return { id: 't1' };
+    });
+
+    const { result } = renderHook(() => useUpdateTableStatus(), { wrapper });
+    await result.current.mutateAsync({ tableId: 't1', status: 'occupied' });
+
+    expect(cached?.find((t) => t.id === 't1')?.status).toBe('occupied');
+    expect(cached?.find((t) => t.id === 't2')?.status).toBe('free');
+  });
+
+  it('rolls back on error', async () => {
+    const { wrapper, queryClient, mockDb } = createWrapper();
+    queryClient.setQueryData([QUERY_KEYS.TABLES], [{ id: 't1', status: 'free' }]);
+    (mockDb.tables.updateStatus as any).mockRejectedValueOnce(new Error('nope'));
+
+    const { result } = renderHook(() => useUpdateTableStatus(), { wrapper });
+    await expect(result.current.mutateAsync({ tableId: 't1', status: 'occupied' })).rejects.toThrow(
+      'nope',
+    );
+
+    expect(
+      (queryClient.getQueryData([QUERY_KEYS.TABLES]) as any[]).find((t) => t.id === 't1').status,
+    ).toBe('free');
+  });
+});

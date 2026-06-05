@@ -50,10 +50,33 @@ urgency: financial tables already have hard-delete restriction
   joins) while retaining them; deletes routed through SECURITY DEFINER RPCs
   (`soft_delete_menu_item` / `soft_delete_category`) since the restrictive
   policy also blocks a direct UPDATE that sets `deleted_at`. Migration
-  `20260605000001`, RLS test `soft-delete-catalog.test.ts`. Remaining tables
-  (e.g. `staff`) still hard-delete — extend the same pattern when needed.
-- **M4 — RLS recursion review**, **M9 — cascade cleanup**, **M11 — retention
-  policies**, **L4 — audit-log archival** (carried forward).
+  `20260605000001`, RLS test `soft-delete-catalog.test.ts`.
+  - **Staff** (2026-06-05): "delete staff" now **deactivates** (`is_active=false`)
+    instead of hard-deleting — the `/api/v1/staff` DELETE route was the last
+    hard-delete path (the `db.staff.delete()` wrapper already deactivated). A
+    hard delete either FK-failed (`refunds.processed_by` / `orders.delivery_person_id`
+    / `staff_schedules` are RESTRICT) or nulled historical attribution;
+    `current_tenant_id()` only resolves for active staff, so deactivation fully
+    locks them out and is reversible. The auth user is retained.
+  - Other operational tables still hard-delete by design (no attribution to
+    preserve; financial tables are RESTRICT-protected). Extend if/when needed.
+- **M4 — RLS recursion review** — ✅ reviewed, safe (2026-06-05). All staff-reading
+  helpers (`current_tenant_id`, `get_my_staff_role`, `is_active_staff`,
+  `get_my_staff_id`) are `SECURITY DEFINER`, the canonical recursion-breaker — a
+  staff policy calling them doesn't re-trigger staff RLS. No recursion; no change.
+- **M9 — cascade cleanup** — ✅ reviewed, sound (2026-06-05). FK `ON DELETE` is a
+  deliberate mix: financial paths (`refunds`/`order_payments`/audit → orders/staff)
+  are `RESTRICT`, ephemeral children (`order_items`, kitchen filters, push tokens)
+  `CASCADE`, attribution `SET NULL`. No accidental-wipe cascades; no change.
+- **M11 retention + L4 audit-archival** — ✅ DONE (was implemented-but-broken;
+  fixed 2026-06-05). `run_data_retention()` + the `archive.*` schema + the
+  `POST /api/v1/admin/retention` endpoint already existed (migration
+  `20260424000004`). But its `INSERT INTO archive.X SELECT * FROM public.X`
+  copies had silently broken: `public.orders` / `order_items` /
+  `financial_audit_log` gained columns after the archive tables were snapshotted,
+  so the archive INSERT threw 42601 on any aged order. Migration
+  `20260605000002` re-aligns the archive tables; RLS test `data-retention.test.ts`
+  exercises archive-prune + PII-anonymize and guards against future drift.
 - **Source:** `docs/history/plans/09-DB-SECURITY-DEFERRED.md`.
 
 ## Package architecture
@@ -70,10 +93,48 @@ urgency: financial tables already have hard-delete restriction
   `11-PACKAGE-ARCHITECTURE-ROADMAP.md` (tenant #2 onboarding gate).
 
 ## Smaller carried-forward items
-- **ADD-5 — Optimistic updates** for key mutations (some shipped via the
-  `orders_optimistic_concurrency` path; confirm remaining coverage).
-- **ADD-8 — HMAC** (code-verified: no `createHmac` usage present).
-- **ADD-9 — Structured logging.**
+- **ADD-5 — Optimistic updates** — ✅ DONE (2026-06-05). The four
+  highest-frequency shift-time mutations were pessimistic (wait → invalidate →
+  refetch); now optimistic (onMutate snapshot → setQueryData → rollback onError
+  → invalidate onSettled): **order status**, **order-item status**,
+  **waiter-call acknowledge**, **table status**. A shared, key-agnostic
+  primitive (`patchQueries`/`rollbackQueries` in `@gustri/queries/optimistic.ts`)
+  serves both clients — staff-web (tenant-scoped keys) via the shared mutation
+  hooks, and mobile (flat keys, offline-first: the change shows instantly even
+  while the mutation is paused offline) via its local hooks. Aligned with
+  ADR-0001, which governs only the *realtime* write path, not user-initiated
+  mutations. Tests cover the primitive + per-hook optimistic flip/rollback.
+- **ADD-8 — HMAC request signing** — ✅ DONE (2026-06-05, server-side BFF
+  proxy). The naive plan (per-tenant secret signed in the browser) would be
+  security theater — customer-web is a public browser app, so a shipped secret
+  is public. Implemented the real version: customer mutations now post to
+  customer-web's OWN same-origin BFF proxy
+  (`app/api/v1/customer/[...path]`), which HMAC-SHA256-signs the request
+  server-side (timestamp+method+path+body, server-only `CUSTOMER_API_SIGNING_SECRET`)
+  and forwards to staff-web; staff-web verifies via `verifyCustomerSignature`
+  on every `/api/v1/customer/*` route. The signing primitive is headless +
+  cross-runtime (`@gustri/core/signing`, Web Crypto). Defense-in-depth on top
+  of the existing IP rate-limit + tenant-binding + RLS: authenticates "came via
+  our deployment", with replay (timestamp window) + tamper (body-bound sig)
+  resistance. Safe default: unset secret ⇒ proxy forwards unsigned and staff-web
+  skips verification (symmetric opt-in, no deploy-coupled break). The proxy
+  forwards the real client IP so per-IP rate-limiting still keys per customer,
+  and propagates the ADD-9 `x-request-id`. New sentinel `invalid_signature`
+  (20 locales). Future: per-request nonce store for strict replay protection.
+- **ADD-9 — Structured logging** — ✅ DONE (2026-06-05). Per-request correlation
+  IDs end-to-end: `staff-web` middleware mints/propagates an `x-request-id`
+  (honoring an inbound one) on every `/api/*` request, forwards it to the
+  handler, and echoes it on the response. A zero-dep single-line-JSON `logger`
+  (`apps/staff-web/src/lib/api/logger.ts` — pino was rejected: not Edge-runtime
+  compatible) replaces ad-hoc `console.*`. `handleRouteError(err, request)`
+  emits a structured log line + tags the Sentry event with `request_id`+`route`,
+  and returns `request_id` in the error body (CORS-proof) and header. Clients
+  close the loop: `httpStatusToAppError` threads `request_id` onto the typed
+  error's `details`, and the mutation-cache `onError` in staff-web, customer-web,
+  and mobile tags their Sentry events with the same ID. Tests:
+  `lib/api/{request-id,logger,handle-route-error,middleware-request-id}.test.ts`
+  + `httpStatusToAppError` request_id cases. (pino at higher volume remains a
+  future swap behind the same `logger` surface.)
 - **MED-8 — Global React Query `staleTime`** — ✅ DONE (2026-06-04). A global
   default was already pinned in all three apps' QueryClient; the remaining
   work was consolidating scattered magic-number overrides into a shared
@@ -81,10 +142,26 @@ urgency: financial tables already have hard-delete restriction
   (`REALTIME`/`SHORT`/`MEDIUM`/`LONG`/`STATIC`), adopted across the shared
   hooks + app hooks, deduping customer-web's local copy. Behavior-preserving
   (same numeric values).
-- **SCALE residual** — ~8 of 34 scaling items recorded pending in
-  `00-OVERVIEW.md`; note server-side **report aggregation already shipped**
-  (`20260423000001_report_aggregation_functions.sql`), so re-verify the list
-  in `docs/history/plans/07-SCALING-AND-ARCHITECTURE-fixes.md` before acting.
+- **SCALE residual** — ✅ all 34 shipped (verified against code 2026-06-05).
+  The recorded "8 pending" was stale; a code sweep confirmed the tail items
+  (SCALE-22 mobile Sentry, 23 CI coverage+bundle-check, 24 next/image, 25
+  retention, 26 pg_stat_statements monitoring, 28 expo push, 29 mobile cache
+  eviction, 30 sound unload, 31 realtime cleanup on logout, 32 FlashList, 33
+  sync-handler Sentry, 34 Maestro E2E) are all present. No action.
+
+## Open hardening follow-ups (optional)
+- **ADD-8 — strict replay protection (nonce store)** — ⬜ OPEN, optional.
+  The customer→staff HMAC signing (shipped 2026-06-05) resists replay via a
+  timestamp window (`DEFAULT_SIGNATURE_TOLERANCE_MS`, ±5 min): a captured
+  signature can be replayed within that window. To make replay protection
+  strict, add a single-use **nonce**: the BFF proxy mints a nonce per request
+  and includes it in the signed payload; staff-web records seen nonces (e.g.
+  Upstash Redis with a TTL = the tolerance window) and rejects any repeat.
+  Touch points: `@gustri/core/signing` (add nonce to the canonical string),
+  `apps/customer-web/.../[...path]/route.ts` (mint + send), and
+  `apps/staff-web/src/lib/api/verify-customer-signature.ts` (seen-nonce check).
+  Not required for launch — the window already bounds the replay surface and
+  the endpoints retain rate-limit + tenant-binding + RLS underneath.
 
 ## Infra / CI follow-ups (found during cleanup, 2026-06-04)
 - ~~**customer-web build is broken on `main`**~~ — ✅ resolved/stale

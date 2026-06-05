@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
     return jsonOk({ success: true });
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }
 
@@ -125,6 +125,6 @@ export async function DELETE(request: NextRequest) {
     if (updateErr) return jsonError('Failed to clear PIN', 500);
     return jsonOk({ success: true });
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

@@ -1,6 +1,7 @@
 import type { Table, TablesInsert, TablesUpdate } from '@gustri/database/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS, tenantKey } from '../keys';
+import { patchQueries, rollbackQueries } from '../optimistic';
 import { useDb, useTenantId } from '../provider';
 import type { MutationCallbacks } from './types';
 
@@ -11,10 +12,28 @@ export function useUpdateTableStatus(options?: MutationCallbacks) {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: Table['status'] }) =>
       db.tables.updateStatus(id, status),
-    onSuccess: () => {
+    // Optimistic: flip the table's status in the tables list + detail.
+    onMutate: async ({ id, status }) => {
+      const listSnap = await patchQueries<Table[]>(
+        queryClient,
+        tenantKey(tenantId, QUERY_KEYS.TABLES),
+        (list) =>
+          Array.isArray(list) ? list.map((t) => (t.id === id ? { ...t, status } : t)) : list,
+      );
+      const detailSnap = await patchQueries<Table>(
+        queryClient,
+        tenantKey(tenantId, QUERY_KEYS.TABLE, id),
+        (t) => (t?.id === id ? { ...t, status } : t),
+      );
+      return { snapshot: [...listSnap, ...detailSnap] };
+    },
+    onError: (err, _vars, context) => {
+      if (context?.snapshot) rollbackQueries(queryClient, context.snapshot);
+      options?.onError?.(err);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.TABLES) });
     },
-    onError: options?.onError,
   });
 }
 

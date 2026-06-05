@@ -1,5 +1,11 @@
 import type { Table } from '@gustri/database/types';
-import { QUERY_KEYS, useDb, useTables as useSharedTables } from '@gustri/queries';
+import {
+  patchQueries,
+  QUERY_KEYS,
+  rollbackQueries,
+  useDb,
+  useTables as useSharedTables,
+} from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { useTenantId } from '@/store/auth-store';
@@ -31,7 +37,18 @@ export function useUpdateTableStatus() {
     mutationKey: MUTATION_KEYS.UPDATE_TABLE_STATUS,
     mutationFn: ({ tableId, status }: { tableId: string; status: Table['status'] }) =>
       db.tables.updateStatus(tableId, status),
-    onSuccess: () => {
+    // Optimistic: flip the table status in the tables list before the
+    // round-trip; rolls back on error, reconciles on settle.
+    onMutate: async ({ tableId, status }) => {
+      const snapshot = await patchQueries<Table[]>(queryClient, [QUERY_KEYS.TABLES], (list) =>
+        Array.isArray(list) ? list.map((t) => (t.id === tableId ? { ...t, status } : t)) : list,
+      );
+      return { snapshot };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.snapshot) rollbackQueries(queryClient, context.snapshot);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
     },
   });

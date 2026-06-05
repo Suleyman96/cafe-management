@@ -116,6 +116,6 @@ export async function PUT(request: NextRequest) {
 
     return jsonOk({ settings });
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

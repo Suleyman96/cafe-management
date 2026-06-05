@@ -21,6 +21,10 @@ const mutationCache = new MutationCache({
     if (isAppError(error)) {
       tags.errorCode = error.code;
       tags.errorName = error.name;
+      // Correlation ID the server attached (ADD-9) — ties this client report
+      // to the server-side log line + Sentry event for the same request.
+      const requestId = error.details?.request_id;
+      if (typeof requestId === 'string') tags.request_id = requestId;
     }
 
     // Detect sync-replay failures — the device was offline within

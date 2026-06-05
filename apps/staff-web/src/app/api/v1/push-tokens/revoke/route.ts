@@ -48,6 +48,6 @@ export async function POST(request: NextRequest) {
 
     return jsonOk({ revoked: true });
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

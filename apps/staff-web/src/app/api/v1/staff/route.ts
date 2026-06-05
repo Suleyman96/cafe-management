@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ staff: staffData }, { status: 201 });
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }
 
@@ -148,10 +148,10 @@ export async function DELETE(request: NextRequest) {
 
     const supabaseAdmin = getSupabaseAdmin();
 
-    // Fetch staff record to get auth_user_id
+    // Confirm the staff member exists in the admin's tenant.
     const { data: staffData, error: staffError } = await supabaseAdmin
       .from('staff')
-      .select('id, auth_user_id, tenant_id')
+      .select('id, tenant_id')
       .eq('id', staffId)
       .eq('tenant_id', adminOrError.tenant_id)
       .single();
@@ -160,33 +160,36 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Staff member not found' }, { status: 404 });
     }
 
-    // Prevent self-deletion
+    // Prevent self-deactivation
     if (staffData.id === adminOrError.id) {
-      return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
+      return NextResponse.json({ error: 'Cannot deactivate your own account' }, { status: 400 });
     }
 
-    // Delete staff record first
-    const { error: deleteError } = await supabaseAdmin.from('staff').delete().eq('id', staffId);
+    // Soft-remove via deactivation rather than a hard DELETE (M8). A hard
+    // delete either FK-fails (refunds.processed_by, orders.delivery_person_id,
+    // and staff_schedules.staff_id are ON DELETE RESTRICT) or nulls out
+    // historical attribution (assigned_waiter, discount_applied_by, stock
+    // performed_by, …). Deactivation keeps the row and all history intact;
+    // `current_tenant_id()` only resolves for `is_active` staff, so a
+    // deactivated member is fully locked out of tenant data and an admin can
+    // re-activate them later. The auth user is intentionally retained so that
+    // re-activation restores access — it is not destroyed here.
+    //
+    // (This mirrors `db.staff.delete()` in @gustri/api-client, which already
+    // sets is_active=false; converting this route removes the last hard-delete
+    // path so the two staff-removal entry points are consistent.)
+    const { error: deactivateError } = await supabaseAdmin
+      .from('staff')
+      .update({ is_active: false })
+      .eq('id', staffId);
 
-    if (deleteError) {
-      Sentry.captureException(deleteError);
-      return NextResponse.json({ error: 'Failed to delete staff member' }, { status: 400 });
-    }
-
-    // Only delete the auth user if no other staff records reference it
-    if (staffData.auth_user_id) {
-      const { count } = await supabaseAdmin
-        .from('staff')
-        .select('id', { count: 'exact', head: true })
-        .eq('auth_user_id', staffData.auth_user_id);
-
-      if (!count || count === 0) {
-        await supabaseAdmin.auth.admin.deleteUser(staffData.auth_user_id);
-      }
+    if (deactivateError) {
+      Sentry.captureException(deactivateError);
+      return NextResponse.json({ error: 'Failed to deactivate staff member' }, { status: 400 });
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

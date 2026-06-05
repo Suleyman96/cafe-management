@@ -1,8 +1,9 @@
-import type { Order, OrderItem, OrderItemsInsert } from '@gustri/database/types';
+import type { Order, OrderItem, OrderItemsInsert, OrderWithDetails } from '@gustri/database/types';
 import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getOrCreateClientRequestId } from '../idempotency';
 import { invalidateOrders, invalidateOrdersAndTables } from '../invalidation';
 import { QUERY_KEYS, tenantKey } from '../keys';
+import { type OptimisticSnapshot, patchQueries, rollbackQueries } from '../optimistic';
 import { useDb, useTenantId } from '../provider';
 import type { MutationCallbacks } from './types';
 
@@ -22,6 +23,76 @@ function peekOrder(
   return cached ?? null;
 }
 
+// Every cached order-list slice an order can appear in. Optimistic patches
+// fan out across all of them (partial key match covers per-filter variants)
+// so whichever board the user is looking at updates instantly. Lists that
+// don't contain the order are a no-op.
+const ORDER_LIST_KEYS = [
+  QUERY_KEYS.ORDERS,
+  QUERY_KEYS.ACTIVE_ORDERS,
+  QUERY_KEYS.DELIVERY_ORDERS,
+  QUERY_KEYS.TAKEOUT_ORDERS,
+] as const;
+
+/** Optimistically apply `patch` to the order with `orderId` across every cached
+ *  order list + that order's detail. Returns a snapshot for rollback. */
+async function patchOrderEverywhere(
+  qc: QueryClient,
+  tenantId: string | null,
+  orderId: string,
+  patch: (o: OrderWithDetails) => OrderWithDetails,
+): Promise<OptimisticSnapshot> {
+  const snaps: OptimisticSnapshot = [];
+  for (const key of ORDER_LIST_KEYS) {
+    snaps.push(
+      ...(await patchQueries<OrderWithDetails[]>(qc, tenantKey(tenantId, key), (list) =>
+        Array.isArray(list) ? list.map((o) => (o.id === orderId ? patch(o) : o)) : list,
+      )),
+    );
+  }
+  snaps.push(
+    ...(await patchQueries<OrderWithDetails>(
+      qc,
+      tenantKey(tenantId, QUERY_KEYS.ORDER, orderId),
+      (o) => (o?.id === orderId ? patch(o) : o),
+    )),
+  );
+  return snaps;
+}
+
+/** Optimistically set one order item's status wherever it appears (any list +
+ *  any cached order detail). The item id is globally unique, so we patch the
+ *  matching item in every order; orders without it are untouched. */
+async function patchOrderItemEverywhere(
+  qc: QueryClient,
+  tenantId: string | null,
+  itemId: string,
+  status: OrderItem['status'],
+): Promise<OptimisticSnapshot> {
+  const patchOrder = (o: OrderWithDetails): OrderWithDetails => {
+    if (!o.order_items?.some((it) => it.id === itemId)) return o;
+    return {
+      ...o,
+      order_items: o.order_items.map((it) => (it.id === itemId ? { ...it, status } : it)),
+    };
+  };
+  const snaps: OptimisticSnapshot = [];
+  for (const key of ORDER_LIST_KEYS) {
+    snaps.push(
+      ...(await patchQueries<OrderWithDetails[]>(qc, tenantKey(tenantId, key), (list) =>
+        Array.isArray(list) ? list.map(patchOrder) : list,
+      )),
+    );
+  }
+  // Partial key match hits every cached order detail for the tenant.
+  snaps.push(
+    ...(await patchQueries<OrderWithDetails>(qc, tenantKey(tenantId, QUERY_KEYS.ORDER), (o) =>
+      o ? patchOrder(o) : o,
+    )),
+  );
+  return snaps;
+}
+
 export function useUpdateOrderStatus(options?: MutationCallbacks) {
   const db = useDb();
   const tenantId = useTenantId();
@@ -29,16 +100,29 @@ export function useUpdateOrderStatus(options?: MutationCallbacks) {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: Order['status'] }) =>
       db.orders.updateStatus(id, status),
-    onSuccess: (_data, { id, status }) => {
+    // Optimistic: flip the order's status everywhere before the round-trip.
+    // Snapshot oldStatus/oldType here (pre-patch) so onSettled can still scope
+    // the invalidation — peeking in onSuccess would read the optimistic value.
+    onMutate: async ({ id, status }) => {
       const prev = peekOrder(queryClient, tenantId, id);
+      const snapshot = await patchOrderEverywhere(queryClient, tenantId, id, (o) => ({
+        ...o,
+        status,
+      }));
+      return { snapshot, oldStatus: prev?.status, oldType: prev?.order_type };
+    },
+    onError: (err, _vars, context) => {
+      if (context?.snapshot) rollbackQueries(queryClient, context.snapshot);
+      options?.onError?.(err);
+    },
+    onSettled: (_data, _err, { id, status }, context) => {
       invalidateOrdersAndTables(queryClient, tenantId, {
         orderId: id,
-        oldStatus: prev?.status,
+        oldStatus: context?.oldStatus,
         newStatus: status,
-        oldType: prev?.order_type,
+        oldType: context?.oldType,
       });
     },
-    onError: options?.onError,
   });
 }
 
@@ -133,10 +217,18 @@ export function useUpdateOrderItemStatus(options?: MutationCallbacks) {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: OrderItem['status'] }) =>
       db.orderItems.updateStatus(id, status),
-    onSuccess: () => {
+    // Optimistic: item status flips are the highest-frequency kitchen action.
+    onMutate: async ({ id, status }) => {
+      const snapshot = await patchOrderItemEverywhere(queryClient, tenantId, id, status);
+      return { snapshot };
+    },
+    onError: (err, _vars, context) => {
+      if (context?.snapshot) rollbackQueries(queryClient, context.snapshot);
+      options?.onError?.(err);
+    },
+    onSettled: () => {
       invalidateOrders(queryClient, tenantId);
     },
-    onError: options?.onError,
   });
 }
 

@@ -6,9 +6,15 @@ import { type NextRequest, NextResponse } from 'next/server';
 /**
  * Create a Supabase client for use in Next.js middleware.
  * Reads auth cookies from the request and writes refreshed cookies to the response.
+ *
+ * `requestHeaders`, when supplied, are forwarded to the downstream route
+ * handler via `NextResponse.next({ request: { headers } })`. Middleware uses
+ * this to inject the `x-request-id` correlation header (ADD-9) so handlers and
+ * `handleRouteError` can read it back.
  */
-export function createMiddlewareClient(request: NextRequest) {
-  let response = NextResponse.next({ request });
+export function createMiddlewareClient(request: NextRequest, requestHeaders?: Headers) {
+  const nextArg = requestHeaders ? { request: { headers: requestHeaders } } : { request };
+  let response = NextResponse.next(nextArg);
 
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,7 +28,7 @@ export function createMiddlewareClient(request: NextRequest) {
           for (const { name, value } of cookiesToSet) {
             request.cookies.set(name, value);
           }
-          response = NextResponse.next({ request });
+          response = NextResponse.next(nextArg);
           for (const { name, value, options } of cookiesToSet) {
             response.cookies.set(name, value, options);
           }

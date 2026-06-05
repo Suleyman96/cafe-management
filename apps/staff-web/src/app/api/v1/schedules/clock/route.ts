@@ -98,6 +98,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ schedule: data });
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

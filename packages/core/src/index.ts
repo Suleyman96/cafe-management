@@ -10,6 +10,7 @@ export * from './menu-channel-filter';
 export * from './order-options';
 export * from './permissions';
 export * from './profit-metrics';
+export * from './signing';
 export * from './type-guards';
 export * from './utils';
 export * from './validation';

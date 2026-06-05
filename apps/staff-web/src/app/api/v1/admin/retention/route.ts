@@ -24,6 +24,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ status: 'completed', results: data });
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

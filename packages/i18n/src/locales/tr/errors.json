@@ -28,5 +28,6 @@
   "invalid_option": "Bu seçenek bu ürün için kullanılamıyor.",
   "option_unavailable": "Seçilen seçeneklerden biri artık kullanılamıyor.",
   "required_option_missing": "Lütfen tüm gerekli seçenekleri seçin.",
-  "too_many_options": "Çok fazla seçenek seçtiniz."
+  "too_many_options": "Çok fazla seçenek seçtiniz.",
+  "invalid_signature": "İstek doğrulanamadı. Lütfen tekrar deneyin."
 }

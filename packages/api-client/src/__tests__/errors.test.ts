@@ -206,4 +206,35 @@ describe('httpStatusToAppError', () => {
     expect(err.code).toBe('HTTP_ERROR');
     expect(err.statusCode).toBe(418);
   });
+
+  describe('request_id correlation (ADD-9)', () => {
+    it('attaches body.request_id to details on a subclass that takes no details (401)', () => {
+      const err = httpStatusToAppError(401, { error: 'expired token', request_id: 'rid-401' });
+      expect(err).toBeInstanceOf(AuthenticationError);
+      expect(err.details).toEqual({ request_id: 'rid-401' });
+    });
+
+    it('merges request_id alongside existing fieldErrors details (400)', () => {
+      const err = httpStatusToAppError(400, {
+        error: 'bad input',
+        details: { fieldErrors: { name: ['required'] } },
+        request_id: 'rid-400',
+      });
+      expect(err).toBeInstanceOf(ValidationError);
+      expect(err.details).toEqual({
+        fieldErrors: { name: ['required'] },
+        request_id: 'rid-400',
+      });
+    });
+
+    it('attaches request_id on a 5xx server error', () => {
+      const err = httpStatusToAppError(500, { error: 'boom', request_id: 'rid-500' });
+      expect(err.details?.request_id).toBe('rid-500');
+    });
+
+    it('leaves details undefined when no request_id is present', () => {
+      const err = httpStatusToAppError(403, { error: 'forbidden' });
+      expect(err.details).toBeUndefined();
+    });
+  });
 });

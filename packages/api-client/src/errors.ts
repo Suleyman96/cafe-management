@@ -127,21 +127,11 @@ export function handleSupabaseError(error: unknown): AppError {
   return new AppError(getErrorMessage(error), err.code || 'UNKNOWN_ERROR', err.status || 500);
 }
 
-/**
- * Map an HTTP response (typically from `/api/v1/*`) to a typed AppError.
- *
- * `body` is the parsed JSON body if available — by convention,
- * `{ error: string, details?: unknown }`. Falls back to a generic message
- * when the body is not JSON or empty.
- */
-export function httpStatusToAppError(
+function mapHttpStatus(
   status: number,
-  body: { error?: string; details?: Record<string, unknown> } | null,
-  fallbackMessage = 'Request failed',
+  message: string,
+  details: Record<string, unknown> | undefined,
 ): AppError {
-  const message = body?.error || fallbackMessage;
-  const details = body?.details;
-
   if (status === 400 || status === 422) {
     return new ValidationError(message, details);
   }
@@ -164,4 +154,31 @@ export function httpStatusToAppError(
     return new AppError(message, 'SERVER_ERROR', status || 500, details);
   }
   return new AppError(message, 'HTTP_ERROR', status, details);
+}
+
+/**
+ * Map an HTTP response (typically from `/api/v1/*`) to a typed AppError.
+ *
+ * `body` is the parsed JSON body if available — by convention,
+ * `{ error: string, details?: unknown, request_id?: string }`. Falls back to a
+ * generic message when the body is not JSON or empty.
+ *
+ * When the body carries a `request_id` (the server-set correlation ID, ADD-9),
+ * it is attached to the returned error's `details.request_id` for EVERY error
+ * type — even subclasses whose constructors don't take `details` — since
+ * `AppError.details` is a public, inherited field. Client telemetry
+ * (mutation-cache `onError`) reads it back to tag the Sentry event with the
+ * same ID the server already logged, closing the client↔server trace loop.
+ */
+export function httpStatusToAppError(
+  status: number,
+  body: { error?: string; details?: Record<string, unknown>; request_id?: string } | null,
+  fallbackMessage = 'Request failed',
+): AppError {
+  const message = body?.error || fallbackMessage;
+  const error = mapHttpStatus(status, message, body?.details);
+  if (body?.request_id) {
+    error.details = { ...error.details, request_id: body.request_id };
+  }
+  return error;
 }

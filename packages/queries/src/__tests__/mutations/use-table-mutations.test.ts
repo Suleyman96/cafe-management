@@ -1,3 +1,4 @@
+import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { QUERY_KEYS, tenantKey } from '../../keys';
 import {
@@ -7,7 +8,7 @@ import {
   useUpdateTable,
   useUpdateTableStatus,
 } from '../../mutations/use-table-mutations';
-import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 function getInvalidatedKeys(spy: ReturnType<typeof vi.spyOn>) {
   return spy.mock.calls.map((c: any) => (c[0] as any).queryKey);
@@ -31,6 +32,44 @@ describe('useUpdateTableStatus', () => {
     const { result, mockDb } = renderHookWithProviders(() => useUpdateTableStatus());
     (mockDb.tables.updateStatus as any).mockRejectedValueOnce(new Error('nope'));
     await expect(result.current.mutateAsync({ id: 't1', status: 'free' })).rejects.toThrow('nope');
+  });
+
+  // ADD-5 optimistic updates
+  it('flips the table status in the cached list before the network resolves', async () => {
+    const { wrapper, queryClient, mockDb } = createWrapper();
+    const tablesKey = tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES);
+    queryClient.setQueryData(tablesKey, [
+      { id: 't1', status: 'free' },
+      { id: 't2', status: 'free' },
+    ]);
+
+    let cachedDuringWrapper: any[] | undefined;
+    (mockDb.tables.updateStatus as any).mockImplementationOnce(async () => {
+      cachedDuringWrapper = queryClient.getQueryData<any[]>(tablesKey);
+      return { id: 't1', status: 'occupied' };
+    });
+
+    const { result } = renderHook(() => useUpdateTableStatus(), { wrapper });
+    await result.current.mutateAsync({ id: 't1', status: 'occupied' });
+
+    expect(cachedDuringWrapper?.find((t) => t.id === 't1')?.status).toBe('occupied');
+    expect(cachedDuringWrapper?.find((t) => t.id === 't2')?.status).toBe('free');
+  });
+
+  it('rolls back the table status on error', async () => {
+    const { wrapper, queryClient, mockDb } = createWrapper();
+    const tablesKey = tenantKey(TEST_TENANT_ID, QUERY_KEYS.TABLES);
+    queryClient.setQueryData(tablesKey, [{ id: 't1', status: 'free' }]);
+    (mockDb.tables.updateStatus as any).mockRejectedValueOnce(new Error('nope'));
+
+    const { result } = renderHook(() => useUpdateTableStatus(), { wrapper });
+    await expect(result.current.mutateAsync({ id: 't1', status: 'occupied' })).rejects.toThrow(
+      'nope',
+    );
+
+    expect(queryClient.getQueryData<any[]>(tablesKey)?.find((t) => t.id === 't1')?.status).toBe(
+      'free',
+    );
   });
 });
 

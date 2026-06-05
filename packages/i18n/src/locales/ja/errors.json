@@ -28,5 +28,6 @@
   "invalid_option": "その商品にはこのオプションは利用できません。",
   "option_unavailable": "選択したオプションのひとつが利用できなくなりました。",
   "required_option_missing": "必須オプションをすべて選択してください。",
-  "too_many_options": "オプションを選びすぎています。"
+  "too_many_options": "オプションを選びすぎています。",
+  "invalid_signature": "リクエストを検証できませんでした。もう一度お試しください。"
 }

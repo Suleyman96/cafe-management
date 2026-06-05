@@ -56,6 +56,6 @@ export async function POST(request: NextRequest) {
 
     return jsonOk({ success: true });
   } catch (err) {
-    return handleRouteError(err);
+    return handleRouteError(err, request);
   }
 }

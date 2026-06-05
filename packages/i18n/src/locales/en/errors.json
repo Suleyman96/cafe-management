@@ -28,5 +28,6 @@
   "invalid_option": "That option isn't available for this item.",
   "option_unavailable": "One of the selected options is no longer available.",
   "required_option_missing": "Please choose all required options.",
-  "too_many_options": "You've selected too many options."
+  "too_many_options": "You've selected too many options.",
+  "invalid_signature": "Could not verify the request. Please try again."
 }

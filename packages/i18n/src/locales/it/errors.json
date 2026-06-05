@@ -28,5 +28,6 @@
   "invalid_option": "Quell'opzione non è disponibile per questo prodotto.",
   "option_unavailable": "Una delle opzioni selezionate non è più disponibile.",
   "required_option_missing": "Seleziona tutte le opzioni obbligatorie.",
-  "too_many_options": "Hai selezionato troppe opzioni."
+  "too_many_options": "Hai selezionato troppe opzioni.",
+  "invalid_signature": "Impossibile verificare la richiesta. Riprova."
 }

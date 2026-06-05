@@ -2,31 +2,19 @@ import { httpStatusToAppError } from '@gustri/api-client';
 import { RateLimitError } from '@gustri/core';
 import type { Database } from '@gustri/database/types';
 import { getOrCreateClientRequestId } from '@gustri/queries';
-import * as Sentry from '@sentry/nextjs';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
 type WaiterCallRow = Database['public']['Tables']['waiter_calls']['Row'];
 type CustomerFeedbackRow = Database['public']['Tables']['customer_feedback']['Row'];
 
-// H5 — explicit dev-only fallback. `next.config.js` throws at build time
-// when `NEXT_PUBLIC_API_BASE_URL` is unset in a production build, so the
-// `http://localhost:3001` fallback only kicks in for local dev. If
-// somehow we reach the runtime in a non-dev environment without the var,
-// flag it loudly to Sentry instead of silently posting to an unreachable
-// host.
-const API_BASE_URL = (() => {
-  const fromEnv = process.env.NEXT_PUBLIC_API_BASE_URL;
-  if (fromEnv) return fromEnv;
-  if (process.env.NODE_ENV === 'development') return 'http://localhost:3001';
-  if (typeof window !== 'undefined') {
-    Sentry.captureMessage(
-      'NEXT_PUBLIC_API_BASE_URL is unset in a non-development build — customer mutations will fail',
-      { level: 'error' },
-    );
-  }
-  return '';
-})();
+// ADD-8 — customer mutations now post to customer-web's OWN same-origin BFF
+// proxy (`app/api/v1/customer/[...path]`), which HMAC-signs the request
+// server-side (where the secret is actually secret) and forwards it to
+// staff-web. So the browser uses a relative, same-origin base; the proxy
+// resolves the upstream staff-web URL server-side via
+// `CUSTOMER_API_UPSTREAM_URL` / `NEXT_PUBLIC_API_BASE_URL`.
+const API_BASE_URL = '';
 
 /**
  * Client-side rate limiter to prevent rapid-fire API calls.

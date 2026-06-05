@@ -89,7 +89,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
         mutationCache: new MutationCache({
           onError: (error, _variables, _context, mutation) => {
             if (mutation.options.onError) return;
-            Sentry.captureException(error);
+            // Correlation ID the server attached (ADD-9) — tag the client
+            // Sentry event with the same ID the server logged for this request.
+            const requestId =
+              isAppError(error) && typeof error.details?.request_id === 'string'
+                ? error.details.request_id
+                : undefined;
+            if (requestId) {
+              Sentry.withScope((scope) => {
+                scope.setTag('request_id', requestId);
+                Sentry.captureException(error);
+              });
+            } else {
+              Sentry.captureException(error);
+            }
             const fallback = i18n.t('somethingWentWrong', {
               ns: 'common',
               defaultValue: 'An unexpected error occurred',

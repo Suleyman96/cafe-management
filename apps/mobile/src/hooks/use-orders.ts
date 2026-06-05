@@ -1,6 +1,6 @@
 import { OrdersRealtimeInsertSchema, OrdersRealtimeUpdateSchema } from '@gustri/database';
 import type { Order, OrderItem, Table } from '@gustri/database/types';
-import { QUERY_KEYS, STALE_TIMES, useDb } from '@gustri/queries';
+import { patchQueries, QUERY_KEYS, rollbackQueries, STALE_TIMES, useDb } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -28,7 +28,26 @@ export function useUpdateOrderStatus() {
     mutationKey: MUTATION_KEYS.UPDATE_ORDER_STATUS,
     mutationFn: ({ orderId, status }: { orderId: string; status: Order['status'] }) =>
       db.orders.updateStatus(orderId, status),
-    onSuccess: () => {
+    // Optimistic: flip the order status in the list + detail before the
+    // round-trip. Especially valuable on mobile — while offline the mutation
+    // is paused but onMutate still runs, so the change shows immediately and
+    // persists until the queued replay reconciles. Rolls back on error.
+    onMutate: async ({ orderId, status }) => {
+      const listSnap = await patchQueries<OrderWithDetails[]>(
+        queryClient,
+        [QUERY_KEYS.ORDERS],
+        (list) =>
+          Array.isArray(list) ? list.map((o) => (o.id === orderId ? { ...o, status } : o)) : list,
+      );
+      const detailSnap = await patchQueries<Order>(queryClient, [QUERY_KEYS.ORDER, orderId], (o) =>
+        o?.id === orderId ? { ...o, status } : o,
+      );
+      return { snapshot: [...listSnap, ...detailSnap] };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.snapshot) rollbackQueries(queryClient, context.snapshot);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TABLES] });
     },
@@ -42,7 +61,30 @@ export function useUpdateOrderItemStatus() {
     mutationKey: MUTATION_KEYS.UPDATE_ORDER_ITEM_STATUS,
     mutationFn: ({ itemId, status }: { itemId: string; status: OrderItem['status'] }) =>
       db.orderItems.updateStatus(itemId, status),
-    onSuccess: () => {
+    // Optimistic: patch the matching item's status inside every cached order.
+    onMutate: async ({ itemId, status }) => {
+      const snapshot = await patchQueries<OrderWithDetails[]>(
+        queryClient,
+        [QUERY_KEYS.ORDERS],
+        (list) =>
+          Array.isArray(list)
+            ? list.map((o) => {
+                if (!o.order_items?.some((it) => it.id === itemId)) return o;
+                return {
+                  ...o,
+                  order_items: o.order_items.map((it) =>
+                    it.id === itemId ? { ...it, status } : it,
+                  ),
+                };
+              })
+            : list,
+      );
+      return { snapshot };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.snapshot) rollbackQueries(queryClient, context.snapshot);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDERS] });
     },
   });

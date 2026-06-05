@@ -1,3 +1,4 @@
+import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { QUERY_KEYS, tenantKey } from '../../keys';
 import {
@@ -25,7 +26,7 @@ import {
   useDeleteWasteLog,
   useUpdateWasteLog,
 } from '../../mutations/use-waste-mutations';
-import { renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
+import { createWrapper, renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 function getInvalidatedKeys(spy: ReturnType<typeof vi.spyOn>) {
   return spy.mock.calls.map((c: any) => (c[0] as any).queryKey);
@@ -103,6 +104,50 @@ describe('useAcknowledgeWaiterCall', () => {
     await result.current.mutateAsync({ id: 'wc1', staffId: 's1' });
     expect(getInvalidatedKeys(spy)).toContainEqual(
       tenantKey(TEST_TENANT_ID, QUERY_KEYS.WAITER_CALLS),
+    );
+  });
+
+  // ADD-5 optimistic updates
+  it('optimistically flips the call to acknowledged before the network resolves', async () => {
+    const { wrapper, queryClient, mockDb } = createWrapper();
+    const callsKey = tenantKey(TEST_TENANT_ID, QUERY_KEYS.WAITER_CALLS);
+    queryClient.setQueryData(callsKey, [
+      { id: 'wc1', status: 'pending', responded_by: null, acknowledged_at: null },
+      { id: 'wc2', status: 'pending', responded_by: null, acknowledged_at: null },
+    ]);
+
+    let cachedDuringWrapper: any[] | undefined;
+    (mockDb.waiterCalls.acknowledge as any).mockImplementationOnce(async () => {
+      cachedDuringWrapper = queryClient.getQueryData<any[]>(callsKey);
+      return { id: 'wc1', status: 'acknowledged' };
+    });
+
+    const { result } = renderHook(() => useAcknowledgeWaiterCall(), { wrapper });
+    await result.current.mutateAsync({ id: 'wc1', staffId: 's1' });
+
+    const wc1 = cachedDuringWrapper?.find((c) => c.id === 'wc1');
+    expect(wc1?.status).toBe('acknowledged');
+    expect(wc1?.responded_by).toBe('s1');
+    expect(typeof wc1?.acknowledged_at).toBe('string');
+    // sibling call untouched
+    expect(cachedDuringWrapper?.find((c) => c.id === 'wc2')?.status).toBe('pending');
+  });
+
+  it('rolls back the optimistic acknowledge on error', async () => {
+    const { wrapper, queryClient, mockDb } = createWrapper();
+    const callsKey = tenantKey(TEST_TENANT_ID, QUERY_KEYS.WAITER_CALLS);
+    queryClient.setQueryData(callsKey, [
+      { id: 'wc1', status: 'pending', responded_by: null, acknowledged_at: null },
+    ]);
+    (mockDb.waiterCalls.acknowledge as any).mockRejectedValueOnce(new Error('contended'));
+
+    const { result } = renderHook(() => useAcknowledgeWaiterCall(), { wrapper });
+    await expect(result.current.mutateAsync({ id: 'wc1', staffId: 's1' })).rejects.toThrow(
+      'contended',
+    );
+
+    expect(queryClient.getQueryData<any[]>(callsKey)?.find((c) => c.id === 'wc1')?.status).toBe(
+      'pending',
     );
   });
 });

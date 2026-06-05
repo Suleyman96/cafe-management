@@ -28,5 +28,6 @@
   "invalid_option": "Bu variant ushbu mahsul uchun mavjud emas.",
   "option_unavailable": "Tanlangan variantlardan biri endi mavjud emas.",
   "required_option_missing": "Iltimos, barcha majburiy variantlarni tanlang.",
-  "too_many_options": "Siz juda koʻp variant tanladingiz."
+  "too_many_options": "Siz juda koʻp variant tanladingiz.",
+  "invalid_signature": "So‘rovni tasdiqlab bo‘lmadi. Iltimos, qayta urinib ko‘ring."
 }

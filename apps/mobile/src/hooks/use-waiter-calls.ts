@@ -1,6 +1,6 @@
 import { WaiterCallsRealtimeInsertSchema, WaiterCallsRealtimeUpdateSchema } from '@gustri/database';
 import type { Table } from '@gustri/database/types';
-import { QUERY_KEYS } from '@gustri/queries';
+import { patchQueries, QUERY_KEYS, rollbackQueries } from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef } from 'react';
@@ -176,12 +176,42 @@ export function useUpdateWaiterCall() {
       }
       throw new Error(`Unsupported waiter call status: ${status}`);
     },
+    // Optimistic: flip the call's status (and the acknowledge/resolve
+    // timestamps the wrapper sets) so the calls list reacts instantly.
+    onMutate: async ({ callId, status, staffId }) => {
+      const snapshot = await patchQueries<WaiterCall[]>(
+        queryClient,
+        [QUERY_KEYS.WAITER_CALLS],
+        (list) =>
+          Array.isArray(list)
+            ? list.map((c) =>
+                c.id === callId
+                  ? {
+                      ...c,
+                      status: status as WaiterCall['status'],
+                      ...(status === 'acknowledged'
+                        ? {
+                            responded_by: staffId ?? c.responded_by,
+                            acknowledged_at: new Date().toISOString(),
+                          }
+                        : {}),
+                      ...(status === 'resolved' ? { resolved_at: new Date().toISOString() } : {}),
+                    }
+                  : c,
+              )
+            : list,
+      );
+      return { snapshot };
+    },
     onSuccess: (_data, variables) => {
       if (variables.status === 'acknowledged') hapticSuccess();
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _vars, context) => {
+      if (context?.snapshot) rollbackQueries(queryClient, context.snapshot);
       Sentry.captureException(error, { extra: { context: 'updateWaiterCall' } });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WAITER_CALLS] });
     },
   });
 }
