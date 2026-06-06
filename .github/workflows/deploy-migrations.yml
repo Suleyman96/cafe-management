@@ -66,7 +66,12 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned to match ci.yml's Supabase CLI version. The prod DB push is
+          # the single most consequential automated op in the repo — running it
+          # on `latest` means whatever CLI shipped that day, which can change
+          # migration-push behavior without a code change. Bump deliberately,
+          # in lockstep with ci.yml.
+          version: 2.78.1
 
       - name: Link to production project
         run: supabase link --project-ref "$SUPABASE_PROJECT_ID"

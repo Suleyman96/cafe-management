@@ -83,7 +83,7 @@ export function MenuItemModal({
 
   // ─── Modifiers (Phase 3) ────────────────────────────────────────
   const { availableGroups, selections, toggleValue, selectedOptions, unitPrice, optionsValid } =
-    useMenuItemOptionsSelection(item);
+    useMenuItemOptionsSelection(item, { enabled: isOpen });
 
   const handleAdd = () => {
     if (!optionsValid) return;

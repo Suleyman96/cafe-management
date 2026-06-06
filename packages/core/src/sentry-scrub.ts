@@ -1,18 +1,22 @@
 /**
- * URL + PII scrubbing helpers for Sentry browser events.
+ * URL + PII scrubbing helpers for Sentry events (headless, shared).
  *
- * Customer-web reaches the app via QR-coded URLs that carry a bearer
- * `qr_token` in the fragment (`#token=…`) or, on legacy paths, the query
- * string (`?token=…`). The token is treated as sensitive — anyone holding
- * it can derive a tenant and place orders against it. Mutation request
- * bodies for `/api/v1/customer/orders` (delivery) additionally carry
- * the customer's name, phone, and address. Neither URL nor body should
- * reach Sentry verbatim, so the `instrumentation-client.ts` `beforeSend`
- * / `beforeBreadcrumb` hooks pipe events through this helper (S5).
+ * Both web apps send PII-adjacent data through Sentry and must redact it
+ * before events leave the process:
+ *   - **customer-web** reaches the app via QR-coded URLs carrying a bearer
+ *     `qr_token` in the fragment (`#token=…`) or, on legacy paths, the query
+ *     string (`?token=…`); delivery mutation bodies additionally carry the
+ *     customer's name, phone, and address.
+ *   - **staff-web** renders and posts customer names/phones/addresses, order
+ *     notes, and payment amounts across its order/table/payment surfaces.
  *
- * Pure-string + JSON transformation, no Sentry SDK imports — keeps the
- * unit test cheap and the helper reusable from any non-Sentry surface
- * that also wants to log a scrubbed URL or object.
+ * Neither URL nor body should reach Sentry verbatim, so each app's
+ * `beforeSend` / `beforeBreadcrumb` hooks pipe events through this helper.
+ *
+ * Pure-string + JSON transformation, no Sentry SDK or React imports — keeps
+ * the unit test cheap and the helper reusable from any non-Sentry surface that
+ * also wants to log a scrubbed URL or object. Lives in `@gustri/core` (headless)
+ * because both web apps consume it.
  */
 
 /**
@@ -26,8 +30,9 @@ export const TOKEN_PARAM_NAMES = ['token', 'access_token', 'qr_token'] as const;
  * Names of PII fields we redact when they appear as object keys anywhere
  * in an event (request body, contexts, extras, breadcrumb data, …).
  *
- * Covers the mutation bodies for `/api/v1/customer/orders` (delivery)
- * and `/api/v1/customer/waiter-calls` (which carries customer notes).
+ * Covers the customer-web mutation bodies for `/api/v1/customer/orders`
+ * (delivery) and `/api/v1/customer/waiter-calls` (customer notes), as well as
+ * the same PII fields as they appear on staff-web order/payment payloads.
  * `client_request_id` is low-risk on its own but it's identifying when
  * paired with order metadata, so we strip it too.
  *
@@ -130,14 +135,13 @@ export function scrubPiiFields<T>(value: T, depth = 0): T {
  * SDK's downstream serialization sees the redactions but the caller
  * doesn't observe in-place mutation.
  *
- * Covers (S5):
+ * Covers:
  *   - `request.url` and `breadcrumb.data.url` — bearer tokens in query
  *     or fragment params.
  *   - `request.data` — JSON bodies posted to `/api/v1/customer/*` that
- *     carry delivery PII.
+ *     carry delivery PII (and staff-web order/payment bodies).
  *   - `contexts`, `extra`, `tags` — any custom payload attached at the
- *     capture site (audit shows no current callers add PII here, but
- *     the scrub is defensive against future additions).
+ *     capture site (defensive against future additions).
  *   - `breadcrumb.data` — fetch breadcrumbs may attach response/request
  *     metadata that includes PII keys.
  */

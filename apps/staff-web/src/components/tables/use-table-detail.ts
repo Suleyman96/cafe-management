@@ -251,47 +251,17 @@ export function useTableDetail(tableId: string) {
     }
   };
 
-  // Handle item status update — also syncs order-level status based on collective item states
+  // Handle item status update. Order-level status is synced server-side by the
+  // `trg_sync_order_status_from_items` DB trigger (migration 20260606000003) —
+  // the previous client-side recompute + second `updateOrderStatus` write here
+  // was redundant and could race/flap the status against the trigger. Mirrors
+  // the cleaned sibling in `components/orders/use-order-detail.ts`.
   const handleItemStatusUpdate = async (itemId: string, newStatus: string) => {
     try {
       await updateItemStatus.mutateAsync({
         itemId,
         status: newStatus as 'pending' | 'preparing' | 'ready' | 'served',
       });
-
-      // Sync order status based on updated item states
-      if (activeOrder?.order_items) {
-        const updatedItems = activeOrder.order_items.map((item: OrderItem) =>
-          item.id === itemId ? { ...item, status: newStatus } : item,
-        );
-        type ItemWithStatus = { status: string };
-        const nonCancelled = updatedItems.filter((i: ItemWithStatus) => i.status !== 'cancelled');
-
-        if (nonCancelled.length > 0) {
-          const allServed = nonCancelled.every((i: ItemWithStatus) => i.status === 'served');
-          const allReadyOrServed = nonCancelled.every(
-            (i: ItemWithStatus) => i.status === 'ready' || i.status === 'served',
-          );
-          const anyPreparing = nonCancelled.some((i: ItemWithStatus) => i.status === 'preparing');
-
-          let targetStatus: keyof typeof ORDER_STATUS | null = null;
-          if (allServed && activeOrder.status !== 'served') {
-            targetStatus = 'SERVED';
-          } else if (allReadyOrServed && !allServed && activeOrder.status !== 'ready') {
-            targetStatus = 'READY';
-          } else if (anyPreparing && activeOrder.status === 'new') {
-            targetStatus = 'PREPARING';
-          }
-
-          if (targetStatus) {
-            await updateOrderStatus.mutateAsync({
-              orderId: activeOrder.id,
-              status: targetStatus,
-            });
-          }
-        }
-      }
-
       toast.success(t('orders.itemMarkedAs', { status: newStatus }));
     } catch (_error) {
       toast.error(t('orders.failedUpdateItemStatus'));

@@ -1,6 +1,10 @@
 # Dependencies
 node_modules/
 .pnpm-store/
+# This is a pnpm-only repo (pnpm-lock.yaml + --frozen-lockfile everywhere).
+# Stray npm/yarn lockfiles drift silently and mislead Dependabot/contributors.
+package-lock.json
+yarn.lock
 
 # Build outputs
 dist/

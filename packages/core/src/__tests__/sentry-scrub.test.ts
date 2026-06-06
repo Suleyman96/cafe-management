@@ -1,15 +1,17 @@
 /**
- * Audit fix — bearer-token URL scrubbing for Sentry events.
+ * Headless Sentry scrub helper (shared by customer-web + staff-web).
  *
- * The customer-web QR-ordering flow carries a `qr_token` bearer
- * credential in URL fragments (`#token=…`, plan 17 M1) and, on legacy
- * shared-link paths, the query string (`?token=…`). Sentry navigation
- * breadcrumbs and `event.request.url` would otherwise capture the
- * token verbatim — anyone with Sentry access could read live tokens
- * out of recent events.
+ * customer-web's QR-ordering flow carries a `qr_token` bearer credential in
+ * URL fragments (`#token=…`, plan 17 M1) and, on legacy shared-link paths, the
+ * query string (`?token=…`). Sentry navigation breadcrumbs and
+ * `event.request.url` would otherwise capture the token verbatim — anyone with
+ * Sentry access could read live tokens out of recent events. staff-web routes
+ * customer PII (name/phone/address, notes) through the same `request.data` /
+ * breadcrumb paths.
  *
- * Pure-string contract under test: scrub all known param names from
- * both `?` and `#` forms while leaving the rest of the URL intact.
+ * Pure-string contract under test: scrub all known param names from both `?`
+ * and `#` forms while leaving the rest of the URL intact, and redact the
+ * `PII_FIELD_NAMES` denylist anywhere it appears in an event.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -19,7 +21,7 @@ import {
   scrubSentryEvent,
   scrubTokenFromUrl,
   TOKEN_PARAM_NAMES,
-} from '@/lib/sentry-scrub';
+} from '../sentry-scrub';
 
 describe('scrubTokenFromUrl', () => {
   describe('redacts known param names', () => {
@@ -120,10 +122,10 @@ describe('scrubSentryEvent', () => {
   });
 });
 
-// S5 — every PII field that appears in `/api/v1/customer/orders`
-// (delivery) bodies or downstream contexts must redact to `[REDACTED]`
-// before the event ships. The denylist lives in `PII_FIELD_NAMES`; this
-// suite locks the round-trip behavior.
+// Every PII field that appears in `/api/v1/customer/orders` (delivery) bodies,
+// staff-web order/payment bodies, or downstream contexts must redact to
+// `[REDACTED]` before the event ships. The denylist lives in `PII_FIELD_NAMES`;
+// this suite locks the round-trip behavior.
 describe('scrubPiiFields', () => {
   it.each(PII_FIELD_NAMES)('redacts top-level key "%s"', (field) => {
     const out = scrubPiiFields({ [field]: 'sensitive', safe: 'ok' });
@@ -176,7 +178,7 @@ describe('scrubPiiFields', () => {
   });
 });
 
-describe('scrubSentryEvent — PII fields (S5)', () => {
+describe('scrubSentryEvent — PII fields', () => {
   it('redacts PII in request.data (mutation body)', () => {
     const event = {
       request: {

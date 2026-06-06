@@ -1,8 +1,8 @@
 // Sentry browser bootstrap. Renamed from `sentry.client.config.ts`
 // (the legacy filename Sentry deprecated and Turbopack will not load
 // — see https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation-client).
+import { scrubPiiFields, scrubSentryEvent, scrubTokenFromUrl } from '@gustri/core';
 import * as Sentry from '@sentry/nextjs';
-import { scrubPiiFields, scrubSentryEvent, scrubTokenFromUrl } from '@/lib/sentry-scrub';
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -42,8 +42,9 @@ Sentry.init({
   //      any custom `extra`/`tags`/`contexts` payload at a capture
   //      site, they're replaced with `[REDACTED]` field-by-field.
   //
-  // The pure scrubbing primitive lives in `lib/sentry-scrub.ts` for
-  // unit testing; this file just wires it into the Sentry lifecycle.
+  // The pure scrubbing primitive lives in `@gustri/core` (headless, shared
+  // with staff-web) for unit testing; this file just wires it into the
+  // Sentry lifecycle.
   beforeSend(event) {
     return scrubSentryEvent(event);
   },

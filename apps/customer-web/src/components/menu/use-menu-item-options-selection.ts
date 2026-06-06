@@ -15,12 +15,21 @@ export type AvailableOptionGroup = MenuItemOptionWithValues;
  * and `optionsValid` values. Extracted from `MenuItemModal` so the modal body
  * stays focused on layout — behavior is byte-identical to the inlined version.
  */
-export function useMenuItemOptionsSelection(item: MenuItemWithCategory) {
+export function useMenuItemOptionsSelection(
+  item: MenuItemWithCategory,
+  options?: { enabled?: boolean },
+) {
   // Modifier selections (Phase 3): optionId -> chosen value ids.
   const [selections, setSelections] = useState<Record<string, string[]>>({});
 
   // ─── Modifiers (Phase 3) ────────────────────────────────────────
-  const { data: optionGroups = [] } = useMenuItemOptions(item.id);
+  // Perf: a `MenuItemModal` is mounted by every card in the grid, so the
+  // options query must be gated on the modal actually being open — otherwise
+  // a 200-item menu fires ~200 parallel option-group requests on first paint,
+  // on the public weak-network entry point. The caller passes `isOpen`.
+  const { data: optionGroups = [] } = useMenuItemOptions(item.id, {
+    enabled: options?.enabled ?? true,
+  });
   // Only offer available groups/values to customers.
   const availableGroups = optionGroups
     .filter((g) => g.is_available)
