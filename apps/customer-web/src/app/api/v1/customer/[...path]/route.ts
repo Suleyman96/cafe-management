@@ -1,4 +1,9 @@
-import { computeRequestSignature, SIGNATURE_HEADER, TIMESTAMP_HEADER } from '@gustri/core';
+import {
+  computeRequestSignature,
+  NONCE_HEADER,
+  SIGNATURE_HEADER,
+  TIMESTAMP_HEADER,
+} from '@gustri/core';
 import { type NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -28,15 +33,31 @@ const UPSTREAM =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   (process.env.NODE_ENV === 'development' ? 'http://localhost:3001' : '');
 
-/** Best-effort real client IP, so staff-web's per-IP rate limit keys on the
- *  customer — not on this proxy's single server IP. staff-web prefers x-real-ip. */
+/**
+ * Best-effort real client IP, forwarded to staff-web so its per-IP rate limit
+ * keys on the customer rather than on this proxy's single server IP.
+ *
+ * TRUST MODEL: `x-real-ip` and `x-forwarded-for` are only trustworthy because
+ * the hosting platform (Vercel) sets them at the edge, OVERWRITING any value a
+ * browser tried to send. On such a platform a client cannot spoof its rate-limit
+ * key. If this app is ever deployed behind infrastructure that does NOT
+ * normalize these headers (a bare reverse proxy passing client-supplied
+ * `x-real-ip`/`x-forwarded-for` through), the edge MUST be configured to strip
+ * inbound forwarding headers — otherwise an attacker could rotate the header to
+ * bypass the limiter. For the XFF fallback we take the LAST hop (added by the
+ * trusted proxy) rather than the first (client-controllable), matching
+ * staff-web's getRateLimitIdentifier trust model.
+ */
 function clientIp(request: NextRequest): string | null {
   const realIp = request.headers.get('x-real-ip');
   if (realIp) return realIp.trim();
   const fwd = request.headers.get('x-forwarded-for');
   if (fwd) {
-    const first = fwd.split(',')[0]?.trim();
-    if (first) return first;
+    const ips = fwd
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (ips.length > 0) return ips[ips.length - 1] ?? null;
   }
   return null;
 }
@@ -67,19 +88,23 @@ async function proxy(request: NextRequest, pathSegments: string[]): Promise<Next
     headers['x-forwarded-for'] = ip;
   }
 
-  // Sign when configured. Bind timestamp + method + upstream path + body so a
-  // captured signature can't be replayed on another endpoint or after the window.
+  // Sign when configured. Bind timestamp + method + upstream path + body + a
+  // fresh single-use nonce so a captured signature can't be replayed on another
+  // endpoint, after the window, or at all (staff-web records the nonce).
   const secret = process.env.CUSTOMER_API_SIGNING_SECRET;
   if (secret) {
     const timestamp = Date.now().toString();
+    const nonce = crypto.randomUUID();
     const signature = await computeRequestSignature({
       secret,
       timestamp,
       method,
       path: upstreamPath,
       body,
+      nonce,
     });
     headers[TIMESTAMP_HEADER] = timestamp;
+    headers[NONCE_HEADER] = nonce;
     headers[SIGNATURE_HEADER] = signature;
   }
 

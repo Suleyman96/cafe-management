@@ -894,7 +894,7 @@ export type Database = {
           payment_type: string
           received_by: string
           tenant_id: string
-          tip_amount: number | null
+          tip_amount: number
         }
         Insert: {
           amount: number
@@ -908,7 +908,7 @@ export type Database = {
           payment_type: string
           received_by: string
           tenant_id?: string
-          tip_amount?: number | null
+          tip_amount?: number
         }
         Update: {
           amount?: number
@@ -922,7 +922,7 @@ export type Database = {
           payment_type?: string
           received_by?: string
           tenant_id?: string
-          tip_amount?: number | null
+          tip_amount?: number
         }
         Relationships: [
           {

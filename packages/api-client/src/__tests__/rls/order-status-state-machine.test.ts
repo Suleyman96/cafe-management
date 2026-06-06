@@ -32,7 +32,26 @@ const SEED_TABLE_ID = '20000000-0000-0000-0000-000000000008';
 const PG_CHECK_VIOLATION = '23514';
 
 let svc: SupabaseClient;
+let menuItemId: string;
 const createdOrderIds: string[] = [];
+
+async function addItem(orderId: string, status: string): Promise<string> {
+  const { data, error } = await svc
+    .from('order_items')
+    .insert({
+      tenant_id: TENANT_1,
+      order_id: orderId,
+      menu_item_id: menuItemId,
+      item_name: 'Sync test item',
+      item_price: 10,
+      quantity: 1,
+      status,
+    })
+    .select('id')
+    .single();
+  if (error || !data) throw new Error(`Seed item failed: ${error?.message ?? 'no data'}`);
+  return data.id;
+}
 
 async function seedOrder(opts: {
   status: string;
@@ -78,8 +97,16 @@ async function trySetStatus(orderId: string, status: string) {
   return svc.from('orders').update({ status }).eq('id', orderId).select('id, status').single();
 }
 
-beforeAll(() => {
+beforeAll(async () => {
   svc = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const { data, error } = await svc
+    .from('menu_items')
+    .select('id')
+    .eq('tenant_id', TENANT_1)
+    .limit(1)
+    .single();
+  if (error || !data) throw new Error(`No seeded menu item for tenant: ${error?.message}`);
+  menuItemId = data.id;
 });
 
 afterAll(async () => {
@@ -235,5 +262,48 @@ describe('order status state machine — delivery flow', () => {
     const { error } = await trySetStatus(orderId, 'ready');
     expect(error).not.toBeNull();
     expect(error?.code).toBe(PG_CHECK_VIOLATION);
+  });
+});
+
+// Audit should-fix regression: the item-status sync trigger must not collide
+// with the state-machine validator. Before the fix (20260606000003), serving
+// the last item while the order was still 'preparing' made the sync trigger
+// issue a preparing->served UPDATE that the validator rejected, ABORTING the
+// item update — staff couldn't serve the last item. The trigger now walks legal
+// single hops.
+describe('order status state machine — item-status sync (no collision)', () => {
+  test('serving the last item of a preparing dine_in order walks the order to served', async () => {
+    const orderId = await seedOrder({ status: 'preparing', order_type: 'dine_in' });
+    const itemId = await addItem(orderId, 'ready');
+
+    // Pre-fix this UPDATE failed (the sync trigger's illegal preparing->served
+    // jump aborted it). It must now succeed.
+    const { error } = await svc
+      .from('order_items')
+      .update({ status: 'served' })
+      .eq('id', itemId)
+      .select('id')
+      .single();
+    expect(error).toBeNull();
+
+    const { data: order } = await svc.from('orders').select('status').eq('id', orderId).single();
+    expect(order?.status).toBe('served');
+  });
+
+  test('serving the last item of a preparing takeout order clamps the order to ready (no served)', async () => {
+    const orderId = await seedOrder({ status: 'preparing', order_type: 'takeout' });
+    const itemId = await addItem(orderId, 'ready');
+
+    const { error } = await svc
+      .from('order_items')
+      .update({ status: 'served' })
+      .eq('id', itemId)
+      .select('id')
+      .single();
+    expect(error).toBeNull();
+
+    // Takeout has no 'served' order status, so the sync clamps to 'ready'.
+    const { data: order } = await svc.from('orders').select('status').eq('id', orderId).single();
+    expect(order?.status).toBe('ready');
   });
 });

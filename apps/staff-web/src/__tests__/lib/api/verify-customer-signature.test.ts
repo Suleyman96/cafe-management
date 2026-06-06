@@ -1,7 +1,18 @@
-import { computeRequestSignature, SIGNATURE_HEADER, TIMESTAMP_HEADER } from '@gustri/core';
+import {
+  computeRequestSignature,
+  NONCE_HEADER,
+  SIGNATURE_HEADER,
+  TIMESTAMP_HEADER,
+} from '@gustri/core';
 import type { NextRequest } from 'next/server';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { verifyCustomerSignature } from '@/lib/api/verify-customer-signature';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const claimNonceMock = vi.fn();
+vi.mock('@/lib/api/nonce-store', () => ({
+  claimNonce: (...args: unknown[]) => claimNonceMock(...args),
+}));
+
+const { verifyCustomerSignature } = await import('@/lib/api/verify-customer-signature');
 
 const SECRET = 'unit-test-secret';
 const URL_STR = 'http://localhost:3001/api/v1/customer/orders';
@@ -15,7 +26,11 @@ function makeRequest(body: string, headers: Record<string, string> = {}): NextRe
   }) as unknown as NextRequest;
 }
 
-async function signedHeaders(body: string, now = Date.now()): Promise<Record<string, string>> {
+async function signedHeaders(
+  body: string,
+  now = Date.now(),
+  nonce?: string,
+): Promise<Record<string, string>> {
   const timestamp = now.toString();
   const signature = await computeRequestSignature({
     secret: SECRET,
@@ -23,8 +38,14 @@ async function signedHeaders(body: string, now = Date.now()): Promise<Record<str
     method: 'POST',
     path: PATH,
     body,
+    nonce,
   });
-  return { [TIMESTAMP_HEADER]: timestamp, [SIGNATURE_HEADER]: signature };
+  const headers: Record<string, string> = {
+    [TIMESTAMP_HEADER]: timestamp,
+    [SIGNATURE_HEADER]: signature,
+  };
+  if (nonce) headers[NONCE_HEADER] = nonce;
+  return headers;
 }
 
 const originalSecret = process.env.CUSTOMER_API_SIGNING_SECRET;
@@ -36,6 +57,12 @@ afterEach(() => {
 });
 
 describe('verifyCustomerSignature (ADD-8)', () => {
+  beforeEach(() => {
+    // Default: nonce store treats every nonce as fresh. Replay tests override.
+    claimNonceMock.mockReset();
+    claimNonceMock.mockResolvedValue('fresh');
+  });
+
   describe('when the secret is not configured (safe default)', () => {
     beforeEach(() => {
       delete process.env.CUSTOMER_API_SIGNING_SECRET;
@@ -87,6 +114,43 @@ describe('verifyCustomerSignature (ADD-8)', () => {
       await verifyCustomerSignature(req);
       // The route handler must still be able to read the body afterwards.
       await expect(req.text()).resolves.toBe(body);
+    });
+
+    describe('nonce / strict replay protection', () => {
+      it('accepts a nonce-signed request and claims the nonce single-use', async () => {
+        const body = '{"table_id":"t1"}';
+        const headers = await signedHeaders(body, Date.now(), 'nonce-abc');
+        await expect(verifyCustomerSignature(makeRequest(body, headers))).resolves.toBeUndefined();
+        expect(claimNonceMock).toHaveBeenCalledWith('nonce-abc', expect.any(Number));
+      });
+
+      it('rejects a replayed request (nonce already claimed)', async () => {
+        claimNonceMock.mockResolvedValue('replay');
+        const body = '{"table_id":"t1"}';
+        const headers = await signedHeaders(body, Date.now(), 'nonce-replay');
+        await expect(verifyCustomerSignature(makeRequest(body, headers))).rejects.toMatchObject({
+          message: 'invalid_signature',
+        });
+      });
+
+      it('allows when the nonce store is skipped (no Redis) — window still applies', async () => {
+        claimNonceMock.mockResolvedValue('skipped');
+        const body = '{"table_id":"t1"}';
+        const headers = await signedHeaders(body, Date.now(), 'nonce-skip');
+        await expect(verifyCustomerSignature(makeRequest(body, headers))).resolves.toBeUndefined();
+      });
+
+      it('rejects a nonce swapped on a captured signature (signature no longer matches)', async () => {
+        const body = '{"table_id":"t1"}';
+        const headers = await signedHeaders(body, Date.now(), 'nonce-real');
+        // Attacker swaps the nonce header but keeps the captured signature.
+        headers[NONCE_HEADER] = 'nonce-forged';
+        await expect(verifyCustomerSignature(makeRequest(body, headers))).rejects.toMatchObject({
+          message: 'invalid_signature',
+        });
+        // Signature check fails before we ever claim the (forged) nonce.
+        expect(claimNonceMock).not.toHaveBeenCalled();
+      });
     });
   });
 });

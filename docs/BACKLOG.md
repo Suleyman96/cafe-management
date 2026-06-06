@@ -150,18 +150,52 @@ urgency: financial tables already have hard-delete restriction
   sync-handler Sentry, 34 Maestro E2E) are all present. No action.
 
 ## Open hardening follow-ups (optional)
-- **ADD-8 — strict replay protection (nonce store)** — ⬜ OPEN, optional.
-  The customer→staff HMAC signing (shipped 2026-06-05) resists replay via a
-  timestamp window (`DEFAULT_SIGNATURE_TOLERANCE_MS`, ±5 min): a captured
-  signature can be replayed within that window. To make replay protection
-  strict, add a single-use **nonce**: the BFF proxy mints a nonce per request
-  and includes it in the signed payload; staff-web records seen nonces (e.g.
-  Upstash Redis with a TTL = the tolerance window) and rejects any repeat.
-  Touch points: `@gustri/core/signing` (add nonce to the canonical string),
-  `apps/customer-web/.../[...path]/route.ts` (mint + send), and
-  `apps/staff-web/src/lib/api/verify-customer-signature.ts` (seen-nonce check).
-  Not required for launch — the window already bounds the replay surface and
-  the endpoints retain rate-limit + tenant-binding + RLS underneath.
+- **ADD-8 — strict replay protection (nonce store)** — ✅ DONE (2026-06-06).
+  The customer→staff HMAC signing already resisted replay via the ±5-min
+  timestamp window; this makes it strict. The BFF proxy now mints a per-request
+  `crypto.randomUUID()` nonce, binds it into the signed payload
+  (`@gustri/core/signing` canonical string), and sends it as `x-gustri-nonce`.
+  staff-web's `verify-customer-signature` verifies the signature (which now
+  covers the nonce, so a swapped nonce fails) then atomically claims the nonce
+  single-use via `nonce-store.ts` (Upstash `SET … NX EX <tolerance>`) — a repeat
+  within the window is rejected as a replay. Fail-open when Redis is absent
+  (dev/CI) or errors, so it never takes down ordering; the timestamp window
+  still bounds replay there. Tests: core nonce cases + verify replay/skip/
+  swapped-nonce + proxy nonce-header. NOTE: since the nonce is now part of the
+  signed canonical, both apps must run this code before `CUSTOMER_API_SIGNING_SECRET`
+  is set — which is already the deploy requirement for the whole feature.
+
+## Post-refactor security/correctness audit (2026-06-06)
+A fresh whole-codebase audit (security / correctness / data-integrity) after the
+refactor work. The codebase was found well-hardened; the genuine findings:
+
+- **MUST-FIX — customer add-items IDOR** — ✅ DONE (PR #182). The
+  `/api/v1/customer/orders/[id]/items` route had no table binding (derived tenant
+  from the public `tenant_id`, looked the order up by id+tenant only), so an
+  order UUID alone let an actor append items to a stranger's open order. Now
+  requires `table_id` and asserts `order.table_id === table_id` for dine-in
+  (matching the cancel endpoints); auth runs before the idempotency replay.
+- **SHOULD-FIX (this PR):**
+  - **Item-status ↔ state-machine collision** — ✅ `20260606000003`. Serving the
+    last item of a `preparing` dine-in order made the sync trigger issue an
+    illegal `preparing→served` that the validator rejected, aborting the item
+    update. The trigger now walks legal single hops and clamps `served` to
+    dine-in. RLS regression test added.
+  - **`orders.table_id` ON DELETE CASCADE → SET NULL** — ✅ `20260606000002`.
+    Deleting a table no longer destroys its unpaid/cancelled order history.
+  - **`order_payments.tip_amount` non-negative** — ✅ `20260606000001`. Was
+    nullable + unguarded; now `NOT NULL DEFAULT 0` + `CHECK (>= 0)`. Types regen'd.
+  - **Signing fail-open prod guardrail** — ✅ `verify-customer-signature` now
+    emits a loud Sentry warning when prod is missing the secret (not fail-closed,
+    which would break ordering on a partial rollout; the endpoints keep
+    rate-limit + tenant-binding + RLS).
+  - **BFF `x-real-ip` trust** — ✅ documented the Vercel-normalization trust
+    model + switched the XFF fallback to the last (trusted-proxy) hop. Correct on
+    Vercel; passthrough deploys must strip inbound forwarding headers at the edge.
+- **`get_delivery_order` PII** — ✅ already fixed (false positive). The auditor
+  read the stale `20260418000001` definition; `20260423000004` redefined it as
+  `get_delivery_order(UUID, p_access_token)` gated on
+  `delivery_access_token = p_access_token` (a null token matches nothing).
 
 ## Infra / CI follow-ups (found during cleanup, 2026-06-04)
 - ~~**customer-web build is broken on `main`**~~ — ✅ resolved/stale

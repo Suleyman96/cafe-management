@@ -32,6 +32,11 @@ describe('computeRequestSignature', () => {
     expect(await computeRequestSignature({ ...base, timestamp: '1700000000001' })).not.toBe(sig);
     expect(await computeRequestSignature({ ...base, method: 'GET' })).not.toBe(sig);
     expect(await computeRequestSignature({ ...base, secret: 'other' })).not.toBe(sig);
+    // The nonce is part of the signed payload — a swapped nonce changes the sig.
+    expect(await computeRequestSignature({ ...base, nonce: 'n1' })).not.toBe(sig);
+    expect(await computeRequestSignature({ ...base, nonce: 'n1' })).not.toBe(
+      await computeRequestSignature({ ...base, nonce: 'n2' }),
+    );
   });
 
   it('normalizes method case (POST === post)', async () => {
@@ -70,6 +75,18 @@ describe('verifyRequestSignature', () => {
       now,
     });
     expect(verdict).toEqual({ valid: false, reason: 'mismatch' });
+  });
+
+  it('accepts a nonce-signed request and rejects a swapped nonce', async () => {
+    const signature = await computeRequestSignature({ ...base, nonce: 'n1' });
+    expect((await verifyRequestSignature({ ...base, nonce: 'n1', signature, now })).valid).toBe(
+      true,
+    );
+    // Same captured signature but a different nonce → mismatch.
+    expect(await verifyRequestSignature({ ...base, nonce: 'n2', signature, now })).toEqual({
+      valid: false,
+      reason: 'mismatch',
+    });
   });
 
   it('rejects an expired timestamp (outside the window)', async () => {

@@ -5,7 +5,12 @@
  * secret is set, forwards the real client IP, and mirrors the upstream
  * status/body + correlation header.
  */
-import { computeRequestSignature, SIGNATURE_HEADER, TIMESTAMP_HEADER } from '@gustri/core';
+import {
+  computeRequestSignature,
+  NONCE_HEADER,
+  SIGNATURE_HEADER,
+  TIMESTAMP_HEADER,
+} from '@gustri/core';
 import { NextRequest } from 'next/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -77,14 +82,17 @@ describe('customer BFF proxy', () => {
 
     const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
     const timestamp = headers[TIMESTAMP_HEADER];
+    const nonce = headers[NONCE_HEADER];
     expect(timestamp).toMatch(/^\d+$/);
-    // Recompute with the same inputs the proxy used → must match.
+    expect(nonce).toMatch(/^[0-9a-f-]{36}$/i); // a minted UUID
+    // Recompute with the same inputs (including the nonce) the proxy used.
     const expected = await computeRequestSignature({
       secret: 'proxy-secret',
       timestamp,
       method: 'POST',
       path: '/api/v1/customer/orders',
       body,
+      nonce,
     });
     expect(headers[SIGNATURE_HEADER]).toBe(expected);
   });

@@ -21,6 +21,10 @@
 
 export const SIGNATURE_HEADER = 'x-gustri-signature';
 export const TIMESTAMP_HEADER = 'x-gustri-timestamp';
+/** Single-use per-request nonce. Bound into the signed payload so a captured
+ *  signature can't be replayed with a different nonce, and recorded server-side
+ *  (within the tolerance window) so the SAME nonce can't be replayed either. */
+export const NONCE_HEADER = 'x-gustri-nonce';
 
 /** Default replay window: a request is rejected if its timestamp is more than
  *  this far from the verifier's clock (in either direction). */
@@ -71,13 +75,16 @@ export interface SignatureInput {
   path: string;
   /** Raw request body string (`''` for bodyless requests). */
   body: string;
+  /** Per-request single-use nonce (see {@link NONCE_HEADER}). Optional so
+   *  bodyless/legacy callers still work; the proxy always supplies one. */
+  nonce?: string;
 }
 
 /** Build the canonical string that gets HMAC'd. Binding method+path+timestamp
- *  (not just the body) stops a captured signature being replayed against a
- *  different endpoint or after the window. */
+ *  +nonce (not just the body) stops a captured signature being replayed against
+ *  a different endpoint, after the window, or with a swapped nonce. */
 function canonicalString(input: Omit<SignatureInput, 'secret'>): string {
-  return `${input.timestamp}.${input.method.toUpperCase()}.${input.path}.${input.body}`;
+  return `${input.timestamp}.${input.method.toUpperCase()}.${input.path}.${input.nonce ?? ''}.${input.body}`;
 }
 
 /** Compute the hex HMAC-SHA256 signature for a request. */
