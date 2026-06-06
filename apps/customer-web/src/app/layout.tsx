@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
@@ -21,6 +21,20 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'gustri',
   },
+};
+
+// Next 14 split `viewport`/`themeColor` out of `metadata` into a dedicated
+// export. Without it the customer app had no `viewport-fit=cover`, so the
+// `100svh` / `fixed inset-0` bottom sheets didn't extend under the notch /
+// home-indicator safe areas on iOS, and the PWA `theme_color` from
+// `manifest.json` wasn't mirrored as a `theme-color` meta (browser chrome
+// stayed default instead of the brand teal). `themeColor` here matches
+// `public/manifest.json`.
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#367B8B',
 };
 
 export default function RootLayout({

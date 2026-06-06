@@ -60,6 +60,11 @@ export function MenuItemCard({
 
   return (
     <>
+      {/* The card-wide onClick is a pointer convenience. The keyboard /
+          screen-reader path to the detail modal (where allergens + modifiers
+          live) is the real <button> wrapping the item name below — making the
+          whole div a `role="button"` would nest it with the quick-add <button>
+          (invalid) and trip `useSemanticElements`. */}
       <div
         className="rounded-2xl overflow-hidden cursor-pointer transition-all active:scale-[0.98]"
         style={{
@@ -133,7 +138,27 @@ export function MenuItemCard({
 
         {/* Content */}
         <div className="p-2.5">
-          <h3 className="font-semibold text-[13px] text-white line-clamp-1">{name}</h3>
+          {/* a11y — the focusable control that opens the detail modal for
+              keyboard + screen-reader users (the card-wide onClick is mouse
+              only). `stopPropagation` keeps it from double-firing the card
+              onClick; `aria-haspopup="dialog"` announces that a dialog opens. */}
+          <h3 className="font-semibold text-[13px] text-white line-clamp-1">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowModal(true);
+              }}
+              aria-haspopup="dialog"
+              aria-label={t('menuItem.viewDetailsA11y', {
+                defaultValue: 'View {{name}} details',
+                name,
+              })}
+              className="text-left focus:outline-none focus-visible:underline"
+            >
+              {name}
+            </button>
+          </h3>
           {description && (
             <p className="text-xs text-white/55 line-clamp-1 mt-0.5">{description}</p>
           )}
