@@ -1,5 +1,6 @@
 'use client';
 
+import { DEFAULT_REFUND_TYPE_CONFIRM_THRESHOLD } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { useCafeSettings } from '@gustri/queries';
 import { Button, NumberInput } from '@gustri/ui-web';
@@ -31,8 +32,6 @@ interface DiscountModalProps {
   customerName?: string | null;
 }
 
-const DEFAULT_REFUND_THRESHOLD = 100;
-
 export function DiscountModal({
   isOpen,
   onClose,
@@ -55,7 +54,8 @@ export function DiscountModal({
   // The threshold is shared with refund: a tenant that wants to gate a
   // £200 refund behind type-to-confirm equally wants to gate a £200
   // discount override. Same column, same UX.
-  const threshold = cafeSettings?.refund_type_to_confirm_threshold ?? DEFAULT_REFUND_THRESHOLD;
+  const threshold =
+    cafeSettings?.refund_type_to_confirm_threshold ?? DEFAULT_REFUND_TYPE_CONFIRM_THRESHOLD;
   // Apply and remove are logically distinct mutations even though they
   // share the `useApplyDiscount` hook (remove sends `discount_type:'none'`,
   // value `0`). The server dedupes per `(tenant_id, order_id, action,

@@ -1,5 +1,6 @@
 'use client';
 
+import { DEFAULT_REFUND_TYPE_CONFIRM_THRESHOLD } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { useCafeSettings } from '@gustri/queries';
 import { Button, NumberInput } from '@gustri/ui-web';
@@ -30,8 +31,6 @@ interface RefundModalProps {
   customerName?: string | null;
 }
 
-const DEFAULT_REFUND_THRESHOLD = 100;
-
 export function RefundModal({
   isOpen,
   onClose,
@@ -54,7 +53,8 @@ export function RefundModal({
   // dedupe on the (tenant_id, client_request_id) partial unique index.
   const idempotencyKey = usePersistentClientRequestId(`refund:${orderId}`);
   const { data: cafeSettings } = useCafeSettings();
-  const threshold = cafeSettings?.refund_type_to_confirm_threshold ?? DEFAULT_REFUND_THRESHOLD;
+  const threshold =
+    cafeSettings?.refund_type_to_confirm_threshold ?? DEFAULT_REFUND_TYPE_CONFIRM_THRESHOLD;
 
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');

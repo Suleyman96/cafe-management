@@ -8,6 +8,13 @@
 export type CsvCell = string | number | boolean | null | undefined | Date;
 
 const NEEDS_QUOTING = /[",\r\n]/;
+// CSV/formula-injection: a *string* cell starting with one of these is
+// interpreted as a formula by Excel / Google Sheets / LibreOffice, so a
+// free-text value like a `staff_name` of `=cmd|'/c calc'!A1` would execute on
+// open. We only screen string cells — numbers/booleans/Dates are
+// machine-formatted and safe (and we must NOT prefix a legitimate negative
+// number with a quote).
+const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
 
 function escapeCell(value: CsvCell): string {
   if (value === null || value === undefined) return '';
@@ -18,6 +25,11 @@ function escapeCell(value: CsvCell): string {
     s = String(value);
   } else {
     s = value;
+    // Neutralize formula injection by prefixing a single quote (OWASP) so the
+    // spreadsheet treats the cell as text.
+    if (FORMULA_TRIGGER.test(s)) {
+      s = `'${s}`;
+    }
   }
   if (NEEDS_QUOTING.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;

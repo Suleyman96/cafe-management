@@ -13,7 +13,7 @@ import { useTranslation } from '@gustri/i18n';
 import type { KitchenOrderView } from '@gustri/queries';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { ORDER_ITEM_STATUS_BADGES } from '@gustri/ui-web';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
   useCancelOrder,
@@ -149,28 +149,43 @@ export function useKitchenDisplay() {
 
   // Filter orders for kitchen display (new, preparing, ready) - exclude orders
   // where all items are served. `visibleOrders` is already category-filtered.
-  const kitchenOrders = visibleOrders
-    .filter(
-      (order) => ['new', 'preparing', 'ready'].includes(order.status) && !allItemsServed(order),
-    )
-    .sort((a, b) => {
-      // Sort by status priority (new > preparing > ready) then by time
-      const statusPriority = { 'new': 0, preparing: 1, ready: 2 };
-      const aPriority = statusPriority[a.status as keyof typeof statusPriority];
-      const bPriority = statusPriority[b.status as keyof typeof statusPriority];
-      if (aPriority !== bPriority) return aPriority - bPriority;
-      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-    });
+  // Memoized so the filter+sort don't re-run on every render (e.g. a per-button
+  // pending-lock toggle) — only when the order list itself changes.
+  const kitchenOrders = useMemo(
+    () =>
+      visibleOrders
+        .filter(
+          (order) => ['new', 'preparing', 'ready'].includes(order.status) && !allItemsServed(order),
+        )
+        .sort((a, b) => {
+          // Sort by status priority (new > preparing > ready) then by time
+          const statusPriority = { 'new': 0, preparing: 1, ready: 2 };
+          const aPriority = statusPriority[a.status as keyof typeof statusPriority];
+          const bPriority = statusPriority[b.status as keyof typeof statusPriority];
+          if (aPriority !== bPriority) return aPriority - bPriority;
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        }),
+    [visibleOrders],
+  );
 
   // Filter pending approval orders (QR orders awaiting staff approval).
-  const pendingApprovalOrders = visibleOrders
-    .filter((order) => order.status === 'pending_approval')
-    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  const pendingApprovalOrders = useMemo(
+    () =>
+      visibleOrders
+        .filter((order) => order.status === 'pending_approval')
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+    [visibleOrders],
+  );
 
   // Count orders by status
-  const newOrdersCount = kitchenOrders?.filter((o) => o.status === 'new').length || 0;
-  const preparingCount = kitchenOrders?.filter((o) => o.status === 'preparing').length || 0;
-  const readyCount = kitchenOrders?.filter((o) => o.status === 'ready').length || 0;
+  const { newOrdersCount, preparingCount, readyCount } = useMemo(
+    () => ({
+      newOrdersCount: kitchenOrders.filter((o) => o.status === 'new').length,
+      preparingCount: kitchenOrders.filter((o) => o.status === 'preparing').length,
+      readyCount: kitchenOrders.filter((o) => o.status === 'ready').length,
+    }),
+    [kitchenOrders],
+  );
 
   // Real-time: invalidate queries on DB changes. The third subscription is
   // staff-scoped (not tenant-scoped) so a manager updating *another* staff

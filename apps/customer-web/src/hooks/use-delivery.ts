@@ -197,13 +197,19 @@ export function useDeliveryOrder(orderId: string, accessToken?: string) {
   // NULL` so they failed the prior `USING (table_id IS NOT NULL)`
   // policy), so this is no functional regression — it's just made
   // explicit.
+  // Stop polling once the delivery order is terminal (delivered / cancelled /
+  // closed) — it can't change again, so a long-lived tracking tab doesn't keep
+  // hitting the network every 30 s. Re-runs when the status flips terminal.
+  const orderStatus = query.data?.status;
+  const isTerminal =
+    orderStatus === 'delivered' || orderStatus === 'cancelled' || orderStatus === 'closed';
   useEffect(() => {
-    if (!orderId) return;
+    if (!orderId || isTerminal) return;
     const intervalId = setInterval(() => {
       query.refetch();
     }, 30_000);
     return () => clearInterval(intervalId);
-  }, [orderId, query.refetch]);
+  }, [orderId, isTerminal, query.refetch]);
 
   return { ...query, rtStatus, refresh };
 }

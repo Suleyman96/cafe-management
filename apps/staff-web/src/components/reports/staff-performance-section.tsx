@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
+import { getRoleBadgeColor } from '@gustri/ui-web';
 import { Award, BarChart3, UserCheck } from 'lucide-react';
 import type { StaffMember } from '@/lib/report-pdf-export';
 
@@ -29,19 +30,12 @@ function RankBadge({ index }: { index: number }) {
 }
 
 function RoleBadge({ role, t }: { role: string; t: (key: string) => string }) {
-  const colors =
-    role === 'owner'
-      ? 'bg-emerald-100 text-emerald-800'
-      : role === 'admin'
-        ? 'bg-purple-100 text-purple-800'
-        : role === 'waiter'
-          ? 'bg-blue-100 text-blue-800'
-          : role === 'kitchen'
-            ? 'bg-orange-100 text-orange-800'
-            : 'bg-gray-100 text-gray-800';
-
+  // Single source of truth for role→badge colors (was an inline reimplementation
+  // that could drift from the canonical palette).
   return (
-    <span className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${colors}`}>
+    <span
+      className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(role)}`}
+    >
       {t(`staffMgmt.role.${role}`)}
     </span>
   );

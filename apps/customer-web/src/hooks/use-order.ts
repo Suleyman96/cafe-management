@@ -281,13 +281,21 @@ export function useOrder(tableId: string) {
   // own mutations still invalidate the cache instantly via the mutation
   // hook's `onSuccess`. If the realtime path is ever restored (e.g. via
   // per-customer JWT auth), this can revert to a gated fallback.
+  // Stop polling once the order reaches a terminal state — a closed /
+  // cancelled / delivered order can't change again, so a customer who leaves
+  // the tracking tab open isn't drained by a 30 s poll for the rest of the
+  // day. The effect re-runs when the status flips terminal (dep below) and the
+  // cleanup clears the live interval.
+  const orderStatus = query.data?.status;
+  const isTerminal =
+    orderStatus === 'closed' || orderStatus === 'cancelled' || orderStatus === 'delivered';
   useEffect(() => {
-    if (!orderId) return;
+    if (!orderId || isTerminal) return;
     const intervalId = setInterval(() => {
       query.refetch();
     }, 30_000);
     return () => clearInterval(intervalId);
-  }, [orderId, query.refetch]);
+  }, [orderId, isTerminal, query.refetch]);
 
   return { ...query, rtStatus, refresh };
 }

@@ -53,8 +53,8 @@ export function OrderDetailPayments({
                     </p>
                   )}
                   <p className="text-xs text-gray-500 mt-1">
-                    {payment.received_by_staff?.full_name || 'Unknown'} &middot;{' '}
-                    {formatTime(payment.created_at, locale)}
+                    {payment.received_by_staff?.full_name || t('unknown', { ns: 'common' })}{' '}
+                    &middot; {formatTime(payment.created_at, locale)}
                   </p>
                 </div>
                 <div className="text-right flex-shrink-0">

@@ -88,6 +88,15 @@ export const WAITER_CALL_REASONS = [
 export const DEFAULT_TAX_PERCENTAGE = 0;
 
 /**
+ * Fallback for `tenant.refund_type_to_confirm_threshold` when cafe settings
+ * haven't loaded: refunds/discount overrides at or above this amount require
+ * the type-to-confirm friction (see CLAUDE.md "Destructive-action
+ * confirmations"). Shared by the refund + discount modals so the threshold
+ * can't drift between the two.
+ */
+export const DEFAULT_REFUND_TYPE_CONFIRM_THRESHOLD = 100;
+
+/**
  * How long after going offline a recently-failed mutation is treated as
  * "queued for retry" rather than a hard failure. Mutation error handlers
  * read `wasOfflineRecently(OFFLINE_SYNC_WINDOW_MS)` to phrase the user-

@@ -47,4 +47,38 @@ describe('toCsv', () => {
     const csv = toCsv([['n'], [3.14]]);
     expect(csv).toBe('n\r\n3.14');
   });
+
+  describe('formula-injection guard', () => {
+    // These payloads contain no comma/quote/newline, so they're prefixed with a
+    // single quote but NOT RFC-quoted.
+    it.each([
+      '=1+1',
+      '+1',
+      '-cmd',
+      '@SUM(A1)',
+      '\tdanger',
+    ])('prefixes a string cell starting with a formula trigger (%j)', (payload) => {
+      expect(toCsv([['name'], [payload]])).toBe(`name\r\n'${payload}`);
+    });
+
+    it('neutralizes a classic command payload (no comma → prefix only)', () => {
+      const csv = toCsv([['staff'], ["=cmd|'/c calc'!A1"]]);
+      expect(csv).toBe(`staff\r\n'=cmd|'/c calc'!A1`);
+    });
+
+    it('prefixes AND RFC-quotes when the payload also contains a comma', () => {
+      const csv = toCsv([['staff'], ['=cmd,calc']]);
+      expect(csv).toBe(`staff\r\n"'=cmd,calc"`);
+    });
+
+    it('does NOT prefix a legitimate negative *number*', () => {
+      const csv = toCsv([['amount'], [-5.5]]);
+      expect(csv).toBe('amount\r\n-5.5');
+    });
+
+    it('leaves a normal string untouched', () => {
+      const csv = toCsv([['name'], ['Jane Doe']]);
+      expect(csv).toBe('name\r\nJane Doe');
+    });
+  });
 });
