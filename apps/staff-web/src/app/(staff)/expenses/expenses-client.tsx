@@ -134,7 +134,9 @@ export default function ExpensesClient() {
             <div>
               <p className="text-sm text-gray-500">{t('expenses.topCategory')}</p>
               <p className="text-lg font-bold text-gray-900 truncate">
-                {summary?.byCategory?.[0]?.name || '-'}
+                {summary?.byCategory?.[0]
+                  ? (summary.byCategory[0].name ?? t('expenses.uncategorized'))
+                  : '-'}
               </p>
             </div>
           </div>
@@ -149,8 +151,10 @@ export default function ExpensesClient() {
             {summary.byCategory.map((cat) => {
               const percentage = summary.total > 0 ? (cat.total / summary.total) * 100 : 0;
               return (
-                <div key={cat.name} className="flex items-center gap-3">
-                  <span className="text-sm text-gray-600 w-28 truncate">{cat.name}</span>
+                <div key={cat.name ?? 'uncategorized'} className="flex items-center gap-3">
+                  <span className="text-sm text-gray-600 w-28 truncate">
+                    {cat.name ?? t('expenses.uncategorized')}
+                  </span>
                   <div className="flex-1 bg-gray-100 rounded-full h-2">
                     <div
                       className="bg-blue-500 h-2 rounded-full"

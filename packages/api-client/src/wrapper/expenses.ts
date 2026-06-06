@@ -195,10 +195,13 @@ export function createExpensesWrapper(ctx: WrapperContext) {
       type ExpenseSummaryRow = { amount: number; category: { id: string; name: string } | null };
       const expenses = (data || []) as unknown as ExpenseSummaryRow[];
       const total = expenses.reduce((sum, e) => sum + e.amount, 0);
-      const byCategory: Record<string, { name: string; total: number; count: number }> = {};
+      // `name: null` for uncategorized — the wrapper is headless, so it can't
+      // translate; UI consumers render the localized `expenses.uncategorized`
+      // label for null instead of a hardcoded English string.
+      const byCategory: Record<string, { name: string | null; total: number; count: number }> = {};
 
       for (const e of expenses) {
-        const catName = e.category?.name || 'Uncategorized';
+        const catName = e.category?.name ?? null;
         const catId = e.category?.id || 'uncategorized';
         if (!byCategory[catId]) {
           byCategory[catId] = { name: catName, total: 0, count: 0 };

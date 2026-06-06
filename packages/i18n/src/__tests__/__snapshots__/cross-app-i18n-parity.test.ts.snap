@@ -94,6 +94,7 @@ exports[`Phase 5.2 — cross-platform i18n parity > the shared cross-platform vo
   "expenses.paymentMethod",
   "expenses.topCategory",
   "expenses.transactions",
+  "expenses.uncategorized",
   "feedback.failedMarkRead",
   "feedback.markRead",
   "feedback.markedAsRead",

@@ -27,12 +27,15 @@ export function ImageUpload({
   onChange,
   bucket = 'branding',
   folder = 'logos',
-  label = 'Upload Image',
+  label,
   hint,
   aspectRatio = 'square',
   maxSizeMB = 2,
 }: ImageUploadProps) {
   const { t } = useTranslation();
+  // Default label is translated rather than a hardcoded 'Upload Image'; callers
+  // that pass an explicit (already-localized) label override it.
+  const resolvedLabel = label ?? t('imageUpload.defaultLabel');
   const tenantId = useAuthStore((s) => s.staff?.tenant_id);
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -162,7 +165,9 @@ export function ImageUpload({
 
   return (
     <div className="space-y-2">
-      {label && <label className="block text-sm font-medium text-gray-700">{label}</label>}
+      {resolvedLabel && (
+        <label className="block text-sm font-medium text-gray-700">{resolvedLabel}</label>
+      )}
 
       {value ? (
         // Preview state
@@ -170,7 +175,7 @@ export function ImageUpload({
           <div
             className={`relative ${aspectClasses[aspectRatio]} w-40 bg-gray-100 rounded-lg overflow-hidden border border-gray-200`}
           >
-            <Image src={value} alt="Uploaded image" fill className="object-contain" />
+            <Image src={value} alt={t('imageUpload.altUploaded')} fill className="object-contain" />
           </div>
           <button
             type="button"
@@ -209,7 +214,7 @@ export function ImageUpload({
             {isUploading ? (
               <>
                 <Loader2 className="h-10 w-10 text-blue-500 animate-spin mb-2" />
-                <p className="text-sm text-gray-600">Uploading...</p>
+                <p className="text-sm text-gray-600">{t('imageUpload.uploading')}</p>
               </>
             ) : (
               <>
@@ -221,10 +226,12 @@ export function ImageUpload({
                   )}
                 </div>
                 <p className="text-sm font-medium text-gray-700">
-                  {dragActive ? 'Drop image here' : 'Click to upload'}
+                  {dragActive ? t('imageUpload.dropHere') : t('imageUpload.clickToUpload')}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">or drag and drop</p>
-                <p className="text-xs text-gray-400 mt-2">PNG, JPG up to {maxSizeMB}MB</p>
+                <p className="text-xs text-gray-500 mt-1">{t('imageUpload.orDragAndDrop')}</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  {t('imageUpload.fileHint', { size: maxSizeMB })}
+                </p>
               </>
             )}
           </div>

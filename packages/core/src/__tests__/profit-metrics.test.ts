@@ -91,7 +91,7 @@ describe('groupExpensesByCategory', () => {
     expect(result[2].name).toBe('Small');
   });
 
-  it('handles null category as Uncategorized', () => {
+  it('emits a null name for null category (UI localizes it, not the headless layer)', () => {
     const expenses = [
       { amount: 100, category: null },
       { amount: 200, category: null },
@@ -99,15 +99,15 @@ describe('groupExpensesByCategory', () => {
 
     const result = groupExpensesByCategory(expenses);
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({ name: 'Uncategorized', total: 300, count: 2 });
+    expect(result[0]).toEqual({ name: null, total: 300, count: 2 });
   });
 
-  it('handles missing category field', () => {
+  it('emits a null name for a missing category field', () => {
     const expenses = [{ amount: 100 }, { amount: 200 }];
 
     const result = groupExpensesByCategory(expenses);
     expect(result).toHaveLength(1);
-    expect(result[0].name).toBe('Uncategorized');
+    expect(result[0].name).toBeNull();
     expect(result[0].total).toBe(300);
   });
 

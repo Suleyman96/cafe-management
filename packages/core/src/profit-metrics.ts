@@ -8,7 +8,13 @@ export interface ExpenseEntry {
 }
 
 export interface CategoryBreakdown {
-  name: string;
+  /**
+   * Category name, or `null` when the expense has no category. Headless code
+   * can't translate, so it emits `null` rather than an English `'Uncategorized'`
+   * literal — UI consumers render the localized label (`expenses.uncategorized`)
+   * for `null`.
+   */
+  name: string | null;
   total: number;
   count: number;
 }
@@ -50,7 +56,7 @@ export function groupExpensesByCategory(expenses: ExpenseEntry[]): CategoryBreak
   const categoryMap = new Map<string, CategoryBreakdown>();
 
   for (const e of expenses) {
-    const catName = e.category?.name || 'Uncategorized';
+    const catName = e.category?.name ?? null;
     const catId = e.category?.id || 'uncategorized';
     const current = categoryMap.get(catId) || { name: catName, total: 0, count: 0 };
     categoryMap.set(catId, {

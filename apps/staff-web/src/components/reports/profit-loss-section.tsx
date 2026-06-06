@@ -96,9 +96,9 @@ export function ProfitLossSection({ metrics, profitMetrics, formatPrice }: Profi
                   ? (cat.total / profitMetrics.totalExpenses) * 100
                   : 0;
               return (
-                <div key={cat.name} className="flex items-center gap-3">
+                <div key={cat.name ?? 'uncategorized'} className="flex items-center gap-3">
                   <span className="text-xs sm:text-sm text-gray-600 w-24 sm:w-28 truncate">
-                    {cat.name}
+                    {cat.name ?? t('expenses.uncategorized')}
                   </span>
                   <div className="flex-1 bg-gray-100 rounded-full h-2">
                     <div
