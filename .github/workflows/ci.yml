@@ -253,18 +253,33 @@ jobs:
       - name: Verify React peers accept 19
         run: |
           FAIL=0
-          for pkg in queries i18n ui; do
+          # The React-bearing shared packages. Previously this listed `ui`,
+          # which has no package.json (the real component packages are
+          # `ui-web` / `ui-mobile`) — so the check silently skipped and never
+          # validated the packages that actually declare React peers.
+          for pkg in queries i18n ui-web ui-mobile; do
             file="packages/$pkg/package.json"
             if [ ! -f "$file" ]; then
-              echo "::warning::$file not found, skipping"
+              echo "::error::$file not found"
+              FAIL=1
               continue
             fi
-            peer=$(jq -r '.peerDependencies.react // "missing"' "$file")
-            if [[ ! "$peer" == *"19"* ]]; then
-              echo "::error::packages/$pkg missing React 19 in peer range: $peer"
+            react=$(jq -r '.peerDependencies.react // "missing"' "$file")
+            if [[ ! "$react" == *"19"* ]]; then
+              echo "::error::packages/$pkg missing React 19 in react peer range: $react"
               FAIL=1
             else
-              echo "✅ packages/$pkg react peer: $peer"
+              echo "✅ packages/$pkg react peer: $react"
+            fi
+            # react-dom is optional (only web component packages declare it).
+            # When present it must also accept 19, or the React-19 web
+            # migration hits a peer conflict the react-only check wouldn't see.
+            rdom=$(jq -r '.peerDependencies["react-dom"] // "none"' "$file")
+            if [[ "$rdom" != "none" && ! "$rdom" == *"19"* ]]; then
+              echo "::error::packages/$pkg react-dom peer doesn't accept 19: $rdom"
+              FAIL=1
+            elif [[ "$rdom" != "none" ]]; then
+              echo "✅ packages/$pkg react-dom peer: $rdom"
             fi
           done
           exit $FAIL

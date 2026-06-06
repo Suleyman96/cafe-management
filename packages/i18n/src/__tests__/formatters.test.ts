@@ -18,6 +18,17 @@ describe('numberToWords', () => {
     expect(numberToWords(99.5, 'en')).toBe('ninety-nine and 50/100');
   });
 
+  it('carries a cents value that rounds up to 100 into the whole part', () => {
+    // Regression: `Math.round((abs - whole) * 100)` yielded 100 here and
+    // rendered "ninety-nine and 100/100". Rounding total cents carries the
+    // dollar correctly.
+    expect(numberToWords(99.995, 'en')).toBe('one hundred and 00/100');
+    expect(numberToWords(99.999, 'en')).toBe('one hundred and 00/100');
+    expect(numberToWords(0.999, 'en')).toBe('one and 00/100');
+    // A value just below the carry threshold still rounds to 99 cents.
+    expect(numberToWords(99.994, 'en')).toBe('ninety-nine and 99/100');
+  });
+
   it('handles zero', () => {
     expect(numberToWords(0, 'en')).toBe('zero and 00/100');
   });

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Gustri — a restaurant management system built as a Turborepo monorepo with 4 client apps and 9 shared packages, powered by Supabase (PostgreSQL + Auth + Realtime).
+Gustri — a restaurant management system built as a Turborepo monorepo with 4 client apps and 8 shared packages, powered by Supabase (PostgreSQL + Auth + Realtime).
 
 ## Monorepo Structure
 
@@ -19,8 +19,7 @@ packages/
   api-client/       Type-safe Supabase wrapper (SupabaseWrapper class)
   queries/          Shared TanStack Query hooks/mutations (web + mobile)
   i18n/             i18next setup + locale bundles (20 languages)
-  ui/               Shared React components (Button, Badge, LoadingSpinner, …)
-  ui-web/           Web-specific shared components
+  ui-web/           Web-specific shared components (Button, Badge, LoadingSpinner, …)
   ui-mobile/        Mobile-specific shared components
   design-tokens/    Shared design tokens (colors, spacing, typography)
 
@@ -85,8 +84,8 @@ Before adding a file, run through this decision tree. Wrong placement is the #1 
 | TanStack Query hook/mutation used by **more than one app** | `@gustri/queries` | Shared cache keys & invalidation rules |
 | TanStack Query hook used by **only one app** | App-local `src/hooks/` (see "Hooks" rule below — `-safe` only when justified) | YAGNI — promote to `@gustri/queries` once a second consumer appears |
 | `QUERY_KEYS` constant / new query-key entry | `@gustri/queries/keys.ts` | Shared cache namespace |
-| Reusable React component (used by 2+ apps **or** clearly generic) | `@gustri/ui` | One source of truth for shared visuals |
-| Tailwind class helpers (e.g., `getRoleBadgeColor`) | `@gustri/ui/badges.ts` (or alongside the consuming component) | Tailwind strings are styling — not headless |
+| Reusable React component (used by 2+ apps **or** clearly generic) | `@gustri/ui-web` (web) / `@gustri/ui-mobile` (mobile) | One source of truth for shared visuals |
+| Tailwind class helpers (e.g., `getRoleBadgeColor`) | `@gustri/ui-web/badges.ts` (or alongside the consuming component) | Tailwind strings are styling — not headless |
 | App-specific component (feature/screen-specific) | `apps/<app>/src/components/<feature>/` | Locality beats premature sharing |
 | User-facing string | i18n key in `@gustri/i18n` locales | Never hardcode visible text — CI gate enforces it |
 | Server-side transaction or third-party call | `apps/staff-web` route under `/api/v1/*`; helper in `apps/staff-web/src/lib/services/` | See Data Access exception 2 |
@@ -388,10 +387,11 @@ STOCK_MOVEMENT: in, out, adjustment
 `@gustri/core` and `@gustri/database` MUST NOT import `react`, `react-dom`, or
 `react-native`. They run in Node (server endpoints, scripts) as well as RN/web,
 and a stray React import locks them to a single runtime. Hooks belong in
-`@gustri/queries`. Components in `@gustri/ui`. Biome enforces this via a
-`noRestrictedImports` override in `biome.json` — `pnpm check` fails on
-violation. CI also verifies that `@gustri/queries`, `@gustri/i18n`, and
-`@gustri/ui` keep React 19 in their peer range.
+`@gustri/queries`. Components in `@gustri/ui-web` / `@gustri/ui-mobile`. Biome
+enforces this via a `noRestrictedImports` override in `biome.json` — `pnpm
+check` fails on violation. CI also verifies that `@gustri/queries`,
+`@gustri/i18n`, `@gustri/ui-web`, and `@gustri/ui-mobile` keep React 19 in their
+peer range.
 
 ## Real-time
 

@@ -115,8 +115,13 @@ export function numberToWords(amount: number, locale: string): string {
   const abs = Math.abs(amount);
   const lang = locale.split('-')[0]?.toLowerCase();
   if (lang === 'en') {
-    const whole = Math.floor(abs);
-    const cents = Math.round((abs - whole) * 100);
+    // Round to total cents FIRST, then split. Rounding the fractional part on
+    // its own lets a value like 99.995 produce cents === 100 →
+    // "ninety-nine and 100/100"; rounding the whole amount carries correctly
+    // into the dollars ("one hundred and 00/100").
+    const totalCents = Math.round(abs * 100);
+    const whole = Math.floor(totalCents / 100);
+    const cents = totalCents % 100;
     const wholeWords = englishWholeToWords(whole);
     const padded = String(cents).padStart(2, '0');
     return `${wholeWords} and ${padded}/100`;
