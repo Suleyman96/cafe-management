@@ -1,7 +1,7 @@
 'use client';
 
 import { formatTime, ORDER_STATUS_KEYS } from '@gustri/core';
-import { useTranslation } from '@gustri/i18n';
+import { useLocale, useTranslation } from '@gustri/i18n';
 import { Button, getOrderStatusColor, LoadingSpinner } from '@gustri/ui-web';
 import { ArrowLeft, ArrowRight, Clock, Home, Package, RefreshCw, Truck, User } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
@@ -25,6 +25,7 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const orderId = params.id as string;
   const { t } = useTranslation('staff');
+  const locale = useLocale();
 
   const {
     order,
@@ -206,7 +207,9 @@ export default function OrderDetailPage() {
               })}
               {transfer.reason && ` - ${transfer.reason}`}
               {transfer.created_at && (
-                <span className="text-gray-600 ml-2">({formatTime(transfer.created_at)})</span>
+                <span className="text-gray-600 ml-2">
+                  ({formatTime(transfer.created_at, locale)})
+                </span>
               )}
             </div>
           ))}

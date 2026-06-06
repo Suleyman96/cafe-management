@@ -1,7 +1,7 @@
 'use client';
 
 import { formatTime } from '@gustri/core';
-import { useTranslation } from '@gustri/i18n';
+import { useLocale, useTranslation } from '@gustri/i18n';
 import type { Payment } from './use-order-detail';
 
 interface OrderDetailPaymentsProps {
@@ -18,6 +18,7 @@ export function OrderDetailPayments({
   formatPrice,
 }: OrderDetailPaymentsProps) {
   const { t } = useTranslation('staff');
+  const locale = useLocale();
 
   return (
     <div className="border rounded-lg mb-6">
@@ -53,7 +54,7 @@ export function OrderDetailPayments({
                   )}
                   <p className="text-xs text-gray-500 mt-1">
                     {payment.received_by_staff?.full_name || 'Unknown'} &middot;{' '}
-                    {formatTime(payment.created_at)}
+                    {formatTime(payment.created_at, locale)}
                   </p>
                 </div>
                 <div className="text-right flex-shrink-0">

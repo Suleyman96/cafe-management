@@ -198,11 +198,17 @@ export function formatElapsedTime(startDate: string | Date): string {
 }
 
 /**
- * Format a date/time string to localized time (e.g., "02:30 PM").
+ * Format a date/time string to localized time (e.g., "02:30 PM" in `en-US`,
+ * "14:30" in `de`).
+ *
+ * Pass the active UI `locale` (e.g. from `useLocale()` in `@gustri/i18n`) so a
+ * non-US user sees their own time convention instead of US AM/PM. The `en-US`
+ * default is a headless/back-compat fallback only — UI callers should always
+ * pass the locale.
  */
-export function formatTime(dateString: string | Date): string {
+export function formatTime(dateString: string | Date, locale = 'en-US'): string {
   const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }
 
 // ─── Exhaustiveness ─────────────────────────────────────────────

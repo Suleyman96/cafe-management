@@ -6,6 +6,7 @@ import {
   calculateTotal,
   calculateTotalWithSettings,
   formatPriceWithSettings,
+  formatTime,
   getDisplaySubtotal,
 } from '../utils';
 
@@ -231,5 +232,26 @@ describe('getDisplaySubtotal', () => {
     const result = getDisplaySubtotal(100, settings);
     expect(Number.isFinite(result)).toBe(true);
     expect(result).toBe(100);
+  });
+});
+
+// ─── formatTime ─────────────────────────────────────────────────
+// Assertions are timezone-robust: they check the 12h-vs-24h convention the
+// locale drives (en-US uses AM/PM, de uses 24h) rather than the exact wall
+// time, which depends on the runner's timezone.
+describe('formatTime', () => {
+  const instant = new Date('2026-01-01T14:30:00Z');
+
+  it('defaults to en-US (12-hour, AM/PM) for back-compat when no locale is given', () => {
+    expect(formatTime(instant)).toMatch(/AM|PM/);
+  });
+
+  it('respects the passed locale — a 24-hour locale drops the AM/PM meridiem', () => {
+    expect(formatTime(instant, 'en-US')).toMatch(/AM|PM/);
+    expect(formatTime(instant, 'de-DE')).not.toMatch(/AM|PM/);
+  });
+
+  it('accepts an ISO string and a Date interchangeably', () => {
+    expect(formatTime('2026-01-01T14:30:00Z', 'de-DE')).toBe(formatTime(instant, 'de-DE'));
   });
 });
