@@ -12,14 +12,15 @@ vi.mock('@/lib/sound', () => ({
   playWaiterCallSound: vi.fn(),
 }));
 
-import { QUERY_KEYS } from '@gustri/queries';
+import { QUERY_KEYS, tenantKey } from '@gustri/queries';
 import {
   useOrder,
   useOrders,
   useUpdateOrderItemStatus,
   useUpdateOrderStatus,
 } from '@/hooks/use-orders';
-import { createWrapper, renderHookWithProviders } from '../helpers/test-utils';
+import { supabase } from '@/lib/supabase';
+import { createWrapper, renderHookWithProviders, TEST_TENANT_ID } from '../helpers/test-utils';
 
 describe('useOrders', () => {
   it('calls db.orders.findAll', () => {
@@ -171,5 +172,65 @@ describe('useUpdateOrderItemStatus - QUERY_KEYS', () => {
 
     const keys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
     expect(keys).toContainEqual([QUERY_KEYS.ORDERS]);
+  });
+});
+
+// Audit #5 — every useOrders instance must open its OWN realtime channel so
+// that unmounting one screen's hook doesn't tear down the channel another
+// screen still relies on (the old shared `'orders:all'` name). Two instances
+// in the same React tree must produce two distinct `orders:all:*` channels.
+describe('useOrders - realtime channel isolation (audit #5)', () => {
+  it('opens a distinct realtime channel per hook instance', () => {
+    const { wrapper } = createWrapper();
+    renderHook(
+      () => {
+        useOrders();
+        useOrders();
+      },
+      { wrapper },
+    );
+
+    const orderChannelNames = (vi.mocked(supabase.channel).mock.calls as Array<[string]>)
+      .map((c) => c[0])
+      .filter((n) => typeof n === 'string' && n.startsWith('orders:all:'));
+
+    expect(orderChannelNames).toHaveLength(2);
+    // Distinct names → distinct Supabase topics + status-store keys.
+    expect(new Set(orderChannelNames).size).toBe(2);
+  });
+});
+
+// Audit #6 — optimistic-concurrency guard for order status writes. When the
+// `orders_optimistic_concurrency` flag is on, the hook forwards the cached
+// order `version` as `expectedVersion` so a stale (e.g. offline-replayed)
+// write is rejected by the wrapper instead of clobbering newer state. Flag
+// off ⇒ the version-naive 2-arg call (asserted by the arg-verification test
+// above).
+describe('useUpdateOrderStatus - optimistic concurrency (audit #6)', () => {
+  it('forwards expectedVersion from cache when the flag is on', async () => {
+    const { wrapper, queryClient, mockDb } = createWrapper();
+    // Enable the per-tenant flag via cafe settings (useFeatureFlag source).
+    queryClient.setQueryData(tenantKey(TEST_TENANT_ID, QUERY_KEYS.CAFE_SETTINGS), {
+      feature_flags: { orders_optimistic_concurrency: true },
+    });
+    // Seed an order carrying a version so the hook can read it.
+    queryClient.setQueryData(
+      [QUERY_KEYS.ORDERS],
+      [{ id: 'o1', status: 'new', version: 7, order_items: [] }],
+    );
+
+    const { result } = renderHook(() => useUpdateOrderStatus(), { wrapper });
+    await result.current.mutateAsync({ orderId: 'o1', status: 'preparing' });
+
+    expect(mockDb.orders.updateStatus).toHaveBeenCalledWith('o1', 'preparing', {
+      expectedVersion: 7,
+    });
+  });
+
+  it('omits the version arg entirely when the flag is off', async () => {
+    const { result, mockDb } = renderHookWithProviders(() => useUpdateOrderStatus());
+    await result.current.mutateAsync({ orderId: 'o1', status: 'preparing' });
+    // No third options arg — byte-identical to the pre-audit call.
+    expect(mockDb.orders.updateStatus).toHaveBeenCalledWith('o1', 'preparing');
   });
 });

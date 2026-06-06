@@ -1,9 +1,16 @@
 import { OrdersRealtimeInsertSchema, OrdersRealtimeUpdateSchema } from '@gustri/database';
 import type { Order, OrderItem, Table } from '@gustri/database/types';
-import { patchQueries, QUERY_KEYS, rollbackQueries, STALE_TIMES, useDb } from '@gustri/queries';
+import {
+  patchQueries,
+  QUERY_KEYS,
+  rollbackQueries,
+  STALE_TIMES,
+  useDb,
+  useFeatureFlag,
+} from '@gustri/queries';
 import * as Sentry from '@sentry/react-native';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import { consumeReconnectReplay, markEvent, seenRecently } from '@/lib/event-dedup';
 import { hapticEvent } from '@/lib/haptics';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
@@ -19,15 +26,50 @@ import { useRealtimeSync } from './use-realtime-sync';
 // Re-export read hooks and mutations with matching param shapes
 export { useCleanupEmptyOrders } from '@gustri/queries';
 
+// Plan 8 — per-tenant kill switch for optimistic-concurrency version checks
+// on order status writes. Default off ⇒ the version-naive UPDATE path.
+const ORDERS_OPTIMISTIC_CONCURRENCY_FLAG = 'orders_optimistic_concurrency';
+
+/**
+ * Read the cached `version` for an order from whichever query populated it.
+ * The single-order key is exact; order *lists* are keyed `[ORDERS, filters]`,
+ * so we scan every cached list variant. Returns `undefined` when no copy is
+ * cached — callers then omit `expectedVersion` so the wrapper falls back to
+ * the version-naive path rather than gating on a stale `0`.
+ */
+function readCachedOrderVersion(qc: QueryClient, orderId: string): number | undefined {
+  const detail = qc.getQueryData<Order>([QUERY_KEYS.ORDER, orderId]);
+  if (typeof detail?.version === 'number') return detail.version;
+  for (const [, list] of qc.getQueriesData<OrderWithDetails[]>({ queryKey: [QUERY_KEYS.ORDERS] })) {
+    const found = Array.isArray(list) ? list.find((o) => o.id === orderId) : undefined;
+    if (typeof found?.version === 'number') return found.version;
+  }
+  return undefined;
+}
+
 // Local mutations — mobile consumers use { orderId } / { itemId } instead of { id }
 
 export function useUpdateOrderStatus() {
   const db = useDb();
   const queryClient = useQueryClient();
+  const versionCheckEnabled = useFeatureFlag(ORDERS_OPTIMISTIC_CONCURRENCY_FLAG);
   return useMutation({
     mutationKey: MUTATION_KEYS.UPDATE_ORDER_STATUS,
-    mutationFn: ({ orderId, status }: { orderId: string; status: Order['status'] }) =>
-      db.orders.updateStatus(orderId, status),
+    // Audit #6 — guard against a stale write clobbering newer server state.
+    // These mutations are offline-replayable, so a `preparing` queued while
+    // offline can resume after the server already advanced. The #183
+    // `trg_sync_order_status_from_items` / state-machine trigger is the primary
+    // guard (it rejects *backward* transitions server-side); forwarding the
+    // cached `version` as `expectedVersion` adds conflict detection for the
+    // legal-but-stale window — the wrapper throws ConflictError(version_conflict)
+    // when the row moved on, which rolls back the optimistic patch and refetches
+    // truth. Brings mobile to parity with staff-web's Plan-8 path. Flag off ⇒
+    // byte-identical to the prior version-naive call (no third arg).
+    mutationFn: ({ orderId, status }: { orderId: string; status: Order['status'] }) => {
+      if (!versionCheckEnabled) return db.orders.updateStatus(orderId, status);
+      const expectedVersion = readCachedOrderVersion(queryClient, orderId);
+      return db.orders.updateStatus(orderId, status, { expectedVersion });
+    },
     // Optimistic: flip the order status in the list + detail before the
     // round-trip. Especially valuable on mobile — while offline the mutation
     // is paused but onMutate still runs, so the change shows immediately and
@@ -109,6 +151,19 @@ export function useOrders(filters?: {
 }) {
   const dbClient = useDb();
   const queryClient = useQueryClient();
+
+  // Audit #5 — unique realtime channel name per hook instance. `useOrders` is
+  // mounted at many sites (and twice in the kitchen screen), so a hardcoded
+  // `'orders:all'` made every instance share one Supabase topic AND one
+  // `realtime-status-store` key: unmounting one ran `removeChannel('orders:all')`
+  // and tore down the channel/status the others still needed → kitchen went
+  // silent until the fallback poll. A per-instance name isolates them. The
+  // extra channels are cheap, and new-order side effects stay single-fire
+  // because `consumeReconnectReplay` dedups by order id across all channels.
+  // `useId` is unique within the app's single React tree (each screen's hook
+  // gets a distinct id).
+  const instanceId = useId();
+  const ordersChannelName = `orders:all:${instanceId.replace(/:/g, '')}`;
 
   const query = useQuery({
     queryKey: [QUERY_KEYS.ORDERS, filters],
@@ -212,7 +267,7 @@ export function useOrders(filters?: {
     [queryClient],
   );
 
-  useRealtimeSync('orders:all', realtimeHandlers);
+  useRealtimeSync(ordersChannelName, realtimeHandlers);
 
   // Fallback alert path: when realtime is degraded, the 2-min poll keeps the
   // list fresh but the INSERT-triggered sound never fires. Diff the previous
@@ -278,7 +333,7 @@ export function useOrders(filters?: {
   // until the next refetch lands. This second trigger forces an explicit
   // `query.refetch()` at the transition edge so the catchup is bounded by
   // network latency, not by React-Query scheduling.
-  const channelStatus = useRealtimeStatusStore((s) => s.channels['orders:all'] ?? null);
+  const channelStatus = useRealtimeStatusStore((s) => s.channels[ordersChannelName] ?? null);
   const previousChannelStatusRef = useRef<RealtimeChannelStatus | null>(null);
   useEffect(() => {
     const previous = previousChannelStatusRef.current;
