@@ -15,47 +15,21 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActiveOrderBanner } from '@/components/order/active-order-banner';
 import { useCartMenuSync } from '@/hooks/use-cart-menu-sync';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useFormatPrice } from '@/hooks/use-format-price';
 import { useCategories, useMenuItems } from '@/hooks/use-menu';
-import { useOrder } from '@/hooks/use-order';
-import { useOrderEta } from '@/hooks/use-order-eta';
 import { useCafeSettings } from '@/hooks/use-settings';
-import { useTable } from '@/hooks/use-table';
 import { useTaxMultiplier } from '@/hooks/use-tax-multiplier';
 import { GLASS } from '@/lib/styles';
 import { cn, getLocalizedField } from '@/lib/utils';
 import { useCartStore } from '@/store/cart-store';
 import { useLanguageStore } from '@/store/language-store';
 import type { Category, MenuItemWithCategory } from '@/types';
+import { MenuActiveOrderBanner } from './menu-active-order-banner';
 import { MenuCartSidebar } from './menu-cart-sidebar';
 import { MenuItemCard } from './menu-item-card';
-
-// M5 — dine-in only. Extracted so we don't fire `useTable` / `useOrder`
-// in the delivery flow (the table sentinel `__delivery__` would 404 and
-// pollute Sentry). The parent mounts this conditionally based on
-// `isDelivery`.
-function MenuActiveOrderBanner({ tableId }: { tableId: string }) {
-  const { data: table } = useTable(tableId);
-  const actualTableId = table?.id || '';
-  const { data: existingOrder } = useOrder(actualTableId);
-  const eta = useOrderEta(
-    existingOrder?.order_items,
-    existingOrder?.status,
-    existingOrder?.created_at,
-    existingOrder?.id,
-  );
-  if (!existingOrder?.order_number) return null;
-  return (
-    <ActiveOrderBanner
-      orderNumber={existingOrder.order_number}
-      href={`/table/${tableId}/order`}
-      eta={eta}
-    />
-  );
-}
+import { SkeletonCard } from './menu-skeleton-card';
 
 interface MenuScreenProps {
   tableId: string;
@@ -64,25 +38,6 @@ interface MenuScreenProps {
 }
 
 type DietaryFilter = 'vegetarian' | 'vegan' | 'gluten_free' | 'spicy';
-
-function SkeletonCard() {
-  return (
-    <div
-      className="rounded-2xl overflow-hidden animate-pulse"
-      style={{
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.08)',
-      }}
-    >
-      <div className="aspect-video bg-white/[0.06]" />
-      <div className="p-3">
-        <div className="h-3.5 w-3/4 rounded bg-white/[0.08] mb-2" />
-        <div className="h-3 w-1/2 rounded bg-white/[0.06] mb-2.5" />
-        <div className="h-4 w-1/3 rounded bg-white/[0.08]" />
-      </div>
-    </div>
-  );
-}
 
 // ─── Main Menu Screen ───────────────────────────────────────────────────────
 

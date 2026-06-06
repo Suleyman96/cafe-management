@@ -1,156 +1,33 @@
 'use client';
 
-import type { PlanName } from '@gustri/core';
-import { getLocalDateString, PLAN_ORDER } from '@gustri/core';
+import { getLocalDateString } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { invalidateSchedules, useTenantId } from '@gustri/queries';
 import { GustriIcon, GustriLogo, getRoleBadgeColor } from '@gustri/ui-web';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  BarChart3,
-  Bell,
-  CalendarDays,
-  ChefHat,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  ClipboardList,
   Clock,
   ListTodo,
   LogIn,
   LogOut,
-  Menu,
-  MessageSquare,
-  Package,
-  Receipt,
-  Scale,
   Settings,
-  Store,
-  Trash2,
-  Truck,
-  Users,
-  UtensilsCrossed,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
-import { useCanPerform } from '@/hooks/use-can-perform';
 import { usePendingApprovalCount } from '@/hooks/use-orders-safe';
 import { useMyScheduleToday } from '@/hooks/use-schedules-safe';
-import { useCafeSettings } from '@/hooks/use-settings-safe';
 import { useMyTasks, useOverdueTasksCount } from '@/hooks/use-tasks-safe';
-import { useTenantPlan } from '@/hooks/use-tenant-plan';
 import { supabase } from '@/lib/supabase/client';
+import { useVisibleNavItems } from './use-visible-nav-items';
 
 const SIDEBAR_GROUPS_STORAGE_KEY = 'gustri:sidebar:collapsedGroups';
-
-type NavItem = {
-  href: string;
-  labelKey: string;
-  icon: React.ReactNode;
-  adminOnly?: boolean;
-  ownerOnly?: boolean;
-  minPlan?: PlanName;
-};
-
-type NavGroup = {
-  key: string;
-  labelKey: string;
-  collapsible: boolean;
-  adminOnly?: boolean;
-  items: NavItem[];
-};
-
-const navGroups: NavGroup[] = [
-  {
-    key: 'main',
-    labelKey: 'mainSection',
-    collapsible: false,
-    items: [
-      { href: '/tables', labelKey: 'tables', icon: <UtensilsCrossed className="h-5 w-5" /> },
-      { href: '/orders', labelKey: 'orders', icon: <ClipboardList className="h-5 w-5" /> },
-      { href: '/delivery', labelKey: 'delivery', icon: <Truck className="h-5 w-5" /> },
-      { href: '/takeout', labelKey: 'takeout', icon: <Package className="h-5 w-5" /> },
-      { href: '/kitchen', labelKey: 'kitchen', icon: <ChefHat className="h-5 w-5" /> },
-      { href: '/calls', labelKey: 'waiterCalls', icon: <Bell className="h-5 w-5" /> },
-      {
-        href: '/tasks',
-        labelKey: 'tasks',
-        icon: <ListTodo className="h-5 w-5" />,
-        minPlan: 'pro' as PlanName,
-      },
-    ],
-  },
-  {
-    key: 'management',
-    labelKey: 'managementSection',
-    collapsible: true,
-    items: [
-      {
-        href: '/feedback',
-        labelKey: 'feedback',
-        icon: <MessageSquare className="h-5 w-5" />,
-        adminOnly: true,
-      },
-      {
-        href: '/stock',
-        labelKey: 'stock',
-        icon: <Package className="h-5 w-5" />,
-        adminOnly: true,
-        minPlan: 'pro' as PlanName,
-      },
-      {
-        href: '/waste',
-        labelKey: 'waste',
-        icon: <Trash2 className="h-5 w-5" />,
-        adminOnly: true,
-        minPlan: 'pro' as PlanName,
-      },
-      {
-        href: '/expenses',
-        labelKey: 'expenses',
-        icon: <Receipt className="h-5 w-5" />,
-        adminOnly: true,
-      },
-    ],
-  },
-  {
-    key: 'admin',
-    labelKey: 'adminSection',
-    collapsible: true,
-    adminOnly: true,
-    items: [
-      { href: '/staff', labelKey: 'staff', icon: <Users className="h-5 w-5" /> },
-      { href: '/menu', labelKey: 'menu', icon: <Menu className="h-5 w-5" /> },
-      {
-        href: '/schedules',
-        labelKey: 'schedules',
-        icon: <CalendarDays className="h-5 w-5" />,
-        minPlan: 'pro' as PlanName,
-      },
-      {
-        href: '/reports',
-        labelKey: 'reports',
-        icon: <BarChart3 className="h-5 w-5" />,
-        ownerOnly: true,
-      },
-      {
-        href: '/reports/shift-reconciliation',
-        labelKey: 'reconciliation',
-        icon: <Scale className="h-5 w-5" />,
-        adminOnly: true,
-      },
-      {
-        href: '/cafe-settings',
-        labelKey: 'cafeSettings',
-        icon: <Store className="h-5 w-5" />,
-      },
-    ],
-  },
-];
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -172,44 +49,10 @@ export function Sidebar({ isCollapsed, onToggle, isMobile, onMobileClose }: Side
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { data: overdueCount = 0 } = useOverdueTasksCount();
   const pendingApprovalCount = usePendingApprovalCount();
-  const { data: cafeSettings } = useCafeSettings();
-  const { plan: tenantPlan } = useTenantPlan();
 
-  // Sidebar uses `manage_staff` as a stand-in for "admin tier UI" — both
-  // admin and owner pass this check, matching the prior `role === 'admin'
-  // || isOwner` semantics. Inline role expressions are banned in new code;
-  // see CLAUDE.md "Authorization vs connectivity gates".
-  const isAdmin = useCanPerform('manage_staff');
-  // `view_reports` gates the owner-only Reports entry (the sole `ownerOnly`
-  // nav item). Routed through the permissions policy rather than an inline
-  // `role === 'owner'` check for the same reason as `isAdmin` above.
-  const canViewReports = useCanPerform('view_reports');
-
-  const filterItems = (items: NavItem[]) =>
-    items.filter((item) => {
-      if (item.ownerOnly && !canViewReports) return false;
-      if (item.adminOnly && !isAdmin) return false;
-      // Plan unknown (post-login fetch pending or failed) → hide gated
-      // items rather than coercing to 'free'. The gated entry will appear
-      // once the plan resolves; this is preferable to surfacing a link the
-      // user can't actually reach (or — worse — hiding entries they paid
-      // for if the fetch failed transiently).
-      if (item.minPlan) {
-        if (!tenantPlan) return false;
-        if (PLAN_ORDER[tenantPlan] < PLAN_ORDER[item.minPlan]) return false;
-      }
-      if (item.href === '/waste' && !cafeSettings?.waste_tracking_enabled) return false;
-      return true;
-    });
-
-  // Build visible groups with filtered items
-  const visibleGroups = navGroups
-    .filter((group) => {
-      if (group.adminOnly && !isAdmin) return false;
-      return true;
-    })
-    .map((group) => ({ ...group, items: filterItems(group.items) }))
-    .filter((group) => group.items.length > 0);
+  // Visible nav groups (plan + permission + feature gates applied). Policy
+  // lives in the hook so it stays unit-testable and the render path clean.
+  const visibleGroups = useVisibleNavItems();
 
   const isGroupCollapsed = (groupKey: string) => {
     // User toggle wins. Without this, the active-page auto-expand below

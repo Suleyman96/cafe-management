@@ -1,4 +1,3 @@
-import { TIME_OPTIONS, WEEKDAY_TRANSLATION_KEY, WEEKDAYS } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
@@ -8,9 +7,8 @@ import { getLocalDateString } from '@/lib/date-utils';
 import { Text, TextInput } from '@/lib/paper-compat';
 import { COLORS } from '@/theme';
 import type { Staff, Task } from '@/types';
-
-// Generate time options in HH:MM format (30-min intervals)
-const TIME_SLOTS = TIME_OPTIONS;
+import { RecurrenceSettings } from './RecurrenceSettings';
+import { TimePicker } from './TimePicker';
 
 interface TaskModalProps {
   task: Task | null;
@@ -46,12 +44,6 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
     { value: 'normal' as const, label: t('tasks.normal'), bg: '#dbeafe', text: '#1d4ed8' },
     { value: 'high' as const, label: t('tasks.high'), bg: '#ffedd5', text: '#c2410c' },
     { value: 'urgent' as const, label: t('tasks.urgent'), bg: '#fee2e2', text: '#dc2626' },
-  ];
-
-  const PATTERNS = [
-    { value: 'daily' as const, label: t('tasks.daily') },
-    { value: 'weekly' as const, label: t('tasks.weekly') },
-    { value: 'monthly' as const, label: t('tasks.monthly') },
   ];
 
   const activeStaff = (staffList as Staff[]).filter((s) => s.is_active);
@@ -215,42 +207,12 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
                 <Text variant="labelMedium" style={styles.label}>
                   {t('tasks.dueTime')}
                 </Text>
-                <Chip
-                  icon="clock-outline"
-                  onPress={() => setShowTimePicker(!showTimePicker)}
-                  style={styles.pickerChip}
-                >
-                  {dueTime || t('tasks.noTimeSet')}
-                </Chip>
-                {showTimePicker && (
-                  <ScrollView style={styles.timePickerList} nestedScrollEnabled>
-                    <Chip
-                      selected={!dueTime}
-                      onPress={() => {
-                        setDueTime('');
-                        setShowTimePicker(false);
-                      }}
-                      compact
-                      style={styles.pickerItem}
-                    >
-                      {t('tasks.noTime')}
-                    </Chip>
-                    {TIME_SLOTS.map((time) => (
-                      <Chip
-                        key={time}
-                        selected={dueTime === time}
-                        onPress={() => {
-                          setDueTime(time);
-                          setShowTimePicker(false);
-                        }}
-                        compact
-                        style={styles.pickerItem}
-                      >
-                        {time}
-                      </Chip>
-                    ))}
-                  </ScrollView>
-                )}
+                <TimePicker
+                  value={dueTime}
+                  onChange={setDueTime}
+                  open={showTimePicker}
+                  onToggle={() => setShowTimePicker(!showTimePicker)}
+                />
               </>
             )}
 
@@ -271,117 +233,17 @@ export function TaskModal({ task, staffId, isAdmin, onSave, isSaving, onClose }:
 
             {/* Recurrence Settings */}
             {isRecurring && isAdmin && (
-              <View style={styles.recurringSection}>
-                <Text variant="labelMedium" style={styles.recurringLabel}>
-                  {t('tasks.recurrencePattern')}
-                </Text>
-                <View style={styles.row}>
-                  {PATTERNS.map((p) => (
-                    <Chip
-                      key={p.value}
-                      selected={recurrencePattern === p.value}
-                      onPress={() => {
-                        setRecurrencePattern(p.value);
-                        setRecurrenceDays([]);
-                      }}
-                      compact
-                      style={[
-                        styles.patternChip,
-                        recurrencePattern === p.value && { backgroundColor: '#dbeafe' },
-                      ]}
-                    >
-                      {p.label}
-                    </Chip>
-                  ))}
-                </View>
-
-                {/* Weekly: day buttons */}
-                {recurrencePattern === 'weekly' && (
-                  <>
-                    <Text variant="labelSmall" style={styles.recurringSubLabel}>
-                      {t('tasks.whichDays')}
-                    </Text>
-                    <View style={styles.weekdayRow}>
-                      {WEEKDAYS.map((day) => (
-                        <Chip
-                          key={day.value}
-                          selected={recurrenceDays.includes(day.value)}
-                          onPress={() => toggleWeekday(day.value)}
-                          compact
-                          style={[
-                            styles.weekdayChip,
-                            recurrenceDays.includes(day.value) && { backgroundColor: '#dbeafe' },
-                          ]}
-                        >
-                          {t(WEEKDAY_TRANSLATION_KEY[day.value])}
-                        </Chip>
-                      ))}
-                    </View>
-                  </>
-                )}
-
-                {/* Monthly: day of month */}
-                {recurrencePattern === 'monthly' && (
-                  <>
-                    <Text variant="labelSmall" style={styles.recurringSubLabel}>
-                      {t('tasks.dayOfMonth')}
-                    </Text>
-                    <TextInput
-                      value={recurrenceDays[0]?.toString() || ''}
-                      onChangeText={(v: string) => {
-                        const num = Number.parseInt(v, 10);
-                        setRecurrenceDays(num >= 1 && num <= 31 ? [num] : []);
-                      }}
-                      mode="outlined"
-                      dense
-                      keyboardType="number-pad"
-                      placeholder="1-31"
-                      style={[styles.input, { width: 100 }]}
-                    />
-                  </>
-                )}
-
-                {/* Default time for recurring */}
-                <Text variant="labelSmall" style={styles.recurringSubLabel}>
-                  {t('tasks.defaultDueTime')}
-                </Text>
-                <Chip
-                  icon="clock-outline"
-                  onPress={() => setShowTimePicker(!showTimePicker)}
-                  style={styles.pickerChip}
-                >
-                  {dueTime || t('tasks.noTimeSet')}
-                </Chip>
-                {showTimePicker && (
-                  <ScrollView style={styles.timePickerList} nestedScrollEnabled>
-                    <Chip
-                      selected={!dueTime}
-                      onPress={() => {
-                        setDueTime('');
-                        setShowTimePicker(false);
-                      }}
-                      compact
-                      style={styles.pickerItem}
-                    >
-                      {t('tasks.noTime')}
-                    </Chip>
-                    {TIME_SLOTS.map((time) => (
-                      <Chip
-                        key={time}
-                        selected={dueTime === time}
-                        onPress={() => {
-                          setDueTime(time);
-                          setShowTimePicker(false);
-                        }}
-                        compact
-                        style={styles.pickerItem}
-                      >
-                        {time}
-                      </Chip>
-                    ))}
-                  </ScrollView>
-                )}
-              </View>
+              <RecurrenceSettings
+                recurrencePattern={recurrencePattern}
+                onRecurrencePatternChange={setRecurrencePattern}
+                recurrenceDays={recurrenceDays}
+                onRecurrenceDaysChange={setRecurrenceDays}
+                toggleWeekday={toggleWeekday}
+                dueTime={dueTime}
+                onDueTimeChange={setDueTime}
+                showTimePicker={showTimePicker}
+                onToggleTimePicker={() => setShowTimePicker(!showTimePicker)}
+              />
             )}
 
             {/* Actions */}
@@ -431,13 +293,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   pickerItem: { marginBottom: 2 },
-  timePickerList: {
-    maxHeight: 150,
-    backgroundColor: '#f9fafb',
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 8,
-  },
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -445,19 +300,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 8,
   },
-  recurringSection: {
-    padding: 12,
-    backgroundColor: '#eff6ff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    marginBottom: 8,
-  },
-  recurringLabel: { color: '#1e40af', marginBottom: 8 },
-  recurringSubLabel: { color: '#1e40af', marginTop: 8, marginBottom: 4 },
-  patternChip: {},
-  weekdayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  weekdayChip: {},
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

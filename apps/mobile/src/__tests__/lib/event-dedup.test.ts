@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   __resetEventDedupForTests,
+  consumeReconnectReplay,
   markEvent,
   RECONNECT_REPLAY_WINDOW_MS,
   seenRecently,
@@ -114,5 +115,31 @@ describe('event-dedup', () => {
     }
     expect(seenRecently('order:refresh-me', 600_000)).toBe(true);
     expect(seenRecently('order:filler-0', 600_000)).toBe(false);
+  });
+
+  describe('consumeReconnectReplay', () => {
+    it('returns false on first sight and marks the id', () => {
+      expect(consumeReconnectReplay('order:1')).toBe(false);
+      // Marked: a subsequent default-window check sees it.
+      expect(seenRecently('order:1')).toBe(true);
+    });
+
+    it('returns true on a re-delivery within the reconnect-replay window', () => {
+      expect(consumeReconnectReplay('order:1')).toBe(false);
+      vi.advanceTimersByTime(RECONNECT_REPLAY_WINDOW_MS - 1);
+      expect(consumeReconnectReplay('order:1')).toBe(true);
+    });
+
+    it('returns false again once the replay window has elapsed', () => {
+      expect(consumeReconnectReplay('order:1')).toBe(false);
+      vi.advanceTimersByTime(RECONNECT_REPLAY_WINDOW_MS + 1);
+      expect(consumeReconnectReplay('order:1')).toBe(false);
+    });
+
+    it('marks before returning, so a same-tick push is suppressed (500ms window)', () => {
+      // mark-before-play: the foreground push handler checks the 500ms window.
+      consumeReconnectReplay('waiter_call:t1');
+      expect(seenRecently('waiter_call:t1', 500)).toBe(true);
+    });
   });
 });

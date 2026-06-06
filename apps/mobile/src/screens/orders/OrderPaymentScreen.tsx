@@ -22,9 +22,10 @@ import { TextInput } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 import { COLORS } from '@/theme';
 import type { Order, OrderItemWithMenuItem, OrdersStackParamList } from '@/types';
+import { useItemPaymentSubtotal } from './use-item-payment-subtotal';
+import { type PaymentMode, usePaymentMode } from './use-payment-mode';
 
 type Route = RouteProp<OrdersStackParamList, 'OrderPayment'>;
-type PaymentMode = 'full' | 'partial' | 'items';
 
 // `useOrder` returns the bare row type for ergonomics, but `db.orders.findById`
 // actually returns the order with its `order_items` (incl. `menu_item`) joined.
@@ -54,15 +55,8 @@ export default function OrderPaymentScreen() {
   const updateOrderStatus = useUpdateOrderStatus();
   const currencySymbol = useCurrencySymbol();
 
-  const [mode, setMode] = useState<PaymentMode>('full');
   const [method, setMethod] = useState<'cash' | 'card' | 'digital'>('cash');
-  const [partialAmount, setPartialAmount] = useState('');
   const [tipAmount, setTipAmount] = useState('');
-  // Per-item selected qty (0 = unselected). Maps to web's
-  // `selectedItemQuantities` for parity in `payment_type === 'specific_items'`.
-  const [selectedItemQuantities, setSelectedItemQuantities] = useState<Map<string, number>>(
-    () => new Map(),
-  );
 
   const details = order as OrderWithItems | undefined;
   const orderTotal = order?.total ?? 0;
@@ -92,62 +86,18 @@ export default function OrderPaymentScreen() {
     [payableItems, paidItemIds],
   );
 
-  // Selected items subtotal (pre-tax).
-  const selectedSubtotal = useMemo(() => {
-    let total = 0;
-    for (const [itemId, qty] of selectedItemQuantities) {
-      if (qty <= 0) continue;
-      const item = unpaidItems.find((i) => i.id === itemId);
-      if (item) total += qty * item.item_price;
-    }
-    return total;
-  }, [selectedItemQuantities, unpaidItems]);
+  const {
+    selectedItemQuantities,
+    selectedItemsTotal,
+    hasSelectedItems,
+    allSelectedAtFullQty,
+    updateItemQty,
+  } = useItemPaymentSubtotal({ unpaidItems, orderSubtotal, orderTax });
 
-  // Proportional tax share for the selected slice. Mirrors web's calc.
-  const selectedTax = useMemo(() => {
-    if (orderTax <= 0 || orderSubtotal <= 0) return 0;
-    return Math.round((selectedSubtotal / orderSubtotal) * orderTax * 100) / 100;
-  }, [selectedSubtotal, orderSubtotal, orderTax]);
-
-  const selectedItemsTotal = selectedSubtotal + selectedTax;
-
-  const hasSelectedItems = useMemo(
-    () => Array.from(selectedItemQuantities.values()).some((q) => q > 0),
-    [selectedItemQuantities],
-  );
-
-  // All selected items at full quantity → eligible for `specific_items`
-  // payment_type (DB trigger validates amount == items subtotal without tax).
-  const allSelectedAtFullQty = useMemo(() => {
-    for (const [itemId, qty] of selectedItemQuantities) {
-      if (qty <= 0) continue;
-      const item = unpaidItems.find((i) => i.id === itemId);
-      if (item && qty < item.quantity) return false;
-    }
-    return true;
-  }, [selectedItemQuantities, unpaidItems]);
-
-  const updateItemQty = (itemId: string, maxQty: number, delta: number) => {
-    setSelectedItemQuantities((prev) => {
-      const next = new Map(prev);
-      const cur = next.get(itemId) || 0;
-      const target = Math.max(0, Math.min(maxQty, cur + delta));
-      if (target === 0) next.delete(itemId);
-      else next.set(itemId, target);
-      return next;
-    });
-  };
-
-  const computeAmount = (): number => {
-    switch (mode) {
-      case 'full':
-        return balance;
-      case 'partial':
-        return parseFloat(partialAmount) || 0;
-      case 'items':
-        return selectedItemsTotal;
-    }
-  };
+  const { mode, setMode, partialAmount, setPartialAmount, computeAmount } = usePaymentMode({
+    balance,
+    selectedItemsTotal,
+  });
 
   const handleSubmit = async () => {
     let amount = computeAmount();

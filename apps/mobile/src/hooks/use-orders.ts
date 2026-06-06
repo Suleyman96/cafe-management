@@ -4,7 +4,7 @@ import { patchQueries, QUERY_KEYS, rollbackQueries, STALE_TIMES, useDb } from '@
 import * as Sentry from '@sentry/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { markEvent, RECONNECT_REPLAY_WINDOW_MS, seenRecently } from '@/lib/event-dedup';
+import { consumeReconnectReplay, markEvent, seenRecently } from '@/lib/event-dedup';
 import { hapticEvent } from '@/lib/haptics';
 import { MUTATION_KEYS } from '@/lib/mutation-keys';
 import { notifyNewOrder } from '@/lib/notifications';
@@ -127,20 +127,12 @@ export function useOrders(filters?: {
           const parsed = OrdersRealtimeInsertSchema.safeParse(newRecord);
           if (parsed.success) {
             const orderKey = `order:${parsed.data.id}`;
-            // Audit #5 + C2 — Supabase Realtime can re-deliver an INSERT
-            // after a brief disconnect (>5 s after the original). The
-            // RECONNECT_REPLAY_WINDOW_MS lookup catches reconnect-replay
-            // even when a backgrounded device misses traffic for several
-            // minutes — the kitchen must not ring twice for the same order.
-            // We still refresh the timestamp below so the realtime↔push
-            // race dedup at the foreground notification handler keeps
-            // working.
-            const isReplay = seenRecently(orderKey, RECONNECT_REPLAY_WINDOW_MS);
-            // Mark BEFORE playing so a near-simultaneous push (which checks
-            // seenRecently in the foreground handler with a 500 ms window)
-            // suppresses its sound for the original delivery.
-            markEvent(orderKey);
-            if (isReplay) {
+            // Audit #5 + C2 — Supabase Realtime can re-deliver an INSERT after a
+            // brief disconnect; the reconnect-replay gate catches that (even when
+            // a backgrounded device missed traffic for minutes) so the kitchen
+            // doesn't ring twice. consumeReconnectReplay marks BEFORE returning so
+            // a near-simultaneous push suppresses its own sound via seenRecently.
+            if (consumeReconnectReplay(orderKey)) {
               // Replay path skips side effects but still invalidates via the
               // realtime handler chain — `useRealtimeSync` runs the
               // `queryKeys` invalidation regardless of `onPayload`'s return.

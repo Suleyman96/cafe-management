@@ -87,6 +87,23 @@ export function seenRecently(id: string, windowMs = 500, now: number = Date.now(
   return now - ts < windowMs;
 }
 
+/**
+ * Reconnect-replay gate for realtime INSERT handlers (audit #5 + C2).
+ *
+ * Checks whether `id` was seen within {@link RECONNECT_REPLAY_WINDOW_MS}, then
+ * marks it — mark-BEFORE-play so a near-simultaneous push delivery of the same
+ * event suppresses its own sound via `seenRecently`. Returns true when this is a
+ * replay whose side effects (sound/notify) the caller should skip.
+ *
+ * Consolidates the byte-identical dedup blocks in `use-orders.ts` and
+ * `use-waiter-calls.ts` so the check + mark + window stay in lock-step.
+ */
+export function consumeReconnectReplay(id: string, now: number = Date.now()): boolean {
+  const isReplay = seenRecently(id, RECONNECT_REPLAY_WINDOW_MS, now);
+  markEvent(id, now);
+  return isReplay;
+}
+
 export function __resetEventDedupForTests(): void {
   recent.clear();
 }
