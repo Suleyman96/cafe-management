@@ -159,10 +159,14 @@ export const apiRoutes = {
         }),
       }),
 
-    addItems: (orderId: string, items: AddCustomerOrderItem[]) =>
+    // M6/IDOR — `tableId` is sent so staff-web asserts it matches the order's
+    // table_id for dine-in (the order UUID alone can't append items to a
+    // stranger's open order). Null for delivery/takeout (no table).
+    addItems: (orderId: string, items: AddCustomerOrderItem[], tableId?: string | null) =>
       apiFetch<{ items: OrderItemRow[] }>(`/api/v1/customer/orders/${orderId}/items`, {
         method: 'POST',
         body: JSON.stringify({
+          table_id: tableId ?? null,
           items: items.map((item) => ({
             ...item,
             client_request_id: getOrCreateClientRequestId(item.client_request_id),

@@ -601,11 +601,88 @@ describe('addCustomerOrderItems — server-side pricing + modifier validation', 
   });
 });
 
+describe('addCustomerOrderItems — table binding (M6 / IDOR)', () => {
+  // The order is fetched by id alone; a dine-in order (non-null table_id) must
+  // be presented with the matching table_id, so knowing the order UUID is not
+  // enough to append items to a stranger's open order.
+  function orderClient(tableIdVal: string | null) {
+    return buildClient({
+      orders: [
+        {
+          data: { id: ORDER_ID, status: 'new', tenant_id: TENANT, table_id: tableIdVal },
+          error: null,
+        },
+      ],
+      order_items: [
+        { data: [], error: null }, // replay lookup → none
+        { data: [{ id: 'oi-1' }], error: null }, // insert
+      ],
+      menu_items: [{ data: [{ id: MENU_ITEM, is_available: true, price: 5 }], error: null }],
+      menu_item_options: [{ data: [], error: null }],
+    });
+  }
+  const baseItem = {
+    menu_item_id: MENU_ITEM,
+    item_name: 'Coffee',
+    item_price: 5,
+    quantity: 1,
+    tenant_id: TENANT,
+    client_request_id: CRID,
+  };
+
+  it('rejects a dine-in order when the table_id does not match', async () => {
+    await expect(
+      addCustomerOrderItems(orderClient(TABLE), {
+        orderId: ORDER_ID,
+        tableId: TENANT_OTHER, // any non-matching uuid
+        items: [baseItem],
+      }),
+    ).rejects.toThrow('order_table_mismatch');
+  });
+
+  it('rejects a dine-in order when no table_id is provided (order UUID alone is not enough)', async () => {
+    await expect(
+      addCustomerOrderItems(orderClient(TABLE), { orderId: ORDER_ID, items: [baseItem] }),
+    ).rejects.toThrow('order_table_mismatch');
+  });
+
+  it('accepts a dine-in order when the table_id matches', async () => {
+    const res = await addCustomerOrderItems(orderClient(TABLE), {
+      orderId: ORDER_ID,
+      tableId: TABLE,
+      items: [baseItem],
+    });
+    expect(res).toBeDefined();
+  });
+
+  it('skips the table check for delivery/takeout orders (null table_id)', async () => {
+    const res = await addCustomerOrderItems(orderClient(null), {
+      orderId: ORDER_ID,
+      items: [baseItem], // no tableId — fine, the order has no table
+    });
+    expect(res).toBeDefined();
+  });
+
+  it('rejects items whose tenant_id differs from the order tenant', async () => {
+    await expect(
+      addCustomerOrderItems(orderClient(null), {
+        orderId: ORDER_ID,
+        items: [{ ...baseItem, tenant_id: TENANT_OTHER }],
+      }),
+    ).rejects.toThrow('order_item_tenant_mismatch');
+  });
+});
+
 describe('addCustomerOrderItems — dedupe', () => {
   it('returns persisted rows when every item id is already on disk', async () => {
     const persistedA = { id: 'item-A', client_request_id: CRID_ITEM_A };
     const persistedB = { id: 'item-B', client_request_id: CRID_ITEM_B };
     const client = buildClient({
+      // The order is now fetched + table-checked BEFORE the replay
+      // short-circuit, so even an idempotent replay must pass authorization.
+      orders: [
+        { data: { id: 'order-1', status: 'new', tenant_id: TENANT, table_id: null }, error: null },
+      ],
       order_items: [{ data: [persistedA, persistedB], error: null }],
     });
 

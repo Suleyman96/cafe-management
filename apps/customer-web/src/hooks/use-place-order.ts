@@ -97,6 +97,9 @@ export function usePlaceOrder({
       await addOrderItems.mutateAsync({
         orderId,
         tenantId,
+        // M6/IDOR — bind the add-items call to the table so the server can
+        // assert it matches the order's table_id.
+        tableId: actualTableId,
         items: items.map((item) => ({
           menu_item_id: item.menuItem.id,
           item_name: item.menuItem.name,

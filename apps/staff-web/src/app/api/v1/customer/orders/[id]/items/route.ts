@@ -19,6 +19,11 @@ export const preferredRegion = ['sin1'];
 // would otherwise blow past the BEFORE INSERT trigger budget per
 // Postgres statement timeout.
 const AddItemsSchema = z.object({
+  // M6 / IDOR: the table the caller is at. Required for dine-in (the service
+  // asserts it matches the order's table_id so the order UUID alone can't be
+  // used to append items to a stranger's open order); null/omitted for
+  // delivery/takeout, which have no table. Sent by the customer-web client.
+  table_id: z.string().uuid().optional().nullable(),
   items: z
     .array(
       z.object({
@@ -68,6 +73,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const items = await addCustomerOrderItems(getSupabaseAdmin(), {
       orderId,
+      tableId: data.table_id ?? null,
       items: data.items,
     });
 

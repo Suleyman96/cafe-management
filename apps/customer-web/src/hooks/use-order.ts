@@ -415,6 +415,9 @@ type AddOrderItemsVariables = {
     selected_options?: Array<{ option_id: string; value_id: string }>;
   }>;
   tenantId: string;
+  /** Dine-in table id — sent so the server can assert it matches the order's
+   *  table (M6/IDOR). Dine-in callers always pass it. */
+  tableId: string;
 };
 
 export function useAddOrderItems() {
@@ -434,6 +437,7 @@ export function useAddOrderItems() {
       orderId,
       items,
       tenantId,
+      tableId,
     }: AddOrderItemsVariables): Promise<OrderItem[]> => {
       const { items: createdItems } = await apiRoutes.customerOrders.addItems(
         orderId,
@@ -443,6 +447,7 @@ export function useAddOrderItems() {
           tenant_id: tenantId,
           client_request_id: getOrCreateClientRequestId(item.client_request_id),
         })),
+        tableId,
       );
       return createdItems as OrderItem[];
     },

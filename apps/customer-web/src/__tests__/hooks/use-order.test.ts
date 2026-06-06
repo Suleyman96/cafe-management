@@ -240,6 +240,7 @@ describe('useAddOrderItems', () => {
     await result.current.mutateAsync({
       orderId: 'order-1',
       tenantId: 'tenant-1',
+      tableId: 'table-1',
       items: [
         { menu_item_id: 'm1', item_name: 'Coffee', item_price: 5, quantity: 1 },
         { menu_item_id: 'm2', item_name: 'Tea', item_price: 3, quantity: 2, notes: 'Hot' },
@@ -251,26 +252,32 @@ describe('useAddOrderItems', () => {
     const uuidV4 = expect.stringMatching(
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
     );
-    expect(apiRoutes.customerOrders.addItems).toHaveBeenCalledWith('order-1', [
-      expect.objectContaining({
-        menu_item_id: 'm1',
-        item_name: 'Coffee',
-        item_price: 5,
-        quantity: 1,
-        notes: null,
-        tenant_id: 'tenant-1',
-        client_request_id: uuidV4,
-      }),
-      expect.objectContaining({
-        menu_item_id: 'm2',
-        item_name: 'Tea',
-        item_price: 3,
-        quantity: 2,
-        notes: 'Hot',
-        tenant_id: 'tenant-1',
-        client_request_id: uuidV4,
-      }),
-    ]);
+    // M6/IDOR — the table id is forwarded as the 3rd arg so the server can
+    // assert it matches the order's table.
+    expect(apiRoutes.customerOrders.addItems).toHaveBeenCalledWith(
+      'order-1',
+      [
+        expect.objectContaining({
+          menu_item_id: 'm1',
+          item_name: 'Coffee',
+          item_price: 5,
+          quantity: 1,
+          notes: null,
+          tenant_id: 'tenant-1',
+          client_request_id: uuidV4,
+        }),
+        expect.objectContaining({
+          menu_item_id: 'm2',
+          item_name: 'Tea',
+          item_price: 3,
+          quantity: 2,
+          notes: 'Hot',
+          tenant_id: 'tenant-1',
+          client_request_id: uuidV4,
+        }),
+      ],
+      'table-1',
+    );
   });
 
   it('invalidates all ORDER queries', async () => {
@@ -280,6 +287,7 @@ describe('useAddOrderItems', () => {
     await result.current.mutateAsync({
       orderId: 'order-1',
       tenantId: 'tenant-1',
+      tableId: 'table-1',
       items: [{ menu_item_id: 'm1', item_name: 'Coffee', item_price: 5, quantity: 1 }],
     });
 

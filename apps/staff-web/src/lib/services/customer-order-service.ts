@@ -39,6 +39,14 @@ interface CreateCustomerOrderParams {
 
 interface AddCustomerOrderItemsParams {
   orderId: string;
+  /**
+   * The table the caller claims to be at. For dine-in orders (which have a
+   * non-null `table_id`) this MUST match the order's table — the same
+   * two-factor "M6" bar the cancel endpoints enforce, so knowing only the
+   * order UUID is not enough to append items to a stranger's open order.
+   * Delivery/takeout orders have no table, so binding doesn't apply to them.
+   */
+  tableId?: string | null;
   items: Array<{
     menu_item_id: string;
     item_name: string;
@@ -213,19 +221,48 @@ export async function addCustomerOrderItems(
   supabaseAdmin: SupabaseClient,
   params: AddCustomerOrderItemsParams,
 ) {
-  const { orderId, items } = params;
+  const { orderId, tableId, items } = params;
 
   if (!items.length) {
     throw new Error('At least one item is required');
   }
-
-  const tenantId = items[0].tenant_id;
 
   const requestIds = items.map((i) => i.client_request_id);
   const allHaveIds = requestIds.every((id) => typeof id === 'string' && id.length > 0);
   const noneHaveIds = requestIds.every((id) => !id);
   if (!allHaveIds && !noneHaveIds) {
     throw new Error('client_request_id must be set on every item or none');
+  }
+
+  // Fetch the order by id ALONE first — the tenant is derived from the order
+  // row (never trusted from the request body), and the table binding below is
+  // the authorization gate. Looking it up by id+body-tenant first (the old
+  // path) made tenant_id — a public value — part of the lookup, which is not a
+  // capability.
+  const { data: order, error: orderError } = await supabaseAdmin
+    .from('orders')
+    .select('id, status, tenant_id, table_id')
+    .eq('id', orderId)
+    .maybeSingle();
+  if (orderError) throw new Error(orderError.message);
+  if (!order) throw new NotFoundError('Order');
+
+  // Authorization (M6 / IDOR fix): a dine-in order is bound to its table, so
+  // the caller must present the matching table_id — knowing the order UUID
+  // alone is not enough. Mirrors the cancel endpoints. Delivery/takeout orders
+  // have a null table_id (their capability is the delivery access token), so
+  // the table check doesn't apply to them.
+  if (order.table_id !== null && order.table_id !== tableId) {
+    throw new ValidationError('order_table_mismatch');
+  }
+
+  const tenantId = order.tenant_id as string;
+
+  // The inserted rows carry a body-supplied tenant_id; reject any that don't
+  // match the order's tenant so a caller can't write rows scoped to a
+  // different tenant than the order they're appending to.
+  if (items.some((i) => i.tenant_id !== tenantId)) {
+    throw new ValidationError('order_item_tenant_mismatch');
   }
 
   // Replay short-circuit: if any item id is already on disk, the entire
@@ -242,18 +279,6 @@ export async function addCustomerOrderItems(
     if (existing && existing.length > 0) {
       return existing;
     }
-  }
-
-  // Verify order exists and is in an acceptable status
-  const { data: order, error: orderError } = await supabaseAdmin
-    .from('orders')
-    .select('id, status, tenant_id')
-    .eq('id', orderId)
-    .eq('tenant_id', tenantId)
-    .single();
-
-  if (orderError || !order) {
-    throw new Error('Order not found');
   }
 
   if (!['pending_approval', 'new', 'preparing'].includes(order.status)) {

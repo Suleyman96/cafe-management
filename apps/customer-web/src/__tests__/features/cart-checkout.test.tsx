@@ -171,7 +171,8 @@ describe('CartScreen — checkout flow', () => {
       );
     });
 
-    // Assert apiRoutes.customerOrders.addItems was called with the items
+    // Assert apiRoutes.customerOrders.addItems was called with the items AND
+    // the table id (M6/IDOR — the server asserts it matches the order's table).
     await waitFor(() => {
       expect(apiRoutes.customerOrders.addItems).toHaveBeenCalledWith(
         'order-1',
@@ -185,6 +186,7 @@ describe('CartScreen — checkout flow', () => {
             quantity: 1,
           }),
         ]),
+        'uuid-t1',
       );
     });
   });
