@@ -11,9 +11,13 @@ import { useIsLeaderTab } from '@/hooks/use-is-leader-tab';
 import { channelRegistry } from '@/lib/realtime/channel-registry';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
+import {
+  type AudioChannel,
+  type AudioPrefs,
+  useAudioPrefsPersistence,
+} from './use-audio-prefs-persistence';
 
-export type AudioChannel = 'orders' | 'waiterCalls' | 'alerts';
-export type AudioPrefs = Record<AudioChannel, boolean>;
+export type { AudioChannel, AudioPrefs } from './use-audio-prefs-persistence';
 
 interface AudioPrefsContextValue {
   prefs: AudioPrefs;
@@ -54,45 +58,6 @@ const CATCHUP_OVERLAP_MS = 5_000;
 // fallback poll / manual refresh; we just don't audio-alert past this.
 const CATCHUP_LIMIT = 200;
 
-const DEFAULT_AUDIO_PREFS: AudioPrefs = { orders: true, waiterCalls: true, alerts: true };
-const LEGACY_AUDIO_KEY = 'staff-audio-enabled';
-
-function audioPrefsStorageKey(staffId: string | undefined): string {
-  // Per-staff key so a kiosk shared by multiple staff each remembers its own
-  // mute preferences. Falls back to a device-global key when no staff is
-  // bound (pre-auth boot) — that branch only writes defaults so it can't
-  // leak one user's choices into another's slot.
-  return staffId ? `staff-audio-prefs:${staffId}` : 'staff-audio-prefs';
-}
-
-function readStoredAudioPrefs(staffId: string | undefined): AudioPrefs {
-  if (typeof window === 'undefined') return DEFAULT_AUDIO_PREFS;
-  try {
-    const raw = localStorage.getItem(audioPrefsStorageKey(staffId));
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<AudioPrefs>;
-      return {
-        orders: typeof parsed.orders === 'boolean' ? parsed.orders : DEFAULT_AUDIO_PREFS.orders,
-        waiterCalls:
-          typeof parsed.waiterCalls === 'boolean'
-            ? parsed.waiterCalls
-            : DEFAULT_AUDIO_PREFS.waiterCalls,
-        alerts: typeof parsed.alerts === 'boolean' ? parsed.alerts : DEFAULT_AUDIO_PREFS.alerts,
-      };
-    }
-    // Migration from the pre-split single global toggle: a `false` legacy
-    // value silenced everything, so honor that across all three channels.
-    const legacy = localStorage.getItem(LEGACY_AUDIO_KEY);
-    if (legacy !== null) {
-      const enabled = legacy === 'true';
-      return { orders: enabled, waiterCalls: enabled, alerts: enabled };
-    }
-  } catch {
-    // Corrupted JSON or storage disabled — fall through to defaults.
-  }
-  return DEFAULT_AUDIO_PREFS;
-}
-
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation('staff');
   const tenantId = useAuthStore((s) => s.staff?.tenant_id);
@@ -106,7 +71,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const isLeader = useIsLeaderTab();
   const isLeaderRef = useRef(isLeader);
   isLeaderRef.current = isLeader;
-  const [audioPrefs, setAudioPrefs] = useState<AudioPrefs>(DEFAULT_AUDIO_PREFS);
+  // Audio preference state + localStorage persistence (per-staff key, legacy
+  // single-toggle migration, SSR-safe load/save effects). Extracted verbatim.
+  const [audioPrefs, setAudioPrefs] = useAudioPrefsPersistence(staffId);
 
   const waiterCallAudioRef = useRef<HTMLAudioElement | null>(null);
   const orderAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -150,14 +117,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     alertedWaiterCallIdsRef.current.clear();
   }, [tenantId]);
 
-  // Load stored prefs whenever the bound staff changes (sign-in, switch
-  // user). Reading lazily inside an effect (rather than the useState
-  // initializer) keeps the initial render SSR-safe and lets a logout →
-  // login as a different user pull that user's saved choices.
-  useEffect(() => {
-    setAudioPrefs(readStoredAudioPrefs(staffId));
-  }, [staffId]);
-
   // Keep ref in sync so the realtime callbacks (which read via ref to
   // avoid tearing down the WS on every state change) see fresh prefs.
   useEffect(() => {
@@ -177,20 +136,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       notificationAudioRef.current.preload = 'auto';
     }
   }, []);
-
-  // Save prefs whenever they change. Skip the very first run on mount —
-  // the load effect above just hydrated state from storage, so writing it
-  // back would be a no-op at best and an overwrite-with-defaults race at
-  // worst (load effect hasn't completed before this one runs).
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(audioPrefsStorageKey(staffId), JSON.stringify(audioPrefs));
-    } catch {
-      // Storage quota exceeded or disabled — silently drop, the in-memory
-      // state still works for the session.
-    }
-  }, [audioPrefs, staffId]);
 
   // Auto-unlock audio on ANY user interaction
   useEffect(() => {
@@ -313,7 +258,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
       }
     },
-    [t],
+    // setAudioPrefs is the useState setter from useAudioPrefsPersistence — stable
+    // across renders; listed so biome's exhaustive-deps is satisfied now that it
+    // comes from a custom hook rather than a local useState.
+    [t, setAudioPrefs],
   );
 
   // Run the realtime catchup query after a successful resubscribe (Plan 10).

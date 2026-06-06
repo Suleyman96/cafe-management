@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FeedbackForm } from '@/components/feedback/feedback-form';
+import { ItemStatusBadge, OrderStatusBanner } from '@/components/order/order-status-display';
 import { OrderTimeline } from '@/components/order/order-timeline';
 import { TableNotActiveScreen } from '@/components/table/table-not-active-screen';
 import { PlatformFooter } from '@/components/ui/platform-footer';
@@ -101,40 +102,6 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
 
   // "served" is a final state — all steps are completed
   const isOrderCompleted = order.status === 'served';
-
-  const getItemStatusLabel = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return t('orderStatus.itemStatus.pending');
-      case 'preparing':
-        return t('orderStatus.itemStatus.preparing');
-      case 'ready':
-        return t('orderStatus.itemStatus.ready');
-      case 'served':
-        return t('orderStatus.itemStatus.served');
-      case 'cancelled':
-        return t('orderStatus.cancelled');
-      default:
-        return status;
-    }
-  };
-
-  const getItemBadgeColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-gray-100 text-gray-700 border-gray-300';
-      case 'preparing':
-        return 'bg-yellow-50 text-yellow-700 border-yellow-300';
-      case 'ready':
-        return 'bg-green-50 text-green-700 border-green-300';
-      case 'served':
-        return 'bg-purple-50 text-purple-700 border-purple-300';
-      case 'cancelled':
-        return 'bg-red-50 text-red-600 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-700 border-gray-300';
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -222,44 +189,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
             </div>
           )}
 
-          {order.status === 'pending_approval' && (
-            <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
-              <p className="text-sm text-center font-medium text-amber-800 dark:text-amber-200">
-                ⏳ {t('orderStatus.banner.pendingApproval')}
-              </p>
-              <p className="text-xs text-center text-amber-600 dark:text-amber-400 mt-1">
-                {t('orderStatus.banner.pendingApprovalSub')}
-              </p>
-            </div>
-          )}
-
-          {order.status === 'new' && (
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-sm text-center font-medium text-blue-800 dark:text-blue-200">
-                ✓ {t('orderStatus.banner.confirmed')}
-              </p>
-            </div>
-          )}
-
-          {order.status === 'preparing' && (
-            <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
-              <p className="text-sm text-center">🔥 {t('orderStatus.banner.preparing')}</p>
-            </div>
-          )}
-
-          {order.status === 'ready' && (
-            <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 rounded-lg">
-              <p className="text-sm text-center font-medium">✨ {t('orderStatus.banner.ready')}</p>
-            </div>
-          )}
-
-          {order.status === 'served' && (
-            <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-950 rounded-lg border border-purple-200 dark:border-purple-800">
-              <p className="text-sm text-center font-medium text-purple-800 dark:text-purple-200">
-                {t('orderStatus.banner.served')}
-              </p>
-            </div>
-          )}
+          <OrderStatusBanner status={order.status} variant="dineIn" />
         </div>
 
         {/* Order Items */}
@@ -284,12 +214,7 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
                       <p className="text-sm text-muted-foreground mt-1">📝 {item.notes}</p>
                     )}
                     <div className="flex items-center gap-2 mt-2">
-                      <Badge
-                        variant="outline"
-                        className={`text-xs ${getItemBadgeColor(item.status)}`}
-                      >
-                        {getItemStatusLabel(item.status)}
-                      </Badge>
+                      <ItemStatusBadge status={item.status} variant="dineIn" />
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

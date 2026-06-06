@@ -1,7 +1,7 @@
 'use client';
 
 import type { Database } from '@gustri/database/types';
-import { useTranslation } from '@gustri/i18n';
+import { useDateFormatter, useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui-web';
 import { DollarSign, Pencil, Plus, Trash2, TrendingDown } from 'lucide-react';
 import { useState } from 'react';
@@ -16,6 +16,7 @@ type WasteLog = Database['public']['Tables']['waste_logs']['Row'];
 
 export default function WastePage() {
   const { t } = useTranslation('staff');
+  const dfDate = useDateFormatter();
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -271,7 +272,7 @@ export default function WastePage() {
                 ) => (
                   <tr key={log.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {new Date(log.waste_date).toLocaleDateString()}
+                      {dfDate.format(new Date(log.waste_date))}
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-900 truncate max-w-xs">{log.item_name}</p>

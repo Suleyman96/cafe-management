@@ -30,6 +30,8 @@ export {
   WASTE_REASON,
 } from '@gustri/database';
 
+import type { OrderItemStatus } from '@gustri/database';
+
 // Active order status sets — used to filter "in-progress" orders by order type
 export const ACTIVE_ORDER_STATUSES = [
   'pending_approval',
@@ -329,6 +331,25 @@ export function getKitchenUrgencyBand(input: KitchenUrgencyInput): KitchenUrgenc
   if (minutes >= TIME_ELAPSED_THRESHOLDS.ELEVATED) return 'elevated';
   if (minutes >= TIME_ELAPSED_THRESHOLDS.WARNING) return 'warning';
   return 'default';
+}
+
+/**
+ * Item-status progression order for the kitchen per-station bulk-advance check.
+ * `cancelled` is excluded (= -1) — cancellation is terminal but does not block
+ * the rest of an order from progressing. Shared by the staff-web and mobile
+ * kitchen so the two platforms agree on what counts as "at or past" a status.
+ */
+export const ITEM_STATUS_PROGRESS: Record<OrderItemStatus, number> = {
+  pending: 0,
+  preparing: 1,
+  ready: 2,
+  served: 3,
+  cancelled: -1,
+};
+
+/** True when `actual` item-status is at or beyond `target` in the progression. */
+export function isItemStatusAtOrPast(actual: OrderItemStatus, target: OrderItemStatus): boolean {
+  return ITEM_STATUS_PROGRESS[actual] >= ITEM_STATUS_PROGRESS[target];
 }
 
 /**

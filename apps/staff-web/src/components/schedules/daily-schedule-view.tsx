@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@gustri/i18n';
+import { useDateFormatter, useLocale, useTranslation } from '@gustri/i18n';
 import { Clock } from 'lucide-react';
 import {
   formatDate,
@@ -31,6 +31,14 @@ export function DailyScheduleView({
   onEdit,
 }: DailyScheduleViewProps) {
   const { t } = useTranslation('staff');
+  const locale = useLocale();
+  const dfFullDate = useDateFormatter({
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const dfTime = useDateFormatter({ hour: '2-digit', minute: '2-digit' });
 
   return (
     <div className="space-y-4">
@@ -49,7 +57,7 @@ export function DailyScheduleView({
             }`}
             type="button"
           >
-            {formatShortDate(d)}
+            {formatShortDate(d, locale)}
           </button>
         ))}
       </div>
@@ -57,14 +65,7 @@ export function DailyScheduleView({
       {/* Daily schedule table */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-4 sm:px-6 py-3 border-b">
-          <h2 className="text-lg font-semibold">
-            {new Date(selectedDate).toLocaleDateString('default', {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric',
-            })}
-          </h2>
+          <h2 className="text-lg font-semibold">{dfFullDate.format(new Date(selectedDate))}</h2>
         </div>
         {isLoading ? (
           <div className="p-6 text-center text-sm text-gray-500">
@@ -124,20 +125,10 @@ export function DailyScheduleView({
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {sched.actual_start
-                          ? new Date(sched.actual_start).toLocaleTimeString('default', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : '-'}
+                        {sched.actual_start ? dfTime.format(new Date(sched.actual_start)) : '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {sched.actual_end
-                          ? new Date(sched.actual_end).toLocaleTimeString('default', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : '-'}
+                        {sched.actual_end ? dfTime.format(new Date(sched.actual_end)) : '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {duration != null ? `${duration}h` : '-'}

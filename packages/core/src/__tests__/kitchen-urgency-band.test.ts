@@ -110,7 +110,9 @@ describe('Phase 5.1/5.3/5.4 — kitchen urgency band contract', () => {
     // regresses. Source-scanner style: see lint-guard-zustand.test.ts.
     const REPO_ROOT = resolve(dirname(__filename), '..', '..', '..', '..');
     const CALLERS = [
-      'apps/mobile/src/components/kitchen/KitchenOrderCard.tsx',
+      // The mobile urgency-band wiring lives in the useKitchenUrgency hook since
+      // the KitchenOrderCard decomposition (KitchenOrderCard is a thin composer).
+      'apps/mobile/src/components/kitchen/use-kitchen-urgency.ts',
       // The web kitchen controller hook owns the urgency-band wiring (the page
       // is a thin orchestrator since the kitchen-page decomposition).
       'apps/staff-web/src/components/kitchen/use-kitchen-display.tsx',

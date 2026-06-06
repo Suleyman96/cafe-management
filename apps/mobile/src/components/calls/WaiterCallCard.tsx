@@ -1,4 +1,4 @@
-import { useTranslation } from '@gustri/i18n';
+import { useDateFormatter, useTranslation } from '@gustri/i18n';
 import { TimeElapsed } from '@gustri/ui-mobile';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -37,6 +37,11 @@ export const WaiterCallCard = React.memo(function WaiterCallCard({
   const callType = call.call_type || 'assistance';
   const reasonColor = WAITER_CALL_REASON_COLORS[callType] || '#6b7280';
   const { t } = useTranslation('staff');
+  const dfTime = useDateFormatter({
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+  });
 
   return (
     <Card style={[styles.card, { borderLeftColor: reasonColor, borderRadius: CARD_RADIUS }]}>
@@ -91,7 +96,7 @@ export const WaiterCallCard = React.memo(function WaiterCallCard({
 
         {call.status === 'resolved' && call.resolved_at && (
           <Text variant="bodySmall" style={styles.muted}>
-            {t('calls.resolvedAt', { time: new Date(call.resolved_at).toLocaleTimeString() })}
+            {t('calls.resolvedAt', { time: dfTime.format(new Date(call.resolved_at)) })}
           </Text>
         )}
       </Card.Content>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useDateFormatter } from '@gustri/i18n';
 import type React from 'react';
 import { formatDate, formatTime, STATUS_COLORS, type StaffSchedule } from './schedule-utils';
 
@@ -16,6 +17,7 @@ export function MonthlyScheduleView({
   onCreate,
   onEdit,
 }: MonthlyScheduleViewProps) {
+  const dfWeekday = useDateFormatter({ weekday: 'short' });
   return (
     <div className="bg-white rounded-lg shadow">
       {/* Calendar header */}
@@ -27,7 +29,7 @@ export function MonthlyScheduleView({
           monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
           const d = new Date(monday);
           d.setDate(monday.getDate() + i);
-          return d.toLocaleDateString('default', { weekday: 'short' });
+          return dfWeekday.format(d);
         }).map((day) => (
           <div
             key={day}

@@ -1,4 +1,4 @@
-import { isDeliveryOrder } from '@gustri/core';
+import { isDeliveryOrder, isItemStatusAtOrPast } from '@gustri/core';
 import { ORDER_STATUS, type OrderItemStatus } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import {
@@ -18,21 +18,6 @@ import { useCancelOrder, useFeatureFlag } from '@/hooks/shared';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { useAuthStore } from '@/store/auth-store';
-
-// Item-status progression order for the per-station bulk advance check.
-// Mirrors the staff-web helper — duplicated here rather than exported
-// from @gustri/core to keep the headless boundary clean.
-const ITEM_STATUS_PROGRESS: Record<OrderItemStatus, number> = {
-  pending: 0,
-  preparing: 1,
-  ready: 2,
-  served: 3,
-  cancelled: -1,
-};
-
-function isAtOrPast(actual: OrderItemStatus, target: OrderItemStatus): boolean {
-  return ITEM_STATUS_PROGRESS[actual] >= ITEM_STATUS_PROGRESS[target];
-}
 
 type KitchenStatus =
   | typeof ORDER_STATUS.NEW
@@ -216,7 +201,7 @@ export function useKitchenDisplay() {
           (item) =>
             item.status === 'cancelled' ||
             advancedIds.has(item.id) ||
-            isAtOrPast(item.status as OrderItemStatus, 'ready'),
+            isItemStatusAtOrPast(item.status as OrderItemStatus, 'ready'),
         );
         if (wholeOrderReady) {
           await updateOrderStatus.mutateAsync({ orderId, status: 'ready' });
@@ -265,7 +250,7 @@ export function useKitchenDisplay() {
           (item) =>
             item.status === 'cancelled' ||
             advancedIds.has(item.id) ||
-            isAtOrPast(item.status as OrderItemStatus, 'served'),
+            isItemStatusAtOrPast(item.status as OrderItemStatus, 'served'),
         );
         if (!isDeliveryOrder(order) && wholeOrderServed) {
           await updateOrderStatus.mutateAsync({ orderId, status: 'served' });

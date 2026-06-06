@@ -50,6 +50,7 @@ export default function ReportsPage() {
     todayString,
     currentMonthString,
     getDateRangeLabel,
+    getDateRangeLabelEn,
   } = useReportDateRange();
 
   const { metrics, profitMetrics, wasteMetrics, staffPerformance, zReportData, loading } =
@@ -94,7 +95,9 @@ export default function ReportsPage() {
       profitMetrics,
       wasteMetrics,
       staffPerformance,
-      dateRangeLabel: getDateRangeLabel(),
+      // English label: the PDF font can't render non-Latin scripts and the
+      // filename is derived from it — the export stays English-only.
+      dateRangeLabel: getDateRangeLabelEn(),
       formatPrice,
       translateRole: (role) => t(`staffMgmt.role.${role}`),
       translateWasteReason: (reason) =>

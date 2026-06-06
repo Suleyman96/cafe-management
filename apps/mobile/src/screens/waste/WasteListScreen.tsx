@@ -12,6 +12,7 @@ import {
   useWasteLogs,
   useWasteMonthlySummary,
 } from '@/hooks/shared';
+import { useMonthNavigation } from '@/hooks/use-month-navigation';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { getLocalDateString } from '@/lib/date-utils';
 import { TextInput } from '@/lib/paper-compat';
@@ -45,9 +46,7 @@ export default function WasteListScreen() {
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
   const locale = useLocale();
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const { year, month, goPrevMonth, goNextMonth } = useMonthNavigation();
   const [reasonFilter, setReasonFilter] = useState<string | undefined>();
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -128,20 +127,6 @@ export default function WasteListScreen() {
     }
   };
 
-  const handlePrevMonth = () => {
-    if (month === 1) {
-      setMonth(12);
-      setYear(year - 1);
-    } else setMonth(month - 1);
-  };
-
-  const handleNextMonth = () => {
-    if (month === 12) {
-      setMonth(1);
-      setYear(year + 1);
-    } else setMonth(month + 1);
-  };
-
   if (isLoading) return <LoadingScreen message={t('waste.loadingWaste')} />;
   if (error) return <ErrorScreen error={error} onRetry={refetch} />;
 
@@ -149,13 +134,13 @@ export default function WasteListScreen() {
     <View style={styles.container}>
       {/* Month Navigation */}
       <View style={styles.monthNav}>
-        <Button compact onPress={handlePrevMonth}>
+        <Button compact onPress={goPrevMonth}>
           {t('expenses.prev')}
         </Button>
         <Text variant="titleMedium" style={styles.monthLabel}>
           {new Date(year, month - 1).toLocaleString(locale, { month: 'long', year: 'numeric' })}
         </Text>
-        <Button compact onPress={handleNextMonth}>
+        <Button compact onPress={goNextMonth}>
           {t('expenses.next')}
         </Button>
       </View>

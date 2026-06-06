@@ -1,17 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import type { MenuItem, OrdersInsert } from '@gustri/database/types';
+import type { OrdersInsert } from '@gustri/database/types';
 import { useTranslation } from '@gustri/i18n';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Linking,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { Button, Dialog, Divider, IconButton, Portal, Switch } from 'react-native-paper';
+import React, { useEffect, useMemo, useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Button, Dialog, Divider, IconButton, Portal } from 'react-native-paper';
+import { DeliveryCustomerForm } from '@/components/delivery/DeliveryCustomerForm';
+import { MenuItemPicker } from '@/components/delivery/MenuItemPicker';
 import { useCategories, useCreateOrder, useCurrencySymbol } from '@/hooks/local';
 import {
   useAddOrderItems,
@@ -19,8 +13,9 @@ import {
   useCreateDeliveryCustomer,
   useMenuItems,
 } from '@/hooks/shared';
+import { useOrderCart } from '@/hooks/use-order-cart';
 import { useSnackbar } from '@/hooks/use-snackbar';
-import { Text, TextInput } from '@/lib/paper-compat';
+import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
 import { COLORS } from '@/theme';
 
@@ -29,11 +24,6 @@ interface CreateDeliveryModalProps {
   onDismiss: () => void;
   onSuccess: () => void;
 }
-
-type CartItem = {
-  menuItem: MenuItem;
-  quantity: number;
-};
 
 export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
   visible,
@@ -66,9 +56,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [deliveryFee, setDeliveryFee] = useState(settings?.delivery_fee_default?.toString() || '0');
   const [saveCustomer, setSaveCustomer] = useState(true);
-  // Map keyed by menu_item.id so add/remove operations are O(1) and the
-  // selected-items list survives category-switch re-renders.
-  const [cart, setCart] = useState<Map<string, CartItem>>(() => new Map());
+  const cart = useOrderCart();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -85,8 +73,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
   const trimmedPhone = customerPhone.trim();
   const isPhoneValid = !trimmedPhone || phoneRegex.test(trimmedPhone);
 
-  const cartItems = useMemo(() => Array.from(cart.values()), [cart]);
-  const hasItems = cartItems.length > 0;
+  const { cartItems, hasItems, subtotal } = cart;
 
   const filteredMenuItems = useMemo(() => {
     if (!menuItems) return [];
@@ -97,43 +84,15 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
   // Totals derived locally for the CTA preview. Server recomputes the
   // authoritative totals via the order_items trigger — these are display-only.
   const totals = useMemo(() => {
-    const subtotal = cartItems.reduce((sum, c) => sum + c.menuItem.price * c.quantity, 0);
     const taxRate =
       settings?.tax_enabled && settings.tax_percentage > 0 ? settings.tax_percentage / 100 : 0;
     const tax = subtotal * taxRate;
     const fee = Number.parseFloat(deliveryFee) || 0;
     return { subtotal, tax, deliveryFee: fee, total: subtotal + tax + fee };
-  }, [cartItems, settings, deliveryFee]);
+  }, [subtotal, settings, deliveryFee]);
 
   const isValid = !!customerName.trim() && isPhoneValid && hasItems;
   const isSubmitting = createOrder.isPending || addOrderItems.isPending;
-
-  const addItem = useCallback((menuItem: MenuItem) => {
-    setCart((prev) => {
-      const next = new Map(prev);
-      const existing = next.get(menuItem.id);
-      next.set(menuItem.id, {
-        menuItem,
-        quantity: existing ? existing.quantity + 1 : 1,
-      });
-      return next;
-    });
-  }, []);
-
-  const updateQty = useCallback((menuItemId: string, delta: number) => {
-    setCart((prev) => {
-      const next = new Map(prev);
-      const existing = next.get(menuItemId);
-      if (!existing) return prev;
-      const newQty = existing.quantity + delta;
-      if (newQty <= 0) {
-        next.delete(menuItemId);
-      } else {
-        next.set(menuItemId, { ...existing, quantity: newQty });
-      }
-      return next;
-    });
-  }, []);
 
   const resetForm = () => {
     setCustomerName('');
@@ -142,7 +101,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
     setDeliveryNotes('');
     setDeliveryFee(settings?.delivery_fee_default?.toString() || '0');
     setSaveCustomer(true);
-    setCart(new Map());
+    cart.clear();
   };
 
   const handleCreate = async () => {
@@ -173,9 +132,9 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
 
       const orderItemPayload = cartItems.map((c) => ({
         order_id: newOrder.id,
-        menu_item_id: c.menuItem.id,
-        item_name: c.menuItem.name,
-        item_price: c.menuItem.price,
+        menu_item_id: c.id,
+        item_name: c.name,
+        item_price: c.price,
         quantity: c.quantity,
         notes: null,
         status: 'pending' as const,
@@ -209,13 +168,6 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
     onDismiss();
   };
 
-  const openInMaps = () => {
-    if (deliveryAddress.trim()) {
-      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(deliveryAddress.trim())}`;
-      Linking.openURL(url);
-    }
-  };
-
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={handleDismiss} style={styles.dialog}>
@@ -235,72 +187,23 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
             <ScrollView keyboardShouldPersistTaps="handled">
               <View style={styles.form}>
                 {/* Customer details */}
-                <TextInput
-                  label={t('delivery.customerName')}
-                  value={customerName}
-                  onChangeText={setCustomerName}
-                  mode="outlined"
-                  left={<TextInput.Icon icon="account" />}
+                <DeliveryCustomerForm
+                  customerName={customerName}
+                  onCustomerNameChange={setCustomerName}
+                  customerPhone={customerPhone}
+                  onCustomerPhoneChange={setCustomerPhone}
+                  isPhoneValid={isPhoneValid}
+                  deliveryAddress={deliveryAddress}
+                  onDeliveryAddressChange={setDeliveryAddress}
+                  deliveryNotes={deliveryNotes}
+                  onDeliveryNotesChange={setDeliveryNotes}
+                  deliveryFee={deliveryFee}
+                  onDeliveryFeeChange={setDeliveryFee}
+                  defaultDeliveryFee={settings?.delivery_fee_default}
+                  defaultCurrencySymbol={settings?.currency_symbol || '$'}
+                  saveCustomer={saveCustomer}
+                  onSaveCustomerChange={setSaveCustomer}
                 />
-                <TextInput
-                  label={t('delivery.phoneNumber')}
-                  value={customerPhone}
-                  onChangeText={setCustomerPhone}
-                  mode="outlined"
-                  keyboardType="phone-pad"
-                  left={<TextInput.Icon icon="phone" />}
-                  error={!!customerPhone.trim() && !isPhoneValid}
-                />
-                <View>
-                  <TextInput
-                    label={t('delivery.deliveryAddress')}
-                    value={deliveryAddress}
-                    onChangeText={setDeliveryAddress}
-                    mode="outlined"
-                    multiline
-                    numberOfLines={2}
-                    left={<TextInput.Icon icon="map-marker" />}
-                  />
-                  {deliveryAddress.trim() && (
-                    <TouchableOpacity onPress={openInMaps} style={styles.mapsLink}>
-                      <MaterialCommunityIcons name="google-maps" size={14} color={COLORS.purple} />
-                      <Text variant="bodySmall" style={styles.mapsText}>
-                        {t('delivery.viewOnMaps')}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                <TextInput
-                  label={t('delivery.deliveryNotes')}
-                  value={deliveryNotes}
-                  onChangeText={setDeliveryNotes}
-                  mode="outlined"
-                  multiline
-                  numberOfLines={2}
-                  left={<TextInput.Icon icon="note-text" />}
-                />
-                <TextInput
-                  label={tCommon('deliveryFee')}
-                  value={deliveryFee}
-                  onChangeText={setDeliveryFee}
-                  mode="outlined"
-                  keyboardType="numeric"
-                  left={<TextInput.Icon icon="truck-delivery" />}
-                />
-                {settings?.delivery_fee_default != null ? (
-                  <Text variant="bodySmall" style={styles.defaultFee}>
-                    {t('delivery.defaultLabel')} {settings.currency_symbol || '$'}
-                    {settings.delivery_fee_default.toFixed(2)}
-                  </Text>
-                ) : null}
-
-                {/* Save customer toggle */}
-                <View style={styles.toggleRow}>
-                  <Text variant="bodyMedium" style={styles.toggleLabel}>
-                    {t('delivery.saveCustomer')}
-                  </Text>
-                  <Switch value={saveCustomer} onValueChange={setSaveCustomer} />
-                </View>
 
                 <Divider />
 
@@ -308,86 +211,16 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
                 <Text variant="titleSmall" style={styles.sectionHeader}>
                   {t('orders.addItems')}
                 </Text>
-                {menuLoading ? (
-                  <Text variant="bodySmall" style={styles.muted}>
-                    {t('orders.loadingMenu')}
-                  </Text>
-                ) : (
-                  <>
-                    {/* Categories chip bar */}
-                    {categories && categories.length > 0 && (
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.categoryRow}
-                      >
-                        {categories.map((cat) => {
-                          const active = cat.id === selectedCategoryId;
-                          return (
-                            <TouchableOpacity
-                              key={cat.id}
-                              onPress={() => setSelectedCategoryId(cat.id)}
-                              style={[styles.categoryChip, active && styles.categoryChipActive]}
-                            >
-                              <Text
-                                variant="labelMedium"
-                                style={[
-                                  styles.categoryChipText,
-                                  active && styles.categoryChipTextActive,
-                                ]}
-                              >
-                                {cat.name}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </ScrollView>
-                    )}
-
-                    {/* Items in selected category. Empty state intentionally
-                      omitted — a category with zero available items is rare
-                      and self-explanatory (the chip is selected but no rows
-                      render). Adding a key here would block PR on 20-locale
-                      translation for a near-unreachable string. */}
-                    {filteredMenuItems.length > 0 && (
-                      <View style={styles.menuItemsList}>
-                        {filteredMenuItems.map((item) => {
-                          const inCart = cart.get(item.id)?.quantity ?? 0;
-                          return (
-                            <TouchableOpacity
-                              key={item.id}
-                              onPress={() => addItem(item)}
-                              style={styles.menuItemRow}
-                            >
-                              <View style={styles.menuItemInfo}>
-                                <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
-                                  {item.name}
-                                </Text>
-                                <Text variant="bodySmall" style={styles.muted}>
-                                  {currencySymbol}
-                                  {item.price.toFixed(2)}
-                                </Text>
-                              </View>
-                              <View style={styles.menuItemAdd}>
-                                {inCart > 0 && (
-                                  <Text
-                                    variant="labelMedium"
-                                    style={styles.inCartBadge}
-                                  >{`${inCart}x`}</Text>
-                                )}
-                                <MaterialCommunityIcons
-                                  name="plus-circle"
-                                  size={22}
-                                  color={COLORS.purple}
-                                />
-                              </View>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    )}
-                  </>
-                )}
+                <MenuItemPicker
+                  loading={menuLoading}
+                  categories={categories}
+                  filteredMenuItems={filteredMenuItems}
+                  selectedCategoryId={selectedCategoryId}
+                  onSelectCategory={setSelectedCategoryId}
+                  getQuantity={cart.getQuantity}
+                  onAddItem={cart.addItem}
+                  currencySymbol={currencySymbol}
+                />
 
                 {hasItems && (
                   <>
@@ -397,14 +230,14 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
                       {t('orders.orderSummary')}
                     </Text>
                     {cartItems.map((c) => (
-                      <View key={c.menuItem.id} style={styles.selectedRow}>
+                      <View key={c.id} style={styles.selectedRow}>
                         <View style={styles.selectedInfo}>
                           <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
-                            {c.menuItem.name}
+                            {c.name}
                           </Text>
                           <Text variant="bodySmall" style={styles.muted}>
                             {currencySymbol}
-                            {c.menuItem.price.toFixed(2)} {t('payment.each')}
+                            {c.price.toFixed(2)} {t('payment.each')}
                           </Text>
                         </View>
                         <View style={styles.qtyControls}>
@@ -412,7 +245,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
                             icon="minus"
                             mode="outlined"
                             size={16}
-                            onPress={() => updateQty(c.menuItem.id, -1)}
+                            onPress={() => cart.updateQty(c.id, -1)}
                           />
                           <Text variant="titleSmall" style={styles.qtyText}>
                             {c.quantity}
@@ -421,7 +254,7 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
                             icon="plus"
                             mode="outlined"
                             size={16}
-                            onPress={() => updateQty(c.menuItem.id, 1)}
+                            onPress={() => cart.updateQty(c.id, 1)}
                           />
                         </View>
                       </View>
@@ -511,50 +344,9 @@ const styles = StyleSheet.create({
   scrollArea: { paddingHorizontal: 0 },
   keyboardAvoid: { flexShrink: 1 },
   form: { gap: 12, paddingHorizontal: 24, paddingVertical: 12 },
-  mapsLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
-    alignSelf: 'flex-end',
-  },
-  mapsText: { color: COLORS.purple, fontSize: 11 },
-  defaultFee: { color: COLORS.textLight, marginTop: -8 },
   bold: { fontWeight: '700', color: COLORS.textPrimary },
   muted: { color: COLORS.textMuted },
   sectionHeader: { fontWeight: '700', color: COLORS.textPrimary, marginTop: 4 },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  toggleLabel: { flex: 1, color: COLORS.textPrimary },
-  categoryRow: { gap: 6, paddingVertical: 4 },
-  categoryChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 9999,
-    backgroundColor: COLORS.borderLight,
-  },
-  categoryChipActive: { backgroundColor: COLORS.purple },
-  categoryChipText: { color: COLORS.textSecondary, fontWeight: '600' },
-  categoryChipTextActive: { color: '#fff' },
-  menuItemsList: { gap: 6 },
-  menuItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    backgroundColor: COLORS.borderLight,
-  },
-  menuItemInfo: { flex: 1, marginRight: 8 },
-  menuItemAdd: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  inCartBadge: {
-    color: COLORS.purple,
-    fontWeight: '700',
-  },
   selectedRow: {
     flexDirection: 'row',
     alignItems: 'center',

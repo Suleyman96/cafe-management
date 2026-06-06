@@ -1,3 +1,4 @@
+import { getDurationHours } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -33,12 +34,6 @@ interface ScheduleCardProps {
   onMarkInProgress?: (id: string) => void;
   onMarkCompleted?: (id: string) => void;
   onEdit?: (id: string) => void;
-}
-
-function getDurationHours(start: string | null | undefined, end: string | null | undefined) {
-  if (!start || !end) return null;
-  const ms = new Date(end).getTime() - new Date(start).getTime();
-  return Math.round((ms / (1000 * 60 * 60)) * 10) / 10;
 }
 
 export const ScheduleCard = React.memo(function ScheduleCard({

@@ -1,7 +1,7 @@
 'use client';
 
 import type { Database } from '@gustri/database/types';
-import { useTranslation } from '@gustri/i18n';
+import { useDateFormatter, useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui-web';
 import { DollarSign, FolderOpen, Pencil, Plus, Settings, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -22,6 +22,8 @@ type Expense = Database['public']['Tables']['expenses']['Row'];
 
 export default function ExpensesClient() {
   const { t } = useTranslation('staff');
+  const dfDate = useDateFormatter();
+  const dfMonth = useDateFormatter({ month: 'long' });
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -69,7 +71,7 @@ export default function ExpensesClient() {
 
   // Month selector options — use locale-aware month names
   const months = Array.from({ length: 12 }, (_, i) =>
-    new Date(new Date().getFullYear(), i).toLocaleString('default', { month: 'long' }),
+    dfMonth.format(new Date(new Date().getFullYear(), i)),
   );
 
   if (isLoading) {
@@ -260,7 +262,7 @@ export default function ExpensesClient() {
                 ) => (
                   <tr key={expense.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {new Date(expense.expense_date).toLocaleDateString()}
+                      {dfDate.format(new Date(expense.expense_date))}
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-900 truncate max-w-xs">

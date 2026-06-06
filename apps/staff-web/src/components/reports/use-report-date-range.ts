@@ -1,6 +1,7 @@
 'use client';
 
 import { getLocalDateString } from '@gustri/core';
+import { useDateFormatter } from '@gustri/i18n';
 import { useMemo, useState } from 'react';
 
 export type DateRangeType = 'today' | 'week' | 'month' | 'year' | 'custom';
@@ -15,6 +16,46 @@ export type CustomMode = 'day' | 'month' | 'year';
  * Extracted verbatim from ReportsPage — behavior unchanged.
  */
 export function useReportDateRange() {
+  const dfFullDate = useDateFormatter({
+    weekday: 'short',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const dfMonthYear = useDateFormatter({ month: 'long', year: 'numeric' });
+  const dfShortDate = useDateFormatter({ month: 'short', day: 'numeric' });
+  const dfShortDateYear = useDateFormatter({
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  // English-only formatters for the PDF export. jsPDF's default font can't
+  // render non-Latin scripts (Japanese/Arabic/Thai would be missing glyphs)
+  // and the filename is derived from the label, so the PDF period + filename
+  // stay English per the bulk-export-is-English-only policy. The on-screen
+  // header uses the locale-aware formatters above.
+  const enFullDate = useMemo(
+    () =>
+      new Intl.DateTimeFormat('en-US', {
+        weekday: 'short',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+    [],
+  );
+  const enMonthYear = useMemo(
+    () => new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }),
+    [],
+  );
+  const enShortDate = useMemo(
+    () => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }),
+    [],
+  );
+  const enShortDateYear = useMemo(
+    () => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    [],
+  );
   const [dateRange, setDateRange] = useState<DateRangeType>('today');
   const [customMode, setCustomMode] = useState<CustomMode>('day');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -129,35 +170,32 @@ export function useReportDateRange() {
   const todayString = getLocalDateString();
   const currentMonthString = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
 
-  // Format display for custom selection
-  const getCustomDateDisplay = (): string => {
+  // Build the human-readable range label from a given set of formatters, so the
+  // same logic produces both the locale-aware on-screen label and the
+  // English-only PDF label.
+  type RangeFmts = {
+    fullDate: Intl.DateTimeFormat;
+    monthYear: Intl.DateTimeFormat;
+    shortDate: Intl.DateTimeFormat;
+    shortDateYear: Intl.DateTimeFormat;
+  };
+  const customDateDisplay = (f: RangeFmts): string => {
     if (customMode === 'day') {
-      return selectedDate.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      });
+      return f.fullDate.format(selectedDate);
     } else if (customMode === 'month') {
-      return selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      return f.monthYear.format(selectedDate);
     } else {
       return selectedDate.getFullYear().toString();
     }
   };
-
-  // Get human-readable date range label
-  const getDateRangeLabel = (): string => {
+  const buildRangeLabel = (f: RangeFmts): string => {
     if (dateRange === 'custom') {
-      return getCustomDateDisplay();
+      return customDateDisplay(f);
     }
 
     const { start, end } = getDateRange;
     const formatDate = (d: Date) =>
-      d.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: dateRange === 'year' ? 'numeric' : undefined,
-      });
+      dateRange === 'year' ? f.shortDateYear.format(d) : f.shortDate.format(d);
 
     switch (dateRange) {
       case 'today':
@@ -174,6 +212,24 @@ export function useReportDateRange() {
     }
   };
 
+  const localizedFmts: RangeFmts = {
+    fullDate: dfFullDate,
+    monthYear: dfMonthYear,
+    shortDate: dfShortDate,
+    shortDateYear: dfShortDateYear,
+  };
+  const englishFmts: RangeFmts = {
+    fullDate: enFullDate,
+    monthYear: enMonthYear,
+    shortDate: enShortDate,
+    shortDateYear: enShortDateYear,
+  };
+
+  // Locale-aware label for the on-screen header.
+  const getDateRangeLabel = (): string => buildRangeLabel(localizedFmts);
+  // English label for the PDF export + filename (see formatter note above).
+  const getDateRangeLabelEn = (): string => buildRangeLabel(englishFmts);
+
   return {
     dateRange,
     setDateRange,
@@ -188,5 +244,6 @@ export function useReportDateRange() {
     todayString,
     currentMonthString,
     getDateRangeLabel,
+    getDateRangeLabelEn,
   };
 }

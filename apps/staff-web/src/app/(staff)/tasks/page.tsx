@@ -2,7 +2,7 @@
 
 import { getLocalDateString, WEEKDAY_TRANSLATION_KEY } from '@gustri/core';
 import type { Database } from '@gustri/database/types';
-import { useTranslation } from '@gustri/i18n';
+import { useDateFormatter, useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui-web';
 import {
   AlertTriangle,
@@ -60,6 +60,7 @@ type TabView = 'today' | 'all' | 'my' | 'templates';
 
 export default function TasksPage() {
   const { t } = useTranslation('staff');
+  const dfDate = useDateFormatter();
   const { staff } = useAuth();
   const isAdmin = useCanPerform('manage_tasks');
   const router = useRouter();
@@ -329,7 +330,7 @@ export default function TasksPage() {
                         className={`text-xs flex items-center gap-1 ${isOverdue(task) ? 'text-red-600 font-medium' : 'text-gray-500'}`}
                       >
                         <Clock className="h-3 w-3" />
-                        {new Date(task.due_date).toLocaleDateString()}
+                        {dfDate.format(new Date(task.due_date))}
                         {task.due_time && ` ${task.due_time.slice(0, 5)}`}
                       </span>
                     )}

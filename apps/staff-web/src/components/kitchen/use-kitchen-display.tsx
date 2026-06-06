@@ -4,6 +4,7 @@ import {
   getKitchenUrgencyBand,
   isDeliveryOrder,
   isDineInOrder,
+  isItemStatusAtOrPast,
   isTakeoutOrder,
   ORDER_STATUS_KEYS,
 } from '@gustri/core';
@@ -39,21 +40,6 @@ import { useAuthStore } from '@/store/auth-store';
  * app — there is no way for the app to override the OS clock.
  */
 const CLOCK_SKEW_BANNER_THRESHOLD_MS = 2 * 60 * 1000;
-
-// Item-status progression order for the per-station bulk advance check.
-// `cancelled` is excluded — cancellation is terminal but does not block
-// the rest of an order from progressing.
-const ITEM_STATUS_PROGRESS: Record<OrderItemStatus, number> = {
-  pending: 0,
-  preparing: 1,
-  ready: 2,
-  served: 3,
-  cancelled: -1,
-};
-
-function isAtOrPast(actual: OrderItemStatus, target: OrderItemStatus): boolean {
-  return ITEM_STATUS_PROGRESS[actual] >= ITEM_STATUS_PROGRESS[target];
-}
 
 // Check if all non-cancelled items in an order are served
 function allItemsServed(order: KitchenOrderView): boolean {
@@ -292,7 +278,7 @@ export function useKitchenDisplay() {
             (item) =>
               item.status === 'cancelled' ||
               advancedIds.has(item.id) ||
-              isAtOrPast(item.status, targetItemStatus),
+              isItemStatusAtOrPast(item.status, targetItemStatus),
           );
 
         // Don't set delivery/takeout orders to "served" — they follow a different flow

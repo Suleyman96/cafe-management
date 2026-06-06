@@ -1,7 +1,7 @@
 'use client';
 
 import type { Staff } from '@gustri/database/types';
-import { useTranslation } from '@gustri/i18n';
+import { useDateFormatter, useTranslation } from '@gustri/i18n';
 import { User } from 'lucide-react';
 import {
   formatDate,
@@ -28,6 +28,8 @@ export function WeeklyScheduleView({
   onEdit,
 }: WeeklyScheduleViewProps) {
   const { t } = useTranslation('staff');
+  const dfWeekday = useDateFormatter({ weekday: 'short' });
+  const dfDayMonth = useDateFormatter({ day: 'numeric', month: 'short' });
 
   return (
     <div className="bg-white rounded-lg shadow overflow-x-auto">
@@ -44,10 +46,8 @@ export function WeeklyScheduleView({
                   isToday(d) ? 'text-blue-600 bg-blue-50/50' : 'text-gray-500'
                 }`}
               >
-                <div>{d.toLocaleDateString('default', { weekday: 'short' })}</div>
-                <div className="text-sm font-bold">
-                  {d.toLocaleDateString('default', { day: 'numeric', month: 'short' })}
-                </div>
+                <div>{dfWeekday.format(d)}</div>
+                <div className="text-sm font-bold">{dfDayMonth.format(d)}</div>
               </th>
             ))}
           </tr>

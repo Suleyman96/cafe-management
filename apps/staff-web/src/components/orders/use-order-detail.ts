@@ -3,7 +3,7 @@
 import type { ORDER_STATUS } from '@gustri/core';
 import { ORDER_STATUS_KEYS } from '@gustri/core';
 import type { Database } from '@gustri/database/types';
-import { useTranslation } from '@gustri/i18n';
+import { useDateFormatter, useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -59,6 +59,12 @@ export type OrderWithRelations = Database['public']['Tables']['orders']['Row'] &
  */
 export function useOrderDetail(orderId: string) {
   const { t } = useTranslation('staff');
+  const dfDateTime = useDateFormatter({
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   const { data: orderData, isLoading: loading, error, refetch } = useOrder(orderId);
   const { data: paymentsData } = useOrderPayments(orderId);
@@ -133,12 +139,7 @@ export function useOrderDetail(orderId: string) {
   };
 
   const formatDate = (timestamp: string) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return dfDateTime.format(new Date(timestamp));
   };
 
   const handleItemStatusUpdate = async (itemId: string, newStatus: string) => {

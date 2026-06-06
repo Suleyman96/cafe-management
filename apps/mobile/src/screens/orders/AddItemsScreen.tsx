@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MenuItemCard } from '@/components/orders/MenuItemCard';
 import { useCategories, useCreateOrder, useCurrencySymbol, useOrder } from '@/hooks/local';
 import { useAddOrderItems, useMenuItems } from '@/hooks/shared';
+import { useOrderCart } from '@/hooks/use-order-cart';
 import { useSnackbar } from '@/hooks/use-snackbar';
 import { Text } from '@/lib/paper-compat';
 import { useAuthStore } from '@/store/auth-store';
@@ -20,13 +21,6 @@ import type { OrdersStackParamList } from '@/types';
 
 type Route = RouteProp<OrdersStackParamList, 'AddItems'>;
 type Nav = StackNavigationProp<OrdersStackParamList, 'AddItems'>;
-
-interface CartItem {
-  menuItemId: string;
-  quantity: number;
-  price: number;
-  name: string;
-}
 
 export default function AddItemsScreen() {
   const route = useRoute<Route>();
@@ -63,7 +57,7 @@ export default function AddItemsScreen() {
   );
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [cart, setCart] = useState<Record<string, CartItem>>({});
+  const cart = useOrderCart();
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -82,61 +76,28 @@ export default function AddItemsScreen() {
     [menuItems, selectedCategory, channelFilter],
   );
 
-  const cartSummary = useMemo(() => {
-    const items = Object.values(cart);
-    return {
-      count: items.reduce((sum, i) => sum + i.quantity, 0),
-      total: items.reduce((sum, i) => sum + i.price * i.quantity, 0),
-    };
-  }, [cart]);
+  const cartSummary = useMemo(
+    () => ({ count: cart.count, total: cart.subtotal }),
+    [cart.count, cart.subtotal],
+  );
 
-  const cartItems = Object.values(cart);
-  const hasCartItems = cartItems.length > 0;
-
-  const handleAdd = useCallback((item: { id: string; price: number; name?: string | null }) => {
-    setCart((prev) => {
-      const existing = prev[item.id];
-      return {
-        ...prev,
-        [item.id]: {
-          menuItemId: item.id,
-          quantity: (existing?.quantity || 0) + 1,
-          price: item.price,
-          name: item.name || 'Item',
-        },
-      };
-    });
-  }, []);
-
-  const handleRemove = useCallback((itemId: string) => {
-    setCart((prev) => {
-      const existing = prev[itemId];
-      if (!existing || existing.quantity <= 1) {
-        const { [itemId]: _, ...rest } = prev;
-        return rest;
-      }
-      return {
-        ...prev,
-        [itemId]: { ...existing, quantity: existing.quantity - 1 },
-      };
-    });
-  }, []);
+  const { cartItems, hasItems: hasCartItems, getQuantity, addItem, removeItem } = cart;
 
   const renderMenuItem = useCallback(
     ({ item }: { item: MenuItem }) => (
       <MenuItemCard
         menuItem={item}
-        quantity={cart[item.id]?.quantity || 0}
+        quantity={getQuantity(item.id)}
         currencySymbol={currencySymbol}
-        onAdd={handleAdd}
-        onRemove={handleRemove}
+        onAdd={addItem}
+        onRemove={removeItem}
       />
     ),
-    [cart, currencySymbol, handleAdd, handleRemove],
+    [getQuantity, currencySymbol, addItem, removeItem],
   );
 
   const handleSubmit = async () => {
-    const items = Object.values(cart);
+    const items = cartItems;
     if (items.length === 0) return;
 
     setSubmitting(true);
@@ -175,7 +136,7 @@ export default function AddItemsScreen() {
 
       const orderItems = items.map((c) => ({
         order_id: targetOrderId!,
-        menu_item_id: c.menuItemId,
+        menu_item_id: c.id,
         quantity: c.quantity,
         item_name: c.name,
         item_price: c.price,
@@ -251,23 +212,18 @@ export default function AddItemsScreen() {
             contentContainerStyle={styles.footerCartScrollContent}
           >
             {cartItems.map((item) => (
-              <View key={item.menuItemId} style={styles.footerCartItem}>
+              <View key={item.id} style={styles.footerCartItem}>
                 <Text style={styles.footerCartItemName} numberOfLines={1}>
                   {item.name}
                 </Text>
                 <View style={styles.footerCartItemControls}>
-                  <TouchableOpacity
-                    style={styles.footerQtyBtn}
-                    onPress={() => handleRemove(item.menuItemId)}
-                  >
+                  <TouchableOpacity style={styles.footerQtyBtn} onPress={() => removeItem(item.id)}>
                     <Text style={styles.footerQtyBtnText}>-</Text>
                   </TouchableOpacity>
                   <Text style={styles.footerCartItemQty}>{item.quantity}</Text>
                   <TouchableOpacity
                     style={styles.footerQtyBtn}
-                    onPress={() =>
-                      handleAdd({ id: item.menuItemId, price: item.price, name: item.name })
-                    }
+                    onPress={() => addItem({ id: item.id, price: item.price, name: item.name })}
                   >
                     <Text style={styles.footerQtyBtnText}>+</Text>
                   </TouchableOpacity>

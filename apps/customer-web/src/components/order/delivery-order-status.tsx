@@ -4,6 +4,7 @@ import { useTranslation } from '@gustri/i18n';
 import { Badge, LoadingSpinner } from '@gustri/ui-web';
 import { CheckCircle2, Clock, Hourglass, MapPin, Phone, Truck, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { ItemStatusBadge, OrderStatusBanner } from '@/components/order/order-status-display';
 import { OrderTimeline } from '@/components/order/order-timeline';
 import { PlatformFooter } from '@/components/ui/platform-footer';
 import { ReconnectingBanner } from '@/components/ui/reconnecting-banner';
@@ -16,7 +17,7 @@ import {
   readDeliveryOrderToken,
   sweepStaleDeliveryOrderTokens,
 } from '@/lib/delivery-order-token-storage';
-import { getStatusColor, timeAgo } from '@/lib/utils';
+import { timeAgo } from '@/lib/utils';
 import { useOrderConfirmationStore } from '@/store/order-confirmation-store';
 
 interface DeliveryOrderStatusProps {
@@ -226,29 +227,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
             </div>
           )}
 
-          {order.status === 'pending_approval' && (
-            <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
-              <p className="text-sm text-center font-medium text-amber-800 dark:text-amber-200">
-                {t('deliveryStatus.banner.pendingApproval')}
-              </p>
-            </div>
-          )}
-
-          {order.status === 'out_for_delivery' && (
-            <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-950 rounded-lg border border-purple-200 dark:border-purple-800">
-              <p className="text-sm text-center font-medium text-purple-800 dark:text-purple-200">
-                {t('deliveryStatus.banner.outForDelivery')}
-              </p>
-            </div>
-          )}
-
-          {order.status === 'delivered' && (
-            <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-              <p className="text-sm text-center font-medium text-green-800 dark:text-green-200">
-                {t('deliveryStatus.banner.delivered')}
-              </p>
-            </div>
-          )}
+          <OrderStatusBanner status={order.status} variant="delivery" />
         </div>
 
         {/* Order Items */}
@@ -266,12 +245,7 @@ export function DeliveryOrderStatus({ orderId }: DeliveryOrderStatusProps) {
                     <span>{item.item_name}</span>
                   </div>
                   {item.notes && <p className="text-sm text-muted-foreground mt-1">{item.notes}</p>}
-                  <Badge
-                    variant="outline"
-                    className={`mt-2 text-xs ${getStatusColor(item.status)}`}
-                  >
-                    {t(`orderStatus.itemStatus.${item.status}`, { defaultValue: item.status })}
-                  </Badge>
+                  <ItemStatusBadge status={item.status} variant="delivery" />
                 </div>
                 <span className="font-medium">{formatPrice(item.item_price * item.quantity)}</span>
               </div>

@@ -2,7 +2,7 @@
 
 import { getLocalDateString } from '@gustri/core';
 import type { OrderStatus, UserRole } from '@gustri/database';
-import { useTranslation } from '@gustri/i18n';
+import { useDateFormatter, useTranslation } from '@gustri/i18n';
 import { Button, getRoleBadgeColor, LoadingSpinner, ORDER_STATUS_BADGES } from '@gustri/ui-web';
 import {
   ArrowLeft,
@@ -55,6 +55,21 @@ export default function StaffDetailPage() {
   const { staff: currentUser } = useAuth();
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
+  const dfDate = useDateFormatter();
+  const dfDateTime = useDateFormatter({
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+  });
+  const dfWeekdayShort = useDateFormatter({
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+  const dfTime = useDateFormatter({ hour: '2-digit', minute: '2-digit' });
 
   const {
     data: staffMember,
@@ -236,14 +251,14 @@ export default function StaffDetailPage() {
                 <div className="flex items-center gap-2">
                   <Calendar className="h-3.5 w-3.5" />
                   {t('staffMgmt.memberSince', {
-                    date: new Date(member.created_at).toLocaleDateString(),
+                    date: dfDate.format(new Date(member.created_at)),
                   })}
                 </div>
                 {member.last_login_at && (
                   <div className="flex items-center gap-2">
                     <Clock className="h-3.5 w-3.5" />
                     {t('staffMgmt.lastLoginAt', {
-                      date: new Date(member.last_login_at).toLocaleString(),
+                      date: dfDateTime.format(new Date(member.last_login_at)),
                     })}
                   </div>
                 )}
@@ -383,7 +398,7 @@ export default function StaffDetailPage() {
                         {formatPrice(orderTotal)}
                       </td>
                       <td className="px-4 py-2 text-sm text-right text-gray-500">
-                        {new Date(order.created_at).toLocaleDateString()}
+                        {dfDate.format(new Date(order.created_at))}
                       </td>
                     </tr>
                   );
@@ -440,7 +455,7 @@ export default function StaffDetailPage() {
                       </span>
                     </td>
                     <td className="px-4 py-2 text-sm text-right text-gray-500">
-                      {new Date(payment.created_at).toLocaleDateString()}
+                      {dfDate.format(new Date(payment.created_at))}
                     </td>
                   </tr>
                 ))}
@@ -514,30 +529,16 @@ export default function StaffDetailPage() {
                   return (
                     <tr key={sched.id} className="hover:bg-gray-50">
                       <td className="px-4 py-2 text-sm text-gray-900">
-                        {new Date(sched.date).toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
+                        {dfWeekdayShort.format(new Date(sched.date))}
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-700">
                         {sched.planned_start?.slice(0, 5)} - {sched.planned_end?.slice(0, 5)}
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-600">
-                        {sched.actual_start
-                          ? new Date(sched.actual_start).toLocaleTimeString('en-US', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : '-'}
+                        {sched.actual_start ? dfTime.format(new Date(sched.actual_start)) : '-'}
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-600">
-                        {sched.actual_end
-                          ? new Date(sched.actual_end).toLocaleTimeString('en-US', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : '-'}
+                        {sched.actual_end ? dfTime.format(new Date(sched.actual_end)) : '-'}
                       </td>
                       <td className="px-4 py-2">
                         <span

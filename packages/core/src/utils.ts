@@ -124,6 +124,44 @@ export function getLocalDateString(date: Date = new Date(), locale: string = 'en
   return date.toLocaleDateString(locale);
 }
 
+// ─── Schedule Date Utilities ────────────────────────────────────
+
+/**
+ * The 7 dates (Monday–Sunday) of the week containing `referenceDate`.
+ * Monday-first to match the schedules grid on staff-web + mobile, which
+ * previously each carried an identical copy of this helper.
+ */
+export function getWeekDates(referenceDate: Date): Date[] {
+  const d = new Date(referenceDate);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day; // Monday as first day
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + diff);
+
+  const dates: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
+    dates.push(date);
+  }
+  return dates;
+}
+
+/**
+ * Whole hours (to one decimal) between two ISO timestamps, or null if either
+ * is missing. Used by the schedules views to show a shift's actual duration.
+ * Signature accepts `undefined` so both the web (`string | null`) and mobile
+ * (`string | null | undefined`) call sites are covered by the single helper.
+ */
+export function getDurationHours(
+  start: string | null | undefined,
+  end: string | null | undefined,
+): number | null {
+  if (!start || !end) return null;
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  return Math.round((ms / (1000 * 60 * 60)) * 10) / 10;
+}
+
 // ─── Order Calculation Utilities ────────────────────────────────
 
 /**

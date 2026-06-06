@@ -1,5 +1,5 @@
 import { DAYS_OF_WEEK, TIME_OPTIONS, WEEKDAY_TRANSLATION_KEY } from '@gustri/core';
-import { useTranslation } from '@gustri/i18n';
+import { useLocale, useTranslation } from '@gustri/i18n';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, Modal, Portal, Switch, Text } from 'react-native-paper';
@@ -56,6 +56,7 @@ export function ScheduleModal({
   const isEdit = !!initialData;
   const { t } = useTranslation('staff');
   const { t: tCommon } = useTranslation('common');
+  const locale = useLocale();
 
   const [staffId, setStaffId] = useState('');
   const [date, setDate] = useState('');
@@ -82,7 +83,7 @@ export function ScheduleModal({
       setNotes(initialData.notes || '');
       setActualStart(
         initialData.actual_start
-          ? new Date(initialData.actual_start).toLocaleTimeString([], {
+          ? new Date(initialData.actual_start).toLocaleTimeString(locale, {
               hour: '2-digit',
               minute: '2-digit',
               hour12: false,
@@ -91,7 +92,7 @@ export function ScheduleModal({
       );
       setActualEnd(
         initialData.actual_end
-          ? new Date(initialData.actual_end).toLocaleTimeString([], {
+          ? new Date(initialData.actual_end).toLocaleTimeString(locale, {
               hour: '2-digit',
               minute: '2-digit',
               hour12: false,
@@ -114,7 +115,7 @@ export function ScheduleModal({
       setRepeatDays([]);
       setRepeatWeeks(1);
     }
-  }, [visible, initialData, defaultDate]);
+  }, [visible, initialData, defaultDate, locale]);
 
   const toggleRepeatDay = (day: number) => {
     setRepeatDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));

@@ -1,47 +1,13 @@
-import { formatSelectedOptions, getKitchenUrgencyBand } from '@gustri/core';
-import { ORDER_STATUS } from '@gustri/database';
 import { useTranslation } from '@gustri/i18n';
 import type { HiddenCategoryBucket } from '@gustri/queries';
 import { StatusBadge, TimeElapsed } from '@gustri/ui-mobile';
-import { useIsMutating } from '@tanstack/react-query';
-import { differenceInMinutes } from 'date-fns';
-import React, { useCallback, useEffect, useRef } from 'react';
-import {
-  ActivityIndicator,
-  Animated,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { MUTATION_KEYS } from '@/lib/mutation-keys';
-import { BRAND_PRIMARY, CARD_PADDING, CARD_RADIUS, COLORS, ORDER_STATUS_COLORS } from '@/theme';
+import React from 'react';
+import { Animated, StyleSheet, Text, View } from 'react-native';
+import { CARD_PADDING, CARD_RADIUS } from '@/theme';
 import { HiddenItemsSummary } from './HiddenItemsSummary';
-
-// Urgency palette for kitchen card surfaces. Mirrors the web kitchen's
-// elapsed-time bands (yellow → orange → red) but uses dark-mode hues so
-// tinted cards remain readable against the kitchen screen's `#111111`
-// background. `new` orders use a dark-blue tint + pulse to demand
-// immediate attention; `ready` / all-items-ready use a dark-green tint
-// to signal "done, awaiting waiter pickup".
-const URGENCY_THEME = {
-  new: { bg: '#0c2654', border: '#60a5fa' },
-  ready: { bg: '#0a2e1a', border: '#4ade80' },
-  critical: { bg: '#3b0f0f', border: '#f87171' },
-  elevated: { bg: '#3b1e00', border: '#fb923c' },
-  warning: { bg: '#3f2f00', border: '#facc15' },
-  // Default (cooking under 10 min) preserves the original neutral surface.
-  default: { bg: '#262626', border: BRAND_PRIMARY },
-} as const;
-
-type KitchenItem = {
-  id: string;
-  quantity: number;
-  status: string;
-  notes?: string | null;
-  selected_options?: unknown;
-  menu_item?: { name?: string | null } | null;
-};
+import { KitchenOrderActions } from './KitchenOrderActions';
+import { type KitchenItem, KitchenOrderItemRow } from './KitchenOrderItemRow';
+import { useKitchenUrgency } from './use-kitchen-urgency';
 
 interface KitchenOrderCardProps {
   order: {
@@ -72,79 +38,6 @@ interface KitchenOrderCardProps {
   isProcessing?: boolean;
 }
 
-interface KitchenOrderItemRowProps {
-  item: KitchenItem;
-  onMarkReady: (itemId: string) => void;
-  isOrderProcessing: boolean;
-}
-
-const KitchenOrderItemRow = React.memo(function KitchenOrderItemRow({
-  item,
-  onMarkReady,
-  isOrderProcessing,
-}: KitchenOrderItemRowProps) {
-  const { t } = useTranslation('staff');
-
-  // H2: per-item disable is read from the mutation cache, not from parent
-  // state. The cache is the same store the mutation lifecycle writes to,
-  // so a same-tick double-tap on this row sees the in-flight mutation
-  // without a parent re-render in the loop. The predicate scopes the
-  // count to mutations whose `variables.itemId` targets *this* row, so
-  // a different item's mutation doesn't lock this one. Auto-clears on
-  // settle — no try/finally bookkeeping in the screen.
-  const matchesItem = useCallback(
-    (m: { state: { variables: unknown } }) => {
-      const vars = m.state.variables as { itemId?: string } | undefined;
-      return vars?.itemId === item.id;
-    },
-    [item.id],
-  );
-  const itemMutating =
-    useIsMutating({
-      mutationKey: MUTATION_KEYS.UPDATE_ORDER_ITEM_STATUS,
-      predicate: matchesItem,
-    }) > 0;
-
-  // `isOrderProcessing` covers bulk order-level operations (Start Preparing /
-  // All Ready / All Served) where every active item is being mutated; those
-  // flows don't enter `useIsMutating`'s per-item scope through the same
-  // gateway, so we keep this gate as the bulk-op safety net.
-  const itemDisabled = isOrderProcessing || itemMutating;
-
-  return (
-    <View style={styles.itemRow}>
-      <View style={styles.itemInfo}>
-        <Text style={styles.itemName}>
-          {item.quantity}x {item.menu_item?.name || t('kitchen.unknownItem')}
-        </Text>
-        {formatSelectedOptions(item.selected_options) ? (
-          <Text style={styles.itemNotes}>{formatSelectedOptions(item.selected_options)}</Text>
-        ) : null}
-        {item.notes && <Text style={styles.itemNotes}>{item.notes}</Text>}
-      </View>
-      {(item.status === 'pending' || item.status === 'preparing') && (
-        <TouchableOpacity
-          style={styles.itemReadyBtn}
-          onPress={() => onMarkReady(item.id)}
-          disabled={itemDisabled}
-          activeOpacity={0.7}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityRole="button"
-          accessibilityLabel={`${t('kitchen.ready')} — ${item.menu_item?.name || t('kitchen.unknownItem')}`}
-          accessibilityState={{ disabled: itemDisabled }}
-        >
-          <Text style={styles.itemReadyBtnText}>{t('kitchen.ready')}</Text>
-        </TouchableOpacity>
-      )}
-      {item.status === 'ready' && (
-        <View style={styles.readyPill}>
-          <Text style={styles.readyPillText}>{t('kitchen.ready')}</Text>
-        </View>
-      )}
-    </View>
-  );
-});
-
 export const KitchenOrderCard = React.memo(function KitchenOrderCard({
   order,
   hiddenCount = 0,
@@ -162,42 +55,11 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
 
   const allItemsReady = activeItems.length > 0 && activeItems.every((i) => i.status === 'ready');
 
-  // Card surface colored by status + elapsed-time bands so the cook can
-  // triage urgency at a glance — same mental model as the web kitchen.
-  // Band classification lives in `@gustri/core` so this and the web
-  // kitchen page stay aligned on what counts as "critical" etc.
-  const minutesElapsed = differenceInMinutes(new Date(), new Date(order.created_at));
-  const band = getKitchenUrgencyBand({
-    minutesElapsed,
+  const { urgency, pulseOpacity } = useKitchenUrgency({
     status: order.status,
+    createdAt: order.created_at,
     allItemsReady,
   });
-  const urgency =
-    band === 'default'
-      ? {
-          bg: URGENCY_THEME.default.bg,
-          border: ORDER_STATUS_COLORS[order.status]?.text || URGENCY_THEME.default.border,
-        }
-      : URGENCY_THEME[band];
-
-  // Pulse the whole card while `status === 'new'`. Same affordance as web's
-  // `animate-pulse` on the kitchen new-order card. Uses the native driver
-  // so the loop doesn't fight the JS thread during heavy realtime traffic.
-  const pulseOpacity = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    if (order.status !== ORDER_STATUS.NEW) {
-      pulseOpacity.setValue(1);
-      return;
-    }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseOpacity, { toValue: 0.65, duration: 800, useNativeDriver: true }),
-        Animated.timing(pulseOpacity, { toValue: 1, duration: 800, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [order.status, pulseOpacity]);
 
   const tableLabel = order.table
     ? t('kitchen.tableNumber', { number: order.table.table_number })
@@ -244,61 +106,16 @@ export const KitchenOrderCard = React.memo(function KitchenOrderCard({
       <HiddenItemsSummary count={hiddenCount} byCategory={hiddenByCategory ?? []} />
 
       {/* Actions */}
-      <View style={styles.actions}>
-        {order.status === ORDER_STATUS.NEW && (
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: COLORS.warning }]}
-            onPress={() => onStartPreparing(order.id)}
-            disabled={isProcessing}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel={t('kitchen.startPreparing')}
-            accessibilityState={{ disabled: isProcessing, busy: isProcessing }}
-          >
-            {isProcessing ? (
-              <ActivityIndicator size="small" color="#000" />
-            ) : (
-              <Text style={[styles.actionBtnText, { color: '#000' }]}>
-                {t('kitchen.startPreparing')}
-              </Text>
-            )}
-          </TouchableOpacity>
-        )}
-        {order.status === ORDER_STATUS.PREPARING && allItemsReady && (
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: COLORS.success }]}
-            onPress={() => onMarkAllReady(order.id)}
-            disabled={isProcessing}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel={t('kitchen.allReady')}
-            accessibilityState={{ disabled: isProcessing, busy: isProcessing }}
-          >
-            {isProcessing ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.actionBtnText}>{t('kitchen.allReady')}</Text>
-            )}
-          </TouchableOpacity>
-        )}
-        {order.status === ORDER_STATUS.READY && order.order_type !== 'delivery' && (
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: '#8b5cf6' }]}
-            onPress={() => onMarkAllServed(order.id)}
-            disabled={isProcessing}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel={t('kitchen.allServed')}
-            accessibilityState={{ disabled: isProcessing, busy: isProcessing }}
-          >
-            {isProcessing ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.actionBtnText}>{t('kitchen.allServed')}</Text>
-            )}
-          </TouchableOpacity>
-        )}
-      </View>
+      <KitchenOrderActions
+        orderId={order.id}
+        status={order.status}
+        orderType={order.order_type}
+        allItemsReady={allItemsReady}
+        isProcessing={isProcessing}
+        onStartPreparing={onStartPreparing}
+        onMarkAllReady={onMarkAllReady}
+        onMarkAllServed={onMarkAllServed}
+      />
     </Animated.View>
   );
 });
@@ -347,64 +164,5 @@ const styles = StyleSheet.create({
   items: {
     marginTop: 12,
     gap: 6,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
-  },
-  itemInfo: {
-    flex: 1,
-    marginRight: 8,
-  },
-  itemName: {
-    color: '#e5e7eb',
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  itemNotes: {
-    color: COLORS.warning,
-    fontStyle: 'italic',
-    fontSize: 12,
-  },
-  itemReadyBtn: {
-    backgroundColor: COLORS.success,
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  itemReadyBtnText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  readyPill: {
-    backgroundColor: COLORS.success,
-    borderRadius: 9999,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  readyPillText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  actions: {
-    marginTop: 12,
-    gap: 8,
-  },
-  actionBtn: {
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
   },
 });

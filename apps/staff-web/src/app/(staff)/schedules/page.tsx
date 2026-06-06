@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@gustri/i18n';
+import { useDateFormatter, useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui-web';
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { ScheduleModal } from '@/components/modals/schedule-modal';
@@ -12,6 +12,13 @@ import { useAuth } from '@/hooks/use-auth';
 
 export default function SchedulesPage() {
   const { t } = useTranslation('staff');
+  const dfMonthYear = useDateFormatter({ month: 'long', year: 'numeric' });
+  const dfShortDay = useDateFormatter({ month: 'short', day: 'numeric' });
+  const dfShortDayYear = useDateFormatter({
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
   const { staff: currentUser } = useAuth();
   const cal = useScheduleCalendar();
   const {
@@ -107,19 +114,11 @@ export default function SchedulesPage() {
         <div className="flex items-center gap-3">
           {viewMode === 'monthly' ? (
             <span className="text-sm font-medium text-gray-900">
-              {monthInfo.firstDay.toLocaleDateString('default', {
-                month: 'long',
-                year: 'numeric',
-              })}
+              {dfMonthYear.format(monthInfo.firstDay)}
             </span>
           ) : (
             <span className="text-sm font-medium text-gray-900">
-              {weekDates[0].toLocaleDateString('default', { month: 'short', day: 'numeric' })} -{' '}
-              {weekDates[6].toLocaleDateString('default', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}
+              {dfShortDay.format(weekDates[0])} - {dfShortDayYear.format(weekDates[6])}
             </span>
           )}
           {viewMode === 'monthly'

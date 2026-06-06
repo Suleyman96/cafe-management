@@ -1,7 +1,7 @@
 'use client';
 
 import type { Database } from '@gustri/database/types';
-import { useTranslation } from '@gustri/i18n';
+import { useDateFormatter, useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui-web';
 import {
   AlertTriangle,
@@ -339,6 +339,14 @@ export default function StockClient() {
 // Inline history modal component
 function StockHistoryModal({ item, onClose }: { item: StockItem; onClose: () => void }) {
   const { t } = useTranslation('staff');
+  const dfDateTime = useDateFormatter({
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+  });
   const { data: movements = [], isLoading } = useStockMovements(item.id);
 
   return (
@@ -401,7 +409,7 @@ function StockHistoryModal({ item, onClose }: { item: StockItem; onClose: () => 
                       </div>
                       {m.reason && <p className="text-sm text-gray-600 mt-0.5">{m.reason}</p>}
                       <p className="text-xs text-gray-400 mt-1">
-                        {new Date(m.created_at).toLocaleString()}
+                        {dfDateTime.format(new Date(m.created_at))}
                         {m.performed_by_staff &&
                           ` ${t('stock.performedBy', { name: m.performed_by_staff.full_name })}`}
                       </p>
