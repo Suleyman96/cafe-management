@@ -1,0 +1,14 @@
+{
+  "//": "Single source of truth for the compiler options shared by every web/Node project in the monorepo (packages via ./tsconfig.json, the Next.js apps directly). Keep ONLY options that should be identical everywhere — notably the strictness flags (`strict`, `noUncheckedIndexedAccess`) so they can't drift per-project. Project-specific knobs (lib, jsx, declaration, paths, outDir, …) stay in the individual tsconfigs. The mobile app extends `expo/tsconfig.base` instead (separate React Native toolchain) and re-declares these flags locally — see apps/mobile/tsconfig.json.",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true
+  }
+}

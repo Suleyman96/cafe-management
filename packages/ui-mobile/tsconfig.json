@@ -4,8 +4,7 @@
     "jsx": "react-jsx",
     "noEmit": true,
     "module": "ESNext",
-    "moduleResolution": "bundler",
-    "noUncheckedIndexedAccess": true
+    "moduleResolution": "bundler"
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
