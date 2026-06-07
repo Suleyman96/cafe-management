@@ -63,7 +63,8 @@ describe('useUpdateOrderStatus', () => {
     (mockDb.orders.updateStatus as any).mockRejectedValueOnce(new Error('boom'));
     await expect(result.current.mutateAsync({ id: 'o1', status: 'preparing' })).rejects.toThrow();
     expect(onError).toHaveBeenCalled();
-    expect(onError.mock.calls[0][0]).toBeInstanceOf(Error);
+    // asserted called above, so calls[0] and its first arg exist
+    expect(onError.mock.calls[0]![0]).toBeInstanceOf(Error);
   });
 });
 

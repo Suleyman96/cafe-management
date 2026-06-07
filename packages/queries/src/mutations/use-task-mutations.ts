@@ -16,7 +16,8 @@ export function useCreateTask(options?: MutationCallbacks) {
     mutationFn: async (data: TaskInsert) => {
       const task = await db.tasks.create(data);
       if (data.is_recurring) {
-        await db.tasks.generateRecurringTasks(new Date().toISOString().split('T')[0]);
+        // ISO 8601 strings always contain a 'T' separator, so [0] (the date part) is in-bounds.
+        await db.tasks.generateRecurringTasks(new Date().toISOString().split('T')[0]!);
       }
       return task;
     },
@@ -35,7 +36,8 @@ export function useUpdateTask(options?: MutationCallbacks) {
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<TaskUpdate> }) => {
       const task = await db.tasks.update(id, updates);
       if (updates.is_recurring !== undefined) {
-        await db.tasks.generateRecurringTasks(new Date().toISOString().split('T')[0]);
+        // ISO 8601 strings always contain a 'T' separator, so [0] (the date part) is in-bounds.
+        await db.tasks.generateRecurringTasks(new Date().toISOString().split('T')[0]!);
       }
       return task;
     },

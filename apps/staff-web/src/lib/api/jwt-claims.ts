@@ -25,7 +25,9 @@ const VALID_ROLES = new Set<string>(Object.values(USER_ROLE));
  */
 export function getStaffClaims(_user: User, token: string): StaffClaims | null {
   try {
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+    const payloadSegment = token.split('.')[1];
+    if (!payloadSegment) return null;
+    const payload = JSON.parse(Buffer.from(payloadSegment, 'base64').toString());
     if (!payload.is_active_staff) return null;
     // Defense-in-depth: a malformed or partial claim set must not flow
     // downstream as a half-populated staff object. A missing/null tenant_id in

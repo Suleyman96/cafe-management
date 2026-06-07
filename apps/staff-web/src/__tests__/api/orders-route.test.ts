@@ -72,7 +72,7 @@ describe('POST /api/v1/orders — totals are stripped (C2)', () => {
 
     expect(res.status).toBe(201);
     expect(createOrderMock).toHaveBeenCalledTimes(1);
-    const callArg = createOrderMock.mock.calls[0][1] as {
+    const callArg = createOrderMock.mock.calls[0]![1] as {
       orderData: Record<string, unknown>;
     };
     expect(callArg.orderData).not.toHaveProperty('subtotal');
@@ -92,7 +92,7 @@ describe('POST /api/v1/orders — totals are stripped (C2)', () => {
 
     expect(res.status).toBe(201);
     expect(createOrderMock).toHaveBeenCalledTimes(1);
-    const callArg = createOrderMock.mock.calls[0][1] as {
+    const callArg = createOrderMock.mock.calls[0]![1] as {
       orderData: Record<string, unknown>;
     };
     expect(callArg.orderData).not.toHaveProperty('subtotal');

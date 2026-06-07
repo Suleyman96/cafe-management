@@ -131,7 +131,7 @@ describe('POST /api/v1/customer/feedback — schema gate', () => {
 
     expect(res.status).toBe(201);
     expect(createFeedbackMock).toHaveBeenCalledTimes(1);
-    const call = createFeedbackMock.mock.calls[0][1] as Record<string, unknown>;
+    const call = createFeedbackMock.mock.calls[0]![1] as Record<string, unknown>;
     expect(call).not.toHaveProperty('tenant_id');
     expect(call.table_id).toBe(TABLE_ID);
     expect(call.order_id).toBe(ORDER_ID);

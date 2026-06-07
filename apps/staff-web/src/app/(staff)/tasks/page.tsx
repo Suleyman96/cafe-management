@@ -175,7 +175,8 @@ export default function TasksPage() {
   };
 
   const getWeekdayLabels = (days: number[]) => {
-    return days.map((d) => t(WEEKDAY_TRANSLATION_KEY[d])).join(', ');
+    // WEEKDAY_TRANSLATION_KEY covers 0-7; stored recurrence days are valid weekday numbers
+    return days.map((d) => t(WEEKDAY_TRANSLATION_KEY[d] ?? '')).join(', ');
   };
 
   if (isLoading) {

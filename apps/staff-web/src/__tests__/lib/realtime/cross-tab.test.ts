@@ -57,7 +57,7 @@ describe('cross-tab — BroadcastChannel transport', () => {
     onCrossTab(cb);
 
     // Emulate the channel echoing our own message back.
-    listeners[0]({
+    listeners[0]!({
       data: { kind: 'mutation-success', tabId: getTabId() },
     } as MessageEvent);
 
@@ -70,7 +70,7 @@ describe('cross-tab — BroadcastChannel transport', () => {
     const cb = vi.fn();
     onCrossTab(cb);
 
-    listeners[0]({
+    listeners[0]!({
       data: { kind: 'mutation-success', tabId: 'sibling-tab' },
     } as MessageEvent);
 
@@ -148,7 +148,7 @@ describe('cross-tab — storage event fallback', () => {
 
     expect(setItemMock).toHaveBeenCalledTimes(1);
     expect(removeItemMock).toHaveBeenCalledTimes(1);
-    const [key, value] = setItemMock.mock.calls[0];
+    const [key, value] = setItemMock.mock.calls[0]!;
     expect(key).toBe('gustri-cache-v1:msg');
     const parsed = JSON.parse(value);
     expect(parsed.kind).toBe('mutation-success');

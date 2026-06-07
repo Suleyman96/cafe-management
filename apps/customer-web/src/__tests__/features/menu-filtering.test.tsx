@@ -120,7 +120,7 @@ describe('menu filtering logic', () => {
   it('dietary filters use AND logic', () => {
     const result = filterItems(items, '', ['vegetarian', 'spicy'], 'en');
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('3');
+    expect(result[0]!.id).toBe('3'); // length asserted above
   });
 
   it('returns all items when no filters active', () => {
@@ -131,13 +131,13 @@ describe('menu filtering logic', () => {
   it('search is case-insensitive', () => {
     const result = filterItems(items, 'STEAK', [], 'en');
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('4');
+    expect(result[0]!.id).toBe('4');
   });
 
   it('combining search and dietary filter narrows results', () => {
     const result = filterItems(items, 'spicy', ['vegetarian'], 'en');
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('3');
+    expect(result[0]!.id).toBe('3');
   });
 
   it('returns empty array when search matches nothing', () => {
@@ -160,7 +160,7 @@ describe('menu filtering logic', () => {
   it('search matches partial name', () => {
     const result = filterItems(items, 'burg', [], 'en');
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('1');
+    expect(result[0]!.id).toBe('1');
   });
 
   it('filters by description when name does not match', () => {
@@ -174,6 +174,6 @@ describe('menu filtering logic', () => {
     ];
     const result = filterItems(itemsWithDesc, 'delight', [], 'en');
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('10');
+    expect(result[0]!.id).toBe('10');
   });
 });

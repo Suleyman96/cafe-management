@@ -34,7 +34,8 @@ const throttledFetch: typeof fetch = (input, init) => {
   const maxRequests = 40;
 
   // Remove timestamps outside the window
-  while (supabaseFetchTimestamps.length > 0 && now - supabaseFetchTimestamps[0] > windowMs) {
+  // `length > 0` in the same condition guarantees index 0 is in-bounds.
+  while (supabaseFetchTimestamps.length > 0 && now - supabaseFetchTimestamps[0]! > windowMs) {
     supabaseFetchTimestamps.shift();
   }
 

@@ -121,10 +121,12 @@ describe('WasteWrapper', () => {
     expect(result.totalCost).toBe(24.5);
     expect(result.count).toBe(3);
     expect(result.byReason).toHaveLength(2);
-    expect(result.byReason[0].reason).toBe('expired');
-    expect(result.byReason[0].total).toBe(19.5);
+    // length asserted above — index 0 is in-bounds
+    expect(result.byReason[0]!.reason).toBe('expired');
+    expect(result.byReason[0]!.total).toBe(19.5);
     expect(result.byCategory).toHaveLength(2);
-    expect(result.byCategory[0].category).toBe('Vegetables');
+    // length asserted above — index 0 is in-bounds
+    expect(result.byCategory[0]!.category).toBe('Vegetables');
   });
 
   it('getDailySummary returns daily totals', async () => {
@@ -153,7 +155,8 @@ describe('WasteWrapper', () => {
     const waste = createWasteWrapper(ctx);
     const result = await waste.getTopWastedItems(5);
     expect(result).toHaveLength(2);
-    expect(result[0].item_name).toBe('Tomatoes');
+    // length asserted above — index 0 is in-bounds
+    expect(result[0]!.item_name).toBe('Tomatoes');
   });
 
   it('throws on error', async () => {

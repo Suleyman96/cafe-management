@@ -150,7 +150,7 @@ describe('useRealtimeSync', () => {
     renderHook(() => useRealtimeSync('burst-channel', burstTables), { wrapper });
 
     expect(capturedCallbacks).toHaveLength(1);
-    const fire = capturedCallbacks[0];
+    const fire = capturedCallbacks[0]!;
 
     // Fire 10 events well within the 300ms debounce window.
     for (let i = 0; i < 10; i += 1) {
@@ -195,18 +195,18 @@ describe('useRealtimeSync', () => {
     renderHook(() => useRealtimeSync('reconnect-channel', reconnectTables), { wrapper });
 
     // First SUBSCRIBED (fresh subscribe — retryCount = 0). No catch-up.
-    subscribeCallbacks[0]('SUBSCRIBED');
+    subscribeCallbacks[0]!('SUBSCRIBED');
     expect(invalidateSpy).not.toHaveBeenCalled();
 
     // Channel drops, hook schedules a reconnect with backoff.
-    subscribeCallbacks[0]('CHANNEL_ERROR');
+    subscribeCallbacks[0]!('CHANNEL_ERROR');
     vi.advanceTimersByTime(2_000); // pass the first backoff window
 
     // The reconnect creates a new channel and registers its own subscribe cb.
     expect(subscribeCallbacks.length).toBeGreaterThanOrEqual(2);
 
     // Second SUBSCRIBED — this is a reconnect (retryCount > 0). Catch-up fires.
-    subscribeCallbacks[subscribeCallbacks.length - 1]('SUBSCRIBED');
+    subscribeCallbacks[subscribeCallbacks.length - 1]!('SUBSCRIBED');
 
     // Every queryKey across the registered tables should be invalidated once.
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['orders'] });
@@ -237,7 +237,7 @@ describe('useRealtimeSync', () => {
     expect(channelMockFn).toHaveBeenCalledTimes(1);
 
     // Mark subscribed and stamp lastEventAt by simulating SUBSCRIBED.
-    subscribeCallbacks[0]('SUBSCRIBED');
+    subscribeCallbacks[0]!('SUBSCRIBED');
 
     // 4 min of silence — under threshold, no resubscribe.
     vi.advanceTimersByTime(4 * 60_000);
@@ -316,7 +316,7 @@ describe('useRealtimeSync', () => {
 
     const { unmount } = renderHook(() => useRealtimeSync('test-channel', tables), { wrapper });
 
-    capturedCallbacks[0]();
+    capturedCallbacks[0]!();
     unmount();
 
     vi.advanceTimersByTime(1000);

@@ -52,8 +52,9 @@ export default function SchedulesScreen() {
     return getWeekDates(ref);
   }, [weekOffset]);
 
-  const startDate = formatDate(weekDates[0]);
-  const endDate = formatDate(weekDates[6]);
+  // getWeekDates always returns exactly 7 dates, so [0] and [6] are in-bounds.
+  const startDate = formatDate(weekDates[0]!);
+  const endDate = formatDate(weekDates[6]!);
 
   const {
     data: rawSchedules,
@@ -92,8 +93,9 @@ export default function SchedulesScreen() {
     if (!schedules) return {};
     const map: Record<string, ScheduleWithStaff[]> = {};
     for (const sched of schedules) {
-      if (!map[sched.date]) map[sched.date] = [];
-      map[sched.date].push(sched);
+      const bucket = map[sched.date] ?? [];
+      bucket.push(sched);
+      map[sched.date] = bucket;
     }
     return map;
   }, [schedules]);
@@ -136,8 +138,8 @@ export default function SchedulesScreen() {
         </Button>
         <View style={styles.weekCenter}>
           <Text variant="titleSmall" style={styles.weekLabel}>
-            {weekDates[0].toLocaleDateString(locale, { month: 'short', day: 'numeric' })} –{' '}
-            {weekDates[6].toLocaleDateString(locale, {
+            {weekDates[0]!.toLocaleDateString(locale, { month: 'short', day: 'numeric' })} –{' '}
+            {weekDates[6]!.toLocaleDateString(locale, {
               month: 'short',
               day: 'numeric',
               year: 'numeric',

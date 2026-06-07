@@ -105,7 +105,7 @@ describe('POST /api/v1/admin/tables/[id]/rotate-qr — schema', () => {
 
     await POST(buildRequest({ expires_at: iso }), { params });
 
-    const call = rotateMock.mock.calls[0][1];
+    const call = rotateMock.mock.calls[0]![1];
     expect(call.expiresAt).toBeInstanceOf(Date);
     expect((call.expiresAt as Date).toISOString()).toBe(iso);
   });
@@ -126,7 +126,7 @@ describe('POST /api/v1/admin/tables/[id]/rotate-qr — cross-tenant', () => {
 
     await POST(buildRequest({ tenant_id: 'attacker-tenant' }), { params });
 
-    const call = rotateMock.mock.calls[0][1];
+    const call = rotateMock.mock.calls[0]![1];
     expect(call.tenantId).toBe(TENANT_ID);
     expect(call.tenantId).not.toBe('attacker-tenant');
   });

@@ -361,7 +361,8 @@ export function ScheduleModal({
                             : undefined
                         }
                       >
-                        {t(WEEKDAY_TRANSLATION_KEY[day.value])}
+                        {/* WEEKDAY_TRANSLATION_KEY covers every DAYS_OF_WEEK value (0-6). */}
+                        {t(WEEKDAY_TRANSLATION_KEY[day.value]!)}
                       </Chip>
                     ))}
                   </View>

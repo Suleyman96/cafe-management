@@ -86,9 +86,10 @@ describe('groupExpensesByCategory', () => {
     ];
 
     const result = groupExpensesByCategory(expenses);
-    expect(result[0].name).toBe('Large');
-    expect(result[1].name).toBe('Medium');
-    expect(result[2].name).toBe('Small');
+    // Three distinct categories in → three sorted entries out.
+    expect(result[0]!.name).toBe('Large');
+    expect(result[1]!.name).toBe('Medium');
+    expect(result[2]!.name).toBe('Small');
   });
 
   it('emits a null name for null category (UI localizes it, not the headless layer)', () => {
@@ -107,8 +108,9 @@ describe('groupExpensesByCategory', () => {
 
     const result = groupExpensesByCategory(expenses);
     expect(result).toHaveLength(1);
-    expect(result[0].name).toBeNull();
-    expect(result[0].total).toBe(300);
+    // Asserted length 1, so index 0 is present.
+    expect(result[0]!.name).toBeNull();
+    expect(result[0]!.total).toBe(300);
   });
 
   it('returns empty array for no expenses', () => {
@@ -129,8 +131,9 @@ describe('calculateProfitMetrics', () => {
     expect(result.netProfit).toBe(500);
     expect(result.profitMargin).toBe(50);
     expect(result.byCategory).toHaveLength(2);
-    expect(result.byCategory[0].name).toBe('Rent');
-    expect(result.byCategory[1].name).toBe('Supplies');
+    // Asserted length 2, so indices 0 and 1 are present.
+    expect(result.byCategory[0]!.name).toBe('Rent');
+    expect(result.byCategory[1]!.name).toBe('Supplies');
   });
 
   it('handles zero revenue with expenses', () => {

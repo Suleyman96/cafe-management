@@ -114,7 +114,7 @@ describe('POST /api/v1/customer/orders — schema gate (C1)', () => {
 
     expect(res.status).toBe(201);
     expect(createCustomerOrderMock).toHaveBeenCalledTimes(1);
-    const callArg = createCustomerOrderMock.mock.calls[0][1] as {
+    const callArg = createCustomerOrderMock.mock.calls[0]![1] as {
       orderData: Record<string, unknown>;
     };
     expect(callArg.orderData).not.toHaveProperty('tenant_id');

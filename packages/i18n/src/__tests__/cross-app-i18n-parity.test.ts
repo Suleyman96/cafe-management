@@ -99,6 +99,9 @@ function extract(root: string): Extraction {
     const rel = relative(REPO_ROOT, file);
     for (const m of content.matchAll(T_CALL_RE)) {
       const key = m[1];
+      // The regex's first capture group always matches when the overall
+      // pattern matches; guard for the type checker (noUncheckedIndexedAccess).
+      if (key === undefined) continue;
       if (ALLOWLIST.has(key)) continue;
       staticKeys.add(key);
       const list = callSites.get(key) ?? [];
@@ -227,6 +230,9 @@ function findConcatSmells(roots: string[]): Array<{ file: string; key: string }>
       const content = readFileSync(file, 'utf8');
       const rel = relative(REPO_ROOT, file);
       for (const m of content.matchAll(CONCAT_BEFORE)) {
+        // Both capture groups are non-optional in CONCAT_BEFORE, so they're
+        // defined whenever the pattern matches; guard for the type checker.
+        if (m[1] === undefined || m[2] === undefined) continue;
         const lhs = m[1].trim();
         // Skip JSX element renders: `<Icon />`, `<Spinner />`, ternaries
         // that contain a JSX element.

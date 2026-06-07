@@ -370,6 +370,53 @@ jobs:
       - name: Verify generated types match schema
         run: ./scripts/generate-types.sh --check
 
+  rls:
+    name: RLS Policy Tests
+    runs-on: ubuntu-latest
+    # Split out of the E2E job so RLS-policy regressions surface in ~2-3 min
+    # (Supabase boot + the dedicated vitest config) instead of waiting on the
+    # Playwright browser install + full E2E run. Depends only on `setup` (the
+    # restored cache carries node_modules + packages/*/dist that the tests
+    # import), so it runs in parallel with lint/test rather than behind build.
+    needs: [setup]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Restore workspace cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            packages/*/node_modules
+            packages/*/dist
+            apps/*/node_modules
+          key: workspace-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          # Keep in lockstep with the e2e job's pin (see its comment).
+          version: 2.78.1
+
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Create admin user
+        run: ./scripts/create-admin-user.sh
+
+      - name: Run RLS policy tests
+        run: pnpm test:rls
+
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
@@ -438,8 +485,8 @@ jobs:
           grep -q '^NEXT_PUBLIC_SUPABASE_URL=' apps/staff-web/.env.local || (echo "FAIL: staff-web env vars have leading whitespace" && exit 1)
           grep -q '^NEXT_PUBLIC_SUPABASE_URL=' apps/customer-web/.env.local || (echo "FAIL: customer-web env vars have leading whitespace" && exit 1)
 
-      - name: Run RLS policy tests
-        run: pnpm test:rls
+      # RLS policy tests now run in the dedicated `rls` job (surfaces failures
+      # early, in parallel with lint/test). Not repeated here.
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

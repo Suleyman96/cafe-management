@@ -64,7 +64,7 @@ export default function CafeSettingsScreen() {
         if (details?.fieldErrors) {
           const flat: Record<string, string> = {};
           for (const [field, msgs] of Object.entries(details.fieldErrors)) {
-            if (msgs && msgs.length > 0) flat[field] = msgs[0];
+            if (msgs && msgs.length > 0) flat[field] = msgs[0]!;
           }
           setFieldErrors(flat);
         }

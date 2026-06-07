@@ -330,7 +330,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
                           : 'bg-white text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      {t(WEEKDAY_TRANSLATION_KEY[day.value])}
+                      {t(WEEKDAY_TRANSLATION_KEY[day.value] ?? '')}
                     </button>
                   ))}
                 </div>

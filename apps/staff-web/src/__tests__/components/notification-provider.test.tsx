@@ -177,7 +177,7 @@ describe('NotificationProvider — Plan 10 replay-since-checkpoint', () => {
 
     // First SUBSCRIBED: retryCountRef === 0 → not a reconnect → no catchup.
     await act(async () => {
-      subscribeCallbacks[0]('SUBSCRIBED');
+      subscribeCallbacks[0]!('SUBSCRIBED');
     });
 
     expect(db.orders.findChangedSince).not.toHaveBeenCalled();
@@ -202,10 +202,10 @@ describe('NotificationProvider — Plan 10 replay-since-checkpoint', () => {
 
     // Initial subscribe + drop. The hook schedules a reconnect with backoff.
     await act(async () => {
-      subscribeCallbacks[0]('SUBSCRIBED');
+      subscribeCallbacks[0]!('SUBSCRIBED');
     });
     await act(async () => {
-      subscribeCallbacks[0]('CHANNEL_ERROR');
+      subscribeCallbacks[0]!('CHANNEL_ERROR');
     });
     // Advance past the first backoff window so setupChannel runs again.
     await act(async () => {
@@ -220,7 +220,7 @@ describe('NotificationProvider — Plan 10 replay-since-checkpoint', () => {
 
     // Second SUBSCRIBED — this is the reconnect path. Catchup fires.
     await act(async () => {
-      subscribeCallbacks[subscribeCallbacks.length - 1]('SUBSCRIBED');
+      subscribeCallbacks[subscribeCallbacks.length - 1]!('SUBSCRIBED');
       // Yield to let the catchup promise chain resolve.
       await Promise.resolve();
       await Promise.resolve();
@@ -229,8 +229,9 @@ describe('NotificationProvider — Plan 10 replay-since-checkpoint', () => {
     expect(db.orders.findChangedSince).toHaveBeenCalledTimes(1);
     expect(db.waiterCalls.findCreatedSince).toHaveBeenCalledTimes(1);
     // First arg is a Date, second is the limit option.
+    // calls[0] is present after the toHaveBeenCalledTimes(1) assertion above.
     const [sinceArg, optsArg] = (db.orders.findChangedSince as ReturnType<typeof vi.fn>).mock
-      .calls[0];
+      .calls[0]!;
     expect(sinceArg).toBeInstanceOf(Date);
     expect(optsArg).toEqual({ limit: 200 });
   });

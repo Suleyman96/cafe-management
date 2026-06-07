@@ -144,7 +144,7 @@ describe('CreateDeliveryModal — name-only delivery (M5 relaxation)', () => {
 
     await waitFor(() => expect(mockCreateOrder.mutateAsync).toHaveBeenCalled());
 
-    const payload = mockCreateOrder.mutateAsync.mock.calls[0][0];
+    const payload = mockCreateOrder.mutateAsync.mock.calls[0]![0];
     expect(payload.order_type).toBe('delivery');
     expect(payload.customer_name).toBe('Phone-In Customer');
     expect(payload.customer_phone).toBeNull();
@@ -176,7 +176,7 @@ describe('CreateDeliveryModal — name-only delivery (M5 relaxation)', () => {
     await waitFor(() => expect(mockCreateOrder.mutateAsync).toHaveBeenCalled());
     await waitFor(() => expect(mockCreateDeliveryCustomer.mutate).toHaveBeenCalled());
 
-    const profilePayload = mockCreateDeliveryCustomer.mutate.mock.calls[0][0];
+    const profilePayload = mockCreateDeliveryCustomer.mutate.mock.calls[0]![0];
     expect(profilePayload.name).toBe('Address-Only Customer');
     expect(profilePayload.address).toBe('1 Test St');
     expect(profilePayload.phone).toBeNull();

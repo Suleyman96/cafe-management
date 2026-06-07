@@ -43,7 +43,8 @@ describe('tenant-context wrapper scoping', () => {
       (c) => c.method === 'eq' && c.args[0] === 'tenant_id',
     );
     expect(eqCalls).toHaveLength(1);
-    expect(eqCalls[0].args[1]).toBe(TENANT_A);
+    // length asserted above — index 0 is in-bounds
+    expect(eqCalls[0]!.args[1]).toBe(TENANT_A);
   });
 
   it('skips the predicate and warns in dev when tenant context is null', async () => {

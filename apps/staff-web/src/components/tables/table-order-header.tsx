@@ -95,7 +95,7 @@ export function TableOrderHeader({
           <div className="flex items-center gap-2">
             <Bell className="h-4 w-4 text-red-600" />
             <span className="text-sm font-medium text-red-800">
-              {activeCallsForTable[0].reason || t('calls.needAssistance')}
+              {activeCallsForTable[0]?.reason || t('calls.needAssistance')}
             </span>
           </div>
           <Button

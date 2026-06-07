@@ -96,8 +96,8 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">✅</div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('feedback.successTitle')}</h3>
-        <p className="text-gray-600" style={{ whiteSpace: 'pre-line' }}>
+        <h3 className="text-2xl font-bold text-foreground mb-2">{t('feedback.successTitle')}</h3>
+        <p className="text-muted-foreground" style={{ whiteSpace: 'pre-line' }}>
           {t('feedback.successMessage')}
         </p>
       </div>
@@ -108,7 +108,7 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Feedback Type Selection */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label className="block text-sm font-medium text-foreground mb-3">
           {t('feedback.typeLabel')}
         </label>
         <div className="grid grid-cols-2 gap-3">
@@ -119,12 +119,12 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
               onClick={() => setFeedbackType(type.value)}
               className={`flex flex-col items-center gap-2 p-5 rounded-xl border-2 transition-all ${
                 feedbackType === type.value
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40'
+                  : 'border-border hover:border-muted-foreground/40'
               }`}
             >
               <div className="text-4xl">{type.icon}</div>
-              <div className="font-medium text-gray-900 text-center">{type.label}</div>
+              <div className="font-medium text-foreground text-center">{type.label}</div>
             </button>
           ))}
         </div>
@@ -132,7 +132,7 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
 
       {/* Message (Required) */}
       <div>
-        <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="message" className="block text-sm font-medium text-foreground mb-2">
           {t('feedback.messageLabel')}
         </label>
         <textarea
@@ -140,12 +140,12 @@ export function FeedbackForm({ tableId, orderId, onSuccess, onCancel }: Feedback
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder={t('feedback.messagePlaceholder')}
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          className="w-full px-4 py-3 border border-input bg-background text-foreground placeholder:text-muted-foreground rounded-xl focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
           rows={6}
           maxLength={1000}
           required
         />
-        <div className="text-xs text-gray-500 mt-1 text-right">{message.length}/1000</div>
+        <div className="text-xs text-muted-foreground mt-1 text-right">{message.length}/1000</div>
       </div>
 
       {/* Action Buttons */}

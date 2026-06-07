@@ -220,7 +220,9 @@ export function formatTime(dateString: string | Date, locale = 'en-US'): string 
  */
 export function timeOfDayToMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
+  // A missing segment (e.g. "14" with no minutes) was `undefined` → `Number(undefined)`
+  // → `NaN` before this guard; `?? NaN` preserves that exact malformed-input behavior.
+  return (h ?? Number.NaN) * 60 + (m ?? Number.NaN);
 }
 
 // ─── Exhaustiveness ─────────────────────────────────────────────

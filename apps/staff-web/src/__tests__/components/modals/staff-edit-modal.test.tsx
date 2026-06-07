@@ -80,7 +80,7 @@ describe('StaffEditModal — C3 revoke-sessions on deactivation', () => {
     );
     expect(revokeCalls).toHaveLength(1);
 
-    const [, init] = revokeCalls[0];
+    const [, init] = revokeCalls[0]!;
     expect((init as RequestInit).method).toBe('POST');
     expect(JSON.parse(((init as RequestInit).body as string) ?? '{}')).toEqual({
       staffId: mockWaiterStaff.id,

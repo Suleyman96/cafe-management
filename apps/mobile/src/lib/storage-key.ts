@@ -27,7 +27,8 @@ let cachedKeyPromise: Promise<string> | null = null;
 function bytesToHex(bytes: Uint8Array): string {
   let hex = '';
   for (let i = 0; i < bytes.length; i++) {
-    hex += bytes[i].toString(16).padStart(2, '0');
+    // i < bytes.length guarantees bytes[i] is in-bounds.
+    hex += bytes[i]!.toString(16).padStart(2, '0');
   }
   return hex;
 }

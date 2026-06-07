@@ -28,8 +28,9 @@ export function verifyPin(pin: string, stored: string | null | undefined): boole
   let salt: Buffer;
   let expected: Buffer;
   try {
-    salt = Buffer.from(parts[1], 'base64');
-    expected = Buffer.from(parts[2], 'base64');
+    // parts.length === 3 verified above, so [1] and [2] are present
+    salt = Buffer.from(parts[1]!, 'base64');
+    expected = Buffer.from(parts[2]!, 'base64');
   } catch {
     return false;
   }

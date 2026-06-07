@@ -51,7 +51,8 @@ describe('StockItemsWrapper', () => {
     const stock = createStockItemsWrapper(ctx);
     const result: StockItemRow[] = await stock.findAll({ lowStockOnly: true });
     expect(result).toHaveLength(1);
-    expect(result[0].quantity).toBe(5);
+    // length asserted above — index 0 is in-bounds
+    expect(result[0]!.quantity).toBe(5);
   });
 
   it('findById returns single item', async () => {
@@ -139,7 +140,8 @@ describe('StockItemsWrapper', () => {
     const stock = createStockItemsWrapper(ctx);
     const result: StockMovementRow[] = await stock.getMovements(validItem.id);
     expect(result).toHaveLength(1);
-    expect(result[0].movement_type).toBe('in');
+    // length asserted above — index 0 is in-bounds
+    expect(result[0]!.movement_type).toBe('in');
   });
 
   it('getLowStockCount returns count of low items', async () => {

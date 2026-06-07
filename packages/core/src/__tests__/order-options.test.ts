@@ -15,7 +15,8 @@ const snapshot = [
 describe('parseSelectedOptions', () => {
   it('parses a valid snapshot array', () => {
     expect(parseSelectedOptions(snapshot)).toHaveLength(2);
-    expect(parseSelectedOptions(snapshot)[0].value_name).toBe('Large');
+    // Preceding assertion guarantees length 2, so index 0 is present.
+    expect(parseSelectedOptions(snapshot)[0]!.value_name).toBe('Large');
   });
 
   it('returns [] for null / non-array / garbage', () => {
@@ -34,7 +35,8 @@ describe('parseSelectedOptions', () => {
     const result = parseSelectedOptions([
       { option_id: 'o', option_name: 'O', value_id: 'v', value_name: 'V', price_delta: '3' },
     ]);
-    expect(result[0].price_delta).toBe(3);
+    // Single valid input parses to exactly one entry; index 0 is present.
+    expect(result[0]!.price_delta).toBe(3);
   });
 });
 

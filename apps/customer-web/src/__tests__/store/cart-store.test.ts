@@ -21,9 +21,9 @@ describe('useCartStore', () => {
 
       const { items } = useCartStore.getState();
       expect(items).toHaveLength(1);
-      expect(items[0].menuItem.id).toBe('m1');
-      expect(items[0].quantity).toBe(2);
-      expect(items[0].notes).toBe('Extra sugar');
+      expect(items[0]!.menuItem.id).toBe('m1');
+      expect(items[0]!.quantity).toBe(2);
+      expect(items[0]!.notes).toBe('Extra sugar');
     });
 
     it('increments quantity for existing item', () => {
@@ -32,7 +32,7 @@ describe('useCartStore', () => {
 
       const { items } = useCartStore.getState();
       expect(items).toHaveLength(1);
-      expect(items[0].quantity).toBe(4);
+      expect(items[0]!.quantity).toBe(4);
     });
 
     it('updates notes only when new notes provided', () => {
@@ -40,7 +40,7 @@ describe('useCartStore', () => {
       useCartStore.getState().addItem(mockMenuItem(), 1); // no notes
 
       const { items } = useCartStore.getState();
-      expect(items[0].notes).toBe('Original note');
+      expect(items[0]!.notes).toBe('Original note');
     });
 
     it('overwrites notes when new notes provided', () => {
@@ -48,7 +48,7 @@ describe('useCartStore', () => {
       useCartStore.getState().addItem(mockMenuItem(), 1, 'New note');
 
       const { items } = useCartStore.getState();
-      expect(items[0].notes).toBe('New note');
+      expect(items[0]!.notes).toBe('New note');
     });
 
     it('adds different items separately', () => {
@@ -69,7 +69,7 @@ describe('useCartStore', () => {
 
       const { items } = useCartStore.getState();
       expect(items).toHaveLength(1);
-      expect(items[0].menuItem.id).toBe('m2');
+      expect(items[0]!.menuItem.id).toBe('m2');
     });
 
     it('does nothing when item not found', () => {
@@ -85,7 +85,7 @@ describe('useCartStore', () => {
       useCartStore.getState().addItem(mockMenuItem(), 1);
       useCartStore.getState().updateQuantity('m1', 5);
 
-      expect(useCartStore.getState().items[0].quantity).toBe(5);
+      expect(useCartStore.getState().items[0]!.quantity).toBe(5);
     });
 
     it('removes item when quantity is 0', () => {
@@ -108,7 +108,7 @@ describe('useCartStore', () => {
       useCartStore.getState().addItem(mockMenuItem(), 1, 'Old note');
       useCartStore.getState().updateNotes('m1', 'New note');
 
-      expect(useCartStore.getState().items[0].notes).toBe('New note');
+      expect(useCartStore.getState().items[0]!.notes).toBe('New note');
     });
   });
 
@@ -170,7 +170,7 @@ describe('useCartStore', () => {
       useCartStore.getState().addItem(mockMenuItem({ id: 'm1', price: 5 }), 2, undefined, large);
       const { items } = useCartStore.getState();
       expect(items).toHaveLength(1);
-      expect(items[0].quantity).toBe(3);
+      expect(items[0]!.quantity).toBe(3);
     });
 
     it('getTotal includes price deltas', () => {
@@ -188,7 +188,7 @@ describe('useCartStore', () => {
       useCartStore.getState().removeItem(lineLarge?.lineKey ?? '');
       const { items } = useCartStore.getState();
       expect(items).toHaveLength(1);
-      expect(items[0].selectedOptions?.[0]?.valueId).toBe('vS');
+      expect(items[0]!.selectedOptions?.[0]?.valueId).toBe('vS');
     });
   });
 

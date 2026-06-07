@@ -42,7 +42,8 @@ export function useMenuItemOptionsSelection(
     const defaults: Record<string, string[]> = {};
     for (const g of availableGroups) {
       const def = g.values.filter((v) => v.is_default).map((v) => v.id);
-      if (def.length > 0) defaults[g.id] = g.selection_type === 'single' ? [def[0]] : def;
+      // `def.length > 0` checked above guarantees index 0 is in-bounds.
+      if (def.length > 0) defaults[g.id] = g.selection_type === 'single' ? [def[0]!] : def;
     }
     setSelections(defaults);
   }, [item.id, optionGroups.length]);

@@ -141,7 +141,8 @@ export function getRateLimitIdentifier(request: Request): string {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
-    if (ips.length > 0) return ips[ips.length - 1];
+    // length > 0 checked, so the last element is present
+    if (ips.length > 0) return ips[ips.length - 1]!;
   }
 
   // Fallback: use Authorization header hash to isolate per-session.

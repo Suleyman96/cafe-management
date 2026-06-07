@@ -54,7 +54,9 @@ export async function generateRecurringTaskInstances(
   // Parse date string directly to avoid UTC vs local timezone issues.
   // new Date("YYYY-MM-DD") parses as UTC midnight, then getDate()/getDay()
   // use local timezone which can return the wrong day in negative UTC offsets.
-  const [year, month, day] = date.split('-').map(Number);
+  // `date` is a YYYY-MM-DD string (DB `due_date` / caller contract), so the
+  // split always yields exactly three numeric parts — assert in-bounds access.
+  const [year, month, day] = date.split('-').map(Number) as [number, number, number];
   const dateObj = new Date(year, month - 1, day); // local midnight
   const dayOfWeek = dateObj.getDay() === 0 ? 7 : dateObj.getDay(); // 1=Mon, 7=Sun
   const dayOfMonth = day;

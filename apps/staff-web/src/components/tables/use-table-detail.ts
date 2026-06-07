@@ -122,7 +122,8 @@ export function useTableDetail(tableId: string) {
   // Auto-select first category (no "All" option)
   useEffect(() => {
     if (categories?.length && selectedCategory === null) {
-      setSelectedCategory(categories[0].id);
+      // categories.length is truthy here, so [0] is present
+      setSelectedCategory(categories[0]!.id);
     }
   }, [categories, selectedCategory]);
 
@@ -245,7 +246,9 @@ export function useTableDetail(tableId: string) {
         orderId: activeOrder.id,
         status: newStatus,
       });
-      toast.success(t('orders.statusUpdatedTo', { status: t(ORDER_STATUS_KEYS[newStatus]) }));
+      toast.success(
+        t('orders.statusUpdatedTo', { status: t(ORDER_STATUS_KEYS[newStatus] ?? newStatus) }),
+      );
     } catch (_error) {
       toast.error(t('orders.failedUpdateStatus'));
     }

@@ -374,7 +374,7 @@ export function ScheduleModal({ schedule, defaultDate, onClose, onSuccess }: Sch
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                       >
-                        {t(WEEKDAY_TRANSLATION_KEY[day.value])}
+                        {t(WEEKDAY_TRANSLATION_KEY[day.value] ?? '')}
                       </button>
                     ))}
                   </div>

@@ -162,7 +162,7 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
               >
                 {CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
-                    {t(CATEGORY_KEYS[cat])}
+                    {t(CATEGORY_KEYS[cat] ?? cat)}
                   </option>
                 ))}
               </select>
@@ -178,7 +178,7 @@ export function StockItemModal({ item, onClose }: StockItemModalProps) {
               >
                 {UNITS.map((unit) => (
                   <option key={unit} value={unit}>
-                    {t(UNIT_KEYS[unit])}
+                    {t(UNIT_KEYS[unit] ?? unit)}
                   </option>
                 ))}
               </select>

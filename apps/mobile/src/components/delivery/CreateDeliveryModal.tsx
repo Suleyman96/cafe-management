@@ -65,7 +65,8 @@ export const CreateDeliveryModal = React.memo(function CreateDeliveryModal({
 
   useEffect(() => {
     if (categories?.length && selectedCategoryId === null) {
-      setSelectedCategoryId(categories[0].id);
+      // categories.length is truthy here, so index 0 is in-bounds.
+      setSelectedCategoryId(categories[0]!.id);
     }
   }, [categories, selectedCategoryId]);
 

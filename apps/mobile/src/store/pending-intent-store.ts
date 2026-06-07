@@ -51,7 +51,8 @@ export const usePendingIntentStore = create<PendingIntentState>((set, get) => ({
   consumePending: () => {
     const queue = get().pending;
     if (queue.length === 0) return null;
-    const [head, ...rest] = queue;
+    // queue is non-empty here, so head is defined.
+    const [head, ...rest] = queue as [PendingIntent, ...PendingIntent[]];
     set({ pending: rest });
     return head;
   },

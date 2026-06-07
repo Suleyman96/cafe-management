@@ -102,7 +102,7 @@ describe('CrossTabBridge', () => {
     const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
     act(() => {
-      onCrossTabHandlers[0]({ kind: 'mutation-success', tabId: 'sibling' });
+      onCrossTabHandlers[0]!({ kind: 'mutation-success', tabId: 'sibling' });
     });
 
     expect(invalidateSpy).toHaveBeenCalledTimes(1);
@@ -114,7 +114,7 @@ describe('CrossTabBridge', () => {
     expect(qc.getQueryData(['orders'])).toBeDefined();
 
     act(() => {
-      onCrossTabHandlers[0]({ kind: 'signed-out', tabId: 'sibling' });
+      onCrossTabHandlers[0]!({ kind: 'signed-out', tabId: 'sibling' });
     });
 
     expect(qc.getQueryData(['orders'])).toBeUndefined();
@@ -127,7 +127,7 @@ describe('CrossTabBridge', () => {
     expect(qc.getQueryData(['orders'])).toBeDefined();
 
     act(() => {
-      onCrossTabHandlers[0]({ kind: 'tenant-changed', tabId: 'sibling', tenantId: 't-2' });
+      onCrossTabHandlers[0]!({ kind: 'tenant-changed', tabId: 'sibling', tenantId: 't-2' });
     });
 
     expect(qc.getQueryData(['orders'])).toBeUndefined();

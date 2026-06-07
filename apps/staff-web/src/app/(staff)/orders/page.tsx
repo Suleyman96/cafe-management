@@ -123,7 +123,9 @@ export default function OrdersPage() {
             status: statusKey as keyof typeof ORDER_STATUS,
           });
         }
-        toast.success(t('orders.statusUpdatedTo', { status: t(ORDER_STATUS_KEYS[newStatus]) }));
+        toast.success(
+          t('orders.statusUpdatedTo', { status: t(ORDER_STATUS_KEYS[newStatus] ?? newStatus) }),
+        );
       } catch (_error) {
         toast.error(t('delivery.failedUpdate'));
       }

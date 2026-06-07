@@ -51,7 +51,8 @@ describe('customer BFF proxy', () => {
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0];
+    // calls[0] is provably present after the toHaveBeenCalledTimes(1) above.
+    const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe('http://staff.test/api/v1/customer/orders');
     expect(init.method).toBe('POST');
     expect(init.body).toBe('{"table_id":"t1"}');
@@ -67,7 +68,7 @@ describe('customer BFF proxy', () => {
 
     await POST(proxyRequest('{}'), { params: Promise.resolve({ path: ['orders'] }) });
 
-    const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+    const headers = fetchMock.mock.calls[0]![1].headers as Record<string, string>;
     expect(headers[SIGNATURE_HEADER]).toBeUndefined();
     expect(headers[TIMESTAMP_HEADER]).toBeUndefined();
   });
@@ -80,8 +81,9 @@ describe('customer BFF proxy', () => {
     const body = '{"table_id":"t1"}';
     await POST(proxyRequest(body), { params: Promise.resolve({ path: ['orders'] }) });
 
-    const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
-    const timestamp = headers[TIMESTAMP_HEADER];
+    const headers = fetchMock.mock.calls[0]![1].headers as Record<string, string>;
+    // Asserted to match /^\d+$/ below, so present.
+    const timestamp = headers[TIMESTAMP_HEADER]!;
     const nonce = headers[NONCE_HEADER];
     expect(timestamp).toMatch(/^\d+$/);
     expect(nonce).toMatch(/^[0-9a-f-]{36}$/i); // a minted UUID
@@ -106,7 +108,7 @@ describe('customer BFF proxy', () => {
       params: Promise.resolve({ path: ['orders'] }),
     });
 
-    const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+    const headers = fetchMock.mock.calls[0]![1].headers as Record<string, string>;
     expect(headers['x-real-ip']).toBe('203.0.113.7');
   });
 
@@ -131,6 +133,6 @@ describe('customer BFF proxy', () => {
     await POST(proxyRequest('{}'), {
       params: Promise.resolve({ path: ['orders', 'o1', 'cancel'] }),
     });
-    expect(fetchMock.mock.calls[0][0]).toBe('http://staff.test/api/v1/customer/orders/o1/cancel');
+    expect(fetchMock.mock.calls[0]![0]).toBe('http://staff.test/api/v1/customer/orders/o1/cancel');
   });
 });

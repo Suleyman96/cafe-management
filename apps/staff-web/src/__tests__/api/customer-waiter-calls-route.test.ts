@@ -116,7 +116,7 @@ describe('POST /api/v1/customer/waiter-calls — schema gate', () => {
 
     expect(res.status).toBe(201);
     expect(createWaiterCallMock).toHaveBeenCalledTimes(1);
-    const call = createWaiterCallMock.mock.calls[0][1] as Record<string, unknown>;
+    const call = createWaiterCallMock.mock.calls[0]![1] as Record<string, unknown>;
     expect(call).not.toHaveProperty('tenant_id');
     expect(call.table_id).toBe(TABLE_ID);
     expect(call.client_request_id).toBe(CLIENT_REQ_ID);

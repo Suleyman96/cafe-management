@@ -235,8 +235,9 @@ describe('ExpensesWrapper', () => {
     expect(result.total).toBe(350);
     expect(result.count).toBe(3);
     expect(result.byCategory).toHaveLength(2);
-    expect(result.byCategory[0].name).toBe('Supplies');
-    expect(result.byCategory[0].total).toBe(300);
+    // length asserted above — index 0 is in-bounds
+    expect(result.byCategory[0]!.name).toBe('Supplies');
+    expect(result.byCategory[0]!.total).toBe(300);
   });
 
   it('throws on error', async () => {

@@ -97,8 +97,9 @@ describe('scrubSentryEvent', () => {
     // `data.url` is the field Sentry's fetch breadcrumbs use; it must
     // be scrubbed. `data.to` is a navigation field — not in scope for
     // this scrubber today (could be added if it shows up unredacted).
-    expect(scrubbed.breadcrumbs?.[1].data?.url).toBe('https://api/orders?token=[REDACTED]');
-    expect(scrubbed.breadcrumbs?.[2].data?.url).toBe('no-op');
+    // Input defined 3 breadcrumbs; indices 1 and 2 are present.
+    expect(scrubbed.breadcrumbs?.[1]?.data?.url).toBe('https://api/orders?token=[REDACTED]');
+    expect(scrubbed.breadcrumbs?.[2]?.data?.url).toBe('no-op');
   });
 
   it('does not mutate the input event in place', () => {
@@ -144,8 +145,9 @@ describe('scrubPiiFields', () => {
     const order = out.order as Record<string, unknown>;
     expect(order.delivery_address).toBe('[REDACTED]');
     const items = order.items as Array<Record<string, unknown>>;
-    expect(items[0].notes).toBe('[REDACTED]');
-    expect(items[0].menu_item_id).toBe('m1');
+    // Fixture defines a single-element items array; index 0 is present.
+    expect(items[0]!.notes).toBe('[REDACTED]');
+    expect(items[0]!.menu_item_id).toBe('m1');
     expect(out.safe_field).toBe('keep');
   });
 
@@ -230,7 +232,8 @@ describe('scrubSentryEvent — PII fields', () => {
       ],
     };
     const scrubbed = scrubSentryEvent(event);
-    const data = scrubbed.breadcrumbs?.[0].data as Record<string, unknown>;
+    // Input defined a single breadcrumb; index 0 is present.
+    const data = scrubbed.breadcrumbs?.[0]?.data as Record<string, unknown>;
     expect(data.url).toBe('https://api/v1/customer/orders?token=[REDACTED]');
     const body = data.body as Record<string, unknown>;
     expect(body.customer_phone).toBe('[REDACTED]');

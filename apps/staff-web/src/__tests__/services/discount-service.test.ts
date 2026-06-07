@@ -271,7 +271,7 @@ describe('applyDiscount — RPC happy path', () => {
     });
 
     const calls = (client as unknown as { __rpcCalls: CapturedRpc[] }).__rpcCalls;
-    expect(calls[0].args).toMatchObject({
+    expect(calls[0]!.args).toMatchObject({
       p_discount_reason: 'Customer complaint - cold food',
     });
   });

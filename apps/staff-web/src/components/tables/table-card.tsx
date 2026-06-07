@@ -93,7 +93,8 @@ const getTableCardStyle = (table: Tables, activeOrders: OrderWithDetails[]) => {
     if (activeOrders.length > 1) {
       return 'bg-amber-50 border-amber-400';
     }
-    return TABLE_CARD_STATUS_STYLES[getEffectiveOrderStatus(activeOrders[0])];
+    // length > 0 checked above (and length > 1 returned early), so [0] is present
+    return TABLE_CARD_STATUS_STYLES[getEffectiveOrderStatus(activeOrders[0]!)];
   }
   return 'bg-white border-gray-200 hover:border-gray-400 hover:shadow-md';
 };

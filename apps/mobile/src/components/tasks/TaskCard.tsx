@@ -68,8 +68,9 @@ export const TaskCard = React.memo(function TaskCard({
   );
 
   const priority = task.priority || 'normal';
-  const priorityStyle = PRIORITY_COLORS[priority] || PRIORITY_COLORS.normal;
-  const statusConfig = (task.status && STATUS_CONFIG[task.status]) || STATUS_CONFIG.pending;
+  // The `normal`/`pending` fallback keys are statically defined above.
+  const priorityStyle = PRIORITY_COLORS[priority] || PRIORITY_COLORS.normal!;
+  const statusConfig = (task.status && STATUS_CONFIG[task.status]) || STATUS_CONFIG.pending!;
 
   const isOverdue =
     !!task.due_date &&

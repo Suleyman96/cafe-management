@@ -62,7 +62,8 @@ export default function AddItemsScreen() {
 
   useEffect(() => {
     if (categories?.length && selectedCategory === null) {
-      setSelectedCategory(categories[0].id);
+      // categories.length is truthy here, so index 0 is in-bounds.
+      setSelectedCategory(categories[0]!.id);
     }
   }, [categories, selectedCategory]);
 

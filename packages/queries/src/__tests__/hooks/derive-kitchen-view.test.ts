@@ -36,9 +36,10 @@ describe('deriveKitchenView', () => {
       });
       expect(activeFilter).toEqual({ mode: 'all' });
       expect(visibleOrders).toHaveLength(1);
-      expect(visibleOrders[0].visibleItems).toHaveLength(2);
-      expect(visibleOrders[0].hiddenCount).toBe(0);
-      expect(visibleOrders[0].hiddenByCategory).toEqual([]);
+      // length asserted above, so [0] is in-bounds
+      expect(visibleOrders[0]!.visibleItems).toHaveLength(2);
+      expect(visibleOrders[0]!.hiddenCount).toBe(0);
+      expect(visibleOrders[0]!.hiddenByCategory).toEqual([]);
     });
 
     it('treats undefined filterCategoryIds as show-all', () => {
@@ -73,7 +74,8 @@ describe('deriveKitchenView', () => {
         filterCategoryIds: null,
         categories,
       });
-      expect(visibleOrders[0].visibleItems.map((i) => i.id)).toEqual(['i1', 'i2']);
+      // single order pushed above, so [0] is in-bounds
+      expect(visibleOrders[0]!.visibleItems.map((i) => i.id)).toEqual(['i1', 'i2']);
     });
   });
 
@@ -97,8 +99,9 @@ describe('deriveKitchenView', () => {
         names: ['Pizza'],
       });
       expect(visibleOrders).toHaveLength(1);
-      expect(visibleOrders[0].visibleItems.map((i) => i.id)).toEqual(['i1']);
-      expect(visibleOrders[0].hiddenCount).toBe(2);
+      // length asserted above, so [0] is in-bounds
+      expect(visibleOrders[0]!.visibleItems.map((i) => i.id)).toEqual(['i1']);
+      expect(visibleOrders[0]!.hiddenCount).toBe(2);
     });
 
     it('groups hidden items by their category for the coordination summary', () => {
@@ -115,7 +118,8 @@ describe('deriveKitchenView', () => {
         filterCategoryIds: [PIZZA],
         categories,
       });
-      const buckets = visibleOrders[0].hiddenByCategory;
+      // single order pushed above, so [0] is in-bounds
+      const buckets = visibleOrders[0]!.hiddenByCategory;
       expect(buckets).toHaveLength(2);
       const bar = buckets.find((b) => b.categoryId === BAR);
       const dessert = buckets.find((b) => b.categoryId === DESSERT);
@@ -148,9 +152,10 @@ describe('deriveKitchenView', () => {
         filterCategoryIds: [PIZZA],
         categories,
       });
-      expect(visibleOrders[0].visibleItems.map((i) => i.id)).toEqual(['i1']);
-      expect(visibleOrders[0].hiddenCount).toBe(1);
-      const uncategorizedBucket = visibleOrders[0].hiddenByCategory.find(
+      // single order pushed above, so [0] is in-bounds
+      expect(visibleOrders[0]!.visibleItems.map((i) => i.id)).toEqual(['i1']);
+      expect(visibleOrders[0]!.hiddenCount).toBe(1);
+      const uncategorizedBucket = visibleOrders[0]!.hiddenByCategory.find(
         (b) => b.categoryId === null,
       );
       expect(uncategorizedBucket).toEqual({ categoryId: null, categoryName: null, count: 1 });
@@ -184,8 +189,9 @@ describe('deriveKitchenView', () => {
         categories,
       });
       expect(activeFilter.mode).toBe('filtered');
-      expect(visibleOrders[0].visibleItems.map((i) => i.id).sort()).toEqual(['i1', 'i2']);
-      expect(visibleOrders[0].hiddenCount).toBe(1);
+      // single order pushed above, so [0] is in-bounds
+      expect(visibleOrders[0]!.visibleItems.map((i) => i.id).sort()).toEqual(['i1', 'i2']);
+      expect(visibleOrders[0]!.hiddenCount).toBe(1);
     });
   });
 });

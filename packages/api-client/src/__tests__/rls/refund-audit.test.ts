@@ -105,7 +105,8 @@ describe('refund audit trigger', () => {
     expect(auditErr).toBeNull();
     expect(auditRows).toHaveLength(1);
 
-    const row = auditRows![0];
+    // length asserted to be 1 above — index 0 is in-bounds
+    const row = auditRows![0]!;
     expect(row.tenant_id).toBe(TENANT_1);
     expect(row.staff_id).toBe(ADMIN_STAFF_ID);
     expect(row.order_id).toBe(orderId);

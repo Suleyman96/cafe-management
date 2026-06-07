@@ -526,10 +526,10 @@ describe('addCustomerOrderItems — server-side pricing + modifier validation', 
       .__inserts;
     const row = (
       captured.find((i) => i.table === 'order_items')?.payload as Record<string, unknown>[]
-    )[0];
+    )[0]!;
     expect(row.item_price).toBe(7); // 5 + 2, not 0.01
     expect(row.selected_options).toHaveLength(1);
-    expect((row.selected_options as Record<string, unknown>[])[0].value_name).toBe('Large');
+    expect((row.selected_options as Record<string, unknown>[])[0]!.value_name).toBe('Large');
   });
 
   it('rejects a selected value whose option belongs to a different menu item', async () => {

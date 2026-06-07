@@ -72,7 +72,8 @@ describe('BadgeConfig contract', () => {
 
   it('StatusColorPair is structurally compatible with BadgeConfig', () => {
     // Compile-time: a BadgeConfig is assignable to a StatusColorPair via Pick.
-    const cfg: BadgeConfig = ORDER_STATUS_HEX.new;
+    // `new` is a documented ORDER_STATUS key, always present in the map.
+    const cfg: BadgeConfig = ORDER_STATUS_HEX.new!;
     const pair: StatusColorPair = cfg;
     expect(pair.bg).toBe(cfg.bg);
     expect(pair.text).toBe(cfg.text);

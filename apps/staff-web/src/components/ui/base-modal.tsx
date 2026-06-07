@@ -86,8 +86,9 @@ export function BaseModal({
         container.focus({ preventScroll: true });
         return;
       }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
+      // length === 0 returned early above, so first/last are present
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
       const activeEl = document.activeElement as HTMLElement | null;
       if (event.shiftKey) {
         if (activeEl === first || !container.contains(activeEl)) {

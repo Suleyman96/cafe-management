@@ -71,7 +71,9 @@ const FILTER_RE = /['"]postgres_changes['"][\s\S]*?filter:\s*([`'"])((?:\\.|(?!\
 function extractFilters(source: string): string[] {
   const out: string[] = [];
   for (const match of source.matchAll(FILTER_RE)) {
-    out.push(match[2]);
+    // Group 2 (the filter literal) is a required capture; on a successful
+    // match it is always present (may be empty, never undefined).
+    out.push(match[2]!);
   }
   return out;
 }

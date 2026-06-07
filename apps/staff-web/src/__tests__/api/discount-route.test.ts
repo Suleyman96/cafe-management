@@ -118,7 +118,7 @@ describe('POST /api/v1/orders/[id]/discount — admin-only authz', () => {
 
     expect(res.status).toBe(200);
     expect(applyDiscountMock).toHaveBeenCalledTimes(1);
-    const call = applyDiscountMock.mock.calls[0][1] as Record<string, unknown>;
+    const call = applyDiscountMock.mock.calls[0]![1] as Record<string, unknown>;
     expect(call.tenantId).toBe(TENANT);
     expect(call.discountType).toBe('percentage');
     expect(call.discountValue).toBe(10);

@@ -65,12 +65,13 @@ export function StaffPerformanceSection({
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm text-yellow-700">{t('reports.topPerformer')}</p>
                 <p className="text-sm sm:text-lg font-bold text-yellow-900 truncate">
-                  {staffPerformance[0].name}
+                  {/* guarded by staffPerformance.length === 0 check above */}
+                  {staffPerformance[0]?.name}
                 </p>
                 <p className="text-xs sm:text-sm text-yellow-700">
                   {t('reports.revenueFromOrders', {
-                    revenue: formatPrice(staffPerformance[0].revenue),
-                    count: staffPerformance[0].ordersHandled,
+                    revenue: formatPrice(staffPerformance[0]?.revenue ?? 0),
+                    count: staffPerformance[0]?.ordersHandled ?? 0,
                   })}
                 </p>
               </div>

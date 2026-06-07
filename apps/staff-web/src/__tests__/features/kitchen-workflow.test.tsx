@@ -98,9 +98,9 @@ describe('Kitchen order workflow', () => {
     renderWithProviders(<KitchenDisplayPage />);
 
     const items = screen.getAllByText(/NewItem|PrepItem|ReadyItem/);
-    expect(items[0].textContent).toBe('NewItem');
-    expect(items[1].textContent).toBe('PrepItem');
-    expect(items[2].textContent).toBe('ReadyItem');
+    expect(items[0]!.textContent).toBe('NewItem');
+    expect(items[1]!.textContent).toBe('PrepItem');
+    expect(items[2]!.textContent).toBe('ReadyItem');
   });
 
   it('shows correct status counts in header', () => {

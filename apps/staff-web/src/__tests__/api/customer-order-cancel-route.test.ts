@@ -88,7 +88,7 @@ describe('POST /api/v1/customer/orders/[id]/cancel — schema gate', () => {
 
     expect(res.status).toBe(200);
     expect(cancelMock).toHaveBeenCalledTimes(1);
-    const call = cancelMock.mock.calls[0][1] as Record<string, unknown>;
+    const call = cancelMock.mock.calls[0]![1] as Record<string, unknown>;
     expect(call).not.toHaveProperty('tenant_id');
     expect(call.orderId).toBe(ORDER_ID);
     expect(call.tableId).toBe(TABLE_ID);

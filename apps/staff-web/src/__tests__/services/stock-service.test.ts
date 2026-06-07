@@ -164,8 +164,8 @@ describe('adjustStock — atomic RPC delegation', () => {
 
     const rpcCalls = getRpcCalls(client);
     expect(rpcCalls).toHaveLength(1);
-    expect(rpcCalls[0].fn).toBe('adjust_stock_atomic');
-    expect(rpcCalls[0].args).toEqual({
+    expect(rpcCalls[0]!.fn).toBe('adjust_stock_atomic');
+    expect(rpcCalls[0]!.args).toEqual({
       p_stock_item_id: STOCK_ITEM_ID,
       p_tenant_id: TENANT,
       p_movement_type: 'out',
@@ -199,7 +199,7 @@ describe('adjustStock — atomic RPC delegation', () => {
 
     const rpcCalls = getRpcCalls(client);
     expect(rpcCalls).toHaveLength(1);
-    expect(rpcCalls[0].args.p_client_request_id).toBeNull();
+    expect(rpcCalls[0]!.args.p_client_request_id).toBeNull();
   });
 });
 

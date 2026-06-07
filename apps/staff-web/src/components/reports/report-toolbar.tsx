@@ -165,6 +165,7 @@ export function ReportToolbar({
                     max={currentMonthString}
                     onChange={(e) => {
                       const [year, month] = e.target.value.split('-');
+                      if (!year || !month) return;
                       setSelectedDate(new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1));
                     }}
                     className="w-full sm:w-auto px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"

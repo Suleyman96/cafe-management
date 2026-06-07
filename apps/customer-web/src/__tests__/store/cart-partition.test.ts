@@ -32,7 +32,7 @@ describe('cart partitioning (M4)', () => {
 
     useCartStore.getState().setPartition({ flow: 'dine_in', tenantId: 'A', tableId: 't1' });
     expect(useCartStore.getState().items).toHaveLength(1);
-    expect(useCartStore.getState().items[0].quantity).toBe(3);
+    expect(useCartStore.getState().items[0]!.quantity).toBe(3);
   });
 
   it('drops stored partition when lastTouchedAt is older than TTL', () => {

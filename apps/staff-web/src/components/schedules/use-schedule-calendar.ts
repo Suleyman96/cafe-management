@@ -34,8 +34,10 @@ export function useScheduleCalendar() {
   }, [monthOffset]);
 
   const startDate =
-    viewMode === 'monthly' ? formatDate(monthInfo.firstDay) : formatDate(weekDates[0]);
-  const endDate = viewMode === 'monthly' ? formatDate(monthInfo.lastDay) : formatDate(weekDates[6]);
+    // getWeekDates always returns 7 dates, so indices 0 and 6 are in-bounds
+    viewMode === 'monthly' ? formatDate(monthInfo.firstDay) : formatDate(weekDates[0]!);
+  const endDate =
+    viewMode === 'monthly' ? formatDate(monthInfo.lastDay) : formatDate(weekDates[6]!);
 
   const { data: schedules, isLoading, refetch } = useSchedulesByDateRange(startDate, endDate);
   const { data: staffList } = useStaff();
@@ -47,9 +49,10 @@ export function useScheduleCalendar() {
 
     // Initialize with all active staff
     for (const s of staffList.filter((s) => s.is_active)) {
-      map[s.id] = { staff: s, schedules: {} };
+      const entry = { staff: s, schedules: {} as Record<string, StaffSchedule[]> };
+      map[s.id] = entry;
       for (const d of weekDates) {
-        map[s.id].schedules[formatDate(d)] = [];
+        entry.schedules[formatDate(d)] = [];
       }
     }
 

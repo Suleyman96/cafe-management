@@ -81,7 +81,8 @@ export function RecurrenceSettings({
                   recurrenceDays.includes(day.value) && { backgroundColor: '#dbeafe' },
                 ]}
               >
-                {t(WEEKDAY_TRANSLATION_KEY[day.value])}
+                {/* WEEKDAY_TRANSLATION_KEY covers every WEEKDAYS value (1-7). */}
+                {t(WEEKDAY_TRANSLATION_KEY[day.value]!)}
               </Chip>
             ))}
           </View>

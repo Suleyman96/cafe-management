@@ -43,7 +43,8 @@ export default function ReportsScreen() {
     [t],
   );
 
-  const range = getDateRange(PRESETS[presetIdx].days);
+  // presetIdx is only ever set to a valid PRESETS index (see Chip map below).
+  const range = getDateRange(PRESETS[presetIdx]!.days);
 
   const { data: orders, isLoading: loadingOrders } = useOrders({
     created_after: `${range.startDate}T00:00:00`,

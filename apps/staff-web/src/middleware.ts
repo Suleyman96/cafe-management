@@ -119,9 +119,9 @@ export async function middleware(request: NextRequest) {
 
   let isActiveStaff = false;
   try {
-    const payload = JSON.parse(
-      Buffer.from(session.access_token.split('.')[1], 'base64').toString(),
-    );
+    const payloadSegment = session.access_token.split('.')[1];
+    if (!payloadSegment) throw new Error('Invalid token format');
+    const payload = JSON.parse(Buffer.from(payloadSegment, 'base64').toString());
     isActiveStaff = payload.is_active_staff === true;
   } catch {
     // Invalid token format

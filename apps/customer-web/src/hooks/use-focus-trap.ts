@@ -60,8 +60,9 @@ export function useFocusTrap<T extends HTMLElement>(
         container.focus({ preventScroll: true });
         return;
       }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
+      // Non-empty guaranteed by the `length === 0` early-return above.
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
       const activeEl = document.activeElement as HTMLElement | null;
 
       if (event.shiftKey) {

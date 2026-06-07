@@ -98,7 +98,8 @@ export function MenuScreen({ tableId, initialCategories, initialMenuItems }: Men
   // Auto-select first category (no "All" option)
   useEffect(() => {
     if (categories?.length && selectedCategory === undefined) {
-      setSelectedCategory(categories[0].id);
+      // `categories?.length` truthy guarantees index 0 is in-bounds.
+      setSelectedCategory(categories[0]!.id);
     }
   }, [categories, selectedCategory]);
 
