@@ -1,9 +1,24 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getRequestId, REQUEST_ID_HEADER } from '@/lib/api/request-id';
+import { buildCspHeader, CSP_NONCE_HEADER } from '@/lib/security/csp';
 import { createMiddlewareClient } from '@/lib/supabase/server';
 
 const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password', '/auth/callback'];
+
+/**
+ * Clone the inbound request headers and stamp the per-request CSP nonce onto
+ * them. Both `x-nonce` (for app code that wants to read it) and the full
+ * `Content-Security-Policy` go on the *request* headers — Next.js reads the CSP
+ * from the request to extract the nonce and apply it to the inline scripts it
+ * renders.
+ */
+function withNonceHeaders(request: NextRequest, nonce: string, csp: string): Headers {
+  const headers = new Headers(request.headers);
+  headers.set(CSP_NONCE_HEADER, nonce);
+  headers.set('Content-Security-Policy', csp);
+  return headers;
+}
 
 const ALLOWED_ORIGINS = [process.env.NEXT_PUBLIC_CUSTOMER_WEB_URL || 'http://localhost:3000'];
 
@@ -89,12 +104,30 @@ export async function middleware(request: NextRequest) {
     return withCommonHeaders(response);
   }
 
-  // Skip public paths
+  // Per-request nonce-based CSP for HTML page responses. Minted once here
+  // (after the JSON API branch, which doesn't execute scripts and needs no
+  // nonce) and threaded onto the request headers so Next.js stamps it onto
+  // every inline hydration <script>. Redirects below intentionally skip the
+  // CSP: a 302 has no HTML body, and the followed GET re-enters this
+  // middleware and gets its own nonce.
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const cspHeader = buildCspHeader(nonce);
+
+  // Public paths skip the auth gate but still need the CSP — the login /
+  // password-reset pages hydrate a form (signInWithPassword) that would
+  // silently break under a strict script-src without the nonce.
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next();
+    const publicResponse = NextResponse.next({
+      request: { headers: withNonceHeaders(request, nonce, cspHeader) },
+    });
+    publicResponse.headers.set('Content-Security-Policy', cspHeader);
+    return publicResponse;
   }
 
-  const { supabase, response } = createMiddlewareClient(request);
+  const { supabase, response } = createMiddlewareClient(
+    request,
+    withNonceHeaders(request, nonce, cspHeader),
+  );
 
   // Page-nav gate uses getSession() (local cookie read + JWT decode, with
   // an auto-refresh round-trip only when the token is near expiry) rather
@@ -133,6 +166,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  response.headers.set('Content-Security-Policy', cspHeader);
   return response;
 }
 

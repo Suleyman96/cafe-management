@@ -87,33 +87,14 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
-          // Next.js bootstraps React via inline <script> tags (the
-          // __NEXT_DATA__ blob, chunk loaders, runtime patches). Strict
-          // `script-src 'self'` blocks them and hydration silently fails —
-          // the page renders, but onSubmit handlers never attach so forms
-          // fall back to native HTML submission.
-          //
-          // TODO: migrate to a nonce-based CSP (Next.js supports this via
-          // middleware) so we can drop 'unsafe-inline' / 'unsafe-eval'.
-          // Until then, allow them in production so the app actually works.
-          ...(process.env.NODE_ENV === 'production'
-            ? [
-                {
-                  key: 'Content-Security-Policy',
-                  value: [
-                    "default-src 'self'",
-                    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-                    "style-src 'self' 'unsafe-inline'",
-                    `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL || ''} wss://*.supabase.co https://*.sentry.io`,
-                    "img-src 'self' data: blob: https://*.supabase.co",
-                    "font-src 'self'",
-                    "frame-ancestors 'none'",
-                    "base-uri 'self'",
-                    "form-action 'self'",
-                  ].join('; '),
-                },
-              ]
-            : []),
+          // Content-Security-Policy is NOT set here. It is emitted per-request
+          // from `src/middleware.ts` with a fresh nonce + 'strict-dynamic'
+          // (see `src/lib/security/csp.ts`), which let us drop the
+          // 'unsafe-inline' / 'unsafe-eval' a static policy required. A static
+          // CSP here would be sent *in addition* to the middleware one, and
+          // browsers enforce multiple CSP headers as an intersection — the
+          // permissive static policy would not loosen the nonce policy, but
+          // keeping a second source of truth invites drift, so there is none.
         ],
       },
     ];

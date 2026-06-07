@@ -1,8 +1,17 @@
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import './globals.css';
 import { ChunkErrorRecovery } from '@/components/pwa/chunk-error-recovery';
 import { ServiceWorkerRegistration } from '@/components/pwa/service-worker-registration';
 import { Providers } from './providers';
+
+// Opt the whole app into dynamic rendering so Next.js stamps the per-request
+// CSP nonce (minted in `middleware.ts`) onto its inline bootstrap <script>
+// tags. A statically prerendered tree has no nonce baked in, so the strict
+// `script-src 'self' 'nonce-…' 'strict-dynamic'` policy blocks those scripts
+// and React never hydrates — the failure that reverted the first CSP attempt
+// (the login Sign-in button stayed disabled because onChange never fired).
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'gustri | Restaurant Management System',
@@ -27,6 +36,14 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Reading a request header is Next.js's documented opt-in for stamping the
+  // per-request CSP nonce onto the inline bootstrap scripts. Combined with the
+  // `force-dynamic` export above, this guarantees every route is rendered at
+  // request time with the nonce applied — so the strict CSP never blocks
+  // hydration. The value itself isn't needed (Next applies the nonce
+  // internally from the request CSP header); the call is the trigger.
+  headers();
+
   return (
     <html lang="en">
       <head>
