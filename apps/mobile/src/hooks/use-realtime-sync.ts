@@ -118,8 +118,17 @@ export function useRealtimeSync(channelName: string, handlers: RealtimeHandler[]
     cancelledRef.current = false;
     let currentChannel: RealtimeChannel | null = null;
     let postResumeHealthTimer: ReturnType<typeof setTimeout> | null = null;
+    // Monotonic epoch, bumped on every (re)create. A channel torn down on
+    // CHANNEL_ERROR / TIMED_OUT or AppState resume can still fire a late
+    // subscribe/postgres callback on a flaky socket; without this guard that
+    // stale callback would schedule a *second* reconnect (or flip status),
+    // racing the live channel into duplicate subscriptions. Each callback
+    // captures its `myEpoch` and bails once a newer channel exists.
+    let channelEpoch = 0;
 
     function createChannel(): RealtimeChannel {
+      channelEpoch += 1;
+      const myEpoch = channelEpoch;
       const tenantFilter = `tenant_id=eq.${tenantId}`;
       let channel = supabase.channel(channelName);
 
@@ -128,7 +137,7 @@ export function useRealtimeSync(channelName: string, handlers: RealtimeHandler[]
           'postgres_changes',
           { event, schema: 'public', table, filter: filter ?? tenantFilter },
           async (payload) => {
-            if (cancelledRef.current) return;
+            if (cancelledRef.current || myEpoch !== channelEpoch) return;
 
             lastEventAtRef.current = Date.now();
 
@@ -152,7 +161,7 @@ export function useRealtimeSync(channelName: string, handlers: RealtimeHandler[]
       }
 
       channel.subscribe((status) => {
-        if (cancelledRef.current) return;
+        if (cancelledRef.current || myEpoch !== channelEpoch) return;
 
         subscribedRef.current = status === 'SUBSCRIBED';
 

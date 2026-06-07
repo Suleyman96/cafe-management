@@ -145,4 +145,37 @@ describe('useRealtimeSync', () => {
     unmount();
     expect(useRealtimeStatusStore.getState().channels['chan-A']).toBeUndefined();
   });
+
+  // Epoch guard: a channel torn down on CHANNEL_ERROR can fire a late callback
+  // on a flaky socket after the backoff already spun up a replacement. The
+  // stale callback must be ignored so it can't flip status or schedule a
+  // duplicate reconnect.
+  it('ignores a stale channel callback after the channel is recreated', () => {
+    vi.useFakeTimers();
+    try {
+      const channels = installRealtimeMock();
+      const { wrapper } = createWrapper();
+      renderHook(() => useRealtimeSync('chan-A', ORDERS_HANDLER), { wrapper });
+
+      const first = channels.get('chan-A');
+      // Drive the first channel into reconnect → schedules a recreate after the
+      // 1s backoff.
+      act(() => first?.statusCb?.('CHANNEL_ERROR'));
+      act(() => {
+        vi.advanceTimersByTime(1100);
+      });
+      const second = channels.get('chan-A');
+      expect(second).not.toBe(first); // a fresh channel (new epoch) was created
+
+      // The STALE first channel fires a late SUBSCRIBED — must be ignored.
+      act(() => first?.statusCb?.('SUBSCRIBED'));
+      expect(useRealtimeStatusStore.getState().channels['chan-A']).not.toBe('connected');
+
+      // The live channel still connects normally.
+      act(() => second?.statusCb?.('SUBSCRIBED'));
+      expect(useRealtimeStatusStore.getState().channels['chan-A']).toBe('connected');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
