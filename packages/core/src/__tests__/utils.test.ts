@@ -8,6 +8,7 @@ import {
   formatPriceWithSettings,
   formatTime,
   getDisplaySubtotal,
+  timeOfDayToMinutes,
 } from '../utils';
 
 // ─── Simple Tax Helpers ─────────────────────────────────────────
@@ -253,5 +254,21 @@ describe('formatTime', () => {
 
   it('accepts an ISO string and a Date interchangeably', () => {
     expect(formatTime('2026-01-01T14:30:00Z', 'de-DE')).toBe(formatTime(instant, 'de-DE'));
+  });
+});
+
+describe('timeOfDayToMinutes', () => {
+  it('parses HH:MM to minutes since midnight', () => {
+    expect(timeOfDayToMinutes('00:00')).toBe(0);
+    expect(timeOfDayToMinutes('14:30')).toBe(870);
+    expect(timeOfDayToMinutes('23:59')).toBe(1439);
+  });
+
+  it('ignores a trailing seconds component (HH:MM:SS)', () => {
+    expect(timeOfDayToMinutes('09:15:45')).toBe(555);
+  });
+
+  it('yields NaN for a malformed value (never matches a shift window)', () => {
+    expect(timeOfDayToMinutes('not-a-time')).toBeNaN();
   });
 });

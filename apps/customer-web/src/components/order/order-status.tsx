@@ -211,7 +211,9 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
                       <span className={isCancelled ? 'line-through' : ''}>{item.item_name}</span>
                     </div>
                     {item.notes && (
-                      <p className="text-sm text-muted-foreground mt-1">📝 {item.notes}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        <span aria-hidden="true">📝</span> {item.notes}
+                      </p>
                     )}
                     <div className="flex items-center gap-2 mt-2">
                       <ItemStatusBadge status={item.status} variant="dineIn" />
@@ -293,7 +295,6 @@ export function OrderStatus({ tableId }: OrderStatusProps) {
           <div className="bg-card rounded-lg p-6 border">
             <FeedbackForm
               tableId={actualTableId}
-              tenantId={table?.tenant_id || ''}
               orderId={order.id}
               onSuccess={() => setShowFeedbackForm(false)}
               onCancel={() => setShowFeedbackForm(false)}

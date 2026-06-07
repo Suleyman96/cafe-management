@@ -13,10 +13,6 @@ type FeedbackType = 'complaint' | 'praise';
 
 interface FeedbackFormProps {
   tableId: string;
-  // `tenantId` is no longer used — the server resolves the tenant from
-  // `tableId` (H1). Kept on the prop signature for now to avoid
-  // touching every call site in this PR; remove in a follow-up.
-  tenantId?: string;
   orderId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;

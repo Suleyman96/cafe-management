@@ -105,6 +105,8 @@ export const SEMANTIC_COLORS = {
   danger: '#ef4444',
   success: '#10b981',
   warning: '#f59e0b',
+  /** Between `warning` and `danger` — e.g. the "elevated" elapsed-time tier. */
+  elevated: '#f97316',
   info: '#3b82f6',
 
   // Brand

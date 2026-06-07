@@ -1,5 +1,6 @@
 'use client';
 
+import { timeOfDayToMinutes } from '@gustri/core';
 import type { Database } from '@gustri/database/types';
 import * as Sentry from '@sentry/nextjs';
 import { useQueryClient } from '@tanstack/react-query';
@@ -62,16 +63,11 @@ function findCurrentOrNextShift(schedules: StaffSchedule[]): StaffSchedule | nul
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-  const toMinutes = (t: string) => {
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + m;
-  };
-
   // First: find a scheduled shift whose window covers now
   for (const s of schedules) {
     if (s.status !== 'scheduled') continue;
-    const start = toMinutes(s.planned_start);
-    const end = toMinutes(s.planned_end);
+    const start = timeOfDayToMinutes(s.planned_start);
+    const end = timeOfDayToMinutes(s.planned_end);
     if (nowMinutes >= start && nowMinutes < end) return s;
   }
 
@@ -80,7 +76,7 @@ function findCurrentOrNextShift(schedules: StaffSchedule[]): StaffSchedule | nul
   let nearestDiff = Infinity;
   for (const s of schedules) {
     if (s.status !== 'scheduled') continue;
-    const start = toMinutes(s.planned_start);
+    const start = timeOfDayToMinutes(s.planned_start);
     const diff = start - nowMinutes;
     if (diff > 0 && diff < nearestDiff) {
       nearest = s;
@@ -103,14 +99,9 @@ export async function postLoginSideEffects(staffId: string) {
       const now = new Date();
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-      const toMinutes = (t: string) => {
-        const [h, m] = t.split(':').map(Number);
-        return h * 60 + m;
-      };
-
       // Auto-complete: in_progress shifts whose planned_end has passed
       for (const s of schedules) {
-        if (s.status === 'in_progress' && toMinutes(s.planned_end) <= nowMinutes) {
+        if (s.status === 'in_progress' && timeOfDayToMinutes(s.planned_end) <= nowMinutes) {
           clockViaApi(s.id, 'clock_out').catch((err) => {
             Sentry.captureException(err, { tags: { context: 'auto-complete-schedule' } });
           });

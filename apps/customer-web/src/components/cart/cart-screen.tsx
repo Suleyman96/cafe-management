@@ -200,12 +200,7 @@ export function CartScreen({ tableId }: CartScreenProps) {
         minimumMet={minimumOrderMet}
         minimumWarning={
           settings?.minimum_order_amount
-            ? t('cart.minimumOrder', {
-                amount:
-                  settings.currency_position === 'before'
-                    ? `${settings.currency_symbol}${settings.minimum_order_amount.toFixed(settings.currency_decimal_places)}`
-                    : `${settings.minimum_order_amount.toFixed(settings.currency_decimal_places)}${settings.currency_symbol}`,
-              })
+            ? t('cart.minimumOrder', { amount: formatPrice(settings.minimum_order_amount) })
             : undefined
         }
         isLoading={isPlacing}

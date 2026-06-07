@@ -211,6 +211,18 @@ export function formatTime(dateString: string | Date, locale = 'en-US'): string 
   return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }
 
+/**
+ * Parse a 24-hour time-of-day string ("HH:MM" or "HH:MM:SS") to minutes since
+ * midnight — e.g. `"14:30"` → `870`. Used for shift-window comparisons; a
+ * malformed value yields `NaN` (comparisons against it are false, so a bad
+ * shift time simply never matches a window). Extracted from the two inline
+ * copies that lived in staff-web `use-auth`.
+ */
+export function timeOfDayToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
 // ─── Exhaustiveness ─────────────────────────────────────────────
 
 /**

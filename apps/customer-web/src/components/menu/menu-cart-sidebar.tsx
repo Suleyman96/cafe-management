@@ -113,7 +113,9 @@ export function MenuCartSidebar({ tableId, accentColor, onOrderPlaced }: MenuCar
               </div>
 
               {item.notes && (
-                <p className="text-[10px] text-white/55 mb-2 truncate">📝 {item.notes}</p>
+                <p className="text-[10px] text-white/55 mb-2 truncate">
+                  <span aria-hidden="true">📝</span> {item.notes}
+                </p>
               )}
 
               <div className="flex items-center justify-between">

@@ -12,7 +12,7 @@ interface TimeElapsedProps {
 
 function getTimeColor(minutes: number): string {
   if (minutes >= TIME_ELAPSED_THRESHOLDS.CRITICAL) return SEMANTIC_COLORS.danger;
-  if (minutes >= TIME_ELAPSED_THRESHOLDS.ELEVATED) return '#f97316';
+  if (minutes >= TIME_ELAPSED_THRESHOLDS.ELEVATED) return SEMANTIC_COLORS.elevated;
   if (minutes >= TIME_ELAPSED_THRESHOLDS.WARNING) return SEMANTIC_COLORS.warning;
   return SEMANTIC_COLORS.textMuted;
 }
