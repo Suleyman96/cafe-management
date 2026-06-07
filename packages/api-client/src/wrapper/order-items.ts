@@ -10,6 +10,7 @@
 import { isOrderItem, isOrderItemArray } from '@gustri/core';
 import { handleSupabaseError } from '../errors';
 import { dedupeInsertMany } from './_dedupe';
+import { assertInsertTenantMatches } from './_tenant-scope';
 import { rpc } from './rpc-typed';
 import type { OrderItemInsert, OrderItemRow, WrapperContext } from './types';
 
@@ -26,6 +27,16 @@ export function createOrderItemsWrapper(ctx: WrapperContext) {
     // model limited. Track in a follow-up issue before opening this to
     // non-staff API consumers.
     create: async (items: OrderItemInsert[]) => {
+      // Defense-in-depth on top of RLS: `order_items.Insert.tenant_id` is an
+      // optional caller-supplied field, so a buggy or malicious client could
+      // post items carrying a foreign tenant_id. Reject any mismatch against
+      // the bound context before the insert (RLS would also reject, but this
+      // fails fast with a clear AuthorizationError and matches every other
+      // tenant-scoped wrapper create). Items that omit tenant_id pass through —
+      // the DB fills it from the parent order.
+      for (const item of items) {
+        assertInsertTenantMatches(item, ctx);
+      }
       const requestIds = items.map((item) => item.client_request_id);
       const data = await dedupeInsertMany<unknown>(requestIds, {
         insert: () => ctx.anyClient.from('order_items').insert(items).select(),

@@ -64,6 +64,32 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 }
 
+/**
+ * Wrap a screen component in its own `ErrorBoundary` so a render throw in one
+ * screen is isolated — the drawer + every other tab stay usable, and the
+ * crashed screen shows the "Try again" reset. Returns a STABLE component
+ * (define the wrapped component at module scope, never inline in a `component=`
+ * prop, or React Navigation would remount the screen on every render).
+ */
+// biome-ignore lint/suspicious/noExplicitAny: an HOC must accept a component of any props shape; the `any` is confined to the constraint and never leaks into the returned type (we return `C`, the caller's exact component type).
+export function withErrorBoundary<C extends React.ComponentType<any>>(Component: C): C {
+  // Generic over the component type itself (not its props) so the wrapped
+  // component keeps `Component`'s exact type. Widening to `ComponentType<P>`
+  // would collapse to `ComponentType<object>`, which React Navigation's
+  // `ScreenComponentType` rejects under the React 19 types (its call signature
+  // returns `ReactNode | Promise<ReactNode>`, incompatible with the screen
+  // slot). Returning `C` keeps the wrapped screen drop-in compatible.
+  function Wrapped(props: React.ComponentProps<C>) {
+    return (
+      <ErrorBoundary>
+        <Component {...props} />
+      </ErrorBoundary>
+    );
+  }
+  Wrapped.displayName = `withErrorBoundary(${Component.displayName ?? Component.name ?? 'Screen'})`;
+  return Wrapped as unknown as C;
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -7,6 +7,7 @@
  */
 
 import { z } from 'zod';
+import { isValidPhone } from '../validators';
 import {
   CurrencyPositionSchema,
   OrderSourceSchema,
@@ -27,7 +28,15 @@ export const OrderCreateInputSchema = z.object({
   table_id: z.string().uuid().nullable().optional(),
   assigned_waiter_id: z.string().uuid().nullable().optional(),
   customer_name: z.string().max(100).nullable().optional(),
-  customer_phone: z.string().max(20).nullable().optional(),
+  // Phone must be callable (≥7 real digits), matching the server route's
+  // `delivery_phone` refine — so the client and server reject the same garbage
+  // (`+()()()` etc.). null/undefined still pass (phone is optional).
+  customer_phone: z
+    .string()
+    .max(20)
+    .refine(isValidPhone, 'invalid_phone_format')
+    .nullable()
+    .optional(),
   customer_notes: z.string().max(2000).nullable().optional(),
   internal_notes: z.string().max(2000).nullable().optional(),
   delivery_address: z.string().max(500).nullable().optional(),

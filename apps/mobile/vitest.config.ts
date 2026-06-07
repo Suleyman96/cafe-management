@@ -42,6 +42,11 @@ export default defineConfig({
       // are `use-push-token-sync.ts` (138 lines, MMKV+AppState-heavy) and
       // `use-realtime-sync.ts` (~150 uncovered lines) — raise these back
       // toward the original 58/37/67/59 as those tests land. Do NOT lower.
+      //
+      // Tracking issue (raise-back plan + which hooks still need tests):
+      //   https://github.com/gunnerkh/cafe-idare/issues/200
+      // The "Do NOT lower" rule is the ratchet; the issue is the obligation to
+      // raise it back so the lowered floor doesn't quietly become permanent.
       thresholds: {
         statements: 47,
         branches: 26,
