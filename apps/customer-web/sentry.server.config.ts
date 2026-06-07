@@ -15,3 +15,6 @@ Sentry.init({
     return scrubSentryEvent(event);
   },
 });
+
+// Match the browser bootstrap so server-thrown exceptions also carry build_sha.
+Sentry.setTag('build_sha', process.env.NEXT_PUBLIC_BUILD_SHA ?? 'unknown');

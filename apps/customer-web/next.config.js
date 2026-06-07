@@ -1,7 +1,27 @@
 const { withSentryConfig } = require('@sentry/nextjs');
+const fs = require('node:fs');
+const path = require('node:path');
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
+
+// Build identifier exposed to the client as NEXT_PUBLIC_BUILD_SHA so Sentry
+// events group by deploy (parity with staff-web's next.config). Resolution:
+// Vercel git SHA → explicit override → `.commit-sha` file (written by
+// .github/workflows/deploy-customer-web.yml, since `vercel build` strips host
+// env) → 'dev'. Empty strings coerce to undefined so `||` fallbacks fire.
+function readCommitShaFile() {
+  try {
+    return fs.readFileSync(path.join(__dirname, '.commit-sha'), 'utf8').trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+const COMMIT_SHA =
+  (process.env.VERCEL_GIT_COMMIT_SHA || undefined) ??
+  (process.env.GIT_COMMIT_SHA || undefined) ??
+  readCommitShaFile() ??
+  'dev';
 
 // H5 — build-time guard. `NEXT_PUBLIC_API_BASE_URL` is the origin of the
 // staff-web `/api/v1/customer/*` routes. If it's unset in a production
@@ -19,6 +39,9 @@ if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_API_BASE_U
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_SHA: COMMIT_SHA,
+  },
   images: {
     remotePatterns: [
       {

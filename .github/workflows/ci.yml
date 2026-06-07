@@ -287,6 +287,17 @@ jobs:
           done
           exit $FAIL
 
+      # The `check:react-compat` script existed but was never run in CI.
+      # It validates each app's React major (web=18, mobile=19) against the
+      # policy in CLAUDE.md. Reads package.json only — no install needed.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify React version policy
+        run: node scripts/check-react-version-compat.mjs
+
   mobile-check:
     name: Mobile Type Check & Test
     runs-on: ubuntu-latest

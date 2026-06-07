@@ -13,3 +13,6 @@ Sentry.init({
     return scrubSentryEvent(event);
   },
 });
+
+// Match the browser/server bootstraps so edge (middleware) events carry build_sha.
+Sentry.setTag('build_sha', process.env.NEXT_PUBLIC_BUILD_SHA ?? 'unknown');

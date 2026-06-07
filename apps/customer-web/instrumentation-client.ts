@@ -58,3 +58,7 @@ Sentry.init({
     return { ...crumb, data: scrubPiiFields(next) };
   },
 });
+
+// Stamp build_sha on every event so Sentry groups issues by deploy (parity
+// with staff-web). Sourced from next.config's NEXT_PUBLIC_BUILD_SHA.
+Sentry.setTag('build_sha', process.env.NEXT_PUBLIC_BUILD_SHA ?? 'unknown');
