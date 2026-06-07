@@ -93,7 +93,12 @@ export async function dedupeInsertMany<TRow>(
   if (allRowsKeyed && isUniqueViolation(inserted.error)) {
     const fetched = await ops.refetchByIds(definedIds);
     if (fetched.error) throw handleSupabaseError(fetched.error);
-    if (fetched.data == null || fetched.data.length === 0) {
+    // A clean idempotent replay re-fetches EVERY row (one per client_request_id).
+    // A shorter result means a *partial* conflict — only some ids existed, so the
+    // atomic batch insert rolled back the non-conflicting rows and they were never
+    // persisted. Returning that subset would silently drop rows the caller asked
+    // to insert, so surface the original error instead.
+    if (fetched.data == null || fetched.data.length !== definedIds.length) {
       throw handleSupabaseError(inserted.error);
     }
     return fetched.data;

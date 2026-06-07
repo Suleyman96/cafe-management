@@ -243,6 +243,34 @@ describe('Wrapper idempotency — orderItems.create (batch)', () => {
     expect(result[1]?.client_request_id).toBe(id2);
   });
 
+  it('throws on a PARTIAL conflict instead of returning an incomplete subset', async () => {
+    const orderId = '00000000-0000-0000-0000-0000000000bb';
+    const id1 = '11111111-1111-4111-8111-111111111111';
+    const id2 = '22222222-2222-4222-8222-222222222222';
+    const item1 = buildOrderItem({ order_id: orderId, client_request_id: id1 });
+
+    const { client } = createSequencedMockClient({
+      order_items: [
+        // Batch insert trips the unique index — atomic, so both rows roll back.
+        { data: null, error: { code: '23505', message: 'duplicate key value' } },
+        // Refetch returns ONLY id1: id2 conflicted but id1 never persisted (or
+        // vice versa). Returning [item1] would silently drop id2, so the helper
+        // must throw the original conflict rather than hand back a subset.
+        { data: [item1], error: null },
+      ],
+    });
+
+    const ctx = { client: client as never, anyClient: client as never };
+    const wrapper = createOrderItemsWrapper(ctx);
+
+    await expect(
+      wrapper.create([
+        buildOrderItemInsert({ order_id: orderId, client_request_id: id1 }),
+        buildOrderItemInsert({ order_id: orderId, client_request_id: id2 }),
+      ]),
+    ).rejects.toThrow();
+  });
+
   it('falls back to throwing when the batch has rows without client_request_id', async () => {
     const { client } = createSequencedMockClient({
       order_items: [{ data: null, error: { code: '23505', message: 'duplicate key value' } }],
