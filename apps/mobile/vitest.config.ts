@@ -37,21 +37,17 @@ export default defineConfig({
         'src/hooks/use-delivery.ts',
         'src/hooks/use-currency-symbol.ts',
       ],
-      // Floor matches the actual current numbers after `use-orders-history`
-      // and `use-inactivity-lock` got tests in this PR. Real gaps remaining
-      // are `use-push-token-sync.ts` (138 lines, MMKV+AppState-heavy) and
-      // `use-realtime-sync.ts` (~150 uncovered lines) — raise these back
-      // toward the original 58/37/67/59 as those tests land. Do NOT lower.
-      //
-      // Tracking issue (raise-back plan + which hooks still need tests):
-      //   https://github.com/gunnerkh/cafe-idare/issues/200
-      // The "Do NOT lower" rule is the ratchet; the issue is the obligation to
-      // raise it back so the lowered floor doesn't quietly become permanent.
+      // Restored to the original floor (issue #200) after `use-push-token-sync`
+      // got a full test suite — actual coverage is now ~70/55/80/71, comfortably
+      // above this floor, so the floor both protects that new test (deleting it
+      // drops below 58/37) and leaves headroom. `use-realtime-sync.ts` still has
+      // uncovered branches; that's future headroom above the floor, not a blocker.
+      // Do NOT lower.
       thresholds: {
-        statements: 47,
-        branches: 26,
-        functions: 64,
-        lines: 49,
+        statements: 58,
+        branches: 37,
+        functions: 67,
+        lines: 59,
       },
     },
   },
