@@ -6,7 +6,13 @@ import { OrderConfirmationOverlay } from '@/components/order/order-confirmation-
 import { Providers } from '@/components/providers';
 import { HtmlLangSetter } from '@/components/ui/html-lang-setter';
 
-const inter = Inter({ subsets: ['latin'] });
+// Load the Latin-script + Cyrillic + Greek subsets Inter ships, so the
+// Russian/Ukrainian/Kazakh (cyrillic), Greek (greek), and accented
+// Latin-script locales (Turkish, German, … via latin-ext) render in Inter
+// rather than falling back to a system font mid-paragraph. Scripts Inter has
+// no glyphs for (Arabic, Thai, Japanese, Korean, Georgian) still fall back to
+// the system stack — that needs a different font family, out of scope here.
+const inter = Inter({ subsets: ['latin', 'latin-ext', 'cyrillic', 'greek'] });
 
 export const metadata: Metadata = {
   title: 'gustri - Order',
