@@ -1,0 +1,59 @@
+# Drawer smoke test for the gustri mobile app.
+#
+# Logs in, then visits every drawer destination and screenshots it. Its purpose
+# is to confirm that each drawer screen RENDERS — i.e. the per-stack
+# `withErrorBoundary` HOC (apps/mobile/src/navigation/DrawerNavigator.tsx)
+# isn't masking a render crash, and the screens behind it mount cleanly.
+#
+# Prerequisites (see README.md for the full recipe):
+#   - The app installed on a booted iOS simulator / Android emulator, pointed at
+#     a Supabase that has the `admin@test.com` / `test1234` seed user
+#     (`pnpm db:reset` locally, or an EAS dev build wired to a seeded project).
+#   - For a Debug build, Metro must be running.
+#
+# Run:  maestro test apps/mobile/.maestro/drawer-smoke.yaml
+# Screenshots land in ~/.maestro/tests/<timestamp>/ (and the names below).
+#
+# The seed user's role is `admin`, so it sees the Main, Management and Admin
+# drawer sections. "Reports" is owner-only and is intentionally omitted — run
+# with an owner account to include it.
+appId: com.gustri.app
+env:
+  EMAIL: admin@test.com
+  PASSWORD: test1234
+---
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Email address"
+    timeout: 90000
+- tapOn: "Email address"
+- inputText: ${EMAIL}
+- tapOn: "Password"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn: "Sign in"
+# Login resolves to the Home (tables) screen.
+- extendedWaitUntil:
+    notVisible: "Sign in"
+    timeout: 40000
+- takeScreenshot: screenshots/00-home
+
+# Main section
+- runFlow: { file: visit-screen.yaml, env: { LABEL: "Delivery", NAME: "01-delivery" } }
+- runFlow: { file: visit-screen.yaml, env: { LABEL: "Takeout", NAME: "02-takeout" } }
+- runFlow: { file: visit-screen.yaml, env: { LABEL: "Tasks", NAME: "03-tasks" } }
+# Management section
+- runFlow: { file: visit-screen.yaml, env: { LABEL: "Feedback", NAME: "04-feedback" } }
+- runFlow: { file: visit-screen.yaml, env: { LABEL: "Stock", NAME: "05-stock" } }
+- runFlow: { file: visit-screen.yaml, env: { LABEL: "Waste", NAME: "06-waste" } }
+- runFlow: { file: visit-screen.yaml, env: { LABEL: "Expenses", NAME: "07-expenses" } }
+# Admin section
+- runFlow: { file: visit-screen.yaml, env: { LABEL: "Staff", NAME: "08-staff" } }
+- runFlow: { file: visit-screen.yaml, env: { LABEL: "Schedules", NAME: "09-schedules" } }
+- runFlow: { file: visit-screen.yaml, env: { LABEL: "Cafe Settings", NAME: "10-cafe-settings" } }
+# Back to the start: open the drawer once more and capture the full menu.
+- swipe:
+    start: 2%, 50%
+    end: 92%, 50%
+- takeScreenshot: screenshots/11-drawer-menu

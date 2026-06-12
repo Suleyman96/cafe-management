@@ -1,0 +1,21 @@
+# Reusable subflow: open the drawer, tap a destination, screenshot it.
+#
+# Params (passed via `env` from the calling flow):
+#   LABEL — the drawer item's visible text (English / en locale), e.g. "Delivery"
+#   NAME  — screenshot file name (no spaces), e.g. "delivery"
+#
+# Used by drawer-smoke.yaml to walk every per-stack ErrorBoundary-wrapped
+# drawer screen and capture each render.
+appId: com.gustri.app
+---
+# Open the drawer with an edge swipe (the app has no persistent hamburger on
+# every stack header, so the edge gesture is the reliable opener).
+- swipe:
+    start: 2%, 50%
+    end: 92%, 50%
+- tapOn: ${LABEL}
+# The drawer closes on selection; wait for it before screenshotting the screen.
+- extendedWaitUntil:
+    notVisible: ${LABEL}
+    timeout: 15000
+- takeScreenshot: screenshots/${NAME}
