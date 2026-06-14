@@ -8,6 +8,7 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
+  CreditCard,
   Edit2,
   Loader2,
   MoreVertical,
@@ -22,6 +23,12 @@ import { usePendingAction } from '@/hooks/use-pending-action';
 import { ORDER_STATUS_ICONS } from '@/lib/enum-icons';
 import type { OrderWithDetails, Tables, WaiterCalls } from '@/types';
 
+// A table card is a summary tile in a grid — it must stay compact regardless of
+// how many orders are open on the table. Past this many, the per-order status
+// chips collapse to a "+N" pill and the per-order total breakdown is dropped
+// (the combined total still shows; the full list lives on the table detail page).
+const MAX_VISIBLE_ORDERS = 6;
+
 interface TableCardProps {
   table: Tables;
   activeOrders: OrderWithDetails[];
@@ -33,6 +40,7 @@ interface TableCardProps {
   onEditTable: (table: Tables) => void;
   onDeleteTable: (table: Tables) => void;
   onTransferTable: (table: Tables) => void;
+  onPayOrder: (order: OrderWithDetails) => void;
   formatPrice: (amount: number) => string;
 }
 
@@ -110,6 +118,7 @@ function TableCardImpl({
   onEditTable,
   onDeleteTable,
   onTransferTable,
+  onPayOrder,
   formatPrice,
 }: TableCardProps) {
   const { t } = useTranslation('staff');
@@ -117,11 +126,17 @@ function TableCardImpl({
   // Per-button pending lock — protects against rapid taps queuing two
   // transfer-modal opens or two delete confirms before React commits the
   // first state change.
-  const { isPending, run } = usePendingAction<'transfer' | 'edit' | 'delete'>();
+  const { isPending, run } = usePendingAction<'transfer' | 'edit' | 'delete' | 'pay'>();
 
   const hasMultipleOrders = activeOrders.length > 1;
   const activeOrder: OrderWithDetails | undefined = activeOrders[0];
   const hasActiveCalls = activeCalls.length > 0;
+
+  // Payment is independent of order status — a waiter can collect whenever, not
+  // only once served. We still gate to a *single* active order so it's
+  // unambiguous which one to settle from the grid; multi-order tables collect
+  // from the table-detail page (per-order).
+  const payableOrder = !hasMultipleOrders ? activeOrder : undefined;
 
   const combinedTotal = activeOrders.reduce((total, order) => {
     return total + calculateOrderTotal(order);
@@ -264,9 +279,9 @@ function TableCardImpl({
             </div>
           )}
 
-          {/* Order Status Badges */}
+          {/* Order Status Badges (capped — see MAX_VISIBLE_ORDERS) */}
           <div className="flex flex-wrap gap-1.5">
-            {activeOrders.map((order, index: number) => {
+            {activeOrders.slice(0, MAX_VISIBLE_ORDERS).map((order, index: number) => {
               const orderEffectiveStatus = getEffectiveOrderStatus(order);
               const orderStatusBadge = getOrderStatusBadge(orderEffectiveStatus);
               return (
@@ -281,6 +296,11 @@ function TableCardImpl({
                 </div>
               );
             })}
+            {activeOrders.length > MAX_VISIBLE_ORDERS && (
+              <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold border border-gray-300 bg-gray-100 text-gray-600">
+                +{activeOrders.length - MAX_VISIBLE_ORDERS}
+              </div>
+            )}
           </div>
 
           {/* Order Details Grid */}
@@ -303,8 +323,10 @@ function TableCardImpl({
             <span className="text-lg font-bold text-gray-800">{formatPrice(combinedTotal)}</span>
           </div>
 
-          {/* Individual Order Totals (if multiple) */}
-          {hasMultipleOrders && (
+          {/* Individual Order Totals — only while the list stays card-sized.
+              Past the cap the combined total above stands in; the full per-order
+              breakdown lives on the table detail page. */}
+          {hasMultipleOrders && activeOrders.length <= MAX_VISIBLE_ORDERS && (
             <div className="text-xs text-gray-500 space-y-0.5">
               {activeOrders.map((order, index: number) => (
                 <div key={order.id} className="flex justify-between">
@@ -346,22 +368,40 @@ function TableCardImpl({
           <Loader2 className="h-4 w-4 animate-spin" />
           <span className="text-sm">{t('tables.creatingOrder')}</span>
         </div>
-      ) : table.status === 'occupied' ? (
+      ) : table.status === 'occupied' || payableOrder ? (
         <div className="flex gap-2 mt-4">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={isPending('transfer')}
-            onClick={(e) => {
-              e.stopPropagation();
-              run('transfer', async () => {
-                onTransferTable(table);
-              });
-            }}
-            className="flex-1"
-          >
-            {t('tables.transfer')}
-          </Button>
+          {table.status === 'occupied' && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isPending('transfer')}
+              onClick={(e) => {
+                e.stopPropagation();
+                run('transfer', async () => {
+                  onTransferTable(table);
+                });
+              }}
+              className="flex-1"
+            >
+              {t('tables.transfer')}
+            </Button>
+          )}
+          {payableOrder && (
+            <Button
+              size="sm"
+              disabled={isPending('pay')}
+              onClick={(e) => {
+                e.stopPropagation();
+                run('pay', async () => {
+                  onPayOrder(payableOrder);
+                });
+              }}
+              className="flex-1 bg-green-600 hover:bg-green-700"
+            >
+              <CreditCard className="h-4 w-4 mr-1" />
+              {t('orders.payment')}
+            </Button>
+          )}
         </div>
       ) : (
         table.status === 'free' && (

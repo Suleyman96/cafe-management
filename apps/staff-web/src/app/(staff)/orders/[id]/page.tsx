@@ -1,6 +1,6 @@
 'use client';
 
-import { formatTime, ORDER_STATUS_KEYS } from '@gustri/core';
+import { formatDateTime, ORDER_STATUS_KEYS } from '@gustri/core';
 import { useLocale, useTranslation } from '@gustri/i18n';
 import { Button, getOrderStatusColor, LoadingSpinner } from '@gustri/ui-web';
 import { ArrowLeft, ArrowRight, Clock, Home, Package, RefreshCw, Truck, User } from 'lucide-react';
@@ -208,7 +208,7 @@ export default function OrderDetailPage() {
               {transfer.reason && ` - ${transfer.reason}`}
               {transfer.created_at && (
                 <span className="text-gray-600 ml-2">
-                  ({formatTime(transfer.created_at, locale)})
+                  ({formatDateTime(transfer.created_at, locale)})
                 </span>
               )}
             </div>

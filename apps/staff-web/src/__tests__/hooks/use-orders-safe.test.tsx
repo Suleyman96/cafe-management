@@ -138,6 +138,19 @@ describe('useUpdateOrderStatus', () => {
     );
   });
 
+  it('optimistically patches the status into parameterized ORDERS caches', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useUpdateOrderStatus());
+    // Parameterized table-detail shape — must be reached by the prefix-matched
+    // setQueriesData patch, not just the bare [tenant, ORDERS] key.
+    const ordersKey = tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS, { table_id: 't1' });
+    queryClient.setQueryData(ordersKey, [{ id: 'o1', status: 'new', table_id: 't1' }]);
+
+    await result.current.mutateAsync({ orderId: 'o1', status: 'PREPARING' });
+
+    const orders = queryClient.getQueryData<Array<{ id: string; status: string }>>(ordersKey);
+    expect(orders?.find((o) => o.id === 'o1')?.status).toBe('preparing');
+  });
+
   it('preserves concurrent realtime updates when the mutation fails (no stale rollback)', async () => {
     // Bug repro: the previous implementation snapshotted the full ORDERS /
     // ACTIVE_ORDERS list in onMutate and restored it on error. Any realtime
@@ -312,6 +325,38 @@ describe('useCancelOrder', () => {
     // `options` is undefined when the optimistic-concurrency feature
     // flag is off (default in the test harness).
     expect(db.orders.cancelOrder).toHaveBeenCalledWith('o1', 'test reason', 't1', undefined);
+  });
+
+  it('optimistically clears the order from parameterized ORDERS and ACTIVE_ORDERS caches', async () => {
+    const { result, queryClient } = renderHookWithProviders(() => useCancelOrder());
+
+    // A *parameterized* ORDERS entry — the table-detail/grid shape whose key
+    // carries filter params. The optimistic patch must reach this via a
+    // prefix-matched setQueriesData; a bare setQueryData([tenant, ORDERS])
+    // (exact match) would miss it. This is the regression the fix guards.
+    const ordersKey = tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS, {
+      table_id: 't1',
+      limit: 50,
+    });
+    const activeKey = tenantKey(TEST_TENANT_ID, QUERY_KEYS.ACTIVE_ORDERS);
+    const seed = () => [
+      { id: 'o1', status: 'served', table_id: 't1' },
+      { id: 'o2', status: 'new', table_id: 't1' },
+    ];
+    queryClient.setQueryData(ordersKey, seed());
+    queryClient.setQueryData(activeKey, seed());
+
+    await result.current.mutateAsync({ orderId: 'o1', reason: 'test', tableId: 't1' });
+
+    // ORDERS list keeps the row but flips it to cancelled (consumers filter by
+    // status); the untouched order is left as-is.
+    const orders = queryClient.getQueryData<Array<{ id: string; status: string }>>(ordersKey);
+    expect(orders?.find((o) => o.id === 'o1')?.status).toBe('cancelled');
+    expect(orders?.find((o) => o.id === 'o2')?.status).toBe('new');
+
+    // ACTIVE_ORDERS is active-only, so the cancelled row is removed outright.
+    const active = queryClient.getQueryData<Array<{ id: string }>>(activeKey);
+    expect(active?.map((o) => o.id)).toEqual(['o2']);
   });
 });
 

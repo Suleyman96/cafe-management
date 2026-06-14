@@ -99,7 +99,7 @@ describe('Payment processing correctness', () => {
     expect(digitalBtn).toBeDefined();
 
     // Cash should be selected by default (has blue styling)
-    expect(cashBtn.closest('button')?.className).toContain('bg-blue-100');
+    expect(cashBtn.closest('button')?.className).toContain('border-blue-500');
   });
 
   it('selected payment method is passed to createPayment mutation', async () => {
@@ -172,13 +172,13 @@ describe('Payment processing correctness', () => {
 
     // Select card
     fireEvent.click(screen.getByText('Card'));
-    expect(screen.getByText('Card').closest('button')?.className).toContain('bg-blue-100');
+    expect(screen.getByText('Card').closest('button')?.className).toContain('border-blue-500');
 
     // Close and reopen
     rerender(<SplitPaymentModal {...defaultProps} isOpen={false} />);
     rerender(<SplitPaymentModal {...defaultProps} isOpen={true} />);
 
     // Cash should be selected again (reset)
-    expect(screen.getByText('Cash').closest('button')?.className).toContain('bg-blue-100');
+    expect(screen.getByText('Cash').closest('button')?.className).toContain('border-blue-500');
   });
 });

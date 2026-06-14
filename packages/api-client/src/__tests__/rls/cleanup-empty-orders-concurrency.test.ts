@@ -108,7 +108,10 @@ describe('cleanup_empty_orders concurrency', () => {
   test('order receiving its first item during cleanup must not be cancelled', async () => {
     const orderId = await seedBackdatedEmptyOrder();
 
-    await Promise.all([
+    // allSettled, not all: when the cancel wins the row lock the racing item
+    // insert is *rejected* by the terminal-order guard (a valid race outcome,
+    // not a test failure). The invariant below holds either way.
+    await Promise.allSettled([
       insertOrderItem(orderId),
       adminClient.rpc('cleanup_empty_orders', { p_older_than_minutes: 2 }),
     ]);
@@ -138,7 +141,8 @@ describe('cleanup_empty_orders concurrency', () => {
 
     for (let i = 0; i < TRIALS; i++) {
       const orderId = await seedBackdatedEmptyOrder();
-      await Promise.all([
+      // allSettled: a cancel-wins race legitimately rejects the item insert.
+      await Promise.allSettled([
         insertOrderItem(orderId),
         adminClient.rpc('cleanup_empty_orders', { p_older_than_minutes: 2 }),
       ]);

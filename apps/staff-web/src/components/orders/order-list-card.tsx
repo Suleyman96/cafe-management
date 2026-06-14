@@ -1,6 +1,6 @@
 'use client';
 
-import { calculateOrderTotal, formatTime, ORDER_STATUS_KEYS } from '@gustri/core';
+import { calculateOrderTotal, formatDateTime, ORDER_STATUS_KEYS } from '@gustri/core';
 import { useLocale, useTranslation } from '@gustri/i18n';
 import { Button, getOrderStatusColor, LoadingSpinner } from '@gustri/ui-web';
 import {
@@ -68,7 +68,6 @@ function OrderListCardImpl({
   const total = calculateOrderTotal(order);
   const paid = calculatePaidAmount(order);
   const remaining = total - paid;
-  const isFullyPaid = remaining === 0 && total > 0;
   const hasItems = order.order_items?.some((item) => item.status !== 'cancelled') ?? false;
 
   const isTakeout =
@@ -129,7 +128,7 @@ function OrderListCardImpl({
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 text-xs sm:text-sm text-gray-600">
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {formatTime(order.created_at, locale)}
+              {formatDateTime(order.created_at, locale)}
             </span>
             {order.customer_name && (
               <span className="flex items-center gap-1">
@@ -273,26 +272,25 @@ function OrderListCardImpl({
             {t('orders.markDelivered')}
           </Button>
         )}
-        {order.status === 'ready' && !order.table && !isDelivery && !isFullyPaid && (
-          <Button
-            size="sm"
-            disabled={isPending('pay')}
-            onClick={() => openModal('pay', () => onOpenPayment(order))}
-          >
-            {isPending('pay') ? buttonSpinner : <CreditCard className="h-4 w-4 mr-1" />}
-            {t('orders.payment')}
-          </Button>
-        )}
-        {order.status === 'served' && !isFullyPaid && (
-          <Button
-            size="sm"
-            disabled={isPending('pay')}
-            onClick={() => openModal('pay', () => onOpenPayment(order))}
-          >
-            {isPending('pay') ? buttonSpinner : <CreditCard className="h-4 w-4 mr-1" />}
-            {t('orders.payment')}
-          </Button>
-        )}
+        {/* Payment is decoupled from the status flow — a waiter can collect at
+            any point in an active order's life, not only once ready/served. We
+            still hide it when there's nothing to collect (remaining <= 0 covers
+            both fully-paid and zero-total orders). Distinct green styling marks
+            it apart from the neutral status-advance buttons. */}
+        {remaining > 0 &&
+          ['pending_approval', 'new', 'preparing', 'ready', 'served', 'out_for_delivery'].includes(
+            order.status,
+          ) && (
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700"
+              disabled={isPending('pay')}
+              onClick={() => openModal('pay', () => onOpenPayment(order))}
+            >
+              {isPending('pay') ? buttonSpinner : <CreditCard className="h-4 w-4 mr-1" />}
+              {t('orders.payment')}
+            </Button>
+          )}
         {['pending_approval', 'new', 'preparing', 'ready', 'served', 'out_for_delivery'].includes(
           order.status,
         ) && (

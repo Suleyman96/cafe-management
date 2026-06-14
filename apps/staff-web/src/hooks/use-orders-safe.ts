@@ -162,8 +162,19 @@ export function useUpdateOrderStatus() {
       const updateList = (old: OrderWithDetails[] | undefined) =>
         old?.map((o) => (o.id === orderId ? { ...o, status: statusValue } : o));
 
-      queryClient.setQueryData(tenantKey(tenantId, QUERY_KEYS.ORDERS), updateList);
-      queryClient.setQueryData(tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS), updateList);
+      // Prefix-matched so the patch reaches the *parameterized* ORDERS keys
+      // (`[tenant, ORDERS, {filters}]`) used by the table-detail and grid
+      // views — a bare setQueryData([tenant, ORDERS]) (exact match) would miss
+      // them and the optimistic update would only ever land via a later
+      // refetch. Mirrors useCancelOrder.
+      queryClient.setQueriesData<OrderWithDetails[]>(
+        { queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) },
+        updateList,
+      );
+      queryClient.setQueriesData<OrderWithDetails[]>(
+        { queryKey: tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS) },
+        updateList,
+      );
 
       // Zombie-patch killer: if onSettled never fires (silent network drop,
       // tab backgrounded mid-flight) the optimistic patch above is reverted
@@ -299,15 +310,53 @@ export function useCancelOrder() {
       const opts = expectedVersion !== undefined ? { expectedVersion } : undefined;
       return db.orders.cancelOrder(orderId, reason, tableId ?? null, opts);
     },
-    onSettled: (_data, _err, { orderId }) => {
+    // Optimistically drop the order from every active list the instant the
+    // user confirms. Critical detail: `useOrders(filters)` keys are
+    // parameterized (`[tenant, ORDERS, {table_id,…}]`), and the tables grid,
+    // the table-detail view, and the orders list each use a *different*
+    // filter key. A plain `setQueryData([tenant, ORDERS], …)` (exact match)
+    // would miss all of them — so we use `setQueriesData` with a prefix
+    // queryKey, which patches every matching cache entry. Without this, a
+    // cancel issued from the detail page leaves the (currently unmounted)
+    // grid query untouched; with realtime paused it then shows the cancelled
+    // order as a ghost — status badge + items — until some later refetch.
+    onMutate: async ({ orderId }) => {
+      await queryClient.cancelQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) });
+      await queryClient.cancelQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS) });
+
       const previousOrder = queryClient.getQueryData<OrderWithDetails>(
         tenantKey(tenantId, QUERY_KEYS.ORDER, orderId),
       );
+
+      // ORDERS lists keep the row (they include historical/cancelled orders;
+      // consumers filter by status themselves) — patch its status so the
+      // active-status filters drop it. ACTIVE_ORDERS is an active-only list,
+      // so remove the row outright.
+      queryClient.setQueriesData<OrderWithDetails[]>(
+        { queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) },
+        (list) => list?.map((o) => (o.id === orderId ? { ...o, status: 'cancelled' } : o)),
+      );
+      queryClient.setQueriesData<OrderWithDetails[]>(
+        { queryKey: tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS) },
+        (list) => list?.filter((o) => o.id !== orderId),
+      );
+
+      // Zombie-patch killer: if onSettled never fires, the optimistic patch is
+      // reverted by a forced invalidate after the TTL.
+      const cancelTtl = withOptimisticTtl(queryClient, [
+        tenantKey(tenantId, QUERY_KEYS.ORDERS),
+        tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS),
+      ]);
+
+      return { previousOrder, cancelTtl };
+    },
+    onSettled: (_data, _err, { orderId }, context) => {
+      context?.cancelTtl?.();
       invalidateOrdersAndTables(queryClient, tenantId, {
         orderId,
-        oldStatus: previousOrder?.status,
+        oldStatus: context?.previousOrder?.status,
         newStatus: 'cancelled',
-        oldType: previousOrder?.order_type,
+        oldType: context?.previousOrder?.order_type,
       });
     },
     onError: (error) => {
@@ -350,8 +399,19 @@ export function useUpdateOrderItemStatus() {
           ),
         }));
 
-      queryClient.setQueryData(tenantKey(tenantId, QUERY_KEYS.ORDERS), updateList);
-      queryClient.setQueryData(tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS), updateList);
+      // Prefix-matched so the patch reaches the *parameterized* ORDERS keys
+      // (`[tenant, ORDERS, {filters}]`) used by the table-detail and grid
+      // views — a bare setQueryData([tenant, ORDERS]) (exact match) would miss
+      // them and the optimistic update would only ever land via a later
+      // refetch. Mirrors useCancelOrder.
+      queryClient.setQueriesData<OrderWithDetails[]>(
+        { queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) },
+        updateList,
+      );
+      queryClient.setQueriesData<OrderWithDetails[]>(
+        { queryKey: tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS) },
+        updateList,
+      );
 
       // Zombie-patch killer — see useUpdateOrderStatus for rationale.
       const cancelTtl = withOptimisticTtl(queryClient, [

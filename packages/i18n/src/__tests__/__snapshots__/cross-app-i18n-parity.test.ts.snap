@@ -196,6 +196,7 @@ exports[`Phase 5.2 — cross-platform i18n parity > the shared cross-platform vo
   "reports.delivery",
   "reports.dineIn",
   "reports.expenses",
+  "reports.keyMetrics",
   "reports.netProfit",
   "reports.orderTypes",
   "reports.ordersHandled",

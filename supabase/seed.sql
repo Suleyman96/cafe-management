@@ -12,7 +12,8 @@ INSERT INTO staff (id, tenant_id, email, full_name, role, auth_user_id, is_activ
 ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'admin@test.com', 'Admin User', 'admin', null, true),
 ('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'waiter1@cafe.com', 'Tanaka Yuki', 'waiter', null, true),
 ('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'waiter2@cafe.com', 'Sato Hana', 'waiter', null, true),
-('10000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000001', 'kitchen@cafe.com', 'Chef Kenji', 'kitchen', null, true)
+('10000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000001', 'kitchen@cafe.com', 'Chef Kenji', 'kitchen', null, true),
+('10000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000001', 'owner@test.com', 'Owner User', 'owner', null, true)
 ON CONFLICT (id) DO NOTHING;
 
 -- The handle_new_tenant_signup() trigger creates the per-tenant defaults

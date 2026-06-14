@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle, DollarSign } from 'lucide-react';
+import { ListChecks, SplitSquareHorizontal, Wallet } from 'lucide-react';
 
 type PaymentMode = 'full' | 'partial' | 'items';
 
@@ -24,19 +24,19 @@ export function PaymentModeSelector({
   const modes = [
     {
       value: 'full' as const,
-      icon: DollarSign,
+      icon: Wallet,
       label: t('payment.fullPayment'),
       subtitle: formatPrice(remainingBalance ?? orderTotal),
     },
     {
       value: 'partial' as const,
-      icon: DollarSign,
+      icon: SplitSquareHorizontal,
       label: t('payment.partialAmount'),
       subtitle: t('payment.customAmount'),
     },
     {
       value: 'items' as const,
-      icon: CheckCircle,
+      icon: ListChecks,
       label: t('payment.specificItems'),
       subtitle: t('payment.selectItems'),
     },

@@ -2,8 +2,10 @@
 
 # Create admin users for local development.
 #
-# Provisions two staff accounts seeded by supabase/seed.sql:
+# Provisions the staff accounts seeded by supabase/seed.sql:
 #   admin@test.com  / test1234   (tenant 1 — default fixture)
+#   owner@test.com  / test1234   (tenant 1 — owner-role fixture for testing
+#                                 owner-gated UI against the seeded data)
 #   admin2@test.com / test1234   (tenant 2 — cross-tenant isolation fixture
 #                                 used by apps/mobile/maestro/tenant-switch.yaml)
 
@@ -40,10 +42,13 @@ create_user() {
   if [ -z "$user_id" ]; then
     if echo "$response" | grep -q "already been registered"; then
       echo "User already exists. Fetching existing user..." >&2
-      response=$(curl -s -X GET "${SUPABASE_URL}/auth/v1/admin/users?email=${email}" \
+      # NB: GoTrue's admin list endpoint ignores the ?email= query param and
+      # returns the full user list, so we must match by email ourselves —
+      # `head -1` would grab an arbitrary user and mislink the staff row.
+      response=$(curl -s -X GET "${SUPABASE_URL}/auth/v1/admin/users" \
         -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
         -H "apikey: ${ANON_KEY}")
-      user_id=$(echo "$response" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+      user_id=$(echo "$response" | python3 -c "import sys, json; d = json.load(sys.stdin); users = d.get('users', d if isinstance(d, list) else []); print(next((u['id'] for u in users if u.get('email') == '${email}'), ''))")
     else
       echo "Error creating user $email:" >&2
       echo "$response" >&2
@@ -67,10 +72,14 @@ link_staff() {
 ADMIN_ID=$(create_user "admin@test.com" "Admin User")
 link_staff "admin@test.com" "$ADMIN_ID"
 
+OWNER_ID=$(create_user "owner@test.com" "Owner User")
+link_staff "owner@test.com" "$OWNER_ID"
+
 ADMIN2_ID=$(create_user "admin2@test.com" "Admin Two")
 link_staff "admin2@test.com" "$ADMIN2_ID"
 
 echo ""
-echo "Admin users created successfully!"
-echo "  admin@test.com  / test1234  (tenant 1)"
-echo "  admin2@test.com / test1234  (tenant 2)"
+echo "Staff users created successfully!"
+echo "  admin@test.com  / test1234  (tenant 1, admin)"
+echo "  owner@test.com  / test1234  (tenant 1, owner)"
+echo "  admin2@test.com / test1234  (tenant 2, admin)"

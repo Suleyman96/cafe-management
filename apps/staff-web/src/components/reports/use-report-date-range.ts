@@ -23,10 +23,14 @@ export function useReportDateRange() {
     year: 'numeric',
   });
   const dfMonthYear = useDateFormatter({ month: 'long', year: 'numeric' });
-  const dfShortDate = useDateFormatter({ month: 'short', day: 'numeric' });
+  // Numeric day/month (not month:'short') for the on-screen range label —
+  // some locales (e.g. az under Chrome's ICU) render the short month as "M05"
+  // rather than a name. The English-only PDF formatters below keep 'short'
+  // ("Jun") since they're always en-US. Matches core's formatDateTime.
+  const dfShortDate = useDateFormatter({ month: '2-digit', day: '2-digit' });
   const dfShortDateYear = useDateFormatter({
-    month: 'short',
-    day: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     year: 'numeric',
   });
   // English-only formatters for the PDF export. jsPDF's default font can't

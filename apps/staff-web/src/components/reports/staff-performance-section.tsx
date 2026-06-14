@@ -90,15 +90,10 @@ export function StaffPerformanceSection({
                   <th className="pb-3 font-medium text-right">{t('reports.itemsSoldCol')}</th>
                   <th className="pb-3 font-medium text-right">{t('reports.revenue')}</th>
                   <th className="pb-3 font-medium text-right">{t('reports.avgOrder')}</th>
-                  <th className="pb-3 font-medium text-right">{t('reports.completion')}</th>
                 </tr>
               </thead>
               <tbody>
                 {staffPerformance.map((member, index) => {
-                  const completionRate =
-                    member.ordersHandled > 0
-                      ? Math.round((member.completedOrders / member.ordersHandled) * 100)
-                      : 0;
                   return (
                     <tr key={member.id} className="border-b last:border-0">
                       <td className="py-3">
@@ -123,13 +118,6 @@ export function StaffPerformanceSection({
                           member.ordersHandled > 0 ? member.revenue / member.ordersHandled : 0,
                         )}
                       </td>
-                      <td className="py-3 text-right text-xs sm:text-sm">
-                        <span
-                          className={`font-medium ${completionRate >= 90 ? 'text-green-600' : 'text-gray-600'}`}
-                        >
-                          {completionRate}%
-                        </span>
-                      </td>
                     </tr>
                   );
                 })}
@@ -140,10 +128,6 @@ export function StaffPerformanceSection({
           {/* Mobile Cards */}
           <div className="sm:hidden space-y-2">
             {staffPerformance.map((member, index) => {
-              const completionRate =
-                member.ordersHandled > 0
-                  ? Math.round((member.completedOrders / member.ordersHandled) * 100)
-                  : 0;
               return (
                 <div key={member.id} className="border rounded-lg p-3">
                   <div className="flex items-center justify-between mb-2">
@@ -153,7 +137,7 @@ export function StaffPerformanceSection({
                     </div>
                     <RoleBadge role={member.role} t={t} />
                   </div>
-                  <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
                     <div>
                       <p className="font-bold text-blue-600">{member.ordersHandled}</p>
                       <p className="text-gray-500">{t('reports.ordersHandled')}</p>
@@ -166,61 +150,10 @@ export function StaffPerformanceSection({
                       <p className="font-bold text-green-600">{formatPrice(member.revenue)}</p>
                       <p className="text-gray-500">{t('reports.revenue')}</p>
                     </div>
-                    <div>
-                      <p
-                        className={`font-bold ${completionRate >= 90 ? 'text-green-600' : 'text-gray-600'}`}
-                      >
-                        {completionRate}%
-                      </p>
-                      <p className="text-gray-500">{t('reports.done')}</p>
-                    </div>
                   </div>
                 </div>
               );
             })}
-          </div>
-
-          {/* Summary Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t mt-3 sm:mt-4">
-            <div className="text-center">
-              <p className="text-lg sm:text-2xl font-bold text-blue-600">
-                {staffPerformance.length}
-              </p>
-              <p className="text-xs text-gray-600">{t('reports.activeStaff')}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg sm:text-2xl font-bold text-green-600">
-                {formatPrice(
-                  staffPerformance.length > 0
-                    ? staffPerformance.reduce((sum, s) => sum + s.revenue, 0) /
-                        staffPerformance.length
-                    : 0,
-                )}
-              </p>
-              <p className="text-xs text-gray-600">{t('reports.avgRevenue')}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg sm:text-2xl font-bold text-purple-600">
-                {staffPerformance.length > 0
-                  ? (
-                      staffPerformance.reduce((sum, s) => sum + s.ordersHandled, 0) /
-                      staffPerformance.length
-                    ).toFixed(1)
-                  : '0'}
-              </p>
-              <p className="text-xs text-gray-600">{t('reports.avgOrders')}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg sm:text-2xl font-bold text-orange-600">
-                {staffPerformance.length > 0
-                  ? (
-                      staffPerformance.reduce((sum, s) => sum + s.itemsSold, 0) /
-                      staffPerformance.length
-                    ).toFixed(1)
-                  : '0'}
-              </p>
-              <p className="text-xs text-gray-600">{t('reports.avgItems')}</p>
-            </div>
           </div>
         </div>
       )}

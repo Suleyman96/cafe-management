@@ -1,6 +1,6 @@
 'use client';
 
-import { calculateOrderTotal, formatTime, ORDER_STATUS_KEYS } from '@gustri/core';
+import { calculateOrderTotal, formatDateTime, ORDER_STATUS_KEYS } from '@gustri/core';
 import type { OrderWithDetails } from '@gustri/database/types';
 import { useLocale, useTranslation } from '@gustri/i18n';
 import { Button, getOrderStatusColor } from '@gustri/ui-web';
@@ -78,7 +78,7 @@ function DeliveryOrderCardImpl({
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs sm:text-sm text-gray-600">
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {formatTime(order.created_at, locale)}
+              {formatDateTime(order.created_at, locale)}
             </span>
             {order.customer_name && (
               <span className="flex items-center gap-1 font-medium">

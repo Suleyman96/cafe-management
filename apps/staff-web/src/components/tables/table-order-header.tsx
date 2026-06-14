@@ -36,10 +36,10 @@ interface TableOrderHeaderProps {
   formatPrice: (amount: number) => string;
   selectedOrderIndex: number;
   setSelectedOrderIndex: (index: number) => void;
-  cartLength: number;
   onResolveCalls: () => void;
   onShowItemTransfer: () => void;
   onShowCancelModal: () => void;
+  onOpenPayment: () => void;
   onStatusUpdate: TableDetail['handleStatusUpdate'];
   onItemStatusUpdate: TableDetail['handleItemStatusUpdate'];
   onCancelItemConfirm: (item: OrderItem) => void;
@@ -56,10 +56,10 @@ export function TableOrderHeader({
   formatPrice,
   selectedOrderIndex,
   setSelectedOrderIndex,
-  cartLength,
   onResolveCalls,
   onShowItemTransfer,
   onShowCancelModal,
+  onOpenPayment,
   onStatusUpdate,
   onItemStatusUpdate,
   onCancelItemConfirm,
@@ -68,9 +68,10 @@ export function TableOrderHeader({
   const { t } = useTranslation('staff');
 
   return (
-    <div
-      className={`flex-shrink-0 overflow-y-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-2 ${cartLength > 0 ? 'max-h-[25vh]' : 'max-h-[40vh]'}`}
-    >
+    // Content-sized; the parent page wraps this in the scrollable order region,
+    // so the header no longer caps/scrolls itself (the menu is a bottom sheet,
+    // not an inline panel competing for height).
+    <div className="px-3 sm:px-4 pt-4 sm:pt-6 pb-2">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
         <div className="flex items-center gap-2 sm:gap-4">
@@ -127,7 +128,10 @@ export function TableOrderHeader({
               ({t('tables.combinedTotal')}: {formatPrice(combinedTotal)})
             </span>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          {/* Single horizontally-scrollable row so a table with many open
+              orders doesn't wrap the tabs into a tall stack that pushes the
+              order's items off-screen. Every order stays reachable by scrolling. */}
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
             {activeOrders.map((order, index) => {
               const orderItemsTotal =
                 order.order_items
@@ -140,13 +144,18 @@ export function TableOrderHeader({
                 <button
                   key={order.id}
                   onClick={() => setSelectedOrderIndex(index)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     selectedOrderIndex === index
                       ? 'bg-amber-500 text-white'
                       : 'bg-white text-amber-700 hover:bg-amber-100 border border-amber-300'
                   }`}
                 >
-                  {t('orders.order')} #{index + 1} ({formatPrice(orderItemsTotal)})
+                  {/* Label by the stable order_number, not the position index —
+                      otherwise cancelling an order just re-indexes the rest and
+                      it looks like nothing changed (all the more so when several
+                      orders share the same total). */}
+                  {order.order_number ? `#${order.order_number}` : `#${index + 1}`} (
+                  {formatPrice(orderItemsTotal)})
                 </button>
               );
             })}
@@ -229,12 +238,14 @@ export function TableOrderHeader({
                   {t('orders.served')}
                 </Button>
               )}
-              {activeOrder.status === 'served' && (
-                <Button size="sm" onClick={() => router.push(`/orders/${activeOrder.id}`)}>
-                  <CreditCard className="h-4 w-4 mr-1" />
-                  {t('orders.payment')}
-                </Button>
-              )}
+              {/* Payment is decoupled from the kitchen status flow: a waiter can
+                  collect payment at any point in an active order's life, not only
+                  once it's served. The status-advance buttons above drive the
+                  kitchen flow; this is its own (green) action. */}
+              <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={onOpenPayment}>
+                <CreditCard className="h-4 w-4 mr-1" />
+                {t('orders.payment')}
+              </Button>
               {/* Transfer Items button */}
               {activeOrder.order_items?.some((i: OrderItem) => i.status !== 'cancelled') && (
                 <Button size="sm" variant="outline" onClick={onShowItemTransfer}>

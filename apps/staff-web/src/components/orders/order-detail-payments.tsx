@@ -1,6 +1,6 @@
 'use client';
 
-import { formatTime } from '@gustri/core';
+import { formatDateTime } from '@gustri/core';
 import { useLocale, useTranslation } from '@gustri/i18n';
 import type { Payment } from './use-order-detail';
 
@@ -54,7 +54,7 @@ export function OrderDetailPayments({
                   )}
                   <p className="text-xs text-gray-500 mt-1">
                     {payment.received_by_staff?.full_name || t('unknown', { ns: 'common' })}{' '}
-                    &middot; {formatTime(payment.created_at, locale)}
+                    &middot; {formatDateTime(payment.created_at, locale)}
                   </p>
                 </div>
                 <div className="text-right flex-shrink-0">

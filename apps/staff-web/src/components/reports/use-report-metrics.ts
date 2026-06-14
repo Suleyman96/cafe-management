@@ -28,10 +28,15 @@ export function useReportMetrics({ tenantId, dateStrings, expenseDateRange }: Re
     dateStrings.from,
     dateStrings.to,
   );
+  // Show every item sold in the period, not just the RPC's default top 20 —
+  // the section is labelled "Sold Products", and the list is scrollable, so a
+  // long menu is fine. The high cap is a practical "all" (no real menu has
+  // thousands of distinct items) while still bounding the query.
   const { data: topSoldItems, isLoading: itemsLoading } = useTopSoldItems(
     tenantId,
     dateStrings.from,
     dateStrings.to,
+    1000,
   );
   const { data: expenseSummary, isLoading: expensesLoading } = useExpenseSummary(
     tenantId,
@@ -48,9 +53,13 @@ export function useReportMetrics({ tenantId, dateStrings, expenseDateRange }: Re
     dateStrings.from,
     dateStrings.to,
   );
+  // Payments filter on created_at (timestamptz), so feed the same UTC instants
+  // the revenue RPC uses (local-midnight boundaries), NOT `${date}T00:00:00` —
+  // that naive string was interpreted as UTC, shifting the Z-Report window off
+  // the cafe's actual day by the local tz offset.
   const { data: zReportPaymentsRaw, isLoading: zReportLoading } = useZReport(
-    `${expenseDateRange.startDate}T00:00:00`,
-    `${expenseDateRange.endDate}T00:00:00`,
+    dateStrings.from,
+    dateStrings.to,
   );
   const zReportPayments = (zReportPaymentsRaw || []) as Array<{
     amount: number;

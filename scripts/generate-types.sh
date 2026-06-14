@@ -35,7 +35,12 @@ generate_to() {
   # `public` schema through the typed client, so introspect only that. If a
   # non-public schema type is ever genuinely needed, add `--schema <name>`
   # here deliberately and pin the owning image.
-  npx supabase gen types typescript --schema public --db-url "$SUPABASE_DB_URL" >> "$tmp"
+  # Use the `supabase` binary on PATH (verified above), NOT `npx supabase`.
+  # `npx` ignores the PATH binary and downloads the *latest* CLI, so CI — where
+  # setup-cli pins 2.78.1 — was silently fetching a newer CLI whose `gen types`
+  # demands an access token, failing the drift gate on every run regardless of
+  # code. The pinned binary keeps generation deterministic.
+  supabase gen types typescript --schema public --db-url "$SUPABASE_DB_URL" >> "$tmp"
   mv "$tmp" "$out"
 }
 

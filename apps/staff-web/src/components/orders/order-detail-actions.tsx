@@ -183,19 +183,23 @@ export function OrderDetailActions({
           {t('orders.markDelivered')}
         </Button>
       )}
-      {['served', 'ready', 'out_for_delivery', 'delivered'].includes(order.status) &&
-        !isFullyPaid && (
-          <Button
-            data-testid="payment-btn"
-            size="sm"
-            onClick={() => openModal('pay', onOpenPayment)}
-            disabled={!canMutate || isPending('pay')}
-            className="flex items-center gap-1 sm:gap-2"
-          >
-            {isPending('pay') ? spinner : <CreditCard className="h-4 w-4" />}
-            {t('orders.payment')}
-          </Button>
-        )}
+      {/* Payment is decoupled from the status flow — a waiter can collect at any
+          point in an active order's life, not only once service is reached.
+          Hidden when fully paid, when there are no live items to pay for, or
+          once the order is terminal. Distinct green styling sets it apart from
+          the neutral status-advance buttons. */}
+      {!isFullyPaid && hasItems && !['closed', 'cancelled'].includes(order.status) && (
+        <Button
+          data-testid="payment-btn"
+          size="sm"
+          onClick={() => openModal('pay', onOpenPayment)}
+          disabled={!canMutate || isPending('pay')}
+          className="flex items-center gap-1 sm:gap-2 bg-green-600 hover:bg-green-700"
+        >
+          {isPending('pay') ? spinner : <CreditCard className="h-4 w-4" />}
+          {t('orders.payment')}
+        </Button>
+      )}
       {isFullyPaid && order.status !== 'closed' && order.status !== 'cancelled' && (
         <Button
           size="sm"

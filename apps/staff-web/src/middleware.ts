@@ -176,8 +176,8 @@ export const config = {
      * Match all request paths except:
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico, icons, manifest, audio files
+     * - favicon.ico, icons, manifest, audio files, fonts
      */
-    '/((?!_next/static|_next/image|favicon\\.ico|icons/|manifest|.*\\.mp3$|.*\\.png$|.*\\.svg$|.*\\.webp$).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|icons/|manifest|.*\\.mp3$|.*\\.png$|.*\\.svg$|.*\\.webp$|.*\\.ttf$|.*\\.woff2?$).*)',
   ],
 };

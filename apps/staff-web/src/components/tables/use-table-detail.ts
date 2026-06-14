@@ -11,7 +11,7 @@ import { useTranslation } from '@gustri/i18n';
 import { QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import * as Sentry from '@sentry/nextjs';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   useAddOrderItems,
@@ -52,7 +52,7 @@ export function useTableDetail(tableId: string) {
   const { data: table, isLoading: tableLoading } = useTable(tableId);
   // Most recent orders for this table. The cap prevents unbounded growth as
   // a popular table accumulates years of history.
-  const { data: orders } = useOrders({ table_id: tableId, limit: 50 });
+  const { data: orders, isLoading: ordersLoading } = useOrders({ table_id: tableId, limit: 50 });
   const { data: menuItems, isLoading: menuLoading } = useMenuItems({ isAvailable: true });
   const { data: categories } = useCategories();
 
@@ -93,7 +93,9 @@ export function useTableDetail(tableId: string) {
   const [cancelItemQty, setCancelItemQty] = useState(1);
   const [cancellingItem, setCancellingItem] = useState(false);
   const [showItemTransferModal, setShowItemTransferModal] = useState(false);
-  const [showMenu, setShowMenu] = useState(true);
+  // Default closed: the order view (items + actions) is the landing state; the
+  // menu opens on demand as a bottom sheet when the user taps "Add items".
+  const [showMenu, setShowMenu] = useState(false);
 
   // Get ALL active orders for this table (including pending_approval)
   const activeOrders = useMemo((): OrderWithDetails[] => {
@@ -118,6 +120,21 @@ export function useTableDetail(tableId: string) {
   useEffect(() => {
     setSelectedOrderIndex(0);
   }, [tableId]);
+
+  // An empty table has nothing to act on but adding items, so open the catalog
+  // sheet automatically — but only on the *initial* load of a given table, not
+  // whenever it later becomes empty mid-session (e.g. after paying or
+  // cancelling the last order, which shouldn't yank the catalog open while the
+  // user is reading the now-settled screen). The ref makes the decision once
+  // per table; navigating to another table re-arms it.
+  const autoOpenedForTableRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (ordersLoading || autoOpenedForTableRef.current === tableId) return;
+    autoOpenedForTableRef.current = tableId;
+    if (activeOrders.length === 0) {
+      setShowMenu(true);
+    }
+  }, [tableId, ordersLoading, activeOrders.length]);
 
   // Auto-select first category (no "All" option)
   useEffect(() => {
@@ -164,6 +181,8 @@ export function useTableDetail(tableId: string) {
       toast.success(t('orders.orderCreatedSuccess'));
       clearCart();
       setOrderNotes('');
+      // Order placed — dismiss the catalog so the new order is front-and-center.
+      setShowMenu(false);
     } catch (error) {
       Sentry.captureException(error);
       toast.error(t('orders.failedCreateOrder'));
@@ -230,6 +249,8 @@ export function useTableDetail(tableId: string) {
       await addOrderItems.mutateAsync(orderItems);
       toast.success(t('orders.itemsAddedToOrder'));
       clearCart();
+      // Items added — dismiss the catalog so the updated order is visible.
+      setShowMenu(false);
     } catch (error) {
       Sentry.captureException(error);
       toast.error(t('orders.failedAddItems'));

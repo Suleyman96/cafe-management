@@ -212,6 +212,41 @@ export function formatTime(dateString: string | Date, locale = 'en-US'): string 
 }
 
 /**
+ * Localized timestamp that adds the date only when it isn't *today*, so an
+ * older order/payment time can't be misread as today's. Same local calendar
+ * day → time only (identical to {@link formatTime}); any other day → numeric
+ * date + time (e.g. "06/13, 14:30" in en-US, "13.06, 14:30" in az).
+ *
+ * Uses numeric day/month rather than `month: 'short'` on purpose: some locales
+ * (notably `az` under Chrome's ICU) render the abbreviated month as "M05"
+ * instead of a name, which reads as gibberish. Numeric is unambiguous and
+ * stable across locales/engines; Intl still orders day vs month per locale.
+ *
+ * `now` is injectable so the "is it today" decision is testable; UI callers
+ * just pass `(dateString, locale)` and get the current time by default.
+ */
+export function formatDateTime(
+  dateString: string | Date,
+  locale = 'en-US',
+  now: Date = new Date(),
+): string {
+  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  const sameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+  if (sameDay) {
+    return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  }
+  return date.toLocaleString(locale, {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/**
  * Parse a 24-hour time-of-day string ("HH:MM" or "HH:MM:SS") to minutes since
  * midnight — e.g. `"14:30"` → `870`. Used for shift-window comparisons; a
  * malformed value yields `NaN` (comparisons against it are false, so a bad

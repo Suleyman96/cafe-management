@@ -46,8 +46,15 @@ export function KeyMetricsGrid({ metrics, formatPrice }: KeyMetricsGridProps) {
           <ChefHat className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
         </div>
         <p className="text-lg sm:text-2xl font-bold">
-          {metrics.totalOrders > 0
-            ? Math.round((metrics.completedOrders / metrics.totalOrders) * 100)
+          {/* Settlement rate among *finalized* orders: paid vs voided. The
+              denominator is completed + cancelled, not totalOrders — totalOrders
+              now counts only completed (paid) orders, so dividing by it would
+              always read 100%. */}
+          {metrics.completedOrders + metrics.cancelledOrders > 0
+            ? Math.round(
+                (metrics.completedOrders / (metrics.completedOrders + metrics.cancelledOrders)) *
+                  100,
+              )
             : 0}
           %
         </p>

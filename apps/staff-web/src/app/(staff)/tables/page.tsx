@@ -9,6 +9,7 @@ import { Plus, RefreshCw, UtensilsCrossed } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/modals/confirm-dialog';
+import { SplitPaymentModal } from '@/components/modals/split-payment-modal';
 import { TableModal } from '@/components/modals/table-modal';
 import { TableTransferModal } from '@/components/modals/table-transfer-modal';
 import { TableCard } from '@/components/tables/table-card';
@@ -53,6 +54,8 @@ export default function TablesPage() {
   const [tableMenuOpen, setTableMenuOpen] = useState<string | null>(null);
   const [deleteConfirmTable, setDeleteConfirmTable] = useState<Table | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Order being settled via the card's Payment shortcut (served tables).
+  const [payingOrder, setPayingOrder] = useState<OrderWithDetails | null>(null);
 
   const cleanupEmptyOrders = useCleanupEmptyOrders();
   const isAdmin = useCanPerform('manage_tables');
@@ -176,6 +179,10 @@ export default function TablesPage() {
     setIsTransferModalOpen(true);
   }, []);
 
+  const handlePayOrder = useCallback((order: OrderWithDetails) => {
+    setPayingOrder(order);
+  }, []);
+
   const confirmDeleteTable = async () => {
     if (!deleteConfirmTable) return;
     setIsDeleting(true);
@@ -281,6 +288,7 @@ export default function TablesPage() {
                 onEditTable={handleEditTable}
                 onDeleteTable={handleDeleteTableMenu}
                 onTransferTable={handleTransferTable}
+                onPayOrder={handlePayOrder}
                 formatPrice={formatPrice}
               />
             );
@@ -319,6 +327,18 @@ export default function TablesPage() {
           }}
         />
       )}
+
+      {/* Payment shortcut from a served table card — settles the order in place. */}
+      <SplitPaymentModal
+        isOpen={!!payingOrder}
+        onClose={() => setPayingOrder(null)}
+        order={payingOrder ?? undefined}
+        onSuccess={() => {
+          setPayingOrder(null);
+          toast.success(t('orders.paymentProcessed'));
+          refetchTables();
+        }}
+      />
 
       <ConfirmDialog
         isOpen={!!deleteConfirmTable}

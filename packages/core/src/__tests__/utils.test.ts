@@ -5,6 +5,7 @@ import {
   calculateTaxWithSettings,
   calculateTotal,
   calculateTotalWithSettings,
+  formatDateTime,
   formatPriceWithSettings,
   formatTime,
   getDisplaySubtotal,
@@ -254,6 +255,36 @@ describe('formatTime', () => {
 
   it('accepts an ISO string and a Date interchangeably', () => {
     expect(formatTime('2026-01-01T14:30:00Z', 'de-DE')).toBe(formatTime(instant, 'de-DE'));
+  });
+});
+
+// ─── formatDateTime ─────────────────────────────────────────────
+describe('formatDateTime', () => {
+  // Use local-time constructors so "same day" is evaluated in the runner's tz,
+  // matching how the function compares calendar days.
+  const at = (y: number, mo: number, d: number, h = 12, mi = 0) => new Date(y, mo, d, h, mi);
+
+  it('shows time only when the timestamp is the same local day as `now`', () => {
+    const now = at(2026, 5, 14, 12, 0);
+    const sameDay = at(2026, 5, 14, 9, 30);
+    // Identical to the time-only formatTime output — no date component.
+    expect(formatDateTime(sameDay, 'en-US', now)).toBe(formatTime(sameDay, 'en-US'));
+  });
+
+  it('adds the (numeric) date when the timestamp is a different day (yesterday)', () => {
+    const now = at(2026, 5, 14, 1, 0);
+    const yesterday = at(2026, 5, 13, 3, 42);
+    const out = formatDateTime(yesterday, 'en-US', now);
+    // Numeric date present (month/day = 06/13 in en-US), not just the clock,
+    // and never an abbreviated month name like "M05"/"Jun".
+    expect(out).not.toBe(formatTime(yesterday, 'en-US'));
+    expect(out).toMatch(/06\/13|13\/06/); // numeric date, never "Jun"/"M05"
+  });
+
+  it('adds the date for a future-but-different day too', () => {
+    const now = at(2026, 5, 14, 23, 0);
+    const tomorrow = at(2026, 5, 15, 0, 5);
+    expect(formatDateTime(tomorrow, 'en-US', now)).not.toBe(formatTime(tomorrow, 'en-US'));
   });
 });
 

@@ -19,6 +19,7 @@ import { useFormatPrice } from '@/hooks/use-format-price';
 import { useIsOnline } from '@/hooks/use-is-online';
 import { usePersistentClientRequestId } from '@/hooks/use-persistent-client-request-id';
 import { resolveLocalizedErrorMessage, toastLocalizedError } from '@/lib/toast/localized-error';
+import { CashTenderedInput } from './payment/cash-tendered-input';
 import { ItemPaymentForm } from './payment/item-payment-form';
 import { OrderSummary } from './payment/order-summary';
 import { PartialPaymentForm } from './payment/partial-payment-form';
@@ -68,6 +69,9 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   );
   const [tipAmount, setTipAmount] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'digital'>('cash');
+  // Cash-handed-over, used only to compute change due. Display aid for the
+  // cashier — it never changes the amount sent to the server.
+  const [cashReceived, setCashReceived] = useState<string>('');
   // Inline error surfaced after a failed payment attempt. The toast also fires
   // (so the failure is visible if the cashier looked away), but the toast
   // dismisses; this state persists in the modal until the user actively
@@ -97,6 +101,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
       setSelectedItemQuantities(new Map());
       setTipAmount('');
       setPaymentMethod('cash');
+      setCashReceived('');
       setPaymentError(null);
     }
   }, [isOpen]);
@@ -293,7 +298,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-bold">{t('payment.processPaymentCash')}</h2>
+          <h2 className="text-xl font-bold">{t('payment.processPaymentBtn')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="h-5 w-5" />
           </button>
@@ -342,6 +347,16 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
             t={t}
           />
 
+          {/* Method first: cash vs card is the cashier's opening decision and
+              drives the cash-tendered helper below. */}
+          {!isFullyPaid && !isZeroTotal && (
+            <PaymentMethodSelector
+              paymentMethod={paymentMethod}
+              onMethodChange={setPaymentMethod}
+              t={t}
+            />
+          )}
+
           <PaymentModeSelector
             paymentMode={paymentMode}
             onModeChange={setPaymentMode}
@@ -375,19 +390,25 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
             />
           )}
 
-          {!isFullyPaid && !isZeroTotal && (
-            <PaymentMethodSelector
-              paymentMethod={paymentMethod}
-              onMethodChange={setPaymentMethod}
-              t={t}
-            />
-          )}
-
           {cafeSettings?.tips_enabled && !isFullyPaid && !isZeroTotal && (
             <TipInput
               tipAmount={tipAmount}
               onTipChange={setTipAmount}
+              baseAmount={getPaymentAmount()}
               currencySymbol={cafeSettings.currency_symbol}
+              formatPrice={formatPrice}
+              t={t}
+            />
+          )}
+
+          {/* Cash-tendered → change due. Only relevant when paying by cash;
+              purely a cashier aid (does not alter the amount charged). */}
+          {paymentMethod === 'cash' && !isFullyPaid && !isZeroTotal && (
+            <CashTenderedInput
+              totalToCollect={getPaymentAmount() + (parseFloat(tipAmount) || 0)}
+              cashReceived={cashReceived}
+              onCashReceivedChange={setCashReceived}
+              currencySymbol={cafeSettings?.currency_symbol || '$'}
               formatPrice={formatPrice}
               t={t}
             />

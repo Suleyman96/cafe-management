@@ -1,7 +1,8 @@
 'use client';
 
-import { useTranslation } from '@gustri/i18n';
+import { useLocale, useTranslation } from '@gustri/i18n';
 import { LoadingSpinner } from '@gustri/ui-web';
+import * as Sentry from '@sentry/nextjs';
 import { KeyMetricsGrid } from '@/components/reports/key-metrics-grid';
 import { OrderBreakdownSection } from '@/components/reports/order-breakdown-section';
 import { OrderStatusSection } from '@/components/reports/order-status-section';
@@ -18,6 +19,7 @@ import { exportReportToPDF } from '@/lib/report-pdf-export';
 
 export default function ReportsPage() {
   const { t } = useTranslation('staff');
+  const locale = useLocale();
   const { staff: currentUser } = useAuth();
   const tenantId = currentUser?.tenant_id;
   const formatPrice = useFormatPrice();
@@ -36,27 +38,30 @@ export default function ReportsPage() {
     todayString,
     currentMonthString,
     getDateRangeLabel,
-    getDateRangeLabelEn,
   } = useReportDateRange();
 
   const { metrics, profitMetrics, wasteMetrics, staffPerformance, zReportData, loading } =
     useReportMetrics({ tenantId, dateStrings, expenseDateRange });
 
-  // Export to PDF function
-  const exportToPDF = () => {
-    exportReportToPDF({
-      metrics,
-      profitMetrics,
-      wasteMetrics,
-      staffPerformance,
-      // English label: the PDF font can't render non-Latin scripts and the
-      // filename is derived from it — the export stays English-only.
-      dateRangeLabel: getDateRangeLabelEn(),
-      formatPrice,
-      translateRole: (role) => t(`staffMgmt.role.${role}`),
-      translateWasteReason: (reason) =>
-        t(`reports.wasteReason.${reason}`, { defaultValue: reason }),
-    });
+  // Export to PDF — async because it lazy-loads the embedded Unicode font.
+  // The PDF now renders the localized label/strings directly (no English-only
+  // fallback), so it gets the locale-aware label + `t`.
+  const exportToPDF = async () => {
+    try {
+      await exportReportToPDF({
+        metrics,
+        profitMetrics,
+        wasteMetrics,
+        staffPerformance,
+        zReport: zReportData,
+        dateRangeLabel: getDateRangeLabel(),
+        formatPrice,
+        locale,
+        t,
+      });
+    } catch (err) {
+      Sentry.captureException(err);
+    }
   };
 
   if (currentUser?.role !== 'owner') {
