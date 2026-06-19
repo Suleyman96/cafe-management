@@ -57,13 +57,26 @@ export function useCreatePayment() {
       queryClient.invalidateQueries({
         queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, variables.order_id),
       });
+      // Remaining-balance key is [PAYMENTS, tenant, orderId, 'balance']; the old
+      // [PAYMENTS, tenant, 'remaining_balance', orderId] matched nothing. (The
+      // PAYMENTS-prefix invalidation above already covers it, but keep this
+      // explicit + correct.)
       queryClient.invalidateQueries({
-        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, 'remaining_balance', variables.order_id),
+        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, variables.order_id, 'balance'),
       });
       queryClient.invalidateQueries({
         queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS_BY_STAFF),
       });
+      // A full payment closes the order (and frees its table) via DB trigger,
+      // so every order/table view must refetch — not just the ORDERS lists.
+      // Without ACTIVE_ORDERS the kitchen kept showing a just-paid order until
+      // realtime happened to fire (and never, when realtime is down). TABLES
+      // for the freed-table status; DELIVERY/TAKEOUT for those dedicated views.
       queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ACTIVE_ORDERS) });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.TABLES) });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.DELIVERY_ORDERS) });
+      queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.TAKEOUT_ORDERS) });
     },
   });
 }

@@ -67,6 +67,21 @@ export function TableOrderHeader({
   const router = useRouter();
   const { t } = useTranslation('staff');
 
+  // Surface partial-payment progress on the table view. Without this the header
+  // only shows the order total, so a partial payment looked like "nothing
+  // changed". order_payments is loaded by the table's orders query (findAll).
+  const orderPaid = (activeOrder?.order_payments ?? []).reduce(
+    (sum: number, p: { amount: number }) => sum + (p.amount ?? 0),
+    0,
+  );
+  const orderRemaining = orderTotal - orderPaid;
+  // Refunds are final (they don't re-open the balance) — surfaced so "paid"
+  // isn't misread when money has been returned.
+  const orderRefunded = (activeOrder?.refunds ?? []).reduce(
+    (sum: number, r: { amount: number }) => sum + (r.amount ?? 0),
+    0,
+  );
+
   return (
     // Content-sized; the parent page wraps this in the scrollable order region,
     // so the header no longer caps/scrolls itself (the menu is a bottom sheet,
@@ -177,6 +192,24 @@ export function TableOrderHeader({
                   <DollarSign className="h-4 w-4" />
                   {formatPrice(orderTotal)}
                 </span>
+                {/* Partial-payment progress (only once something's been paid). */}
+                {orderPaid > 0 && (
+                  <>
+                    <span className="text-green-700">
+                      {t('orders.paidAmount')} {formatPrice(orderPaid)}
+                    </span>
+                    {orderRemaining > 0 && (
+                      <span className="font-medium text-orange-600">
+                        {t('orders.dueAmount')} {formatPrice(orderRemaining)}
+                      </span>
+                    )}
+                  </>
+                )}
+                {orderRefunded > 0 && (
+                  <span className="text-red-600">
+                    {t('orders.totalRefundedAmount')} {formatPrice(orderRefunded)}
+                  </span>
+                )}
                 {/* Order Taken By */}
                 {activeOrder.assigned_waiter && (
                   <span className="flex items-center gap-1">

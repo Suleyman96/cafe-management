@@ -68,6 +68,9 @@ function OrderListCardImpl({
   const total = calculateOrderTotal(order);
   const paid = calculatePaidAmount(order);
   const remaining = total - paid;
+  // Refunds are final (don't re-open the balance) — shown so "paid" isn't
+  // misread when money's been returned.
+  const refunded = (order.refunds ?? []).reduce((sum, r) => sum + (r.amount ?? 0), 0);
   const hasItems = order.order_items?.some((item) => item.status !== 'cancelled') ?? false;
 
   const isTakeout =
@@ -163,6 +166,11 @@ function OrderListCardImpl({
           {remaining > 0 && paid > 0 && (
             <div className="text-xs sm:text-sm text-orange-600">
               {t('orders.dueAmount')} {formatPrice(remaining)}
+            </div>
+          )}
+          {refunded > 0 && (
+            <div className="text-xs sm:text-sm text-red-600">
+              {t('orders.totalRefundedAmount')} {formatPrice(refunded)}
             </div>
           )}
         </div>

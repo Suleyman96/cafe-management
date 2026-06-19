@@ -40,8 +40,12 @@ export function useApplyDiscount() {
       queryClient.invalidateQueries({
         queryKey: tenantKey(tenantId, QUERY_KEYS.ORDER, variables.orderId),
       });
+      // A discount changes the order total, so the remaining balance changes.
+      // The real balance key is [PAYMENTS, tenant, orderId, 'balance'] — the old
+      // [PAYMENTS, tenant, 'remaining_balance', orderId] matched nothing, so the
+      // payment modal kept showing a pre-discount balance.
       queryClient.invalidateQueries({
-        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, 'remaining_balance', variables.orderId),
+        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, variables.orderId, 'balance'),
       });
     },
   });

@@ -72,9 +72,10 @@ describe('useCreatePayment', () => {
     expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.PAYMENTS, 'o1'));
     expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.PAYMENTS_BY_STAFF));
     expect(invalidatedKeys).toContainEqual(tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDERS));
-    // CRITICAL: Must invalidate remaining balance so payment modal shows updated amount
+    // CRITICAL: must invalidate the remaining-balance query so the payment modal
+    // shows the updated amount. Its key is [PAYMENTS, tenant, orderId, 'balance'].
     expect(invalidatedKeys).toContainEqual(
-      tenantKey(TEST_TENANT_ID, QUERY_KEYS.PAYMENTS, 'remaining_balance', 'o1'),
+      tenantKey(TEST_TENANT_ID, QUERY_KEYS.PAYMENTS, 'o1', 'balance'),
     );
   });
 

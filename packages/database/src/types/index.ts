@@ -125,6 +125,13 @@ export interface OrderWithDetails extends Order {
   order_items: OrderItemWithMenuItem[];
   assigned_waiter?: Pick<Staff, 'full_name'> | null;
   delivery_person?: Pick<Staff, 'full_name'> | null;
+  // Loaded by orders.findAll / findById; used to show paid/remaining on the
+  // orders list and table-detail view. Optional — not every order query selects it.
+  order_payments?: OrderPaymentWithStaff[];
+  // Refund amounts (findAll), so the list/table views can surface "Refunded"
+  // instead of overstating "paid". Refunds are final — they don't re-open the
+  // balance; this is display-only.
+  refunds?: Array<{ amount: number }>;
 }
 
 export interface OrderItemWithMenuItem extends OrderItem {

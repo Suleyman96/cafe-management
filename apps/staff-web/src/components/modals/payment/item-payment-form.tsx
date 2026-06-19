@@ -9,6 +9,8 @@ type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
 
 interface ItemPaymentFormProps {
   unpaidItems: OrderItem[];
+  /** Units still owed per line item (ordered qty − already-paid units). */
+  remainingByItem: Map<string, number>;
   selectedItemQuantities: Map<string, number>;
   onUpdateQuantity: (itemId: string, maxQty: number, delta: number) => void;
   selectedItemsTotal: number;
@@ -19,6 +21,7 @@ interface ItemPaymentFormProps {
 
 export function ItemPaymentForm({
   unpaidItems,
+  remainingByItem,
   selectedItemQuantities,
   onUpdateQuantity,
   selectedItemsTotal,
@@ -35,6 +38,9 @@ export function ItemPaymentForm({
         {unpaidItems.map((item: OrderItem) => {
           const selectedQty = selectedItemQuantities.get(item.id) || 0;
           const isSelected = selectedQty > 0;
+          // Cap selection at the units still owed, not the full ordered qty —
+          // units already paid (this/other split payments) aren't selectable.
+          const remaining = remainingByItem.get(item.id) ?? item.quantity;
 
           return (
             <div
@@ -43,7 +49,7 @@ export function ItemPaymentForm({
             >
               <div className="flex-1">
                 <div className="font-medium text-sm">
-                  {item.quantity}x {item.item_name}
+                  {remaining}x {item.item_name}
                 </div>
                 {item.notes && <div className="text-xs text-gray-500">{item.notes}</div>}
                 <div className="text-xs text-gray-500">
@@ -51,10 +57,10 @@ export function ItemPaymentForm({
                 </div>
               </div>
 
-              {/* Quantity selector */}
+              {/* Quantity selector (bounded by units still owed) */}
               <div className="flex items-center gap-1.5">
                 <button
-                  onClick={() => onUpdateQuantity(item.id, item.quantity, -1)}
+                  onClick={() => onUpdateQuantity(item.id, remaining, -1)}
                   disabled={selectedQty <= 0}
                   className="h-7 w-7 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
@@ -62,8 +68,8 @@ export function ItemPaymentForm({
                 </button>
                 <span className="w-6 text-center text-sm font-medium">{selectedQty}</span>
                 <button
-                  onClick={() => onUpdateQuantity(item.id, item.quantity, 1)}
-                  disabled={selectedQty >= item.quantity}
+                  onClick={() => onUpdateQuantity(item.id, remaining, 1)}
+                  disabled={selectedQty >= remaining}
                   className="h-7 w-7 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -73,7 +79,7 @@ export function ItemPaymentForm({
               <div className="font-medium text-sm w-20 text-right">
                 {isSelected
                   ? formatPrice(selectedQty * item.item_price)
-                  : formatPrice(item.quantity * item.item_price)}
+                  : formatPrice(remaining * item.item_price)}
               </div>
             </div>
           );

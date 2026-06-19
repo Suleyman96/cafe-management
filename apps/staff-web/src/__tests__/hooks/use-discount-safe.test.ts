@@ -63,10 +63,12 @@ describe('useApplyDiscount', () => {
         tenantKey(TEST_TENANT_ID, QUERY_KEYS.ORDER, 'order-1'),
       );
 
-      // CRITICAL: Must invalidate remaining balance so payment modal gets fresh data
-      // This was a bug — missing this invalidation caused "fully paid" false positives
+      // CRITICAL: must invalidate the remaining-balance query so the payment
+      // modal gets fresh data after a discount changes the total. The real key
+      // is [PAYMENTS, tenant, orderId, 'balance'] — the old 'remaining_balance'
+      // variant matched nothing, so the invalidation never actually fired.
       expect(invalidatedKeys).toContainEqual(
-        tenantKey(TEST_TENANT_ID, QUERY_KEYS.PAYMENTS, 'remaining_balance', 'order-1'),
+        tenantKey(TEST_TENANT_ID, QUERY_KEYS.PAYMENTS, 'order-1', 'balance'),
       );
     });
   });

@@ -59,8 +59,11 @@ export function useCreateRefund() {
       queryClient.invalidateQueries({
         queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, 'refunds', variables.order_id),
       });
+      // Real balance key is [PAYMENTS, tenant, orderId, 'balance']; the old
+      // 'remaining_balance' variant matched nothing. (The PAYMENTS-prefix
+      // invalidation above already covers it, but keep this explicit + correct.)
       queryClient.invalidateQueries({
-        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, 'remaining_balance', variables.order_id),
+        queryKey: tenantKey(tenantId, QUERY_KEYS.PAYMENTS, variables.order_id, 'balance'),
       });
     },
   });

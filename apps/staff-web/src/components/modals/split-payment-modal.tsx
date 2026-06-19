@@ -106,13 +106,15 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
     }
   }, [isOpen]);
 
-  // Collect item IDs that have already been fully paid via specific_items payments
-  const paidItemIds = new Set<string>();
+  // Count already-paid UNITS per line item. specific_items payments carry one
+  // order_item_ids element per paid unit (duplicates = quantity), so a multi-
+  // unit line can be paid down a few units at a time.
+  const paidQtyByItem = new Map<string, number>();
   if (existingPayments) {
     for (const payment of existingPayments) {
       if (payment.payment_type === 'specific_items' && payment.order_item_ids) {
         for (const id of payment.order_item_ids) {
-          paidItemIds.add(id);
+          paidQtyByItem.set(id, (paidQtyByItem.get(id) ?? 0) + 1);
         }
       }
     }
@@ -122,8 +124,16 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   const payableItems =
     order?.order_items?.filter((item: OrderItem) => item.status !== 'cancelled') || [];
 
-  // Items available for selection in "Specific Items" mode (exclude already-paid items)
-  const unpaidItems = payableItems.filter((item: OrderItem) => !paidItemIds.has(item.id));
+  // Units still owed per line item, and the lines that still have any.
+  const remainingByItem = new Map<string, number>(
+    payableItems.map((item: OrderItem) => [
+      item.id,
+      item.quantity - (paidQtyByItem.get(item.id) ?? 0),
+    ]),
+  );
+  const unpaidItems = payableItems.filter(
+    (item: OrderItem) => (remainingByItem.get(item.id) ?? 0) > 0,
+  );
 
   // Use stored order data for consistency — the order's subtotal/tax/total were calculated
   // at creation time and should be used as-is, regardless of current tax settings
@@ -159,16 +169,6 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
   // Total for selected items including proportional tax
   const calculateSelectedItemsTotal = () => {
     return calculateSelectedItemsSubtotal() + calculateSelectedItemsTax();
-  };
-
-  // Check if all selected items are at full quantity (for specific_items payment type)
-  const allSelectedAtFullQuantity = () => {
-    for (const [itemId, qty] of selectedItemQuantities) {
-      if (qty <= 0) continue;
-      const item = unpaidItems.find((i: OrderItem) => i.id === itemId);
-      if (item && qty < item.quantity) return false;
-    }
-    return true;
   };
 
   const getPaymentAmount = () => {
@@ -213,23 +213,16 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
     } else if (paymentMode === 'partial') {
       paymentType = 'partial_amount';
     } else {
-      // Items mode
-      const balance = remainingBalance ?? orderTotal;
-      const hasTax = orderTax > 0;
-
-      // Use specific_items only when no tax (DB trigger validates amount == items subtotal without tax)
-      // and all selected items are at full quantity
-      if (!hasTax && allSelectedAtFullQuantity() && amount <= balance) {
-        paymentType = 'specific_items';
-        const unpaidItemIds = new Set(unpaidItems.map((i: OrderItem) => i.id));
-        orderItemIds = Array.from(selectedItemQuantities.entries())
-          .filter(([id, qty]) => qty > 0 && unpaidItemIds.has(id))
-          .map(([id]) => id);
-      } else {
-        // Use partial_amount — amount includes proportional tax, capped at remaining balance
-        paymentType = 'partial_amount';
-        amount = Math.min(amount, balance);
-      }
+      // Items mode → specific_items, with ONE order_item_ids element per selected
+      // unit (quantity-aware). The validate_items_payment trigger sums per
+      // element, adds proportional tax, and caps each line at its ordered
+      // quantity (counting prior payments), so already-paid units can't be paid
+      // again — works with or without tax, and for partial quantities.
+      paymentType = 'specific_items';
+      const selectableIds = new Set(unpaidItems.map((i: OrderItem) => i.id));
+      orderItemIds = Array.from(selectedItemQuantities.entries())
+        .filter(([id, qty]) => qty > 0 && selectableIds.has(id))
+        .flatMap(([id, qty]) => Array.from({ length: qty }, () => id));
     }
 
     try {
@@ -381,6 +374,7 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
           {paymentMode === 'items' && (
             <ItemPaymentForm
               unpaidItems={unpaidItems}
+              remainingByItem={remainingByItem}
               selectedItemQuantities={selectedItemQuantities}
               onUpdateQuantity={updateItemQuantity}
               selectedItemsTotal={calculateSelectedItemsTotal()}
@@ -389,6 +383,20 @@ export function SplitPaymentModal({ isOpen, onClose, order, onSuccess }: SplitPa
               t={t}
             />
           )}
+
+          {/* Explain the disabled Pay button when the selected items are worth
+              more than what's still owed (e.g. a partial payment already covered
+              part of the bill). Without this the button just silently disables. */}
+          {paymentMode === 'items' &&
+            hasSelectedItems &&
+            calculateSelectedItemsTotal() > (remainingBalance ?? orderTotal) + 0.01 && (
+              <p className="-mt-3 mb-6 text-sm text-red-600">
+                {t('payment.exceedsBalance', {
+                  amount: formatPrice(calculateSelectedItemsTotal()),
+                  balance: formatPrice(remainingBalance ?? orderTotal),
+                })}
+              </p>
+            )}
 
           {cafeSettings?.tips_enabled && !isFullyPaid && !isZeroTotal && (
             <TipInput

@@ -43,7 +43,12 @@ export function createOrderQueries(ctx: WrapperContext) {
               menu_item:menu_items(*)
             ),
             assigned_waiter:staff!orders_assigned_waiter_id_fkey(full_name),
-            delivery_person:staff!orders_delivery_person_id_fkey(full_name)
+            delivery_person:staff!orders_delivery_person_id_fkey(full_name),
+            order_payments(
+              *,
+              received_by_staff:staff!order_payments_received_by_fkey(full_name)
+            ),
+            refunds(amount)
           `)
           .order('created_at', { ascending: false }),
         ctx,

@@ -19,7 +19,12 @@ const CreatePaymentSchema = z.object({
   received_by: z.string().uuid(),
   tip_amount: z.number().min(0).optional().default(0),
   notes: z.string().optional().nullable(),
-  item_ids: z.array(z.string().uuid()).optional().nullable(),
+  // Must be `order_item_ids` (the DB column + what the web/mobile clients send).
+  // It was `item_ids`, so Zod stripped the real field, the service inserted NULL,
+  // and the validate_items_payment trigger rejected every specific_items payment
+  // with "order_item_ids must be provided". (Masked when tax > 0, since the modal
+  // falls back to partial_amount then.)
+  order_item_ids: z.array(z.string().uuid()).optional().nullable(),
   // Required (Blocker 1): payment routes are the highest-risk replay path.
   // A missing key forces a 400 instead of a duplicate charge.
   client_request_id: z.string().uuid(),
