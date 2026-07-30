@@ -1,0 +1,61 @@
+name: Nightly DB Backup
+
+# Free backup safety net while the prod Supabase project is on the Free plan
+# (which has no automated backups). Dumps roles + schema + data nightly and
+# stores them as a GitHub Actions artifact (retained 30 days, no external
+# storage or cost).
+#
+# ⚠️ RETIRE THIS AT THE FIRST PAYING TENANT. The artifact is a FULL plaintext
+# prod data dump downloadable by any repo collaborator — fine for pre-revenue
+# test data, but once real customer PII exists it conflicts with the privacy
+# policy. Move to Supabase Pro (daily backups) and/or encrypted offsite storage.
+#
+# The dump is a small pg_dump over the Supabase HTTP/DB connection; on a
+# low-volume DB the egress is negligible against the Free quota.
+#
+# Restore (manual, deliberate): `psql "$DB_URL" -f roles.sql` then `schema.sql`
+# then `data.sql`, or `supabase db reset` against a fresh project + `psql` the
+# data. Test a restore before you rely on it.
+
+on:
+  schedule:
+    - cron: '30 2 * * *' # 02:30 UTC daily (offset from data-retention at 03:17)
+  workflow_dispatch: # manual "back up now" from the Actions tab
+
+concurrency:
+  group: nightly-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Dump production database
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+
+    steps:
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.78.1 # match ci.yml / deploy-migrations.yml
+
+      - name: Link to production project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Dump roles, schema, and data
+        run: |
+          mkdir -p backup
+          supabase db dump --linked --role-only -f backup/roles.sql
+          supabase db dump --linked -f backup/schema.sql
+          supabase db dump --linked --data-only -f backup/data.sql
+          ls -lh backup
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backup/
+          retention-days: 30
+          if-no-files-found: error
