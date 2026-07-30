@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@gustri/design-tokens": "workspace:*",
+    "@sentry/nextjs": "^10.49.0",
     "@supabase/supabase-js": "^2.45.0",
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.441.0",
