@@ -45,7 +45,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         movement_type: data.movement_type,
         quantity_change: data.quantity_change,
         reason: data.reason || '',
-        performed_by: data.performed_by || planContext.staff.id,
+        // Audit integrity: actor from the verified JWT, never the body — a
+        // stock_movements row must attribute to the real caller.
+        performed_by: planContext.staff.id,
         client_request_id: data.client_request_id,
       },
       tenantId: planContext.staff.tenant_id,

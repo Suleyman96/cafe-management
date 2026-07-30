@@ -14,7 +14,9 @@ const CreateRefundSchema = z.object({
   amount: z.number().positive(),
   reason: z.string().min(1),
   refund_method: z.enum(['cash', 'card', 'digital']),
-  processed_by: z.string().uuid(),
+  // Optional + ignored: the server stamps the actor from the verified admin
+  // JWT (see below). Accepted only so older clients don't 400; never trusted.
+  processed_by: z.string().uuid().optional(),
   order_item_ids: z.array(z.string().uuid()).optional().nullable(),
   notes: z.string().optional().nullable(),
   // Required (Blocker 1): refunds must dedupe on retry. The trigger-based
@@ -37,9 +39,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { data, error } = await validateBody(request, CreateRefundSchema);
     if (error) return error;
 
+    // Audit integrity: stamp the actor from the verified admin JWT, never the
+    // body. `processed_by` is written to financial_audit_log — a spoofable id
+    // there undermines exactly the records used to resolve payment disputes.
+    // Spread-injected (not mutated) so the type is guaranteed non-optional.
     const { refund, deduped } = await createRefund(getSupabaseAdmin(), {
       orderId,
-      refundData: data,
+      refundData: { ...data, processed_by: adminOrError.id },
       tenantId: adminOrError.tenant_id,
     });
 

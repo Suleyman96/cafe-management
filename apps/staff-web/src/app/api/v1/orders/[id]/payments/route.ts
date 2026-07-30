@@ -16,7 +16,10 @@ const CreatePaymentSchema = z.object({
   amount: z.number().positive(),
   payment_method: PaymentMethodSchema,
   payment_type: PaymentTypeSchema,
-  received_by: z.string().uuid(),
+  // Optional + ignored: the server stamps the actor from the verified JWT
+  // (see below). Accepted here only so older clients that still send it don't
+  // 400 — the value is never trusted.
+  received_by: z.string().uuid().optional(),
   tip_amount: z.number().min(0).optional().default(0),
   notes: z.string().optional().nullable(),
   // Must be `order_item_ids` (the DB column + what the web/mobile clients send).
@@ -43,6 +46,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const { data, error } = await validateBody(request, CreatePaymentSchema);
     if (error) return error;
+
+    // Audit integrity: the actor is the verified caller, never a body-supplied
+    // id. `received_by` lands on the payment/financial trail — trusting the body
+    // would let any authenticated staff stamp a payment as someone else.
+    data.received_by = staffOrError.id;
 
     const { payment, deduped } = await createPayment(getSupabaseAdmin(), {
       orderId,

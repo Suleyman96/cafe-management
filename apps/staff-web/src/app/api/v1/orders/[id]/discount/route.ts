@@ -15,7 +15,9 @@ const ApplyDiscountSchema = z.object({
   discount_type: DiscountTypeSchema,
   discount_value: z.number().min(0),
   discount_reason: z.string().optional().nullable(),
-  discount_applied_by: z.string().uuid(),
+  // Optional + ignored: the server stamps the actor from the verified admin
+  // JWT (see below). Accepted only so older clients don't 400; never trusted.
+  discount_applied_by: z.string().uuid().optional(),
   // Required (Blocker 1): discount apply writes a financial_audit_log row
   // and must dedupe on replay so retries don't double-stamp the comp.
   client_request_id: z.string().uuid(),
@@ -40,7 +42,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       discountType: data.discount_type,
       discountValue: data.discount_value,
       discountReason: data.discount_reason,
-      discountAppliedBy: data.discount_applied_by,
+      // Audit integrity: actor from the verified admin JWT, not the body.
+      discountAppliedBy: adminOrError.id,
       clientRequestId: data.client_request_id,
       tenantId: adminOrError.tenant_id,
     });

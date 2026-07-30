@@ -5,23 +5,30 @@ export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
   if (process.env.NODE_ENV !== 'production') return;
 
-  // Production observability gate (Blocker 7). Only enforced when
+  // Production boot guard (Blocker 7). Only enforced when
   // NEXT_PUBLIC_SENTRY_DSN is set, which is the marker for "this is a
-  // real prod deploy with our observability stack wired up". Without
-  // the gate, a misconfigured Vercel project could ship to prod with
-  // rate limiting silently disabled — `rate-limit.ts` falls back to
-  // null limiters when the Upstash env is missing, so missing keys
-  // don't crash but they DO turn off all the rate-limit gates.
-  // Failing boot here surfaces the misconfiguration immediately.
+  // real prod deploy with our observability stack wired up". These
+  // security controls all FAIL OPEN when their env is missing — the
+  // process still boots, but the protection is silently off:
+  //   - Upstash: `rate-limit.ts` falls back to null limiters, so every
+  //     rate-limit gate (PIN brute-force, password-reset, customer spam)
+  //     is disabled.
+  //   - CUSTOMER_API_SIGNING_SECRET: `verifyCustomerSignature` becomes a
+  //     no-op, so the customer-web → staff-web proxy accepts unsigned
+  //     (spoofable) requests.
+  // Failing boot here surfaces the misconfiguration immediately instead
+  // of shipping a wide-open deploy.
   if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     const missing: string[] = [];
     if (!process.env.UPSTASH_REDIS_REST_URL) missing.push('UPSTASH_REDIS_REST_URL');
     if (!process.env.UPSTASH_REDIS_REST_TOKEN) missing.push('UPSTASH_REDIS_REST_TOKEN');
+    if (!process.env.CUSTOMER_API_SIGNING_SECRET) missing.push('CUSTOMER_API_SIGNING_SECRET');
     if (missing.length > 0) {
       throw new Error(
         `Production boot guard: required env not set: ${missing.join(', ')}. ` +
-          'Rate limiting depends on these. Set them in the Vercel project, or unset ' +
-          'NEXT_PUBLIC_SENTRY_DSN if this deploy is intentionally rate-limit-free.',
+          'Rate limiting and customer request-signing depend on these and fail open ' +
+          'without them. Set them in the Vercel project, or unset NEXT_PUBLIC_SENTRY_DSN ' +
+          'if this deploy is intentionally running without those protections.',
       );
     }
   }
