@@ -65,6 +65,9 @@ const UpdateSettingsSchema = z
     location_maps_url: z.string().nullable(),
     // Localization
     default_language: z.string().max(5),
+    // First-run onboarding: set when the owner finishes the getting-started
+    // checklist. Client sends an ISO timestamp; scoped to the caller's tenant.
+    onboarding_completed_at: z.string().datetime().nullable(),
   })
   .partial();
 

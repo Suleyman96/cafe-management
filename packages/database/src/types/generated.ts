@@ -63,6 +63,7 @@ export type Database = {
           location_maps_url: string | null
           minimum_delivery_amount: number | null
           minimum_order_amount: number
+          onboarding_completed_at: string | null
           prices_include_tax: boolean
           qr_ordering_enabled: boolean
           refund_type_to_confirm_threshold: number
@@ -108,6 +109,7 @@ export type Database = {
           location_maps_url?: string | null
           minimum_delivery_amount?: number | null
           minimum_order_amount?: number
+          onboarding_completed_at?: string | null
           prices_include_tax?: boolean
           qr_ordering_enabled?: boolean
           refund_type_to_confirm_threshold?: number
@@ -153,6 +155,7 @@ export type Database = {
           location_maps_url?: string | null
           minimum_delivery_amount?: number | null
           minimum_order_amount?: number
+          onboarding_completed_at?: string | null
           prices_include_tax?: boolean
           qr_ordering_enabled?: boolean
           refund_type_to_confirm_threshold?: number
