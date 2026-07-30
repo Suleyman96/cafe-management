@@ -94,6 +94,15 @@ const limiters = redis
         limiter: Ratelimit.slidingWindow(10, '60 s'),
         prefix: 'rl:customer-qr-token',
       }),
+      // GDPR data-portability export: dumps the tenant's entire dataset in one
+      // request (heavy read across ~25 tables). A legitimate admin runs this a
+      // handful of times ever; 3/5min per IP leaves room for a retry after a
+      // dropped download without letting the endpoint be used to hammer the DB.
+      'data-export': new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(3, '300 s'),
+        prefix: 'rl:data-export',
+      }),
     }
   : null;
 
@@ -109,7 +118,8 @@ export type RateLimitCategory =
   | 'waiter-call'
   | 'feedback'
   | 'order-cancel'
-  | 'customer-qr-token';
+  | 'customer-qr-token'
+  | 'data-export';
 
 export async function rateLimit(
   category: RateLimitCategory,
