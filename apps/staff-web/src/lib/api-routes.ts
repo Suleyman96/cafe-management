@@ -138,4 +138,15 @@ export const apiRoutes = {
         body: JSON.stringify(opts ?? {}),
       }),
   },
+
+  // Owner-only account closure (soft-close). The `confirmation` literal must be
+  // 'CLOSE' — the server rejects anything else. On success the caller's own
+  // session is dead (RLS reads cut off immediately), so the UI signs out.
+  tenant: {
+    deactivate: (data: { confirmation: 'CLOSE'; reason?: string | null }) =>
+      apiFetch<{ status: string; tenant_id: string }>('/api/v1/admin/tenant/deactivate', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  },
 };

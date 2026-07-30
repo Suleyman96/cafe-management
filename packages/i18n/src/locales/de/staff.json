@@ -1496,5 +1496,15 @@
   "weekdays.sun": "So",
   "weekdays.thu": "Do",
   "weekdays.tue": "Di",
-  "weekdays.wed": "Mi"
+  "weekdays.wed": "Mi",
+  "cafeSettings.dangerZone.title": "Gefahrenzone",
+  "cafeSettings.dangerZone.closeAccountDesc": "Das Konto dieses Restaurants dauerhaft schließen. Mitarbeiter verlieren sofort den Zugriff und Kunden können nicht mehr bestellen. Ihre Daten werden während einer Kulanzfrist aufbewahrt — zum Wiederöffnen den Support kontaktieren.",
+  "cafeSettings.dangerZone.closeAccountButton": "Konto schließen…",
+  "cafeSettings.dangerZone.modalTitle": "Dieses Konto schließen?",
+  "cafeSettings.dangerZone.modalWarning": "Damit wird das Konto für alle geschlossen. Alle Mitarbeiter werden abgemeldet und Kundenbestellungen werden gestoppt. Zum Wiederöffnen den Support vor Ablauf der Kulanzfrist kontaktieren.",
+  "cafeSettings.dangerZone.reasonLabel": "Grund (optional)",
+  "cafeSettings.dangerZone.typeToConfirm": "Zum Bestätigen {{phrase}} eingeben",
+  "cafeSettings.dangerZone.confirmButton": "Konto schließen",
+  "cafeSettings.dangerZone.closing": "Wird geschlossen…",
+  "cafeSettings.dangerZone.closeFailed": "Konto konnte nicht geschlossen werden. Bitte erneut versuchen."
 }

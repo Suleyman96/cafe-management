@@ -1496,5 +1496,15 @@
   "weekdays.sun": "კვი",
   "weekdays.thu": "ხუთ",
   "weekdays.tue": "სამ",
-  "weekdays.wed": "ოთხ"
+  "weekdays.wed": "ოთხ",
+  "cafeSettings.dangerZone.title": "საშიში ზონა",
+  "cafeSettings.dangerZone.closeAccountDesc": "სამუდამოდ დახურეთ ამ რესტორნის ანგარიში. პერსონალი მაშინვე კარგავს წვდომას და მომხმარებლები ვეღარ შეუკვეთავენ. თქვენი მონაცემები ინახება საშეღავათო პერიოდში — ხელახლა გასახსნელად დაუკავშირდით მხარდაჭერას.",
+  "cafeSettings.dangerZone.closeAccountButton": "ანგარიშის დახურვა…",
+  "cafeSettings.dangerZone.modalTitle": "დაიხუროს ეს ანგარიში?",
+  "cafeSettings.dangerZone.modalWarning": "ეს ხურავს ანგარიშს ყველასთვის. მთელი პერსონალი გამოვა სისტემიდან და მომხმარებელთა შეკვეთა შეჩერდება. ხელახლა გასახსნელად დაუკავშირდით მხარდაჭერას საშეღავათო პერიოდის დასრულებამდე.",
+  "cafeSettings.dangerZone.reasonLabel": "მიზეზი (არასავალდებულო)",
+  "cafeSettings.dangerZone.typeToConfirm": "დასადასტურებლად აკრიფეთ {{phrase}}",
+  "cafeSettings.dangerZone.confirmButton": "ანგარიშის დახურვა",
+  "cafeSettings.dangerZone.closing": "იხურება…",
+  "cafeSettings.dangerZone.closeFailed": "ანგარიშის დახურვა ვერ მოხერხდა. სცადეთ ხელახლა."
 }

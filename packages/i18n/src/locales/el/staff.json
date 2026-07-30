@@ -1496,5 +1496,15 @@
   "weekdays.sun": "Κυρ",
   "weekdays.thu": "Πέμ",
   "weekdays.tue": "Τρί",
-  "weekdays.wed": "Τετ"
+  "weekdays.wed": "Τετ",
+  "cafeSettings.dangerZone.title": "Ζώνη κινδύνου",
+  "cafeSettings.dangerZone.closeAccountDesc": "Κλείστε οριστικά τον λογαριασμό αυτού του εστιατορίου. Το προσωπικό χάνει αμέσως την πρόσβαση και οι πελάτες δεν μπορούν πλέον να παραγγείλουν. Τα δεδομένα σας διατηρούνται για μια περίοδο χάριτος — επικοινωνήστε με την υποστήριξη για επανενεργοποίηση.",
+  "cafeSettings.dangerZone.closeAccountButton": "Κλείσιμο λογαριασμού…",
+  "cafeSettings.dangerZone.modalTitle": "Κλείσιμο αυτού του λογαριασμού;",
+  "cafeSettings.dangerZone.modalWarning": "Αυτό κλείνει τον λογαριασμό για όλους. Όλο το προσωπικό αποσυνδέεται και οι παραγγελίες πελατών σταματούν. Για επανενεργοποίηση, επικοινωνήστε με την υποστήριξη πριν λήξει η περίοδος χάριτος.",
+  "cafeSettings.dangerZone.reasonLabel": "Λόγος (προαιρετικά)",
+  "cafeSettings.dangerZone.typeToConfirm": "Πληκτρολογήστε {{phrase}} για επιβεβαίωση",
+  "cafeSettings.dangerZone.confirmButton": "Κλείσιμο λογαριασμού",
+  "cafeSettings.dangerZone.closing": "Κλείσιμο…",
+  "cafeSettings.dangerZone.closeFailed": "Δεν ήταν δυνατό το κλείσιμο του λογαριασμού. Δοκιμάστε ξανά."
 }

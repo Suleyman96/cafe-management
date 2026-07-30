@@ -1496,5 +1496,15 @@
   "weekdays.sun": "Sun",
   "weekdays.thu": "Thu",
   "weekdays.tue": "Tue",
-  "weekdays.wed": "Wed"
+  "weekdays.wed": "Wed",
+  "cafeSettings.dangerZone.title": "Danger zone",
+  "cafeSettings.dangerZone.closeAccountDesc": "Permanently close this restaurant's account. Staff lose access immediately and customers can no longer order. Your data is kept during a grace period — contact support to reopen.",
+  "cafeSettings.dangerZone.closeAccountButton": "Close account…",
+  "cafeSettings.dangerZone.modalTitle": "Close this account?",
+  "cafeSettings.dangerZone.modalWarning": "This closes the account for everyone. All staff are signed out and customer ordering stops. To reopen, contact support before the grace period ends.",
+  "cafeSettings.dangerZone.reasonLabel": "Reason (optional)",
+  "cafeSettings.dangerZone.typeToConfirm": "Type {{phrase}} to confirm",
+  "cafeSettings.dangerZone.confirmButton": "Close account",
+  "cafeSettings.dangerZone.closing": "Closing…",
+  "cafeSettings.dangerZone.closeFailed": "Couldn't close the account. Please try again."
 }

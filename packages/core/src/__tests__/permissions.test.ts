@@ -53,7 +53,7 @@ describe('canPerform', () => {
   });
 
   describe('owner-only gates', () => {
-    const ownerOnlyActions: Action[] = ['view_reports', 'grant_owner_role'];
+    const ownerOnlyActions: Action[] = ['view_reports', 'grant_owner_role', 'close_account'];
 
     it.each(ownerOnlyActions)('allows owner only for %s', (action) => {
       expect(canPerform('owner', action)).toBe(true);

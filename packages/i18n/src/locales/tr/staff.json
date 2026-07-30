@@ -1496,5 +1496,15 @@
   "weekdays.sun": "Paz",
   "weekdays.thu": "Per",
   "weekdays.tue": "Sal",
-  "weekdays.wed": "Çar"
+  "weekdays.wed": "Çar",
+  "cafeSettings.dangerZone.title": "Tehlikeli bölge",
+  "cafeSettings.dangerZone.closeAccountDesc": "Bu restoranın hesabını kalıcı olarak kapatın. Personel erişimini hemen kaybeder ve müşteriler artık sipariş veremez. Verileriniz bir ödemesiz dönem boyunca saklanır — yeniden açmak için destekle iletişime geçin.",
+  "cafeSettings.dangerZone.closeAccountButton": "Hesabı kapat…",
+  "cafeSettings.dangerZone.modalTitle": "Bu hesap kapatılsın mı?",
+  "cafeSettings.dangerZone.modalWarning": "Bu, hesabı herkes için kapatır. Tüm personelin oturumu kapatılır ve müşteri siparişleri durur. Yeniden açmak için ödemesiz dönem sona ermeden destekle iletişime geçin.",
+  "cafeSettings.dangerZone.reasonLabel": "Neden (isteğe bağlı)",
+  "cafeSettings.dangerZone.typeToConfirm": "Onaylamak için {{phrase}} yazın",
+  "cafeSettings.dangerZone.confirmButton": "Hesabı kapat",
+  "cafeSettings.dangerZone.closing": "Kapatılıyor…",
+  "cafeSettings.dangerZone.closeFailed": "Hesap kapatılamadı. Lütfen tekrar deneyin."
 }

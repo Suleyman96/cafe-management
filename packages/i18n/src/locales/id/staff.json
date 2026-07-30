@@ -1496,5 +1496,15 @@
   "weekdays.sun": "Min",
   "weekdays.thu": "Kam",
   "weekdays.tue": "Sel",
-  "weekdays.wed": "Rab"
+  "weekdays.wed": "Rab",
+  "cafeSettings.dangerZone.title": "Zona berbahaya",
+  "cafeSettings.dangerZone.closeAccountDesc": "Tutup akun restoran ini secara permanen. Staf langsung kehilangan akses dan pelanggan tidak dapat memesan lagi. Data Anda disimpan selama masa tenggang — hubungi dukungan untuk membuka kembali.",
+  "cafeSettings.dangerZone.closeAccountButton": "Tutup akun…",
+  "cafeSettings.dangerZone.modalTitle": "Tutup akun ini?",
+  "cafeSettings.dangerZone.modalWarning": "Ini menutup akun untuk semua orang. Semua staf keluar dan pemesanan pelanggan berhenti. Untuk membuka kembali, hubungi dukungan sebelum masa tenggang berakhir.",
+  "cafeSettings.dangerZone.reasonLabel": "Alasan (opsional)",
+  "cafeSettings.dangerZone.typeToConfirm": "Ketik {{phrase}} untuk mengonfirmasi",
+  "cafeSettings.dangerZone.confirmButton": "Tutup akun",
+  "cafeSettings.dangerZone.closing": "Menutup…",
+  "cafeSettings.dangerZone.closeFailed": "Tidak dapat menutup akun. Silakan coba lagi."
 }

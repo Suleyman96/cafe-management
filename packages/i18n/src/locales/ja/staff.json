@@ -1496,5 +1496,15 @@
   "weekdays.sun": "日",
   "weekdays.thu": "木",
   "weekdays.tue": "火",
-  "weekdays.wed": "水"
+  "weekdays.wed": "水",
+  "cafeSettings.dangerZone.title": "危険な操作",
+  "cafeSettings.dangerZone.closeAccountDesc": "このレストランのアカウントを完全に閉鎖します。スタッフは直ちにアクセスできなくなり、お客様は注文できなくなります。データは猶予期間中保持されます。再開するにはサポートにお問い合わせください。",
+  "cafeSettings.dangerZone.closeAccountButton": "アカウントを閉鎖…",
+  "cafeSettings.dangerZone.modalTitle": "このアカウントを閉鎖しますか？",
+  "cafeSettings.dangerZone.modalWarning": "これによりアカウントは全員に対して閉鎖されます。すべてのスタッフはログアウトされ、お客様の注文は停止します。再開するには、猶予期間が終了する前にサポートにお問い合わせください。",
+  "cafeSettings.dangerZone.reasonLabel": "理由（任意）",
+  "cafeSettings.dangerZone.typeToConfirm": "確認するには {{phrase}} と入力してください",
+  "cafeSettings.dangerZone.confirmButton": "アカウントを閉鎖",
+  "cafeSettings.dangerZone.closing": "閉鎖しています…",
+  "cafeSettings.dangerZone.closeFailed": "アカウントを閉鎖できませんでした。もう一度お試しください。"
 }

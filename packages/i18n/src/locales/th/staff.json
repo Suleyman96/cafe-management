@@ -1496,5 +1496,15 @@
   "weekdays.sun": "อา.",
   "weekdays.thu": "พฤ.",
   "weekdays.tue": "อ.",
-  "weekdays.wed": "พ."
+  "weekdays.wed": "พ.",
+  "cafeSettings.dangerZone.title": "โซนอันตราย",
+  "cafeSettings.dangerZone.closeAccountDesc": "ปิดบัญชีของร้านอาหารนี้อย่างถาวร พนักงานจะสูญเสียการเข้าถึงทันทีและลูกค้าจะไม่สามารถสั่งอาหารได้อีก ข้อมูลของคุณจะถูกเก็บไว้ในช่วงผ่อนผัน — ติดต่อฝ่ายสนับสนุนเพื่อเปิดใหม่",
+  "cafeSettings.dangerZone.closeAccountButton": "ปิดบัญชี…",
+  "cafeSettings.dangerZone.modalTitle": "ปิดบัญชีนี้หรือไม่?",
+  "cafeSettings.dangerZone.modalWarning": "การดำเนินการนี้จะปิดบัญชีสำหรับทุกคน พนักงานทั้งหมดจะออกจากระบบและการสั่งซื้อของลูกค้าจะหยุดลง หากต้องการเปิดใหม่ โปรดติดต่อฝ่ายสนับสนุนก่อนสิ้นสุดช่วงผ่อนผัน",
+  "cafeSettings.dangerZone.reasonLabel": "เหตุผล (ไม่บังคับ)",
+  "cafeSettings.dangerZone.typeToConfirm": "พิมพ์ {{phrase}} เพื่อยืนยัน",
+  "cafeSettings.dangerZone.confirmButton": "ปิดบัญชี",
+  "cafeSettings.dangerZone.closing": "กำลังปิด…",
+  "cafeSettings.dangerZone.closeFailed": "ไม่สามารถปิดบัญชีได้ โปรดลองอีกครั้ง"
 }

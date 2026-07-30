@@ -1496,5 +1496,15 @@
   "weekdays.sun": "Dim",
   "weekdays.thu": "Jeu",
   "weekdays.tue": "Mar",
-  "weekdays.wed": "Mer"
+  "weekdays.wed": "Mer",
+  "cafeSettings.dangerZone.title": "Zone de danger",
+  "cafeSettings.dangerZone.closeAccountDesc": "Fermer définitivement le compte de ce restaurant. Le personnel perd immédiatement l'accès et les clients ne peuvent plus commander. Vos données sont conservées pendant une période de grâce — contactez le support pour rouvrir.",
+  "cafeSettings.dangerZone.closeAccountButton": "Fermer le compte…",
+  "cafeSettings.dangerZone.modalTitle": "Fermer ce compte ?",
+  "cafeSettings.dangerZone.modalWarning": "Cela ferme le compte pour tout le monde. Tout le personnel est déconnecté et les commandes des clients s'arrêtent. Pour rouvrir, contactez le support avant la fin de la période de grâce.",
+  "cafeSettings.dangerZone.reasonLabel": "Raison (facultatif)",
+  "cafeSettings.dangerZone.typeToConfirm": "Tapez {{phrase}} pour confirmer",
+  "cafeSettings.dangerZone.confirmButton": "Fermer le compte",
+  "cafeSettings.dangerZone.closing": "Fermeture…",
+  "cafeSettings.dangerZone.closeFailed": "Impossible de fermer le compte. Veuillez réessayer."
 }

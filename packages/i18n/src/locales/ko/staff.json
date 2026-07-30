@@ -1496,5 +1496,15 @@
   "weekdays.sun": "일",
   "weekdays.thu": "목",
   "weekdays.tue": "화",
-  "weekdays.wed": "수"
+  "weekdays.wed": "수",
+  "cafeSettings.dangerZone.title": "위험 구역",
+  "cafeSettings.dangerZone.closeAccountDesc": "이 레스토랑의 계정을 영구적으로 닫습니다. 직원은 즉시 접근 권한을 잃고 고객은 더 이상 주문할 수 없습니다. 데이터는 유예 기간 동안 보관됩니다 — 다시 열려면 지원팀에 문의하세요.",
+  "cafeSettings.dangerZone.closeAccountButton": "계정 닫기…",
+  "cafeSettings.dangerZone.modalTitle": "이 계정을 닫으시겠습니까?",
+  "cafeSettings.dangerZone.modalWarning": "이렇게 하면 모든 사람에 대해 계정이 닫힙니다. 모든 직원이 로그아웃되고 고객 주문이 중단됩니다. 다시 열려면 유예 기간이 끝나기 전에 지원팀에 문의하세요.",
+  "cafeSettings.dangerZone.reasonLabel": "사유 (선택 사항)",
+  "cafeSettings.dangerZone.typeToConfirm": "확인하려면 {{phrase}}을(를) 입력하세요",
+  "cafeSettings.dangerZone.confirmButton": "계정 닫기",
+  "cafeSettings.dangerZone.closing": "닫는 중…",
+  "cafeSettings.dangerZone.closeFailed": "계정을 닫을 수 없습니다. 다시 시도해 주세요."
 }

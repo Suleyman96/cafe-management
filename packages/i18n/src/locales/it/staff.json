@@ -1496,5 +1496,15 @@
   "weekdays.sun": "Dom",
   "weekdays.thu": "Gio",
   "weekdays.tue": "Mar",
-  "weekdays.wed": "Mer"
+  "weekdays.wed": "Mer",
+  "cafeSettings.dangerZone.title": "Zona pericolosa",
+  "cafeSettings.dangerZone.closeAccountDesc": "Chiudi definitivamente l'account di questo ristorante. Il personale perde subito l'accesso e i clienti non possono più ordinare. I tuoi dati vengono conservati durante un periodo di tolleranza — contatta l'assistenza per riaprire.",
+  "cafeSettings.dangerZone.closeAccountButton": "Chiudi account…",
+  "cafeSettings.dangerZone.modalTitle": "Chiudere questo account?",
+  "cafeSettings.dangerZone.modalWarning": "Questo chiude l'account per tutti. Tutto il personale viene disconnesso e gli ordini dei clienti si interrompono. Per riaprire, contatta l'assistenza prima della fine del periodo di tolleranza.",
+  "cafeSettings.dangerZone.reasonLabel": "Motivo (facoltativo)",
+  "cafeSettings.dangerZone.typeToConfirm": "Digita {{phrase}} per confermare",
+  "cafeSettings.dangerZone.confirmButton": "Chiudi account",
+  "cafeSettings.dangerZone.closing": "Chiusura…",
+  "cafeSettings.dangerZone.closeFailed": "Impossibile chiudere l'account. Riprova."
 }

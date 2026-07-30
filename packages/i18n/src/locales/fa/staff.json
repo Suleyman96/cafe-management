@@ -1496,5 +1496,15 @@
   "weekdays.sun": "یک",
   "weekdays.thu": "پن",
   "weekdays.tue": "سه",
-  "weekdays.wed": "چه"
+  "weekdays.wed": "چه",
+  "cafeSettings.dangerZone.title": "منطقه خطر",
+  "cafeSettings.dangerZone.closeAccountDesc": "حساب این رستوران را برای همیشه ببندید. کارکنان بلافاصله دسترسی خود را از دست می‌دهند و مشتریان دیگر نمی‌توانند سفارش دهند. داده‌های شما در یک دوره مهلت نگهداری می‌شود — برای بازگشایی با پشتیبانی تماس بگیرید.",
+  "cafeSettings.dangerZone.closeAccountButton": "بستن حساب…",
+  "cafeSettings.dangerZone.modalTitle": "این حساب بسته شود؟",
+  "cafeSettings.dangerZone.modalWarning": "این کار حساب را برای همه می‌بندد. همه کارکنان از سیستم خارج می‌شوند و سفارش مشتری متوقف می‌شود. برای بازگشایی، پیش از پایان دوره مهلت با پشتیبانی تماس بگیرید.",
+  "cafeSettings.dangerZone.reasonLabel": "دلیل (اختیاری)",
+  "cafeSettings.dangerZone.typeToConfirm": "برای تأیید {{phrase}} را تایپ کنید",
+  "cafeSettings.dangerZone.confirmButton": "بستن حساب",
+  "cafeSettings.dangerZone.closing": "در حال بستن…",
+  "cafeSettings.dangerZone.closeFailed": "بستن حساب ممکن نشد. لطفاً دوباره تلاش کنید."
 }

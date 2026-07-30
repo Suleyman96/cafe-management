@@ -6,6 +6,7 @@ import { Bell, Palette, Phone, RotateCcw, Save, Store } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { BrandingSettingsTab } from '@/components/settings/branding-settings-tab';
+import { CloseAccountSection } from '@/components/settings/close-account-section';
 import { ContactSettingsTab } from '@/components/settings/contact-settings-tab';
 import { GeneralSettingsTab } from '@/components/settings/general-settings-tab';
 import { NotificationSettingsTab } from '@/components/settings/notification-settings-tab';
@@ -16,6 +17,7 @@ import type { CafeSettingsFormData } from '@/types/settings';
 export default function CafeSettingsPage() {
   const { t } = useTranslation('staff');
   const canEditSettings = useCanPerform('edit_settings');
+  const canCloseAccount = useCanPerform('close_account');
   const { data: settings, isLoading } = useCafeSettings();
   const updateSettings = useUpdateCafeSettings();
 
@@ -241,6 +243,9 @@ export default function CafeSettingsPage() {
         <ContactSettingsTab formData={formData} onChange={handleChange} />
       )}
       {activeTab === 'notifications' && <NotificationSettingsTab />}
+
+      {/* Owner-only account closure. Server re-checks role === 'owner'. */}
+      {canCloseAccount && <CloseAccountSection />}
 
       {/* Save button at bottom for mobile */}
       {hasChanges && (

@@ -1496,5 +1496,15 @@
   "weekdays.sun": "Нд",
   "weekdays.thu": "Чт",
   "weekdays.tue": "Вт",
-  "weekdays.wed": "Ср"
+  "weekdays.wed": "Ср",
+  "cafeSettings.dangerZone.title": "Небезпечна зона",
+  "cafeSettings.dangerZone.closeAccountDesc": "Назавжди закрийте обліковий запис цього ресторану. Персонал одразу втрачає доступ, а клієнти більше не можуть замовляти. Ваші дані зберігаються протягом пільгового періоду — зверніться до підтримки, щоб відкрити знову.",
+  "cafeSettings.dangerZone.closeAccountButton": "Закрити акаунт…",
+  "cafeSettings.dangerZone.modalTitle": "Закрити цей акаунт?",
+  "cafeSettings.dangerZone.modalWarning": "Це закриє акаунт для всіх. Усі співробітники вийдуть із системи, а замовлення клієнтів припиняться. Щоб відкрити знову, зверніться до підтримки до завершення пільгового періоду.",
+  "cafeSettings.dangerZone.reasonLabel": "Причина (необов'язково)",
+  "cafeSettings.dangerZone.typeToConfirm": "Введіть {{phrase}} для підтвердження",
+  "cafeSettings.dangerZone.confirmButton": "Закрити акаунт",
+  "cafeSettings.dangerZone.closing": "Закриття…",
+  "cafeSettings.dangerZone.closeFailed": "Не вдалося закрити акаунт. Спробуйте ще раз."
 }

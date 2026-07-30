@@ -1496,5 +1496,15 @@
   "weekdays.sun": "أح",
   "weekdays.thu": "خم",
   "weekdays.tue": "ثل",
-  "weekdays.wed": "أر"
+  "weekdays.wed": "أر",
+  "cafeSettings.dangerZone.title": "منطقة الخطر",
+  "cafeSettings.dangerZone.closeAccountDesc": "أغلق حساب هذا المطعم نهائيًا. يفقد الموظفون الوصول فورًا ولا يمكن للعملاء الطلب بعد الآن. يتم الاحتفاظ ببياناتك خلال فترة سماح — تواصل مع الدعم لإعادة الفتح.",
+  "cafeSettings.dangerZone.closeAccountButton": "إغلاق الحساب…",
+  "cafeSettings.dangerZone.modalTitle": "إغلاق هذا الحساب؟",
+  "cafeSettings.dangerZone.modalWarning": "هذا يغلق الحساب للجميع. يتم تسجيل خروج جميع الموظفين وتتوقف طلبات العملاء. لإعادة الفتح، تواصل مع الدعم قبل انتهاء فترة السماح.",
+  "cafeSettings.dangerZone.reasonLabel": "السبب (اختياري)",
+  "cafeSettings.dangerZone.typeToConfirm": "اكتب {{phrase}} للتأكيد",
+  "cafeSettings.dangerZone.confirmButton": "إغلاق الحساب",
+  "cafeSettings.dangerZone.closing": "جارٍ الإغلاق…",
+  "cafeSettings.dangerZone.closeFailed": "تعذّر إغلاق الحساب. يرجى المحاولة مرة أخرى."
 }

@@ -1496,5 +1496,15 @@
   "weekdays.sun": "B.",
   "weekdays.thu": "C.a.",
   "weekdays.tue": "Ç.a.",
-  "weekdays.wed": "Ç."
+  "weekdays.wed": "Ç.",
+  "cafeSettings.dangerZone.title": "Təhlükə zonası",
+  "cafeSettings.dangerZone.closeAccountDesc": "Bu restoranın hesabını birdəfəlik bağlayın. İşçilər dərhal girişi itirir və müştərilər artıq sifariş verə bilmir. Məlumatlarınız güzəşt müddətində saxlanılır — yenidən açmaq üçün dəstəklə əlaqə saxlayın.",
+  "cafeSettings.dangerZone.closeAccountButton": "Hesabı bağla…",
+  "cafeSettings.dangerZone.modalTitle": "Bu hesab bağlansın?",
+  "cafeSettings.dangerZone.modalWarning": "Bu, hesabı hər kəs üçün bağlayır. Bütün işçilər sistemdən çıxarılır və müştəri sifarişi dayanır. Yenidən açmaq üçün güzəşt müddəti bitməmişdən əvvəl dəstəklə əlaqə saxlayın.",
+  "cafeSettings.dangerZone.reasonLabel": "Səbəb (istəyə bağlı)",
+  "cafeSettings.dangerZone.typeToConfirm": "Təsdiq üçün {{phrase}} yazın",
+  "cafeSettings.dangerZone.confirmButton": "Hesabı bağla",
+  "cafeSettings.dangerZone.closing": "Bağlanır…",
+  "cafeSettings.dangerZone.closeFailed": "Hesab bağlanmadı. Zəhmət olmasa yenidən cəhd edin."
 }

@@ -1496,5 +1496,15 @@
   "weekdays.sun": "Жс",
   "weekdays.thu": "Бс",
   "weekdays.tue": "Сс",
-  "weekdays.wed": "Ср"
+  "weekdays.wed": "Ср",
+  "cafeSettings.dangerZone.title": "Қауіпті аймақ",
+  "cafeSettings.dangerZone.closeAccountDesc": "Осы мейрамхананың есептік жазбасын біржола жабыңыз. Қызметкерлер қолжетімділікті бірден жоғалтады, ал тұтынушылар енді тапсырыс бере алмайды. Деректеріңіз жеңілдік мерзімінде сақталады — қайта ашу үшін қолдау қызметіне хабарласыңыз.",
+  "cafeSettings.dangerZone.closeAccountButton": "Есептік жазбаны жабу…",
+  "cafeSettings.dangerZone.modalTitle": "Осы есептік жазба жабылсын ба?",
+  "cafeSettings.dangerZone.modalWarning": "Бұл есептік жазбаны барлығы үшін жабады. Барлық қызметкерлер жүйеден шығарылады және тұтынушы тапсырысы тоқтайды. Қайта ашу үшін жеңілдік мерзімі аяқталғанға дейін қолдау қызметіне хабарласыңыз.",
+  "cafeSettings.dangerZone.reasonLabel": "Себебі (міндетті емес)",
+  "cafeSettings.dangerZone.typeToConfirm": "Растау үшін {{phrase}} деп теріңіз",
+  "cafeSettings.dangerZone.confirmButton": "Есептік жазбаны жабу",
+  "cafeSettings.dangerZone.closing": "Жабылуда…",
+  "cafeSettings.dangerZone.closeFailed": "Есептік жазбаны жабу мүмкін болмады. Қайталап көріңіз."
 }

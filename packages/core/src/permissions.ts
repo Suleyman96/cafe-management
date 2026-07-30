@@ -28,7 +28,8 @@ export type Action =
   | 'manage_expenses'
   | 'mark_item_ready'
   | 'view_reports'
-  | 'grant_owner_role';
+  | 'grant_owner_role'
+  | 'close_account';
 
 const ADMIN_OR_OWNER: ReadonlySet<UserRole> = new Set(['admin', 'owner']);
 const KITCHEN_ADMIN_OR_OWNER: ReadonlySet<UserRole> = new Set(['kitchen', 'admin', 'owner']);
@@ -48,6 +49,10 @@ const ACTION_ALLOWED_ROLES: Record<Action, ReadonlySet<UserRole>> = {
   mark_item_ready: KITCHEN_ADMIN_OR_OWNER,
   view_reports: OWNER_ONLY,
   grant_owner_role: OWNER_ONLY,
+  // Closing the whole account is the most consequential org action — owner
+  // only. Server-side the route re-checks `role === 'owner'` (this gate just
+  // decides whether the UI offers the danger zone at all).
+  close_account: OWNER_ONLY,
 };
 
 export function canPerform(role: UserRole | null | undefined, action: Action): boolean {

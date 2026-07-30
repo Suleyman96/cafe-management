@@ -1496,5 +1496,15 @@
   "weekdays.sun": "Yak",
   "weekdays.thu": "Pay",
   "weekdays.tue": "Sesh",
-  "weekdays.wed": "Chor"
+  "weekdays.wed": "Chor",
+  "cafeSettings.dangerZone.title": "Xavfli hudud",
+  "cafeSettings.dangerZone.closeAccountDesc": "Ushbu restoran hisobini butunlay yoping. Xodimlar darhol kirishni yo'qotadi va mijozlar endi buyurtma bera olmaydi. Ma'lumotlaringiz imtiyozli davrda saqlanadi — qayta ochish uchun qo'llab-quvvatlashga murojaat qiling.",
+  "cafeSettings.dangerZone.closeAccountButton": "Hisobni yopish…",
+  "cafeSettings.dangerZone.modalTitle": "Ushbu hisob yopilsinmi?",
+  "cafeSettings.dangerZone.modalWarning": "Bu hisobni hamma uchun yopadi. Barcha xodimlar tizimdan chiqariladi va mijozlar buyurtmasi to'xtaydi. Qayta ochish uchun imtiyozli davr tugashidan oldin qo'llab-quvvatlashga murojaat qiling.",
+  "cafeSettings.dangerZone.reasonLabel": "Sabab (ixtiyoriy)",
+  "cafeSettings.dangerZone.typeToConfirm": "Tasdiqlash uchun {{phrase}} deb yozing",
+  "cafeSettings.dangerZone.confirmButton": "Hisobni yopish",
+  "cafeSettings.dangerZone.closing": "Yopilmoqda…",
+  "cafeSettings.dangerZone.closeFailed": "Hisobni yopib bo'lmadi. Iltimos, qayta urinib ko'ring."
 }
