@@ -1,0 +1,67 @@
+name: Deploy Edge Functions
+
+# Deploys Supabase edge functions to production. Before this, `send-push`
+# (the order/waiter-call push notification sender) existed in the repo but no
+# workflow ever deployed it — so it could never run in prod. Runs on pushes to
+# main that touch supabase/functions/**, plus manual dispatch.
+#
+# send-push needs NO custom secrets: it reads only SUPABASE_URL /
+# SUPABASE_SERVICE_ROLE_KEY (auto-injected by the edge runtime) and posts to
+# Expo's public push endpoint. If a future function needs secrets, add a
+# `supabase secrets set ...` step here.
+#
+# NOTE (separate gap): deploying the function does not by itself make push fire
+# — something must INVOKE it (a Supabase Database Webhook, or a pg_net trigger
+# on orders/waiter_calls INSERT) with a service-role bearer. That wiring is not
+# yet in the repo; see docs/go-live-checklist.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-functions
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy edge functions to production
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.78.1 # match ci.yml / deploy-migrations.yml
+
+      # Deploy EVERY function under supabase/functions/, not just send-push.
+      # The `paths:` trigger fires on any functions/** change, so hardcoding a
+      # single name would let a newly-added function push a green "deploy" run
+      # without actually deploying it. Looping keeps deploy coverage in lockstep
+      # with what exists. `_shared` (common Deno code, no config.toml) is skipped.
+      - name: Deploy all edge functions
+        run: |
+          shopt -s nullglob
+          deployed=0
+          for dir in supabase/functions/*/; do
+            name="$(basename "$dir")"
+            [ "$name" = "_shared" ] && continue
+            echo "::group::Deploying $name"
+            supabase functions deploy "$name" --project-ref "$SUPABASE_PROJECT_ID"
+            echo "::endgroup::"
+            deployed=$((deployed + 1))
+          done
+          if [ "$deployed" -eq 0 ]; then
+            echo "No edge functions found to deploy" >&2
+            exit 1
+          fi
+          echo "Deployed $deployed function(s)."
