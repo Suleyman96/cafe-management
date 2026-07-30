@@ -34,7 +34,7 @@ function cacheKey(staffId: string, tenantId: string) {
   return `${staffId}:${tenantId}`;
 }
 
-export type TenantClaimError = 'invalid_tenant' | 'tenant_claim_mismatch';
+export type TenantClaimError = 'invalid_tenant' | 'tenant_claim_mismatch' | 'tenant_inactive';
 
 export async function verifyTenantClaim(
   staffId: string,
@@ -50,9 +50,13 @@ export async function verifyTenantClaim(
 
   // Tenant existence check first — invalid_tenant is a different error from
   // mismatch, useful both for logs and for the eventual SOC alert rule.
+  // `is_active` is fetched in the same SELECT (no extra round-trip) to gate the
+  // service-role /api/v1/* write path for closed tenants — RLS already blocks
+  // direct reads via current_tenant_id(), but these endpoints bypass RLS, so a
+  // closed account could otherwise still move money (refunds/discounts) here.
   const { data: tenant, error: tenantErr } = await client
     .from('tenants')
-    .select('id')
+    .select('id, is_active')
     .eq('id', tenantId)
     .maybeSingle();
   if (tenantErr || !tenant) {
@@ -62,6 +66,18 @@ export async function verifyTenantClaim(
       extra: { reason: 'invalid_tenant', staffId, tenantId },
     });
     return 'invalid_tenant';
+  }
+  if (tenant.is_active === false) {
+    // Soft-closed tenant. Cache as not-ok so repeat calls stay blocked within
+    // the 30s window (same trust window as the rest of the auth cache). Undo is
+    // support-only — a deactivated owner must not be able to reactivate through
+    // an endpoint that this very gate would let them reach.
+    cache.set(key, { expiresAt: now + TTL_MS, ok: false });
+    Sentry.captureMessage('tenant_inactive', {
+      level: 'warning',
+      extra: { reason: 'tenant_inactive', staffId, tenantId },
+    });
+    return 'tenant_inactive';
   }
 
   const { data: staff, error: staffErr } = await client

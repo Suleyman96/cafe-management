@@ -1894,6 +1894,9 @@ export type Database = {
           billing_email: string | null
           created_at: string | null
           current_period_end: string | null
+          deactivated_at: string | null
+          deactivated_by: string | null
+          deactivation_reason: string | null
           id: string
           is_active: boolean
           name: string
@@ -1907,6 +1910,9 @@ export type Database = {
           billing_email?: string | null
           created_at?: string | null
           current_period_end?: string | null
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivation_reason?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -1920,6 +1926,9 @@ export type Database = {
           billing_email?: string | null
           created_at?: string | null
           current_period_end?: string | null
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivation_reason?: string | null
           id?: string
           is_active?: boolean
           name?: string
@@ -1929,7 +1938,15 @@ export type Database = {
           subscription_status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tenants_deactivated_by_fkey"
+            columns: ["deactivated_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       waiter_calls: {
         Row: {

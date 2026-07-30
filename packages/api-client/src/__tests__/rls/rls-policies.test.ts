@@ -698,3 +698,75 @@ describe('RLS Policies — Cross-tenant write isolation', () => {
     expect(error !== null || (data ?? []).length === 0).toBe(true);
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────
+// Tenant soft-close (migration 20260729000001). Deactivating a tenant must
+// collapse current_tenant_id() to NULL so every tenant-scoped RLS policy
+// denies — the single chokepoint that closes both staff and customer access.
+// ──────────────────────────────────────────────────────────────────────────
+describe('RLS Policies — Tenant soft-close (deactivation gate)', () => {
+  // Service-role client for fixture toggling (bypasses RLS). This file has no
+  // file-scope service client, so create one from the in-scope SERVICE_ROLE_KEY.
+  const svcClient = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY);
+  let staffClient: ReturnType<typeof createClient>;
+  let adminTenantId: string;
+
+  beforeAll(async () => {
+    const { data, error } = await createClient(SUPABASE_URL, ANON_KEY).auth.signInWithPassword({
+      email: 'admin@test.com',
+      password: 'test1234',
+    });
+    if (error || !data.session) {
+      throw new Error(`Failed to sign in: ${error?.message || 'no session'}`);
+    }
+    staffClient = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${data.session.access_token}` } },
+    });
+
+    const { data: staffRow, error: staffErr } = await svcClient
+      .from('staff')
+      .select('tenant_id')
+      .eq('email', 'admin@test.com')
+      .single();
+    if (staffErr || !staffRow?.tenant_id) {
+      throw new Error(`Could not resolve admin tenant_id: ${staffErr?.message}`);
+    }
+    adminTenantId = staffRow.tenant_id;
+  });
+
+  afterAll(async () => {
+    // Always restore — the seed tenant is shared with every other suite.
+    await svcClient
+      .from('tenants')
+      .update({
+        is_active: true,
+        deactivated_at: null,
+        deactivated_by: null,
+        deactivation_reason: null,
+      })
+      .eq('id', adminTenantId);
+  });
+
+  test('deactivating the tenant collapses current_tenant_id() → authed reads return 0', async () => {
+    // Probe `cafe_settings`: tenant-scoped ONLY (no public policy since
+    // migration 20260430000002, and no per-user self-row policy like `staff`
+    // has), exactly one seed row per tenant — so it cleanly reflects whether
+    // current_tenant_id() resolved.
+    const before = await staffClient.from('cafe_settings').select('*');
+    expect(before.error).toBeNull();
+    expect(before.data!.length).toBeGreaterThanOrEqual(1);
+
+    // Soft-close the tenant (what POST /api/v1/admin/tenant/deactivate does).
+    const { error: deErr } = await svcClient
+      .from('tenants')
+      .update({ is_active: false })
+      .eq('id', adminTenantId);
+    expect(deErr).toBeNull();
+
+    // Same valid session, but current_tenant_id() now resolves to NULL, so the
+    // `tenant_id = current_tenant_id()` policy denies every row.
+    const after = await staffClient.from('cafe_settings').select('*');
+    expect(after.error).toBeNull();
+    expect(after.data).toHaveLength(0);
+  });
+});
