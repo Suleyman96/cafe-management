@@ -82,19 +82,31 @@ describe('postLoginSideEffects', () => {
 
     await postLoginSideEffects('staff-1');
 
-    await vi.waitFor(() => {
-      expect(db.schedules.findByStaffAndDate).toHaveBeenCalledWith('staff-1', today);
-    });
+    // `postLoginSideEffects` fires the clock-in as a fire-and-forget chain
+    // (updateLastLogin → findByStaffAndDate → getSession(withTimeout) → fetch).
+    // On a coverage-instrumented CI runner that chain can take >1s, so the
+    // default 1000ms waitFor timeout races it and flakes (observed on PR CI at
+    // ~1018ms). Give it real headroom — this asserts an async side effect, not
+    // latency.
+    await vi.waitFor(
+      () => {
+        expect(db.schedules.findByStaffAndDate).toHaveBeenCalledWith('staff-1', today);
+      },
+      { timeout: 5000 },
+    );
 
-    await vi.waitFor(() => {
-      expect(fetchSpy).toHaveBeenCalledWith(
-        '/api/v1/schedules/clock',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ scheduleId: 'sched-1', action: 'clock_in' }),
-        }),
-      );
-    });
+    await vi.waitFor(
+      () => {
+        expect(fetchSpy).toHaveBeenCalledWith(
+          '/api/v1/schedules/clock',
+          expect.objectContaining({
+            method: 'POST',
+            body: JSON.stringify({ scheduleId: 'sched-1', action: 'clock_in' }),
+          }),
+        );
+      },
+      { timeout: 5000 },
+    );
 
     fetchSpy.mockRestore();
   });
