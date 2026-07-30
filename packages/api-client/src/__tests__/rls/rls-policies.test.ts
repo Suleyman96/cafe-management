@@ -220,6 +220,61 @@ describe('RLS — get_active_order_for_table QR-token capability', () => {
   });
 });
 
+// Migration 20260728000001 — self-serve signup provisions a tenant via the
+// auth.users trigger, and MUST force plan='free' regardless of a client-supplied
+// plan (the old `raw_user_meta_data->>'plan'` read was a self-grant vector).
+describe('Self-serve signup provisioning (migration 20260728000001)', () => {
+  const uniq = `${Date.now()}`;
+  const email = `provtest-${uniq}@example.com`;
+  const cafeName = `Provision Test Cafe ${uniq}`;
+  let userId: string | null = null;
+  let tenantId: string | null = null;
+
+  afterAll(async () => {
+    if (tenantId) await svc.from('tenants').delete().eq('id', tenantId); // cascades staff/settings/categories
+    if (userId) await svc.auth.admin.deleteUser(userId);
+  });
+
+  test('provisions a FREE tenant + owner + defaults, ignoring a client-claimed paid plan', async () => {
+    const { data, error } = await svc.auth.admin.createUser({
+      email,
+      password: 'test1234!',
+      email_confirm: true,
+      // Malicious: try to self-grant 'business' via signup metadata.
+      user_metadata: {
+        signup: 'true',
+        restaurant_name: cafeName,
+        plan: 'business',
+        full_name: 'Eve',
+      },
+    });
+    expect(error).toBeNull();
+    userId = data.user?.id ?? null;
+    expect(userId).toBeTruthy();
+
+    const { data: tenant } = await svc
+      .from('tenants')
+      .select('id, plan')
+      .eq('name', cafeName)
+      .single();
+    tenantId = tenant?.id ?? null;
+    expect(tenant?.plan).toBe('free'); // NOT 'business' — self-grant blocked
+
+    const { data: staff } = await svc
+      .from('staff')
+      .select('role')
+      .eq('auth_user_id', userId!)
+      .single();
+    expect(staff?.role).toBe('owner');
+
+    const { count: taskCats } = await svc
+      .from('task_categories')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId!);
+    expect(taskCats).toBe(5);
+  });
+});
+
 describe('RLS Policies — Authenticated Access', () => {
   let staffClient: ReturnType<typeof createClient>;
 

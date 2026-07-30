@@ -1888,30 +1888,42 @@ export type Database = {
       }
       tenants: {
         Row: {
+          billing_email: string | null
           created_at: string | null
+          current_period_end: string | null
           id: string
           is_active: boolean
           name: string
           plan: string
           slug: string
+          stripe_customer_id: string | null
+          subscription_status: string | null
           updated_at: string | null
         }
         Insert: {
+          billing_email?: string | null
           created_at?: string | null
+          current_period_end?: string | null
           id?: string
           is_active?: boolean
           name: string
           plan?: string
           slug: string
+          stripe_customer_id?: string | null
+          subscription_status?: string | null
           updated_at?: string | null
         }
         Update: {
+          billing_email?: string | null
           created_at?: string | null
+          current_period_end?: string | null
           id?: string
           is_active?: boolean
           name?: string
           plan?: string
           slug?: string
+          stripe_customer_id?: string | null
+          subscription_status?: string | null
           updated_at?: string | null
         }
         Relationships: []

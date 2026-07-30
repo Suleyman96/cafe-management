@@ -55,9 +55,12 @@ function SignupForm() {
         email,
         password,
         options: {
+          // Only `signup` is sent — the server provisions every self-serve
+          // tenant on the free plan and IGNORES any client-supplied plan
+          // (migration 20260728000001). We don't forward `plan` so there's no
+          // illusion the client controls it; upgrades happen via billing later.
           data: {
             signup: 'true',
-            plan,
           },
           emailRedirectTo: `${STAFF_APP_URL}/auth/callback?next=/`,
         },
