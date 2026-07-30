@@ -14,17 +14,21 @@
 
 import type { Database } from '@gustri/database/types';
 import { createClient } from '@supabase/supabase-js';
-import { beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
 const SUPABASE_URL = 'http://127.0.0.1:54321';
 const ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+const SERVICE_ROLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
 
 // Anonymous client — no auth. Typed with `<Database>` so PostgREST can
 // infer column types on `.insert(...)`, `.update(...)`, etc; without it
 // every column narrows to `never` and tests that probe specific fields
 // fail to compile (the bug fixed alongside this file's RLS sweep).
 const anonClient = createClient<Database>(SUPABASE_URL, ANON_KEY);
+// Service-role client — bypasses RLS, used only to seed fixtures.
+const svc = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 describe('RLS Policies — Anonymous Access', () => {
   test('can read menu items (intentionally public)', async () => {
@@ -97,6 +101,122 @@ describe('RLS Policies — Anonymous Access', () => {
   test('cannot read staff_schedules', async () => {
     const { data } = await anonClient.from('staff_schedules').select('*');
     expect(data).toHaveLength(0);
+  });
+});
+
+// Migration 20260727000001 — the dine-in order RPC must treat the table's
+// qr_code as the capability. table_id alone is enumerable via the public anon
+// key (tables are readable), so an existence-only check let any anonymous user
+// scrape every tenant's live orders. These tests lock the fix in.
+describe('RLS — get_active_order_for_table QR-token capability', () => {
+  const TENANT_1 = '00000000-0000-0000-0000-000000000001';
+  const TABLE_ID = '20000000-0000-0000-0000-000000000001'; // seed table (tenant 1)
+  let qrToken = '';
+  let createdOrderId: string | null = null;
+
+  beforeAll(async () => {
+    // The table's secret QR code (only readable via service role / a real scan).
+    const { data: tbl, error: tblErr } = await svc
+      .from('tables')
+      .select('qr_code')
+      .eq('id', TABLE_ID)
+      .single();
+    if (tblErr || !tbl?.qr_code) throw new Error(`seed table qr_code missing: ${tblErr?.message}`);
+    qrToken = tbl.qr_code;
+
+    // Seed an active dine-in order on that table.
+    const { data: order, error } = await svc
+      .from('orders')
+      .insert({
+        tenant_id: TENANT_1,
+        table_id: TABLE_ID,
+        status: 'new',
+        order_type: 'dine_in',
+        source: 'customer',
+        subtotal: 10,
+        tax: 1,
+        total: 11,
+      })
+      .select('id')
+      .single();
+    if (error || !order) throw new Error(`failed to seed order: ${error?.message}`);
+    createdOrderId = order.id;
+  });
+
+  afterAll(async () => {
+    if (createdOrderId) await svc.from('orders').delete().eq('id', createdOrderId);
+  });
+
+  test('anon WITH the correct qr_token reads the active order', async () => {
+    const { data, error } = await (anonClient.rpc as any)('get_active_order_for_table', {
+      p_table_id: TABLE_ID,
+      p_qr_token: qrToken,
+    });
+    expect(error).toBeNull();
+    expect(data).not.toBeNull();
+    expect((data as { id: string }).id).toBe(createdOrderId);
+  });
+
+  test('anon WITHOUT a token cannot read the order (table_id is not a capability)', async () => {
+    const { data } = await (anonClient.rpc as any)('get_active_order_for_table', {
+      p_table_id: TABLE_ID,
+      p_qr_token: null,
+    });
+    expect(data).toBeNull();
+  });
+
+  test('anon with a WRONG token cannot read the order', async () => {
+    const { data } = await (anonClient.rpc as any)('get_active_order_for_table', {
+      p_table_id: TABLE_ID,
+      p_qr_token: 'not-the-real-token',
+    });
+    expect(data).toBeNull();
+  });
+
+  // The two branches below are the actual QR-rotation/revocation security
+  // control (`qr_code_revoked_at IS NULL` and the expiry check). Without these,
+  // a refactor dropping either predicate would let a rotated/expired sticker
+  // keep reading live orders with the tests still green. Each mutates the seed
+  // table's column and restores it in `finally` so a failure can't leak state
+  // into the other suites.
+  test('anon with the correct-but-REVOKED token cannot read the order', async () => {
+    await svc
+      .from('tables')
+      .update({ qr_code_revoked_at: new Date().toISOString() })
+      .eq('id', TABLE_ID);
+    try {
+      const { data } = await (anonClient.rpc as any)('get_active_order_for_table', {
+        p_table_id: TABLE_ID,
+        p_qr_token: qrToken,
+      });
+      expect(data).toBeNull();
+    } finally {
+      await svc.from('tables').update({ qr_code_revoked_at: null }).eq('id', TABLE_ID);
+    }
+  });
+
+  test('anon with the correct-but-EXPIRED token cannot read the order', async () => {
+    await svc
+      .from('tables')
+      .update({ qr_code_expires_at: new Date(Date.now() - 60_000).toISOString() })
+      .eq('id', TABLE_ID);
+    try {
+      const { data } = await (anonClient.rpc as any)('get_active_order_for_table', {
+        p_table_id: TABLE_ID,
+        p_qr_token: qrToken,
+      });
+      expect(data).toBeNull();
+    } finally {
+      await svc.from('tables').update({ qr_code_expires_at: null }).eq('id', TABLE_ID);
+    }
+  });
+
+  test('the dead get_waiter_calls_for_table RPC is no longer executable by anon', async () => {
+    const { error } = await (anonClient.rpc as any)('get_waiter_calls_for_table', {
+      p_table_id: TABLE_ID,
+      p_status: 'pending',
+    });
+    expect(error).not.toBeNull(); // anon EXECUTE revoked
   });
 });
 
@@ -191,10 +311,6 @@ describe('RLS Policies — Authenticated Access', () => {
 // ──────────────────────────────────────────────────────────────────────────
 
 const TENANT_2 = '00000000-0000-0000-0000-000000000002';
-// Local-dev service-role JWT (default fixture key shipped with `supabase
-// start`). Safe to commit because it's only valid against `localhost:54321`.
-const SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
 
 describe('RLS Policies — Cross-tenant write isolation', () => {
   let tenant1Client: ReturnType<typeof createClient<Database>>;

@@ -8,13 +8,26 @@ import {
 } from '@/hooks/use-order';
 import { apiRoutes } from '@/lib/api-routes';
 import { db, supabase } from '@/lib/supabase';
+import { writeTableToken } from '@/lib/table-token-storage';
 import { renderHookWithProviders, waitFor } from '../helpers/test-utils';
 
 describe('useOrder', () => {
-  it('calls supabase.rpc with get_active_order_for_table', () => {
+  it('calls the RPC with the table id and null token when none is stored', () => {
     renderHookWithProviders(() => useOrder('table-1'));
     expect(supabase.rpc).toHaveBeenCalledWith('get_active_order_for_table', {
       p_table_id: 'table-1',
+      p_qr_token: null,
+    });
+  });
+
+  it('presents the persisted QR token as the capability when present', () => {
+    // Security: table_id alone is enumerable, so the RPC requires the table's
+    // scanned qr_token (migration 20260727000001). It's persisted per-table.
+    writeTableToken('table-cap', 'secret-qr-token');
+    renderHookWithProviders(() => useOrder('table-cap'));
+    expect(supabase.rpc).toHaveBeenCalledWith('get_active_order_for_table', {
+      p_table_id: 'table-cap',
+      p_qr_token: 'secret-qr-token',
     });
   });
 

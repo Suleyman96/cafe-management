@@ -6,6 +6,7 @@ import { apiRoutes } from '@/lib/api-routes';
 import { isRecentClientRequestId, recordRecentClientRequestId } from '@/lib/realtime-dedup';
 import { STALE_TIMES } from '@/lib/stale-times';
 import { supabase } from '@/lib/supabase';
+import { readTableToken } from '@/lib/table-token-storage';
 import type { Order, OrderItem, OrderWithItems } from '@/types';
 
 // H1 — realtime channel status surfaced to the UI. `CONNECTING` is the
@@ -21,8 +22,14 @@ export function useOrder(tableId: string) {
   const query = useQuery({
     queryKey: [QUERY_KEYS.ORDER, tableId],
     queryFn: async (): Promise<OrderWithItems | null> => {
+      // The RPC requires the table's QR token as a capability (table_id alone
+      // is enumerable — migration 20260727000001). It's persisted per-table by
+      // the landing page after a successful scan; a missing token yields NULL
+      // (the customer must re-scan the QR).
+      const qrToken = readTableToken(tableId);
       const { data, error } = await (supabase.rpc as Function)('get_active_order_for_table', {
         p_table_id: tableId,
+        p_qr_token: qrToken,
       });
       if (error) throw error;
       if (!data) return null;

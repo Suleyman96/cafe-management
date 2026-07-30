@@ -2431,7 +2431,7 @@ export type Database = {
       }
       generate_order_number: { Args: never; Returns: string }
       get_active_order_for_table: {
-        Args: { p_table_id: string }
+        Args: { p_qr_token: string; p_table_id: string }
         Returns: Json
       }
       get_app_version: {

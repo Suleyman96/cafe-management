@@ -1,8 +1,10 @@
 'use client';
 
 import { LANGUAGES, useTranslation } from '@gustri/i18n';
+import { QUERY_KEYS } from '@gustri/queries';
 import { LoadingSpinner } from '@gustri/ui-web';
 import * as Sentry from '@sentry/nextjs';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowRight,
   CheckCircle,
@@ -22,6 +24,7 @@ import { useOrder } from '@/hooks/use-order';
 import { useCafeSettings } from '@/hooks/use-settings';
 import { useTable } from '@/hooks/use-table';
 import { setTableContext } from '@/lib/supabase';
+import { writeTableToken } from '@/lib/table-token-storage';
 import { useLanguageStore } from '@/store/language-store';
 import { HeroHeader } from './hero-header';
 import { LanguagePickerSheet } from './language-picker-sheet';
@@ -66,7 +69,20 @@ export function TableLanding({ tableId, token }: TableLandingProps) {
   const [retryPending, setRetryPending] = useState(false);
 
   const actualTableId = table?.id || '';
+  const queryClient = useQueryClient();
   const { data: activeOrder, isLoading: orderLoading } = useOrder(actualTableId);
+
+  // Persist the scanned QR token per-table so sub-pages (menu/cart/order),
+  // which don't carry `?token=…`, can present it to `get_active_order_for_table`
+  // (the RPC now requires it — migration 20260727000001). The first `useOrder`
+  // fetch may run before the token is stored (returning null), so invalidate
+  // the order query once the capability is available.
+  useEffect(() => {
+    if (actualTableId && token) {
+      writeTableToken(actualTableId, token);
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ORDER, actualTableId] });
+    }
+  }, [actualTableId, token, queryClient]);
 
   const currentLang = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
 
