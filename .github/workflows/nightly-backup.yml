@@ -30,6 +30,11 @@ jobs:
   backup:
     name: Dump production database
     runs-on: ubuntu-latest
+    # Required: the valid SUPABASE_ACCESS_TOKEN (+ DB password / project id) live
+    # in the `production` environment. Without this, the job resolves stale/empty
+    # repo-level secrets and `supabase link` fails with "Unauthorized" (matches
+    # deploy-migrations.yml, which works because it declares this).
+    environment: production
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
