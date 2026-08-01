@@ -52,6 +52,7 @@ const makeSettings = (overrides: Partial<CafeSettings> = {}): CafeSettings => ({
   feature_flags: {},
   refund_type_to_confirm_threshold: 100,
   idle_soft_lock_minutes: 60,
+  onboarding_completed_at: null,
   created_at: '',
   updated_at: '',
   ...overrides,
