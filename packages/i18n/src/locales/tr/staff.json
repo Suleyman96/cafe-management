@@ -1541,5 +1541,6 @@
   "platformCreate.create": "Kiracı oluştur",
   "platformCreate.creating": "Oluşturuluyor…",
   "platformCreate.created": "Kiracı oluşturuldu",
-  "platformCreate.emailInUse": "Bu e-posta zaten kullanımda."
+  "platformCreate.emailInUse": "Bu e-posta zaten kullanımda.",
+  "platform.backToApp": "Uygulamaya dön"
 }

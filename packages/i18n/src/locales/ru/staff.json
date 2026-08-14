@@ -1541,5 +1541,6 @@
   "platformCreate.create": "Создать арендатора",
   "platformCreate.creating": "Создание…",
   "platformCreate.created": "Арендатор создан",
-  "platformCreate.emailInUse": "Эта эл. почта уже используется."
+  "platformCreate.emailInUse": "Эта эл. почта уже используется.",
+  "platform.backToApp": "Назад в приложение"
 }

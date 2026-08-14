@@ -1541,5 +1541,6 @@
   "platformCreate.create": "İcarədar yarat",
   "platformCreate.creating": "Yaradılır…",
   "platformCreate.created": "İcarədar yaradıldı",
-  "platformCreate.emailInUse": "Bu e-poçt artıq istifadə olunur."
+  "platformCreate.emailInUse": "Bu e-poçt artıq istifadə olunur.",
+  "platform.backToApp": "Tətbiqə qayıt"
 }

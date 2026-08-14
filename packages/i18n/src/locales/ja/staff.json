@@ -1541,5 +1541,6 @@
   "platformCreate.create": "Create tenant",
   "platformCreate.creating": "Creating…",
   "platformCreate.created": "Tenant created",
-  "platformCreate.emailInUse": "That email is already in use."
+  "platformCreate.emailInUse": "That email is already in use.",
+  "platform.backToApp": "Back to app"
 }
