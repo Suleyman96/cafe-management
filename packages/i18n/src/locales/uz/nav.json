@@ -41,5 +41,7 @@
   "takeout": "Olib ketish",
   "tasks": "Vazifalar",
   "waiterCalls": "Ofitsiant chaqirish",
-  "waste": "Isrofgarchilik"
+  "waste": "Isrofgarchilik",
+  "platformSection": "Platform",
+  "platformConsole": "Tenants"
 }

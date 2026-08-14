@@ -41,5 +41,7 @@
   "takeout": "Bawa pulang",
   "tasks": "Tugas",
   "waiterCalls": "Panggilan Pelayan",
-  "waste": "Limbah"
+  "waste": "Limbah",
+  "platformSection": "Platform",
+  "platformConsole": "Tenants"
 }

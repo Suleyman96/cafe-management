@@ -41,5 +41,7 @@
   "takeout": "テイクアウト",
   "tasks": "タスク",
   "waiterCalls": "スタッフ呼出",
-  "waste": "廃棄"
+  "waste": "廃棄",
+  "platformSection": "Platform",
+  "platformConsole": "Tenants"
 }

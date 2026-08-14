@@ -41,5 +41,7 @@
   "takeout": "طلبات خارجية",
   "tasks": "المهام",
   "waiterCalls": "استدعاء النادل",
-  "waste": "الهدر"
+  "waste": "الهدر",
+  "platformSection": "Platform",
+  "platformConsole": "Tenants"
 }

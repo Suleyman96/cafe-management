@@ -41,5 +41,7 @@
   "takeout": "สั่งกลับบ้าน",
   "tasks": "งาน",
   "waiterCalls": "เรียกพนักงาน",
-  "waste": "ของเสีย"
+  "waste": "ของเสีย",
+  "platformSection": "Platform",
+  "platformConsole": "Tenants"
 }

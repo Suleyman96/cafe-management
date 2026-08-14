@@ -41,5 +41,7 @@
   "takeout": "Παραλαβή",
   "tasks": "Εργασίες",
   "waiterCalls": "Κλήσεις Σερβιτόρου",
-  "waste": "Απόβλητα"
+  "waste": "Απόβλητα",
+  "platformSection": "Platform",
+  "platformConsole": "Tenants"
 }

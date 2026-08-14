@@ -41,5 +41,7 @@
   "takeout": "Takeout",
   "tasks": "Tasks",
   "waiterCalls": "Waiter Calls",
-  "waste": "Waste"
+  "waste": "Waste",
+  "platformSection": "Platform",
+  "platformConsole": "Tenants"
 }

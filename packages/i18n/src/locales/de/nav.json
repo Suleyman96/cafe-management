@@ -41,5 +41,7 @@
   "takeout": "Zum Mitnehmen",
   "tasks": "Aufgaben",
   "waiterCalls": "Kellnerrufe",
-  "waste": "Abfall"
+  "waste": "Abfall",
+  "platformSection": "Platform",
+  "platformConsole": "Tenants"
 }

@@ -41,5 +41,7 @@
   "takeout": "포장",
   "tasks": "업무",
   "waiterCalls": "직원 호출",
-  "waste": "폐기"
+  "waste": "폐기",
+  "platformSection": "Platform",
+  "platformConsole": "Tenants"
 }

@@ -41,5 +41,7 @@
   "takeout": "Өзіңізбен алу",
   "tasks": "Тапсырмалар",
   "waiterCalls": "Даяшы шақыру",
-  "waste": "Қалдық"
+  "waste": "Қалдық",
+  "platformSection": "Platform",
+  "platformConsole": "Tenants"
 }

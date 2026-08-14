@@ -2,6 +2,7 @@ import type { PlanName } from '@gustri/core';
 import {
   BarChart3,
   Bell,
+  Building2,
   CalendarDays,
   ChefHat,
   ClipboardList,
@@ -24,6 +25,8 @@ export type NavItem = {
   icon: React.ReactNode;
   adminOnly?: boolean;
   ownerOnly?: boolean;
+  // gustri operator only (PLATFORM_ADMIN_EMAILS), not a tenant role.
+  platformOnly?: boolean;
   minPlan?: PlanName;
 };
 
@@ -32,6 +35,7 @@ export type NavGroup = {
   labelKey: string;
   collapsible: boolean;
   adminOnly?: boolean;
+  platformOnly?: boolean;
   items: NavItem[];
 };
 
@@ -119,6 +123,15 @@ export const navGroups: NavGroup[] = [
         labelKey: 'cafeSettings',
         icon: <Store className="h-5 w-5" />,
       },
+    ],
+  },
+  {
+    key: 'platform',
+    labelKey: 'platformSection',
+    collapsible: true,
+    platformOnly: true,
+    items: [
+      { href: '/platform', labelKey: 'platformConsole', icon: <Building2 className="h-5 w-5" /> },
     ],
   },
 ];

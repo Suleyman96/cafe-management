@@ -41,5 +41,7 @@
   "takeout": "A emporter",
   "tasks": "Tâches",
   "waiterCalls": "Appels serveur",
-  "waste": "Gaspillage"
+  "waste": "Gaspillage",
+  "platformSection": "Platform",
+  "platformConsole": "Tenants"
 }

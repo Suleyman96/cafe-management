@@ -41,5 +41,7 @@
   "takeout": "წასაღები",
   "tasks": "დავალებები",
   "waiterCalls": "მიმტანის გამოძახება",
-  "waste": "ნარჩენები"
+  "waste": "ნარჩენები",
+  "platformSection": "Platform",
+  "platformConsole": "Tenants"
 }

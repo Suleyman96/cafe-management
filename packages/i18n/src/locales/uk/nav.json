@@ -41,5 +41,7 @@
   "takeout": "На винос",
   "tasks": "Завдання",
   "waiterCalls": "Виклики офіціанта",
-  "waste": "Списання"
+  "waste": "Списання",
+  "platformSection": "Platform",
+  "platformConsole": "Tenants"
 }

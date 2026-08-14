@@ -2,6 +2,7 @@
 
 import { PLAN_ORDER } from '@gustri/core';
 import { useCanPerform } from '@/hooks/use-can-perform';
+import { useIsPlatformAdmin } from '@/hooks/use-is-platform-admin';
 import { useCafeSettings } from '@/hooks/use-settings-safe';
 import { useTenantPlan } from '@/hooks/use-tenant-plan';
 import { type NavGroup, type NavItem, navGroups } from './nav-config';
@@ -23,6 +24,9 @@ export function useVisibleNavItems(): NavGroup[] {
   // || isOwner` semantics. Inline role expressions are banned in new code;
   // see CLAUDE.md "Authorization vs connectivity gates".
   const isAdmin = useCanPerform('manage_staff');
+  // Platform console visibility — gustri operator only, resolved via the server
+  // gate. Non-admins resolve to false and never see the entry.
+  const isPlatformAdmin = useIsPlatformAdmin();
   // `view_reports` gates the owner-only Reports entry (the sole `ownerOnly`
   // nav item). Routed through the permissions policy rather than an inline
   // `role === 'owner'` check for the same reason as `isAdmin` above.
@@ -30,6 +34,7 @@ export function useVisibleNavItems(): NavGroup[] {
 
   const filterItems = (items: NavItem[]) =>
     items.filter((item) => {
+      if (item.platformOnly && !isPlatformAdmin) return false;
       if (item.ownerOnly && !canViewReports) return false;
       if (item.adminOnly && !isAdmin) return false;
       // Plan unknown (post-login fetch pending or failed) → hide gated
@@ -48,6 +53,7 @@ export function useVisibleNavItems(): NavGroup[] {
   // Build visible groups with filtered items
   return navGroups
     .filter((group) => {
+      if (group.platformOnly && !isPlatformAdmin) return false;
       if (group.adminOnly && !isAdmin) return false;
       return true;
     })
