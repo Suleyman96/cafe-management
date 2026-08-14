@@ -149,4 +149,41 @@ export const apiRoutes = {
         body: JSON.stringify(data),
       }),
   },
+
+  // Platform-admin (super-admin) console. Gated by PLATFORM_ADMIN_EMAILS
+  // server-side; these calls 403 for non-platform-admins.
+  platform: {
+    me: () =>
+      apiFetch<{ isPlatformAdmin: boolean; email: string }>('/api/v1/platform/me', {
+        method: 'GET',
+      }),
+    listTenants: () =>
+      apiFetch<{ tenants: PlatformTenant[]; count: number }>('/api/v1/platform/tenants', {
+        method: 'GET',
+      }),
+    setPlan: (tenantId: string, plan: PlatformTenant['plan']) =>
+      apiFetch<{ tenant: { id: string; name: string; plan: string } }>(
+        `/api/v1/platform/tenants/${tenantId}/plan`,
+        { method: 'POST', body: JSON.stringify({ plan }) },
+      ),
+    setStatus: (tenantId: string, active: boolean, reason?: string | null) =>
+      apiFetch<{ tenant: { id: string; name: string; is_active: boolean } }>(
+        `/api/v1/platform/tenants/${tenantId}/status`,
+        { method: 'POST', body: JSON.stringify({ active, reason: reason ?? null }) },
+      ),
+  },
 };
+
+export interface PlatformTenant {
+  id: string;
+  name: string;
+  slug: string;
+  plan: 'free' | 'standard' | 'pro' | 'business';
+  is_active: boolean;
+  created_at: string | null;
+  billing_email: string | null;
+  deactivated_at: string | null;
+  deactivation_reason: string | null;
+  staff_count: number;
+  table_count: number;
+}
