@@ -169,9 +169,11 @@ export type PlanName = 'free' | 'standard' | 'pro' | 'business';
 
 export const PLAN_LIMITS = {
   free: {
+    // Real trial: QR ordering ON (custom_branding off → "Powered by gustri" on
+    // the QR menu = free marketing), 500 orders/mo so a micro-cafe can run on it.
     maxTables: 5,
-    maxOrdersPerMonth: 100,
-    qrOrdering: false,
+    maxOrdersPerMonth: 500,
+    qrOrdering: true,
     kitchenDisplay: true,
     inventory: false,
     waste: false,
@@ -181,8 +183,10 @@ export const PLAN_LIMITS = {
     analytics: 'basic' as const,
   },
   standard: {
-    maxTables: 10,
-    maxOrdersPerMonth: 700,
+    // No order cap on paid tiers: a hard mid-month cap would stop a paying
+    // cafe's POS during service. Differentiate on tables + features.
+    maxTables: 15,
+    maxOrdersPerMonth: -1,
     qrOrdering: true,
     kitchenDisplay: true,
     inventory: false,
@@ -193,8 +197,8 @@ export const PLAN_LIMITS = {
     analytics: 'full' as const,
   },
   pro: {
-    maxTables: 20,
-    maxOrdersPerMonth: 2200,
+    maxTables: 40,
+    maxOrdersPerMonth: -1,
     qrOrdering: true,
     kitchenDisplay: true,
     inventory: true,

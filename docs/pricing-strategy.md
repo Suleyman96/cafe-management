@@ -53,31 +53,46 @@ Small to medium cafes and restaurants in Azerbaijan and CIS region.
 
 ## Feature Distribution by Plan
 
+**This table reflects what is actually enforced** by `plan_limits()` (SQL) and
+`@gustri/core` `PLAN_LIMITS` (kept in sync by a CI parity test). Update both when
+changing a cap. Do not list a feature as tier-gated here unless it is enforced.
+
 | Feature | Free | Standard | Pro | Business |
 |---------|------|----------|-----|----------|
-| Basic POS & orders | 1 terminal | 2 terminals | 5 terminals | Unlimited |
-| Menu management | 50 items | 200 items | Unlimited | Unlimited |
-| Table management | 5 tables | 15 tables | Unlimited | Unlimited |
-| QR ordering | Yes | Yes | Yes | Yes |
+| **Orders / month** | **500** | Unlimited | Unlimited | Unlimited |
+| **Tables** | **5** | **15** | **40** | Unlimited |
+| Menu items | Unlimited | Unlimited | Unlimited | Unlimited |
+| **QR ordering** | **Yes** | Yes | Yes | Yes |
 | Kitchen display (mobile) | Yes | Yes | Yes | Yes |
-| Takeout orders | Yes | Yes | Yes | Yes |
-| Delivery orders (with driver assignment) | Yes | Yes | Yes | Yes |
-| Split payments | Yes | Yes | Yes | Yes |
-| Waiter calls | Yes | Yes | Yes | Yes |
-| Stock/Inventory | Yes | Yes | Yes | Yes |
-| Expense tracking | Yes | Yes | Yes | Yes |
-| Staff scheduling | Yes | Yes | Yes | Yes |
-| Task management | Yes | Yes | Yes | Yes |
-| Analytics/Reports | Basic (today only) | 30-day history | Full history | Full + export |
+| Takeout & delivery orders | Yes | Yes | Yes | Yes |
+| Split payments · waiter calls | Yes | Yes | Yes | Yes |
 | Customer feedback | Yes | Yes | Yes | Yes |
-| Branding/White-label | No | Yes | Yes | Yes |
-| Multi-language menu | Planned | Planned | Planned | Planned |
-| Loyalty/Points | No | No | Yes | Yes |
-| Multi-location | No | No | No | Yes |
-| API access | No | No | No | Yes |
+| Expense tracking | Yes | Yes | Yes | Yes |
+| Stock / inventory | — | — | **Yes** | Yes |
+| Waste logging | — | — | **Yes** | Yes |
+| Staff scheduling | — | — | **Yes** | Yes |
+| Task management | — | — | **Yes** | Yes |
+| Custom branding (hide "Powered by gustri") | — | **Yes** | Yes | Yes |
+| Analytics | Basic (today only) | Full | Full | Full |
 | Support | Community | Email | Priority email | Phone + email |
 
-> **Note:** Multi-language menu is not yet implemented. The database currently uses single `name` and `description` columns for menu items and categories. Multilingual support (az, ru, tr, en) is planned for a future release.
+**Free-tier note:** QR ordering is intentionally ON for Free, but custom
+branding is OFF — so a free tenant's QR menu shows "Powered by gustri", turning
+every customer scan into free marketing. Free's only hard cap is 500 orders/mo
+and 5 tables; paid tiers have **no order cap** (a mid-service POS lockout would
+be catastrophic — they scale on tables + features instead).
+
+### 🚧 Planned — not yet built (do NOT sell as available)
+
+These appear in earlier marketing copy but are **not implemented or enforced**.
+Keep them off the live pricing page (or clearly labelled "coming soon") until shipped:
+
+| Feature | Intended tier |
+|---------|---------------|
+| Loyalty / points | Pro+ |
+| Multi-location | Business |
+| API access | Business |
+| Multi-language menu | All (DB currently single `name`/`description` per item) |
 
 ---
 
