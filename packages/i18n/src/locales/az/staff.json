@@ -1528,5 +1528,18 @@
   "platform.statusUpdated": "Status yeniləndi",
   "platform.actionFailed": "Əməliyyat alınmadı. Yenidən cəhd edin.",
   "platform.empty": "Hələ icarədar yoxdur.",
-  "platform.confirmSuspend": "Bu icarədar dayandırılsın? Onlar dərhal bütün girişi itirəcək."
+  "platform.confirmSuspend": "Bu icarədar dayandırılsın? Onlar dərhal bütün girişi itirəcək.",
+  "platformCreate.newTenant": "Yeni icarədar",
+  "platformCreate.title": "İcarədar yarat",
+  "platformCreate.subtitle": "Kafeni birbaşa yaradın. Sahib təyin etdiyiniz parolla dərhal daxil ola bilər.",
+  "platformCreate.cafeName": "Kafenin adı",
+  "platformCreate.ownerEmail": "Sahibin e-poçtu",
+  "platformCreate.ownerName": "Sahibin adı (istəyə bağlı)",
+  "platformCreate.password": "Sahibin parolu",
+  "platformCreate.passwordHint": "Ən azı 8 simvol. Sahiblə paylaşın; sonra dəyişə bilər.",
+  "platformCreate.generate": "Yarat",
+  "platformCreate.create": "İcarədar yarat",
+  "platformCreate.creating": "Yaradılır…",
+  "platformCreate.created": "İcarədar yaradıldı",
+  "platformCreate.emailInUse": "Bu e-poçt artıq istifadə olunur."
 }

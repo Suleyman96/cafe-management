@@ -1,9 +1,12 @@
 'use client';
 
 import { useTranslation } from '@gustri/i18n';
-import { LoadingSpinner } from '@gustri/ui-web';
+import { Button, LoadingSpinner } from '@gustri/ui-web';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { CreateTenantModal } from '@/components/platform/create-tenant-modal';
 import { apiRoutes, type PlatformTenant } from '@/lib/api-routes';
 
 const PLANS: PlatformTenant['plan'][] = ['free', 'standard', 'pro', 'business'];
@@ -11,6 +14,7 @@ const PLANS: PlatformTenant['plan'][] = ['free', 'standard', 'pro', 'business'];
 export default function PlatformPage() {
   const { t } = useTranslation('staff');
   const qc = useQueryClient();
+  const [showCreate, setShowCreate] = useState(false);
 
   const meQuery = useQuery({
     queryKey: ['platform', 'me'],
@@ -70,12 +74,25 @@ export default function PlatformPage() {
 
   return (
     <div className="p-3 sm:p-6 max-w-6xl">
-      <div className="mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold">{t('platform.title')}</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {t('platform.subtitle')} · {tenants.length}
-        </p>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold">{t('platform.title')}</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {t('platform.subtitle')} · {tenants.length}
+          </p>
+        </div>
+        <Button size="sm" onClick={() => setShowCreate(true)}>
+          <Plus className="mr-1 h-4 w-4" />
+          {t('platformCreate.newTenant')}
+        </Button>
       </div>
+
+      {showCreate && (
+        <CreateTenantModal
+          onClose={() => setShowCreate(false)}
+          onCreated={() => qc.invalidateQueries({ queryKey: ['platform', 'tenants'] })}
+        />
+      )}
 
       {tenantsQuery.isLoading ? (
         <div className="flex h-40 items-center justify-center">

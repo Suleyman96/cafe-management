@@ -171,6 +171,17 @@ export const apiRoutes = {
         `/api/v1/platform/tenants/${tenantId}/status`,
         { method: 'POST', body: JSON.stringify({ active, reason: reason ?? null }) },
       ),
+    createTenant: (data: {
+      cafe_name: string;
+      owner_email: string;
+      owner_name?: string | null;
+      password: string;
+      plan: PlatformTenant['plan'];
+    }) =>
+      apiFetch<{ tenant: { id: string; name: string; plan: string }; owner_email: string }>(
+        '/api/v1/platform/tenants',
+        { method: 'POST', body: JSON.stringify(data) },
+      ),
   },
 };
 

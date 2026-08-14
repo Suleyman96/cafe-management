@@ -1528,5 +1528,18 @@
   "platform.statusUpdated": "Status updated",
   "platform.actionFailed": "Action failed. Please try again.",
   "platform.empty": "No tenants yet.",
-  "platform.confirmSuspend": "Suspend this tenant? They'll lose all access immediately."
+  "platform.confirmSuspend": "Suspend this tenant? They'll lose all access immediately.",
+  "platformCreate.newTenant": "New tenant",
+  "platformCreate.title": "Create a tenant",
+  "platformCreate.subtitle": "Provision a cafe directly. The owner can log in immediately with the password you set.",
+  "platformCreate.cafeName": "Cafe name",
+  "platformCreate.ownerEmail": "Owner email",
+  "platformCreate.ownerName": "Owner name (optional)",
+  "platformCreate.password": "Owner password",
+  "platformCreate.passwordHint": "Min 8 characters. Share it with the owner; they can change it later.",
+  "platformCreate.generate": "Generate",
+  "platformCreate.create": "Create tenant",
+  "platformCreate.creating": "Creating…",
+  "platformCreate.created": "Tenant created",
+  "platformCreate.emailInUse": "That email is already in use."
 }

@@ -1528,5 +1528,18 @@
   "platform.statusUpdated": "Статус обновлён",
   "platform.actionFailed": "Действие не выполнено. Попробуйте ещё раз.",
   "platform.empty": "Пока нет арендаторов.",
-  "platform.confirmSuspend": "Приостановить этого арендатора? Он сразу потеряет весь доступ."
+  "platform.confirmSuspend": "Приостановить этого арендатора? Он сразу потеряет весь доступ.",
+  "platformCreate.newTenant": "Новый арендатор",
+  "platformCreate.title": "Создать арендатора",
+  "platformCreate.subtitle": "Создайте кафе напрямую. Владелец сможет войти сразу с заданным вами паролем.",
+  "platformCreate.cafeName": "Название кафе",
+  "platformCreate.ownerEmail": "Эл. почта владельца",
+  "platformCreate.ownerName": "Имя владельца (необязательно)",
+  "platformCreate.password": "Пароль владельца",
+  "platformCreate.passwordHint": "Минимум 8 символов. Передайте владельцу; он сможет изменить позже.",
+  "platformCreate.generate": "Сгенерировать",
+  "platformCreate.create": "Создать арендатора",
+  "platformCreate.creating": "Создание…",
+  "platformCreate.created": "Арендатор создан",
+  "platformCreate.emailInUse": "Эта эл. почта уже используется."
 }

@@ -1528,5 +1528,18 @@
   "platform.statusUpdated": "Durum güncellendi",
   "platform.actionFailed": "İşlem başarısız. Lütfen tekrar deneyin.",
   "platform.empty": "Henüz kiracı yok.",
-  "platform.confirmSuspend": "Bu kiracı askıya alınsın mı? Tüm erişimlerini hemen kaybederler."
+  "platform.confirmSuspend": "Bu kiracı askıya alınsın mı? Tüm erişimlerini hemen kaybederler.",
+  "platformCreate.newTenant": "Yeni kiracı",
+  "platformCreate.title": "Kiracı oluştur",
+  "platformCreate.subtitle": "Bir kafeyi doğrudan oluşturun. Sahip, belirlediğiniz parolayla hemen giriş yapabilir.",
+  "platformCreate.cafeName": "Kafe adı",
+  "platformCreate.ownerEmail": "Sahip e-postası",
+  "platformCreate.ownerName": "Sahip adı (isteğe bağlı)",
+  "platformCreate.password": "Sahip parolası",
+  "platformCreate.passwordHint": "En az 8 karakter. Sahiple paylaşın; sonra değiştirebilir.",
+  "platformCreate.generate": "Oluştur",
+  "platformCreate.create": "Kiracı oluştur",
+  "platformCreate.creating": "Oluşturuluyor…",
+  "platformCreate.created": "Kiracı oluşturuldu",
+  "platformCreate.emailInUse": "Bu e-posta zaten kullanımda."
 }

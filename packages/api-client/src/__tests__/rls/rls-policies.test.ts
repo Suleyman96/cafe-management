@@ -770,3 +770,69 @@ describe('RLS Policies — Tenant soft-close (deactivation gate)', () => {
     expect(after.data).toHaveLength(0);
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────
+// Platform-created tenant: the operator route (POST /platform/tenants) creates
+// the owner via admin.createUser with `signup` metadata and relies on
+// handle_new_tenant_signup() to provision everything. This proves that
+// integration end-to-end (the whole premise of not duplicating provisioning).
+// ──────────────────────────────────────────────────────────────────────────
+describe('Platform — operator-created tenant provisions via the signup trigger', () => {
+  const svc = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const email = `platform-create-${Date.now()}@example.com`;
+  let userId: string | null = null;
+  let tenantId: string | null = null;
+
+  afterAll(async () => {
+    // Best-effort cleanup (CI resets the DB per run anyway).
+    if (tenantId) await svc.from('tenants').delete().eq('id', tenantId);
+    if (userId) await svc.auth.admin.deleteUser(userId).catch(() => {});
+  });
+
+  test('createUser with signup+restaurant_name provisions a named free tenant + owner + defaults', async () => {
+    const { data, error } = await svc.auth.admin.createUser({
+      email,
+      password: 'test1234x',
+      email_confirm: true,
+      user_metadata: {
+        signup: 'platform',
+        restaurant_name: 'Platform Test Cafe',
+        full_name: 'HQ Owner',
+      },
+    });
+    expect(error).toBeNull();
+    userId = data.user?.id ?? null;
+    expect(userId).toBeTruthy();
+
+    // Owner staff row was created by the trigger, in the same transaction.
+    const { data: staff } = await svc
+      .from('staff')
+      .select('tenant_id, role')
+      .eq('auth_user_id', userId as string)
+      .single();
+    expect(staff?.role).toBe('owner');
+    tenantId = (staff?.tenant_id as string) ?? null;
+    expect(tenantId).toBeTruthy();
+
+    // Tenant is named from metadata and forced to the free plan.
+    const { data: tenant } = await svc
+      .from('tenants')
+      .select('name, plan')
+      .eq('id', tenantId as string)
+      .single();
+    expect(tenant?.name).toBe('Platform Test Cafe');
+    expect(tenant?.plan).toBe('free');
+
+    // Default categories seeded so first-run pickers aren't empty.
+    const { count: taskCats } = await svc
+      .from('task_categories')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId as string);
+    const { count: expCats } = await svc
+      .from('expense_categories')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId as string);
+    expect(taskCats ?? 0).toBeGreaterThanOrEqual(5);
+    expect(expCats ?? 0).toBeGreaterThanOrEqual(6);
+  });
+});
