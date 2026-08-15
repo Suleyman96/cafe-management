@@ -47,7 +47,13 @@ export function CafeLoginForm({ slug, cafeName }: { slug: string; cafeName: stri
         router.push('/');
         return;
       }
-      setError(result.error === 'unexpected' ? t('unexpectedError') : t('loginFailed'));
+      setError(
+        result.error === 'rate_limited'
+          ? t('cafeLogin.tooManyAttempts')
+          : result.error === 'unexpected'
+            ? t('unexpectedError')
+            : t('loginFailed'),
+      );
     } catch (err) {
       Sentry.captureException(err, { tags: { context: 'cafe-login-form' } });
       setError(t('unexpectedError'));

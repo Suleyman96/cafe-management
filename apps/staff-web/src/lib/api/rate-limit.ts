@@ -103,6 +103,16 @@ const limiters = redis
         limiter: Ratelimit.slidingWindow(3, '300 s'),
         prefix: 'rl:data-export',
       }),
+      // Cafe-scoped login (/c/{slug}). Unlike password sign-in (throttled by
+      // Supabase Auth), this action does a PRE-auth service-role resolution
+      // (slug → tenant → staff) that Supabase never sees — so it needs its own
+      // throttle to bound username/cafe enumeration + DB load. 10/min per IP is
+      // generous for a human mistyping a password; anything past that is abuse.
+      login: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(10, '60 s'),
+        prefix: 'rl:login',
+      }),
     }
   : null;
 
@@ -119,7 +129,8 @@ export type RateLimitCategory =
   | 'feedback'
   | 'order-cancel'
   | 'customer-qr-token'
-  | 'data-export';
+  | 'data-export'
+  | 'login';
 
 export async function rateLimit(
   category: RateLimitCategory,
