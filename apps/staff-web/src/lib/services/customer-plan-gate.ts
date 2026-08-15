@@ -5,11 +5,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * Plan gate shared by every `/api/v1/customer/*` service that writes
  * on behalf of a customer-web user.
  *
- * QR ordering is a paid feature (`PLAN_LIMITS[*].qrOrdering` —
- * standard / pro / business). Free-tier tenants don't get any of the
- * customer-facing write surfaces (orders, waiter calls, feedback,
- * delivery), so every service that creates a row on their behalf
- * needs the same check.
+ * QR ordering is gated by `PLAN_LIMITS[plan].qrOrdering`; every service
+ * that writes a customer-facing row (orders, waiter calls, feedback,
+ * delivery) runs the same check so the policy lives in one place.
+ *
+ * NOTE (#227): the free tier is now a real trial with `qrOrdering: true`,
+ * so every current plan passes this gate — the reject path is latent,
+ * kept so a future gated tier (or re-disabling free) is enforced without
+ * touching each caller.
  *
  * Pre-this-helper, the check was duplicated three times:
  *   - customer-order-service:    inline tenant fetch + PLAN_LIMITS check

@@ -23,6 +23,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (admin instanceof NextResponse) return admin;
 
     const { id: tenantId } = await params;
+    // Validate the path param before it reaches Postgres — a non-UUID would
+    // otherwise surface as a generic 500 (invalid input syntax for uuid).
+    if (!z.string().uuid().safeParse(tenantId).success) {
+      return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
+    }
+
     const { data, error } = await validateBody(request, SetStatusSchema);
     if (error) return error;
 
@@ -42,10 +48,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .update(patch)
       .eq('id', tenantId)
       .select('id, name, is_active')
-      .single();
+      .maybeSingle();
 
-    if (updateErr || !updated) {
-      throw new Error(`platform set-status: update failed (${updateErr?.message ?? 'no row'})`);
+    if (updateErr) {
+      throw new Error(`platform set-status: update failed (${updateErr.message})`);
+    }
+    // No row → the tenant id doesn't exist. 404, not a 500.
+    if (!updated) {
+      return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
 
     return jsonOk({ tenant: updated });

@@ -58,8 +58,10 @@ export default function PlatformPage() {
     );
   }
 
-  // meQuery fails (403) for non-platform-admins — the routes are the real gate.
-  if (meQuery.isError) {
+  // Non-platform-admins are denied. The route 403s them (→ isError), but gate on
+  // the positive predicate too — same authority the nav uses (useIsPlatformAdmin)
+  // — so a 200 `{isPlatformAdmin:false}` would also be denied, not rendered.
+  if (meQuery.isError || meQuery.data?.isPlatformAdmin !== true) {
     return (
       <div className="p-6">
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
@@ -106,6 +108,20 @@ export default function PlatformPage() {
       {tenantsQuery.isLoading ? (
         <div className="flex h-40 items-center justify-center">
           <LoadingSpinner />
+        </div>
+      ) : tenantsQuery.isError ? (
+        // A failed fetch must NOT masquerade as "no tenants" — that could read as
+        // an empty platform. Show an explicit error with a retry.
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          <p>{t('platform.loadFailed')}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-3"
+            onClick={() => tenantsQuery.refetch()}
+          >
+            {t('platform.retry')}
+          </Button>
         </div>
       ) : tenants.length === 0 ? (
         <p className="text-gray-500">{t('platform.empty')}</p>

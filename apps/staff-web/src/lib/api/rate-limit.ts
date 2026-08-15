@@ -3,6 +3,16 @@ import { Redis } from '@upstash/redis';
 
 const hasRedis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
 
+// Rate limiting is a no-op without Upstash (fine in dev). In production that
+// means EVERY bucket — login, staff-create, password-reset — silently allows
+// unlimited attempts, so a misconfigured deploy must be loud, not silent.
+if (!hasRedis && process.env.NODE_ENV === 'production') {
+  console.error(
+    '[rate-limit] UPSTASH_REDIS_REST_URL/TOKEN are unset in production — ' +
+      'all rate limiting is DISABLED (fail-open). Set both env vars to restore throttling.',
+  );
+}
+
 const redis = hasRedis
   ? new Redis({
       url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -106,12 +116,23 @@ const limiters = redis
       // Cafe-scoped login (/c/{slug}). Unlike password sign-in (throttled by
       // Supabase Auth), this action does a PRE-auth service-role resolution
       // (slug → tenant → staff) that Supabase never sees — so it needs its own
-      // throttle to bound username/cafe enumeration + DB load. 10/min per IP is
-      // generous for a human mistyping a password; anything past that is abuse.
+      // throttle. Keyed PER-ACCOUNT (ip+slug+username): 10/min bounds password
+      // brute-force against a single account. It must NOT be keyed on IP alone —
+      // a restaurant's staff all sign in from one shared/NAT IP, so an IP-only
+      // bucket locks the whole cafe out at shift change.
       login: new Ratelimit({
         redis,
         limiter: Ratelimit.slidingWindow(10, '60 s'),
         prefix: 'rl:login',
+      }),
+      // Coarse per-IP companion to `login`: bounds total pre-auth resolution
+      // load / username enumeration from one IP without blocking legitimate
+      // shift-change bursts. 60/min comfortably covers a large cafe's staff all
+      // logging in at once; well past that from one IP is abuse.
+      'login-ip': new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(60, '60 s'),
+        prefix: 'rl:login-ip',
       }),
     }
   : null;
@@ -130,7 +151,8 @@ export type RateLimitCategory =
   | 'order-cancel'
   | 'customer-qr-token'
   | 'data-export'
-  | 'login';
+  | 'login'
+  | 'login-ip';
 
 export async function rateLimit(
   category: RateLimitCategory,

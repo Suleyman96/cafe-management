@@ -140,7 +140,10 @@ describe('resolveCustomerQrToken', () => {
     );
   });
 
-  it('rejects with plan_required when the resolved tenant disables qrOrdering (free)', async () => {
+  it('resolves for a free-tier tenant (QR ordering is ON on free — trial, #227)', async () => {
+    // #227 turned the free tier into a real trial: `PLAN_LIMITS.free.qrOrdering`
+    // is now true, so a free tenant's QR tokens resolve like any paid tier. This
+    // locks that decision — flipping free back to qrOrdering:false fails here.
     const client = buildClient({
       qr_tokens: [
         {
@@ -151,8 +154,8 @@ describe('resolveCustomerQrToken', () => {
       tenants: [{ data: { plan: 'free' }, error: null }],
     });
 
-    await expect(resolveCustomerQrToken(client, { qr_token: TOKEN })).rejects.toThrow(
-      /plan_required/,
-    );
+    await expect(resolveCustomerQrToken(client, { qr_token: TOKEN })).resolves.toEqual({
+      tenant_id: TENANT,
+    });
   });
 });

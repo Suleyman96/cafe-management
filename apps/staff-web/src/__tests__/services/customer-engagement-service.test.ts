@@ -1,10 +1,13 @@
 /**
- * Audit M3 — `PLAN_LIMITS[plan].qrOrdering` is now enforced on
+ * Audit M3 — `PLAN_LIMITS[plan].qrOrdering` is enforced on
  * `createCustomerWaiterCall` and `createCustomerFeedback`, mirroring the
- * gate that has always been in place on `createCustomerOrder`. Free-tier
- * tenants whose UI hides the QR-engagement entry points but who would
- * otherwise be reachable via a hand-crafted POST or a forked client now
- * get a `plan_required` (HTTP 403) instead of a successful insert.
+ * gate on `createCustomerOrder`. A plan that disables `qrOrdering` gets a
+ * `plan_required` (HTTP 403) instead of a successful insert.
+ *
+ * NOTE (#227): the free tier is now a real trial with `qrOrdering: true`, so
+ * every current plan enables these write surfaces — the reject path is latent
+ * (kept for any future gated tier). The tests below lock the current policy:
+ * free proceeds like the paid tiers.
  *
  * The route layer (`/api/v1/customer/waiter-calls`,
  * `/api/v1/customer/feedback`) translates the sentinel via
@@ -67,20 +70,28 @@ function buildClient(plan: Record<string, QueuedResponse[]>): SupabaseClient {
 }
 
 describe('createCustomerWaiterCall — plan gate (M3)', () => {
-  it('rejects with plan_required when the tenant plan disables qrOrdering (free tier)', async () => {
+  it('proceeds for a free-tier tenant (QR ordering is ON on free — trial, #227)', async () => {
+    // #227 flipped `PLAN_LIMITS.free.qrOrdering` to true, so free tenants now
+    // get the customer-engagement write surfaces too. This locks that decision.
+    const created = { id: 'call-free', tenant_id: TENANT };
     const client = buildClient({
       tables: [{ data: { id: TABLE, tenant_id: TENANT }, error: null }],
       tenants: [{ data: { plan: 'free' }, error: null }],
+      waiter_calls: [
+        { data: null, error: null }, // dedupe lookup → no replay
+        { data: created, error: null }, // insert
+      ],
     });
 
-    await expect(
-      createCustomerWaiterCall(client, {
-        table_id: TABLE,
-        call_type: 'assistance',
-        priority: 'normal',
-        client_request_id: CRID,
-      }),
-    ).rejects.toThrow(/plan_required/);
+    const { row, deduped } = await createCustomerWaiterCall(client, {
+      table_id: TABLE,
+      call_type: 'assistance',
+      priority: 'normal',
+      client_request_id: CRID,
+    });
+
+    expect(deduped).toBe(false);
+    expect(row).toEqual(created);
   });
 
   it('proceeds for plans that enable qrOrdering (standard)', async () => {
@@ -123,20 +134,27 @@ describe('createCustomerWaiterCall — plan gate (M3)', () => {
 });
 
 describe('createCustomerFeedback — plan gate (M3)', () => {
-  it('rejects with plan_required when the tenant plan disables qrOrdering (free tier)', async () => {
+  it('proceeds for a free-tier tenant (QR ordering is ON on free — trial, #227)', async () => {
+    // #227: free is a real trial, so feedback writes are allowed on free too.
+    const created = { id: 'fb-free', tenant_id: TENANT };
     const client = buildClient({
       tables: [{ data: { id: TABLE, tenant_id: TENANT }, error: null }],
       tenants: [{ data: { plan: 'free' }, error: null }],
+      customer_feedback: [
+        { data: null, error: null }, // dedupe lookup → no replay
+        { data: created, error: null }, // insert
+      ],
     });
 
-    await expect(
-      createCustomerFeedback(client, {
-        table_id: TABLE,
-        feedback_type: 'praise',
-        message: 'Great food!',
-        client_request_id: CRID,
-      }),
-    ).rejects.toThrow(/plan_required/);
+    const { row, deduped } = await createCustomerFeedback(client, {
+      table_id: TABLE,
+      feedback_type: 'praise',
+      message: 'Great food!',
+      client_request_id: CRID,
+    });
+
+    expect(deduped).toBe(false);
+    expect(row).toEqual(created);
   });
 
   it('proceeds for plans that enable qrOrdering (pro)', async () => {

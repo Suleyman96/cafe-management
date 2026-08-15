@@ -14,10 +14,25 @@ export type CafeSignInResult =
   // password, inactive) so login never reveals which cafes or usernames exist.
   | { ok: false; error: 'invalid_credentials' | 'unexpected' | 'rate_limited' };
 
-/** Best-effort client IP from proxy headers, for rate-limit keying. */
+/**
+ * Best-effort client IP from proxy headers, for rate-limit keying. Mirrors the
+ * hardened `getRateLimitIdentifier`: prefer `x-real-ip`, else the LAST
+ * `x-forwarded-for` hop (the one added by the trusted proxy) — the first hop is
+ * attacker-controllable via header spoofing.
+ */
 async function clientIp(): Promise<string> {
   const h = await headers();
-  return h.get('x-real-ip') ?? h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const realIp = h.get('x-real-ip');
+  if (realIp) return realIp.trim();
+  const forwarded = h.get('x-forwarded-for');
+  if (forwarded) {
+    const ips = forwarded
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (ips.length > 0) return ips[ips.length - 1]!;
+  }
+  return 'unknown';
 }
 
 /** Escape PostgREST `ilike` wildcards so a username with % or _ can't match broadly. */
@@ -44,13 +59,25 @@ export async function signInWithCafeAction(
   password: string,
 ): Promise<CafeSignInResult> {
   try {
-    // Throttle the pre-auth resolution (Supabase only throttles the password
-    // step, which garbage input never reaches). Bounds enumeration + DB load.
-    const { success } = await rateLimit('login', await clientIp());
-    if (!success) return { ok: false, error: 'rate_limited' };
-
     const admin = getSupabaseAdmin();
     const username = identifier.trim();
+    const ip = await clientIp();
+
+    // Throttle the pre-auth resolution (Supabase only throttles the password
+    // step, which garbage input never reaches). Two buckets:
+    //  • coarse per-IP (`login-ip`, 60/min) bounds enumeration + DB load without
+    //    blocking a whole cafe's staff logging in from one shared/NAT IP;
+    //  • per-account (`login`, 10/min on ip+slug+username) bounds password
+    //    brute-force against a single account.
+    // Keyed on ip+slug+username — NOT ip alone — so one cafe's shift-change
+    // burst doesn't lock everyone out.
+    const [ipLimit, acctLimit] = await Promise.all([
+      rateLimit('login-ip', ip),
+      rateLimit('login', `${ip}:${slug}:${username.toLowerCase()}`),
+    ]);
+    if (!ipLimit.success || !acctLimit.success) {
+      return { ok: false, error: 'rate_limited' };
+    }
 
     // slug → tenant
     const { data: tenant } = await admin

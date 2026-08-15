@@ -1527,6 +1527,8 @@
   "platform.planUpdated": "Plan yeniləndi",
   "platform.statusUpdated": "Status yeniləndi",
   "platform.actionFailed": "Əməliyyat alınmadı. Yenidən cəhd edin.",
+  "platform.loadFailed": "İcarədarları yükləmək alınmadı.",
+  "platform.retry": "Yenidən cəhd et",
   "platform.empty": "Hələ icarədar yoxdur.",
   "platform.confirmSuspend": "Bu icarədar dayandırılsın? Onlar dərhal bütün girişi itirəcək.",
   "platformCreate.newTenant": "Yeni icarədar",

@@ -19,10 +19,11 @@ import { assertCustomerPlanAllowsWrites } from './customer-plan-gate';
  *   4. Enforce `PLAN_LIMITS[plan].qrOrdering` (audit M3). Customer
  *      engagement (waiter buzz, feedback) is the same product surface
  *      as customer ordering — both depend on the customer holding a QR
- *      placard. Plans that disable `qrOrdering` (free tier) shouldn't
- *      receive engagement writes either; the customer-orders route has
- *      always gated on this, so applying it here closes the
- *      inconsistency the audit flagged.
+ *      placard. Any plan that disables `qrOrdering` shouldn't receive
+ *      engagement writes either; the customer-orders route has always
+ *      gated on this, so applying it here closes the inconsistency the
+ *      audit flagged. (Since #227 the free tier enables `qrOrdering`, so
+ *      the gate currently passes for every tier — see customer-plan-gate.)
  *
  * Tenant resolution is deliberately strict: a `table_id` that doesn't
  * exist throws `NotFoundError` so the route returns 404, not a vague

@@ -1527,6 +1527,8 @@
   "platform.planUpdated": "Тариф обновлён",
   "platform.statusUpdated": "Статус обновлён",
   "platform.actionFailed": "Действие не выполнено. Попробуйте ещё раз.",
+  "platform.loadFailed": "Не удалось загрузить арендаторов.",
+  "platform.retry": "Повторить",
   "platform.empty": "Пока нет арендаторов.",
   "platform.confirmSuspend": "Приостановить этого арендатора? Он сразу потеряет весь доступ.",
   "platformCreate.newTenant": "Новый арендатор",

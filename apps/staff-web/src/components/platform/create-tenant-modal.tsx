@@ -29,6 +29,7 @@ export function CreateTenantModal({
   const { t } = useTranslation('staff');
   const titleId = useId();
   const firstRef = useRef<HTMLInputElement>(null);
+  const handoffRef = useRef<HTMLHeadingElement>(null);
 
   const [cafeName, setCafeName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
@@ -65,13 +66,20 @@ export function CreateTenantModal({
   });
 
   useEffect(() => {
-    firstRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !create.isPending) onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, create.isPending]);
+
+  // Move focus into whichever view is showing: the form's first field, or the
+  // handoff panel's heading once created. Without this, switching to the handoff
+  // panel drops focus to <body> (the focused Create button unmounts).
+  useEffect(() => {
+    if (created) handoffRef.current?.focus();
+    else firstRef.current?.focus();
+  }, [created]);
 
   const valid =
     cafeName.trim().length > 0 && /.+@.+\..+/.test(ownerEmail.trim()) && password.length >= 8;
@@ -88,9 +96,13 @@ export function CreateTenantModal({
       [t('platformCreate.password'), created.password],
     ];
     const copyAll = () => {
-      navigator.clipboard
-        .writeText(rows.map(([k, v]) => `${k}: ${v}`).join('\n'))
-        .then(() => toast.success(t('platformCreate.copied')));
+      // This copy carries the plaintext password — a silent failure would leave
+      // the operator pasting stale clipboard content to the new owner. Handle
+      // rejection (permission denied / non-secure context) explicitly.
+      navigator.clipboard.writeText(rows.map(([k, v]) => `${k}: ${v}`).join('\n')).then(
+        () => toast.success(t('platformCreate.copied')),
+        () => toast.error(t('platform.actionFailed')),
+      );
     };
     return (
       <div
@@ -100,7 +112,12 @@ export function CreateTenantModal({
         aria-labelledby={titleId}
       >
         <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-          <h3 id={titleId} className="text-lg font-semibold text-gray-900">
+          <h3
+            id={titleId}
+            ref={handoffRef}
+            tabIndex={-1}
+            className="text-lg font-semibold text-gray-900 focus:outline-none"
+          >
             {t('platformCreate.created')}
           </h3>
           <p className="mt-1 text-sm text-gray-500">{t('platformCreate.handoffHint')}</p>

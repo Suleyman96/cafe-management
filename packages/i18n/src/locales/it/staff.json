@@ -1527,6 +1527,8 @@
   "platform.planUpdated": "Plan updated",
   "platform.statusUpdated": "Status updated",
   "platform.actionFailed": "Action failed. Please try again.",
+  "platform.loadFailed": "Couldn't load tenants.",
+  "platform.retry": "Retry",
   "platform.empty": "No tenants yet.",
   "platform.confirmSuspend": "Suspend this tenant? They'll lose all access immediately.",
   "platformCreate.newTenant": "New tenant",

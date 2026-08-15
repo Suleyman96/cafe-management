@@ -766,7 +766,13 @@ describe('createCustomerOrder — client_request_id is required', () => {
     ).rejects.toBeInstanceOf(ValidationError);
   });
 
-  it('plan-gating still runs once a key is supplied', async () => {
+  it('accepts a free-tier order once a key is supplied (QR ordering ON on free — trial, #227)', async () => {
+    // #227 made free a real trial (`PLAN_LIMITS.free.qrOrdering` = true), so a
+    // free tenant orders through the same path as paid tiers. This also proves
+    // the key check doesn't short-circuit the flow — a valid key reaches the
+    // plan gate and the insert. (Reject-by-plan is unreachable now that every
+    // tier enables qrOrdering; the gate remains for any future gated tier.)
+    const fresh = { id: 'order-free', tenant_id: TENANT, client_request_id: CRID };
     const client = buildClient({
       qr_tokens: [
         {
@@ -780,19 +786,23 @@ describe('createCustomerOrder — client_request_id is required', () => {
           error: null,
         },
       ],
-      orders: [{ data: null, error: null }], // dedupe lookup → no replay
+      orders: [
+        { data: null, error: null }, // dedupe lookup → no replay
+        { data: fresh, error: null }, // insert
+      ],
       tenants: [{ data: { plan: 'free' }, error: null }],
     });
 
-    await expect(
-      createCustomerOrder(client, {
-        orderData: {
-          order_type: 'takeout',
-          qr_token: QR_TOKEN_VALID,
-          client_request_id: CRID,
-        },
-      }),
-    ).rejects.toThrow(/plan_required/);
+    const result = await createCustomerOrder(client, {
+      orderData: {
+        order_type: 'takeout',
+        qr_token: QR_TOKEN_VALID,
+        client_request_id: CRID,
+      },
+    });
+
+    expect(result.deduped).toBe(false);
+    expect(result.order).toEqual(fresh);
   });
 });
 

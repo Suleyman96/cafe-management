@@ -1527,6 +1527,8 @@
   "platform.planUpdated": "Plan güncellendi",
   "platform.statusUpdated": "Durum güncellendi",
   "platform.actionFailed": "İşlem başarısız. Lütfen tekrar deneyin.",
+  "platform.loadFailed": "Kiracılar yüklenemedi.",
+  "platform.retry": "Tekrar dene",
   "platform.empty": "Henüz kiracı yok.",
   "platform.confirmSuspend": "Bu kiracı askıya alınsın mı? Tüm erişimlerini hemen kaybederler.",
   "platformCreate.newTenant": "Yeni kiracı",
