@@ -44,6 +44,22 @@ const config: Config = {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
+          // Numeric brand-teal scale (matches the `blue` palette above; `500`
+          // equals the `--primary` DEFAULT). Without these, common utilities
+          // like `bg-primary-500` / `from-primary-50` silently resolve to
+          // nothing — which left the cafe-login button invisible (white text,
+          // no background) and the onboarding/platform-header accents unstyled.
+          50: '#f0fafb',
+          100: '#d4eff4',
+          200: '#aee0ea',
+          300: '#7acad9',
+          400: '#4aadc1',
+          500: '#367B8B',
+          600: '#2d6878',
+          700: '#285766',
+          800: '#274856',
+          900: '#243d49',
+          950: '#132730',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
