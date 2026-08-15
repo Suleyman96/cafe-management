@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/nextjs';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
@@ -19,19 +18,6 @@ const CreateStaffSchema = z.object({
     .optional()
     .nullable(),
 });
-
-async function findAuthUserByEmail(supabaseAdmin: SupabaseClient, email: string) {
-  let page = 1;
-  const perPage = 100;
-  while (true) {
-    const { data } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
-    if (!data?.users?.length) return null;
-    const found = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
-    if (found) return found;
-    if (data.users.length < perPage) return null;
-    page++;
-  }
-}
 
 export const dynamic = 'force-dynamic';
 export const preferredRegion = ['sin1'];
@@ -70,35 +56,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: passwordCheck.errors.join('. ') }, { status: 400 });
     }
 
-    // Create auth user using admin API
+    // Each staff member gets a fresh, globally-unique INTERNAL auth identity, so
+    // the display `email` (which is really a per-cafe username and is often a
+    // fake address) can repeat freely across cafes. Staff sign in via the
+    // cafe-scoped login (/c/{slug}), which resolves (cafe, username) → this
+    // account. The display email lives on the staff row and is de-duplicated
+    // per-cafe by idx_staff_email_tenant. We no longer reuse a cross-tenant auth
+    // user (that collided on idx_staff_auth_user and blocked the same username
+    // at a second cafe — the exact case this enables).
+    const syntheticEmail = `staff.${crypto.randomUUID().replace(/-/g, '')}@staff.gustri.com`;
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
+      email: syntheticEmail,
       password,
-      email_confirm: true, // Auto-confirm email for staff accounts
+      email_confirm: true, // internal identity; nothing to confirm
     });
-
-    let authUserId: string;
-    let createdNewAuthUser = true;
-
-    if (authError) {
-      // If the auth user already exists (e.g., same person at another tenant), reuse it
-      if (authError.message?.includes('already been registered') || authError.status === 422) {
-        const found = await findAuthUserByEmail(supabaseAdmin, email);
-        if (!found) {
-          Sentry.captureException(authError);
-          return NextResponse.json({ error: 'Failed to create user account' }, { status: 400 });
-        }
-        authUserId = found.id;
-        createdNewAuthUser = false;
-      } else {
-        Sentry.captureException(authError);
-        return NextResponse.json({ error: 'Failed to create user account' }, { status: 400 });
-      }
-    } else if (!authData.user) {
-      return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
-    } else {
-      authUserId = authData.user.id;
+    if (authError || !authData?.user) {
+      Sentry.captureException(authError ?? new Error('createUser returned no user'));
+      return NextResponse.json({ error: 'Failed to create user account' }, { status: 400 });
     }
+    const authUserId = authData.user.id;
 
     // Create staff record
     const { data: staffData, error: staffError } = await supabaseAdmin
@@ -116,11 +92,18 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (staffError) {
-      Sentry.captureException(staffError);
-      // Only delete the auth user if we created it (not if it already existed)
-      if (createdNewAuthUser && authData?.user) {
-        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      // Roll back the just-created internal auth user so no orphan is left.
+      await supabaseAdmin.auth.admin.deleteUser(authUserId).catch(() => {});
+      // 23505 on idx_staff_email_tenant = this username is already used IN THIS
+      // cafe (cross-cafe duplicates are now allowed). Give a clear message
+      // instead of the old opaque "failed" that confused operators.
+      if ((staffError as { code?: string }).code === '23505') {
+        return NextResponse.json(
+          { error: 'A staff member with this email already exists in this cafe.' },
+          { status: 409 },
+        );
       }
+      Sentry.captureException(staffError);
       return NextResponse.json({ error: 'Failed to create staff record' }, { status: 400 });
     }
 

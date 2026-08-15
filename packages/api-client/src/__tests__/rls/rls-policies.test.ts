@@ -836,3 +836,93 @@ describe('Platform — operator-created tenant provisions via the signup trigger
     expect(expCats ?? 0).toBeGreaterThanOrEqual(6);
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────
+// Cafe-scoped login: the same staff "username" (email) can now exist at two
+// different cafes (each gets a distinct internal auth account), and the
+// login-resolution query (slug → tenant → staff by email) maps each to the
+// right account. This is the core of feat/cafe-scoped-login.
+// ──────────────────────────────────────────────────────────────────────────
+describe('Cafe-scoped login — same username across cafes resolves per-cafe', () => {
+  const svc = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const stamp = Date.now();
+  const slugA = `login-cafe-a-${stamp}`;
+  const slugB = `login-cafe-b-${stamp}`;
+  const sharedUsername = `waiter1@x.com`; // same fake email at both cafes
+  const ids: { tenantA?: string; tenantB?: string; userA?: string; userB?: string } = {};
+
+  afterAll(async () => {
+    if (ids.tenantA) await svc.from('tenants').delete().eq('id', ids.tenantA);
+    if (ids.tenantB) await svc.from('tenants').delete().eq('id', ids.tenantB);
+    if (ids.userA) await svc.auth.admin.deleteUser(ids.userA).catch(() => {});
+    if (ids.userB) await svc.auth.admin.deleteUser(ids.userB).catch(() => {});
+  });
+
+  test('two cafes, identical username → two accounts, each resolvable by cafe', async () => {
+    // Two cafes.
+    const { data: a } = await svc
+      .from('tenants')
+      .insert({ name: 'Login Cafe A', slug: slugA, plan: 'free' })
+      .select('id')
+      .single();
+    const { data: b } = await svc
+      .from('tenants')
+      .insert({ name: 'Login Cafe B', slug: slugB, plan: 'free' })
+      .select('id')
+      .single();
+    ids.tenantA = a?.id;
+    ids.tenantB = b?.id;
+    expect(ids.tenantA).toBeTruthy();
+    expect(ids.tenantB).toBeTruthy();
+
+    // Each staff gets a distinct synthetic internal auth account (what the
+    // staff-create route now does).
+    const { data: ua } = await svc.auth.admin.createUser({
+      email: `staff.a${stamp}@staff.gustri.com`,
+      password: 'pw-aaaa-1',
+      email_confirm: true,
+    });
+    const { data: ub } = await svc.auth.admin.createUser({
+      email: `staff.b${stamp}@staff.gustri.com`,
+      password: 'pw-bbbb-2',
+      email_confirm: true,
+    });
+    ids.userA = ua.user?.id ?? undefined;
+    ids.userB = ub.user?.id ?? undefined;
+
+    // Same display username in BOTH cafes — both inserts must succeed.
+    const insA = await svc.from('staff').insert({
+      email: sharedUsername,
+      full_name: 'Waiter A',
+      role: 'waiter',
+      is_active: true,
+      auth_user_id: ids.userA as string,
+      tenant_id: ids.tenantA as string,
+    });
+    const insB = await svc.from('staff').insert({
+      email: sharedUsername,
+      full_name: 'Waiter B',
+      role: 'waiter',
+      is_active: true,
+      auth_user_id: ids.userB as string,
+      tenant_id: ids.tenantB as string,
+    });
+    expect(insA.error).toBeNull();
+    expect(insB.error).toBeNull();
+    expect(ids.userA).not.toEqual(ids.userB);
+
+    // The login resolution (slug → tenant → staff by username) must map each
+    // cafe's login to its OWN account, never the other's.
+    const resolve = async (tenantId: string) => {
+      const { data } = await svc
+        .from('staff')
+        .select('auth_user_id')
+        .eq('tenant_id', tenantId)
+        .ilike('email', sharedUsername)
+        .maybeSingle();
+      return data?.auth_user_id;
+    };
+    expect(await resolve(ids.tenantA as string)).toBe(ids.userA);
+    expect(await resolve(ids.tenantB as string)).toBe(ids.userB);
+  });
+});

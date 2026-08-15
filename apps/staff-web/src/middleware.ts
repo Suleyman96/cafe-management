@@ -4,7 +4,9 @@ import { getRequestId, REQUEST_ID_HEADER } from '@/lib/api/request-id';
 import { buildCspHeader, CSP_NONCE_HEADER } from '@/lib/security/csp';
 import { createMiddlewareClient } from '@/lib/supabase/server';
 
-const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password', '/auth/callback'];
+// `/c/` is the cafe-scoped login landing (/c/{slug}) + its sign-in server
+// action — both must be reachable while signed out.
+const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password', '/auth/callback', '/c/'];
 
 /**
  * Clone the inbound request headers and stamp the per-request CSP nonce onto
