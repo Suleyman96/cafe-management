@@ -3,7 +3,7 @@
 import { useTranslation } from '@gustri/i18n';
 import { Button, LoadingSpinner } from '@gustri/ui-web';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { Copy, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { CreateTenantModal } from '@/components/platform/create-tenant-modal';
@@ -72,6 +72,15 @@ export default function PlatformPage() {
   const tenants = tenantsQuery.data?.tenants ?? [];
   const busy = setPlan.isPending || setStatus.isPending;
 
+  // The shareable staff login link for a cafe (/c/{slug} on this origin).
+  const copyLoginLink = (slug: string) => {
+    const url = `${window.location.origin}/c/${slug}`;
+    navigator.clipboard.writeText(url).then(
+      () => toast.success(t('platform.linkCopied')),
+      () => toast.error(t('platform.actionFailed')),
+    );
+  };
+
   return (
     <div className="p-3 sm:p-6 max-w-6xl">
       <div className="mb-6 flex items-center justify-between gap-4">
@@ -109,6 +118,7 @@ export default function PlatformPage() {
                 <th className="px-4 py-3">{t('platform.plan')}</th>
                 <th className="px-4 py-3">{t('platform.status')}</th>
                 <th className="px-4 py-3">{t('platform.activity')}</th>
+                <th className="px-4 py-3">{t('platform.loginLink')}</th>
                 <th className="px-4 py-3">{t('platform.created')}</th>
                 <th className="px-4 py-3" />
               </tr>
@@ -153,6 +163,17 @@ export default function PlatformPage() {
                       staff: tn.staff_count,
                       tables: tn.table_count,
                     })}
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => copyLoginLink(tn.slug)}
+                      title={`/c/${tn.slug}`}
+                      className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 font-mono text-xs text-gray-600 hover:bg-gray-50"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      <span className="max-w-[10rem] truncate">/c/{tn.slug}</span>
+                    </button>
                   </td>
                   <td className="px-4 py-3 text-gray-500">
                     {tn.created_at ? tn.created_at.slice(0, 10) : '—'}

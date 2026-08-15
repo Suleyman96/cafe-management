@@ -1542,5 +1542,12 @@
   "platformCreate.creating": "Oluşturuluyor…",
   "platformCreate.created": "Kiracı oluşturuldu",
   "platformCreate.emailInUse": "Bu e-posta zaten kullanımda.",
-  "platform.backToApp": "Uygulamaya dön"
+  "platform.backToApp": "Uygulamaya dön",
+  "platform.loginLink": "Giriş bağlantısı",
+  "platform.linkCopied": "Giriş bağlantısı kopyalandı",
+  "platformCreate.loginLink": "Giriş bağlantısı",
+  "platformCreate.handoffHint": "Giriş yapabilmesi için bunları sahibe gönderin.",
+  "platformCreate.copyAll": "Tümünü kopyala",
+  "platformCreate.copied": "Kopyalandı",
+  "platformCreate.done": "Tamam"
 }

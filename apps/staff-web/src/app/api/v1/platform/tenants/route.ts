@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
 
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('id, name, plan, is_active')
+      .select('id, name, plan, is_active, slug')
       .eq('id', tenantId)
       .single();
 

@@ -35,6 +35,11 @@ export function CreateTenantModal({
   const [ownerName, setOwnerName] = useState('');
   const [password, setPassword] = useState('');
   const [plan, setPlan] = useState<PlatformTenant['plan']>('free');
+  // Set after a successful create → switches the modal to the handoff panel
+  // (login link + credentials to send the new owner).
+  const [created, setCreated] = useState<{ slug: string; email: string; password: string } | null>(
+    null,
+  );
 
   const create = useMutation({
     mutationFn: () =>
@@ -45,10 +50,10 @@ export function CreateTenantModal({
         password,
         plan,
       }),
-    onSuccess: () => {
+    onSuccess: (res) => {
       toast.success(t('platformCreate.created'));
       onCreated();
-      onClose();
+      setCreated({ slug: res.tenant.slug, email: ownerEmail.trim(), password });
     },
     onError: (err: Error) => {
       toast.error(
@@ -73,6 +78,50 @@ export function CreateTenantModal({
 
   const inputCls =
     'mt-1 w-full rounded-lg border border-gray-300 p-2 text-sm focus:border-primary-400 focus:outline-none disabled:opacity-50';
+
+  // Handoff panel — what the operator sends the new owner.
+  if (created) {
+    const loginUrl = `${window.location.origin}/c/${created.slug}`;
+    const rows: [string, string][] = [
+      [t('platformCreate.loginLink'), loginUrl],
+      [t('platformCreate.ownerEmail'), created.email],
+      [t('platformCreate.password'), created.password],
+    ];
+    const copyAll = () => {
+      navigator.clipboard
+        .writeText(rows.map(([k, v]) => `${k}: ${v}`).join('\n'))
+        .then(() => toast.success(t('platformCreate.copied')));
+    };
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
+        <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+          <h3 id={titleId} className="text-lg font-semibold text-gray-900">
+            {t('platformCreate.created')}
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">{t('platformCreate.handoffHint')}</p>
+          <div className="mt-4 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm">
+            {rows.map(([label, value]) => (
+              <div key={label}>
+                <div className="text-xs uppercase text-gray-400">{label}</div>
+                <div className="break-all font-mono text-gray-800">{value}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" onClick={copyAll}>
+              {t('platformCreate.copyAll')}
+            </Button>
+            <Button onClick={onClose}>{t('platformCreate.done')}</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

@@ -1542,5 +1542,12 @@
   "platformCreate.creating": "Creating…",
   "platformCreate.created": "Tenant created",
   "platformCreate.emailInUse": "That email is already in use.",
-  "platform.backToApp": "Back to app"
+  "platform.backToApp": "Back to app",
+  "platform.loginLink": "Login link",
+  "platform.linkCopied": "Login link copied",
+  "platformCreate.loginLink": "Login link",
+  "platformCreate.handoffHint": "Send these to the owner so they can sign in.",
+  "platformCreate.copyAll": "Copy all",
+  "platformCreate.copied": "Copied",
+  "platformCreate.done": "Done"
 }

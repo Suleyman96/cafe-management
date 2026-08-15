@@ -1542,5 +1542,12 @@
   "platformCreate.creating": "Создание…",
   "platformCreate.created": "Арендатор создан",
   "platformCreate.emailInUse": "Эта эл. почта уже используется.",
-  "platform.backToApp": "Назад в приложение"
+  "platform.backToApp": "Назад в приложение",
+  "platform.loginLink": "Ссылка для входа",
+  "platform.linkCopied": "Ссылка для входа скопирована",
+  "platformCreate.loginLink": "Ссылка для входа",
+  "platformCreate.handoffHint": "Отправьте это владельцу, чтобы он мог войти.",
+  "platformCreate.copyAll": "Копировать всё",
+  "platformCreate.copied": "Скопировано",
+  "platformCreate.done": "Готово"
 }

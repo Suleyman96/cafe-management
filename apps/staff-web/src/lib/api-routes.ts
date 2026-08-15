@@ -178,10 +178,10 @@ export const apiRoutes = {
       password: string;
       plan: PlatformTenant['plan'];
     }) =>
-      apiFetch<{ tenant: { id: string; name: string; plan: string }; owner_email: string }>(
-        '/api/v1/platform/tenants',
-        { method: 'POST', body: JSON.stringify(data) },
-      ),
+      apiFetch<{
+        tenant: { id: string; name: string; plan: string; slug: string };
+        owner_email: string;
+      }>('/api/v1/platform/tenants', { method: 'POST', body: JSON.stringify(data) }),
   },
 };
 
