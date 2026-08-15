@@ -1,6 +1,7 @@
 import { NotFoundError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findOrCreateByClientRequestId } from '@/lib/api/dedupe';
+import { notifyNewWaiterCall } from '@/lib/push/notify';
 import { assertCustomerPlanAllowsWrites } from './customer-plan-gate';
 
 /**
@@ -77,7 +78,7 @@ export async function createCustomerWaiterCall(
   const tenantId = await resolveTenantFromTable(supabaseAdmin, input.table_id);
   await assertCustomerPlanAllowsWrites(supabaseAdmin, tenantId);
 
-  return findOrCreateByClientRequestId<Record<string, unknown>>(supabaseAdmin, {
+  const result = await findOrCreateByClientRequestId<Record<string, unknown>>(supabaseAdmin, {
     table: 'waiter_calls',
     tenantId,
     clientRequestId: input.client_request_id,
@@ -101,6 +102,13 @@ export async function createCustomerWaiterCall(
       return data as Record<string, unknown>;
     },
   });
+
+  // Best-effort staff push for genuinely new calls only. Never throws.
+  if (!result.deduped) {
+    await notifyNewWaiterCall(supabaseAdmin, { tenantId, tableId: input.table_id });
+  }
+
+  return result;
 }
 
 /**

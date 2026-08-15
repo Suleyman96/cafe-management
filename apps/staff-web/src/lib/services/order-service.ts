@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findOrCreateByClientRequestId } from '@/lib/api/dedupe';
+import { notifyNewOrder } from '@/lib/push/notify';
 
 /**
  * Server-side order business logic.
@@ -65,6 +66,15 @@ export async function createOrder(supabaseAdmin: SupabaseClient, params: CreateO
       return data;
     },
   });
+
+  // Fire a best-effort staff push for genuinely new orders only (a deduped
+  // replay already notified on its first pass). `notifyNewOrder` never throws.
+  if (!result.deduped) {
+    await notifyNewOrder(supabaseAdmin, {
+      tenantId,
+      orderNumber: (result.row as { order_number?: string | number | null }).order_number,
+    });
+  }
 
   return { order: result.row, deduped: result.deduped };
 }

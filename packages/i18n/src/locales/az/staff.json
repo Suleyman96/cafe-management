@@ -1551,5 +1551,9 @@
   "platformCreate.handoffHint": "Sahibin daxil ola bilməsi üçün bunları göndərin.",
   "platformCreate.copyAll": "Hamısını kopyala",
   "platformCreate.copied": "Kopyalandı",
-  "platformCreate.done": "Hazırdır"
+  "platformCreate.done": "Hazırdır",
+  "push.newOrder.title": "Yeni sifariş",
+  "push.newOrder.body": "Sifariş #{{number}} qəbul edildi",
+  "push.newWaiterCall.title": "Ofisiant çağırışı",
+  "push.newWaiterCall.body": "Masaya kömək lazımdır"
 }

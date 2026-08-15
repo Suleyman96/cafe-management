@@ -1,6 +1,7 @@
 import { ConflictError, NotFoundError, ValidationError } from '@gustri/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findOrCreateByClientRequestId } from '@/lib/api/dedupe';
+import { notifyNewOrder } from '@/lib/push/notify';
 import { assertCustomerPlanAllowsWrites } from './customer-plan-gate';
 
 type DineInOrderInput = {
@@ -204,6 +205,16 @@ export async function createCustomerOrder(
       return order as Record<string, unknown>;
     },
   });
+
+  // Best-effort kitchen/staff push for genuinely new customer orders. This is
+  // the most important push path — a QR order needs to reach the kitchen.
+  // Never throws.
+  if (!result.deduped) {
+    await notifyNewOrder(supabaseAdmin, {
+      tenantId,
+      orderNumber: (result.row as { order_number?: string | number | null }).order_number,
+    });
+  }
 
   return { order: result.row, deduped: result.deduped };
 }

@@ -1551,5 +1551,9 @@
   "platformCreate.handoffHint": "Отправьте это владельцу, чтобы он мог войти.",
   "platformCreate.copyAll": "Копировать всё",
   "platformCreate.copied": "Скопировано",
-  "platformCreate.done": "Готово"
+  "platformCreate.done": "Готово",
+  "push.newOrder.title": "Новый заказ",
+  "push.newOrder.body": "Заказ #{{number}} получен",
+  "push.newWaiterCall.title": "Вызов официанта",
+  "push.newWaiterCall.body": "Столику нужна помощь"
 }

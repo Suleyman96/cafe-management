@@ -1551,5 +1551,9 @@
   "platformCreate.handoffHint": "Giriş yapabilmesi için bunları sahibe gönderin.",
   "platformCreate.copyAll": "Tümünü kopyala",
   "platformCreate.copied": "Kopyalandı",
-  "platformCreate.done": "Tamam"
+  "platformCreate.done": "Tamam",
+  "push.newOrder.title": "Yeni sipariş",
+  "push.newOrder.body": "Sipariş #{{number}} alındı",
+  "push.newWaiterCall.title": "Garson çağrısı",
+  "push.newWaiterCall.body": "Bir masa yardım istiyor"
 }

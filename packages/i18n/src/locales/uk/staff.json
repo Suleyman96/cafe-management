@@ -1551,5 +1551,9 @@
   "platformCreate.handoffHint": "Send these to the owner so they can sign in.",
   "platformCreate.copyAll": "Copy all",
   "platformCreate.copied": "Copied",
-  "platformCreate.done": "Done"
+  "platformCreate.done": "Done",
+  "push.newOrder.title": "New order",
+  "push.newOrder.body": "Order #{{number}} received",
+  "push.newWaiterCall.title": "Waiter call",
+  "push.newWaiterCall.body": "A table needs assistance"
 }

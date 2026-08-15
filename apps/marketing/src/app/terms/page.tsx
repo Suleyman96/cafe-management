@@ -82,10 +82,11 @@ export default function TermsPage() {
             5. Subscription &amp; cancellation
           </h2>
           <p className="text-gray-600 leading-relaxed">
-            Paid plans are billed monthly or annually depending on the plan you choose. You can
-            cancel at any time through the billing portal; cancellation takes effect at the end of
-            the current billing period and we do not refund partial periods. The free plan requires
-            no payment and remains free as long as you fit within its usage caps.
+            Paid plans are arranged directly with us and billed by invoice (for example, by bank
+            transfer). Your plan is activated once payment is received and renews for the period you
+            agree with us. To change or cancel a paid plan, contact us; cancellation takes effect at
+            the end of the current paid period and we do not refund partial periods. The free plan
+            requires no payment and remains free as long as you fit within its usage caps.
           </p>
           <p className="text-gray-600 leading-relaxed">
             We may suspend or terminate accounts for non-payment, misuse, or breach of these terms.
