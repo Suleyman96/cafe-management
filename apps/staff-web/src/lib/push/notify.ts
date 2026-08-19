@@ -24,6 +24,12 @@ import { logger } from '@/lib/api/logger';
 
 const PUSH_TIMEOUT_MS = 2000;
 
+// Role targeting. Owner + admin are always included as a safety net so a
+// single manager/owner working a shift never misses an alert, even in a cafe
+// with no dedicated kitchen/waiter staff.
+const ORDER_ROLES = ['kitchen', 'owner', 'admin'];
+const WAITER_CALL_ROLES = ['waiter', 'owner', 'admin'];
+
 // We read the locale JSON directly and interpolate by hand rather than going
 // through `@gustri/i18n` (react-i18next) — this module is imported by API
 // routes, and pulling React's context into that server bundle breaks the Next
@@ -110,7 +116,13 @@ async function tenantLocale(admin: SupabaseClient, tenantId: string): Promise<st
  */
 async function sendTenantPush(
   admin: SupabaseClient,
-  payload: { tenantId: string; title: string; body: string; data?: Record<string, unknown> },
+  payload: {
+    tenantId: string;
+    title: string;
+    body: string;
+    data?: Record<string, unknown>;
+    roles?: string[];
+  },
 ): Promise<void> {
   try {
     const invoke = admin.functions.invoke('send-push', {
@@ -119,6 +131,9 @@ async function sendTenantPush(
         title: payload.title,
         body: payload.body,
         data: payload.data ?? {},
+        // Restrict recipients by role when given; owner/admin are always
+        // included by the caller so a solo owner-on-shift still gets buzzed.
+        ...(payload.roles ? { roles: payload.roles } : {}),
       },
     });
     const timeout = new Promise<{ error: { message: string } }>((resolve) =>
@@ -153,6 +168,7 @@ export async function notifyNewOrder(
       title,
       body,
       data: { type: 'new_order' },
+      roles: ORDER_ROLES,
     });
   } catch (err) {
     logger.warn('push_notify_order_failed', {
@@ -178,6 +194,7 @@ export async function notifyNewWaiterCall(
       title,
       body,
       data: { type: 'waiter_call', tableId: args.tableId ?? null },
+      roles: WAITER_CALL_ROLES,
     });
   } catch (err) {
     logger.warn('push_notify_waiter_call_failed', {

@@ -1,7 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 Deno.serve(async (req) => {
-  const { tenant_id, title, body, data } = await req.json();
+  // `roles` (optional) restricts recipients to the given staff roles — e.g.
+  // kitchen for new orders, waiters for calls. Omitted/empty ⇒ all active
+  // staff (backward-compatible). Owner/admin are always included by the caller
+  // as a safety net so a solo owner-on-shift never misses an alert.
+  const { tenant_id, title, body, data, roles } = await req.json();
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -13,11 +17,17 @@ Deno.serve(async (req) => {
   // tenant — even though `staff_push_tokens` already carries tenant_id,
   // joining to `staff` defends against any future drift between the two
   // (e.g. if a staff row is moved between tenants).
-  const { data: rows, error } = await supabase
+  let query = supabase
     .from('staff_push_tokens')
-    .select('expo_token, staff:staff!inner(id, tenant_id, is_active)')
+    .select('expo_token, staff:staff!inner(id, tenant_id, is_active, role)')
     .eq('staff.tenant_id', tenant_id)
     .eq('staff.is_active', true);
+
+  if (Array.isArray(roles) && roles.length > 0) {
+    query = query.in('staff.role', roles);
+  }
+
+  const { data: rows, error } = await query;
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
