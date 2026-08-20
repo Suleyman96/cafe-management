@@ -5,17 +5,18 @@ import { FREE_PLAN_REASSURANCE } from '@/lib/constants';
 export function Hero() {
   return (
     <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
-      {/* Background gradient */}
+      {/* Background: a deliberate teal glow over white (the old /50 wash read
+          as flat gray). Soft, brand-forward, still lets the text breathe. */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-50/50 to-white" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary-100/30 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-50 via-white to-white" />
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 h-[560px] w-[900px] rounded-full bg-primary-200/40 blur-[130px]" />
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
         {/* Badge */}
         <div className="inline-flex items-center gap-2 rounded-full bg-primary-50 px-4 py-1.5 text-sm font-medium text-primary-700 mb-8">
           <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
-          Free for your first 100 orders/month — no credit card
+          Free for your first 500 orders/month — no credit card
         </div>
 
         {/* Heading */}
@@ -27,7 +28,7 @@ export function Hero() {
         {/* Subheading */}
         <p className="mt-6 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto text-balance leading-relaxed">
           The affordable, modern platform for small cafes, coffee shops, and bakeries. POS, QR
-          ordering, kitchen tickets, and inventory — free for your first 100 orders/month. No card
+          ordering, kitchen tickets, and inventory — free for your first 500 orders/month. No card
           processor lock-in. Setup in 5 minutes.
         </p>
 

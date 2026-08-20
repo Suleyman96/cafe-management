@@ -3,8 +3,15 @@
 @tailwind utilities;
 
 @layer base {
+  /* The marketing design is committed to a light theme. Declare it so a
+     `prefers-color-scheme: dark` browser doesn't paint its default DARK page
+     background behind our dark `text-gray-900` — which left headings on pages
+     without their own background (e.g. /pricing) invisible. */
+  :root {
+    color-scheme: light;
+  }
   body {
-    @apply antialiased text-gray-900;
+    @apply antialiased bg-white text-gray-900;
   }
 }
 

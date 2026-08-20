@@ -32,7 +32,8 @@ describe('push role-targeting', () => {
     await notifyNewOrder(client, { tenantId: TENANT, orderNumber: 42 });
 
     expect(invoke).toHaveBeenCalledTimes(1);
-    const [fn, opts] = invoke.mock.calls[0];
+    // calls[0] is defined (asserted above); `!` satisfies noUncheckedIndexedAccess.
+    const [fn, opts] = invoke.mock.calls[0]!;
     expect(fn).toBe('send-push');
     expect(opts.body.tenant_id).toBe(TENANT);
     expect(opts.body.data.type).toBe('new_order');
@@ -44,7 +45,7 @@ describe('push role-targeting', () => {
     await notifyNewWaiterCall(client, { tenantId: TENANT, tableId: 'table-1' });
 
     expect(invoke).toHaveBeenCalledTimes(1);
-    const [, opts] = invoke.mock.calls[0];
+    const [, opts] = invoke.mock.calls[0]!;
     expect(opts.body.data.type).toBe('waiter_call');
     expect(opts.body.roles).toEqual(['waiter', 'owner', 'admin']);
   });

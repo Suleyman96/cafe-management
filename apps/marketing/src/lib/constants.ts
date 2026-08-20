@@ -7,7 +7,7 @@ export const SITE_TAGLINE = 'Your restaurant, one platform.';
 export const STAFF_APP_URL = process.env.NEXT_PUBLIC_STAFF_APP_URL || 'http://localhost:3001';
 
 export const FREE_PLAN_REASSURANCE =
-  'No credit card. 5-minute setup. Free forever for ≤100 orders/mo.';
+  'No credit card. 5-minute setup. Free forever for up to 500 orders/mo.';
 
 export const NAV_LINKS = [
   { label: 'Features', href: '/features' },
@@ -30,14 +30,15 @@ export const PLANS = [
     description: 'For very small cafes just getting started',
     features: [
       'Up to 5 tables',
-      'Up to 100 orders/month',
+      'Up to 500 orders/month',
+      'QR ordering included',
       'POS system',
       'Kitchen display',
       'Basic analytics',
       'Community support',
     ],
     cta: 'Start Free',
-    microcopy: 'No credit card. Free forever for ≤100 orders/mo.',
+    microcopy: 'No credit card. Free forever for up to 500 orders/mo.',
     highlighted: false,
   },
   {
@@ -45,36 +46,36 @@ export const PLANS = [
     price: 10,
     description: 'For small cafes ready to grow',
     features: [
-      'Up to 10 tables',
-      'Up to 700 orders/month',
+      'Up to 15 tables',
+      'Unlimited orders',
       'QR ordering',
       'Full analytics',
       'Custom branding',
       'Email support',
     ],
-    cta: 'Get Started',
-    microcopy: '$10/mo. Cancel anytime.',
+    cta: 'Talk to us',
+    microcopy: 'We onboard you personally.',
     highlighted: false,
   },
   {
     name: 'Pro',
-    price: 25,
+    price: 20,
     description: 'For medium cafes that need everything',
     features: [
-      'Up to 20 tables',
-      'Up to 2,200 orders/month',
+      'Up to 40 tables',
+      'Unlimited orders',
       'All features included',
       'Inventory & waste tracking',
       'Staff scheduling & tasks',
       'Priority support',
     ],
-    cta: 'Get Started',
-    microcopy: '$25/mo. Cancel anytime. Most popular.',
+    cta: 'Talk to us',
+    microcopy: 'Most popular. We handle onboarding.',
     highlighted: true,
   },
   {
     name: 'Business',
-    price: 70,
+    price: 50,
     description: 'For large restaurants — no limits',
     features: [
       'Unlimited tables',
@@ -169,7 +170,7 @@ export const FAQ_ITEMS = [
   {
     question: 'Is there really a free plan?',
     answer:
-      'Yes. The Free plan includes POS and kitchen display — up to 5 tables and 100 orders per month. No credit card required, no time limit.',
+      'Yes. The Free plan includes POS, kitchen display, and QR ordering — up to 5 tables and 500 orders per month. No credit card required, no time limit.',
   },
   {
     question: 'Do I need special hardware?',
@@ -179,7 +180,7 @@ export const FAQ_ITEMS = [
   {
     question: 'Can I switch plans anytime?',
     answer:
-      'Yes. Upgrade or downgrade at any time. If you upgrade, you only pay the difference. If you downgrade, the credit applies to your next billing cycle.',
+      'Yes. Start on the Free plan instantly, and message us whenever you want to move up. We set up your paid plan and arrange billing with you directly — no lock-in, change whenever your cafe needs to.',
   },
   {
     question: 'Is my data secure?',

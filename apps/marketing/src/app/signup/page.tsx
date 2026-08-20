@@ -38,6 +38,7 @@ function SignupForm() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +46,11 @@ function SignupForm() {
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters.');
+      return;
+    }
+
+    if (!agreed) {
+      setError('Please agree to the Terms and Privacy Policy to continue.');
       return;
     }
 
@@ -174,9 +180,29 @@ function SignupForm() {
             <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
           )}
 
+          <label className="flex items-start gap-2.5 text-sm text-gray-600">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+            />
+            <span>
+              I agree to the{' '}
+              <a href="/terms" className="font-medium text-primary-600 hover:underline">
+                Terms of Service
+              </a>{' '}
+              and{' '}
+              <a href="/privacy" className="font-medium text-primary-600 hover:underline">
+                Privacy Policy
+              </a>
+              .
+            </span>
+          </label>
+
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !agreed}
             className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary-500 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-primary-500/25 hover:bg-primary-600 transition-all hover:shadow-primary-500/40 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isLoading ? (
@@ -193,7 +219,7 @@ function SignupForm() {
           </button>
 
           <p className="text-center text-xs text-gray-500">
-            No credit card. Free forever for ≤100 orders/mo.
+            No credit card. Free forever for up to 500 orders/mo.
           </p>
 
           <p className="text-center text-sm text-gray-500">

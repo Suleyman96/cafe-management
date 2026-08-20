@@ -35,7 +35,7 @@ export function CTA() {
               </Link>
             </div>
             <p className="mt-5 text-sm text-primary-100">
-              No credit card. 5-minute setup. Free forever for ≤100 orders/mo.
+              No credit card. 5-minute setup. Free forever for up to 500 orders/mo.
             </p>
           </div>
         </div>

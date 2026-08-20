@@ -63,12 +63,11 @@ export function Pricing() {
                 ))}
               </ul>
 
+              {/* Free is self-serve (instant signup). Paid tiers are
+                  white-glove: the operator sets them up after payment, so
+                  their CTA routes to Contact, not the signup flow. */}
               <Link
-                href={
-                  plan.cta === 'Contact Sales'
-                    ? '/contact'
-                    : `/signup?plan=${plan.name.toLowerCase()}`
-                }
+                href={plan.price === 0 ? '/signup?plan=free' : '/contact'}
                 className={`mt-8 block w-full rounded-lg py-2.5 text-center text-sm font-semibold transition-colors ${
                   plan.highlighted
                     ? 'bg-white text-primary-600 hover:bg-primary-50'

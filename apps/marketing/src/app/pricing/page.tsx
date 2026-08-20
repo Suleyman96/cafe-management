@@ -77,12 +77,10 @@ export default function PricingPage() {
                   ))}
                 </ul>
 
+                {/* Free self-serves; paid tiers are white-glove (operator
+                    onboards after payment) → route to Contact. */}
                 <Link
-                  href={
-                    plan.name === 'Business'
-                      ? '/contact'
-                      : `/signup?plan=${plan.name.toLowerCase()}`
-                  }
+                  href={plan.price === 0 ? '/signup?plan=free' : '/contact'}
                   className={`mt-8 block w-full rounded-lg py-2.5 text-center text-sm font-semibold transition-colors ${
                     plan.highlighted
                       ? 'bg-white text-primary-600 hover:bg-primary-50'
