@@ -60,7 +60,7 @@ export default function OpengraphImage() {
             maxWidth: '900px',
           }}
         >
-          POS, QR ordering, kitchen tickets, inventory — free for your first 500 orders/month.
+          POS, QR ordering, kitchen tickets, inventory — free for your first 300 orders/month.
         </div>
       </div>
 

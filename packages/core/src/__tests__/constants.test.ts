@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ORDER_STATUSES_REQUIRING_CANCEL_TYPE_CONFIRM,
   orderCancellationRequiresTypeConfirm,
+  PLAN_LIMITS,
 } from '../constants';
 
 describe('orderCancellationRequiresTypeConfirm', () => {
@@ -32,5 +33,17 @@ describe('orderCancellationRequiresTypeConfirm', () => {
     for (const status of ORDER_STATUSES_REQUIRING_CANCEL_TYPE_CONFIRM) {
       expect(orderCancellationRequiresTypeConfirm(status)).toBe(true);
     }
+  });
+});
+
+describe('PLAN_LIMITS order caps', () => {
+  it('caps the free tier at 300 orders/month', () => {
+    expect(PLAN_LIMITS.free.maxOrdersPerMonth).toBe(300);
+  });
+
+  it('leaves paid tiers uncapped (-1 = unlimited)', () => {
+    expect(PLAN_LIMITS.standard.maxOrdersPerMonth).toBe(-1);
+    expect(PLAN_LIMITS.pro.maxOrdersPerMonth).toBe(-1);
+    expect(PLAN_LIMITS.business.maxOrdersPerMonth).toBe(-1);
   });
 });

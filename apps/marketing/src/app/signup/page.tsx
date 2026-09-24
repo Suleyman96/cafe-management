@@ -219,7 +219,7 @@ function SignupForm() {
           </button>
 
           <p className="text-center text-xs text-gray-500">
-            No credit card. Free forever for up to 500 orders/mo.
+            No credit card. Free forever for up to 300 orders/mo.
           </p>
 
           <p className="text-center text-sm text-gray-500">

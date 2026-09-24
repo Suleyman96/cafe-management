@@ -7,7 +7,7 @@ export const SITE_TAGLINE = 'Your restaurant, one platform.';
 export const STAFF_APP_URL = process.env.NEXT_PUBLIC_STAFF_APP_URL || 'http://localhost:3001';
 
 export const FREE_PLAN_REASSURANCE =
-  'No credit card. 5-minute setup. Free forever for up to 500 orders/mo.';
+  'No credit card. 5-minute setup. Free forever for up to 300 orders/mo.';
 
 export const NAV_LINKS = [
   { label: 'Features', href: '/features' },
@@ -30,15 +30,14 @@ export const PLANS = [
     description: 'For very small cafes just getting started',
     features: [
       'Up to 5 tables',
-      'Up to 500 orders/month',
+      'Up to 300 orders/month',
       'QR ordering included',
-      'POS system',
       'Kitchen display',
       'Basic analytics',
       'Community support',
     ],
     cta: 'Start Free',
-    microcopy: 'No credit card. Free forever for up to 500 orders/mo.',
+    microcopy: 'No credit card. Free forever for up to 300 orders/mo.',
     highlighted: false,
   },
   {
@@ -170,7 +169,7 @@ export const FAQ_ITEMS = [
   {
     question: 'Is there really a free plan?',
     answer:
-      'Yes. The Free plan includes POS, kitchen display, and QR ordering — up to 5 tables and 500 orders per month. No credit card required, no time limit.',
+      'Yes. The Free plan includes POS, kitchen display, and QR ordering — up to 5 tables and 300 orders per month. No credit card required, no time limit.',
   },
   {
     question: 'Do I need special hardware?',

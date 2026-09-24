@@ -16,7 +16,7 @@ export function Hero() {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 rounded-full bg-primary-50 px-4 py-1.5 text-sm font-medium text-primary-700 mb-8">
           <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
-          Free for your first 500 orders/month — no credit card
+          Free for your first 300 orders/month — no credit card
         </div>
 
         {/* Heading */}
@@ -28,7 +28,7 @@ export function Hero() {
         {/* Subheading */}
         <p className="mt-6 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto text-balance leading-relaxed">
           The affordable, modern platform for small cafes, coffee shops, and bakeries. POS, QR
-          ordering, kitchen tickets, and inventory — free for your first 500 orders/month. No card
+          ordering, kitchen tickets, and inventory — free for your first 300 orders/month. No card
           processor lock-in. Setup in 5 minutes.
         </p>
 

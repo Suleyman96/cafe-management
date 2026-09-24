@@ -170,9 +170,9 @@ export type PlanName = 'free' | 'standard' | 'pro' | 'business';
 export const PLAN_LIMITS = {
   free: {
     // Real trial: QR ordering ON (custom_branding off → "Powered by gustri" on
-    // the QR menu = free marketing), 500 orders/mo so a micro-cafe can run on it.
+    // the QR menu = free marketing), 300 orders/mo so a micro-cafe can run on it.
     maxTables: 5,
-    maxOrdersPerMonth: 500,
+    maxOrdersPerMonth: 300,
     qrOrdering: true,
     kitchenDisplay: true,
     inventory: false,

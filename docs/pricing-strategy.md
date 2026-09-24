@@ -59,7 +59,7 @@ changing a cap. Do not list a feature as tier-gated here unless it is enforced.
 
 | Feature | Free | Standard | Pro | Business |
 |---------|------|----------|-----|----------|
-| **Orders / month** | **500** | Unlimited | Unlimited | Unlimited |
+| **Orders / month** | **300** | Unlimited | Unlimited | Unlimited |
 | **Tables** | **5** | **15** | **40** | Unlimited |
 | Menu items | Unlimited | Unlimited | Unlimited | Unlimited |
 | **QR ordering** | **Yes** | Yes | Yes | Yes |
@@ -78,7 +78,7 @@ changing a cap. Do not list a feature as tier-gated here unless it is enforced.
 
 **Free-tier note:** QR ordering is intentionally ON for Free, but custom
 branding is OFF — so a free tenant's QR menu shows "Powered by gustri", turning
-every customer scan into free marketing. Free's only hard cap is 500 orders/mo
+every customer scan into free marketing. Free's only hard cap is 300 orders/mo
 and 5 tables; paid tiers have **no order cap** (a mid-service POS lockout would
 be catastrophic — they scale on tables + features instead).
 
