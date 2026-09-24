@@ -23,7 +23,20 @@ export const SOCIAL_LINKS = {
   linkedin: 'https://linkedin.com/company/gustri',
 } as const;
 
-export const PLANS = [
+export type Plan = {
+  name: string;
+  /** Monthly price in USD. 0 = free. */
+  price: number;
+  /** Yearly price in USD (paid plans only; omitted for Free). */
+  priceYearly?: number;
+  description: string;
+  features: readonly string[];
+  cta: string;
+  microcopy: string;
+  highlighted: boolean;
+};
+
+export const PLANS: readonly Plan[] = [
   {
     name: 'Free',
     price: 0,
@@ -42,7 +55,8 @@ export const PLANS = [
   },
   {
     name: 'Standard',
-    price: 10,
+    price: 12,
+    priceYearly: 99,
     description: 'For small cafes ready to grow',
     features: [
       'Up to 15 tables',
@@ -59,6 +73,7 @@ export const PLANS = [
   {
     name: 'Pro',
     price: 20,
+    priceYearly: 189,
     description: 'For medium cafes that need everything',
     features: [
       'Up to 40 tables',
@@ -75,6 +90,7 @@ export const PLANS = [
   {
     name: 'Business',
     price: 50,
+    priceYearly: 399,
     description: 'For large restaurants — no limits',
     features: [
       'Unlimited tables',
@@ -88,7 +104,7 @@ export const PLANS = [
     microcopy: 'Custom onboarding for larger restaurants.',
     highlighted: false,
   },
-] as const;
+];
 
 export const FEATURES = [
   {
