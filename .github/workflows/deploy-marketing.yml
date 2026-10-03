@@ -1,18 +1,13 @@
 name: Deploy Marketing
 
-# Auto-deploys on every push to main, plus manual dispatch. Marketing is a
-# static site + MDX blog with NO DB dependency, so (unlike deploy-staff-web /
-# deploy-customer-web, which chain behind Deploy Migrations via `workflow_run`)
-# it deploys directly on push — no need to gate on migrations.
-#
-# PREREQUISITE: this requires the `VERCEL_MARKETING_PROJECT_ID` secret and a
-# configured Vercel project. Until both exist, `vercel pull` fails and every
-# main push goes red — so this trigger must only be live once the project +
-# secret are in place. (`VERCEL_ORG_ID` / `VERCEL_TOKEN` already exist, reused
-# from the sibling deploy workflows.)
+# Manual-dispatch only. The marketing site deploys via Vercel's own Git
+# integration (the `cafe-idare-lfpm` project auto-deploys on push to main), so
+# this Actions workflow is NOT the active deploy path and must not auto-run —
+# otherwise it would double-deploy and, without a `VERCEL_MARKETING_PROJECT_ID`
+# secret, redden every push. Kept for manual `workflow_dispatch` use only; if
+# you ever switch marketing off Vercel Git auto-deploy, add the secret and
+# restore a `push: branches: [main]` trigger here.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
