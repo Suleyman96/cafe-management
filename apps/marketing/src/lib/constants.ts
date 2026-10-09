@@ -73,7 +73,7 @@ export const PLANS: readonly Plan[] = [
   {
     name: 'Pro',
     price: 20,
-    priceYearly: 189,
+    priceYearly: 179,
     description: 'For medium cafes that need everything',
     features: [
       'Up to 40 tables',
