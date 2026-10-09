@@ -135,4 +135,30 @@ describe('customer BFF proxy', () => {
     });
     expect(fetchMock.mock.calls[0]![0]).toBe('http://staff.test/api/v1/customer/orders/o1/cancel');
   });
+
+  // L5 — path-traversal / malformed-segment guard. Each of these must 400
+  // WITHOUT touching the upstream, confining the proxy to the
+  // `/api/v1/customer/` prefix regardless of Next's normalization.
+  describe('L5 — rejects unsafe catch-all segments with 400 and never forwards', () => {
+    it.each<[string, string[]]>([
+      ['dot-dot traversal', ['orders', '..', '..', 'etc', 'passwd']],
+      ['single dot segment', ['orders', '.']],
+      ['encoded separator / illegal chars', ['orders%2f..']],
+      ['slash inside a segment', ['orders/secret']],
+      ['space / punctuation', ['orders ;drop']],
+      ['empty path', []],
+    ])('%s', async (_label, path) => {
+      delete process.env.CUSTOMER_API_SIGNING_SECRET;
+      const fetchMock = vi.fn().mockResolvedValue(upstreamOk({}));
+      vi.stubGlobal('fetch', fetchMock);
+
+      const res = await POST(proxyRequest('{}'), {
+        params: Promise.resolve({ path }),
+      });
+
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'invalid_path' });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -20,22 +20,14 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://plausible.io",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob:",
-              "font-src 'self'",
-              // `*.sentry.io` covers the region-scoped ingest hosts
-              // (o<org>.ingest.us|de.sentry.io) the browser SDK POSTs errors to.
-              "connect-src 'self' https://plausible.io https://*.supabase.co https://*.sentry.io",
-              "frame-ancestors 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join('; '),
-          },
+          // CSP intentionally NOT set here — it's emitted per-request by
+          // src/middleware.ts so the policy can carry a fresh nonce that
+          // Next.js stamps onto its inline hydration `<script>` blocks (and
+          // that our JSON-LD reads via `x-nonce`). A static CSP here would
+          // override the middleware header and, now that `script-src` no
+          // longer allows `'unsafe-inline'`, break hydration with
+          // "Executing inline script violates the following Content Security
+          // Policy". See the middleware for the full rationale (M8).
         ],
       },
     ];

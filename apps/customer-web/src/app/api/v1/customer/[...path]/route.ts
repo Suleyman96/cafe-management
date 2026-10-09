@@ -62,9 +62,27 @@ function clientIp(request: NextRequest): string | null {
   return null;
 }
 
+// L5 — segments allowed in the catch-all path. Alphanumerics plus `.`, `_`,
+// `-`; crucially this rejects `/`, `\`, `%`, null bytes, and the `.`/`..`
+// dot-segments. Even though Next normalizes most traversal before we see it,
+// validating here provably confines the proxy to the `/api/v1/customer/`
+// prefix regardless of upstream normalization quirks.
+const PATH_SEGMENT_RE = /^[A-Za-z0-9._-]+$/;
+
+function isSafeSegment(segment: string): boolean {
+  if (segment === '.' || segment === '..') return false;
+  return PATH_SEGMENT_RE.test(segment);
+}
+
 async function proxy(request: NextRequest, pathSegments: string[]): Promise<NextResponse> {
   if (!UPSTREAM) {
     return NextResponse.json({ error: 'upstream_not_configured' }, { status: 500 });
+  }
+
+  // L5 — reject any traversal or otherwise malformed segment before it can
+  // influence the upstream URL. An empty catch-all or any bad segment is a 400.
+  if (pathSegments.length === 0 || !pathSegments.every(isSafeSegment)) {
+    return NextResponse.json({ error: 'invalid_path' }, { status: 400 });
   }
 
   const upstreamPath = `/api/v1/customer/${pathSegments.join('/')}`;

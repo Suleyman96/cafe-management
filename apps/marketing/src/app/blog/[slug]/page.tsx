@@ -11,6 +11,11 @@ interface Props {
   params: { slug: string };
 }
 
+// L7 — only slugs returned by generateStaticParams resolve; any other
+// `/blog/<slug>` 404s at the routing layer instead of invoking the loader
+// with an attacker-controlled slug.
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return getAllPosts().map((post) => ({ slug: post.slug }));
 }

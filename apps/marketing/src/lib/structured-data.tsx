@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { FAQ_ITEMS, PLANS, SITE_DESCRIPTION, SITE_NAME, SITE_URL, SOCIAL_LINKS } from './constants';
 
 export function organizationSchema() {
@@ -46,9 +47,15 @@ export function faqPageSchema() {
 }
 
 export function JsonLd({ data }: { data: object }) {
+  // M8 — carry the per-request CSP nonce (minted in src/middleware.ts) so this
+  // inline script satisfies `script-src 'nonce-…'` now that `'unsafe-inline'`
+  // is gone. Reading `headers()` opts the route into dynamic rendering, which
+  // is the accepted cost of the nonce-based CSP approach.
+  const nonce = headers().get('x-nonce') ?? undefined;
   return (
     <script
       type="application/ld+json"
+      nonce={nonce}
       // biome-ignore lint/security/noDangerouslySetInnerHtml: schema.org JSON is trusted
       dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
     />

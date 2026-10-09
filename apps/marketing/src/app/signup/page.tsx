@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import { ArrowLeft, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -73,7 +74,22 @@ function SignupForm() {
       });
 
       if (signUpError) {
-        setError(signUpError.message);
+        // M7 — never surface GoTrue's raw message (e.g. "User already
+        // registered"): it lets an attacker enumerate which emails have
+        // accounts. Report the raw error to Sentry / the dev console for ops,
+        // and show the user a generic message that reveals nothing about
+        // whether the email exists.
+        //
+        // i18n note: this marketing site is English-only at runtime (no
+        // language switcher, `<html lang="en">`) and every other string in
+        // this form — including the sibling validation errors above — is
+        // inline English. We keep the copy inline for consistency; the
+        // translatable source of truth lives in `auth.json` under
+        // `signupFailed` across all 20 locales, ready for when marketing is
+        // internationalized.
+        console.error('[signup] sign-up failed', signUpError);
+        Sentry.captureException(signUpError, { tags: { surface: 'marketing-signup' } });
+        setError('Something went wrong. Please check your details and try again.');
         return;
       }
 
