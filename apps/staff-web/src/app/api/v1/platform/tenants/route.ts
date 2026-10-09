@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
 import { logger } from '@/lib/api/logger';
+import { logPlatformAudit } from '@/lib/api/platform-audit';
 import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
 import { jsonOk, jsonRateLimited } from '@/lib/api/response';
 import { validateBody } from '@/lib/api/validate';
@@ -193,6 +194,22 @@ export async function POST(request: NextRequest) {
     if (readErr || !tenant) {
       throw new Error(`platform create-tenant: read-back failed (${readErr?.message ?? 'no row'})`);
     }
+
+    // L12: audit the operator action (actor, new tenant, requested→persisted
+    // plan). Creation has no "before" state.
+    await logPlatformAudit(supabase, {
+      actorId: admin.id,
+      actorEmail: admin.email,
+      tenantId,
+      action: 'tenant_create',
+      oldValue: null,
+      newValue: {
+        plan: tenant.plan,
+        requested_plan: data.plan,
+        is_active: tenant.is_active,
+        owner_email: data.owner_email,
+      },
+    });
 
     return jsonOk({ tenant, owner_email: data.owner_email }, 201);
   } catch (err) {

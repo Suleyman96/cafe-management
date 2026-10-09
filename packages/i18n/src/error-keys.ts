@@ -67,6 +67,17 @@ export const SENTINEL_ERROR_CODES = [
   'option_unavailable',
   'required_option_missing',
   'too_many_options',
+  // Tenant-isolation checks on order create (H1/L2). Emitted by
+  // order-service when a supplied table_id / assigned_waiter_id /
+  // delivery_customer_id belongs to another tenant (or doesn't exist). The UI
+  // only ever offers the current tenant's own entities, so these fire on a
+  // tampered/bypassed request.
+  'table_tenant_mismatch',
+  'waiter_tenant_mismatch',
+  'delivery_customer_tenant_mismatch',
+  // L1 — a plain `admin` tried to create a staff member with role `owner`.
+  // Only an `owner` may grant `owner`.
+  'owner_role_requires_owner',
   // ADD-8 — customer→staff HMAC signature verification failure. Emitted by
   // `/api/v1/customer/*` when request signing is enforced
   // (`CUSTOMER_API_SIGNING_SECRET` set) and the signature is missing/invalid/

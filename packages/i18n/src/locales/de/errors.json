@@ -29,5 +29,9 @@
   "option_unavailable": "Eine der gewählten Optionen ist nicht mehr verfügbar.",
   "required_option_missing": "Bitte wählen Sie alle erforderlichen Optionen.",
   "too_many_options": "Sie haben zu viele Optionen ausgewählt.",
-  "invalid_signature": "Die Anfrage konnte nicht verifiziert werden. Bitte versuchen Sie es erneut."
+  "invalid_signature": "Die Anfrage konnte nicht verifiziert werden. Bitte versuchen Sie es erneut.",
+  "table_tenant_mismatch": "Dieser Tisch gehört nicht zum aktuellen Restaurant.",
+  "waiter_tenant_mismatch": "Dieses Personalmitglied gehört nicht zum aktuellen Restaurant.",
+  "delivery_customer_tenant_mismatch": "Dieser Lieferkunde gehört nicht zum aktuellen Restaurant.",
+  "owner_role_requires_owner": "Nur ein Inhaber kann einen weiteren Inhaber erstellen."
 }

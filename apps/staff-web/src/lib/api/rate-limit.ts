@@ -134,6 +134,27 @@ const limiters = redis
         limiter: Ratelimit.slidingWindow(60, '60 s'),
         prefix: 'rl:login-ip',
       }),
+      // Platform-operator mutations (M1/M9/H2): cross-tenant console actions —
+      // data-retention sweep, db-stats telemetry, tenant plan/status changes.
+      // Keyed per operator (admin id) where an admin identity exists, by IP on
+      // the cron-authorized retention path. These are rare, high-privilege
+      // actions; 30/min is generous for a human operator working the console
+      // and tight enough to bound a compromised token.
+      platform: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(30, '60 s'),
+        prefix: 'rl:platform',
+      }),
+      // Shift-time operational writes (L4): waiter reassignment, clock in/out,
+      // push-token registration, table QR rotation. Keyed per IP. A cafe's
+      // staff share one NAT IP, so the ceiling is generous (60/min) to avoid
+      // locking a whole floor out during a shift-change burst while still
+      // bounding automated abuse.
+      'shift-op': new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(60, '60 s'),
+        prefix: 'rl:shift-op',
+      }),
     }
   : null;
 
@@ -152,7 +173,9 @@ export type RateLimitCategory =
   | 'customer-qr-token'
   | 'data-export'
   | 'login'
-  | 'login-ip';
+  | 'login-ip'
+  | 'platform'
+  | 'shift-op';
 
 export async function rateLimit(
   category: RateLimitCategory,

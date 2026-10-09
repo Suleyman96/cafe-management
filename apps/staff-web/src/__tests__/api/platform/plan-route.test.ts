@@ -37,13 +37,38 @@ function params(id = TENANT_ID) {
   return { params: Promise.resolve({ id }) };
 }
 
-/** Captures the single `.update(patch)` call on tenants and echoes a row back. */
+/**
+ * Captures the `.update(patch)` call on tenants and the `.insert(row)` on
+ * platform_audit_log (L12), and echoes a row back. The pre-read `select` on
+ * tenants returns the prior plan so the audit records old→new.
+ */
 function makeSupabase() {
-  const calls = { update: [] as Record<string, unknown>[] };
+  const calls = {
+    update: [] as Record<string, unknown>[],
+    audit: [] as Record<string, unknown>[],
+  };
   const client = {
     calls,
-    from() {
+    from(table: string) {
+      if (table === 'platform_audit_log') {
+        return {
+          insert: (row: Record<string, unknown>) => {
+            calls.audit.push(row);
+            return Promise.resolve({ error: null });
+          },
+        };
+      }
       return {
+        // L12 pre-read: old plan/cadence snapshot.
+        select: () => ({
+          eq: () => ({
+            maybeSingle: () =>
+              Promise.resolve({
+                data: { plan: 'standard', billing_cycle: null, current_period_end: null },
+                error: null,
+              }),
+          }),
+        }),
         update: (vals: Record<string, unknown>) => {
           calls.update.push(vals);
           return {
@@ -135,5 +160,18 @@ describe('POST /api/v1/platform/tenants/[id]/plan', () => {
     await POST(req({ plan: 'standard' }), params());
     const patch = (supabaseMock.value as ReturnType<typeof makeSupabase>).calls.update[0]!;
     expect(patch).toEqual({ plan: 'standard' });
+  });
+
+  it('writes a platform_audit_log row recording actor + old→new (L12)', async () => {
+    await POST(req({ plan: 'pro', billing_cycle: 'monthly' }), params());
+    const audit = (supabaseMock.value as ReturnType<typeof makeSupabase>).calls.audit;
+    expect(audit).toHaveLength(1);
+    const row = audit[0]!;
+    expect(row.action).toBe('plan_change');
+    expect(row.actor_email).toBe('boss@gustri.com');
+    expect(row.actor_id).toBe('admin-1');
+    expect(row.tenant_id).toBe(TENANT_ID);
+    expect((row.old_value as { plan: string }).plan).toBe('standard');
+    expect((row.new_value as { plan: string }).plan).toBe('pro');
   });
 });

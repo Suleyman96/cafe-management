@@ -82,6 +82,8 @@ describe('createOrder service — totals are derived server-side (C2)', () => {
         { data: null, error: null }, // dedupe lookup miss (Blocker 1)
         { data: fresh, error: null }, // insert
       ],
+      // H1 tenant-scope check: table belongs to the tenant.
+      tables: [{ data: { id: 'tbl-1' }, error: null }],
     });
 
     await createOrder(client, {
@@ -115,6 +117,7 @@ describe('createOrder service — totals are derived server-side (C2)', () => {
         { data: null, error: null }, // dedupe lookup miss (Blocker 1)
         { data: fresh, error: null },
       ],
+      tables: [{ data: { id: 'tbl-1' }, error: null }],
     });
 
     await createOrder(client, {
@@ -131,5 +134,93 @@ describe('createOrder service — totals are derived server-side (C2)', () => {
     expect(orderInsert!.payload.subtotal).toBe(0);
     expect(orderInsert!.payload.tax).toBe(0);
     expect(orderInsert!.payload.total).toBe(0);
+  });
+});
+
+describe('createOrder service — cross-tenant FK rejection (H1 / L2)', () => {
+  it('rejects a table_id that belongs to another tenant (no insert)', async () => {
+    const client = buildClient({
+      orders: [{ data: null, error: null }], // dedupe miss
+      tables: [{ data: null, error: null }], // not found in this tenant
+    });
+
+    await expect(
+      createOrder(client, {
+        orderData: {
+          order_type: 'dine_in',
+          table_id: 'tbl-foreign',
+          client_request_id: CRID,
+        },
+        tenantId: TENANT,
+      }),
+    ).rejects.toMatchObject({ message: 'table_tenant_mismatch', statusCode: 404 });
+
+    // The order must NEVER be inserted when the FK check fails.
+    const inserts = (client as unknown as { __inserts: CapturedInsert[] }).__inserts;
+    expect(inserts.find((i) => i.table === 'orders')).toBeUndefined();
+  });
+
+  it('rejects an assigned_waiter_id that belongs to another tenant', async () => {
+    const client = buildClient({
+      orders: [{ data: null, error: null }],
+      staff: [{ data: null, error: null }], // waiter not in this tenant
+    });
+
+    await expect(
+      createOrder(client, {
+        orderData: {
+          order_type: 'dine_in',
+          assigned_waiter_id: 'waiter-foreign',
+          client_request_id: CRID,
+        },
+        tenantId: TENANT,
+      }),
+    ).rejects.toMatchObject({ message: 'waiter_tenant_mismatch', statusCode: 404 });
+  });
+
+  it('rejects a delivery_customer_id that belongs to another tenant', async () => {
+    const client = buildClient({
+      orders: [{ data: null, error: null }],
+      delivery_customers: [{ data: null, error: null }],
+    });
+
+    await expect(
+      createOrder(client, {
+        orderData: {
+          order_type: 'delivery',
+          delivery_customer_id: 'cust-foreign',
+          client_request_id: CRID,
+        },
+        tenantId: TENANT,
+      }),
+    ).rejects.toMatchObject({ message: 'delivery_customer_tenant_mismatch', statusCode: 404 });
+  });
+
+  it('accepts when every supplied FK belongs to the tenant', async () => {
+    const fresh = { id: 'order-fresh', tenant_id: TENANT };
+    const client = buildClient({
+      orders: [
+        { data: null, error: null }, // dedupe miss
+        { data: fresh, error: null }, // insert
+      ],
+      tables: [{ data: { id: 'tbl-1' }, error: null }],
+      staff: [{ data: { id: 'waiter-1' }, error: null }],
+      delivery_customers: [{ data: { id: 'cust-1' }, error: null }],
+    });
+
+    const result = await createOrder(client, {
+      orderData: {
+        order_type: 'delivery',
+        table_id: 'tbl-1',
+        assigned_waiter_id: 'waiter-1',
+        delivery_customer_id: 'cust-1',
+        client_request_id: CRID,
+      },
+      tenantId: TENANT,
+    });
+
+    expect(result.deduped).toBe(false);
+    const inserts = (client as unknown as { __inserts: CapturedInsert[] }).__inserts;
+    expect(inserts.find((i) => i.table === 'orders')).toBeDefined();
   });
 });

@@ -29,5 +29,9 @@
   "option_unavailable": "أحد الخيارات المحددة لم يعد متاحًا.",
   "required_option_missing": "يرجى اختيار جميع الخيارات المطلوبة.",
   "too_many_options": "لقد اخترت عددًا كبيرًا جدًا من الخيارات.",
-  "invalid_signature": "تعذّر التحقق من الطلب. يرجى المحاولة مرة أخرى."
+  "invalid_signature": "تعذّر التحقق من الطلب. يرجى المحاولة مرة أخرى.",
+  "table_tenant_mismatch": "هذه الطاولة لا تنتمي إلى المطعم الحالي.",
+  "waiter_tenant_mismatch": "هذا الموظف لا ينتمي إلى المطعم الحالي.",
+  "delivery_customer_tenant_mismatch": "عميل التوصيل هذا لا ينتمي إلى المطعم الحالي.",
+  "owner_role_requires_owner": "يمكن للمالك فقط إنشاء مالك آخر."
 }

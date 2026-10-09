@@ -31,10 +31,17 @@ export const preferredRegion = ['sin1'];
  */
 export async function POST(request: NextRequest) {
   try {
-    if (!isAuthorizedCron(request)) {
+    // L13: the cron-secret holder is an unattended scheduler, not an
+    // interactive operator — it should learn only that the sweep ran and how
+    // many tenants are due, never the tenant list itself. Only the
+    // platform-admin (interactive console) path receives the full `due` array.
+    const cronAuthorized = isAuthorizedCron(request);
+    if (!cronAuthorized) {
       const adminOrError = await verifyPlatformAdmin(request);
       if (adminOrError instanceof NextResponse) return adminOrError;
     }
+    // True only for the interactive platform-admin path.
+    const includeDue = !cronAuthorized;
 
     const supabase = getSupabaseAdmin();
 
@@ -77,7 +84,8 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json({
         status: 'completed',
-        due: [],
+        due_count: 0,
+        ...(includeDue ? { due: [] } : {}),
         emailed: false,
         reason: 'none_due',
       });
@@ -94,7 +102,8 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json({
         status: 'completed',
-        due,
+        due_count: due.length,
+        ...(includeDue ? { due } : {}),
         emailed: false,
         reason: 'email_not_configured',
       });
@@ -108,7 +117,12 @@ export async function POST(request: NextRequest) {
       .join('\n');
     const emailed = await sendOperatorDigest(espKey, recipients, due.length, lines);
 
-    return NextResponse.json({ status: 'completed', due, emailed });
+    return NextResponse.json({
+      status: 'completed',
+      due_count: due.length,
+      ...(includeDue ? { due } : {}),
+      emailed,
+    });
   } catch (err) {
     return handleRouteError(err, request);
   }

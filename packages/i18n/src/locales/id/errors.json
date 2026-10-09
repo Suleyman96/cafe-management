@@ -29,5 +29,9 @@
   "option_unavailable": "Salah satu opsi yang dipilih tidak lagi tersedia.",
   "required_option_missing": "Silakan pilih semua opsi yang diperlukan.",
   "too_many_options": "Anda memilih terlalu banyak opsi.",
-  "invalid_signature": "Tidak dapat memverifikasi permintaan. Silakan coba lagi."
+  "invalid_signature": "Tidak dapat memverifikasi permintaan. Silakan coba lagi.",
+  "table_tenant_mismatch": "Meja ini bukan milik restoran saat ini.",
+  "waiter_tenant_mismatch": "Staf ini bukan milik restoran saat ini.",
+  "delivery_customer_tenant_mismatch": "Pelanggan pengiriman ini bukan milik restoran saat ini.",
+  "owner_role_requires_owner": "Hanya pemilik yang dapat membuat pemilik lain."
 }

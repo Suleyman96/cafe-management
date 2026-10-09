@@ -29,5 +29,9 @@
   "option_unavailable": "Tanlangan variantlardan biri endi mavjud emas.",
   "required_option_missing": "Iltimos, barcha majburiy variantlarni tanlang.",
   "too_many_options": "Siz juda koʻp variant tanladingiz.",
-  "invalid_signature": "So‘rovni tasdiqlab bo‘lmadi. Iltimos, qayta urinib ko‘ring."
+  "invalid_signature": "So‘rovni tasdiqlab bo‘lmadi. Iltimos, qayta urinib ko‘ring.",
+  "table_tenant_mismatch": "Bu stol joriy restoranga tegishli emas.",
+  "waiter_tenant_mismatch": "Bu xodim joriy restoranga tegishli emas.",
+  "delivery_customer_tenant_mismatch": "Bu yetkazib berish mijozi joriy restoranga tegishli emas.",
+  "owner_role_requires_owner": "Faqat egasi boshqa egani yaratishi mumkin."
 }

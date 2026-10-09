@@ -46,6 +46,7 @@ function makeSupabase(
     createUser: [] as unknown[],
     deleteUser: [] as unknown[],
     planUpdate: [] as Record<string, unknown>[],
+    audit: [] as Record<string, unknown>[],
   };
   const client = {
     calls,
@@ -66,6 +67,14 @@ function makeSupabase(
       },
     },
     from(table: string) {
+      if (table === 'platform_audit_log') {
+        return {
+          insert: (row: Record<string, unknown>) => {
+            calls.audit.push(row);
+            return Promise.resolve({ error: null });
+          },
+        };
+      }
       return {
         select: () => ({
           eq: () => ({
@@ -139,6 +148,11 @@ describe('POST /api/v1/platform/tenants', () => {
     expect(createArg.user_metadata.restaurant_name).toBe('Blue Bottle');
     // pro (paid) → plan update applied
     expect(client.calls.planUpdate).toEqual([{ plan: 'pro' }]);
+    // L12: operator action recorded.
+    expect(client.calls.audit).toHaveLength(1);
+    expect(client.calls.audit[0]!.action).toBe('tenant_create');
+    expect(client.calls.audit[0]!.actor_email).toBe('boss@gustri.com');
+    expect(client.calls.audit[0]!.tenant_id).toBe(TENANT_ID);
   });
 
   it('does NOT set plan for a free tenant (trigger already provisions free)', async () => {

@@ -926,3 +926,94 @@ describe('Cafe-scoped login — same username across cafes resolves per-cafe', (
     expect(await resolve(ids.tenantB as string)).toBe(ids.userB);
   });
 });
+
+// L1 — only an `owner` may grant the `owner` role. The POST /api/v1/staff
+// route guards the service-role create path, but staff edits go through the
+// AUTHENTICATED client under RLS ("Admins can insert/update staff in tenant"),
+// which carries no restriction on the target row's role. The
+// `enforce_owner_grant_requires_owner` trigger (migration 20261010000003)
+// closes that path at the database. These probes sign in as a plain admin
+// (admin@test.com, tenant 1) and must be REJECTED.
+describe('RLS — only an owner can grant the owner role (L1)', () => {
+  let adminClient: ReturnType<typeof createClient<Database>>;
+  let adminStaffId: string;
+
+  beforeAll(async () => {
+    const { data, error } = await createClient(SUPABASE_URL, ANON_KEY).auth.signInWithPassword({
+      email: 'admin@test.com',
+      password: 'test1234',
+    });
+    if (error || !data.session) {
+      throw new Error(`admin sign-in failed: ${error?.message ?? 'no session'}`);
+    }
+    adminClient = createClient<Database>(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${data.session.access_token}` } },
+    });
+
+    const { data: me } = await svc
+      .from('staff')
+      .select('id, role')
+      .eq('email', 'admin@test.com')
+      .maybeSingle();
+    if (!me || me.role !== 'admin') {
+      throw new Error(`fixture admin@test.com is not role 'admin' (got ${me?.role ?? 'none'})`);
+    }
+    adminStaffId = me.id as string;
+  });
+
+  test('admin CANNOT promote an existing staff member to owner (role unchanged)', async () => {
+    const { error } = await adminClient
+      .from('staff')
+      .update({ role: 'owner' })
+      .eq('id', adminStaffId);
+
+    // Rejected by the trigger (insufficient_privilege → 42501) carrying the
+    // localizable sentinel.
+    expect(error).not.toBeNull();
+    expect(`${error?.code ?? ''} ${error?.message ?? ''}`).toContain('owner_role_requires_owner');
+
+    // The role on disk must be untouched.
+    const { data: after } = await svc
+      .from('staff')
+      .select('role')
+      .eq('id', adminStaffId)
+      .maybeSingle();
+    expect(after?.role).toBe('admin');
+  });
+
+  test('admin CANNOT insert a new owner staff row', async () => {
+    const { data: me } = await svc
+      .from('staff')
+      .select('tenant_id')
+      .eq('id', adminStaffId)
+      .maybeSingle();
+
+    const probeEmail = `l1-probe-${Date.now()}@test.com`;
+    const { error } = await adminClient.from('staff').insert({
+      email: probeEmail,
+      full_name: 'L1 Probe Owner',
+      role: 'owner',
+      tenant_id: me!.tenant_id as string,
+    });
+
+    expect(error).not.toBeNull();
+    expect(`${error?.code ?? ''} ${error?.message ?? ''}`).toContain('owner_role_requires_owner');
+
+    // Nothing should have been written; clean up defensively if it leaked.
+    const { data: leaked } = await svc.from('staff').select('id').eq('email', probeEmail);
+    if (leaked && leaked.length > 0) {
+      await svc.from('staff').delete().eq('email', probeEmail);
+    }
+    expect(leaked ?? []).toHaveLength(0);
+  });
+
+  test('admin CAN still edit a staff row without touching role', async () => {
+    // Setting role to its current value must not trip the guard (the trigger
+    // only blocks a transition INTO owner by a non-owner).
+    const { error } = await adminClient
+      .from('staff')
+      .update({ role: 'admin' })
+      .eq('id', adminStaffId);
+    expect(error).toBeNull();
+  });
+});

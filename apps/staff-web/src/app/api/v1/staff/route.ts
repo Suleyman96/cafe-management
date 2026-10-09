@@ -1,3 +1,4 @@
+import { AuthorizationError } from '@gustri/core';
 import * as Sentry from '@sentry/nextjs';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -49,6 +50,13 @@ export async function POST(request: NextRequest) {
       );
     }
     const { email, password, full_name, role, phone } = parseResult.data;
+
+    // L1: only an `owner` may create another `owner`. verifyAdmin admits both
+    // `admin` and `owner`; without this guard a plain admin could mint a new
+    // owner and escalate the org's top role. Narrow to owner-grants-owner.
+    if (role === 'owner' && adminOrError.role !== 'owner') {
+      throw new AuthorizationError('owner_role_requires_owner');
+    }
 
     // Validate password strength
     const passwordCheck = validatePassword(password);

@@ -2,7 +2,9 @@ import { computePeriodEnd } from '@gustri/core';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
-import { jsonOk } from '@/lib/api/response';
+import { logPlatformAudit } from '@/lib/api/platform-audit';
+import { rateLimit } from '@/lib/api/rate-limit';
+import { jsonOk, jsonRateLimited } from '@/lib/api/response';
 import { validateBody } from '@/lib/api/validate';
 import { getSupabaseAdmin } from '@/lib/api/verify-admin';
 import { verifyPlatformAdmin } from '@/lib/api/verify-platform-admin';
@@ -33,6 +35,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const admin = await verifyPlatformAdmin(request);
     if (admin instanceof NextResponse) return admin;
 
+    // M9: throttle operator mutations keyed by the admin id (not IP) so a
+    // compromised operator token can't fire an unbounded stream of plan changes.
+    const { success, resetAt } = await rateLimit('platform', admin.id);
+    if (!success) return jsonRateLimited(resetAt);
+
     const { id: tenantId } = await params;
     // Validate the path param before it reaches Postgres — a non-UUID would
     // otherwise surface as a generic 500 (invalid input syntax for uuid).
@@ -42,6 +49,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const { data, error } = await validateBody(request, SetPlanSchema);
     if (error) return error;
+
+    const supabase = getSupabaseAdmin();
+
+    // L12: capture the pre-change state for the operator audit trail.
+    const { data: before } = await supabase
+      .from('tenants')
+      .select('plan, billing_cycle, current_period_end')
+      .eq('id', tenantId)
+      .maybeSingle();
 
     // Build the billing-cadence patch alongside the plan change.
     //  - free: clear cadence + paid-through date (no subscription).
@@ -65,7 +81,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       patch.current_period_end = data.current_period_end;
     }
 
-    const { data: updated, error: updateErr } = await getSupabaseAdmin()
+    const { data: updated, error: updateErr } = await supabase
       .from('tenants')
       .update(patch)
       .eq('id', tenantId)
@@ -79,6 +95,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!updated) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
+
+    // L12: audit the operator action (actor, tenant, old→new plan/cadence).
+    await logPlatformAudit(supabase, {
+      actorId: admin.id,
+      actorEmail: admin.email,
+      tenantId,
+      action: 'plan_change',
+      oldValue: before ?? null,
+      newValue: {
+        plan: updated.plan,
+        billing_cycle: updated.billing_cycle,
+        current_period_end: updated.current_period_end,
+      },
+    });
 
     return jsonOk({ tenant: updated });
   } catch (err) {

@@ -29,5 +29,9 @@
   "option_unavailable": "Seçilmiş seçimlərdən biri artıq mövcud deyil.",
   "required_option_missing": "Zəhmət olmasa bütün tələb olunan seçimləri seçin.",
   "too_many_options": "Çox sayda seçim etmisiniz.",
-  "invalid_signature": "Sorğunu doğrulamaq mümkün olmadı. Zəhmət olmasa yenidən cəhd edin."
+  "invalid_signature": "Sorğunu doğrulamaq mümkün olmadı. Zəhmət olmasa yenidən cəhd edin.",
+  "table_tenant_mismatch": "Bu masa cari restorana aid deyil.",
+  "waiter_tenant_mismatch": "Bu işçi cari restorana aid deyil.",
+  "delivery_customer_tenant_mismatch": "Bu çatdırılma müştərisi cari restorana aid deyil.",
+  "owner_role_requires_owner": "Yalnız sahib başqa bir sahib yarada bilər."
 }

@@ -29,5 +29,9 @@
   "option_unavailable": "選択したオプションのひとつが利用できなくなりました。",
   "required_option_missing": "必須オプションをすべて選択してください。",
   "too_many_options": "オプションを選びすぎています。",
-  "invalid_signature": "リクエストを検証できませんでした。もう一度お試しください。"
+  "invalid_signature": "リクエストを検証できませんでした。もう一度お試しください。",
+  "table_tenant_mismatch": "このテーブルは現在のレストランに属していません。",
+  "waiter_tenant_mismatch": "このスタッフは現在のレストランに属していません。",
+  "delivery_customer_tenant_mismatch": "この配達のお客様は現在のレストランに属していません。",
+  "owner_role_requires_owner": "オーナーのみが別のオーナーを作成できます。"
 }

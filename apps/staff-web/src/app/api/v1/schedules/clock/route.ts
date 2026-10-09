@@ -1,6 +1,8 @@
 import * as Sentry from '@sentry/nextjs';
 import { type NextRequest, NextResponse } from 'next/server';
 import { handleRouteError } from '@/lib/api/handle-route-error';
+import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
+import { jsonRateLimited } from '@/lib/api/response';
 import { getSupabaseAdmin } from '@/lib/api/verify-admin';
 import { verifyStaff } from '@/lib/api/verify-staff';
 
@@ -19,6 +21,10 @@ export const preferredRegion = ['sin1'];
  */
 export async function POST(request: NextRequest) {
   try {
+    // L4: bound automated abuse of the clock endpoint.
+    const { success, resetAt } = await rateLimit('shift-op', getRateLimitIdentifier(request));
+    if (!success) return jsonRateLimited(resetAt);
+
     const staffOrError = await verifyStaff(request);
     if (staffOrError instanceof NextResponse) return staffOrError;
 

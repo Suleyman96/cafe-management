@@ -29,5 +29,9 @@
   "option_unavailable": "Seçilen seçeneklerden biri artık kullanılamıyor.",
   "required_option_missing": "Lütfen tüm gerekli seçenekleri seçin.",
   "too_many_options": "Çok fazla seçenek seçtiniz.",
-  "invalid_signature": "İstek doğrulanamadı. Lütfen tekrar deneyin."
+  "invalid_signature": "İstek doğrulanamadı. Lütfen tekrar deneyin.",
+  "table_tenant_mismatch": "Bu masa geçerli restorana ait değil.",
+  "waiter_tenant_mismatch": "Bu personel geçerli restorana ait değil.",
+  "delivery_customer_tenant_mismatch": "Bu teslimat müşterisi geçerli restorana ait değil.",
+  "owner_role_requires_owner": "Yalnızca bir sahip başka bir sahip oluşturabilir."
 }

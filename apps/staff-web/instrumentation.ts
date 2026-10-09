@@ -33,7 +33,13 @@ export async function register() {
     }
   }
 
-  if (process.env.SKIP_PII_ENCRYPTION_PROBE === '1') return;
+  // L3: the skip flag is a dev/staging convenience only. In production the PII
+  // encryption probe must ALWAYS run — a `SKIP_PII_ENCRYPTION_PROBE=1` that
+  // leaked into the prod env (or was set by an attacker) must not disable the
+  // guard. Honor the flag only outside production.
+  if (process.env.SKIP_PII_ENCRYPTION_PROBE === '1' && process.env.NODE_ENV !== 'production') {
+    return;
+  }
 
   // Lazy import so edge/build steps don't pull supabase-js into their bundle.
   const { createClient } = await import('@supabase/supabase-js');

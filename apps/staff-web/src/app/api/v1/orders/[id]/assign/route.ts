@@ -2,7 +2,8 @@ import { handleSupabaseError } from '@gustri/api-client';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
-import { jsonOk } from '@/lib/api/response';
+import { getRateLimitIdentifier, rateLimit } from '@/lib/api/rate-limit';
+import { jsonOk, jsonRateLimited } from '@/lib/api/response';
 import { validateBody } from '@/lib/api/validate';
 import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
 
@@ -32,6 +33,10 @@ const AssignWaiterSchema = z.object({
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: orderId } = await params;
+
+    // L4: bound automated abuse of the reassignment endpoint.
+    const { success, resetAt } = await rateLimit('shift-op', getRateLimitIdentifier(request));
+    if (!success) return jsonRateLimited(resetAt);
 
     const adminOrError = await verifyAdmin(request);
     if (adminOrError instanceof NextResponse) return adminOrError;

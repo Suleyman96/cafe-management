@@ -1,15 +1,24 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { handleRouteError } from '@/lib/api/handle-route-error';
-import { getSupabaseAdmin, verifyAdmin } from '@/lib/api/verify-admin';
+import { rateLimit } from '@/lib/api/rate-limit';
+import { jsonRateLimited } from '@/lib/api/response';
+import { getSupabaseAdmin } from '@/lib/api/verify-admin';
+import { verifyPlatformAdmin } from '@/lib/api/verify-platform-admin';
 
 export const dynamic = 'force-dynamic';
 export const preferredRegion = ['sin1'];
 
 export async function GET(request: NextRequest) {
   try {
-    const adminOrError = await verifyAdmin(request);
+    // M1: db-stats returns platform-wide telemetry (slow queries, connection
+    // stats, table sizes across every tenant's data). A per-tenant admin must
+    // not see it — gate on the platform operator, not `verifyAdmin`.
+    const adminOrError = await verifyPlatformAdmin(request);
     if (adminOrError instanceof NextResponse) return adminOrError;
+
+    const { success, resetAt } = await rateLimit('platform', adminOrError.id);
+    if (!success) return jsonRateLimited(resetAt);
 
     const supabase = getSupabaseAdmin();
 

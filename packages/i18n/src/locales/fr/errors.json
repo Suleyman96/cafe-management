@@ -29,5 +29,9 @@
   "option_unavailable": "L'une des options sélectionnées n'est plus disponible.",
   "required_option_missing": "Veuillez choisir toutes les options requises.",
   "too_many_options": "Vous avez sélectionné trop d'options.",
-  "invalid_signature": "Impossible de vérifier la requête. Veuillez réessayer."
+  "invalid_signature": "Impossible de vérifier la requête. Veuillez réessayer.",
+  "table_tenant_mismatch": "Cette table n'appartient pas au restaurant actuel.",
+  "waiter_tenant_mismatch": "Ce membre du personnel n'appartient pas au restaurant actuel.",
+  "delivery_customer_tenant_mismatch": "Ce client de livraison n'appartient pas au restaurant actuel.",
+  "owner_role_requires_owner": "Seul un propriétaire peut créer un autre propriétaire."
 }

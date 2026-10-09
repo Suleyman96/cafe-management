@@ -79,6 +79,8 @@ describe('POST /api/v1/platform/billing-reminders', () => {
   });
 
   it('none-due short-circuit returns emailed:false reason none_due', async () => {
+    // Platform-admin path: the full due array (empty here) is included.
+    isAuthorizedCronMock.mockReturnValue(false);
     supabaseMock.rows = [
       {
         id: 't1',
@@ -94,9 +96,11 @@ describe('POST /api/v1/platform/billing-reminders', () => {
     expect(body.emailed).toBe(false);
     expect(body.reason).toBe('none_due');
     expect(body.due).toEqual([]);
+    expect(body.due_count).toBe(0);
   });
 
   it('no-ops cleanly (does NOT error) when email transport is unconfigured', async () => {
+    isAuthorizedCronMock.mockReturnValue(false); // platform-admin path → due included
     supabaseMock.rows = [
       {
         id: 't1',
@@ -111,12 +115,14 @@ describe('POST /api/v1/platform/billing-reminders', () => {
     expect(res.status).toBe(200);
     expect(body.emailed).toBe(false);
     expect(body.reason).toBe('email_not_configured');
-    // The due list is still surfaced so the cron log / console retains a signal.
+    // The due list is surfaced to the interactive operator.
     expect(body.due).toHaveLength(1);
     expect(body.due[0].id).toBe('t1');
+    expect(body.due_count).toBe(1);
   });
 
   it('still no-ops when recipients exist but ESP key is missing', async () => {
+    isAuthorizedCronMock.mockReturnValue(false);
     process.env.PLATFORM_ADMIN_EMAILS = 'ops@gustri.com';
     supabaseMock.rows = [
       {
@@ -130,5 +136,26 @@ describe('POST /api/v1/platform/billing-reminders', () => {
     const body = await (await POST(req())).json();
     expect(body.emailed).toBe(false);
     expect(body.reason).toBe('email_not_configured');
+  });
+
+  it('OMITS the due tenant list for the cron-secret caller (L13)', async () => {
+    // Default: cron-authorized (isAuthorizedCron → true). The unattended
+    // scheduler must learn the count but never the tenant identities.
+    isAuthorizedCronMock.mockReturnValue(true);
+    supabaseMock.rows = [
+      {
+        id: 't1',
+        name: 'Overdue Cafe',
+        plan: 'pro',
+        billing_cycle: 'monthly',
+        current_period_end: OVERDUE,
+      },
+    ];
+    const res = await POST(req());
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.reason).toBe('email_not_configured');
+    expect(body.due).toBeUndefined();
+    expect(body.due_count).toBe(1);
   });
 });

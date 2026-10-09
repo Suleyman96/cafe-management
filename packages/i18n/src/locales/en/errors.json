@@ -29,5 +29,9 @@
   "option_unavailable": "One of the selected options is no longer available.",
   "required_option_missing": "Please choose all required options.",
   "too_many_options": "You've selected too many options.",
-  "invalid_signature": "Could not verify the request. Please try again."
+  "invalid_signature": "Could not verify the request. Please try again.",
+  "table_tenant_mismatch": "This table doesn't belong to the current restaurant.",
+  "waiter_tenant_mismatch": "This staff member doesn't belong to the current restaurant.",
+  "delivery_customer_tenant_mismatch": "This delivery customer doesn't belong to the current restaurant.",
+  "owner_role_requires_owner": "Only an owner can create another owner."
 }
