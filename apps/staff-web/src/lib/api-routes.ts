@@ -1,3 +1,4 @@
+import type { BillingCycle } from '@gustri/core';
 import type { Database } from '@gustri/database/types';
 import { supabase } from '@/lib/supabase/client';
 
@@ -161,11 +162,30 @@ export const apiRoutes = {
       apiFetch<{ tenants: PlatformTenant[]; count: number }>('/api/v1/platform/tenants', {
         method: 'GET',
       }),
-    setPlan: (tenantId: string, plan: PlatformTenant['plan']) =>
-      apiFetch<{ tenant: { id: string; name: string; plan: string } }>(
-        `/api/v1/platform/tenants/${tenantId}/plan`,
-        { method: 'POST', body: JSON.stringify({ plan }) },
-      ),
+    // `billing_cycle` is optional — pass it for a paid plan to set the cadence
+    // and have the server compute the paid-through date (current_period_end).
+    // Omitting it (or setting plan to `free`, which clears both) leaves the
+    // cadence untouched.
+    setPlan: (
+      tenantId: string,
+      plan: PlatformTenant['plan'],
+      opts?: { billing_cycle?: BillingCycle },
+    ) =>
+      apiFetch<{
+        tenant: {
+          id: string;
+          name: string;
+          plan: string;
+          billing_cycle: string | null;
+          current_period_end: string | null;
+        };
+      }>(`/api/v1/platform/tenants/${tenantId}/plan`, {
+        method: 'POST',
+        body: JSON.stringify({
+          plan,
+          ...(opts?.billing_cycle ? { billing_cycle: opts.billing_cycle } : {}),
+        }),
+      }),
     setStatus: (tenantId: string, active: boolean, reason?: string | null) =>
       apiFetch<{ tenant: { id: string; name: string; is_active: boolean } }>(
         `/api/v1/platform/tenants/${tenantId}/status`,
@@ -177,9 +197,17 @@ export const apiRoutes = {
       owner_name?: string | null;
       password: string;
       plan: PlatformTenant['plan'];
+      billing_cycle?: BillingCycle;
     }) =>
       apiFetch<{
-        tenant: { id: string; name: string; plan: string; slug: string };
+        tenant: {
+          id: string;
+          name: string;
+          plan: string;
+          slug: string;
+          billing_cycle: string | null;
+          current_period_end: string | null;
+        };
         owner_email: string;
       }>('/api/v1/platform/tenants', { method: 'POST', body: JSON.stringify(data) }),
   },
@@ -193,6 +221,8 @@ export interface PlatformTenant {
   is_active: boolean;
   created_at: string | null;
   billing_email: string | null;
+  billing_cycle: string | null;
+  current_period_end: string | null;
   deactivated_at: string | null;
   deactivation_reason: string | null;
   staff_count: number;

@@ -146,6 +146,25 @@ describe('POST /api/v1/platform/tenants', () => {
     expect((supabaseMock.value as ReturnType<typeof makeSupabase>).calls.planUpdate).toEqual([]);
   });
 
+  it('sets billing_cycle + computed current_period_end when a cycle is given', async () => {
+    const before = Date.now();
+    const res = await POST(req({ ...good, plan: 'pro', billing_cycle: 'yearly' }));
+    expect(res.status).toBe(201);
+    const patch = (supabaseMock.value as ReturnType<typeof makeSupabase>).calls.planUpdate[0]!;
+    expect(patch.plan).toBe('pro');
+    expect(patch.billing_cycle).toBe('yearly');
+    const days = (new Date(patch.current_period_end as string).getTime() - before) / 86_400_000;
+    expect(days).toBeGreaterThan(360);
+    expect(days).toBeLessThan(370);
+  });
+
+  it('paid plan with NO cycle sets only the plan (no date)', async () => {
+    await POST(req(good)); // good = plan 'pro', no billing_cycle
+    expect((supabaseMock.value as ReturnType<typeof makeSupabase>).calls.planUpdate).toEqual([
+      { plan: 'pro' },
+    ]);
+  });
+
   it('409 when the email already exists', async () => {
     supabaseMock.value = makeSupabase({
       createErr: 'A user with this email address has already been registered',

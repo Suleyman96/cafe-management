@@ -1,5 +1,6 @@
 'use client';
 
+import type { BillingCycle } from '@gustri/core';
 import { useTranslation } from '@gustri/i18n';
 import { Button } from '@gustri/ui-web';
 import { useMutation } from '@tanstack/react-query';
@@ -9,6 +10,7 @@ import { toast } from 'sonner';
 import { apiRoutes, type PlatformTenant } from '@/lib/api-routes';
 
 const PLANS: PlatformTenant['plan'][] = ['free', 'standard', 'pro', 'business'];
+const BILLING_CYCLES: BillingCycle[] = ['monthly', 'yearly'];
 
 function randomPassword(): string {
   // Readable-ish, 14 chars from a no-ambiguous alphabet. Not security-critical
@@ -36,6 +38,8 @@ export function CreateTenantModal({
   const [ownerName, setOwnerName] = useState('');
   const [password, setPassword] = useState('');
   const [plan, setPlan] = useState<PlatformTenant['plan']>('free');
+  // Billing cadence — only sent for a paid plan (server ignores it for free).
+  const [cycle, setCycle] = useState<BillingCycle>('monthly');
   // Set after a successful create → switches the modal to the handoff panel
   // (login link + credentials to send the new owner).
   const [created, setCreated] = useState<{ slug: string; email: string; password: string } | null>(
@@ -50,6 +54,7 @@ export function CreateTenantModal({
         owner_name: ownerName.trim() || null,
         password,
         plan,
+        ...(plan !== 'free' ? { billing_cycle: cycle } : {}),
       }),
     onSuccess: (res) => {
       toast.success(t('platformCreate.created'));
@@ -236,6 +241,25 @@ export function CreateTenantModal({
               ))}
             </select>
           </label>
+          {/* Cadence applies only to paid plans; the server computes the
+              paid-through date from it (monthly = +1 month, yearly = +12). */}
+          {plan !== 'free' && (
+            <label className="block text-sm font-medium text-gray-700">
+              {t('platform.billingCycle')}
+              <select
+                value={cycle}
+                onChange={(e) => setCycle(e.target.value as BillingCycle)}
+                disabled={create.isPending}
+                className={inputCls}
+              >
+                {BILLING_CYCLES.map((c) => (
+                  <option key={c} value={c}>
+                    {t(`platform.cycle_${c}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
 
         <div className="mt-6 flex justify-end gap-2">

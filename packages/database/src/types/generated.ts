@@ -1891,6 +1891,7 @@ export type Database = {
       }
       tenants: {
         Row: {
+          billing_cycle: string | null
           billing_email: string | null
           created_at: string | null
           current_period_end: string | null
@@ -1907,6 +1908,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          billing_cycle?: string | null
           billing_email?: string | null
           created_at?: string | null
           current_period_end?: string | null
@@ -1923,6 +1925,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          billing_cycle?: string | null
           billing_email?: string | null
           created_at?: string | null
           current_period_end?: string | null

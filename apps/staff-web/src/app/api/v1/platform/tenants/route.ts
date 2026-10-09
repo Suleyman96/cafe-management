@@ -1,3 +1,4 @@
+import { computePeriodEnd } from '@gustri/core';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handleRouteError } from '@/lib/api/handle-route-error';
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from('tenants')
         .select(
-          'id, name, slug, plan, is_active, created_at, billing_email, deactivated_at, deactivation_reason',
+          'id, name, slug, plan, is_active, created_at, billing_email, billing_cycle, current_period_end, deactivated_at, deactivation_reason',
         )
         .order('created_at', { ascending: false }),
       fetchAllTenantIds('staff'),
@@ -79,6 +80,10 @@ const CreateTenantSchema = z.object({
   // bcrypt truncates at 72 bytes; min 8 is a sane floor for an admin-set password.
   password: z.string().min(8).max(72),
   plan: z.enum(['free', 'standard', 'pro', 'business']),
+  // Optional billing cadence for a paid plan. Ignored for `free`. When present,
+  // the paid-through date (current_period_end) is computed now + 1 month /
+  // 12 months in the plan bump below.
+  billing_cycle: z.enum(['monthly', 'yearly']).optional(),
 });
 
 /**
@@ -153,9 +158,22 @@ export async function POST(request: NextRequest) {
     //    bump failed, the operator sees it on `free` and fixes it with the
     //    console's plan control (PATCH .../plan), which is idempotent.
     if (data.plan !== 'free') {
+      // Apply the paid tier and, when a cadence was chosen, the computed
+      // paid-through date (now + 1 month / 12 months). Cadence is optional —
+      // omitting it just leaves current_period_end NULL (operator can set it
+      // later via the plan control).
+      const planPatch: {
+        plan: typeof data.plan;
+        billing_cycle?: 'monthly' | 'yearly';
+        current_period_end?: string;
+      } = { plan: data.plan };
+      if (data.billing_cycle) {
+        planPatch.billing_cycle = data.billing_cycle;
+        planPatch.current_period_end = computePeriodEnd(data.billing_cycle).toISOString();
+      }
       const { error: planErr } = await supabase
         .from('tenants')
-        .update({ plan: data.plan })
+        .update(planPatch)
         .eq('id', tenantId);
       if (planErr) {
         logger.error(
@@ -169,7 +187,7 @@ export async function POST(request: NextRequest) {
     // tenant, contradicting the client's non-null contract.
     const { data: tenant, error: readErr } = await supabase
       .from('tenants')
-      .select('id, name, plan, is_active, slug')
+      .select('id, name, plan, is_active, slug, billing_cycle, current_period_end')
       .eq('id', tenantId)
       .single();
     if (readErr || !tenant) {
