@@ -61,7 +61,7 @@ rather than a standalone push.
 
 ## Tech Stack
 
-- **Runtime:** Node.js 18+, pnpm 10.33.4 (pinned via root `package.json` `packageManager`; CI's `pnpm/action-setup` reads it, so that field is the single source of truth — bump there)
+- **Runtime:** Node.js 22.x (pinned via `engines.node` in root + each app `package.json`, `.nvmrc`, and CI `node-version`; Vercel reads `engines.node`), pnpm 10.33.4 (pinned via root `package.json` `packageManager`; CI's `pnpm/action-setup` reads it, so that field is the single source of truth — bump there)
 - **Build:** Turborepo 2.8 + tsup (packages), Next.js 14 (apps)
 - **Language:** TypeScript 5.6+ (strict mode)
 - **Linter/Formatter:** Biome 2.4 (NOT eslint/prettier)
