@@ -215,6 +215,69 @@ describe('StaffWrapper', () => {
     await expect(wrapper.findAll()).rejects.toThrow('Invalid staff data');
   });
 
+  // ─── M6: tenant predicate + mass-assignment allow-list ───────────
+
+  const TENANT = '00000000-0000-0000-0000-00000000aaaa';
+
+  it('update scopes the write to the bound tenant (eq tenant_id)', async () => {
+    const ctx = createMockContext({
+      tenantId: TENANT,
+      responses: { staff: { data: validStaff, error: null } },
+    });
+    const wrapper = createStaffWrapper(ctx);
+    await wrapper.update(validStaff.id, buildStaffUpdate({ full_name: 'New Name' }));
+    const eqCalls = ctx
+      .getCalls()
+      .filter((c: { method: string; args: unknown[] }) => c.method === 'eq');
+    expect(
+      eqCalls.some((c: { args: unknown[] }) => c.args[0] === 'tenant_id' && c.args[1] === TENANT),
+    ).toBe(true);
+  });
+
+  it('update strips non-allow-listed columns (tenant_id, auth_user_id, pin_hash, id)', async () => {
+    const ctx = createMockContext({
+      tenantId: TENANT,
+      responses: { staff: { data: validStaff, error: null } },
+    });
+    const wrapper = createStaffWrapper(ctx);
+    await wrapper.update(validStaff.id, {
+      full_name: 'Edited',
+      role: 'admin',
+      // Mass-assignment attempt — these must NOT reach the update payload.
+      tenant_id: 'another-tenant',
+      auth_user_id: 'hijack-auth',
+      pin_hash: 'injected-hash',
+      id: 'spoofed-id',
+    } as never);
+    const updateCall = ctx
+      .getCalls()
+      .find((c: { table: string; method: string }) => c.table === 'staff' && c.method === 'update');
+    const payload = updateCall?.args[0] as Record<string, unknown>;
+    expect(payload).toBeDefined();
+    expect(payload).not.toHaveProperty('tenant_id');
+    expect(payload).not.toHaveProperty('auth_user_id');
+    expect(payload).not.toHaveProperty('pin_hash');
+    expect(payload).not.toHaveProperty('id');
+    // Allow-listed columns still pass through.
+    expect(payload.full_name).toBe('Edited');
+    expect(payload.role).toBe('admin');
+  });
+
+  it('delete scopes the soft-delete to the bound tenant (eq tenant_id)', async () => {
+    const ctx = createMockContext({
+      tenantId: TENANT,
+      responses: { staff: { data: null, error: null } },
+    });
+    const wrapper = createStaffWrapper(ctx);
+    await wrapper.delete(validStaff.id);
+    const eqCalls = ctx
+      .getCalls()
+      .filter((c: { method: string; args: unknown[] }) => c.method === 'eq');
+    expect(
+      eqCalls.some((c: { args: unknown[] }) => c.args[0] === 'tenant_id' && c.args[1] === TENANT),
+    ).toBe(true);
+  });
+
   it('findAll requests an explicit projection without auth_user_id', async () => {
     const listRow = {
       id: 'list-1',

@@ -5,20 +5,28 @@ export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
   if (process.env.NODE_ENV !== 'production') return;
 
-  // Production boot guard (Blocker 7). Only enforced when
-  // NEXT_PUBLIC_SENTRY_DSN is set, which is the marker for "this is a
-  // real prod deploy with our observability stack wired up". These
-  // security controls all FAIL OPEN when their env is missing — the
-  // process still boots, but the protection is silently off:
+  // Production boot guard (Blocker 7 / M2). These security controls all
+  // FAIL OPEN when their env is missing — the process still boots, but the
+  // protection is silently off:
   //   - Upstash: `rate-limit.ts` falls back to null limiters, so every
   //     rate-limit gate (PIN brute-force, password-reset, customer spam)
   //     is disabled.
   //   - CUSTOMER_API_SIGNING_SECRET: `verifyCustomerSignature` becomes a
   //     no-op, so the customer-web → staff-web proxy accepts unsigned
   //     (spoofable) requests.
-  // Failing boot here surfaces the misconfiguration immediately instead
-  // of shipping a wide-open deploy.
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  // In production these are REQUIRED UNCONDITIONALLY — the guard no longer
+  // keys off NEXT_PUBLIC_SENTRY_DSN (M2). A prod deploy missing any of them
+  // fails boot here instead of shipping a wide-open deploy.
+  //
+  // `ALLOW_INSECURE_BOOT=1` is an escape hatch for non-production boots
+  // (local/CI) that intentionally run without these controls. It is IGNORED
+  // in production. (This whole block only runs in production — the NODE_ENV
+  // guard above returns early otherwise — so `allowInsecureBoot` is always
+  // false here; the check documents intent and future-proofs the guard if
+  // the early return is ever relaxed.)
+  const allowInsecureBoot =
+    process.env.NODE_ENV !== 'production' && process.env.ALLOW_INSECURE_BOOT === '1';
+  if (!allowInsecureBoot) {
     const missing: string[] = [];
     if (!process.env.UPSTASH_REDIS_REST_URL) missing.push('UPSTASH_REDIS_REST_URL');
     if (!process.env.UPSTASH_REDIS_REST_TOKEN) missing.push('UPSTASH_REDIS_REST_TOKEN');
@@ -27,8 +35,8 @@ export async function register() {
       throw new Error(
         `Production boot guard: required env not set: ${missing.join(', ')}. ` +
           'Rate limiting and customer request-signing depend on these and fail open ' +
-          'without them. Set them in the Vercel project, or unset NEXT_PUBLIC_SENTRY_DSN ' +
-          'if this deploy is intentionally running without those protections.',
+          'without them. Set them in the Vercel project. (Non-production boots may set ' +
+          'ALLOW_INSECURE_BOOT=1 to bypass; it is ignored in production.)',
       );
     }
   }

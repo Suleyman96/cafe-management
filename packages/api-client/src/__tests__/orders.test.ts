@@ -186,6 +186,58 @@ describe('OrdersWrapper', () => {
     expect(result.status).toBe('preparing');
   });
 
+  // ─── M6: tenant predicate on mutations (defense-in-depth) ────────
+  it('updateStatus scopes update + refetch to the bound tenant', async () => {
+    const TENANT = '00000000-0000-0000-0000-00000000aaaa';
+    const updateCtx = createMockContext({
+      tenantId: TENANT,
+      responses: {
+        orders: { data: { ...validOrder, status: 'preparing' }, error: null },
+        order_items: { data: [{ id: 'item-1' }], error: null },
+      },
+    });
+    const updateOrders = createOrdersWrapper(updateCtx);
+    await updateOrders.updateStatus(validOrder.id, 'preparing');
+    const tenantEqs = updateCtx
+      .getCalls()
+      .filter(
+        (c: { method: string; args: unknown[] }) =>
+          c.method === 'eq' && c.args[0] === 'tenant_id' && c.args[1] === TENANT,
+      );
+    expect(tenantEqs.length).toBeGreaterThan(0);
+  });
+
+  it('updateNotes scopes the write to the bound tenant', async () => {
+    const TENANT = '00000000-0000-0000-0000-00000000aaaa';
+    const notesCtx = createMockContext({
+      tenantId: TENANT,
+      responses: { orders: { data: validOrder, error: null } },
+    });
+    const notesOrders = createOrdersWrapper(notesCtx);
+    await notesOrders.updateNotes(validOrder.id, { internal_notes: 'x' });
+    const tenantEqs = notesCtx
+      .getCalls()
+      .filter(
+        (c: { method: string; args: unknown[] }) =>
+          c.method === 'eq' && c.args[0] === 'tenant_id' && c.args[1] === TENANT,
+      );
+    expect(tenantEqs.length).toBeGreaterThan(0);
+  });
+
+  it('mutations stay unscoped when no tenant is bound (anon/legacy ctx)', async () => {
+    const notesCtx = createMockContext({
+      responses: { orders: { data: validOrder, error: null } },
+    });
+    const notesOrders = createOrdersWrapper(notesCtx);
+    await notesOrders.updateNotes(validOrder.id, { internal_notes: 'x' });
+    const tenantEqs = notesCtx
+      .getCalls()
+      .filter(
+        (c: { method: string; args: unknown[] }) => c.method === 'eq' && c.args[0] === 'tenant_id',
+      );
+    expect(tenantEqs.length).toBe(0);
+  });
+
   it('updateStatus rejects advancing empty orders', async () => {
     const emptyCtx = createMockContext({
       responses: {

@@ -228,6 +228,7 @@ export function RefundModal({
             <textarea
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows={2}
+              maxLength={500}
               placeholder={t('orders.refundReason')}
               value={reason}
               onChange={(e) => setReason(e.target.value)}

@@ -14,6 +14,36 @@ const STAFF_LIST_SELECT = 'id, email, full_name, role, is_active, created_at, up
 const STAFF_DETAIL_SELECT =
   'id, email, full_name, role, is_active, phone, preferred_language, created_at, updated_at, last_login_at, tenant_id, pin_set_at' as const;
 
+// M6 — explicit allow-list of columns `update` may write. Blocks
+// mass-assignment of identity / tenant / security columns that would enable
+// cross-tenant takeover or auth bypass if a caller slipped them into
+// `updates`: `tenant_id` (reassign a staff row to another tenant),
+// `auth_user_id` (hijack an auth identity), `pin_hash` (auth bypass),
+// `id`/`created_at`/`updated_at` (immutable). `role` and `is_active` stay
+// updatable because the admin staff-edit UI sets them and who may do so is
+// enforced server-side (RLS + `verifyAdmin`); dropping them here would
+// silently break legitimate staff editing.
+const STAFF_UPDATE_ALLOWED_FIELDS = [
+  'full_name',
+  'email',
+  'phone',
+  'preferred_language',
+  'role',
+  'is_active',
+  'pin_set_at',
+] as const;
+
+function pickStaffUpdatableFields(updates: StaffUpdate): Partial<StaffUpdate> {
+  const safe: Record<string, unknown> = {};
+  const source = updates as Record<string, unknown>;
+  for (const key of STAFF_UPDATE_ALLOWED_FIELDS) {
+    if (key in source && source[key] !== undefined) {
+      safe[key] = source[key];
+    }
+  }
+  return safe as Partial<StaffUpdate>;
+}
+
 export function createStaffWrapper(ctx: WrapperContext) {
   return {
     findAll: async (options?: { role?: StaffRow['role']; limit?: number }) => {
@@ -90,10 +120,14 @@ export function createStaffWrapper(ctx: WrapperContext) {
     },
 
     update: async (id: string, updates: StaffUpdate) => {
-      const { data, error } = await ctx.anyClient
-        .from('staff')
-        .update(updates)
-        .eq('id', id)
+      // M6 — strip non-allow-listed columns (mass-assignment guard) and
+      // scope the write to the bound tenant (defense-in-depth on top of RLS)
+      // so an `id` from another tenant can't be updated.
+      const safeUpdates = pickStaffUpdatableFields(updates);
+      const { data, error } = await applyTenantScope(
+        ctx.anyClient.from('staff').update(safeUpdates).eq('id', id),
+        ctx,
+      )
         .select(STAFF_DETAIL_SELECT)
         .single();
 
@@ -103,7 +137,11 @@ export function createStaffWrapper(ctx: WrapperContext) {
     },
 
     delete: async (id: string) => {
-      const { error } = await ctx.anyClient.from('staff').update({ is_active: false }).eq('id', id);
+      // M6 — tenant-scope the soft-delete so a cross-tenant id is a no-op.
+      const { error } = await applyTenantScope(
+        ctx.anyClient.from('staff').update({ is_active: false }).eq('id', id),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
     },
@@ -127,10 +165,16 @@ export function createStaffWrapper(ctx: WrapperContext) {
     },
 
     updateLastLogin: async (staffId: string) => {
-      const { error } = await ctx.anyClient
-        .from('staff')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', staffId);
+      // M6 — tenant-scope the refetch/write. During the login flow tenant
+      // context may not be bound yet, in which case applyTenantScope is a
+      // no-op (same as before) and RLS remains the boundary.
+      const { error } = await applyTenantScope(
+        ctx.anyClient
+          .from('staff')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('id', staffId),
+        ctx,
+      );
 
       if (error) throw handleSupabaseError(error);
     },

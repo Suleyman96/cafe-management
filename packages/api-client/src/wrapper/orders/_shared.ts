@@ -5,6 +5,7 @@
  */
 
 import { ConflictError } from '@gustri/core';
+import { applyTenantScope } from '../_tenant-scope';
 import type { WrapperContext } from '../types';
 
 /**
@@ -49,7 +50,11 @@ export function mapDecryptedPiiArray<T extends Record<string, unknown>>(rows: T[
  * thrown ConflictError so the UI can offer "Refresh / Override".
  */
 export async function fetchCurrentVersion(ctx: WrapperContext, id: string): Promise<number | null> {
-  const { data } = await ctx.anyClient.from('orders').select('version').eq('id', id).maybeSingle();
+  // Tenant-scope the version refetch (M6, defense-in-depth on top of RLS).
+  const { data } = await applyTenantScope(
+    ctx.anyClient.from('orders').select('version').eq('id', id),
+    ctx,
+  ).maybeSingle();
   const v = (data as { version?: number } | null)?.version;
   return typeof v === 'number' ? v : null;
 }

@@ -2,6 +2,8 @@
  * Type-Safe Discount Hooks
  */
 
+import { validateOrThrow } from '@gustri/core';
+import { DiscountApplyInputSchema } from '@gustri/database/schemas/inputs';
 import { getOrCreateClientRequestId, QUERY_KEYS, tenantKey, useTenantId } from '@gustri/queries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRoutes } from '@/lib/api-routes';
@@ -27,14 +29,24 @@ export function useApplyDiscount() {
     onMutate: (params: ApplyDiscountInput) => {
       params.client_request_id = getOrCreateClientRequestId(params.client_request_id);
     },
-    mutationFn: (params: ApplyDiscountInput) =>
-      apiRoutes.discounts.apply(params.orderId, {
-        discount_type: params.discount_type,
-        discount_value: params.discount_value,
-        discount_reason: params.discount_reason,
-        discount_applied_by: params.discount_applied_by,
-        client_request_id: params.client_request_id as string,
-      }),
+    mutationFn: (params: ApplyDiscountInput) => {
+      // Invariant: `onMutate` above stamps `client_request_id`. If it's
+      // missing here, re-minting silently would bypass the server's dedupe
+      // path and risk duplicate financial_audit_log rows.
+      if (!params.client_request_id) {
+        throw new Error('applyDiscount: client_request_id missing — onMutate must run first');
+      }
+      // M5 — validate at the UI→hook boundary: reject negative/NaN values
+      // and percentage discounts > 100 before they reach the server.
+      const discount = validateOrThrow(DiscountApplyInputSchema, params, 'Invalid discount');
+      return apiRoutes.discounts.apply(discount.orderId, {
+        discount_type: discount.discount_type,
+        discount_value: discount.discount_value,
+        discount_reason: discount.discount_reason,
+        discount_applied_by: discount.discount_applied_by,
+        client_request_id: discount.client_request_id,
+      });
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: tenantKey(tenantId, QUERY_KEYS.ORDERS) });
       queryClient.invalidateQueries({

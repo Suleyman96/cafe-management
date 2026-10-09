@@ -38,11 +38,16 @@ export function createTenantsWrapper(ctx: WrapperContext) {
       // and the wrapper's tenantId IS that primary key. The applyTenantScope
       // default uses tenant_id, so query by id explicitly here and skip the
       // helper. RLS still scopes correctly.
-      const { data, error } = await ctx.client
-        .from('tenants')
-        .select(TENANT_PUBLIC_COLUMNS)
-        .limit(1)
-        .single();
+      let query = ctx.client.from('tenants').select(TENANT_PUBLIC_COLUMNS);
+
+      // L11 — when a tenant is bound, filter explicitly by id (defense-in-depth
+      // on top of RLS). Stays correct when unbound (RLS remains the backstop).
+      const tenantId = ctx.tenantContext?.tenantId ?? null;
+      if (tenantId) {
+        query = query.eq('id', tenantId);
+      }
+
+      const { data, error } = await query.limit(1).single();
 
       if (error) throw handleSupabaseError(error);
       return data;

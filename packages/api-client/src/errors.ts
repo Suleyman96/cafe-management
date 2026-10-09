@@ -19,9 +19,39 @@ import {
   ValidationError,
 } from '@gustri/core';
 
+// L9 — generic user-facing message used in place of raw DB text on the
+// branches that would otherwise forward `err.message`/`err.details`. The raw
+// text is kept in `AppError.details` (for Sentry/logs) but never surfaced as
+// the user-facing message.
+const GENERIC_ERROR_MESSAGE = 'An unexpected error occurred';
+
+// snake_case sentinel codes (e.g. `order_not_found_in_tenant`,
+// `plan_required`) are intentionally propagated as `AppError.message` — they
+// are localized client-side via `localizeErrorMessage`, not raw DB prose. Only
+// genericize messages that are NOT sentinel-shaped. Mirrors the heuristic in
+// `@gustri/i18n` `looksLikeSentinel` (kept local to avoid a package dep).
+function looksLikeSentinelMessage(message: string | undefined): message is string {
+  return typeof message === 'string' && /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(message);
+}
+
+// Stash the raw provider text in `details` so Sentry/logs keep it, without
+// leaking it into the user-facing message. Returns undefined when there's
+// nothing to keep.
+function rawErrorDetails(err: {
+  message?: string;
+  details?: string;
+  code?: string;
+}): Record<string, unknown> | undefined {
+  const details: Record<string, unknown> = {};
+  if (err.message) details.rawMessage = err.message;
+  if (err.details) details.rawDetails = err.details;
+  if (err.code) details.rawCode = err.code;
+  return Object.keys(details).length > 0 ? details : undefined;
+}
+
 export function handleSupabaseError(error: unknown): AppError {
   if (error == null) {
-    return new AppError('An unexpected error occurred', 'UNKNOWN_ERROR', 500);
+    return new AppError(GENERIC_ERROR_MESSAGE, 'UNKNOWN_ERROR', 500);
   }
   const err = error as { code?: string; status?: number; message?: string; details?: string };
 
@@ -61,12 +91,27 @@ export function handleSupabaseError(error: unknown): AppError {
     ) {
       return new ConflictError(sentinel);
     }
-    return new NotFoundError(err.message || 'Resource');
+    // L9 — a snake_case sentinel (e.g. `order_not_found_in_tenant`) is a
+    // localization code, not raw DB text, so keep it as the message. Raw
+    // PL/pgSQL prose is genericized and stashed in details.
+    if (looksLikeSentinelMessage(sentinel)) {
+      return new NotFoundError(sentinel);
+    }
+    const notFound = new NotFoundError('Resource');
+    notFound.details = rawErrorDetails(err);
+    return notFound;
   }
 
   // PostgreSQL: RLS or insufficient privilege
   if (err.code === '42501') {
-    return new AuthorizationError(err.message || 'Insufficient privileges');
+    // L9 — never surface the raw "permission denied for table X" text; it
+    // leaks schema internals. Use a generic message, keep raw in details.
+    if (looksLikeSentinelMessage(err.message)) {
+      return new AuthorizationError(err.message);
+    }
+    const authz = new AuthorizationError('Insufficient privileges');
+    authz.details = rawErrorDetails(err);
+    return authz;
   }
 
   // PL/pgSQL `RAISE EXCEPTION ... USING ERRCODE = 'P0001'` (raise_exception).
@@ -105,7 +150,12 @@ export function handleSupabaseError(error: unknown): AppError {
     ) {
       return new ConflictError(sentinel);
     }
-    return new ValidationError(err.message || 'Value violates constraint');
+    // L9 — preserve a snake_case sentinel (localized client-side); genericize
+    // raw constraint text and keep it in details.
+    if (looksLikeSentinelMessage(sentinel)) {
+      return new ValidationError(sentinel);
+    }
+    return new ValidationError('Value violates constraint', rawErrorDetails(err));
   }
 
   if (err.status === 404) {
@@ -124,7 +174,19 @@ export function handleSupabaseError(error: unknown): AppError {
     return new NetworkError();
   }
 
-  return new AppError(getErrorMessage(error), err.code || 'UNKNOWN_ERROR', err.status || 500);
+  // L9 — generic fallback. Preserve a snake_case sentinel message (localized
+  // client-side); otherwise don't forward raw provider text as the message —
+  // use a generic constant and keep the raw text in details for Sentry/logs.
+  const rawMessage = getErrorMessage(error);
+  if (looksLikeSentinelMessage(rawMessage)) {
+    return new AppError(rawMessage, err.code || 'UNKNOWN_ERROR', err.status || 500);
+  }
+  return new AppError(
+    GENERIC_ERROR_MESSAGE,
+    err.code || 'UNKNOWN_ERROR',
+    err.status || 500,
+    rawErrorDetails(err),
+  );
 }
 
 function mapHttpStatus(

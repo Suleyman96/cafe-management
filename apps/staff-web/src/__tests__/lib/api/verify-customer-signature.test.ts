@@ -63,13 +63,28 @@ describe('verifyCustomerSignature (ADD-8)', () => {
     claimNonceMock.mockResolvedValue('fresh');
   });
 
-  describe('when the secret is not configured (safe default)', () => {
+  describe('when the secret is not configured', () => {
     beforeEach(() => {
       delete process.env.CUSTOMER_API_SIGNING_SECRET;
     });
 
-    it('is a no-op even with no signature headers', async () => {
+    it('is a no-op in non-production (dev/CI) even with no signature headers', async () => {
       await expect(verifyCustomerSignature(makeRequest('{}'))).resolves.toBeUndefined();
+    });
+
+    it('fails closed in production — rejects with invalid_signature (M3)', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      // The function reads NODE_ENV at call time, so toggling it here exercises
+      // the production fail-closed branch without a module re-import.
+      vi.stubEnv('NODE_ENV', 'production');
+      try {
+        await expect(verifyCustomerSignature(makeRequest('{}'))).rejects.toMatchObject({
+          message: 'invalid_signature',
+          statusCode: 401,
+        });
+      } finally {
+        vi.stubEnv('NODE_ENV', originalNodeEnv ?? 'test');
+      }
     });
   });
 
@@ -83,6 +98,19 @@ describe('verifyCustomerSignature (ADD-8)', () => {
       await expect(
         verifyCustomerSignature(makeRequest(body, await signedHeaders(body))),
       ).resolves.toBeUndefined();
+    });
+
+    it('still accepts a correctly signed request in production (M3 fail-closed does not reject valid traffic)', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      vi.stubEnv('NODE_ENV', 'production');
+      try {
+        const body = '{"table_id":"t1"}';
+        await expect(
+          verifyCustomerSignature(makeRequest(body, await signedHeaders(body))),
+        ).resolves.toBeUndefined();
+      } finally {
+        vi.stubEnv('NODE_ENV', originalNodeEnv ?? 'test');
+      }
     });
 
     it('rejects a request with no signature headers', async () => {

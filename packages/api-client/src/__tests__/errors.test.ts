@@ -152,6 +152,61 @@ describe('handleSupabaseError', () => {
     expect(error).toBeInstanceOf(AppError);
     expect(error.statusCode).toBe(500);
   });
+
+  // ─── L9: no raw DB text in user-facing messages ──────────────────
+  describe('L9 — raw provider text is not leaked into the message', () => {
+    it('42501 uses a generic message and keeps the raw text in details', () => {
+      const error = handleSupabaseError({
+        code: '42501',
+        message: 'permission denied for table orders',
+        details: 'internal detail',
+      });
+      expect(error).toBeInstanceOf(AuthorizationError);
+      expect(error.message).toBe('Insufficient privileges');
+      expect(error.message).not.toContain('permission denied');
+      expect(error.details?.rawMessage).toBe('permission denied for table orders');
+      expect(error.details?.rawDetails).toBe('internal detail');
+    });
+
+    it('non-sentinel 23514 uses a generic message and keeps raw text in details', () => {
+      const error = handleSupabaseError({
+        code: '23514',
+        message: 'new row for relation "orders" violates check constraint "chk_total"',
+      });
+      expect(error).toBeInstanceOf(ValidationError);
+      expect(error.message).toBe('Value violates constraint');
+      expect(error.details?.rawMessage).toContain('check constraint');
+    });
+
+    it('non-sentinel P0002 (raw prose) uses a generic message, raw in details', () => {
+      const error = handleSupabaseError({
+        code: 'P0002',
+        message: 'record "x" does not exist at line 42',
+      });
+      expect(error).toBeInstanceOf(NotFoundError);
+      expect(error.message).toBe('Resource not found');
+      expect(error.message).not.toContain('line 42');
+      expect(error.details?.rawMessage).toContain('line 42');
+    });
+
+    it('snake_case sentinel on P0002 IS preserved (localization code, not raw text)', () => {
+      const error = handleSupabaseError({ code: 'P0002', message: 'order_not_found_in_tenant' });
+      expect(error).toBeInstanceOf(NotFoundError);
+      expect(error.message).toContain('order_not_found_in_tenant');
+    });
+
+    it('generic fallback uses a generic message and keeps raw text in details', () => {
+      const error = handleSupabaseError({
+        code: 'XX999',
+        status: 500,
+        message: 'internal: connection to 10.0.0.5 refused',
+      });
+      expect(error.message).toBe('An unexpected error occurred');
+      expect(error.message).not.toContain('10.0.0.5');
+      expect(error.code).toBe('XX999');
+      expect(error.details?.rawMessage).toContain('10.0.0.5');
+    });
+  });
 });
 
 describe('httpStatusToAppError', () => {

@@ -79,11 +79,10 @@ export function createOrderMutations(ctx: WrapperContext) {
     ) => {
       // Prevent "served" status on delivery and takeout orders
       if (status === 'served') {
-        const { data: order, error: fetchError } = await ctx.anyClient
-          .from('orders')
-          .select('order_type')
-          .eq('id', id)
-          .single();
+        const { data: order, error: fetchError } = await applyTenantScope(
+          ctx.anyClient.from('orders').select('order_type').eq('id', id),
+          ctx,
+        ).single();
         if (fetchError) throw handleSupabaseError(fetchError);
         const orderType = (order as { order_type: string } | null)?.order_type;
         if (orderType === 'delivery') {
@@ -133,11 +132,10 @@ export function createOrderMutations(ctx: WrapperContext) {
       //   2. The row's version moved (concurrency conflict).
       //   3. RLS hid the row.
       // We refetch to disambiguate and surface ConflictError only for (2).
-      let updateQuery = ctx.anyClient
-        .from('orders')
-        .update({ status })
-        .eq('id', id)
-        .neq('status', status);
+      let updateQuery = applyTenantScope(
+        ctx.anyClient.from('orders').update({ status }).eq('id', id).neq('status', status),
+        ctx,
+      );
       if (options?.expectedVersion !== undefined) {
         updateQuery = updateQuery.eq('version', options.expectedVersion);
       }
@@ -153,11 +151,10 @@ export function createOrderMutations(ctx: WrapperContext) {
 
       // Update touched zero rows. Re-SELECT to disambiguate idempotent replay
       // from a concurrency conflict.
-      const { data: existing, error: refetchError } = await ctx.anyClient
-        .from('orders')
-        .select()
-        .eq('id', id)
-        .single();
+      const { data: existing, error: refetchError } = await applyTenantScope(
+        ctx.anyClient.from('orders').select().eq('id', id),
+        ctx,
+      ).single();
       if (refetchError) throw handleSupabaseError(refetchError);
       if (!isOrder(existing)) throw new Error('Invalid order data');
 
@@ -202,11 +199,10 @@ export function createOrderMutations(ctx: WrapperContext) {
         update.force_close_reason = options.forceCloseReason;
       }
 
-      let updateQuery = ctx.anyClient
-        .from('orders')
-        .update(update)
-        .eq('id', id)
-        .neq('status', 'closed');
+      let updateQuery = applyTenantScope(
+        ctx.anyClient.from('orders').update(update).eq('id', id).neq('status', 'closed'),
+        ctx,
+      );
       if (options?.expectedVersion !== undefined) {
         updateQuery = updateQuery.eq('version', options.expectedVersion);
       }
@@ -221,11 +217,10 @@ export function createOrderMutations(ctx: WrapperContext) {
       }
 
       // Already closed (idempotent) or version moved (conflict). Refetch.
-      const { data: existing, error: refetchError } = await ctx.anyClient
-        .from('orders')
-        .select()
-        .eq('id', id)
-        .single();
+      const { data: existing, error: refetchError } = await applyTenantScope(
+        ctx.anyClient.from('orders').select().eq('id', id),
+        ctx,
+      ).single();
       if (refetchError) throw handleSupabaseError(refetchError);
       if (!isOrder(existing)) throw new Error('Invalid order data');
 
@@ -249,13 +244,16 @@ export function createOrderMutations(ctx: WrapperContext) {
       // Update order status to cancelled and store reason in internal_notes.
       // When expectedVersion is supplied, the .eq('version', …) filter
       // surfaces a 0-row UPDATE which we map to ConflictError below.
-      let updateQuery = ctx.anyClient
-        .from('orders')
-        .update({
-          status: 'cancelled',
-          internal_notes: `Cancelled: ${reason}`,
-        })
-        .eq('id', orderId);
+      let updateQuery = applyTenantScope(
+        ctx.anyClient
+          .from('orders')
+          .update({
+            status: 'cancelled',
+            internal_notes: `Cancelled: ${reason}`,
+          })
+          .eq('id', orderId),
+        ctx,
+      );
       if (options?.expectedVersion !== undefined) {
         updateQuery = updateQuery.eq('version', options.expectedVersion);
       }
@@ -274,20 +272,26 @@ export function createOrderMutations(ctx: WrapperContext) {
       // If the order has a table, check if there are other active orders before setting it to free
       if (tableId) {
         // Check for other active orders on this table
-        const { data: otherOrders } = await ctx.client
-          .from('orders')
-          .select('id')
-          .eq('table_id', tableId)
-          .in('status', ['pending_approval', 'new', 'preparing', 'ready', 'served'])
-          .neq('id', orderId)
-          .limit(1);
+        const { data: otherOrders } = await applyTenantScope(
+          ctx.client
+            .from('orders')
+            .select('id')
+            .eq('table_id', tableId)
+            .in('status', ['pending_approval', 'new', 'preparing', 'ready', 'served'])
+            .neq('id', orderId)
+            .limit(1),
+          ctx,
+        );
 
         // Only set table to free if no other active orders exist
         if (!otherOrders || otherOrders.length === 0) {
-          await ctx.anyClient
-            .from('tables')
-            .update({ status: 'free', occupied_at: null })
-            .eq('id', tableId);
+          await applyTenantScope(
+            ctx.anyClient
+              .from('tables')
+              .update({ status: 'free', occupied_at: null })
+              .eq('id', tableId),
+            ctx,
+          );
         }
       }
 
@@ -298,10 +302,10 @@ export function createOrderMutations(ctx: WrapperContext) {
       orderId: string,
       notes: { customer_notes?: string | null; internal_notes?: string | null },
     ) => {
-      const { data, error } = await ctx.anyClient
-        .from('orders')
-        .update(notes)
-        .eq('id', orderId)
+      const { data, error } = await applyTenantScope(
+        ctx.anyClient.from('orders').update(notes).eq('id', orderId),
+        ctx,
+      )
         .select()
         .single();
 
@@ -338,15 +342,18 @@ export function createOrderMutations(ctx: WrapperContext) {
       // check by re-reading version from the refetched row: if the new
       // version did not advance past `expectedVersion`, the UPDATE was
       // a no-op (filtered by the version mismatch) — surface a conflict.
-      let updateQuery = ctx.anyClient
-        .from('orders')
-        .update({
-          discount_type: discount.discount_type,
-          discount_value: discount.discount_value,
-          discount_reason: discount.discount_reason || null,
-          discount_applied_by: discount.discount_applied_by,
-        })
-        .eq('id', orderId);
+      let updateQuery = applyTenantScope(
+        ctx.anyClient
+          .from('orders')
+          .update({
+            discount_type: discount.discount_type,
+            discount_value: discount.discount_value,
+            discount_reason: discount.discount_reason || null,
+            discount_applied_by: discount.discount_applied_by,
+          })
+          .eq('id', orderId),
+        ctx,
+      );
       if (options?.expectedVersion !== undefined) {
         updateQuery = updateQuery.eq('version', options.expectedVersion);
       }
@@ -356,11 +363,10 @@ export function createOrderMutations(ctx: WrapperContext) {
       if (error) throw handleSupabaseError(error);
 
       // Fetch the updated order after the trigger has recalculated totals
-      const { data, error: fetchError } = await ctx.anyClient
-        .from('orders_decrypted')
-        .select('*')
-        .eq('id', orderId)
-        .single();
+      const { data, error: fetchError } = await applyTenantScope(
+        ctx.anyClient.from('orders_decrypted').select('*').eq('id', orderId),
+        ctx,
+      ).single();
 
       if (fetchError) throw handleSupabaseError(fetchError);
 

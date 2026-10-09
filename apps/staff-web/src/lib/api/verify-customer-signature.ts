@@ -10,16 +10,16 @@ import * as Sentry from '@sentry/nextjs';
 import type { NextRequest } from 'next/server';
 import { claimNonce } from './nonce-store';
 
-// Production guardrail: if the secret is unset in production, signature
-// verification is silently disabled — the audit's "fail-open has no prod
-// guardrail" gap. We do NOT fail closed (that would take down customer ordering
-// the moment the secret is missing during a partial rollout; the endpoints
-// still have rate-limit + tenant-binding + RLS underneath). Instead we surface
-// the misconfiguration loudly, once per server instance, so it can't go
-// unnoticed.
+// Production guardrail (M3): if the secret is unset in production, signature
+// verification now FAILS CLOSED (see `verifyCustomerSignature` below) rather
+// than silently passing. M2's boot gate already forces the secret to be present
+// in prod, so reaching the function without it should be impossible — but if it
+// ever happens we reject the request instead of accepting unsigned (spoofable)
+// traffic. We still surface the misconfiguration loudly here, once per server
+// instance, so it can't go unnoticed.
 if (process.env.NODE_ENV === 'production' && !process.env.CUSTOMER_API_SIGNING_SECRET) {
   Sentry.captureMessage(
-    'CUSTOMER_API_SIGNING_SECRET is unset in production — customer API signature verification is DISABLED (defense-in-depth layer off)',
+    'CUSTOMER_API_SIGNING_SECRET is unset in production — customer API signature verification now FAILS CLOSED (requests rejected)',
     'warning',
   );
 }
@@ -32,19 +32,29 @@ if (process.env.NODE_ENV === 'production' && !process.env.CUSTOMER_API_SIGNING_S
  * server-side BFF proxy (which holds the shared secret) rather than hit
  * staff-web directly.
  *
- * SAFE DEFAULT: if `CUSTOMER_API_SIGNING_SECRET` is not configured, verification
- * is a no-op — the endpoint keeps its current (rate-limit + tenant-binding +
- * RLS) protection. This lets the feature roll out without a deploy-coupled
- * break: enforcement turns on only once the secret is set on BOTH the proxy and
- * staff-web. Misconfiguring one side without the other therefore fails closed
- * *only* when you've opted in by setting the secret here.
+ * SECRET-UNSET BEHAVIOR (M3):
+ *   - Production: FAIL CLOSED — reject the request. M2's boot gate already
+ *     requires the secret in prod, so this path is unreachable in a correct
+ *     deploy; if it is ever hit, we must not accept unsigned (spoofable)
+ *     traffic.
+ *   - Non-production: no-op — local dev and CI run without the secret, so the
+ *     endpoint keeps its rate-limit + tenant-binding + RLS protection and
+ *     ordering still works.
+ * When the secret IS set (the normal prod path, set on BOTH customer-web's BFF
+ * proxy and staff-web), the signed request verifies normally below.
  *
  * Reads the body off a clone so the route handler can still consume the
  * original stream (e.g. via `validateBody`).
  */
 export async function verifyCustomerSignature(request: NextRequest): Promise<void> {
   const secret = process.env.CUSTOMER_API_SIGNING_SECRET;
-  if (!secret) return;
+  if (!secret) {
+    // M3: fail closed in production, no-op in dev/CI.
+    if (process.env.NODE_ENV === 'production') {
+      throw new AuthenticationError('invalid_signature');
+    }
+    return;
+  }
 
   const signature = request.headers.get(SIGNATURE_HEADER) ?? '';
   const timestamp = request.headers.get(TIMESTAMP_HEADER) ?? '';

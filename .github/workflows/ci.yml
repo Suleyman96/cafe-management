@@ -473,11 +473,13 @@ jobs:
           NEXT_PUBLIC_CUSTOMER_WEB_URL=http://localhost:3000
           UPSTASH_REDIS_REST_URL=${{ secrets.UPSTASH_REDIS_REST_URL }}
           UPSTASH_REDIS_REST_TOKEN=${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          CUSTOMER_API_SIGNING_SECRET=ci-e2e-shared-signing-secret
           ENVEOF
           cat > apps/customer-web/.env.local << 'ENVEOF'
           NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
           NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
           NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
+          CUSTOMER_API_SIGNING_SECRET=ci-e2e-shared-signing-secret
           ENVEOF
 
       - name: Verify env files

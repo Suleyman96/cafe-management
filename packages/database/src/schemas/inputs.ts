@@ -73,6 +73,64 @@ export const OrderPaymentCreateInputSchema = z.object({
 
 export type OrderPaymentCreateInput = z.infer<typeof OrderPaymentCreateInputSchema>;
 
+// ─── Refund create ───────────────────────────────────────────────
+
+// Refunds move money out — validate the amount can't be negative, zero,
+// NaN or Infinity at the call boundary (defense-in-depth on top of the
+// server's `validate_refund_amount` trigger). `reason` is required and
+// capped; `client_request_id` dedupes a network-retried refund against the
+// server's (tenant_id, client_request_id) partial unique index.
+export const RefundCreateInputSchema = z.object({
+  order_id: z.string().min(1),
+  processed_by: z.string().min(1),
+  amount: z.number().finite().positive(),
+  reason: z.string().min(1).max(500),
+  refund_method: PaymentMethodSchema,
+  order_item_ids: z.array(z.string()).nullable().optional(),
+  notes: z.string().max(500).nullable().optional(),
+  client_request_id: z.string().uuid(),
+});
+
+export type RefundCreateInput = z.infer<typeof RefundCreateInputSchema>;
+
+// ─── Discount apply ──────────────────────────────────────────────
+
+// Field names mirror the staff-web `useApplyDiscount` hook input
+// (`orderId` camelCase, the rest snake_case). A discount changes the order
+// total, so a corrupt value (negative / NaN / >100% percentage) would
+// mis-state revenue. Rules:
+//   - `discount_value` must be finite and non-negative.
+//   - For `percentage`/`fixed` discounts the value must be > 0 (a real
+//     discount) and, for `percentage`, ≤ 100.
+//   - `none` is the "clear discount" path — value 0 is expected there.
+export const DiscountApplyInputSchema = z
+  .object({
+    orderId: z.string().min(1),
+    discount_type: z.enum(['none', 'percentage', 'fixed']),
+    discount_value: z.number().finite().nonnegative(),
+    discount_reason: z.string().max(500).nullable().optional(),
+    discount_applied_by: z.string().min(1),
+    client_request_id: z.string().uuid(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.discount_type !== 'none' && !(val.discount_value > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Discount value must be greater than zero',
+        path: ['discount_value'],
+      });
+    }
+    if (val.discount_type === 'percentage' && val.discount_value > 100) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Percentage discount cannot exceed 100',
+        path: ['discount_value'],
+      });
+    }
+  });
+
+export type DiscountApplyInput = z.infer<typeof DiscountApplyInputSchema>;
+
 // ─── Stock adjustment ────────────────────────────────────────────
 
 export const StockAdjustInputSchema = z
