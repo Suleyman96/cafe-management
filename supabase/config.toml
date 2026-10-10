@@ -4,7 +4,12 @@
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "storage"]
+# `archive` and `ops` are exposed so the service-role admin client can reach them
+# (retention RLS test reads archive.*; the retention route reads ops.feature_flags).
+# Both are locked by RESTRICTIVE deny-all RLS for authenticated/anon and granted
+# only to service_role (which has BYPASSRLS). Neither is in `public`, so
+# generate-types.sh (`--schema public`) never emits them → no generated.ts drift.
+schemas = ["public", "storage", "archive", "ops"]
 extra_search_path = ["public"]
 max_rows = 1000
 

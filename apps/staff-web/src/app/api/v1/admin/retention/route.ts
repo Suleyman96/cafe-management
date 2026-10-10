@@ -33,6 +33,25 @@ export async function POST(request: NextRequest) {
     if (!success) return jsonRateLimited(resetAt);
 
     const supabase = getSupabaseAdmin();
+
+    // MED-3 kill-switch: retention is an irreversible, platform-wide delete, so
+    // it stays OFF until an operator explicitly enables it (CLAUDE.md Feature
+    // Flag Rule — absent/default state is the safe path). Read the global flag
+    // server-side via the service-role client (ops schema is locked to
+    // service_role by RLS). Absent row OR read error OR enabled!==true → skip,
+    // without touching data. Returns 200 so the cron treats "disabled" as a
+    // successful no-op rather than a red run.
+    const { data: flag, error: flagError } = await supabase
+      .schema('ops')
+      .from('feature_flags')
+      .select('enabled')
+      .eq('key', 'data_retention_enabled')
+      .maybeSingle();
+
+    if (flagError || flag?.enabled !== true) {
+      return NextResponse.json({ skipped: true, reason: 'retention_disabled' });
+    }
+
     const { data, error } = await supabase.rpc('run_data_retention');
 
     if (error) {

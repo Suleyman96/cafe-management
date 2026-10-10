@@ -31,9 +31,23 @@ vi.mock('@/lib/api/verify-platform-admin', () => ({
 }));
 
 // The route MUST NOT import verifyAdmin anymore — provide only getSupabaseAdmin.
+// The admin client exposes `.rpc()` (retention RPC) and `.schema().from()...`
+// (the MED-3 ops.feature_flags kill-switch read).
 const rpcMock = vi.fn();
+const flagMock = vi.fn();
 vi.mock('@/lib/api/verify-admin', () => ({
-  getSupabaseAdmin: () => ({ rpc: (...a: unknown[]) => rpcMock(...a) }),
+  getSupabaseAdmin: () => ({
+    rpc: (...a: unknown[]) => rpcMock(...a),
+    schema: () => ({
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            maybeSingle: () => flagMock(),
+          }),
+        }),
+      }),
+    }),
+  }),
 }));
 
 const rateLimitMock = vi.fn();
@@ -55,9 +69,13 @@ beforeEach(() => {
   isAuthorizedCronMock.mockReset();
   verifyPlatformAdminMock.mockReset();
   rpcMock.mockReset();
+  flagMock.mockReset();
   rateLimitMock.mockReset();
   rateLimitMock.mockResolvedValue({ success: true, remaining: 30, resetAt: 0 });
   rpcMock.mockResolvedValue({ data: { deleted: 0 }, error: null });
+  // Default: kill-switch ON so the auth/rate-limit assertions below exercise the
+  // full run path. The "skipped" cases flip it off explicitly.
+  flagMock.mockResolvedValue({ data: { enabled: true }, error: null });
 });
 
 describe('POST /api/v1/admin/retention (H2)', () => {
@@ -94,6 +112,33 @@ describe('POST /api/v1/admin/retention (H2)', () => {
     rateLimitMock.mockResolvedValue({ success: false, remaining: 0, resetAt: Date.now() + 1000 });
     const res = await POST(req());
     expect(res.status).toBe(429);
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it('MED-3: skips (200 skipped) without running the RPC when the kill-switch is OFF', async () => {
+    isAuthorizedCronMock.mockReturnValue(true);
+    flagMock.mockResolvedValue({ data: { enabled: false }, error: null });
+    const res = await POST(req());
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ skipped: true, reason: 'retention_disabled' });
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it('MED-3: skips when the flag row is absent (default-OFF / fail-safe)', async () => {
+    isAuthorizedCronMock.mockReturnValue(true);
+    flagMock.mockResolvedValue({ data: null, error: null });
+    const res = await POST(req());
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ skipped: true, reason: 'retention_disabled' });
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it('MED-3: skips when the flag read errors (fail-safe toward not deleting)', async () => {
+    isAuthorizedCronMock.mockReturnValue(true);
+    flagMock.mockResolvedValue({ data: null, error: { message: 'boom' } });
+    const res = await POST(req());
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ skipped: true, reason: 'retention_disabled' });
     expect(rpcMock).not.toHaveBeenCalled();
   });
 });

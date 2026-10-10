@@ -9,7 +9,7 @@ revenue**. Until then, **this runbook is the recovery plan.**
 | Target | Value | Notes |
 |---|---|---|
 | **RPO** (max data loss) | **≤ 24 h** | Nightly dump at 02:30 UTC. A failure between runs can lose up to a day. |
-| **RTO** (time to recover) | **≤ 4 h** target | Fresh project provision + decrypt + restore + storage sync. |
+| **RTO** (time to recover) | **≤ 4 h** target — **UNVALIDATED** | Fresh project provision + decrypt + restore + storage sync. The 4 h is an *estimate*: it is not proven until a drill records actual wall-clock (§5). Treat RTO as unknown until then. |
 
 > ⚠️ **GO/NO-GO GATE:** The data-retention cron (`data-retention.yml` +
 > `RETENTION_ENDPOINT_URL` / `RETENTION_CRON_SECRET`) **MUST stay DISABLED
@@ -30,11 +30,44 @@ Two encrypted blobs per night in the Cloudflare R2 bucket (`$R2_BUCKET`):
   `qr-codes`, and `branding` Storage buckets.
 
 Both are encrypted with **`age`** to a recipient **public** key
-(`AGE_BACKUP_PUBLIC_KEY`). **CI only ever holds the public key** — it can
-encrypt but cannot decrypt. The matching **age private key is held OFFLINE by
-the operator** and is the single most important secret in this whole system:
-**lose it and the backups are unrecoverable.** Store it in a password manager /
-hardware token, not in the repo and not in CI.
+(`AGE_BACKUP_PUBLIC_KEY`) and, if an escrow recipient is configured
+(`AGE_BACKUP_ESCROW_PUBLIC_KEY`), to a **second** public key as well. **CI only
+ever holds public keys** — it can encrypt but cannot decrypt. The matching **age
+private key is held OFFLINE by the operator** and is the single most important
+secret in this whole system: **lose it and the backups are unrecoverable.** Store
+it in a password manager / hardware token, not in the repo and not in CI.
+
+> 🔑 **Key separation (HIGH-4).** Store the **age private key** and the
+> **`app.pii_encryption_key`** (the GUC that decrypts PII, see §2) in **separate**
+> locations — e.g. two different password-manager vaults / custodians. They are
+> defense-in-depth for *different* threats: the age key protects the blob at
+> rest; the PII key protects PII inside a decrypted dump. Co-locating them means
+> one compromised vault yields both a backup and the ability to read its PII —
+> exactly the correlation this split prevents. (An earlier draft said to keep
+> them in the *same* store; that was wrong — keep them apart.)
+
+### Escrow recipient (optional, recommended)
+
+Set `AGE_BACKUP_ESCROW_PUBLIC_KEY` to a second age public key whose private key
+is held by a **different** custodian (e.g. a co-founder, or a sealed offline
+copy). Every nightly blob is then encrypted to **both** recipients, so losing
+the operator's private key is survivable. It is **optional** — the backup is
+"configured" without it — but strongly recommended once there is real data.
+
+### Age key rotation
+
+`age` recipients are baked into each blob at encryption time, so **rotating the
+key does not re-key existing blobs** — old blobs still require the **old**
+private key to decrypt. To rotate:
+
+1. Generate a new keypair offline (`age-keygen -o backup-age-new.key`).
+2. Update `AGE_BACKUP_PUBLIC_KEY` (and/or the escrow key) to the new public key.
+   New nightly blobs are encrypted to the new recipient from the next run.
+3. **Keep the old private key** for as long as any blob encrypted to it is still
+   within retention (R2 lifecycle + the 30-day Actions artifact mirror), or
+   proactively **re-encrypt** the blobs you want to keep: decrypt with the old
+   key and re-encrypt to the new recipient. Only after every old-key blob has
+   aged out may the old private key be destroyed.
 
 ### Prerequisites to restore
 
@@ -84,8 +117,58 @@ export DB_URL="postgresql://postgres:<password>@<host>:5432/postgres"
 
 psql "$DB_URL" -v ON_ERROR_STOP=1 -f restore-db/roles.sql
 psql "$DB_URL" -v ON_ERROR_STOP=1 -f restore-db/schema.sql
-psql "$DB_URL" -v ON_ERROR_STOP=1 -f restore-db/data.sql
+
+# ⚠️ Load DATA with triggers/rules DISABLED — see "Why" below. Wrap the data
+# load so the schema's BEFORE/AFTER triggers and validation do not re-fire on
+# historical rows. `session_replication_role = 'replica'` makes the session skip
+# user triggers AND FK/constraint triggers for the duration of the load.
+psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
+BEGIN;
+SET session_replication_role = 'replica';
+\i restore-db/data.sql
+RESET session_replication_role;
+COMMIT;
+SQL
 ```
+
+> **Why disable triggers for the data load (HIGH-1).** The dumped rows are
+> *history* — orders that were closed, paid, refunded, transferred. The schema's
+> write-path guards are written for *live* mutations, not reloads, and will
+> **abort the restore** if they re-fire. Concretely:
+> - `payment_on_terminal_order` / `validate_payment_amount` reject inserting a
+>   payment against an already-closed order — but that is exactly what the dump
+>   contains (a closed order *and* its payment rows).
+> - `guard_close_order_unpaid`, refund-amount validation, the order
+>   state-machine trigger, and `recalculate_order_total` all assume a forward,
+>   one-row-at-a-time transition and can reject or mutate bulk-loaded rows.
+> - FK ordering: `replica` mode also defers FK trigger firing, so child rows
+>   whose parent appears later in the dump don't trip a transient FK error.
+>
+> `session_replication_role = 'replica'` is the standard pg_restore-equivalent
+> for a SQL data load (it is what `pg_restore --disable-triggers` does). It
+> requires the session role to be a **superuser / replication role** — on a
+> fresh scratch Postgres or a brand-new Supabase project you connect as
+> `postgres`, which qualifies. **Live Supabase prod does NOT grant this**, which
+> is the crux of the per-tenant procedure in §4.
+>
+> **Post-load re-validation.** Because the guards were bypassed, re-assert
+> integrity *after* the load so you don't certify a silently-corrupt restore:
+>
+> ```bash
+> # 1. FK integrity: re-validate every constraint the load deferred.
+> psql "$DB_URL" -v ON_ERROR_STOP=1 -c "SET session_replication_role='origin';"
+> # 2. Spot-check the money invariants the triggers normally enforce, e.g.
+> #    every order's paid/refunded totals reconcile and no payment exceeds total:
+> psql "$DB_URL" -At <<'SQL'
+> SELECT o.id, o.total,
+>        COALESCE(SUM(p.amount),0) AS paid,
+>        COALESCE((SELECT SUM(r.amount) FROM refunds r WHERE r.order_id=o.id),0) AS refunded
+> FROM orders o LEFT JOIN order_payments p ON p.order_id=o.id
+> GROUP BY o.id, o.total
+> HAVING COALESCE(SUM(p.amount),0) - COALESCE((SELECT SUM(r.amount) FROM refunds r WHERE r.order_id=o.id),0) > o.total + 0.01;
+> SQL
+> # (expect zero rows). Record row-count spot-checks vs prod in the §5 drill log.
+> ```
 
 > 🔑 **PII decryption:** the target DB **must** have the GUC
 > `app.pii_encryption_key` set to the **same value** as prod, or encrypted PII
@@ -96,8 +179,9 @@ psql "$DB_URL" -v ON_ERROR_STOP=1 -f restore-db/data.sql
 > ALTER DATABASE postgres SET app.pii_encryption_key = '<same-strong-random-as-prod>';
 > ```
 >
-> Set it **before** reading decrypted views. Keep this key in the same offline
-> store as the age private key.
+> Set it **before** reading decrypted views. Store this key in a **separate**
+> offline location from the age private key (see "Key separation" in §0) — two
+> vaults, not one.
 
 ---
 
@@ -124,8 +208,26 @@ them in the dashboard first.)
 
 ## 4. Per-tenant recovery (restore ONE tenant without clobbering the rest)
 
-1. Restore the **full** dump to a **scratch** DB (sections 1–2 above).
-2. Extract the one tenant's rows by `tenant_id` and re-insert into prod. The
+> **The core constraint (HIGH-2):** you **cannot** `\copy` historical rows
+> straight into **live prod**. Two hard blockers:
+> 1. **Triggers.** The same write-path guards described in §2
+>    (`payment_on_terminal_order`, `validate_payment_amount`,
+>    `guard_close_order_unpaid`, the order state-machine, refund validation,
+>    `recalculate_order_total`) will reject or mutate the reloaded history — and
+>    on live prod you **cannot** `SET session_replication_role = 'replica'` to
+>    disable them: Supabase does **not** grant the connecting role superuser /
+>    replication rights. (Setting it silently no-ops or errors.)
+> 2. **No superuser.** Anything that needs `ALTER TABLE … DISABLE TRIGGER` or a
+>    replication-role session is unavailable on managed prod.
+>
+> So per-tenant recovery is done in a **scratch project where you ARE superuser**,
+> then re-imported into prod through a **trigger-safe path** (plain inserts that
+> the live guards accept, or a maintenance window — see step 4).
+
+1. **Restore the full dump to a SCRATCH project** (sections 1–2 above, triggers
+   disabled via `session_replication_role='replica'`). You are `postgres` there,
+   so the bulk history loads cleanly. **Never** run these steps against prod.
+2. Extract the one tenant's rows by `tenant_id` **in the scratch DB**. The
    authoritative per-tenant table set is the GDPR export route
    (`apps/staff-web/src/app/api/v1/admin/export/route.ts`, `TENANT_TABLES`):
 
@@ -153,19 +255,37 @@ them in the dashboard first.)
 
    ```bash
    T='00000000-0000-0000-0000-000000000001'  # the tenant to recover
-   # Example: dump one tenant's orders from the scratch DB as data-only INSERTs.
-   pg_dump "$SCRATCH_DB_URL" --data-only --table=public.orders \
-     --on-conflict-do-nothing \
-     | grep -v '^$' > tenant-orders.sql   # then filter / load deliberately
-   # Preferred: per-table `\copy (SELECT * FROM <t> WHERE tenant_id='$T') TO …`
-   # then `\copy <t> FROM …` into prod, honoring FK order (tenants → staff/
-   # tables/categories → menu_items → orders → order_items/payments/refunds/…).
+   # Extract the tenant's rows FROM THE SCRATCH DB (per table, tenant-scoped).
+   for t in categories menu_items tables staff orders order_items \
+            order_payments refunds table_transfers financial_audit_log; do
+     psql "$SCRATCH_DB_URL" -c \
+       "\copy (SELECT * FROM public.$t WHERE tenant_id='$T') TO 'tenant-$t.csv' CSV HEADER"
+   done
    ```
 
-   Respect FK order on re-insert: `tenants` first, then catalog
+3. **Re-import into prod through a trigger-safe path.** You cannot disable
+   triggers on live prod, so choose one of:
+
+   - **Preferred — maintenance window + Supabase support.** For a large/complex
+     tenant, schedule a window and ask Supabase support to run the load with
+     replication-role disabled (or restore the scratch DB *as* the new prod if
+     the whole project is being recovered). This is the only way to bulk-load
+     history that the live guards would otherwise reject.
+   - **Small tenant / recent data — insert via the app's own write paths or the
+     service role**, honoring FK order and letting the triggers run. This only
+     works when the rows don't violate the live guards (e.g. re-creating an
+     open order and paying it forward), so it suits *recent* data, not deep
+     closed/refunded history.
+
+   Respect FK order on re-insert either way: `tenants` first, then catalog
    (`categories`, `menu_items`, `tables`, `staff`), then `orders`, then order
    children (`order_items`, `order_payments`, `refunds`, `table_transfers`,
    `financial_audit_log`).
+
+   > Do **not** attempt a plain `\copy … FROM` of closed/paid/refunded history
+   > directly into prod and expect it to "just work" — the write-path triggers
+   > will reject it, and prod gives you no way to switch them off. Recover in the
+   > scratch project; promote to prod only through one of the two paths above.
 
 ---
 
@@ -205,6 +325,7 @@ Set these in the **`production`** environment (same place as the existing
 | Secret | Purpose |
 |---|---|
 | `AGE_BACKUP_PUBLIC_KEY` | age **public** recipient key CI encrypts to (keep the **private** key OFFLINE). |
+| `AGE_BACKUP_ESCROW_PUBLIC_KEY` _(optional)_ | Second age **public** recipient (HIGH-4). If set, every blob is encrypted to this key too, held by a **different** custodian — survivable loss of the operator key. Optional; does **not** count toward "configured". |
 | `R2_ACCESS_KEY_ID` | Cloudflare R2 access key (write to the backup bucket). |
 | `R2_SECRET_ACCESS_KEY` | Cloudflare R2 secret. |
 | `R2_BUCKET` | R2 bucket name for backups. |
@@ -229,7 +350,36 @@ To generate the age keypair (operator, offline):
 age-keygen -o backup-age.key          # prints the public key to stderr
 # Put the printed "Public key: age1…" value in AGE_BACKUP_PUBLIC_KEY.
 # Store backup-age.key (the PRIVATE key) OFFLINE — never in the repo or CI.
+# For escrow, repeat on a SECOND custodian's machine and put that public key in
+# AGE_BACKUP_ESCROW_PUBLIC_KEY (its private key stays with that custodian).
 ```
+
+---
+
+## 6b. R2 bucket hardening (operator — Cloudflare console) (MED-1)
+
+The encrypted blobs are only as durable as the bucket they live in. Harden the
+R2 bucket in the Cloudflare dashboard (this is console config, not CI):
+
+- **Object Lock (WORM) / versioning.** Enable **Object Lock** on the backup
+  bucket (compliance or governance mode) so a blob, once written, **cannot be
+  overwritten or deleted** for the retention period — this defeats ransomware
+  and a compromised CI key re-uploading garbage over good backups. If Object
+  Lock is not used, at minimum enable **versioning** so an overwrite/delete
+  leaves the prior version recoverable.
+- **Lifecycle policy.** Add a lifecycle rule to expire blobs after your
+  retention window (e.g. 30–90 days of nightlies) so storage doesn't grow
+  unbounded — set the Object-Lock retention **≤** the lifecycle age so locked
+  objects can eventually age out. Keep this window ≥ the age-key rotation
+  overlap (§0) so you never lifecycle-delete a blob you still hold only an old
+  key for.
+- **Write-only, scoped token for CI.** The R2 token in CI
+  (`R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`) should be scoped to **this
+  bucket only** and to **put-object** (write) — **not** list/get/delete. CI only
+  ever needs to *upload*; a leaked CI token must not be able to read back or
+  delete existing backups. Use a **separate, read-enabled** token for restores,
+  kept with the operator (not in CI). Object Lock still protects against a
+  token that is mis-scoped with delete.
 
 ---
 

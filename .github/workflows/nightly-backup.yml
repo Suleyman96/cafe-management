@@ -8,12 +8,15 @@ name: Nightly Backup
 #   - Storage: menu-images / qr-codes / branding via S3 `aws s3 sync`
 #
 # Each archive is tar'd and encrypted with `age` to a recipient PUBLIC key
-# (AGE_BACKUP_PUBLIC_KEY). CI only ever holds the PUBLIC key, so a leaked CI
-# environment cannot DECRYPT anything — the matching age PRIVATE key is held
-# OFFLINE by the operator (see docs/backup-restore-runbook.md) and is the only
-# thing that can restore these blobs. The encrypted blobs are pushed to
-# Cloudflare R2 (offsite, independent of Supabase/GitHub). No plaintext dump
-# ever leaves the runner.
+# (AGE_BACKUP_PUBLIC_KEY) and, if AGE_BACKUP_ESCROW_PUBLIC_KEY is set, to a
+# second escrow recipient (HIGH-4) so a lost operator key is survivable. CI only
+# ever holds PUBLIC keys, so a leaked CI environment cannot DECRYPT anything —
+# the matching age PRIVATE keys are held OFFLINE by the operator / in escrow
+# (see docs/backup-restore-runbook.md) and are the only things that can restore
+# these blobs. Before encrypting, the dump is integrity-checked (non-empty files,
+# an orders COPY sentinel, and `gzip -t`) so a truncated/empty dump never ships
+# (HIGH-3). The encrypted blobs are pushed to Cloudflare R2 (offsite, independent
+# of Supabase/GitHub). No plaintext dump ever leaves the runner.
 #
 # Posture: DIY-hardened on Supabase Free. RPO <= 24h (nightly), RTO target <= 4h.
 # Revisit Supabase Pro ($25/mo, daily managed backups) / PITR ($100/mo) at first
@@ -119,6 +122,10 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
       AGE_BACKUP_PUBLIC_KEY: ${{ secrets.AGE_BACKUP_PUBLIC_KEY }}
+      # Optional second age recipient (HIGH-4): if set, every blob is encrypted
+      # to the operator key AND this escrow key, so a lost operator key is not a
+      # total loss. Optional — not required for the backup to be "configured".
+      AGE_BACKUP_ESCROW_PUBLIC_KEY: ${{ secrets.AGE_BACKUP_ESCROW_PUBLIC_KEY }}
       # R2 is S3-compatible; the aws CLI reads these standard names.
       AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -163,13 +170,40 @@ jobs:
           supabase db dump --linked --data-only -f backup/data.sql
           ls -lh backup
 
-      - name: Tar + age-encrypt (public key only — CI cannot decrypt)
+      - name: Verify dump, tar, gzip-check + age-encrypt (public key only — CI cannot decrypt)
         run: |
+          set -euo pipefail
           STAMP="$(date +%F)"
+
+          # HIGH-3: never ship a truncated/empty dump. Each dump file must be
+          # non-empty, and the data dump must carry the orders COPY block — the
+          # canary that the data section is actually present, not a header-only
+          # stub from a failed/half-run pg_dump.
+          for f in roles.sql schema.sql data.sql; do
+            if [ ! -s "backup/$f" ]; then
+              echo "::error::Dump backup/$f is empty or missing — refusing to ship a truncated DB backup."
+              exit 1
+            fi
+          done
+          if ! grep -Eq 'COPY (public\.orders|"public"\."orders")' backup/data.sql; then
+            echo "::error::data.sql is missing the 'COPY public.orders' sentinel — the data section looks empty/truncated. Refusing to ship."
+            exit 1
+          fi
+
           tar -czf "gustri-db-${STAMP}.tar.gz" -C backup .
-          # Encrypt to the recipient PUBLIC key. The matching private key is
-          # held OFFLINE by the operator and is NOT available to CI.
-          age -r "$AGE_BACKUP_PUBLIC_KEY" \
+          gzip -t "gustri-db-${STAMP}.tar.gz" # fail loudly on a corrupt gzip stream
+
+          # HIGH-4: encrypt to the operator PUBLIC key and, if configured, an
+          # optional escrow recipient. The matching private keys are held OFFLINE
+          # (operator) / in escrow — neither is available to CI.
+          AGE_ARGS=(-r "$AGE_BACKUP_PUBLIC_KEY")
+          if [ -n "${AGE_BACKUP_ESCROW_PUBLIC_KEY:-}" ]; then
+            AGE_ARGS+=(-r "$AGE_BACKUP_ESCROW_PUBLIC_KEY")
+            echo "Encrypting to operator + escrow recipients."
+          else
+            echo "Encrypting to operator recipient only (no escrow key set)."
+          fi
+          age "${AGE_ARGS[@]}" \
             -o "gustri-db-${STAMP}.tar.gz.age" "gustri-db-${STAMP}.tar.gz"
           rm -f "gustri-db-${STAMP}.tar.gz" # drop plaintext tar from the runner
           ls -lh "gustri-db-${STAMP}.tar.gz.age"
@@ -191,15 +225,34 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
-      - name: Open issue on failure
+      - name: Open or update failure issue
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue create \
-            --title "Nightly DB backup FAILED $(date +%F)" \
-            --body "The nightly DB backup job failed (run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}). A silently-failing or paused-project backup leaves us with no recent recovery point. Investigate before the next window; see docs/backup-restore-runbook.md." \
-            || echo "::warning::Could not open failure issue (check issues: write permission)."
+          # LOW-2: dedupe — comment on an already-open failure issue instead of
+          # opening a fresh one every night the job stays broken.
+          PREFIX="Nightly DB backup FAILED"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          EXISTING="$(gh issue list --state open --search "in:title \"$PREFIX\"" \
+            --json number,title \
+            --jq "map(select(.title | startswith(\"$PREFIX\"))) | .[0].number // empty" 2>/dev/null || true)"
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" \
+              --body "Failed again on $(date +%F) (run: $RUN_URL)." \
+              || echo "::warning::Could not comment on existing failure issue #$EXISTING."
+          else
+            gh issue create \
+              --title "$PREFIX $(date +%F)" \
+              --body "The nightly DB backup job failed (run: $RUN_URL). A silently-failing or paused-project backup leaves us with no recent recovery point. Investigate before the next window; see docs/backup-restore-runbook.md." \
+              || echo "::warning::Could not open failure issue (check issues: write permission)."
+          fi
+
+      - name: Cleanup plaintext (always)
+        if: always()
+        # LOW-1: scrub plaintext dump + any leftover tar from the runner, even on
+        # failure. The encrypted .age blob was already uploaded above.
+        run: rm -rf backup gustri-db-*.tar.gz || true
 
   backup-storage:
     name: Mirror + encrypt + offsite the Storage buckets
@@ -210,6 +263,8 @@ jobs:
     environment: production
     env:
       AGE_BACKUP_PUBLIC_KEY: ${{ secrets.AGE_BACKUP_PUBLIC_KEY }}
+      # Optional escrow recipient (HIGH-4); see the DB job for rationale.
+      AGE_BACKUP_ESCROW_PUBLIC_KEY: ${{ secrets.AGE_BACKUP_ESCROW_PUBLIC_KEY }}
       # Supabase Storage S3 endpoint credentials (source).
       SUPABASE_S3_ACCESS_KEY: ${{ secrets.SUPABASE_S3_ACCESS_KEY }}
       SUPABASE_S3_SECRET: ${{ secrets.SUPABASE_S3_SECRET }}
@@ -244,17 +299,33 @@ jobs:
       - name: Install age
         run: sudo apt-get update && sudo apt-get install -y age
 
+      - name: Checkout (for the supabase/config.toml bucket list)
+        uses: actions/checkout@v4
+
       - name: Mirror Storage buckets from Supabase S3 endpoint
         env:
           # Source reads use the Supabase S3 creds.
           AWS_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET }}
         run: |
+          set -euo pipefail
           DEST="$(mktemp -d)"
           echo "DEST=${DEST}" >> "$GITHUB_ENV"
-          # Buckets defined in supabase/config.toml. --sync pulls only changed
-          # objects; an empty bucket is fine (sync is a no-op).
-          for bucket in menu-images qr-codes branding; do
+
+          # MED-2: derive the bucket list from supabase/config.toml at runtime so
+          # a newly added [storage.buckets.X] can't silently fall out of the
+          # backup (the old hardcoded "menu-images qr-codes branding" drifted).
+          mapfile -t BUCKETS < <(grep -oE '^\[storage\.buckets\.[^]]+\]' supabase/config.toml \
+            | sed -E 's/^\[storage\.buckets\.([^].]+)\]$/\1/')
+          if [ "${#BUCKETS[@]}" -eq 0 ]; then
+            echo "::error::No [storage.buckets.*] entries found in supabase/config.toml — refusing to back up an unknown bucket set."
+            exit 1
+          fi
+          echo "Buckets to mirror: ${BUCKETS[*]}"
+
+          # --sync pulls only changed objects; an empty bucket is a no-op. No
+          # `|| true` — a sync failure must fail the step, not ship an empty tar.
+          for bucket in "${BUCKETS[@]}"; do
             mkdir -p "${DEST}/${bucket}"
             # Explicit --region for SigV4 against Supabase (overrides the job's
             # region=auto, which is correct only for the R2 destination).
@@ -262,13 +333,36 @@ jobs:
               --endpoint-url "$SUPABASE_S3_ENDPOINT" \
               --region "$SUPABASE_S3_REGION"
           done
-          du -sh "${DEST}" || true
+          du -sh "${DEST}"
 
-      - name: Tar + age-encrypt (public key only — CI cannot decrypt)
+          # HIGH-3: a swallowed sync failure would leave only empty bucket dirs;
+          # don't encrypt+ship an empty archive. (If the project legitimately has
+          # no Storage objects yet, leave the Storage backup secrets unset until
+          # it does — the guard job then skips this job quietly.)
+          if [ -z "$(find "${DEST}" -type f -print -quit)" ]; then
+            echo "::error::No objects synced from any Storage bucket — refusing to ship an empty archive."
+            exit 1
+          fi
+
+      - name: Tar, gzip-check + age-encrypt (public key only — CI cannot decrypt)
         run: |
+          set -euo pipefail
           STAMP="$(date +%F)"
+          if [ -z "$(find "$DEST" -type f -print -quit)" ]; then
+            echo "::error::Storage mirror directory is empty — refusing to ship an empty archive."
+            exit 1
+          fi
           tar -czf "gustri-storage-${STAMP}.tar.gz" -C "$DEST" .
-          age -r "$AGE_BACKUP_PUBLIC_KEY" \
+          gzip -t "gustri-storage-${STAMP}.tar.gz" # fail loudly on a corrupt gzip stream
+          # HIGH-4: operator key + optional escrow recipient.
+          AGE_ARGS=(-r "$AGE_BACKUP_PUBLIC_KEY")
+          if [ -n "${AGE_BACKUP_ESCROW_PUBLIC_KEY:-}" ]; then
+            AGE_ARGS+=(-r "$AGE_BACKUP_ESCROW_PUBLIC_KEY")
+            echo "Encrypting to operator + escrow recipients."
+          else
+            echo "Encrypting to operator recipient only (no escrow key set)."
+          fi
+          age "${AGE_ARGS[@]}" \
             -o "gustri-storage-${STAMP}.tar.gz.age" "gustri-storage-${STAMP}.tar.gz"
           rm -f "gustri-storage-${STAMP}.tar.gz"
           ls -lh "gustri-storage-${STAMP}.tar.gz.age"
@@ -292,12 +386,31 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
-      - name: Open issue on failure
+      - name: Open or update failure issue
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue create \
-            --title "Nightly Storage backup FAILED $(date +%F)" \
-            --body "The nightly Storage-bucket backup job failed (run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}). Menu images / QR codes / branding may have no recent offsite copy. Investigate before the next window; see docs/backup-restore-runbook.md." \
-            || echo "::warning::Could not open failure issue (check issues: write permission)."
+          # LOW-2: dedupe — comment on an already-open failure issue instead of
+          # opening a fresh one every night the job stays broken.
+          PREFIX="Nightly Storage backup FAILED"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          EXISTING="$(gh issue list --state open --search "in:title \"$PREFIX\"" \
+            --json number,title \
+            --jq "map(select(.title | startswith(\"$PREFIX\"))) | .[0].number // empty" 2>/dev/null || true)"
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" \
+              --body "Failed again on $(date +%F) (run: $RUN_URL)." \
+              || echo "::warning::Could not comment on existing failure issue #$EXISTING."
+          else
+            gh issue create \
+              --title "$PREFIX $(date +%F)" \
+              --body "The nightly Storage-bucket backup job failed (run: $RUN_URL). Menu images / QR codes / branding may have no recent offsite copy. Investigate before the next window; see docs/backup-restore-runbook.md." \
+              || echo "::warning::Could not open failure issue (check issues: write permission)."
+          fi
+
+      - name: Cleanup plaintext (always)
+        if: always()
+        # LOW-1: scrub the decrypted Storage mirror + any leftover tar, even on
+        # failure. The encrypted .age blob was already uploaded above.
+        run: rm -rf "${DEST:-/nonexistent-dest}" gustri-storage-*.tar.gz || true

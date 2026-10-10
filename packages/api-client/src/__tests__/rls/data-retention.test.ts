@@ -15,12 +15,15 @@
  *      (regression for 20261010000004, which added table_transfers to the
  *      archived set);
  *   4. an aged delivery order's PII is redacted in place.
+ *   5. (MED-4) the archived rows ACTUALLY LAND in archive.* — including
+ *      archive.table_transfers, the child with no surfaced return count — and
+ *      (MED-5a) the archived order's PII is REDACTED in archive.orders.
  *
- * archive.* isn't exposed via PostgREST, so we assert the public-side prune +
- * the RPC's own archived-count return (and a clean RPC run, which proves the
- * table_transfers archival executed with aligned columns) rather than reading
- * the archive tables directly. The operator verifies archive.* row counts with
- * a direct DB query during a restore drill (see docs/backup-restore-runbook.md).
+ * archive.* is now exposed to PostgREST (supabase/config.toml) but locked by a
+ * RESTRICTIVE deny-all RLS policy for authenticated/anon (20261011000001).
+ * service_role has BYPASSRLS, so the service-role client below reads it directly
+ * — this is what lets us assert the archived rows rather than only inferring
+ * them from a clean RPC run.
  *
  * Run: pnpm test:rls
  * Prerequisites: local Supabase running, db reset & seeded.
@@ -84,6 +87,15 @@ afterAll(async () => {
     await svc.from('table_transfers').delete().in('order_id', createdOrderIds);
     await svc.from('order_items').delete().in('order_id', createdOrderIds);
     await svc.from('orders').delete().in('id', createdOrderIds);
+    // Retention copies the aged orders into archive.* — clear those too so a
+    // local re-run without `db reset` starts clean (CI always resets).
+    const arc = svc.schema('archive');
+    await arc.from('financial_audit_log').delete().in('order_id', createdOrderIds);
+    await arc.from('refunds').delete().in('order_id', createdOrderIds);
+    await arc.from('order_payments').delete().in('order_id', createdOrderIds);
+    await arc.from('table_transfers').delete().in('order_id', createdOrderIds);
+    await arc.from('order_items').delete().in('order_id', createdOrderIds);
+    await arc.from('orders').delete().in('id', createdOrderIds);
   }
 });
 
@@ -126,6 +138,20 @@ describe('run_data_retention', () => {
     expect(deliveryAfter.data?.customer_name).toBe('REDACTED');
     expect(deliveryAfter.data?.customer_phone).toBe('REDACTED');
     expect(deliveryAfter.data?.delivery_address).toBe('REDACTED');
+
+    // (MED-4) the closed order physically LANDED in archive.orders (not just
+    // vanished from the hot table), and (MED-5a) its PII is REDACTED there.
+    const archivedClosed = await svc
+      .schema('archive')
+      .from('orders')
+      .select('id, customer_name, customer_phone, delivery_address')
+      .eq('id', closedId)
+      .single();
+    expect(archivedClosed.error).toBeNull();
+    expect(archivedClosed.data?.id).toBe(closedId);
+    expect(archivedClosed.data?.customer_name).toBe('REDACTED');
+    expect(archivedClosed.data?.customer_phone).toBe('REDACTED');
+    expect(archivedClosed.data?.delivery_address).toBe('REDACTED');
   });
 
   test('archives refund, audit, and table_transfer children instead of destroying them', async () => {
@@ -220,5 +246,47 @@ describe('run_data_retention', () => {
     expect(refundAfter.data ?? []).toHaveLength(0);
     const transferAfter = await svc.from('table_transfers').select('id').eq('order_id', orderId);
     expect(transferAfter.data ?? []).toHaveLength(0);
+
+    // (MED-4) LOSSLESSNESS: the children physically LANDED in archive.*, read
+    // back with the BYPASSRLS service-role client. The table_transfers row is
+    // the important one — it carries no return count, so a clean RPC run alone
+    // can't prove it was archived rather than cascade-destroyed.
+    const archivedTransfer = await svc
+      .schema('archive')
+      .from('table_transfers')
+      .select('order_id, from_table_id, to_table_id')
+      .eq('order_id', orderId);
+    expect(archivedTransfer.error).toBeNull();
+    expect(archivedTransfer.data ?? []).toHaveLength(1);
+    expect(archivedTransfer.data?.[0]?.from_table_id).toBe(TABLE_1);
+    expect(archivedTransfer.data?.[0]?.to_table_id).toBe(TABLE_2);
+
+    const archivedRefund = await svc
+      .schema('archive')
+      .from('refunds')
+      .select('order_id, amount')
+      .eq('order_id', orderId);
+    expect(archivedRefund.error).toBeNull();
+    expect(archivedRefund.data ?? []).toHaveLength(1);
+
+    const archivedAudit = await svc
+      .schema('archive')
+      .from('financial_audit_log')
+      .select('order_id')
+      .eq('order_id', orderId);
+    expect(archivedAudit.error).toBeNull();
+    expect((archivedAudit.data ?? []).length).toBeGreaterThanOrEqual(1);
+
+    // (MED-5a) the archived order copy has its PII redacted.
+    const archivedOrder = await svc
+      .schema('archive')
+      .from('orders')
+      .select('id, customer_name, customer_phone, delivery_address')
+      .eq('id', orderId)
+      .single();
+    expect(archivedOrder.error).toBeNull();
+    expect(archivedOrder.data?.customer_name).toBe('REDACTED');
+    expect(archivedOrder.data?.customer_phone).toBe('REDACTED');
+    expect(archivedOrder.data?.delivery_address).toBe('REDACTED');
   });
 });
