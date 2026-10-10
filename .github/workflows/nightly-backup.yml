@@ -1,21 +1,32 @@
-name: Nightly DB Backup
+name: Nightly Backup
 
-# Free backup safety net while the prod Supabase project is on the Free plan
-# (which has no automated backups). Dumps roles + schema + data nightly and
-# stores them as a GitHub Actions artifact (retained 30 days, no external
-# storage or cost).
+# DIY disaster-recovery safety net while the prod Supabase project stays on the
+# FREE plan (no automated backups, no PITR). Runs nightly and produces an
+# ENCRYPTED, OFFSITE copy of both the database and the Storage buckets:
 #
-# ⚠️ RETIRE THIS AT THE FIRST PAYING TENANT. The artifact is a FULL plaintext
-# prod data dump downloadable by any repo collaborator — fine for pre-revenue
-# test data, but once real customer PII exists it conflicts with the privacy
-# policy. Move to Supabase Pro (daily backups) and/or encrypted offsite storage.
+#   - DB:      roles + schema + data via `supabase db dump`
+#   - Storage: menu-images / qr-codes / branding via S3 `aws s3 sync`
 #
-# The dump is a small pg_dump over the Supabase HTTP/DB connection; on a
-# low-volume DB the egress is negligible against the Free quota.
+# Each archive is tar'd and encrypted with `age` to a recipient PUBLIC key
+# (AGE_BACKUP_PUBLIC_KEY). CI only ever holds the PUBLIC key, so a leaked CI
+# environment cannot DECRYPT anything — the matching age PRIVATE key is held
+# OFFLINE by the operator (see docs/backup-restore-runbook.md) and is the only
+# thing that can restore these blobs. The encrypted blobs are pushed to
+# Cloudflare R2 (offsite, independent of Supabase/GitHub). No plaintext dump
+# ever leaves the runner.
 #
-# Restore (manual, deliberate): `psql "$DB_URL" -f roles.sql` then `schema.sql`
-# then `data.sql`, or `supabase db reset` against a fresh project + `psql` the
-# data. Test a restore before you rely on it.
+# Posture: DIY-hardened on Supabase Free. RPO <= 24h (nightly), RTO target <= 4h.
+# Revisit Supabase Pro ($25/mo, daily managed backups) / PITR ($100/mo) at first
+# revenue — until then THIS is the backup.
+#
+# Restore is deliberate and documented: see docs/backup-restore-runbook.md.
+# The data-retention cron MUST stay disabled until a restore has been tested.
+#
+# Config state (see docs/backup-restore-runbook.md §6): until the backup secrets
+# are set, the `guard` job classifies each backup as UNCONFIGURED and the DB /
+# Storage jobs SKIP QUIETLY (a warning, no failure, no tracking issue). Once ANY
+# backup secret is set, that job runs, enforces that ALL its required secrets are
+# present, and alerts LOUDLY (opens a tracking issue) on any real failure.
 
 on:
   schedule:
@@ -26,25 +37,120 @@ concurrency:
   group: nightly-backup
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  issues: write # failure-notification step opens a tracking issue
+
 jobs:
-  backup:
-    name: Dump production database
+  # Decide, from secret PRESENCE only, whether each backup is configured yet.
+  # This is what keeps an un-onboarded repo from opening a failure issue every
+  # night: if the NEW backup secrets are entirely unset we classify the backup
+  # as "false" (not configured) and the real job is skipped — no run, no issue.
+  # A PARTIAL config ("partial") still runs the real job so its strict preflight
+  # fails loudly, because a half-set backup is a genuine misconfiguration.
+  guard:
+    name: Backups configured?
     runs-on: ubuntu-latest
-    # Required: the valid SUPABASE_ACCESS_TOKEN (+ DB password / project id) live
-    # in the `production` environment. Without this, the job resolves stale/empty
-    # repo-level secrets and `supabase link` fails with "Unauthorized" (matches
-    # deploy-migrations.yml, which works because it declares this).
+    # `production` holds the secrets; without it they resolve empty and every
+    # backup would look "unconfigured".
+    environment: production
+    outputs:
+      db: ${{ steps.check.outputs.db }}
+      storage: ${{ steps.check.outputs.storage }}
+    env:
+      AGE_BACKUP_PUBLIC_KEY: ${{ secrets.AGE_BACKUP_PUBLIC_KEY }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      SUPABASE_S3_ACCESS_KEY: ${{ secrets.SUPABASE_S3_ACCESS_KEY }}
+      SUPABASE_S3_SECRET: ${{ secrets.SUPABASE_S3_SECRET }}
+      SUPABASE_S3_ENDPOINT: ${{ secrets.SUPABASE_S3_ENDPOINT }}
+    steps:
+      - name: Classify configuration state
+        id: check
+        run: |
+          # Echo false (none set) / true (all set) / partial (some set) for the
+          # named secrets. Never exits non-zero — a failed guard would skip the
+          # backups silently, the exact outcome we are preventing.
+          classify() {
+            present=0
+            total=0
+            for v in "$@"; do
+              total=$((total + 1))
+              if [ -n "${!v}" ]; then present=$((present + 1)); fi
+            done
+            if [ "$present" -eq 0 ]; then
+              echo "false"
+            elif [ "$present" -eq "$total" ]; then
+              echo "true"
+            else
+              echo "partial"
+            fi
+          }
+          # The NEW, backup-specific secrets per job (the pre-existing SUPABASE_*
+          # deploy secrets are NOT counted — their presence doesn't mean backups
+          # are set up). SUPABASE_S3_REGION is optional (has a default), so it is
+          # excluded here too.
+          DB="$(classify AGE_BACKUP_PUBLIC_KEY R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET R2_ENDPOINT)"
+          STORAGE="$(classify AGE_BACKUP_PUBLIC_KEY SUPABASE_S3_ACCESS_KEY SUPABASE_S3_SECRET SUPABASE_S3_ENDPOINT R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET R2_ENDPOINT)"
+          echo "db=$DB" >> "$GITHUB_OUTPUT"
+          echo "storage=$STORAGE" >> "$GITHUB_OUTPUT"
+          if [ "$DB" = "false" ]; then
+            echo "::warning::Nightly DB backup not configured — set the backup secrets (docs/backup-restore-runbook.md §6) to enable. Skipping (no failure, no issue)."
+          fi
+          if [ "$STORAGE" = "false" ]; then
+            echo "::warning::Nightly Storage backup not configured — set the backup secrets (docs/backup-restore-runbook.md §6) to enable. Skipping (no failure, no issue)."
+          fi
+
+  backup-db:
+    name: Dump + encrypt + offsite the database
+    needs: guard
+    # Skip quietly while unconfigured; run (and fail loudly) once any secret set.
+    if: needs.guard.outputs.db != 'false'
+    runs-on: ubuntu-latest
+    # The valid SUPABASE_ACCESS_TOKEN (+ DB password / project id) and the R2 /
+    # age secrets live in the `production` environment (matches
+    # deploy-migrations.yml). Without this, the job resolves stale/empty
+    # repo-level secrets and `supabase link` fails with "Unauthorized".
     environment: production
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      AGE_BACKUP_PUBLIC_KEY: ${{ secrets.AGE_BACKUP_PUBLIC_KEY }}
+      # R2 is S3-compatible; the aws CLI reads these standard names.
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      # R2 rejects the trailing checksums newer aws-cli v2 adds by default;
+      # only send them when the operation requires it.
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
 
     steps:
+      - name: Preflight — required secrets present
+        run: |
+          missing=""
+          for v in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_ID \
+                   AGE_BACKUP_PUBLIC_KEY AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY \
+                   R2_BUCKET R2_ENDPOINT; do
+            if [ -z "${!v}" ]; then missing="$missing $v"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required secret(s):$missing"
+            exit 1
+          fi
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: 2.78.1 # match ci.yml / deploy-migrations.yml
+
+      - name: Install age
+        run: sudo apt-get update && sudo apt-get install -y age
 
       - name: Link to production project
         run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
@@ -57,10 +163,141 @@ jobs:
           supabase db dump --linked --data-only -f backup/data.sql
           ls -lh backup
 
-      - name: Upload backup artifact
+      - name: Tar + age-encrypt (public key only — CI cannot decrypt)
+        run: |
+          STAMP="$(date +%F)"
+          tar -czf "gustri-db-${STAMP}.tar.gz" -C backup .
+          # Encrypt to the recipient PUBLIC key. The matching private key is
+          # held OFFLINE by the operator and is NOT available to CI.
+          age -r "$AGE_BACKUP_PUBLIC_KEY" \
+            -o "gustri-db-${STAMP}.tar.gz.age" "gustri-db-${STAMP}.tar.gz"
+          rm -f "gustri-db-${STAMP}.tar.gz" # drop plaintext tar from the runner
+          ls -lh "gustri-db-${STAMP}.tar.gz.age"
+          echo "STAMP=${STAMP}" >> "$GITHUB_ENV"
+
+      - name: Upload encrypted blob to Cloudflare R2
+        run: |
+          aws s3 cp "gustri-db-${STAMP}.tar.gz.age" \
+            "s3://${R2_BUCKET}/db/gustri-db-${STAMP}.tar.gz.age" \
+            --endpoint-url "$R2_ENDPOINT"
+
+      # Optional convenience mirror — ENCRYPTED blob only (never plaintext).
+      # The raw dump is NOT uploaded: no plaintext PII leaves the runner.
+      - name: Upload encrypted blob as artifact (30d)
         uses: actions/upload-artifact@v4
         with:
-          name: db-backup-${{ github.run_id }}
-          path: backup/
+          name: db-backup-encrypted-${{ github.run_id }}
+          path: gustri-db-*.tar.gz.age
           retention-days: 30
           if-no-files-found: error
+
+      - name: Open issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "Nightly DB backup FAILED $(date +%F)" \
+            --body "The nightly DB backup job failed (run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}). A silently-failing or paused-project backup leaves us with no recent recovery point. Investigate before the next window; see docs/backup-restore-runbook.md." \
+            || echo "::warning::Could not open failure issue (check issues: write permission)."
+
+  backup-storage:
+    name: Mirror + encrypt + offsite the Storage buckets
+    needs: guard
+    # Skip quietly while unconfigured; run (and fail loudly) once any secret set.
+    if: needs.guard.outputs.storage != 'false'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      AGE_BACKUP_PUBLIC_KEY: ${{ secrets.AGE_BACKUP_PUBLIC_KEY }}
+      # Supabase Storage S3 endpoint credentials (source).
+      SUPABASE_S3_ACCESS_KEY: ${{ secrets.SUPABASE_S3_ACCESS_KEY }}
+      SUPABASE_S3_SECRET: ${{ secrets.SUPABASE_S3_SECRET }}
+      SUPABASE_S3_ENDPOINT: ${{ secrets.SUPABASE_S3_ENDPOINT }}
+      # Supabase's S3 gateway signs with SigV4 and (unlike R2) rejects
+      # region=auto — it must match the project's region. Optional secret with a
+      # conventional default; set it to your project's region (runbook §6).
+      SUPABASE_S3_REGION: ${{ secrets.SUPABASE_S3_REGION || 'us-east-1' }}
+      # R2 destination (same bucket as the DB backup, under storage/).
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      AWS_DEFAULT_REGION: auto
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+
+    steps:
+      - name: Preflight — required secrets present
+        run: |
+          missing=""
+          for v in AGE_BACKUP_PUBLIC_KEY SUPABASE_S3_ACCESS_KEY SUPABASE_S3_SECRET \
+                   SUPABASE_S3_ENDPOINT R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY \
+                   R2_BUCKET R2_ENDPOINT; do
+            if [ -z "${!v}" ]; then missing="$missing $v"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required secret(s):$missing"
+            exit 1
+          fi
+
+      - name: Install age
+        run: sudo apt-get update && sudo apt-get install -y age
+
+      - name: Mirror Storage buckets from Supabase S3 endpoint
+        env:
+          # Source reads use the Supabase S3 creds.
+          AWS_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET }}
+        run: |
+          DEST="$(mktemp -d)"
+          echo "DEST=${DEST}" >> "$GITHUB_ENV"
+          # Buckets defined in supabase/config.toml. --sync pulls only changed
+          # objects; an empty bucket is fine (sync is a no-op).
+          for bucket in menu-images qr-codes branding; do
+            mkdir -p "${DEST}/${bucket}"
+            # Explicit --region for SigV4 against Supabase (overrides the job's
+            # region=auto, which is correct only for the R2 destination).
+            aws s3 sync "s3://${bucket}" "${DEST}/${bucket}" \
+              --endpoint-url "$SUPABASE_S3_ENDPOINT" \
+              --region "$SUPABASE_S3_REGION"
+          done
+          du -sh "${DEST}" || true
+
+      - name: Tar + age-encrypt (public key only — CI cannot decrypt)
+        run: |
+          STAMP="$(date +%F)"
+          tar -czf "gustri-storage-${STAMP}.tar.gz" -C "$DEST" .
+          age -r "$AGE_BACKUP_PUBLIC_KEY" \
+            -o "gustri-storage-${STAMP}.tar.gz.age" "gustri-storage-${STAMP}.tar.gz"
+          rm -f "gustri-storage-${STAMP}.tar.gz"
+          ls -lh "gustri-storage-${STAMP}.tar.gz.age"
+          echo "STAMP=${STAMP}" >> "$GITHUB_ENV"
+
+      - name: Upload encrypted blob to Cloudflare R2
+        env:
+          # Destination writes use the R2 creds.
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: |
+          aws s3 cp "gustri-storage-${STAMP}.tar.gz.age" \
+            "s3://${R2_BUCKET}/storage/gustri-storage-${STAMP}.tar.gz.age" \
+            --endpoint-url "$R2_ENDPOINT"
+
+      - name: Upload encrypted blob as artifact (30d)
+        uses: actions/upload-artifact@v4
+        with:
+          name: storage-backup-encrypted-${{ github.run_id }}
+          path: gustri-storage-*.tar.gz.age
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Open issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "Nightly Storage backup FAILED $(date +%F)" \
+            --body "The nightly Storage-bucket backup job failed (run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}). Menu images / QR codes / branding may have no recent offsite copy. Investigate before the next window; see docs/backup-restore-runbook.md." \
+            || echo "::warning::Could not open failure issue (check issues: write permission)."

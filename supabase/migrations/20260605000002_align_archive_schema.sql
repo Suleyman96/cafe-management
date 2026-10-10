@@ -18,10 +18,14 @@
 -- storage — no constraints/defaults needed; the SELECT supplies every value.
 --
 -- INVARIANT going forward: any migration that ADDs a column to public.orders,
--- public.order_items, public.order_payments, public.refunds, or
--- public.financial_audit_log MUST mirror it here, or run_data_retention breaks.
--- The `data-retention` RLS test archives a real order+item and will fail if this
--- drifts again.
+-- public.order_items, public.order_payments, public.refunds,
+-- public.table_transfers, or public.financial_audit_log MUST mirror it here,
+-- or run_data_retention breaks. (table_transfers joined the archived set in
+-- 20261010000004_retention_archive_financial.sql — its archive table is
+-- created there via LIKE INCLUDING ALL, so it is column-aligned as of that
+-- migration; future columns on it must be mirrored here too.)
+-- The `data-retention` RLS test archives a real order+item (+refund+audit
+-- +transfer) and will fail if this drifts again.
 
 BEGIN;
 

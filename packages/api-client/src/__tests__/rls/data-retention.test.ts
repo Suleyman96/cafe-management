@@ -1,16 +1,26 @@
 /**
  * Integration test — `run_data_retention()` (M11 retention + L4 audit archival).
  *
- * The RPC (migration 20260424000004, exposed via POST /api/v1/admin/retention)
- * archives aged closed/cancelled orders + their financial children + audit rows
- * into the `archive.*` schema, then deletes them from the hot tables, and
- * PII-anonymizes aged delivery orders. It deletes financial data, yet had no
- * test. This locks in the two headline behaviors:
+ * The RPC (migrations 20260424000004 → 20260505000001 → 20261010000004, exposed
+ * via POST /api/v1/admin/retention) archives aged closed/cancelled orders + ALL
+ * their children (items, payments, refunds, table_transfers, audit rows) into
+ * the `archive.*` schema, then deletes them from the hot tables, and
+ * PII-anonymizes aged delivery orders. This locks in:
  *   1. an aged closed order is pruned from public.orders (and reported archived);
- *   2. an aged delivery order's PII is redacted in place.
+ *   2. its refunds + financial_audit_log rows are ARCHIVED, not destroyed
+ *      (reported via refunds_archived / audit_archived) — regression for the
+ *      original CASCADE-destroys-money bug;
+ *   3. its table_transfers row is archived losslessly too — the archival INSERT
+ *      runs without error (column-parity guard) and the order still prunes
+ *      (regression for 20261010000004, which added table_transfers to the
+ *      archived set);
+ *   4. an aged delivery order's PII is redacted in place.
  *
  * archive.* isn't exposed via PostgREST, so we assert the public-side prune +
- * the RPC's own archived-count return rather than reading the archive tables.
+ * the RPC's own archived-count return (and a clean RPC run, which proves the
+ * table_transfers archival executed with aligned columns) rather than reading
+ * the archive tables directly. The operator verifies archive.* row counts with
+ * a direct DB query during a restore drill (see docs/backup-restore-runbook.md).
  *
  * Run: pnpm test:rls
  * Prerequisites: local Supabase running, db reset & seeded.
@@ -25,6 +35,8 @@ const SERVICE_ROLE_KEY =
 
 const TENANT_1 = '00000000-0000-0000-0000-000000000001';
 const TABLE_1 = '20000000-0000-0000-0000-000000000001';
+const TABLE_2 = '20000000-0000-0000-0000-000000000002';
+const ADMIN_STAFF_ID = '10000000-0000-0000-0000-000000000001';
 // Comfortably past both the 24-month order and 12-month PII default windows.
 const THREE_YEARS_AGO = '2023-01-01T00:00:00Z';
 
@@ -62,10 +74,14 @@ beforeAll(() => {
 
 afterAll(async () => {
   // The closed order is pruned by retention; the delivery order survives
-  // (anonymized) — clean up whatever remains. financial_audit_log first
-  // (ON DELETE RESTRICT to orders).
+  // (anonymized) — clean up whatever remains. Delete the RESTRICT-FK children
+  // (financial_audit_log, refunds, order_payments) before orders;
+  // table_transfers is CASCADE.
   if (createdOrderIds.length) {
     await svc.from('financial_audit_log').delete().in('order_id', createdOrderIds);
+    await svc.from('refunds').delete().in('order_id', createdOrderIds);
+    await svc.from('order_payments').delete().in('order_id', createdOrderIds);
+    await svc.from('table_transfers').delete().in('order_id', createdOrderIds);
     await svc.from('order_items').delete().in('order_id', createdOrderIds);
     await svc.from('orders').delete().in('id', createdOrderIds);
   }
@@ -110,5 +126,99 @@ describe('run_data_retention', () => {
     expect(deliveryAfter.data?.customer_name).toBe('REDACTED');
     expect(deliveryAfter.data?.customer_phone).toBe('REDACTED');
     expect(deliveryAfter.data?.delivery_address).toBe('REDACTED');
+  });
+
+  test('archives refund, audit, and table_transfer children instead of destroying them', async () => {
+    // Aged closed order carrying all three "lossy-on-cascade" children:
+    //   - a refund            (was CASCADE-destroyed pre-20260505000001)
+    //   - a financial_audit_log row (same)
+    //   - a table_transfer    (still CASCADE today — fixed by 20261010000004)
+    // Seeding order mirrors the known-good recipe in refund-audit.test.ts and
+    // payment-on-closed-order.test.ts (both pass in the same CI RLS job through
+    // the same triggers). Payments are REJECTED on terminal orders
+    // (20260503000006), so we can't seed a 'closed' order and then pay it — the
+    // order must be OPEN when the payment + refund land, then transition to a
+    // terminal state for retention to archive+prune it.
+    //
+    // Amounts — every trigger in the chain passes:
+    //   order.total = 100
+    //   payment 50  (partial): validate_payment_amount on OPEN order →
+    //     remaining = total - SUM(paid) = 100 - 0 = 100; 50 <= 100 ✓, and a
+    //     partial payment leaves status 'new' (not auto-closed).
+    //   refund  25:  validate_refund_amount →
+    //     available = SUM(paid) - SUM(refunded) = 50 - 0 = 50; 25 <= 50 ✓.
+    //   close new→closed: legal (state-machine rule 2: any non-terminal → closed)
+    //     and guard_close_order_unpaid (20260506000003) sees
+    //     remaining = total - paid + refunded = 100 - 50 + 25 = 75 > 0.01, so a
+    //     force_close_reason is required → supplied ('test_seed').
+    const orderId = await insertOrder({ status: 'new', subtotal: 100, tax: 0, total: 100 });
+
+    const { error: payErr } = await svc.from('order_payments').insert({
+      tenant_id: TENANT_1,
+      order_id: orderId,
+      amount: 50,
+      payment_method: 'cash',
+      payment_type: 'partial_amount',
+      received_by: ADMIN_STAFF_ID,
+    });
+    expect(payErr).toBeNull();
+
+    const { error: refundErr } = await svc.from('refunds').insert({
+      tenant_id: TENANT_1,
+      order_id: orderId,
+      processed_by: ADMIN_STAFF_ID,
+      amount: 25,
+      reason: 'retention regression seed',
+      refund_method: 'cash',
+    });
+    expect(refundErr).toBeNull();
+
+    // Explicit audit row (independent of the refund-insert trigger) so the
+    // assertion doesn't rely on trigger behavior.
+    const { error: auditErr } = await svc.from('financial_audit_log').insert({
+      tenant_id: TENANT_1,
+      order_id: orderId,
+      action: 'refund',
+    });
+    expect(auditErr).toBeNull();
+
+    const { error: transferErr } = await svc.from('table_transfers').insert({
+      tenant_id: TENANT_1,
+      order_id: orderId,
+      from_table_id: TABLE_1,
+      to_table_id: TABLE_2,
+      transferred_by: ADMIN_STAFF_ID,
+    });
+    expect(transferErr).toBeNull();
+
+    // Transition the (still 3-years-old) order to a terminal state so retention
+    // archives+prunes it. force_close_reason satisfies guard_close_order_unpaid
+    // for the 75 left outstanding after the refund (see amount trace above).
+    const { error: closeErr } = await svc
+      .from('orders')
+      .update({ status: 'closed', force_close_reason: 'test_seed' })
+      .eq('id', orderId);
+    expect(closeErr).toBeNull();
+
+    // A clean RPC run is itself the table_transfers column-parity guard: if
+    // archive.table_transfers were misaligned, the positional `INSERT ... SELECT
+    // *` would raise 42601 and `error` would be non-null.
+    const { data: result, error } = await svc.rpc('run_data_retention');
+    expect(error).toBeNull();
+    const row = Array.isArray(result) ? result[0] : result;
+
+    // Refund + audit rows were ARCHIVED (reported counts), not silently lost.
+    expect(Number(row.refunds_archived)).toBeGreaterThanOrEqual(1);
+    expect(Number(row.audit_archived)).toBeGreaterThanOrEqual(1);
+
+    // The order (and all its children) are gone from the hot tables. The order
+    // deleting at all proves the RESTRICT-FK children (refund, audit) were
+    // cleared first — which only happens after they're archived.
+    const orderAfter = await svc.from('orders').select('id').eq('id', orderId).maybeSingle();
+    expect(orderAfter.data).toBeNull();
+    const refundAfter = await svc.from('refunds').select('id').eq('order_id', orderId);
+    expect(refundAfter.data ?? []).toHaveLength(0);
+    const transferAfter = await svc.from('table_transfers').select('id').eq('order_id', orderId);
+    expect(transferAfter.data ?? []).toHaveLength(0);
   });
 });
