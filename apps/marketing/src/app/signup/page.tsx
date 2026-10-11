@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useRef, useState } from 'react';
-import { STAFF_APP_URL } from '@/lib/constants';
+import { STAFF_APP_URL, TERMS_VERSION } from '@/lib/constants';
 import { isSignupSubmitReady } from '@/lib/signup-gate';
 import { getSupabase } from '@/lib/supabase';
 
@@ -82,12 +82,22 @@ function SignupForm() {
         email,
         password,
         options: {
-          // Only `signup` is sent — the server provisions every self-serve
-          // tenant on the free plan and IGNORES any client-supplied plan
-          // (migration 20260728000001). We don't forward `plan` so there's no
-          // illusion the client controls it; upgrades happen via billing later.
+          // `signup` is the provisioning guard — the server provisions every
+          // self-serve tenant on the free plan and IGNORES any client-supplied
+          // plan (migration 20260728000001). We don't forward `plan` so there's
+          // no illusion the client controls it; upgrades happen via billing
+          // later.
+          //
+          // L14 (compliance): record the Terms/Privacy consent the user just
+          // gave via the `agreed` checkbox (gated above). The provisioning
+          // trigger (migration 20261012000001) persists terms_version +
+          // terms_accepted_at onto the tenant, so consent is auditable: which
+          // Terms revision, accepted when. The timestamp is captured client-
+          // side at submit; TERMS_VERSION is bumped whenever the Terms change.
           data: {
             signup: 'true',
+            terms_version: TERMS_VERSION,
+            terms_accepted_at: new Date().toISOString(),
           },
           emailRedirectTo: `${STAFF_APP_URL}/auth/callback?next=/`,
           // H3: pass the Turnstile token when we have one. Supabase verifies it

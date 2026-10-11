@@ -68,3 +68,33 @@ This is what makes the widget render and the submit button require a token.
 - Because provisioning now waits for confirmation, a user who never clicks the
   link has an auth account but **no tenant/staff** — exactly as intended. They
   can re-request confirmation; no orphaned tenant is created in the meantime.
+
+## L14 — Terms/Privacy consent is persisted (compliance)
+
+The signup consent checkbox used to only gate the submit button; nothing
+recorded that the user accepted, which Terms version, or when. That consent is
+now an auditable record on the tenant.
+
+- **Schema** (`20261012000001_persist_signup_consent.sql`): two nullable columns
+  on `public.tenants` — `terms_version text` and `terms_accepted_at timestamptz`.
+  The migration re-defines `handle_new_tenant_signup()` from the H3 body
+  verbatim (all deferral / idempotency / `plan='free'` anti-escalation
+  behaviour unchanged) and only adds these two columns to the
+  `INSERT INTO public.tenants`, reading them from the signup metadata
+  (`raw_user_meta_data->>'terms_version'` and
+  `(raw_user_meta_data->>'terms_accepted_at')::timestamptz`). The H3 trigger
+  wiring is untouched (`CREATE OR REPLACE` re-points the existing trigger).
+- **Client** (`apps/marketing/src/app/signup/page.tsx`): once `agreed` is
+  checked, `auth.signUp` forwards `terms_version: TERMS_VERSION` and
+  `terms_accepted_at: new Date().toISOString()` in `options.data`.
+- **`TERMS_VERSION`** lives in `apps/marketing/src/lib/constants.ts` (currently
+  `'2026-10-11'`). **Bump it whenever the Terms or Privacy text changes
+  materially** — the new value becomes the version recorded for every signup
+  thereafter, which is how we tell who accepted which revision. It's an opaque
+  date-stamped string; compare for equality, never parse.
+- **Operator / platform-created path** (`admin.createUser` with
+  `signup: 'platform'`, or any path that passes no consent metadata) records
+  `NULL` for both columns. We deliberately do **not** COALESCE
+  `terms_accepted_at` to `now()`: those tenants never clicked the consent
+  checkbox, so a fabricated timestamp would be a misleading audit record. NULL
+  truthfully means "no consent captured via this path".

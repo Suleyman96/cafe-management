@@ -247,7 +247,11 @@ describe('Self-serve signup provisioning (migrations 20260728000001 + 2026101100
     if (deferredUserId) await svc.auth.admin.deleteUser(deferredUserId).catch(() => {});
   });
 
-  test('pre-confirmed INSERT provisions a FREE tenant + owner + defaults, ignoring a client-claimed paid plan', async () => {
+  // L14: fixed consent snapshot the signup form would forward in metadata.
+  const consentVersion = '2026-10-11';
+  const consentAt = '2026-10-11T12:34:56.000Z';
+
+  test('pre-confirmed INSERT provisions a FREE tenant + owner + defaults, ignoring a client-claimed paid plan, and persists consent', async () => {
     const { data, error } = await svc.auth.admin.createUser({
       email,
       password: 'test1234!',
@@ -260,6 +264,9 @@ describe('Self-serve signup provisioning (migrations 20260728000001 + 2026101100
         restaurant_name: cafeName,
         plan: 'business',
         full_name: 'Eve',
+        // L14: the Terms/Privacy consent the signup form forwards.
+        terms_version: consentVersion,
+        terms_accepted_at: consentAt,
       },
     });
     expect(error).toBeNull();
@@ -268,11 +275,15 @@ describe('Self-serve signup provisioning (migrations 20260728000001 + 2026101100
 
     const { data: tenant } = await svc
       .from('tenants')
-      .select('id, plan')
+      .select('id, plan, terms_version, terms_accepted_at')
       .eq('name', cafeName)
       .single();
     tenantId = tenant?.id ?? null;
     expect(tenant?.plan).toBe('free'); // NOT 'business' — self-grant blocked
+
+    // L14: the consent snapshot from signup metadata is persisted on the tenant.
+    expect(tenant?.terms_version).toBe(consentVersion);
+    expect(new Date(tenant?.terms_accepted_at as string).toISOString()).toBe(consentAt);
 
     const { data: staff } = await svc
       .from('staff')
@@ -902,11 +913,17 @@ describe('Platform — operator-created tenant provisions via the signup trigger
     // Tenant is named from metadata and forced to the free plan.
     const { data: tenant } = await svc
       .from('tenants')
-      .select('name, plan')
+      .select('name, plan, terms_version, terms_accepted_at')
       .eq('id', tenantId as string)
       .single();
     expect(tenant?.name).toBe('Platform Test Cafe');
     expect(tenant?.plan).toBe('free');
+
+    // L14: the operator/platform path passes no consent metadata, so both
+    // consent columns stay NULL — we deliberately do NOT fabricate a timestamp
+    // for a tenant that never clicked the signup consent checkbox.
+    expect(tenant?.terms_version).toBeNull();
+    expect(tenant?.terms_accepted_at).toBeNull();
 
     // Default categories seeded so first-run pickers aren't empty.
     const { count: taskCats } = await svc

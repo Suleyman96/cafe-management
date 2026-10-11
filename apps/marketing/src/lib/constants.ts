@@ -6,6 +6,14 @@ export const SITE_TAGLINE = 'Your restaurant, one platform.';
 
 export const STAFF_APP_URL = process.env.NEXT_PUBLIC_STAFF_APP_URL || 'http://localhost:3001';
 
+// L14 (compliance): the Terms of Service / Privacy Policy revision a user
+// accepts at signup. Persisted server-side (tenants.terms_version) so consent
+// is auditable. BUMP this whenever the Terms or Privacy text changes materially
+// — the new value becomes the version recorded for every signup thereafter,
+// which is how we tell who accepted which revision. Opaque string by design
+// (date-stamped): consumers compare for equality, never parse it.
+export const TERMS_VERSION = '2026-10-11';
+
 export const FREE_PLAN_REASSURANCE =
   'No credit card. 5-minute setup. Free forever for up to 300 orders/mo.';
 
