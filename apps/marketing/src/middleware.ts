@@ -34,15 +34,23 @@ export function middleware(request: NextRequest) {
   // production.
   const cspHeader = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://plausible.io${
+    // `https://challenges.cloudflare.com` is the Turnstile loader (H3 signup
+    // CAPTCHA). Under `'strict-dynamic'` CSP3 browsers ignore the host and
+    // trust it because the nonce'd app bundle injects it; the host stays listed
+    // as the CSP2 fallback for older browsers.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://plausible.io https://challenges.cloudflare.com${
       isDev ? " 'unsafe-eval'" : ''
     }`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self'",
     // `*.sentry.io` covers the region-scoped ingest hosts the browser SDK
-    // POSTs errors to; `*.supabase.co` covers the signup auth call.
-    "connect-src 'self' https://plausible.io https://*.supabase.co https://*.sentry.io",
+    // POSTs errors to; `*.supabase.co` covers the signup auth call;
+    // `challenges.cloudflare.com` covers the Turnstile widget's verification.
+    "connect-src 'self' https://plausible.io https://*.supabase.co https://*.sentry.io https://challenges.cloudflare.com",
+    // The Turnstile challenge renders inside an iframe from this origin;
+    // `frame-src` is NOT covered by `'strict-dynamic'`, so it must be listed.
+    'frame-src https://challenges.cloudflare.com',
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",

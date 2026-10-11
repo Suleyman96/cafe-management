@@ -1,12 +1,21 @@
 'use client';
 
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import * as Sentry from '@sentry/nextjs';
 import { ArrowLeft, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 import { STAFF_APP_URL } from '@/lib/constants';
+import { isSignupSubmitReady } from '@/lib/signup-gate';
 import { getSupabase } from '@/lib/supabase';
+
+// H3 (anti-abuse): Cloudflare Turnstile site key. PUBLIC by design (it only
+// identifies the widget; the secret lives in the Supabase dashboard, which
+// verifies the token server-side on signUp). When unset — local dev — we skip
+// the widget and don't block signup (graceful degrade); when set, a token is
+// required before the submit button enables.
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 const VALID_PLANS = ['free', 'standard', 'pro', 'business'] as const;
 type Plan = (typeof VALID_PLANS)[number];
@@ -40,6 +49,12 @@ function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const turnstileRef = useRef<TurnstileInstance | undefined>(undefined);
+
+  // CAPTCHA only applies when a site key is configured (see TURNSTILE_SITE_KEY).
+  const captchaRequired = Boolean(TURNSTILE_SITE_KEY);
+  const canSubmit = isSignupSubmitReady({ agreed, captchaRequired, captchaToken, isLoading });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +67,11 @@ function SignupForm() {
 
     if (!agreed) {
       setError('Please agree to the Terms and Privacy Policy to continue.');
+      return;
+    }
+
+    if (captchaRequired && !captchaToken) {
+      setError('Please complete the verification challenge to continue.');
       return;
     }
 
@@ -70,10 +90,22 @@ function SignupForm() {
             signup: 'true',
           },
           emailRedirectTo: `${STAFF_APP_URL}/auth/callback?next=/`,
+          // H3: pass the Turnstile token when we have one. Supabase verifies it
+          // server-side against the secret configured in the Auth dashboard and
+          // rejects the signup if it's missing/invalid. Undefined (not '') when
+          // CAPTCHA isn't configured, so local dev signUp is unaffected.
+          captchaToken: captchaRequired ? captchaToken : undefined,
         },
       });
 
       if (signUpError) {
+        // Turnstile tokens are single-use — reset the widget so the user can
+        // get a fresh token before retrying (otherwise re-submit fails on a
+        // spent token).
+        if (captchaRequired) {
+          turnstileRef.current?.reset();
+          setCaptchaToken('');
+        }
         // M7 — never surface GoTrue's raw message (e.g. "User already
         // registered"): it lets an attacker enumerate which emails have
         // accounts. Report the raw error to Sentry / the dev console for ops,
@@ -216,9 +248,22 @@ function SignupForm() {
             </span>
           </label>
 
+          {/* H3: Cloudflare Turnstile. Rendered only when a site key is
+              configured; local dev (no key) skips it and signup still works. */}
+          {TURNSTILE_SITE_KEY && (
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={TURNSTILE_SITE_KEY}
+              onSuccess={setCaptchaToken}
+              onExpire={() => setCaptchaToken('')}
+              onError={() => setCaptchaToken('')}
+              options={{ theme: 'light', size: 'flexible' }}
+            />
+          )}
+
           <button
             type="submit"
-            disabled={isLoading || !agreed}
+            disabled={!canSubmit}
             className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary-500 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-primary-500/25 hover:bg-primary-600 transition-all hover:shadow-primary-500/40 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isLoading ? (

@@ -223,22 +223,36 @@ describe('RLS — get_active_order_for_table QR-token capability', () => {
 // Migration 20260728000001 — self-serve signup provisions a tenant via the
 // auth.users trigger, and MUST force plan='free' regardless of a client-supplied
 // plan (the old `raw_user_meta_data->>'plan'` read was a self-grant vector).
-describe('Self-serve signup provisioning (migration 20260728000001)', () => {
+//
+// Migration 20261011000003 (H3 anti-abuse) — provisioning is now DEFERRED
+// until the email is confirmed. A pre-confirmed INSERT (admin API with
+// `email_confirm: true`, or confirmation disabled) still provisions
+// immediately; an unconfirmed INSERT must NOT, and the later confirmation
+// UPDATE provisions exactly once.
+describe('Self-serve signup provisioning (migrations 20260728000001 + 20261011000003)', () => {
   const uniq = `${Date.now()}`;
   const email = `provtest-${uniq}@example.com`;
   const cafeName = `Provision Test Cafe ${uniq}`;
+  const deferredEmail = `provtest-deferred-${uniq}@example.com`;
+  const deferredCafe = `Deferred Provision Cafe ${uniq}`;
   let userId: string | null = null;
   let tenantId: string | null = null;
+  let deferredUserId: string | null = null;
+  let deferredTenantId: string | null = null;
 
   afterAll(async () => {
     if (tenantId) await svc.from('tenants').delete().eq('id', tenantId); // cascades staff/settings/categories
     if (userId) await svc.auth.admin.deleteUser(userId);
+    if (deferredTenantId) await svc.from('tenants').delete().eq('id', deferredTenantId);
+    if (deferredUserId) await svc.auth.admin.deleteUser(deferredUserId).catch(() => {});
   });
 
-  test('provisions a FREE tenant + owner + defaults, ignoring a client-claimed paid plan', async () => {
+  test('pre-confirmed INSERT provisions a FREE tenant + owner + defaults, ignoring a client-claimed paid plan', async () => {
     const { data, error } = await svc.auth.admin.createUser({
       email,
       password: 'test1234!',
+      // Pre-confirmed: email_confirmed_at is set at INSERT, so provisioning
+      // runs immediately (operator path + confirmation-disabled path).
       email_confirm: true,
       // Malicious: try to self-grant 'business' via signup metadata.
       user_metadata: {
@@ -271,6 +285,77 @@ describe('Self-serve signup provisioning (migration 20260728000001)', () => {
       .from('task_categories')
       .select('*', { count: 'exact', head: true })
       .eq('tenant_id', tenantId!);
+    expect(taskCats).toBe(5);
+  });
+
+  test('H3: an UNCONFIRMED signup does NOT provision; confirming the email provisions exactly once', async () => {
+    // Create the user WITHOUT confirming the email — this mirrors the public
+    // anon `auth.signUp` path (the DB-spam / squatting vector H3 closes).
+    const { data, error } = await svc.auth.admin.createUser({
+      email: deferredEmail,
+      password: 'test1234!',
+      email_confirm: false,
+      user_metadata: {
+        signup: 'true',
+        restaurant_name: deferredCafe,
+        plan: 'business', // still must be ignored once provisioning runs
+        full_name: 'Mallory',
+      },
+    });
+    expect(error).toBeNull();
+    deferredUserId = data.user?.id ?? null;
+    expect(deferredUserId).toBeTruthy();
+
+    // No tenant, no staff — provisioning deferred until confirmation.
+    const { data: tenantBefore } = await svc
+      .from('tenants')
+      .select('id')
+      .eq('name', deferredCafe)
+      .maybeSingle();
+    expect(tenantBefore).toBeNull();
+
+    const { count: staffBefore } = await svc
+      .from('staff')
+      .select('*', { count: 'exact', head: true })
+      .eq('auth_user_id', deferredUserId!);
+    expect(staffBefore ?? 0).toBe(0);
+
+    // Confirm the email → the UPDATE OF email_confirmed_at fires the trigger.
+    const { error: confirmErr } = await svc.auth.admin.updateUserById(deferredUserId!, {
+      email_confirm: true,
+    });
+    expect(confirmErr).toBeNull();
+
+    const { data: tenantAfter } = await svc
+      .from('tenants')
+      .select('id, plan')
+      .eq('name', deferredCafe)
+      .single();
+    deferredTenantId = tenantAfter?.id ?? null;
+    expect(deferredTenantId).toBeTruthy();
+    expect(tenantAfter?.plan).toBe('free'); // anti-escalation preserved
+
+    const { data: ownerStaff } = await svc
+      .from('staff')
+      .select('role')
+      .eq('auth_user_id', deferredUserId!)
+      .single();
+    expect(ownerStaff?.role).toBe('owner');
+
+    // Idempotency: a second UPDATE touching email_confirmed_at must not
+    // double-provision. Exactly one staff owner + one set of 5 task categories.
+    await svc.auth.admin.updateUserById(deferredUserId!, { email_confirm: true });
+
+    const { count: staffAfter } = await svc
+      .from('staff')
+      .select('*', { count: 'exact', head: true })
+      .eq('auth_user_id', deferredUserId!);
+    expect(staffAfter ?? 0).toBe(1);
+
+    const { count: taskCats } = await svc
+      .from('task_categories')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', deferredTenantId!);
     expect(taskCats).toBe(5);
   });
 });
