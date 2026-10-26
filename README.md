@@ -61,11 +61,30 @@ operational work such as encrypted backups and data retention.
 
 ## Screenshots
 
-<!-- Add screenshots here, e.g. docs/screenshots/staff-orders.png -->
+Demo data: a Japanese café ("Sakura Café") with live orders at different stages.
 
-| Staff dashboard | Customer QR ordering | Mobile app |
-|---|---|---|
-| _coming soon_ | _coming soon_ | _coming soon_ |
+**Order management**: live order feed with status-specific actions (start preparing, mark ready,
+payment, cancel)
+
+![Order management](docs/screenshots/staff-orders.png)
+
+| Table map | Kitchen display |
+|---|---|
+| ![Table map](docs/screenshots/staff-tables.png) | ![Kitchen display](docs/screenshots/staff-kitchen.png) |
+| Each table's status, current order, and total at a glance | Cook-side queue grouped by stage, with per-item progress |
+
+| Reports & analytics | Menu management |
+|---|---|
+| ![Reports](docs/screenshots/staff-reports.png) | ![Menu management](docs/screenshots/staff-menu.png) |
+| Revenue, profit & loss, and an end-of-day Z-report by payment method | Categories, availability, and per-channel (dine-in / takeout / delivery) toggles |
+
+**Customer QR ordering (phone)**: guests scan the table's QR code, pick a language, and order
+
+<p>
+  <img src="docs/screenshots/customer-landing.png" alt="Customer table landing page" width="260" />
+  &nbsp;
+  <img src="docs/screenshots/customer-menu.png" alt="Customer menu" width="260" />
+</p>
 
 ---
 
